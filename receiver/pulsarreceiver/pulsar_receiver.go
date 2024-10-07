@@ -13,12 +13,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 )
 
 var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 
 const alreadyClosedError = "AlreadyClosedError"
+
+const transport = "pulsar"
 
 type pulsarTracesConsumer struct {
 	tracesConsumer  consumer.Traces
@@ -29,9 +32,18 @@ type pulsarTracesConsumer struct {
 	unmarshaler     TracesUnmarshaler
 	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
+	obsrecv         *receiverhelper.ObsReport
 }
 
 func newTracesReceiver(config Config, set receiver.Settings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -49,6 +61,7 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshalers map[st
 	}
 
 	return &pulsarTracesConsumer{
+		obsrecv:         obsrecv,
 		tracesConsumer:  nextConsumer,
 		topic:           config.Topic,
 		unmarshaler:     unmarshaler,
@@ -81,6 +94,7 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 
 	// TODO: Ensure returned errors are handled
 	for {
+		obsCtx := c.obsrecv.StartTracesOp(ctx)
 		message, err := c.consumer.Receive(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), alreadyClosedError) {
@@ -105,6 +119,7 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 		if err := traceConsumer.ConsumeTraces(context.Background(), traces); err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
+		c.obsrecv.EndTracesOp(obsCtx, c.unmarshaler.Encoding(), traces.SpanCount(), err)
 		_ = c.consumer.Ack(message)
 	}
 }
@@ -128,9 +143,18 @@ type pulsarMetricsConsumer struct {
 	cancel          context.CancelFunc
 	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
+	obsrecv         *receiverhelper.ObsReport
 }
 
 func newMetricsReceiver(config Config, set receiver.Settings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -148,6 +172,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshalers map[s
 	}
 
 	return &pulsarMetricsConsumer{
+		obsrecv:         obsrecv,
 		metricsConsumer: nextConsumer,
 		topic:           config.Topic,
 		unmarshaler:     unmarshaler,
@@ -181,6 +206,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 
 	// TODO: Ensure returned errors are handled
 	for {
+		obsCtx := c.obsrecv.StartMetricsOp(ctx)
 		message, err := c.consumer.Receive(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), alreadyClosedError) {
@@ -206,6 +232,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 		if err := metricsConsumer.ConsumeMetrics(context.Background(), metrics); err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
+		c.obsrecv.EndMetricsOp(obsCtx, c.unmarshaler.Encoding(), metrics.DataPointCount(), err)
 
 		_ = c.consumer.Ack(message)
 	}
@@ -230,9 +257,18 @@ type pulsarLogsConsumer struct {
 	cancel          context.CancelFunc
 	settings        receiver.Settings
 	consumerOptions pulsar.ConsumerOptions
+	obsrecv         *receiverhelper.ObsReport
 }
 
 func newLogsReceiver(config Config, set receiver.Settings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             set.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -250,6 +286,7 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshalers map[stri
 	}
 
 	return &pulsarLogsConsumer{
+		obsrecv:         obsrecv,
 		logsConsumer:    nextConsumer,
 		topic:           config.Topic,
 		cancel:          nil,
@@ -282,6 +319,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 	logsConsumer := c.logsConsumer
 
 	for {
+		obsCtx := c.obsrecv.StartLogsOp(ctx)
 		message, err := c.consumer.Receive(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), alreadyClosedError) {
@@ -306,7 +344,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 		if err := logsConsumer.ConsumeLogs(context.Background(), logs); err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
-
+		c.obsrecv.EndLogsOp(obsCtx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
 		_ = c.consumer.Ack(message)
 	}
 }
