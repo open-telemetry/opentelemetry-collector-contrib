@@ -9,7 +9,7 @@ status:
     active: [rmfitzpatrick, jamesmoessis]
   unsupported_platforms: [darwin, windows]
 
-sem_conv_version: 1.6.1
+sem_conv_version: 1.27.0
 
 # Note: there are other, additional resource attributes that the user can configure through the yaml
 resource_attributes:
