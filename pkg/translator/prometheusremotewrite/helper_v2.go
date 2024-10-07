@@ -133,11 +133,10 @@ func createAttributesV2(resource pcommon.Resource, attributes pcommon.Map, exter
 		l[name] = extras[i+1]
 	}
 
-	// TODO what was this for??
-	//labels = labels[:0]
-	//for k, v := range l {
-	//	labels = append(labels, prompb.Label{Name: k, Value: v})
-	//}
+	serieslabels = serieslabels[:0]
+	for k, v := range l {
+		serieslabels = append(serieslabels, labels.Label{Name: k, Value: v})
+	}
 
 	return serieslabels
 }
