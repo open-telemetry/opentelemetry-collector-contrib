@@ -497,3 +497,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver => ../../receiver/googlecloudmonitoringreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver => ../../receiver/gelfreceiver
