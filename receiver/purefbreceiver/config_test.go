@@ -23,8 +23,6 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	clientConfig := confighttp.NewDefaultClientConfig()
-
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -32,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				ClientConfig: clientConfig,
+				ClientConfig: confighttp.NewDefaultClientConfig(),
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
 						Array:   15 * time.Second,
