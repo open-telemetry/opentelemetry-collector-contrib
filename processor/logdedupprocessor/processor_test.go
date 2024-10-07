@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -17,11 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
@@ -96,8 +93,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, settings)
-	p.conditions = nil
+	p, err := createLogsProcessor(context.Background(), settings, cfg, logsSink)
 	require.NoError(t, err)
 
 	// Start then stop the processor checking for errors
@@ -126,8 +122,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, settings)
-	p.conditions = nil
+	p, err := createLogsProcessor(context.Background(), settings, cfg, logsSink)
 	require.NoError(t, err)
 	require.NotPanics(t, func() {
 		err := p.Shutdown(context.Background())
@@ -149,14 +144,13 @@ func TestProcessorConsume(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, settings)
-	p.conditions = nil
+	p, err := createLogsProcessor(context.Background(), settings, cfg, logsSink)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	logs, err := golden.ReadLogs("testdata/input/basicLogs.yaml")
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "basicLogs.yaml"))
 	require.NoError(t, err)
 
 	// Consume the payload
@@ -168,14 +162,13 @@ func TestProcessorConsume(t *testing.T) {
 		return logsSink.LogRecordCount() > 0
 	}, 3*time.Second, 200*time.Millisecond)
 
-	expectedLogs, err := golden.ReadLogs("testdata/expected/basicLogs.yaml")
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "basicLogs.yaml"))
 	require.NoError(t, err)
 
 	allSinkLogs := logsSink.AllLogs()
 	require.Len(t, allSinkLogs, 1)
 
-	removeTimestamps(expectedLogs, allSinkLogs[0])
-	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp()))
+	require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
 
 	// Cleanup
 	err = p.Shutdown(context.Background())
@@ -192,8 +185,7 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	}
 
 	// Create & start a processor
-	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
-	p.conditions = nil
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -230,14 +222,13 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
-	p.conditions = getConditions(t, cfg.Conditions)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	logs, err := golden.ReadLogs("testdata/input/conditionLogs.yaml")
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "conditionLogs.yaml"))
 	require.NoError(t, err)
 
 	// Consume the payload
@@ -252,18 +243,16 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	allSinkLogs := logsSink.AllLogs()
 	require.Len(t, allSinkLogs, 2)
 
-	expectedConsumedLogs, err := golden.ReadLogs("testdata/expected/conditionConsumedLogs.yaml")
+	expectedConsumedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "conditionConsumedLogs.yaml"))
 	require.NoError(t, err)
-	expectedDedupedLogs, err := golden.ReadLogs("testdata/expected/conditionDedupedLogs.yaml")
+	expectedDedupedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "conditionDedupedLogs.yaml"))
 	require.NoError(t, err)
 
 	consumedLogs := allSinkLogs[0]
 	dedupedLogs := allSinkLogs[1]
 
-	removeTimestamps(expectedConsumedLogs, expectedDedupedLogs, consumedLogs, dedupedLogs)
-
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp()))
+	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
 
 	// Cleanup
 	err = p.Shutdown(context.Background())
@@ -283,14 +272,13 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := newProcessor(cfg, logsSink, processortest.NewNopSettings())
-	p.conditions = getConditions(t, cfg.Conditions)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	logs, err := golden.ReadLogs("testdata/input/conditionLogs.yaml")
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "conditionLogs.yaml"))
 	require.NoError(t, err)
 
 	// Consume the payload
@@ -308,40 +296,16 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	consumedLogs := allSinkLogs[0]
 	dedupedLogs := allSinkLogs[1]
 
-	expectedConsumedLogs, err := golden.ReadLogs("testdata/expected/multipleConditionsConsumedLogs.yaml")
+	expectedConsumedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "multipleConditionsConsumedLogs.yaml"))
 	require.NoError(t, err)
-	expectedDedupedLogs, err := golden.ReadLogs("testdata/expected/multipleConditionsDedupedLogs.yaml")
+	expectedDedupedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "multipleConditionsDedupedLogs.yaml"))
 	require.NoError(t, err)
 
-	removeTimestamps(expectedConsumedLogs, expectedDedupedLogs, consumedLogs, dedupedLogs)
-
-	require.NoError(t, plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp()))
-	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp()))
+	err = plogtest.CompareLogs(expectedConsumedLogs, consumedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp"))
+	require.NoError(t, err)
+	require.NoError(t, plogtest.CompareLogs(expectedDedupedLogs, dedupedLogs, plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
 
 	// Cleanup
 	err = p.Shutdown(context.Background())
 	require.NoError(t, err)
-}
-
-func removeTimestamps(plogs ...plog.Logs) {
-	for _, logs := range plogs {
-		for i := 0; i < logs.ResourceLogs().Len(); i++ {
-			rl := logs.ResourceLogs().At(i)
-			for j := 0; j < rl.ScopeLogs().Len(); j++ {
-				sl := rl.ScopeLogs().At(j)
-				for k := 0; k < sl.LogRecords().Len(); k++ {
-					logRecord := sl.LogRecords().At(k)
-					logRecord.Attributes().Remove("first_observed_timestamp")
-					logRecord.Attributes().Remove("last_observed_timestamp")
-					logRecord.SetTimestamp(0)
-				}
-			}
-		}
-	}
-}
-
-func getConditions(t *testing.T, conditionsIn []string) expr.BoolExpr[ottllog.TransformContext] {
-	conditions, err := filterottl.NewBoolExprForLog(conditionsIn, filterottl.StandardLogFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-	return conditions
 }
