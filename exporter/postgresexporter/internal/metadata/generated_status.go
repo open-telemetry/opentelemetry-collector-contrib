@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("postgres")
+	Type      = component.MustNewType("postgresexporter")
 	ScopeName = "postgresexporter"
 )
 

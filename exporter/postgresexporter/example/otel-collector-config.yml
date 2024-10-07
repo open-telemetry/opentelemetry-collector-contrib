@@ -4,17 +4,34 @@ receivers:
       grpc:
         endpoint: 0.0.0.0:4317
       http:
+        endpoint: 0.0.0.0:4318
+
 exporters:
   postgresexporter:
-    connectionString: "postgrs://postgres:postgres@localhost:5432/postgres" 
+    username: "postgres"
+    password: "postgres"
+    database: "postgres"
+    logs_table_name: "otellogs"
+    traces_table_name: "oteltraces"
+    metrics_table_name: "otelmetrics"
+    port: "5432"
+    hostname: "localhost"
+  debug:
+
 service:
   pipelines:
-    traces:
-      receivers: [ otlp ]
-      exporters: [ postgresexporter ]
     logs:
       receivers: [ otlp ]
-      exporters: [ postgresexporter ]
+      exporters: 
+        - debug
+        - postgresexporter
+    traces:
+      receivers: [ otlp ]
+      exporters: 
+        - debug
+        - postgresexporter
     metrics:
       receivers: [ otlp ]
-      exporters: [ postgresexporter ]
+      exporters: 
+        - debug
+        - postgresexporter

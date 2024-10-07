@@ -2,19 +2,29 @@ package postgresexporter
 
 import (
 	"context"
+	"database/sql"
+	"log"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 )
 
-type postgresexporter struct{}
+type postgresexporter struct {
+	client *sql.DB
+	logger *zap.Logger
+	cfg    *Config
+}
 
-func NewPostgresExporter() *postgresexporter {
-	return &postgresexporter{}
+func NewPostgresExporter(cfg *Config) *postgresexporter {
+	return &postgresexporter{
+		cfg: cfg,
+	}
 }
 
 func (s *postgresexporter) pushLogs(_ context.Context, ld plog.Logs) error {
+	log.Println(ld)
 	return nil
 }
 
