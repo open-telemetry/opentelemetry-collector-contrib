@@ -1567,7 +1567,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreStatus.Enabled ||
 		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
 		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreBackupStatus.Enabled ||
-		!s.splunkClient.isConfigured(typeIdx) {
+		!s.splunkClient.isConfigured(typeCm) {
 		return
 	}
 
