@@ -6,6 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -32,20 +33,23 @@ func (v *traceVisitor) visit(
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span) (ok bool) {
 
-	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
+	instrumentationKey := string(v.exporter.config.InstrumentationKey)
+	client := appinsights.NewTelemetryClient(instrumentationKey)
+
+	telemetryTraces, err := spanToTelemetryTraces(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
 		v.err = consumererror.NewPermanent(err)
 		return false
 	}
 
-	for _, envelope := range envelopes {
-		envelope.IKey = string(v.exporter.config.InstrumentationKey)
-
+	for _, trace := range telemetryTraces {
 		// This is a fire and forget operation
-		v.exporter.transportChannel.Send(envelope)
-	}
+		client.Track(trace)
 
+	}
+	// Flush the telemetry client to ensure all data is sent and take advantage of batching
+	client.Channel().Flush()
 	v.processed++
 
 	return true
