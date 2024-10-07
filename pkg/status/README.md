@@ -1,0 +1,12 @@
+# pkg/status
+
+## Overview
+
+This module contains functionality for aggregating status information about components. Used by extensions that
+implement the `extension.StatusWatcher` interface for collecting status information about the internal status of all
+components inside the collector.
+
+### History
+
+`status` was originally developed for the `healthcheckv2extension`. Other extensions that need to collector status
+information needed to use this same implementation to aggregate status information.
