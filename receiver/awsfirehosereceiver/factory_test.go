@@ -18,7 +18,7 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	r, err := createMetricsReceiver(
 		context.Background(),
 		receivertest.NewNopSettings(),

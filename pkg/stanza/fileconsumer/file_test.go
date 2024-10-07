@@ -1340,7 +1340,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	file1 := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
 	file2 := filetest.OpenTempWithPattern(t, tempDir, "*.log2")
 
-	// Two same fingerprint file , and smaller than  config size
+	// Two same fingerprint file , and smaller than config size
 	content := "aaaaaaaaaaa"
 	filetest.WriteString(t, file1, content+"\n")
 	filetest.WriteString(t, file2, content+"\n")
@@ -1435,7 +1435,7 @@ func TestNoLostPartial(t *testing.T) {
 	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
-	// Two same fingerprint file , and smaller than  config size
+	// Two same fingerprint file , and smaller than config size
 	file1 := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
 	file2 := filetest.OpenTempWithPattern(t, tempDir, "*.log2")
 

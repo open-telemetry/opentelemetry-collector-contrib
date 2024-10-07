@@ -1166,7 +1166,7 @@ func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
 	}
 }
 
-func TestCreateLogsReceiver_encoding_text_error(t *testing.T) {
+func TestCreateLogs_encoding_text_error(t *testing.T) {
 	cfg := Config{
 		Encoding: "text_uft-8",
 	}
