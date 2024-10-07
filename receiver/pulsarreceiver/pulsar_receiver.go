@@ -115,8 +115,8 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 			_ = c.consumer.Ack(message)
 			return err
 		}
-
-		if err := traceConsumer.ConsumeTraces(context.Background(), traces); err != nil {
+		err = traceConsumer.ConsumeTraces(context.Background(), traces)
+		if err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 		c.obsrecv.EndTracesOp(obsCtx, c.unmarshaler.Encoding(), traces.SpanCount(), err)
@@ -228,8 +228,8 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 			_ = c.consumer.Ack(message)
 			return err
 		}
-
-		if err := metricsConsumer.ConsumeMetrics(context.Background(), metrics); err != nil {
+		err = metricsConsumer.ConsumeMetrics(context.Background(), metrics)
+		if err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 		c.obsrecv.EndMetricsOp(obsCtx, c.unmarshaler.Encoding(), metrics.DataPointCount(), err)
@@ -340,8 +340,8 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 			_ = c.consumer.Ack(message)
 			return err
 		}
-
-		if err := logsConsumer.ConsumeLogs(context.Background(), logs); err != nil {
+		err = logsConsumer.ConsumeLogs(context.Background(), logs)
+		if err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 		c.obsrecv.EndLogsOp(obsCtx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
