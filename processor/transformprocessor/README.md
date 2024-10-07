@@ -220,6 +220,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [copy_metric](#copy_metric)
 - [scale_metric](#scale_metric)
 - [aggregate_on_attributes](#aggregate_on_attributes)
+- [convert_exponential_histogram_to_histogram](#convert_exponential_histogram_to_histogram)
 - [aggregate_on_attribute_value](#aggregate_on_attribute_value)
 
 ### convert_sum_to_gauge
@@ -356,6 +357,86 @@ Examples:
 
 - `copy_metric(desc="new desc") where description == "old desc"`
 
+
+### convert_exponential_histogram_to_histogram
+
+__Warning:__ The approach used in this function to convert exponential histograms to explicit histograms __is not__ part of the __OpenTelemetry Specification__.
+
+`convert_exponential_histogram_to_histogram(distribution, [ExplicitBounds])`
+
+The `convert_exponential_histogram_to_histogram` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
+
+This function requires 2 arguments:
+
+- `distribution` - This argument defines the distribution algorithm used to allocate the exponential histogram datapoints into a new Explicit Histogram. There are 4 options:
+
+  - __upper__ - This approach identifies the highest possible value of each exponential bucket (_the upper bound_) and uses it to distribute the datapoints by comparing the upper bound of each bucket with the ExplicitBounds provided. This approach works better for small/narrow exponential histograms where the difference between the upper bounds and lower bounds are small.
+
+      _For example, Given:_
+      1. count = 10
+      2. Boundaries: [5, 10, 15, 20, 25]
+      3. Upper Bound: 15
+      _Process:_
+      4. Start with zeros: [0, 0, 0, 0, 0]
+      5. Iterate the boundaries and compare $upper = 15$ with each boundary:
+        - $15>5$ (_skip_)
+        - $15>10$ (_skip_)
+        - $15<=15$ (allocate count to this boundary)
+      6. Allocate count: [0, 0, __10__, 0, 0]
+      7. Final Counts: [0, 0, __10__, 0, 0]
+
+  - __midpoint__ - This approach works in a similar way to the __upper__ approach, but instead of using the upper bound, it uses the midpoint of each exponential bucket. The midpoint is identified by calculating the average of the upper and lower bounds. This approach also works better for small/narrow exponential histograms.
+
+
+    >The __uniform__ and __random__ distribution algorithms both utilise the concept of intersecting boundaries.
+    Intersecting boundaries are any boundary in the `boundaries array` that falls between or on the lower and upper values of the Exponential Histogram boundaries. 
+    _For Example:_ if you have an Exponential Histogram bucket with a lower bound of 10 and upper of 20, and your boundaries array is [5, 10, 15, 20, 25], the intersecting boundaries are 10, 15, and 20 because they lie within the range [10, 20].
+
+  - __uniform__ - This approach distributes the datapoints for each bucket uniformly across the intersecting __ExplicitBounds__. The algorithm works as follows:
+
+     - If there are valid intersecting boundaries, the function evenly distributes the count across these boundaries. 
+	  - Calculate the count to be allocated to each boundary.
+	  - If there is a remainder after dividing the count equally, it distributes the remainder by incrementing the count for some of the boundaries until the remainder is exhausted.
+
+    _For example Given:_
+      1. count = 10
+      2. Exponential Histogram Bounds: [10, 20]
+      3. Boundaries:                [5, 10, 15, 20, 25]
+      4. Intersecting Boundaries:       [10, 15, 20]                          
+      5. Number of Intersecting Boundaries: 3
+      6. Using the formula: $count/numOfIntersections=10/3=3r1$
+      
+      _Uniform Allocation:_
+      
+      7. Start with zeros:          [0, 0, 0, 0, 0]
+      8. Allocate 3 to each:        [0, 3, 3, 3, 0]
+      9. Distribute remainder $r$ 1:    [0, 4, 3, 3, 0]
+      10. Final Counts:              [0, 4, 3, 3, 0]
+
+  - __random__ - This approach distributes the datapoints for each bucket randomly across the intersecting __ExplicitBounds__. This approach works in a similar manner to the uniform distribution algorithm with the main difference being that points are distributed randomly instead of uniformly. This works as follows:
+      - If there are valid intersecting boundaries, calculate the proportion of the count that should be allocated to each boundary based on the overlap of the boundary with the provided range (lower to upper).
+      - For each boundary, a random fraction of the calculated proportion is allocated.
+      - Any remaining count (_due to rounding or random distribution_) is then distributed randomly among the intersecting boundaries.
+      - If the bucket range does not intersect with any boundaries, the entire count is assigned to the start boundary.
+
+- `ExplicitBounds` represents the list of bucket boundaries for the new histogram. This argument is __required__ and __cannot be empty__.
+
+__WARNINGS:__
+
+- The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries and identify the best distribution approach for your data in order to minimize this loss. 
+
+  For example, selecting Boundaries that are too high or too low may result histogram buckets that are too wide or too narrow, respectively.
+
+- __Negative Bucket Counts__ are not supported in Explicit Histograms, as such negative bucket counts are ignored.
+
+- __ZeroCounts__ are only allocated if the ExplicitBounds array contains a zero boundary. That is, if the Explicit Boundaries that you provide does not start with `0`, the function will not allocate any zero counts from the Exponential Histogram.
+
+This function should only be used when Exponential Histograms are not suitable for the downstream consumers or if upstream metric sources are unable to generate Explicit Histograms.
+
+__Example__:
+
+- `convert_exponential_histogram_to_histogram("random", [0.0, 10.0, 100.0, 1000.0, 10000.0])`
+
 ### scale_metric
 
 `scale_metric(factor, Optional[unit])`
@@ -461,6 +542,7 @@ statements:
 ```
 
 To aggregate only using a specified set of attributes, you can use `keep_matching_keys`.
+
 
 ## Examples
 

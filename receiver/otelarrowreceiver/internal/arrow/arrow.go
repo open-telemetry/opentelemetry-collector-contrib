@@ -41,6 +41,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
@@ -173,7 +174,9 @@ func newHeaderReceiver(streamCtx context.Context, as auth.Server, includeMetadat
 // client.Info with additional key:values associated with the arrow batch.
 func (h *headerReceiver) combineHeaders(ctx context.Context, hdrsBytes []byte) (context.Context, map[string][]string, error) {
 	if len(hdrsBytes) == 0 && len(h.streamHdrs) == 0 {
-		return ctx, nil, nil
+		// Note: call newContext in this case to ensure that
+		// connInfo is added to the context, for Auth.
+		return h.newContext(ctx, nil), nil, nil
 	}
 
 	if len(hdrsBytes) == 0 {
@@ -420,8 +423,8 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	}
 }
 
-func (r *receiverStream) newInFlightData(ctx context.Context, method string, batchID int64, pendingCh chan<- batchResp) (context.Context, *inFlightData) {
-	ctx, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
+func (r *receiverStream) newInFlightData(ctx context.Context, method string, batchID int64, pendingCh chan<- batchResp) *inFlightData {
+	_, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
 
 	r.inFlightWG.Add(1)
 	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, 1)
@@ -433,7 +436,7 @@ func (r *receiverStream) newInFlightData(ctx context.Context, method string, bat
 		span:           span,
 	}
 	id.refs.Add(1)
-	return ctx, id
+	return id
 }
 
 // inFlightData is responsible for storing the resources held by one request.
@@ -549,35 +552,43 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 
 	// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,
 	// or plog.Logs item.
-	req, err := serverStream.Recv()
+	req, recvErr := serverStream.Recv()
+
+	// the incoming stream context is the parent of the in-flight context, which
+	// carries a span covering sequential stream-processing work.  the context
+	// is severed at this point, with flight.span a contextless child that will be
+	// finished in recvDone().
+	flight := r.newInFlightData(streamCtx, method, req.GetBatchId(), pendingCh)
 
 	// inflightCtx is carried through into consumeAndProcess on the success path.
-	inflightCtx, flight := r.newInFlightData(streamCtx, method, req.GetBatchId(), pendingCh)
+	// this inherits the stream context so that its auth headers are present
+	// when the per-data Auth call is made.
+	inflightCtx := streamCtx
 	defer flight.recvDone(inflightCtx, &retErr)
 
-	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return err
+	if recvErr != nil {
+		if errors.Is(recvErr, io.EOF) {
+			return recvErr
 
-		} else if errors.Is(err, context.Canceled) {
+		} else if errors.Is(recvErr, context.Canceled) {
 			// This is a special case to avoid introducing a span error
 			// for a canceled operation.
 			return io.EOF
 
-		} else if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
+		} else if status, ok := status.FromError(recvErr); ok && status.Code() == codes.Canceled {
 			// This is a special case to avoid introducing a span error
 			// for a canceled operation.
 			return io.EOF
 		}
 		// Note: err is directly from gRPC, should already have status.
-		return err
+		return recvErr
 	}
 
 	// Check for optional headers and set the incoming context.
-	inflightCtx, authHdrs, err := hrcv.combineHeaders(inflightCtx, req.GetHeaders())
-	if err != nil {
+	inflightCtx, authHdrs, hdrErr := hrcv.combineHeaders(inflightCtx, req.GetHeaders())
+	if hdrErr != nil {
 		// Failing to parse the incoming headers breaks the stream.
-		return status.Errorf(codes.Internal, "arrow metadata error: %v", err)
+		return status.Errorf(codes.Internal, "arrow metadata error: %v", hdrErr)
 	}
 
 	// start this span after hrcv.combineHeaders returns extracted context. This will allow this span
@@ -601,9 +612,29 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		// This is a compressed size so make sure to acquire the difference when request is decompressed.
 		prevAcquiredBytes = int64(proto.Size(req))
 	} else {
-		prevAcquiredBytes, err = strconv.ParseInt(uncompSizeHeaderStr[0], 10, 64)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to convert string to request size: %v", err)
+		var parseErr error
+		prevAcquiredBytes, parseErr = strconv.ParseInt(uncompSizeHeaderStr[0], 10, 64)
+		if parseErr != nil {
+			return status.Errorf(codes.Internal, "failed to convert string to request size: %v", parseErr)
+		}
+	}
+
+	var callerCancel context.CancelFunc
+	if encodedTimeout, has := authHdrs["grpc-timeout"]; has && len(encodedTimeout) == 1 {
+		if timeout, decodeErr := grpcutil.DecodeTimeout(encodedTimeout[0]); decodeErr != nil {
+			r.telemetry.Logger.Debug("grpc-timeout parse error", zap.Error(decodeErr))
+		} else {
+			// timeout parsed successfully
+			inflightCtx, callerCancel = context.WithTimeout(inflightCtx, timeout)
+
+			// if we return before the new goroutine is started below
+			// cancel the context.  callerCancel will be non-nil until
+			// the new goroutine is created at the end of this function.
+			defer func() {
+				if callerCancel != nil {
+					callerCancel()
+				}
+			}()
 		}
 	}
 
@@ -612,19 +643,19 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// immediately if there are too many waiters, or will
 	// otherwise block until timeout or enough memory becomes
 	// available.
-	err = r.boundedQueue.Acquire(inflightCtx, prevAcquiredBytes)
-	if err != nil {
-		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue: %v", err)
+	acquireErr := r.boundedQueue.Acquire(inflightCtx, prevAcquiredBytes)
+	if acquireErr != nil {
+		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue: %v", acquireErr)
 	}
 	flight.numAcquired = prevAcquiredBytes
 
-	data, numItems, uncompSize, err := r.consumeBatch(ac, req)
+	data, numItems, uncompSize, consumeErr := r.consumeBatch(ac, req)
 
-	if err != nil {
-		if errors.Is(err, arrowRecord.ErrConsumerMemoryLimit) {
-			return status.Errorf(codes.ResourceExhausted, "otel-arrow decode: %v", err)
+	if consumeErr != nil {
+		if errors.Is(consumeErr, arrowRecord.ErrConsumerMemoryLimit) {
+			return status.Errorf(codes.ResourceExhausted, "otel-arrow decode: %v", consumeErr)
 		}
-		return status.Errorf(codes.Internal, "otel-arrow decode: %v", err)
+		return status.Errorf(codes.Internal, "otel-arrow decode: %v", consumeErr)
 	}
 
 	flight.uncompSize = uncompSize
@@ -633,27 +664,35 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
 	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
 
-	numAcquired, err := r.acquireAdditionalBytes(inflightCtx, prevAcquiredBytes, uncompSize, hrcv.connInfo.Addr, uncompSizeHeaderFound)
+	numAcquired, secondAcquireErr := r.acquireAdditionalBytes(inflightCtx, prevAcquiredBytes, uncompSize, hrcv.connInfo.Addr, uncompSizeHeaderFound)
 
 	flight.numAcquired = numAcquired
-	if err != nil {
-		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue re-acquire: %v", err)
+	if secondAcquireErr != nil {
+		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue re-acquire: %v", secondAcquireErr)
 	}
 
 	// Recognize that the request is still in-flight via consumeAndRespond()
 	flight.refs.Add(1)
 
 	// consumeAndRespond consumes the data and returns control to the sender loop.
-	go r.consumeAndRespond(inflightCtx, data, flight)
+	go func(callerCancel context.CancelFunc) {
+		if callerCancel != nil {
+			defer callerCancel()
+		}
+		r.consumeAndRespond(inflightCtx, streamCtx, data, flight)
+	}(callerCancel)
+
+	// Reset callerCancel so the deferred function above does not call it here.
+	callerCancel = nil
 
 	return nil
 }
 
 // consumeAndRespond finishes the span started in recvOne and logs the
 // result after invoking the pipeline to consume the data.
-func (r *Receiver) consumeAndRespond(ctx context.Context, data any, flight *inFlightData) {
+func (r *Receiver) consumeAndRespond(ctx, streamCtx context.Context, data any, flight *inFlightData) {
 	var err error
-	defer flight.consumeDone(ctx, &err)
+	defer flight.consumeDone(streamCtx, &err)
 
 	// recoverErr is a special function because it recovers panics, so we
 	// keep it in a separate defer than the processing above, which will

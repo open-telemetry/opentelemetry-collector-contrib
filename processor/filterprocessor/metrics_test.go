@@ -330,7 +330,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateMetricsProcessor(
+			fmp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -378,7 +378,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 	}
 	factory := NewFactory()
-	fmp, err := factory.CreateMetricsProcessor(
+	fmp, err := factory.CreateMetrics(
 		context.Background(),
 		tel.NewSettings(),
 		cfg,
@@ -420,7 +420,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor.",
+			Description: "Number of items passed to the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -435,7 +435,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor.",
+			Description: "Number of items emitted from the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -480,7 +480,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor.",
+			Description: "Number of items passed to the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -495,7 +495,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor.",
+			Description: "Number of items emitted from the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -539,7 +539,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor.",
+			Description: "Number of items passed to the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -554,7 +554,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 		{
 			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor.",
+			Description: "Number of items emitted from the processor. [alpha]",
 			Unit:        "{items}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -625,7 +625,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 		Exclude: mp,
 	}
 	ctx := context.Background()
-	proc, _ := factory.CreateMetricsProcessor(
+	proc, _ := factory.CreateMetrics(
 		ctx,
 		processortest.NewNopSettings(),
 		cfg,
@@ -703,7 +703,7 @@ func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 		},
 	}
 	ctx := context.Background()
-	proc, _ := factory.CreateMetricsProcessor(
+	proc, _ := factory.CreateMetrics(
 		ctx,
 		processortest.NewNopSettings(),
 		cfg,

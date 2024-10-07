@@ -9,28 +9,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestFailoverRecovery(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.TracesSink
-	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
-	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
-	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
-	tracesFourth := component.NewIDWithName(component.DataTypeTraces, "traces/fourth")
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
+	tracesFourth := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/fourth")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
 		RetryInterval:    50 * time.Millisecond,
 		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
 		tracesFirst:  &sinkFirst,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,
@@ -154,19 +154,19 @@ func TestFailoverRecovery(t *testing.T) {
 
 func TestFailoverRecovery_MaxRetries(t *testing.T) {
 	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.TracesSink
-	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
-	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
-	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
-	tracesFourth := component.NewIDWithName(component.DataTypeTraces, "traces/fourth")
+	tracesFirst := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/first")
+	tracesSecond := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/second")
+	tracesThird := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/third")
+	tracesFourth := pipeline.NewIDWithName(pipeline.SignalTraces, "traces/fourth")
 
 	cfg := &Config{
-		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
+		PipelinePriority: [][]pipeline.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
 		RetryInterval:    50 * time.Millisecond,
 		RetryGap:         10 * time.Millisecond,
 		MaxRetries:       10000,
 	}
 
-	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+	router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
 		tracesFirst:  &sinkFirst,
 		tracesSecond: &sinkSecond,
 		tracesThird:  &sinkThird,

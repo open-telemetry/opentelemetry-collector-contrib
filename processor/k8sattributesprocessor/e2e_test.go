@@ -17,10 +17,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
@@ -107,13 +107,13 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 
 	tcs := []struct {
 		name     string
-		dataType component.DataType
+		dataType pipeline.Signal
 		service  string
 		attrs    map[string]*expectedValue
 	}{
 		{
 			name:     "traces-job",
-			dataType: component.DataTypeTraces,
+			dataType: pipeline.SignalTraces,
 			service:  "test-traces-job",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-job-[a-z0-9]*"),
@@ -138,7 +138,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "traces-statefulset",
-			dataType: component.DataTypeTraces,
+			dataType: pipeline.SignalTraces,
 			service:  "test-traces-statefulset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-traces-statefulset-0"),
@@ -163,7 +163,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "traces-deployment",
-			dataType: component.DataTypeTraces,
+			dataType: pipeline.SignalTraces,
 			service:  "test-traces-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -189,7 +189,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "traces-daemonset",
-			dataType: component.DataTypeTraces,
+			dataType: pipeline.SignalTraces,
 			service:  "test-traces-daemonset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-daemonset-[a-z0-9]*"),
@@ -214,7 +214,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "metrics-job",
-			dataType: component.DataTypeMetrics,
+			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-job",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-job-[a-z0-9]*"),
@@ -239,7 +239,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "metrics-statefulset",
-			dataType: component.DataTypeMetrics,
+			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-statefulset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-statefulset-0"),
@@ -264,7 +264,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "metrics-deployment",
-			dataType: component.DataTypeMetrics,
+			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -290,7 +290,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "metrics-daemonset",
-			dataType: component.DataTypeMetrics,
+			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-daemonset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-daemonset-[a-z0-9]*"),
@@ -315,7 +315,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "logs-job",
-			dataType: component.DataTypeLogs,
+			dataType: pipeline.SignalLogs,
 			service:  "test-logs-job",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-job-[a-z0-9]*"),
@@ -340,7 +340,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "logs-statefulset",
-			dataType: component.DataTypeLogs,
+			dataType: pipeline.SignalLogs,
 			service:  "test-logs-statefulset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-logs-statefulset-0"),
@@ -364,7 +364,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "logs-deployment",
-			dataType: component.DataTypeLogs,
+			dataType: pipeline.SignalLogs,
 			service:  "test-logs-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -391,7 +391,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		},
 		{
 			name:     "logs-daemonset",
-			dataType: component.DataTypeLogs,
+			dataType: pipeline.SignalLogs,
 			service:  "test-logs-daemonset",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-daemonset-[a-z0-9]*"),
@@ -419,11 +419,11 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			switch tc.dataType {
-			case component.DataTypeTraces:
+			case pipeline.SignalTraces:
 				scanTracesForAttributes(t, tracesConsumer, tc.service, tc.attrs)
-			case component.DataTypeMetrics:
+			case pipeline.SignalMetrics:
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
-			case component.DataTypeLogs:
+			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -480,13 +480,13 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 
 	tcs := []struct {
 		name     string
-		dataType component.DataType
+		dataType pipeline.Signal
 		service  string
 		attrs    map[string]*expectedValue
 	}{
 		{
 			name:     "traces-deployment",
-			dataType: component.DataTypeTraces,
+			dataType: pipeline.SignalTraces,
 			service:  "test-traces-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -510,7 +510,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 		},
 		{
 			name:     "metrics-deployment",
-			dataType: component.DataTypeMetrics,
+			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -534,7 +534,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 		},
 		{
 			name:     "logs-deployment",
-			dataType: component.DataTypeLogs,
+			dataType: pipeline.SignalLogs,
 			service:  "test-logs-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -561,11 +561,11 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			switch tc.dataType {
-			case component.DataTypeTraces:
+			case pipeline.SignalTraces:
 				scanTracesForAttributes(t, tracesConsumer, tc.service, tc.attrs)
-			case component.DataTypeMetrics:
+			case pipeline.SignalMetrics:
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
-			case component.DataTypeLogs:
+			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -638,13 +638,13 @@ func TestE2E_MixRBAC(t *testing.T) {
 
 	tcs := []struct {
 		name     string
-		dataType component.DataType
+		dataType pipeline.Signal
 		service  string
 		attrs    map[string]*expectedValue
 	}{
 		{
 			name:     "traces-deployment",
-			dataType: component.DataTypeTraces,
+			dataType: pipeline.SignalTraces,
 			service:  "test-traces-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -671,7 +671,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 		},
 		{
 			name:     "metrics-deployment",
-			dataType: component.DataTypeMetrics,
+			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -698,7 +698,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 		},
 		{
 			name:     "logs-deployment",
-			dataType: component.DataTypeLogs,
+			dataType: pipeline.SignalLogs,
 			service:  "test-logs-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -728,11 +728,11 @@ func TestE2E_MixRBAC(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			switch tc.dataType {
-			case component.DataTypeTraces:
+			case pipeline.SignalTraces:
 				scanTracesForAttributes(t, tracesConsumer, tc.service, tc.attrs)
-			case component.DataTypeMetrics:
+			case pipeline.SignalMetrics:
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
-			case component.DataTypeLogs:
+			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -792,13 +792,13 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 
 	tcs := []struct {
 		name     string
-		dataType component.DataType
+		dataType pipeline.Signal
 		service  string
 		attrs    map[string]*expectedValue
 	}{
 		{
 			name:     "traces-deployment",
-			dataType: component.DataTypeTraces,
+			dataType: pipeline.SignalTraces,
 			service:  "test-traces-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-traces-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -822,7 +822,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 		},
 		{
 			name:     "metrics-deployment",
-			dataType: component.DataTypeMetrics,
+			dataType: pipeline.SignalMetrics,
 			service:  "test-metrics-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-metrics-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -846,7 +846,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 		},
 		{
 			name:     "logs-deployment",
-			dataType: component.DataTypeLogs,
+			dataType: pipeline.SignalLogs,
 			service:  "test-logs-deployment",
 			attrs: map[string]*expectedValue{
 				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-logs-deployment-[a-z0-9]*-[a-z0-9]*"),
@@ -873,11 +873,11 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			switch tc.dataType {
-			case component.DataTypeTraces:
+			case pipeline.SignalTraces:
 				scanTracesForAttributes(t, tracesConsumer, tc.service, tc.attrs)
-			case component.DataTypeMetrics:
+			case pipeline.SignalMetrics:
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
-			case component.DataTypeLogs:
+			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
@@ -1004,11 +1004,11 @@ func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.T
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
-	_, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mc)
+	_, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, mc)
 	require.NoError(t, err, "failed creating metrics receiver")
-	_, err = f.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, tc)
+	_, err = f.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, tc)
 	require.NoError(t, err, "failed creating traces receiver")
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, lc)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, lc)
 	require.NoError(t, err, "failed creating logs receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	return func() {

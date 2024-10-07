@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -91,8 +92,7 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// handle the request payload
 	err := sr.handleRequest(req)
 	if err != nil {
-		// TODO account for this error (throttled logging or metrics)
-		rw.WriteHeader(http.StatusBadRequest)
+		errorutil.HTTPError(rw, err)
 		return
 	}
 
@@ -208,6 +208,15 @@ func newReceiver(
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %v receiver: %w", params.ID, err)
 	}
+
+	if config.AccessTokenPassthrough {
+		params.Logger.Warn(
+			"access_token_passthrough is deprecated. " +
+				"Please enable include_metadata in the receiver and add " +
+				"`metadata_keys: [X-Sf-Token]` to the batch processor",
+		)
+	}
+
 	transport := "http"
 	if config.TLSSetting != nil {
 		transport = "https"

@@ -16,8 +16,8 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.14.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.14.0
 	go.opentelemetry.io/build-tools/multimod v0.14.0
-	go.opentelemetry.io/collector/cmd/builder v0.109.1-0.20240916171416-d3a171889c53
-	go.opentelemetry.io/collector/cmd/mdatagen v0.109.1-0.20240916171416-d3a171889c53
+	go.opentelemetry.io/collector/cmd/builder v0.111.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.111.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.25.0
 	golang.org/x/vuln v1.1.3
@@ -131,7 +131,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/parsers/yaml v0.1.0 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/providers/env v0.1.0 // indirect
+	github.com/knadh/koanf/providers/env v1.0.0 // indirect
 	github.com/knadh/koanf/providers/file v1.1.0 // indirect
 	github.com/knadh/koanf/providers/fs v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
@@ -226,12 +226,12 @@ require (
 	go-simpler.org/musttag v0.12.2 // indirect
 	go-simpler.org/sloglint v0.7.1 // indirect
 	go.opentelemetry.io/build-tools v0.14.0 // indirect
-	go.opentelemetry.io/collector/component v0.109.1-0.20240916171416-d3a171889c53 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.109.1-0.20240916171416-d3a171889c53 // indirect
-	go.opentelemetry.io/collector/confmap v1.15.1-0.20240916171416-d3a171889c53 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.1-0.20240916171416-d3a171889c53 // indirect
-	go.opentelemetry.io/collector/filter v0.109.1-0.20240916171416-d3a171889c53 // indirect
-	go.opentelemetry.io/collector/pdata v1.15.1-0.20240916171416-d3a171889c53 // indirect
+	go.opentelemetry.io/collector/component v0.111.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.17.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.17.0 // indirect
+	go.opentelemetry.io/collector/filter v0.111.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.17.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
@@ -250,7 +250,7 @@ require (
 	golang.org/x/term v0.24.0 // indirect
 	golang.org/x/text v0.18.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.66.0 // indirect
+	google.golang.org/grpc v1.67.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
@@ -263,9 +263,6 @@ require (
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
-
-// It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
-replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 retract (
 	v0.76.2

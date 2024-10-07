@@ -31,17 +31,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ocfg, ok := factory.CreateDefaultConfig().(*Config)
-	assert.True(t, ok)
+	ocfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, ocfg.RetryConfig, configretry.NewDefaultBackOffConfig())
 	assert.Equal(t, ocfg.QueueSettings, exporterhelper.NewDefaultQueueConfig())
 	assert.Equal(t, ocfg.TimeoutSettings, exporterhelper.NewDefaultTimeoutConfig())
 	assert.Equal(t, configcompression.TypeZstd, ocfg.Compression)
 	assert.Equal(t, ArrowConfig{
 		Disabled:           false,
-		NumStreams:         runtime.NumCPU(),
-		MaxStreamLifetime:  time.Hour,
-		PayloadCompression: "",
+		NumStreams:         max(1, runtime.NumCPU()/2),
+		MaxStreamLifetime:  30 * time.Second,
+		PayloadCompression: "zstd",
 		Zstd:               zstd.DefaultEncoderConfig(),
 		Prioritizer:        arrow.DefaultPrioritizer,
 	}, ocfg.Arrow)

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
@@ -256,7 +257,7 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 func TestAggregateStatusExtensions(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 
-	extsID := component.MustNewID("extensions")
+	extsID := pipeline.MustNewID("extensions")
 	extInstanceID1 := componentstatus.NewInstanceID(component.MustNewID("ext1"), component.KindExtension).WithPipelines(extsID)
 	extInstanceID2 := componentstatus.NewInstanceID(component.MustNewID("ext2"), component.KindExtension).WithPipelines(extsID)
 	extInstanceIDs := []*componentstatus.InstanceID{extInstanceID1, extInstanceID2}
@@ -527,7 +528,7 @@ func toComponentKey(id *componentstatus.InstanceID) string {
 	return fmt.Sprintf("%s:%s", strings.ToLower(id.Kind().String()), id.ComponentID())
 }
 
-func toPipelineKey(id component.ID) string {
+func toPipelineKey(id pipeline.ID) string {
 	return fmt.Sprintf("pipeline:%s", id.String())
 }
 
