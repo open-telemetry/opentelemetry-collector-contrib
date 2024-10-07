@@ -2,7 +2,9 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
 
-go 1.22.0
+go 1.21.0
+
+toolchain go1.21.11
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.102.0
@@ -139,7 +141,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.102.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.102.0

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver
 
-go 1.22.0
+go 1.21.0
 
 require (
 	go.opentelemetry.io/collector/component v0.102.1

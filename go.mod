@@ -8,7 +8,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 // For the OpenTelemetry Collector Contrib distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 
-go 1.22.0
+go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.102.0
