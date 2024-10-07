@@ -22,13 +22,15 @@ import (
 var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
 
 // PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
+// NOTE: Needs an actual lambda so the data can be refreshed
 type PerRPCAuth struct {
-	metadata map[string]string
+    renderMetadata func() map[string]string // Function to generate metadata
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
 func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return c.metadata, nil
+	// Call the render function to get the latest data
+	return c.renderMetadata(), nil
 }
 
 // RequireTransportSecurity always returns true for this implementation. Passing bearer tokens in plain-text connections is a bad idea.
@@ -170,9 +172,12 @@ func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 
 // PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	// Create a function that will return the request metadata when called later
 	return &PerRPCAuth{
-		metadata: map[string]string{"authorization": b.authorizationValue()},
-	}, nil
+        renderMetadata: func() map[string]string {
+            return map[string]string{"authorization": b.authorizationValue()}
+        },
+    }, nil
 }
 
 // RoundTripper is not implemented by BearerTokenAuth
