@@ -120,17 +120,7 @@ func generateMetricFromMatchingAttributes(metric1 pmetric.Metric, metric2 pmetri
 					newDP.SetDoubleValue(val)
 
 					metric2DP.Attributes().Range(func(k string, v pcommon.Value) bool {
-						switch v.Type() {
-						case pcommon.ValueTypeDouble:
-							newDP.Attributes().PutDouble(k, v.Double())
-
-						case pcommon.ValueTypeInt:
-							newDP.Attributes().PutInt(k, v.Int())
-						case pcommon.ValueTypeBool:
-							newDP.Attributes().PutBool(k, v.Bool())
-						default:
-							newDP.Attributes().PutStr(k, v.Str())
-						}
+						v.CopyTo(newDP.Attributes().PutEmpty(k))
 						// Always return true to ensure iteration over all attributes
 						return true
 					})
