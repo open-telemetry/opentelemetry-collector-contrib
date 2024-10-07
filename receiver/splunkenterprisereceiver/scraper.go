@@ -1608,9 +1608,6 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 		rs = kv.Content.Current.ReplicationStatus
 		se = kv.Content.Current.StorageEngine
 		ext = kv.Content.KVService.Status
-		if ext != "" {
-
-		}
 
 		s.mb.RecordSplunkKvstoreStatusDataPoint(now, 1, se, ext, st)
 		s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
