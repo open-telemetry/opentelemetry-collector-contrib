@@ -182,7 +182,7 @@ func (p *logProcessor) recordNonRoutedResourceLogs(ctx context.Context, routingK
 func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
-	if value == "" { // "" is a  key for default exporters
+	if value == "" { // "" is a key for default exporters
 		p.telemetry.RoutingProcessorNonRoutedLogRecords.Add(
 			ctx,
 			int64(l.LogRecordCount()),

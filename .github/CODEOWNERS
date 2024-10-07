@@ -271,6 +271,7 @@ receiver/otlpjsonfilereceiver/                                      @open-teleme
 receiver/podmanreceiver/                                            @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusreceiver/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/prometheusremotewritereceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens
 receiver/pulsarreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                            @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                            @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure

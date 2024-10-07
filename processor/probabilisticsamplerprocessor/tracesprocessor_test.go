@@ -49,7 +49,7 @@ func TestEmptyHashFunction(t *testing.T) {
 	require.InDelta(t, 0.568, float64(hashed)/float64(numHashBuckets), 0.001)
 }
 
-func TestNewTracesProcessor(t *testing.T) {
+func TestNewTraces(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Traces

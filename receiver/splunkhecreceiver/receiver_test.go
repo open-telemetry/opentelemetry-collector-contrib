@@ -363,9 +363,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			metricsSink := new(consumertest.MetricsSink)
 			f := NewFactory()
 
-			_, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), config, sink)
+			_, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), config, sink)
 			assert.NoError(t, err)
-			rcv, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
+			rcv, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
 			assert.NoError(t, err)
 
 			r := rcv.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver)
