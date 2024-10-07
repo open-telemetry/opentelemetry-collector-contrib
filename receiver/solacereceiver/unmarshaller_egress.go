@@ -209,7 +209,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.SpanData_DeleteSpan, span ptrace.Span) {
 	const (
 		destinationNameKey       = "messaging.destination.name"
-		destinationKindKey       = "messaging.solace.destination.kind"
 		deleteOperationReasonKey = "messaging.solace.operation.reason"
 	)
 	const (
@@ -251,7 +250,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 			endpointName = casted.TopicEndpointName
 		}
 		attributes.PutStr(destinationNameKey, casted.TopicEndpointName)
-		attributes.PutStr(destinationKindKey, topicEndpointKind)
+		attributes.PutStr(destinationTypeAttrKey, topicEndpointKind)
 	case *egress_v1.SpanData_DeleteSpan_QueueName:
 		if isAnonymousQueue(casted.QueueName) {
 			endpointName = anonymousEndpointName
@@ -259,7 +258,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 			endpointName = casted.QueueName
 		}
 		attributes.PutStr(destinationNameKey, casted.QueueName)
-		attributes.PutStr(destinationKindKey, queueKind)
+		attributes.PutStr(destinationTypeAttrKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown endpoint type %T", casted))
 		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))

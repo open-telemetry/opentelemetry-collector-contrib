@@ -99,7 +99,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		sourceNameKey                 = "messaging.source.name"
 		sourceKindKey                 = "messaging.solace.source.kind"
 		destinationNameKey            = "messaging.destination.name"
-		destinationKindKey            = "messaging.solace.destination.kind"
 		moveOperationReasonKey        = "messaging.solace.operation.reason"
 		sourcePartitionNumberKey      = "messaging.solace.source.partition_number"
 		destinationPartitionNumberKey = "messaging.solace.destination.partition_number"
@@ -171,10 +170,10 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 	switch casted := moveSpan.Destination.(type) {
 	case *move_v1.SpanData_DestinationTopicEndpointName:
 		attributes.PutStr(destinationNameKey, casted.DestinationTopicEndpointName)
-		attributes.PutStr(destinationKindKey, topicEndpointKind)
+		attributes.PutStr(destinationTypeAttrKey, topicEndpointKind)
 	case *move_v1.SpanData_DestinationQueueName:
 		attributes.PutStr(destinationNameKey, casted.DestinationQueueName)
-		attributes.PutStr(destinationKindKey, queueKind)
+		attributes.PutStr(destinationTypeAttrKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown endpoint type %T", casted))
 		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))

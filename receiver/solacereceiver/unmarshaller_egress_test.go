@@ -527,7 +527,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "someQueue",
-				"messaging.solace.destination.kind": "queue",
+				"messaging.solace.destination_type": "queue",
 			}, "someQueue delete"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
@@ -540,7 +540,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "0123456789abcdef0123456789abcdeg",
-				"messaging.solace.destination.kind": "topic-endpoint",
+				"messaging.solace.destination_type": "topic-endpoint",
 			}, "0123456789abcdef0123456789abcdeg delete"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
@@ -553,7 +553,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "#P2P/QTMP/myQueue",
-				"messaging.solace.destination.kind": "queue",
+				"messaging.solace.destination_type": "queue",
 			}, "(anonymous) delete"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
@@ -566,7 +566,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "0123456789abcdef0123456789abcdef",
-				"messaging.solace.destination.kind": "topic-endpoint",
+				"messaging.solace.destination_type": "topic-endpoint",
 			}, "(anonymous) delete"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
@@ -588,7 +588,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "someQueue",
-				"messaging.solace.destination.kind": "queue",
+				"messaging.solace.destination_type": "queue",
 				"messaging.solace.operation.reason": "ttl_expired",
 			}, "someQueue delete"),
 		},
@@ -602,7 +602,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "someQueue",
-				"messaging.solace.destination.kind": "queue",
+				"messaging.solace.destination_type": "queue",
 				"messaging.solace.operation.reason": "rejected_nack",
 			}, "someQueue delete"),
 		},
@@ -616,7 +616,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "someQueue",
-				"messaging.solace.destination.kind": "queue",
+				"messaging.solace.destination_type": "queue",
 				"messaging.solace.operation.reason": "max_redeliveries_exceeded",
 			}, "someQueue delete"),
 		},
@@ -630,7 +630,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "someQueue",
-				"messaging.solace.destination.kind": "queue",
+				"messaging.solace.destination_type": "queue",
 				"messaging.solace.operation.reason": "hop_count_exceeded",
 			}, "someQueue delete"),
 		},
@@ -644,7 +644,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "someQueue",
-				"messaging.solace.destination.kind": "queue",
+				"messaging.solace.destination_type": "queue",
 				"messaging.solace.operation.reason": "ingress_selector",
 			}, "someQueue delete"),
 		},
@@ -672,7 +672,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":                "someQueue",
-				"messaging.solace.destination.kind":         "queue",
+				"messaging.solace.destination_type":         "queue",
 				"messaging.solace.operation.reason":         "admin_action",
 				"messaging.solace.admin.interface":          "cli_terminal",
 				"enduser.id":                                "clientId",
@@ -704,7 +704,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":                "someQueue",
-				"messaging.solace.destination.kind":         "queue",
+				"messaging.solace.destination_type":         "queue",
 				"messaging.solace.operation.reason":         "admin_action",
 				"messaging.solace.admin.interface":          "cli_ssh",
 				"enduser.id":                                "clientId",
@@ -732,7 +732,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.destination.name":          "someQueue",
-				"messaging.solace.destination.kind":   "queue",
+				"messaging.solace.destination_type":   "queue",
 				"messaging.solace.operation.reason":   "admin_action",
 				"messaging.solace.admin.interface":    "semp",
 				"messaging.solace.admin.semp.version": 2,
