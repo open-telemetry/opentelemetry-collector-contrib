@@ -43,7 +43,7 @@ type MetricsModel interface {
 	insert(ctx context.Context, db *sql.DB) error
 }
 
-// MetricsMetaData  contain specific metric data
+// MetricsMetaData contain specific metric data
 type MetricsMetaData struct {
 	ResAttr    map[string]string
 	ResURL     string

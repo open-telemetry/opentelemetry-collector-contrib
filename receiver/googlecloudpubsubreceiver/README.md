@@ -18,7 +18,7 @@ This receiver gets OTLP messages from a Google Cloud [Pubsub](https://cloud.goog
 The following configuration options are supported:
 
 * `project` (Optional): The Google Cloud Project of the client connects to.
-* `subscription` (Required): The subscription name to receive OTLP data from. The subscription name  should be a 
+* `subscription` (Required): The subscription name to receive OTLP data from. The subscription name should be a
   fully qualified resource name (eg: `projects/otel-project/subscriptions/otlp`).
 * `encoding` (Optional): The encoding that will be used to received data from the subscription. This can either be
   `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log`, `cloud_logging`, or `raw_text` (see `encoding`).  This will
