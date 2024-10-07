@@ -14,6 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	promConfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	promRemote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
@@ -153,6 +154,37 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promCo
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // For now translateV2 is not implemented and returns an empty metrics.
 // nolint
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, _ *writev2.Request) (pmetric.Metrics, promRemote.WriteResponseStats, int, error) {
-	return pmetric.NewMetrics(), promRemote.WriteResponseStats{}, 0, nil
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promRemote.WriteResponseStats, int, error) {
+	var (
+		badRequestErrors []error
+		otelMetrics      = pmetric.NewMetrics()
+		b                = labels.NewScratchBuilder(0)
+		stats            = promRemote.WriteResponseStats{}
+	)
+
+	resourceMetrics := otelMetrics.ResourceMetrics().AppendEmpty()
+
+	for _, ts := range req.Timeseries {
+		ls := ts.ToLabels(&b, req.Symbols)
+
+		if !ls.Has(labels.MetricName) {
+			badRequestErrors = append(badRequestErrors, fmt.Errorf("missing metric name in labels"))
+			continue
+		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
+			badRequestErrors = append(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
+			continue
+		}
+
+		ls = ls.DropMetricName()
+		for _, label := range ls {
+			resourceMetrics.Resource().Attributes().PutStr(label.Name, label.Value)
+		}
+
+	}
+
+	var statusCode int
+	if len(badRequestErrors) > 0 {
+		statusCode = http.StatusBadRequest
+	}
+	return otelMetrics, stats, statusCode, errors.Join(badRequestErrors...)
 }
