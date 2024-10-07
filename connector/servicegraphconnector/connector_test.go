@@ -514,14 +514,14 @@ func TestDimensionsKeyMetric(t *testing.T) {
 	set.Logger = zaptest.NewLogger(t)
 	p, err := newConnector(set, cfg, mockMetricsExporter)
 	require.NoError(t, err)
+	defer p.Shutdown(context.Background())
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 	first := buildSampleTrace(t, "first")
 	second := buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), first))
 	assert.NoError(t, p.ConsumeTraces(context.Background(), second))
 	// 2 keyToMetric due to different dimensions.
-	assert.Equal(t, 2, len(p.keyToMetric))
-	assert.NoError(t, p.Shutdown(context.Background()))
+	assert.Len(t, p.keyToMetric, 2)
 }
 
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {
