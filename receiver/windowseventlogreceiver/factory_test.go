@@ -39,7 +39,7 @@ func TestCreateAndShutdown(t *testing.T) {
 	ctx := context.Background()
 	settings := receivertest.NewNopSettings()
 	sink := new(consumertest.LogsSink)
-	receiver, err := factory.CreateLogsReceiver(ctx, settings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, settings, cfg, sink)
 
 	if runtime.GOOS != "windows" {
 		assert.Error(t, err)

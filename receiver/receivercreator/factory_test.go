@@ -22,7 +22,7 @@ func TestCreateReceiver(t *testing.T) {
 	params := receivertest.NewNopSettings()
 
 	lConsumer := consumertest.NewNop()
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, lConsumer)
+	lReceiver, err := factory.CreateLogs(context.Background(), params, cfg, lConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
@@ -34,7 +34,7 @@ func TestCreateReceiver(t *testing.T) {
 	require.Nil(t, lrc.nextTracesConsumer)
 
 	mConsumer := consumertest.NewNop()
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mConsumer)
+	mReceiver, err := factory.CreateMetrics(context.Background(), params, cfg, mConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
@@ -47,7 +47,7 @@ func TestCreateReceiver(t *testing.T) {
 	require.Nil(t, lrc.nextTracesConsumer)
 
 	tConsumer := consumertest.NewNop()
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, tConsumer)
+	tReceiver, err := factory.CreateTraces(context.Background(), params, cfg, tConsumer)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 

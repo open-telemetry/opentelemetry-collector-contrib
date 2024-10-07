@@ -38,7 +38,7 @@ func setup(t *testing.T, cfg *self.Config) (processor.Metrics, *consumertest.Met
 		cfg = &self.Config{MaxStale: 0, MaxStreams: math.MaxInt}
 	}
 
-	proc, err := self.NewFactory().CreateMetricsProcessor(
+	proc, err := self.NewFactory().CreateMetrics(
 		context.Background(),
 		processortest.NewNopSettings(),
 		cfg,
