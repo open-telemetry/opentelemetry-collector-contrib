@@ -27,14 +27,14 @@ func TestCreateReceiverMetricsFirst(t *testing.T) {
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
 	params := receivertest.NewNopSettings()
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
-	_, err = factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
+	_, err = factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	lReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
@@ -46,12 +46,12 @@ func TestCreateReceiverLogsFirst(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	lReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, lReceiver, "receiver creation failed")
 
 	params := receivertest.NewNopSettings()
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
