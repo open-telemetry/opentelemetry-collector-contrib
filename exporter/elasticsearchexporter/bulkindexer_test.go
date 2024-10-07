@@ -119,6 +119,8 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	tests := []struct {
 		name          string
 		roundTripFunc func(*http.Request) (*http.Response, error)
+		wantMessage   string
+		wantFields    []zap.Field
 	}{
 		{
 			name: "500",
@@ -129,6 +131,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					Body:       io.NopCloser(strings.NewReader("error")),
 				}, nil
 			},
+			wantMessage: "bulk indexer flush error",
 		},
 		{
 			name: "429",
@@ -139,12 +142,27 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					Body:       io.NopCloser(strings.NewReader("error")),
 				}, nil
 			},
+			wantMessage: "bulk indexer flush error",
 		},
 		{
 			name: "transport error",
 			roundTripFunc: func(*http.Request) (*http.Response, error) {
 				return nil, errors.New("transport error")
 			},
+			wantMessage: "bulk indexer flush error",
+		},
+		{
+			name: "known version conflict error",
+			roundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body: io.NopCloser(strings.NewReader(
+						`{"items":[{"create":{"_index":".ds-metrics-generic.otel-default","status":400,"error":{"type":"version_conflict_engine_exception","reason":""}}}]}`)),
+				}, nil
+			},
+			wantMessage: "failed to index document",
+			wantFields:  []zap.Field{zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs")},
 		},
 	}
 
@@ -169,7 +187,11 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
 			assert.NoError(t, bulkIndexer.Close(context.Background()))
-			assert.Equal(t, 1, observed.FilterMessage("bulk indexer flush error").Len())
+			messages := observed.FilterMessage(tt.wantMessage)
+			require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
+			for _, wantField := range tt.wantFields {
+				assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
+			}
 		})
 	}
 }
