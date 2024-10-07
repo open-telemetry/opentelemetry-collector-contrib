@@ -101,6 +101,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeAvgIopsByHost,
 		s.scrapeSchedulerRunTimeByHost,
 		s.scrapeIndexerAvgRate,
+		s.scrapeKVStoreStatus,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
