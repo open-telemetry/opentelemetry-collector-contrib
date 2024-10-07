@@ -22,9 +22,9 @@ import (
 var _ credentials.PerRPCCredentials = (*PerRPCAuth)(nil)
 
 // PerRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.
-// NOTE: Needs an actual lambda so the data can be refreshed
+// NOTE: Needs an function instead of static values so the data can be refreshed
 type PerRPCAuth struct {
-    renderMetadata func() map[string]string // Function to generate metadata
+    renderMetadata func() map[string]string
 }
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
