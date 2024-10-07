@@ -19,7 +19,7 @@ const (
 	defaultReaders           = 1
 	defaultProcessors        = 1
 	defaultUDPMaxQueueLength = 100
-	defaultListenAddress     = "0.0.0.0:31250"
+	defaultListenAddress     = "127.0.0.1:31250"
 	defaultProtocol          = "udp"
 	MaxUDPSize               = 64 * 1024
 )
@@ -106,8 +106,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		asyncReaders:    c.AsyncReaders,
 		asyncProcessors: c.AsyncProcessors,
 	}
-
-	// fmt.Println("GELF receiver config validated.")
 
 	return udpInput, nil
 }

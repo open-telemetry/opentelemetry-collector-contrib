@@ -30,9 +30,6 @@ var (
 	magicZlib    = []byte{0x78}
 	magicGzip    = []byte{0x1f, 0x8b}
 )
-
-// ----------------------------------------------------------
-// Input is an operator that listens to a socket for log entries.
 type Input struct {
 	helper.InputOperator
 	wg              sync.WaitGroup
