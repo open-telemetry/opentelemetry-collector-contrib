@@ -221,6 +221,7 @@ func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 			LanguageName:    req.Header.Get(header.Lang),
 			LanguageVersion: req.Header.Get(header.LangVersion),
 			TracerVersion:   req.Header.Get(header.TracerVersion),
+			ContainerID:     req.Header.Get(header.ContainerID),
 			Chunks:          traceChunks,
 			AppVersion:      appVersion,
 		}

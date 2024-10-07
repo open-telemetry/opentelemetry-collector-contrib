@@ -76,7 +76,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
@@ -428,8 +428,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
@@ -768,8 +767,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
@@ -1168,7 +1166,7 @@ func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
 	}
 }
 
-func TestCreateLogsReceiver_encoding_text_error(t *testing.T) {
+func TestCreateLogs_encoding_text_error(t *testing.T) {
 	cfg := Config{
 		Encoding: "text_uft-8",
 	}

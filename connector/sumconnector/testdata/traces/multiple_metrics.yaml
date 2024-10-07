@@ -1,0 +1,163 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: All spans sum
+            name: span.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127924753000"
+              isMonotonic: true
+          - description: Span sum if ...
+            name: span.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127924753000"
+              isMonotonic: true
+          - description: All span events sum
+            name: spanevent.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.9"
+                  timeUnixNano: "1678392127924753000"
+              isMonotonic: true
+          - description: Span event sum if ...
+            name: spanevent.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.9"
+                  timeUnixNano: "1678392127924753000"
+              isMonotonic: true
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: All spans sum
+            name: span.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127924764000"
+              isMonotonic: true
+          - description: Span sum if ...
+            name: span.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127924764000"
+              isMonotonic: true
+          - description: All span events sum
+            name: spanevent.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.3"
+                  timeUnixNano: "1678392127924764000"
+              isMonotonic: true
+          - description: Span event sum if ...
+            name: spanevent.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23.3"
+                  timeUnixNano: "1678392127924764000"
+              isMonotonic: true
+
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: All spans sum
+            name: span.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127924772000"
+              isMonotonic: true
+          - description: Span sum if ...
+            name: span.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "5.1"
+                  timeUnixNano: "1678392127924772000"
+              isMonotonic: true
+          - description: All span events sum
+            name: spanevent.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23"
+                  timeUnixNano: "1678392127924772000"
+              isMonotonic: true
+          - description: Span event sum if ...
+            name: spanevent.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "15"
+                  timeUnixNano: "1678392127924772000"
+              isMonotonic: true
+
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: All spans sum
+            name: span.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "8.2"
+                  timeUnixNano: "1678392127924780000"
+              isMonotonic: true
+          - description: Span sum if ...
+            name: span.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "5.1"
+                  timeUnixNano: "1678392127924780000"
+              isMonotonic: true
+          - description: All span events sum
+            name: spanevent.sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "23"
+                  timeUnixNano: "1678392127924780000"
+              isMonotonic: true
+          - description: Span event sum if ...
+            name: spanevent.sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "15"
+                  timeUnixNano: "1678392127924780000"
+              isMonotonic: true
+
