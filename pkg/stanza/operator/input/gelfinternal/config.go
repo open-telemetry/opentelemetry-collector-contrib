@@ -80,13 +80,13 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	if c.Protocol != "udp" {
 		return nil, fmt.Errorf("supported protocols - udp, invalid protocol: %s", c.Protocol)
 	}
-	if c.AsyncReaders <= 0 && c.AsyncReaders < 20 {
+	if c.AsyncReaders < 1 {
 		return nil, fmt.Errorf("invalid async_reader: %d", c.AsyncReaders)
 	}
-	if c.AsyncProcessors <= 0 && c.AsyncProcessors < 20 {
+	if c.AsyncProcessors < 1 {
 		return nil, fmt.Errorf("invalid async_processors: %d", c.AsyncProcessors)
 	}
-	if c.UDPMaxQueueLength <= 0 && c.UDPMaxQueueLength < 65535 {
+	if c.UDPMaxQueueLength <= 0 || c.UDPMaxQueueLength > 65535 {
 		return nil, fmt.Errorf("expecting queue length greater than 0 and less than 65535, invalid udp_max_queue_length: %d", c.UDPMaxQueueLength)
 	}
 
