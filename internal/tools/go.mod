@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.22.0
+go 1.22.1
+
+toolchain go1.22.7
 
 require (
 	github.com/Antonboom/testifylint v1.5.0
