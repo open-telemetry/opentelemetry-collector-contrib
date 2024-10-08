@@ -45,16 +45,12 @@ func TestStart(t *testing.T) {
 	require.NoError(t, err, "receiver start failed")
 
 	stanzaReceiver := logsReceiver.(*receiver)
-	logChan := stanzaReceiver.emitter.OutChannelForWrite()
-	logChan <- []*entry.Entry{entry.New()}
+
+	stanzaReceiver.consumeEntries(context.Background(), []*entry.Entry{entry.New()})
 
 	// Eventually because of asynchronuous nature of the receiver.
-	require.Eventually(t,
-		func() bool {
-			return mockConsumer.LogRecordCount() == 1
-		},
-		10*time.Second, 5*time.Millisecond, "one log entry expected",
-	)
+	require.Equal(t, 1, mockConsumer.LogRecordCount())
+
 	require.NoError(t, logsReceiver.Shutdown(context.Background()))
 }
 

@@ -46,22 +46,6 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		var emitterOpts []helper.EmitterOption
-		if baseCfg.maxBatchSize > 0 {
-			emitterOpts = append(emitterOpts, helper.WithMaxBatchSize(baseCfg.maxBatchSize))
-		}
-		if baseCfg.flushInterval > 0 {
-			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
-		}
-		emitter := helper.NewLogEmitter(params.TelemetrySettings, emitterOpts...)
-		pipe, err := pipeline.Config{
-			Operators:     operators,
-			DefaultOutput: emitter,
-		}.Build(params.TelemetrySettings)
-		if err != nil {
-			return nil, err
-		}
-
 		var converterOpts []converterOption
 		if baseCfg.numWorkers > 0 {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
@@ -74,15 +58,35 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if err != nil {
 			return nil, err
 		}
-		return &receiver{
+		rcv := &receiver{
 			set:       params.TelemetrySettings,
 			id:        params.ID,
-			pipe:      pipe,
-			emitter:   emitter,
 			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
 			converter: converter,
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,
-		}, nil
+		}
+
+		var emitterOpts []helper.EmitterOption
+		if baseCfg.maxBatchSize > 0 {
+			emitterOpts = append(emitterOpts, helper.WithMaxBatchSize(baseCfg.maxBatchSize))
+		}
+		if baseCfg.flushInterval > 0 {
+			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
+		}
+		emitterOpts = append(emitterOpts, helper.WithSyncConsumerFunc(rcv.consumeEntries))
+
+		emitter := helper.NewLogEmitter(params.TelemetrySettings, emitterOpts...)
+		pipe, err := pipeline.Config{
+			Operators:     operators,
+			DefaultOutput: emitter,
+		}.Build(params.TelemetrySettings)
+		if err != nil {
+			return nil, err
+		}
+
+		rcv.pipe = pipe
+
+		return rcv, nil
 	}
 }

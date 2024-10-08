@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
@@ -60,8 +61,8 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	// * one which reads all the logs produced by the emitter and then forwards
 	//   them to converter
 	// ...
-	r.emitWg.Add(1)
-	go r.emitterLoop()
+	//r.emitWg.Add(1)
+	//go r.emitterLoop()
 
 	// ...
 	// * second one which reads all the logs produced by the converter
@@ -96,6 +97,18 @@ func (r *receiver) emitterLoop() {
 	r.set.Logger.Debug("Emitter loop stopped")
 }
 
+func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
+	pLogs := convertEntries(entries)
+	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
+	logRecordCount := pLogs.LogRecordCount()
+
+	cErr := r.consumer.ConsumeLogs(ctx, pLogs)
+	if cErr != nil {
+		r.set.Logger.Error("ConsumeLogs() failed", zap.Error(cErr))
+	}
+	r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
+}
+
 // consumerLoop reads converter log entries and calls the consumer to consumer them.
 func (r *receiver) consumerLoop(ctx context.Context) {
 	defer r.consumeWg.Done()
@@ -125,9 +138,6 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 
 	r.set.Logger.Info("Stopping stanza receiver")
 	pipelineErr := r.pipe.Stop()
-
-	// wait for emitter to finish batching and let consumers catch up
-	r.emitWg.Wait()
 
 	r.converter.Stop()
 	r.cancel()

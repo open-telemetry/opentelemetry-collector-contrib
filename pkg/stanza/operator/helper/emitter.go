@@ -17,14 +17,15 @@ import (
 // LogEmitter is a stanza operator that emits log entries to a channel
 type LogEmitter struct {
 	OutputOperator
-	logChan       chan []*entry.Entry
-	closeChan     chan struct{}
-	stopOnce      sync.Once
-	batchMux      sync.Mutex
-	batch         []*entry.Entry
-	wg            sync.WaitGroup
-	maxBatchSize  uint
-	flushInterval time.Duration
+	logChan          chan []*entry.Entry
+	closeChan        chan struct{}
+	stopOnce         sync.Once
+	batchMux         sync.Mutex
+	batch            []*entry.Entry
+	wg               sync.WaitGroup
+	maxBatchSize     uint
+	flushInterval    time.Duration
+	syncConsumerFunc func(context.Context, []*entry.Entry)
 }
 
 var (
@@ -58,6 +59,18 @@ type flushIntervalOption struct {
 
 func (o flushIntervalOption) apply(e *LogEmitter) {
 	e.flushInterval = o.flushInterval
+}
+
+func WithSyncConsumerFunc(f func(context.Context, []*entry.Entry)) EmitterOption {
+	return syncConsumerFuncOption{f: f}
+}
+
+type syncConsumerFuncOption struct {
+	f func(context.Context, []*entry.Entry)
+}
+
+func (o syncConsumerFuncOption) apply(e *LogEmitter) {
+	e.syncConsumerFunc = o.f
 }
 
 // NewLogEmitter creates a new receiver output
@@ -156,9 +169,13 @@ func (e *LogEmitter) flusher() {
 
 // flush flushes the provided batch to the log channel.
 func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
-	select {
-	case e.logChan <- batch:
-	case <-ctx.Done():
+	if e.syncConsumerFunc != nil {
+		e.syncConsumerFunc(ctx, batch)
+	} else {
+		select {
+		case e.logChan <- batch:
+		case <-ctx.Done():
+		}
 	}
 }
 

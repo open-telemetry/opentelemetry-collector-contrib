@@ -171,11 +171,6 @@ func (p *Parser) criConsumer(ctx context.Context) {
 // the crioConsumer are stopped in the proper order without being affected by
 // any possible race conditions
 func (p *Parser) Stop() error {
-	if !p.asyncConsumerStarted {
-		// nothing is started return
-		return nil
-	}
-
 	var stopErrs []error
 	err := p.recombineParser.Stop()
 	if err != nil {
@@ -308,6 +303,15 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 
 	}
 	return nil
+}
+
+func (p *Parser) consumeEntries(ctx context.Context, entries []*entry.Entry) {
+	for _, e := range entries {
+		err := p.Write(ctx, e)
+		if err != nil {
+			p.Logger().Error("failed to write entry", zap.Error(err))
+		}
+	}
 }
 
 func moveField(e *entry.Entry, originalKey, mappedKey string) error {
