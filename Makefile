@@ -283,7 +283,7 @@ ifndef COMPONENT
 endif
 
 .PHONY: docker-otelcontribcol
-docker-otelcontribcol:
+docker-otelcontribcol: genotelcontribcol
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
 .PHONY: docker-telemetrygen
@@ -294,7 +294,7 @@ docker-telemetrygen:
 	rm cmd/telemetrygen/telemetrygen_*
 
 .PHONY: generate
-generate: install-tools
+generate: install-tools genotelcontribcol genoteltestbedcol
 	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
@@ -337,7 +337,7 @@ genotelcontribcol: $(BUILDER)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
-otelcontribcol:
+otelcontribcol: genotelcontribcol
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
@@ -353,7 +353,7 @@ genoteltestbedcol: $(BUILDER)
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
-oteltestbedcol:
+oteltestbedcol: genoteltestbedcol
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
