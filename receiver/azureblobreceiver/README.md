@@ -24,7 +24,7 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `auth` (default = connection_string): Specifies the used authentication method. Supported values are `connection_string`, `service_principal`.
+- `auth` (default = connection_string): Specifies the used authentication method. Supported values are `connection_string`, `service_principal`, `default`.
 - `cloud` (default = "AzureCloud"): Defines which Azure Cloud to use when using the `service_principal` authentication method. Value is either `AzureCloud` or `AzureUSGovernment`.
 - `logs:`
   `  container_name:` (default = "logs"): Name of the blob container with the logs
