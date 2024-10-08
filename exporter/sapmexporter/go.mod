@@ -43,7 +43,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.111.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0 // indirect
