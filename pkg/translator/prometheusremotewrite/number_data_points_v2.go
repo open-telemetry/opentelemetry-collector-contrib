@@ -20,8 +20,8 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 
 		labels := labels.Labels{
 			labels.Label{
-				model.MetricNameLabel,
-				name,
+				Name:  model.MetricNameLabel,
+				Value: name,
 			},
 		}
 
