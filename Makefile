@@ -391,7 +391,8 @@ define updatehelper
 					builder_version=$$(grep -F "$$package" $(3) | awk '{print $$4}'); \
 					if [ "$$builder_package" == "$$package" ]; then \
 						echo "$$builder_version";\
-						sed -i '' -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
+						sed -i.bak -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
+						rm $(3).bak; \
 						echo "[$(3)]: $$package updated to $$version"; \
 					fi; \
 			fi; \
