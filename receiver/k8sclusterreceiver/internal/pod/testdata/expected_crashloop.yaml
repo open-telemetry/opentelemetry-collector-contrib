@@ -22,13 +22,13 @@ resourceMetrics:
           - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
             gauge:
               dataPoints:
-                - asInt: "4"
+                - asInt: "2"
             name: k8s.pod.phase
             unit: ""
           - description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
             gauge:
               dataPoints:
-                - asInt: "1"
+                - asInt: "6"
             name: k8s.pod.status_reason
             unit: ""
         scope:
@@ -50,7 +50,7 @@ resourceMetrics:
             stringValue: container-name
         - key: k8s.container.status.last_terminated_reason
           value:
-            stringValue: Evicted
+            stringValue: Error
         - key: k8s.namespace.name
           value:
             stringValue: test-namespace
@@ -81,7 +81,7 @@ resourceMetrics:
           - description: Whether container is in waiting state. (0 for now, 1 for yes)
             gauge:
               dataPoints:
-                - asInt: "0"
+                - asInt: "1"
             name: k8s.container.status.waiting
             unit: ""
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
