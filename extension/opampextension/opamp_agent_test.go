@@ -240,3 +240,40 @@ func TestParseInstanceIDString(t *testing.T) {
 		})
 	}
 }
+
+func TestOpAMPAgent_Dependencies(t *testing.T) {
+	t.Run("No server specified", func(t *testing.T) {
+		o := opampAgent{
+			cfg: &Config{},
+		}
+
+		require.Nil(t, o.Dependencies())
+	})
+
+	t.Run("No auth extension specified", func(t *testing.T) {
+		o := opampAgent{
+			cfg: &Config{
+				Server: &OpAMPServer{
+					WS: &commonFields{},
+				},
+			},
+		}
+
+		require.Nil(t, o.Dependencies())
+	})
+
+	t.Run("auth extension specified", func(t *testing.T) {
+		authID := component.MustNewID("basicauth")
+		o := opampAgent{
+			cfg: &Config{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Auth: authID,
+					},
+				},
+			},
+		}
+
+		require.Equal(t, []component.ID{authID}, o.Dependencies())
+	})
+}
