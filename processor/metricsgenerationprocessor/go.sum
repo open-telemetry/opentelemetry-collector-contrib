@@ -17,6 +17,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
+github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -64,6 +66,8 @@ go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 h1:w9kGdTaXdwD/
 go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0/go.mod h1:Ebt1jDdrQb3G2sNHrWHNr5wS3UJ9k3h8LHCqUPTbxLY=
 go.opentelemetry.io/collector/consumer/consumertest v0.111.0 h1:ZEikGRPdrhVAq7xhJVc8WapRBVN/CdPnMEnXgpRGu1U=
 go.opentelemetry.io/collector/consumer/consumertest v0.111.0/go.mod h1:EHPrn8ovcTGdTDlCEi1grOXSP3jUUYU0zvl92uA5L+4=
+go.opentelemetry.io/collector/featuregate v1.17.0 h1:vpfXyWe7DFqCsDArsR9rAKKtVpt72PKjzjeqPegViws=
+go.opentelemetry.io/collector/featuregate v1.17.0/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
 go.opentelemetry.io/collector/internal/globalsignal v0.111.0 h1:oq0nSD+7K2Q1Fx5d3s6lPRdKZeTL0FEg4sIaR7ZJzIc=
 go.opentelemetry.io/collector/internal/globalsignal v0.111.0/go.mod h1:GqMXodPWOxK5uqpX8MaMXC2389y2XJTa5nPwf8FYDK8=
 go.opentelemetry.io/collector/pdata v1.17.0 h1:z8cjjT2FThAehWu5fbF48OnZyK5q8xd1UhC4XszDo0w=
