@@ -31,7 +31,7 @@ func FromMetricsV2(md pmetric.Metrics, settings Settings) (map[string]*writev2.T
 	return out, errs
 }
 
-// prometheusConverter converts from OTel write format to Prometheus write format.
+// prometheusConverterV2 converts from OTLP to Prometheus write 2.0 format.
 type prometheusConverterV2 struct {
 	// TODO handle conflicts
 	unique      map[uint64]*writev2.TimeSeries
