@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/jackc/pgx/v5 v5.7.1
-	github.com/mattn/go-sqlite3 v1.14.23
+	github.com/mattn/go-sqlite3 v1.14.24
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/confmap v1.17.0

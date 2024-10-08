@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlque
 go 1.22.0
 
 require (
-	github.com/SAP/go-hdb v1.12.2
+	github.com/SAP/go-hdb v1.12.3
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.7.2
 	github.com/sijms/go-ora/v2 v2.8.19
-	github.com/snowflakedb/gosnowflake v1.11.1
+	github.com/snowflakedb/gosnowflake v1.11.2
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/pdata v1.17.0
