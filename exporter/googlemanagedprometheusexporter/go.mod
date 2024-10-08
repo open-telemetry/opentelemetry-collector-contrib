@@ -3,11 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/google
 go 1.22.0
 
 require (
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.48.1
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.48.1
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.48.2
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.48.2
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/confmap v1.17.0
+	go.opentelemetry.io/collector/consumer v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.0
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.111.0
 	go.opentelemetry.io/collector/pdata v1.17.0
@@ -23,8 +24,8 @@ require (
 	cloud.google.com/go/longrunning v0.5.9 // indirect
 	cloud.google.com/go/monitoring v1.20.2 // indirect
 	cloud.google.com/go/trace v1.10.10 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.1 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.24.2 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -87,7 +88,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.17.0 // indirect
 	go.opentelemetry.io/collector/connector v0.111.0 // indirect
 	go.opentelemetry.io/collector/connector/connectorprofiles v0.111.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0 // indirect
@@ -146,6 +146,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
+	google.golang.org/grpc/stats/opentelemetry v0.0.0-20240702152247-2da976983bbb // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
