@@ -413,6 +413,7 @@ Available Converters:
 - [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
 - [Day](#day)
 - [Double](#double)
 - [Duration](#duration)
@@ -547,6 +548,31 @@ Examples:
 
 - `ConvertCase(metric.name, "snake")`
 
+### ConvertAttributesToElementsXML
+
+`ConvertAttributesToElementsXML(target, Optional[xpath])`
+
+The `ConvertAttributesToElementsXML` Converter returns an edited version of an XML string where attributes are converted into child elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertAttributesToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Attributes will only be converted within the result(s) of the xpath.
+
+For example, `<a foo="bar"><b>baz</b></a>` will be converted to `<a><b>baz</b><foo>bar</foo></a>`.
+
+Examples:
+
+Convert all attributes in a document
+
+- `ConvertAttributesToElementsXML(body)`
+
+Convert only attributes within "Record" elements
+
+- `ConvertAttributesToElementsXML(body, "/Log/Record")`
+
+
 ### Day
 
 `Day(value)`
@@ -599,31 +625,6 @@ Examples:
 - `Duration("3s")`
 - `Duration("333ms")`
 - `Duration("1000000h")`
-
-
-### ElementizeAttributesXML
-
-`ElementizeAttributesXML(target, Optional[xpath])`
-
-The `ElementizeAttributesXML` Converter returns an edited version of an XML string where attributes are converted into child elements.
-
-`target` is a Getter that returns a string. This string should be in XML format.
-If `target` is not a string, nil, or cannot be parsed as XML, `ElementizeAttributesXML` will return an error.
-
-`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
-selects one or more elements. Attributes will only be converted within the result(s) of the xpath.
-
-For example, `<a foo="bar"><b>baz</b></a>` will be converted to `<a><b>baz</b><foo>bar</foo></a>`.
-
-Examples:
-
-Convert all attributes in a document
-
-- `ElementizeAttributesXML(body)`
-
-Convert only attributes within "Record" elements
-
-- `ElementizeAttributesXML(body, "/Log/Record")`
 
 ### ExtractPatterns
 

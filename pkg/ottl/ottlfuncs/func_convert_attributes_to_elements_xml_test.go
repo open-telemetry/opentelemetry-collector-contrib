@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_ElementizeAttributesXML(t *testing.T) {
+func Test_ConvertAttributesToElementsXML(t *testing.T) {
 	tests := []struct {
 		name     string
 		document string
@@ -79,7 +79,7 @@ func Test_ElementizeAttributesXML(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := &ElementizeAttributesXMLArguments[any]{
+			args := &ConvertAttributesToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
 						return tt.document, nil
@@ -87,7 +87,7 @@ func Test_ElementizeAttributesXML(t *testing.T) {
 				},
 				XPath: ottl.NewTestingOptional(tt.xPath),
 			}
-			exprFunc, err := createElementizeAttributesXMLFunction[any](ottl.FunctionContext{}, args)
+			exprFunc, err := createConvertAttributesToElementsXMLFunction[any](ottl.FunctionContext{}, args)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), nil)
@@ -97,8 +97,8 @@ func Test_ElementizeAttributesXML(t *testing.T) {
 	}
 }
 
-func TestCreateElementizeAttributesXMLFunc(t *testing.T) {
-	factory := NewElementizeAttributesXMLFactory[any]()
+func TestCreateConvertAttributesToElementsXMLFunc(t *testing.T) {
+	factory := NewConvertAttributesToElementsXMLFactory[any]()
 	fCtx := ottl.FunctionContext{}
 
 	// Invalid arg type
@@ -108,7 +108,7 @@ func TestCreateElementizeAttributesXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ElementizeAttributesXMLArguments[any]{
+		fCtx, &ConvertAttributesToElementsXMLArguments[any]{
 			XPath: ottl.NewTestingOptional("!"),
 		})
 	assert.Error(t, err)
@@ -116,7 +116,7 @@ func TestCreateElementizeAttributesXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ElementizeAttributesXMLArguments[any]{
+		fCtx, &ConvertAttributesToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
 		})
 	assert.NoError(t, err)

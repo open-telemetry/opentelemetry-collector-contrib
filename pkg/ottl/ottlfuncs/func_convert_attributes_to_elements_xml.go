@@ -12,20 +12,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type ElementizeAttributesXMLArguments[K any] struct {
+type ConvertAttributesToElementsXMLArguments[K any] struct {
 	Target ottl.StringGetter[K]
 	XPath  ottl.Optional[string]
 }
 
-func NewElementizeAttributesXMLFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ElementizeAttributesXML", &ElementizeAttributesXMLArguments[K]{}, createElementizeAttributesXMLFunction[K])
+func NewConvertAttributesToElementsXMLFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("ConvertAttributesToElementsXML", &ConvertAttributesToElementsXMLArguments[K]{}, createConvertAttributesToElementsXMLFunction[K])
 }
 
-func createElementizeAttributesXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ElementizeAttributesXMLArguments[K])
+func createConvertAttributesToElementsXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ConvertAttributesToElementsXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ElementizeAttributesXML args must be of type *ElementizeAttributesXMLAguments[K]")
+		return nil, fmt.Errorf("ConvertAttributesToElementsXML args must be of type *ConvertAttributesToElementsXMLAguments[K]")
 	}
 
 	xPath := args.XPath.Get()
@@ -36,13 +36,13 @@ func createElementizeAttributesXMLFunction[K any](_ ottl.FunctionContext, oArgs 
 		return nil, err
 	}
 
-	return elementizeAttributesXML(args.Target, xPath), nil
+	return convertAttributesToElementsXML(args.Target, xPath), nil
 }
 
-// elementizeAttributesXML returns a `pcommon.String` that is a result of converting all attributes of the
+// convertAttributesToElementsXML returns a string that is a result of converting all attributes of the
 // target XML into child elements. These new elements are added as the last child elements of the parent.
 // e.g. <a foo="bar" hello="world"><b/></a> -> <a><hello>world</hello><foo>bar</foo><b/></a>
-func elementizeAttributesXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K] {
+func convertAttributesToElementsXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		var doc *xmlquery.Node
 		if targetVal, err := target.Get(ctx, tCtx); err != nil {
