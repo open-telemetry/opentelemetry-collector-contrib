@@ -100,7 +100,6 @@ func extractValue(v map[string]any, path []string) (any, error) {
 
 	if o, ok := obj.(map[string]any); ok {
 		return extractValue(o, path[1:])
-	} else {
-		return nil, fmt.Errorf("provided object does not contain the path %v", path)
 	}
+	return nil, fmt.Errorf("provided object does not contain the path %v", path)
 }

@@ -67,9 +67,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
+			want: pcommon.NewMap,
 		},
 		{
 			name:      "flat object with key path and value path",
@@ -164,9 +162,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
+			want: pcommon.NewMap,
 		},
 		{
 			name:      "nested object with value path not resolving to a value",
@@ -185,9 +181,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
+			want: pcommon.NewMap,
 		},
 		{
 			name:      "nested object with value path segment resolving to non-map value",
@@ -206,9 +200,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
+			want: pcommon.NewMap,
 		},
 		{
 			name:    "unsupported type",
@@ -227,9 +219,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
+			want: pcommon.NewMap,
 		},
 		{
 			name:    "empty key path",
@@ -299,7 +289,7 @@ func Test_SliceToMap(t *testing.T) {
 			}
 			associateFunc, err := sliceToMapFunction[any](ottl.FunctionContext{}, &SliceToMapArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return tt.value(), nil
 					},
 				},
