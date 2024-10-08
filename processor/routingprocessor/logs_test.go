@@ -565,6 +565,15 @@ func TestLogs_RoutingWorks_ResourceAttribute_WithOTTL_Ordered(t *testing.T) {
 	}
 }
 
+/*
+# before
+BenchmarkLogs_Routing
+BenchmarkLogs_Routing-8        18951       63102 ns/op
+
+# after
+BenchmarkLogs_Routing
+BenchmarkLogs_Routing-8   	   21171	     57387 ns/op
+*/
 func BenchmarkLogs_Routing(t *testing.B) {
 	defaultExp := &mockLogsExporter{}
 	lExpFirst := &mockLogsExporter{}
