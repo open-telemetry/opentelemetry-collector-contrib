@@ -164,6 +164,7 @@ behaviours, which may be configured through the following settings:
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events.
     - `bodymap`: Provides fine-grained control over the final documents to be ingested.
+            :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes.
             It  works only for logs where the log record body is a map. Each LogRecord
             body is serialized to JSON as-is and becomes a separate document for ingestion.
   - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
