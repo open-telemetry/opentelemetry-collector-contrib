@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -30,6 +31,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
+
+var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
 
 type opampAgent struct {
 	cfg    *Config
@@ -124,10 +127,6 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 
 	o.logger.Debug("OpAMP client started")
 
-	if err := o.setHealth(&protobufs.ComponentHealth{Healthy: true}); err != nil {
-		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
-	}
-
 	return nil
 }
 
@@ -141,17 +140,8 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
-	err := o.setHealth(
-		&protobufs.ComponentHealth{
-			Healthy: false, LastError: "Agent is shut down",
-		},
-	)
-	if err != nil {
-		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
-	}
-
 	o.logger.Debug("Stopping OpAMP client...")
-	err = o.opampClient.Stop(ctx)
+	err := o.opampClient.Stop(ctx)
 	// Opamp-go considers this an error, but the collector does not.
 	// https://github.com/open-telemetry/opamp-go/issues/255
 	if err != nil && strings.EqualFold(err.Error(), "cannot stop because not started") {
@@ -170,6 +160,14 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 
 func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
 	return o.customCapabilityRegistry.Register(capability, opts...)
+}
+
+func (o *opampAgent) Ready() error {
+	return o.setHealth(&protobufs.ComponentHealth{Healthy: true})
+}
+
+func (o *opampAgent) NotReady() error {
+	return o.setHealth(&protobufs.ComponentHealth{Healthy: false})
 }
 
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
