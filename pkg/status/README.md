@@ -3,7 +3,7 @@
 ## Overview
 
 This module contains functionality for aggregating status information about components. Used by extensions that
-implement the `extension.StatusWatcher` interface for collecting status information about the internal status of all
+implement the `componentstatus.Watcher` interface for collecting status information about the internal status of all
 components inside the collector.
 
 ### History
