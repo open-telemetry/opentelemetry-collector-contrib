@@ -381,7 +381,7 @@ func Test_onMessage(t *testing.T) {
         ppid_poll_interval: 5s
         server:
             ws:
-                endpoint: ws://localhost:0/v1/opamp
+                endpoint: ws://127.0.0.1:0/v1/opamp
                 tls:
                     insecure: true
 receivers:
@@ -480,7 +480,7 @@ service:
         ppid_poll_interval: 5s
         server:
             ws:
-                endpoint: ws://localhost:0/v1/opamp
+                endpoint: ws://127.0.0.1:0/v1/opamp
                 tls:
                     insecure: true
 receivers:
@@ -1223,7 +1223,7 @@ extensions:
         ppid_poll_interval: 5s
         server:
             ws:
-                endpoint: ws://localhost:0/v1/opamp
+                endpoint: ws://127.0.0.1:0/v1/opamp
                 tls:
                     insecure: true
 receiver:
@@ -1339,7 +1339,7 @@ extensions:
         ppid_poll_interval: 5s
         server:
             ws:
-                endpoint: ws://localhost:0/v1/opamp
+                endpoint: ws://127.0.0.1:0/v1/opamp
                 tls:
                     insecure: true
 receivers:
