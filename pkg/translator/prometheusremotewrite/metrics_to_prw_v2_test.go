@@ -4,8 +4,9 @@
 package prometheusremotewrite
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestFromMetricsV2(t *testing.T) {

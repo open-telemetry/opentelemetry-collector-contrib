@@ -6,9 +6,10 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"strconv"
+
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"

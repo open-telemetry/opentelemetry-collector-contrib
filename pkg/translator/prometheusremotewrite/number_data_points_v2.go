@@ -4,9 +4,10 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"math"
+
 	"github.com/prometheus/common/model"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	"math"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
