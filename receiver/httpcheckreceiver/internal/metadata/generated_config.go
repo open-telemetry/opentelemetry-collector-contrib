@@ -27,13 +27,17 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for httpcheck metrics.
 type MetricsConfig struct {
-	HttpcheckDuration MetricConfig `mapstructure:"httpcheck.duration"`
-	HttpcheckError    MetricConfig `mapstructure:"httpcheck.error"`
-	HttpcheckStatus   MetricConfig `mapstructure:"httpcheck.status"`
+	HttpcheckDnslookupDuration MetricConfig `mapstructure:"httpcheck.dnslookup_duration"`
+	HttpcheckDuration          MetricConfig `mapstructure:"httpcheck.duration"`
+	HttpcheckError             MetricConfig `mapstructure:"httpcheck.error"`
+	HttpcheckStatus            MetricConfig `mapstructure:"httpcheck.status"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		HttpcheckDnslookupDuration: MetricConfig{
+			Enabled: true,
+		},
 		HttpcheckDuration: MetricConfig{
 			Enabled: true,
 		},
