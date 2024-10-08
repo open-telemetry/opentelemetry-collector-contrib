@@ -532,7 +532,6 @@ func TestExporterMetrics(t *testing.T) {
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
-		defer server.Close()
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
