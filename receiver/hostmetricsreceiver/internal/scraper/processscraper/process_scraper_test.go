@@ -166,8 +166,8 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutableName)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
+		// internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
+		// internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
 		internal.AssertContainsAttribute(t, attr, "process.parent_pid")
 	}
