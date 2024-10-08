@@ -6,6 +6,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.111.0
+	github.com/sanity-io/litter v1.5.5
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.1-0.20241008154146-ea48c09c31ae
