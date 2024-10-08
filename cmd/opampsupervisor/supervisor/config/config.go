@@ -123,12 +123,18 @@ type Agent struct {
 	Description             AgentDescription `mapstructure:"description"`
 	SuccessfulHealthChecks  int32            `mapstructure:"successful_health_checks"`
 	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
+	HealthCheckInterval     time.Duration    `mapstructure:"health_check_interval"`
+	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
 }
 
 func (a Agent) Validate() error {
 	if a.OrphanDetectionInterval <= 0 {
 		return errors.New("agent::orphan_detection_interval must be positive")
+	}
+
+	if a.BootstrapTimeout <= 0 {
+		return errors.New("agent::bootstrap_timeout must be positive")
 	}
 
 	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
@@ -150,6 +156,10 @@ func (a Agent) Validate() error {
 
 	if a.ConfigApplyTimeout <= 0 {
 		return errors.New("agent::config_apply_timeout must be valid duration")
+	}
+
+	if a.HealthCheckInterval <= 0 {
+		return errors.New("agent::health_check_interval must be valid duration")
 	}
 
 	return nil
@@ -192,6 +202,8 @@ func DefaultSupervisor() Supervisor {
 			OrphanDetectionInterval: 5 * time.Second,
 			SuccessfulHealthChecks:  3,
 			ConfigApplyTimeout:      30 * time.Second,
+			HealthCheckInterval:     10 * time.Second,
+			BootstrapTimeout:        3 * time.Second,
 		},
 	}
 }

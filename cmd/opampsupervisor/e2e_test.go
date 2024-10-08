@@ -1293,6 +1293,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		"successful_health_checks": "2",
 		"config_apply_timeout":     "5s",
 	})
+	s.agentStartMaxHealthCheckAttempts = 3
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
 

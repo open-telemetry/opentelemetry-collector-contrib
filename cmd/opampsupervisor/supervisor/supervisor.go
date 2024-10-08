@@ -19,7 +19,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -77,7 +76,7 @@ type Supervisor struct {
 
 	startedAt time.Time
 
-	healthCheckTicker  *backoff.Ticker
+	healthCheckTicker  *time.Ticker
 	healthChecker      *healthchecker.HTTPHealthChecker
 	lastHealthCheckErr error
 
@@ -116,12 +115,20 @@ type Supervisor struct {
 	remoteConfig *protobufs.AgentRemoteConfig
 
 	// A channel to indicate there is a new config to apply.
-	hasNewConfig           chan struct{}
-	waitingForHealthCheck  bool
+	hasNewConfig chan struct{}
+	// waitingForHealthCheck is true if the agent is starting up and the supervisor is waiting for health checks to succeed.
+	waitingForHealthCheck bool
+	// successfulHealthChecks tracks the number of consecutive successful health checks.
 	successfulHealthChecks int32
-	requiredHealthChecks   int32
-	configApplyTimeout     time.Duration
-	lastConfigChangeTime   time.Time
+	// requiredHealthChecks is the number of consecutive health checks required for the agent to be considered healthy.
+	requiredHealthChecks int32
+	// configApplyTimeout is the maximum time to wait for the agent to apply a new config.
+	// After this time passes without the agent reporting health as OK, the agent is considered unhealthy.
+	configApplyTimeout time.Duration
+	// lastConfigChangeTime is the time when the last config change was applied.
+	lastConfigChangeTime time.Time
+	// healthCheckInterval is the interval between health checks.
+	healthCheckInterval time.Duration
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -132,9 +139,12 @@ type Supervisor struct {
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
 
-	agentHasStarted               bool
+	agentHasStarted bool
+	// agentStartHealthCheckAttempts is the number of health check attempts made during agent startup.
 	agentStartHealthCheckAttempts int
-	agentRestarting               atomic.Bool
+	// agentStartMaxHealthCheckAttempts is the maximum number of health check attempts to make during agent startup.
+	agentStartMaxHealthCheckAttempts int
+	agentRestarting                  atomic.Bool
 
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
@@ -172,6 +182,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	s.requiredHealthChecks = s.config.Agent.SuccessfulHealthChecks
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
+	s.healthCheckInterval = s.config.Agent.HealthCheckInterval
 
 	return s, nil
 }
@@ -373,8 +384,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}()
 
 	select {
-	// TODO make timeout configurable
-	case <-time.After(3 * time.Second):
+	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
 			return errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
@@ -995,6 +1005,7 @@ func (s *Supervisor) startAgent() {
 
 	s.agentHasStarted = false
 	s.agentStartHealthCheckAttempts = 0
+	s.agentStartMaxHealthCheckAttempts = 10
 	s.startedAt = time.Now()
 	s.startHealthCheckTicker()
 
@@ -1003,13 +1014,10 @@ func (s *Supervisor) startAgent() {
 
 func (s *Supervisor) startHealthCheckTicker() {
 	// Prepare health checker
-	healthCheckBackoff := backoff.NewExponentialBackOff()
-	healthCheckBackoff.MaxInterval = 60 * time.Second
-	healthCheckBackoff.MaxElapsedTime = 0 // Never stop
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
 	}
-	s.healthCheckTicker = backoff.NewTicker(healthCheckBackoff)
+	s.healthCheckTicker = time.NewTicker(s.healthCheckInterval)
 }
 
 func (s *Supervisor) healthCheck() {
@@ -1040,8 +1048,9 @@ func (s *Supervisor) healthCheck() {
 			s.successfulHealthChecks = 0 // Reset successful checks on error
 		}
 
-		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
-			s.agentStartHealthCheckAttempts++
+		if !s.agentHasStarted {
+			health.Healthy = false
+			health.LastError = "Agent is starting"
 		} else {
 			health.Healthy = false
 			health.LastError = err.Error()
@@ -1059,6 +1068,11 @@ func (s *Supervisor) healthCheck() {
 		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
+	}
+
+	if errors.Is(err, s.lastHealthCheckErr) {
+		// No difference from last check. Nothing new to report.
+		return
 	}
 
 	// Report via OpAMP.
@@ -1227,16 +1241,17 @@ func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, e
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
+
+	if msg.AgentIdentification != nil {
+		configChanged = s.processAgentIdentificationMessage(msg.AgentIdentification) || configChanged
+	}
+
 	if msg.RemoteConfig != nil {
-		configChanged = configChanged || s.processRemoteConfigMessage(msg.RemoteConfig)
+		configChanged = s.processRemoteConfigMessage(msg.RemoteConfig) || configChanged
 	}
 
 	if msg.OwnMetricsConnSettings != nil {
-		configChanged = configChanged || s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings)
-	}
-
-	if msg.AgentIdentification != nil {
-		configChanged = configChanged || s.processAgentIdentificationMessage(msg.AgentIdentification)
+		configChanged = s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings) || configChanged
 	}
 
 	// Update the agent config if any messages have touched the config
@@ -1334,7 +1349,14 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 		s.logger.Error("Failed to send agent description to OpAMP server")
 	}
 
-	return true
+	// Need to recalculate the Agent config so that the new agent identification is included in it.
+	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	if err != nil {
+		s.logger.Error("Error composing merged config with new instance ID", zap.Error(err))
+		return false
+	}
+
+	return configChanged
 }
 
 func (s *Supervisor) persistentStateFilePath() string {
