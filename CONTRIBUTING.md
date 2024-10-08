@@ -220,9 +220,9 @@ When submitting a component to the community, consider breaking it down into sep
     * `make checkapi`
     * `make goporto`
     * `make crosslink`
-    * `make gotidy`
     * `make genotelcontribcol`
     * `make genoteltestbedcol`
+    * `make gotidy`
     * `make generate`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
