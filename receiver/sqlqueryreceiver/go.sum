@@ -32,8 +32,8 @@ github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migc
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Microsoft/hcsshim v0.11.4 h1:68vKo2VN8DE9AdN4tnkWnmdhqdbpUFM8OF3Airm7fz8=
 github.com/Microsoft/hcsshim v0.11.4/go.mod h1:smjE4dvqPX9Zldna+t5FG3rnoHhaB7QYxPRqGcpAD9w=
-github.com/SAP/go-hdb v1.12.2 h1:pWf+rL7c5t8HDN9M6ETkBaVQAGVwH8+REdbZiZh0KAc=
-github.com/SAP/go-hdb v1.12.2/go.mod h1:rnW0pSZJPPFbyDQ4NPJaNBNk84KcWaTYkcpNUJGGNFk=
+github.com/SAP/go-hdb v1.12.3 h1:NW9QonvYjWFomLQmQYKp1Hg2sW33YpEiwBTQgDzFgKE=
+github.com/SAP/go-hdb v1.12.3/go.mod h1:1z9dmCSJciNRPVJw91n2ic5bpXyk/sj3fmPqfxfjLxI=
 github.com/apache/arrow/go/v15 v15.0.0 h1:1zZACWf85oEZY5/kd9dsQS7i+2G5zVQcbKTHgslqHNA=
 github.com/apache/arrow/go/v15 v15.0.0/go.mod h1:DGXsR3ajT524njufqf95822i+KTh+yea1jass9YXgjA=
 github.com/aws/aws-sdk-go-v2 v1.26.1 h1:5554eUqIYVWpU0YmeeYZ0wU64H2VLBs8TlhRB2L+EkA=
