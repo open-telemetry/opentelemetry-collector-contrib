@@ -90,7 +90,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sijms/go-ora/v2 v2.8.19 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/snowflakedb/gosnowflake v1.11.1 // indirect
+	github.com/snowflakedb/gosnowflake v1.11.2 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0 // indirect
