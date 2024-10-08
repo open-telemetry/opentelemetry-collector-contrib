@@ -43,7 +43,7 @@ func TestFactory(t *testing.T) {
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}, rCfg)
 
-	r, err := f.CreateTracesReceiver(
+	r, err := f.CreateTraces(
 		context.Background(), receivertest.NewNopSettings(),
 		cfg, consumertest.NewNop(),
 	)

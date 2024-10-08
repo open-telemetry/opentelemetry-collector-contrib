@@ -119,8 +119,7 @@ func TestWriterSetOutputsMissing(t *testing.T) {
 	}
 
 	err := writer.SetOutputs([]operator.Operator{output1})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "does not exist")
+	require.ErrorContains(t, err, "does not exist")
 }
 
 func TestWriterSetOutputsInvalid(t *testing.T) {
@@ -132,8 +131,7 @@ func TestWriterSetOutputsInvalid(t *testing.T) {
 	}
 
 	err := writer.SetOutputs([]operator.Operator{output1})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "can not process entries")
+	require.ErrorContains(t, err, "can not process entries")
 }
 
 func TestWriterSetOutputsValid(t *testing.T) {

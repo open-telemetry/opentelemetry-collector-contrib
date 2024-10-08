@@ -46,8 +46,7 @@ func TestBasicConfigBuildWithoutType(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "missing required `type` field.")
+	require.ErrorContains(t, err, "missing required `type` field.")
 }
 
 func TestBasicConfigBuildMissingLogger(t *testing.T) {
@@ -59,8 +58,7 @@ func TestBasicConfigBuildMissingLogger(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = nil
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "operator build context is missing a logger.")
+	require.ErrorContains(t, err, "operator build context is missing a logger.")
 }
 
 func TestBasicConfigBuildValid(t *testing.T) {

@@ -55,11 +55,11 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) (err e
 
 	switch {
 	case !isEmpty(e.config.Metrics.Endpoint):
-		if e.clientConn, err = e.config.Metrics.ToClientConnWithOptions(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = e.config.Metrics.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	case !isEmpty(e.config.Domain):
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConnWithOptions(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	}

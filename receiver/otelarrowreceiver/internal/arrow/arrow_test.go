@@ -591,8 +591,7 @@ func TestReceiverRecvError(t *testing.T) {
 	ctc.putBatch(nil, fmt.Errorf("test recv error"))
 
 	err := ctc.wait()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "test recv error")
+	require.ErrorContains(t, err, "test recv error")
 }
 
 func TestReceiverSendError(t *testing.T) {

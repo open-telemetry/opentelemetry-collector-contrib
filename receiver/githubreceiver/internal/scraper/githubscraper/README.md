@@ -6,7 +6,7 @@ The GitHub scraper is reliant on limitations found within GitHub's REST and
 GraphQL APIs. The following limitations are known:
 
 * The original creation date of a branch is not available via either of the
-  APIs. GitSCM (the  tool) does provide Ref creation time however this is not
+  APIs. GitSCM (the tool) does provide Ref creation time however this is not
   exposed. As such, we're forced to calculate the age by looking to see if any
   changes have been made to the branch, using that commit as the time from
   which we can grab the date. This means that age will reflect the time between
