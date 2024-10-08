@@ -41,21 +41,21 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
@@ -119,11 +119,11 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTraces(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, next)
+	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -191,7 +191,7 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 

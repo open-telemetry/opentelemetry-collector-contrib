@@ -1,7 +1,5 @@
-FROM alpine:latest as prep
+FROM alpine:latest AS prep
 RUN apk --update add ca-certificates
-
-RUN mkdir -p /tmp
 
 FROM scratch
 

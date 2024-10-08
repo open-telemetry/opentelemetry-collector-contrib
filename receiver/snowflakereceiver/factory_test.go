@@ -36,7 +36,7 @@ func TestDefaultConfig(t *testing.T) {
 	require.EqualValues(t, defaultInterval, cfg.CollectionInterval)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	tests := []struct {
 		desc string
 		run  func(t *testing.T)

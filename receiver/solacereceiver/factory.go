@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// CreateTracesReceiver creates a trace receiver based on provided config. Component is not shared
+// CreateTraces creates a trace receiver based on provided config. Component is not shared
 func createTracesReceiver(
 	_ context.Context,
 	params receiver.Settings,
