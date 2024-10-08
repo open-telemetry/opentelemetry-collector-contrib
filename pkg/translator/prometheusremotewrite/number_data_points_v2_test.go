@@ -26,9 +26,35 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 		want   func() map[uint64]*writev2.TimeSeries
 	}{
 		{
-			name: "gauge",
+			name: "int_gauge",
 			metric: func() pmetric.Metric {
 				return getIntGaugeMetric(
+					"test",
+					pcommon.NewMap(),
+					1, ts,
+				)
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := labels.Labels{
+					labels.Label{
+						Name:  labels.MetricName,
+						Value: "test",
+					},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					labels.Hash(): {
+						LabelsRefs: []uint32{1, 2},
+						Samples: []writev2.Sample{
+							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "double_gauge",
+			metric: func() pmetric.Metric {
+				return getDoubleGaugeMetric(
 					"test",
 					pcommon.NewMap(),
 					1, ts,
