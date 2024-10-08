@@ -7,6 +7,59 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.111.0
+
+### 💡 Enhancements 💡
+
+- `opampsupervisor`: Pass config structure instead of file path when using NewSupervisor function (#34379)
+
+## v0.110.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: TimeoutSettings/QueueSettings fields in various Config structs are no longer embedded (#35158)
+  Structs in which .TimeoutSettings is no longer embedded:
+  * carbonexporter.Config
+  * googlecloudpubsubreceiver.Config
+  Structs in which .TimeoutSettings and .QueueSettings are no longer embedded:
+  * alertmanagerexporter.Config
+  * googlecloudexporter.Config
+  * googlemanagedprometheusexporter.Config
+  * otelarrowexporter.Config
+  
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: The datadog exporter config has been deprecated in favor of the new `datadog/config` package. The new package is shared between the Datadog exporter and the Datadog Connector.
+ (#35067)
+  The new `datadog/config` package is a shared module for Datadog exporter configuration. The module is shared between the Datadog exporter and the Datadog Connector.
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: Create a new module for Datadog exporter configuration.
+ (#35067)
+  This change introduces a new module for Datadog exporter configuration. The module is shared between the Datadog exporter and the Datadog Connector.
+  
+- `kafkaexporter`: Add option to supply destination topic through context. (#34503, #34432)
+
+## v0.109.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Change the OTTL grammar to support expressing statements context via path names (#29017)
+  The `ottl.Path` interface requires a new method: `Context() string`
+- `prometheusreceiver`: Move the TargetAllocator configuration struct to an internal directory (#33146)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add support for localized time parsing into the coreinternal/timeutils (#32977)
+- `googlecloudmonitoringreceiver`: Enhancing the Google Cloud monitoring receiver to establish a client connection, scrape GCP Cloud Metrics, and transform them into an OpenTelemetry compatible format for pipeline processing. (#33762)
+  - Implements client connection to Google Cloud Monitoring API.
+  - Scrapes timeseries data based on configured metrics.
+  - Converts the data into OpenTelemetry format for use in the pipeline.
+  
+
 ## v0.108.0
 
 ### 🛑 Breaking changes 🛑

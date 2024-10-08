@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
@@ -373,7 +373,7 @@ func TestBuildExporterConfig(t *testing.T) {
 	grpcSettings.Endpoint = "the-endpoint"
 	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
 
-	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
+	assert.Equal(t, defaultCfg.TimeoutConfig, exporterCfg.TimeoutConfig)
 	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
 	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
@@ -569,7 +569,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				return
 			case <-ticker.C:
 				go func() {
-					require.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
+					assert.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
 				}()
 			}
 		}
@@ -591,8 +591,8 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	mu.Unlock()
-	require.Greater(t, counter1.Load(), int64(0))
-	require.Greater(t, counter2.Load(), int64(0))
+	require.Positive(t, counter1.Load())
+	require.Positive(t, counter2.Load())
 }
 
 func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {

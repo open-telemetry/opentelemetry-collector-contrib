@@ -8,7 +8,7 @@ OTEL_STABLE_VERSION=main
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
 TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
 CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
-GOMOD=$(SRC_ROOT)/go.mod
+GOMOD=$(SRC_ROOT)/cmd/otelcontribcol/go.mod
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -47,7 +47,7 @@ CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CMD_MODS_0 := $(shell find ./cmd/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otelcontribcol/*" -exec $(TO_MOD_DIR) )
+CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
 CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
@@ -117,6 +117,10 @@ gogci:
 .PHONY: gotidy
 gotidy:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
+
+.PHONY: remove-toolchain
+remove-toolchain:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="toolchain"
 
 .PHONY: gomoddownload
 gomoddownload:
@@ -330,7 +334,6 @@ chlog-update: $(CHLOGGEN)
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
-	$(MAKE) --no-print-directory -C cmd/otelcontribcol fmt
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -338,10 +341,15 @@ otelcontribcol:
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
+# Build the Collector executable without the symbol table, debug information, and the DWARF symbol table.
+.PHONY: otelcontribcollite
+otelcontribcollite:
+	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
+
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
-	$(MAKE) --no-print-directory -C cmd/oteltestbedcol fmt
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
@@ -349,11 +357,21 @@ oteltestbedcol:
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
+.PHONY: oteltestbedcollite
+oteltestbedcollite:
+	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
+
 # Build the telemetrygen executable.
 .PHONY: telemetrygen
 telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
+
+.PHONY: telemetrygenlite
+telemetrygenlite:
+	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
 # helper function to update the core packages in builder-config.yaml
 # input parameters are 
@@ -387,12 +405,13 @@ update-otel:$(MULTIMOD)
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml) 
-	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) gotidy
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml)
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) oteltestbedcol
+	$(MAKE) remove-toolchain
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -539,4 +558,4 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
-	git diff --exit-code || (echo 'Some files need committing' &&  git status && exit 1)
+	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

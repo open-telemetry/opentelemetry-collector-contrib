@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
@@ -362,9 +363,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			metricsSink := new(consumertest.MetricsSink)
 			f := NewFactory()
 
-			_, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), config, sink)
+			_, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), config, sink)
 			assert.NoError(t, err)
-			rcv, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
+			rcv, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
 			assert.NoError(t, err)
 
 			r := rcv.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver)
@@ -500,7 +501,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	t.Log("Sending Splunk HEC data Request")
 
 	body, err := json.Marshal(buildSplunkHecMsg(sec, 0))
-	require.NoError(t, err, fmt.Sprintf("failed to marshal Splunk message: %v", err))
+	require.NoErrorf(t, err, "failed to marshal Splunk message: %v", err)
 
 	url := fmt.Sprintf("https://%s", addr)
 
@@ -2116,7 +2117,7 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

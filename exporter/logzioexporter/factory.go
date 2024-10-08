@@ -38,7 +38,7 @@ func createDefaultConfig() component.Config {
 		Region:        "",
 		Token:         "",
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
 			Timeout:  30 * time.Second,

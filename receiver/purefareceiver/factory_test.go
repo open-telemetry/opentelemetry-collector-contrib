@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal/metadata"
@@ -31,11 +31,11 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := receivertest.NewNopSettings()
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, nil)
+	mReceiver, err := factory.CreateMetrics(context.Background(), set, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
-	assert.Equal(t, err, component.ErrDataTypeIsNotSupported)
+	tReceiver, err := factory.CreateTraces(context.Background(), set, cfg, nil)
+	assert.Equal(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
