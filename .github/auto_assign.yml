@@ -12,7 +12,7 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - atoulme
-    - crobert-1
+    # - crobert-1 on leave
     - dashpole
     - mwear
     - songy23
