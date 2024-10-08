@@ -101,16 +101,15 @@ func TestEncodeMetric(t *testing.T) {
 
 	var docsBytes [][]byte
 	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
-		val, err := numberToValue(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i))
-		require.NoError(t, err)
-		err = model.upsertMetricDataPointValue(docs,
+		err := model.upsertMetricDataPointValue(
+			docs,
 			metrics.ResourceMetrics().At(0).Resource(),
 			"",
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
 			"",
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
-			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i),
-			val)
+			newNumberDataPoint(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i)),
+		)
 		require.NoError(t, err)
 	}
 
@@ -1056,7 +1055,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
 
 		// This sets the data_stream values default or derived from the record/scope/resources
-		routeLogRecord(record, scope, resource, "", true)
+		routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
 
 		b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL)
 		require.NoError(t, err)
