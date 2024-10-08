@@ -10,6 +10,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -51,11 +52,11 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) (err er
 
 	switch {
 	case !isEmpty(e.config.Traces.Endpoint):
-		if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.Traces.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	case !isEmpty(e.config.Domain):
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	}

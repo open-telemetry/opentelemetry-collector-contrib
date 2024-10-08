@@ -21,7 +21,7 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the
@@ -152,7 +152,7 @@ type DiscoverySettings struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
-// FlushSettings  defines settings for configuring the write buffer flushing
+// FlushSettings defines settings for configuring the write buffer flushing
 // policy in the Elasticsearch exporter. The exporter sends a bulk request with
 // all events already serialized into the send-buffer.
 type FlushSettings struct {

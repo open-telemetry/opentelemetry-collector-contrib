@@ -78,8 +78,10 @@ func (r *mockReceiver) setExportError(err error) {
 type mockTracesReceiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	mockReceiver
-	exportResponse func() ptraceotlp.ExportResponse
-	lastRequest    ptrace.Traces
+	exportResponse      func() ptraceotlp.ExportResponse
+	lastRequest         ptrace.Traces
+	hasMetadata         bool
+	spanCountByMetadata map[string]int
 }
 
 func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
@@ -88,8 +90,14 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRe
 	r.totalItems.Add(int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
+	if r.hasMetadata {
+		v1 := r.metadata.Get("key1")
+		v2 := r.metadata.Get("key2")
+		hashKey := fmt.Sprintf("%s|%s", v1, v2)
+		r.spanCountByMetadata[hashKey] += (td.SpanCount())
+	}
+	r.lastRequest = td
 	return r.exportResponse(), r.exportError
 }
 
@@ -566,7 +574,7 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, md, rcv.getLastRequest())
 
 	mdata := rcv.getMetadata()
-	require.EqualValues(t, mdata.Get("header"), expectedHeader)
+	require.EqualValues(t, expectedHeader, mdata.Get("header"))
 	require.Len(t, mdata.Get("User-Agent"), 1)
 	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 
@@ -1125,8 +1133,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	// Send two trace items.
 	td := testdata.GenerateTraces(2)
 	err = exp.ConsumeTraces(context.Background(), td)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "test failed")
+	assert.ErrorContains(t, err, "test failed")
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {

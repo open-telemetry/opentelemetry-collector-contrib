@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -435,13 +436,13 @@ func BenchmarkTCPInput(b *testing.B) {
 	done := make(chan struct{})
 	go func() {
 		conn, err := net.Dial("tcp", tcpInput.listener.Addr().String())
-		require.NoError(b, err)
+		assert.NoError(b, err)
 		defer func() {
 			err := tcpInput.Stop()
-			require.NoError(b, err, "expected to stop tcp input operator without error")
+			assert.NoError(b, err, "expected to stop tcp input operator without error")
 
 			err = conn.Close()
-			require.NoError(b, err, "expected to close connection without error")
+			assert.NoError(b, err, "expected to close connection without error")
 		}()
 		message := []byte("message\n")
 		for {
@@ -450,7 +451,7 @@ func BenchmarkTCPInput(b *testing.B) {
 				return
 			default:
 				_, err := conn.Write(message)
-				require.NoError(b, err)
+				assert.NoError(b, err)
 			}
 		}
 	}()

@@ -108,3 +108,7 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 
 	return dp
 }
+
+func (dp Summary) Add(Summary) Summary {
+	panic("todo")
+}

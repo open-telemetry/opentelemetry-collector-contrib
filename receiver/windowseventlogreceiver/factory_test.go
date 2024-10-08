@@ -10,8 +10,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver/internal/metadata"
@@ -39,11 +39,11 @@ func TestCreateAndShutdown(t *testing.T) {
 	ctx := context.Background()
 	settings := receivertest.NewNopSettings()
 	sink := new(consumertest.LogsSink)
-	receiver, err := factory.CreateLogsReceiver(ctx, settings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, settings, cfg, sink)
 
 	if runtime.GOOS != "windows" {
 		assert.Error(t, err)
-		assert.IsType(t, component.ErrDataTypeIsNotSupported, err)
+		assert.IsType(t, pipeline.ErrSignalNotSupported, err)
 		assert.Nil(t, receiver)
 	} else {
 		assert.NoError(t, err)

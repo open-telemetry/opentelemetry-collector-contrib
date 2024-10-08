@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -38,7 +39,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	dropWizardServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// Serve back the metrics as if they were from DropWizard.
 		_, err := rw.Write([]byte(dropWizardResponse))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		currentScrapeIndex++
 		if currentScrapeIndex == 8 { // We shall let the Prometheus receiver scrape the DropWizard mock server, at least 8 times.
 			wg.Done() // done scraping dropWizardResponse 8 times
@@ -98,7 +99,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		PrometheusConfig: receiverConfig,
 	}
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
-	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
+	prometheusReceiver, err := receiverFactory.CreateMetrics(ctx, receiverCreateSet, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
 	}

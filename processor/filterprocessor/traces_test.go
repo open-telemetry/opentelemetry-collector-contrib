@@ -130,7 +130,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateTracesProcessor(
+			fmp, err := factory.CreateTraces(
 				ctx,
 				processortest.NewNopSettings(),
 				cfg,

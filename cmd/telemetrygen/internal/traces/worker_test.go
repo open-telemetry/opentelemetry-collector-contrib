@@ -185,7 +185,7 @@ func TestSpanKind(t *testing.T) {
 
 	// verify that the default Span Kind is being overridden
 	for _, span := range syncer.spans {
-		assert.NotEqual(t, span.SpanKind(), trace.SpanKindInternal)
+		assert.NotEqual(t, trace.SpanKindInternal, span.SpanKind())
 	}
 }
 
@@ -235,7 +235,7 @@ func TestSpanStatuses(t *testing.T) {
 				require.NoError(t, Run(cfg, zap.NewNop()))
 				// verify that the default the span status is set as expected
 				for _, span := range syncer.spans {
-					assert.Equal(t, span.Status().Code, tt.spanStatus, fmt.Sprintf("span status: %v and expected status %v", span.Status().Code, tt.spanStatus))
+					assert.Equalf(t, span.Status().Code, tt.spanStatus, "span status: %v and expected status %v", span.Status().Code, tt.spanStatus)
 				}
 			} else {
 				require.Error(t, Run(cfg, zap.NewNop()))

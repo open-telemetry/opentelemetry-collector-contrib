@@ -29,7 +29,7 @@ func createMetricsReceiver(
 	}
 	sqlServerScraper := newSQLServerPCScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sqlServerScraper.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sqlServerScraper.scrape,
 		scraperhelper.WithStart(sqlServerScraper.start),
 		scraperhelper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {

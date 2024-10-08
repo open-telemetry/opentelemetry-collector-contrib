@@ -5,15 +5,21 @@ package metricsgenerationprocessor
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 type testMetric struct {
@@ -274,7 +280,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 				Rules: test.rules,
 			}
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -383,4 +389,133 @@ func getOutputForIntGaugeTest() pmetric.Metrics {
 	neweDoubleDataPoint.SetDoubleValue(105)
 
 	return intGaugeOutputMetrics
+}
+
+type goldenTestCases struct {
+	name    string
+	testDir string
+}
+
+func TestGoldenFileMetrics(t *testing.T) {
+	// Test description by test data directory:
+	// input_metric_types: These tests are to ensure calculations can be done on both sums and gauges
+	// result_metric_types: These tests are to ensure the created metric's type is correct
+	// metric2_zero_value: These tests are to ensure metrics are created properly when the second metric's (metric2)
+	// value is 0.
+	testCaseNames := []goldenTestCases{
+		{
+			name:    "sum_gauge_metric",
+			testDir: "input_metric_types",
+		},
+		{
+			name:    "add_sum_sum",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "add_gauge_gauge",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "add_gauge_sum",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "add_sum_gauge",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "multiply_gauge_sum",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "multiply_sum_gauge",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "divide_gauge_sum",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "divide_sum_gauge",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "subtract_gauge_sum",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "subtract_sum_gauge",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "percent_sum_gauge",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "percent_gauge_sum",
+			testDir: "result_metric_types",
+		},
+		{
+			name:    "metric2_zero_add",
+			testDir: "metric2_zero_value",
+		},
+		{
+			name:    "metric2_zero_subtract",
+			testDir: "metric2_zero_value",
+		},
+		{
+			name:    "metric2_zero_multiply",
+			testDir: "metric2_zero_value",
+		},
+		{
+			name:    "metric2_zero_divide",
+			testDir: "metric2_zero_value",
+		},
+		{
+			name:    "metric2_zero_percent",
+			testDir: "metric2_zero_value",
+		},
+	}
+
+	for _, testCase := range testCaseNames {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", testCase.testDir, "config.yaml"))
+		assert.NoError(t, err)
+
+		next := new(consumertest.MetricsSink)
+		factory := NewFactory()
+		cfg := factory.CreateDefaultConfig()
+
+		sub, err := cm.Sub(fmt.Sprintf("%s/%s", "experimental_metricsgeneration", testCase.name))
+		require.NoError(t, err)
+		require.NoError(t, sub.Unmarshal(cfg))
+
+		mgp, err := factory.CreateMetrics(
+			context.Background(),
+			processortest.NewNopSettings(),
+			cfg,
+			next,
+		)
+		assert.NotNil(t, mgp)
+		assert.NoError(t, err)
+
+		assert.True(t, mgp.Capabilities().MutatesData)
+		require.NoError(t, mgp.Start(context.Background(), nil))
+
+		inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", testCase.testDir, "metrics_input.yaml"))
+		assert.NoError(t, err)
+
+		err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
+		assert.NoError(t, err)
+
+		got := next.AllMetrics()
+		// golden.WriteMetrics(t, filepath.Join("testdata", testCase.testDir, fmt.Sprintf("%s_%s", testCase.name, "expected.yaml")), got[0])
+		expected, err := golden.ReadMetrics(filepath.Join("testdata", testCase.testDir, fmt.Sprintf("%s_%s", testCase.name, "expected.yaml")))
+		assert.NoError(t, err)
+		assert.Len(t, got, 1)
+		err = pmetrictest.CompareMetrics(expected, got[0],
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp())
+		assert.NoError(t, err)
+	}
 }

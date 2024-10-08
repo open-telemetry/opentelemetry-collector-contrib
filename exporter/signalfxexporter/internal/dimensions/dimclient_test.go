@@ -136,7 +136,7 @@ func TestDimensionClient(t *testing.T) {
 		}))
 
 		dims := waitForDims(dimCh, 1, 3)
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "host",
 				Value: "test-box",
@@ -148,7 +148,7 @@ func TestDimensionClient(t *testing.T) {
 				Tags:         []string{"active"},
 				TagsToRemove: []string{"terminated"},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("same dimension with different values", func(t *testing.T) {
@@ -164,7 +164,7 @@ func TestDimensionClient(t *testing.T) {
 		}))
 
 		dims := waitForDims(dimCh, 1, 3)
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "host",
 				Value: "test-box",
@@ -173,7 +173,7 @@ func TestDimensionClient(t *testing.T) {
 				},
 				TagsToRemove: []string{"active"},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("send a distinct prop/tag set for existing dim with server error", func(t *testing.T) {
@@ -197,7 +197,7 @@ func TestDimensionClient(t *testing.T) {
 		dims = waitForDims(dimCh, 1, 3)
 
 		// After the server recovers the dim should be resent.
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "AWSUniqueID",
 				Value: "abcd",
@@ -206,7 +206,7 @@ func TestDimensionClient(t *testing.T) {
 				},
 				Tags: []string{"running"},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("does not retry 4xx responses", func(t *testing.T) {
@@ -245,7 +245,7 @@ func TestDimensionClient(t *testing.T) {
 
 		forcedResp.Store(200)
 		dims = waitForDims(dimCh, 1, 3)
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "AWSUniqueID",
 				Value: "id404",
@@ -253,7 +253,7 @@ func TestDimensionClient(t *testing.T) {
 					"z": newString("x"),
 				},
 			},
-		})
+		}, dims)
 	})
 
 	t.Run("send successive quick updates to same dim", func(t *testing.T) {
@@ -294,7 +294,7 @@ func TestDimensionClient(t *testing.T) {
 
 		dims := waitForDims(dimCh, 1, 3)
 
-		require.Equal(t, dims, []dim{
+		require.Equal(t, []dim{
 			{
 				Key:   "AWSUniqueID",
 				Value: "abcd",
@@ -305,7 +305,7 @@ func TestDimensionClient(t *testing.T) {
 				Tags:         []string{"dev"},
 				TagsToRemove: []string{"running"},
 			},
-		})
+		}, dims)
 	})
 }
 

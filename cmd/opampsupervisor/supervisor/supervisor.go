@@ -6,11 +6,13 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	_ "embed"
 	"errors"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -23,7 +25,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -66,6 +67,17 @@ const (
 
 const maxBufferedCustomMessages = 10
 
+type configState struct {
+	// Supervisor-assembled config to be given to the Collector.
+	mergedConfig string
+	// true if the server provided configmap was empty
+	configMapIsEmpty bool
+}
+
+func (c *configState) equal(other *configState) bool {
+	return other.mergedConfig == c.mergedConfig && other.configMapIsEmpty == c.configMapIsEmpty
+}
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -106,8 +118,8 @@ type Supervisor struct {
 	// will listen on for health check requests from the Supervisor.
 	agentHealthCheckEndpoint string
 
-	// Supervisor-assembled config to be given to the Collector.
-	mergedConfig *atomic.Value
+	// Internal config state for agent use. See the configState struct for more details.
+	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
 	effectiveConfig *atomic.Value
@@ -136,13 +148,13 @@ type Supervisor struct {
 	opampServerPort int
 }
 
-func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
+func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
 	s := &Supervisor{
 		logger:                       logger,
 		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
-		mergedConfig:                 &atomic.Value{},
+		cfgState:                     &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
@@ -153,13 +165,10 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, err
 	}
 
-	if err := s.loadConfig(configFile); err != nil {
-		return nil, fmt.Errorf("error loading config: %w", err)
-	}
-
-	if err := s.config.Validate(); err != nil {
+	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
+	s.config = cfg
 
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
@@ -179,15 +188,18 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
-	healthCheckPort, err := s.findRandomPort()
+	healthCheckPort := s.config.Agent.HealthCheckPort
+	if healthCheckPort == 0 {
+		healthCheckPort, err = s.findRandomPort()
 
-	if err != nil {
-		return fmt.Errorf("could not find port for health check: %w", err)
+		if err != nil {
+			return fmt.Errorf("could not find port for health check: %w", err)
+		}
 	}
 
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
-	s.logger.Debug("Supervisor starting",
+	s.logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
 	err = s.loadAndWriteInitialMergedConfig()
@@ -240,28 +252,6 @@ func (s *Supervisor) createTemplates() error {
 	}
 	if s.ownTelemetryTemplate, err = template.New("owntelemetry").Parse(ownTelemetryTpl); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func (s *Supervisor) loadConfig(configFile string) error {
-	if configFile == "" {
-		return errors.New("path to config file cannot be empty")
-	}
-
-	k := koanf.New("::")
-	if err := k.Load(file.Provider(configFile), yaml.Parser()); err != nil {
-		return err
-	}
-
-	decodeConf := koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	}
-
-	s.config = config.DefaultSupervisor()
-	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
-		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
 
 	return nil
@@ -362,8 +352,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}()
 
 	select {
-	// TODO make timeout configurable
-	case <-time.After(3 * time.Second):
+	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
 			return errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
@@ -389,9 +378,17 @@ func (s *Supervisor) startOpAMP() error {
 func (s *Supervisor) startOpAMPClient() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
-	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+	// determine if we need to load a TLS config or not
+	var tlsConfig *tls.Config
+	parsedURL, err := url.Parse(s.config.Server.Endpoint)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse server endpoint: %w", err)
+	}
+	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
+		tlsConfig, err = s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
+		if err != nil {
+			return err
+		}
 	}
 
 	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
@@ -459,11 +456,17 @@ func (s *Supervisor) startOpAMPClient() error {
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.logger))
 
+	var err error
+	s.opampServerPort, err = s.findRandomPort()
+	if err != nil {
+		return err
+	}
+
 	s.logger.Debug("Starting OpAMP server...")
 
 	connected := &atomic.Bool{}
 
-	err := s.opampServer.Start(flattenedSettings{
+	err = s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnectingFunc: func(_ *http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
@@ -800,8 +803,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	}
 
 	// write the initial merged config to disk
-	cfg := s.mergedConfig.Load().(string)
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
+	cfgState := s.cfgState.Load().(*configState)
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
@@ -813,9 +816,11 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	cfgStr, ok := s.effectiveConfig.Load().(string)
 	if !ok {
-		cfgStr, ok = s.mergedConfig.Load().(string)
+		cfgState, ok := s.cfgState.Load().(*configState)
 		if !ok {
 			cfgStr = ""
+		} else {
+			cfgStr = cfgState.mergedConfig
 		}
 	}
 
@@ -877,7 +882,11 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	var k = koanf.New("::")
 
-	if c := config.GetConfig(); c != nil {
+	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
+
+	if !configMapIsEmpty {
+		c := config.GetConfig()
+
 		// Sort to make sure the order of merging is stable.
 		var names []string
 		for name := range c.ConfigMap {
@@ -946,11 +955,16 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	}
 
 	// Check if supervisor's merged config is changed.
-	newMergedConfig := string(newMergedConfigBytes)
+
+	newConfigState := &configState{
+		mergedConfig:     string(newMergedConfigBytes),
+		configMapIsEmpty: configMapIsEmpty,
+	}
+
 	configChanged = false
 
-	oldConfig := s.mergedConfig.Swap(newMergedConfig)
-	if oldConfig == nil || oldConfig.(string) != newMergedConfig {
+	oldConfigState := s.cfgState.Swap(newConfigState)
+	if oldConfigState == nil || !oldConfigState.(*configState).equal(newConfigState) {
 		s.logger.Debug("Merged config changed.")
 		configChanged = true
 	}
@@ -970,6 +984,12 @@ func (s *Supervisor) handleRestartCommand() error {
 }
 
 func (s *Supervisor) startAgent() {
+	if s.cfgState.Load().(*configState).configMapIsEmpty {
+		// Don't start the agent if there is no config to run
+		s.logger.Info("No config present, not starting agent.")
+		return
+	}
+
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
@@ -1111,14 +1131,14 @@ func (s *Supervisor) runAgentProcess() {
 
 func (s *Supervisor) stopAgentApplyConfig() {
 	s.logger.Debug("Stopping the agent to apply new config")
-	cfg := s.mergedConfig.Load().(string)
+	cfgState := s.cfgState.Load().(*configState)
 	err := s.commander.Stop(context.Background())
 
 	if err != nil {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 }
@@ -1187,16 +1207,17 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
+
+	if msg.AgentIdentification != nil {
+		configChanged = s.processAgentIdentificationMessage(msg.AgentIdentification) || configChanged
+	}
+
 	if msg.RemoteConfig != nil {
-		configChanged = configChanged || s.processRemoteConfigMessage(msg.RemoteConfig)
+		configChanged = s.processRemoteConfigMessage(msg.RemoteConfig) || configChanged
 	}
 
 	if msg.OwnMetricsConnSettings != nil {
-		configChanged = configChanged || s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings)
-	}
-
-	if msg.AgentIdentification != nil {
-		configChanged = configChanged || s.processAgentIdentificationMessage(msg.AgentIdentification)
+		configChanged = s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings) || configChanged
 	}
 
 	// Update the agent config if any messages have touched the config
@@ -1306,7 +1327,14 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 		s.logger.Error("Failed to send agent description to OpAMP server")
 	}
 
-	return true
+	// Need to recalculate the Agent config so that the new agent identification is included in it.
+	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	if err != nil {
+		s.logger.Error("Error composing merged config with new instance ID", zap.Error(err))
+		return false
+	}
+
+	return configChanged
 }
 
 func (s *Supervisor) persistentStateFilePath() string {

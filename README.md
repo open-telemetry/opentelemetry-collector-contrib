@@ -73,6 +73,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
+- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:

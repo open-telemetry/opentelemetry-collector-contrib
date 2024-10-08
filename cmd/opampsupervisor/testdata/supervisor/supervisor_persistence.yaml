@@ -1,7 +1,5 @@
 server:
   endpoint: ws://{{.url}}/v1/opamp
-  tls:
-    insecure: true
 
 capabilities:
   reports_effective_config: true
