@@ -128,8 +128,9 @@ type Supervisor struct {
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
-	// waitingForHealthCheck is true if the agent is starting up and the supervisor is waiting for health checks to succeed.
-	waitingForHealthCheck bool
+	// waitingForHealthCheckSuccess is true if the agent is starting up and the supervisor is waiting for health checks to succeed.
+	// this is set to true 1. at the init phase 2. when agent receives a remote config
+	waitingForHealthCheckSuccess bool
 	// successfulHealthChecks tracks the number of consecutive successful health checks.
 	successfulHealthChecks int32
 	// requiredHealthChecks is the number of consecutive health checks required for the agent to be considered healthy.
@@ -141,6 +142,8 @@ type Supervisor struct {
 	lastConfigChangeTime time.Time
 	// healthCheckInterval is the interval between health checks.
 	healthCheckInterval time.Duration
+	// lastHealth is the last health status of the agent.
+	lastHealth *protobufs.ComponentHealth
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -151,12 +154,13 @@ type Supervisor struct {
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
 
+	// agentHasStarted is true if the agent has started.
 	agentHasStarted bool
-	// agentStartHealthCheckAttempts is the number of health check attempts made during agent startup.
-	agentStartHealthCheckAttempts int
-	// agentStartMaxHealthCheckAttempts is the maximum number of health check attempts to make during agent startup.
-	agentStartMaxHealthCheckAttempts int
-	agentRestarting                  atomic.Bool
+	// isBootstrapped is true if the agent has been bootstrapped.
+	// This is used to determine if the agent is starting up for the first time or if it is restarting.
+	isBootstrapped bool
+	// agentRestarting is true if the agent is restarting.
+	agentRestarting atomic.Bool
 
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
@@ -245,6 +249,9 @@ func (s *Supervisor) Start() error {
 	s.agentWG.Add(1)
 	go func() {
 		defer s.agentWG.Done()
+		s.waitingForHealthCheckSuccess = true
+		s.successfulHealthChecks = 0
+		s.lastConfigChangeTime = time.Now()
 		s.runAgentProcess()
 	}()
 
@@ -1022,8 +1029,6 @@ func (s *Supervisor) startAgent() {
 	}
 
 	s.agentHasStarted = false
-	s.agentStartHealthCheckAttempts = 0
-	s.agentStartMaxHealthCheckAttempts = 10
 	s.startedAt = time.Now()
 	s.startHealthCheckTicker()
 
@@ -1039,20 +1044,22 @@ func (s *Supervisor) startHealthCheckTicker() {
 }
 
 func (s *Supervisor) healthCheck() {
-	if !s.commander.IsRunning() {
-		return
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 
 	err := s.healthChecker.Check(ctx)
 	cancel()
 
-	if s.waitingForHealthCheck {
+	if s.waitingForHealthCheckSuccess {
 		timeSinceChange := time.Since(s.lastConfigChangeTime)
 		if timeSinceChange > s.configApplyTimeout {
-			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
-			s.waitingForHealthCheck = false
+			if s.isBootstrapped {
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+			}
+			// the config apply timeout has been exceeded
+			// we are no longer waiting for the health check to succeed
+			// we consider the agent to be unhealthy
+			s.waitingForHealthCheckSuccess = false
 		}
 	}
 
@@ -1062,33 +1069,45 @@ func (s *Supervisor) healthCheck() {
 	}
 
 	if err != nil {
-		if s.waitingForHealthCheck {
+		if s.waitingForHealthCheckSuccess {
 			s.successfulHealthChecks = 0 // Reset successful checks on error
 		}
 
-		if !s.agentHasStarted {
+		// if the agent has not started, and we are waiting for the health check to succeed
+		// report that it is starting otherwise, report that it is not healthy with the error
+		if !s.agentHasStarted && s.waitingForHealthCheckSuccess {
 			health.Healthy = false
 			health.LastError = "Agent is starting"
+			// if we have a last health status, use it
+			if s.lastHealth != nil && s.lastHealth.Healthy {
+				health.Healthy = s.lastHealth.Healthy
+			}
 		} else {
 			health.Healthy = false
 			health.LastError = err.Error()
 			s.logger.Error("Agent is not healthy", zap.Error(err))
 		}
 	} else {
-		if s.waitingForHealthCheck {
+		if s.waitingForHealthCheckSuccess {
 			s.successfulHealthChecks++
 			if s.successfulHealthChecks >= s.requiredHealthChecks {
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
-				s.waitingForHealthCheck = false
+				if s.isBootstrapped {
+					s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				}
+				s.waitingForHealthCheckSuccess = false
 			}
 		}
 
 		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
+		if !s.isBootstrapped {
+			s.isBootstrapped = true
+		}
 	}
 
-	if errors.Is(err, s.lastHealthCheckErr) {
+	s.lastHealth = health
+	if err != nil && errors.Is(err, s.lastHealthCheckErr) {
 		// No difference from last check. Nothing new to report.
 		return
 	}
@@ -1115,7 +1134,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
-			s.waitingForHealthCheck = true
+			s.waitingForHealthCheckSuccess = true
 			s.successfulHealthChecks = 0
 			s.lastConfigChangeTime = time.Now()
 

@@ -18,3 +18,4 @@ agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
   successful_health_checks: {{.successful_health_checks}}
   config_apply_timeout: {{.config_apply_timeout}}
+  health_check_interval: {{.health_check_interval}}

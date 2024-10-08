@@ -1442,6 +1442,7 @@ func TestSupervisorLogging(t *testing.T) {
 	require.NoError(t, logFile.Close())
 }
 func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
+	now := time.Now()
 	var agentConfig atomic.Value
 	var healthReport atomic.Value
 	var remoteConfigStatus atomic.Value
@@ -1470,7 +1471,8 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	s := newSupervisor(t, "report_status", map[string]string{
 		"url":                      server.addr,
 		"successful_health_checks": "2",
-		"config_apply_timeout":     "5s",
+		"config_apply_timeout":     "3s",
+		"health_check_interval":    "1s",
 	})
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1500,7 +1502,7 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 	require.Eventually(t, func() bool {
 		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
 		return ok && health.Healthy
-	}, 30*time.Second, 10*time.Millisecond, "Collector did not become healthy")
+	}, 10*time.Second, 10*time.Millisecond, "Collector did not become healthy")
 
 	// Check that the status is set to APPLIED after successful health checks
 	require.Eventually(t, func() bool {
