@@ -11,14 +11,14 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/vmware/govmomi v0.44.0
 	go.opentelemetry.io/collector/component v0.111.0
-	go.opentelemetry.io/collector/config/configopaque v1.17.0
-	go.opentelemetry.io/collector/config/configtls v1.17.0
-	go.opentelemetry.io/collector/confmap v1.17.0
+	go.opentelemetry.io/collector/config/configopaque v1.17.1-0.20241008154146-ea48c09c31ae
+	go.opentelemetry.io/collector/config/configtls v1.17.1-0.20241008154146-ea48c09c31ae
+	go.opentelemetry.io/collector/confmap v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/consumer v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
-	go.opentelemetry.io/collector/featuregate v1.17.0
+	go.opentelemetry.io/collector/featuregate v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/filter v0.111.0
-	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/receiver v0.111.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

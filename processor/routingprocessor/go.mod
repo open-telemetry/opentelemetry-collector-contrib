@@ -5,16 +5,16 @@ go 1.22.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.111.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/client v1.17.0
+	go.opentelemetry.io/collector/client v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/component v0.111.0
 	go.opentelemetry.io/collector/config/configgrpc v0.111.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.0
-	go.opentelemetry.io/collector/confmap v1.17.0
+	go.opentelemetry.io/collector/confmap v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/consumer v0.111.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/exporter v0.111.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.111.0
-	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/pipeline v0.111.0
 	go.opentelemetry.io/collector/processor v0.111.0
 	go.opentelemetry.io/otel v1.30.0
@@ -63,11 +63,11 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.111.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.111.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.17.0 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.17.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.17.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.17.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.17.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.17.1-0.20241008154146-ea48c09c31ae // indirect
+	go.opentelemetry.io/collector/config/confignet v1.17.1-0.20241008154146-ea48c09c31ae // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.17.1-0.20241008154146-ea48c09c31ae // indirect
+	go.opentelemetry.io/collector/config/configretry v1.17.1-0.20241008154146-ea48c09c31ae // indirect
+	go.opentelemetry.io/collector/config/configtls v1.17.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/collector/config/internal v0.111.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.111.0 // indirect
