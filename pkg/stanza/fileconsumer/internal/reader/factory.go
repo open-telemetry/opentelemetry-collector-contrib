@@ -60,7 +60,12 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	if f.FlushTimeout > 0 {
 		m.FlushState = &flush.State{LastDataChange: time.Now()}
 	}
-	return f.NewReaderFromMetadata(file, m)
+	r, err := f.NewReaderFromMetadata(file, m)
+	if err != nil {
+		return nil, err
+	}
+	r.new = true // indicates that a reader is new (no previously known offset)
+	return r, nil
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {

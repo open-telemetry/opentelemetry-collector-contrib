@@ -31,6 +31,7 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
+	SyncOffsets()
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -171,6 +172,44 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
 }
 
+func (t *fileTracker) readArchive(readIndex int) (*fileset.Fileset[*reader.Metadata], error) {
+	key := fmt.Sprintf("knownFiles%d", readIndex)
+	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
+	if err != nil {
+		return nil, err
+	}
+	f := fileset.New[*reader.Metadata](len(metadata))
+	f.Add(metadata...)
+	return f, nil
+}
+
+func (t *fileTracker) updateArchive(readIndex int, rmds *fileset.Fileset[*reader.Metadata]) error {
+	key := fmt.Sprintf("knownFiles%d", readIndex)
+	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
+}
+
+func (t *fileTracker) SyncOffsets() {
+	archiveReadIndex := 0
+	for i := 0; i < t.pollsToArchive; i++ {
+		newFound := false
+		data, _ := t.readArchive(archiveReadIndex)
+		for _, v := range t.currentPollFiles.Get() {
+			if v.IsNew() {
+				newFound = true
+				if md := data.Match(v.GetFingerprint(), fileset.StartsWith); md != nil {
+					v.SyncMetadata(md)
+				}
+			}
+		}
+		if !newFound {
+			// no new reader exists. No need to walk through archive. Just exit to save time
+			break
+		}
+		t.updateArchive(archiveReadIndex, data)
+	}
+
+}
+
 // noStateTracker only tracks the current polled files. Once the poll is
 // complete and telemetry is consumed, the tracked files are closed. The next
 // poll will create fresh readers with no previously tracked offsets.
@@ -225,3 +264,5 @@ func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
+
+func (t *noStateTracker) SyncOffsets() {}
