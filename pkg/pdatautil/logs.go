@@ -5,14 +5,12 @@ package pdatautil // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import "go.opentelemetry.io/collector/pdata/plog"
 
-// MoveLogRecordsWithContextIf calls f sequentially for each LogRecord present in the plog.Logs.
-// If f returns true, the element is removed from the original plog.Logs and added to the returned plog.Logs.
-// Notably, the Resource and Scope associated with the LogRecord are recreated in the returned plog.Logs as necessary.
-// Resources or Scopes are added to the result only if necessary, and removed from the original if they become empty.
-// All ordering is preserved.
-func MoveLogRecordsWithContextIf(ld plog.Logs, f func(plog.LogRecord) bool) plog.Logs {
-	result := plog.NewLogs()
-	rls := ld.ResourceLogs()
+// MoveLogRecordsWithContextIf calls f sequentially for each LogRecord present in the first plog.Logs.
+// If f returns true, the element is removed from the first plog.Logs and added to the second plog.Logs.
+// Notably, the Resource and Scope associated with the LogRecord are recreated in the second plog.Logs only once.
+// Resources or Scopes are removed from the original if they become empty. All ordering is preserved.
+func MoveLogRecordsWithContextIf(from, to plog.Logs, f func(plog.LogRecord) bool) {
+	rls := from.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		if rls.Len() == 0 {
 			continue // Don't remove empty
@@ -32,7 +30,7 @@ func MoveLogRecordsWithContextIf(ld plog.Logs, f func(plog.LogRecord) bool) plog
 					return false
 				}
 				if rlCopy == nil {
-					rlc := result.ResourceLogs().AppendEmpty()
+					rlc := to.ResourceLogs().AppendEmpty()
 					rlCopy = &rlc
 					rl.Resource().CopyTo(rlCopy.Resource())
 					rlCopy.SetSchemaUrl(rl.SchemaUrl())
@@ -55,5 +53,4 @@ func MoveLogRecordsWithContextIf(ld plog.Logs, f func(plog.LogRecord) bool) plog
 	rls.RemoveIf(func(rl plog.ResourceLogs) bool {
 		return rl.ScopeLogs().Len() == 0
 	})
-	return result
 }

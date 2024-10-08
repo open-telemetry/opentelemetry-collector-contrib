@@ -64,24 +64,33 @@ func TestMoveLogRecordsWithContextIf(t *testing.T) {
 				return strings.Contains(lr.Body().AsString(), "scopeB")
 			},
 		},
+		{
+			name: "move_some_to_preexisting",
+			condition: func(lr plog.LogRecord) bool {
+				return strings.Contains(lr.Body().AsString(), "scopeB")
+			},
+		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// Load up a fresh copy of the input for each test, since it may be modified in place.
-			input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+			from, err := golden.ReadLogs(filepath.Join("testdata", "logs", tt.name, "from.yaml"))
 			require.NoError(t, err)
 
-			expectModified, err := golden.ReadLogs(filepath.Join("testdata", "logs", tt.name, "modified.yaml"))
+			to, err := golden.ReadLogs(filepath.Join("testdata", "logs", tt.name, "to.yaml"))
 			require.NoError(t, err)
 
-			expectResult, err := golden.ReadLogs(filepath.Join("testdata", "logs", tt.name, "returned.yaml"))
+			fromModifed, err := golden.ReadLogs(filepath.Join("testdata", "logs", tt.name, "from_modified.yaml"))
 			require.NoError(t, err)
 
-			result := pdatautil.MoveLogRecordsWithContextIf(input, tt.condition)
+			toModified, err := golden.ReadLogs(filepath.Join("testdata", "logs", tt.name, "to_modified.yaml"))
+			require.NoError(t, err)
 
-			assert.NoError(t, plogtest.CompareLogs(expectModified, input), "input not modified as expected")
-			assert.NoError(t, plogtest.CompareLogs(expectResult, result), "result not as expected")
+			pdatautil.MoveLogRecordsWithContextIf(from, to, tt.condition)
+
+			assert.NoError(t, plogtest.CompareLogs(fromModifed, from), "from not modified as expected")
+			assert.NoError(t, plogtest.CompareLogs(toModified, to), "to not as expected")
 		})
 	}
 }

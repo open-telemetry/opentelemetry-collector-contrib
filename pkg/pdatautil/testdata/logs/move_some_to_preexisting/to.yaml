@@ -1,0 +1,71 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: resourceAttrOne
+          value:
+            stringValue: resourceC
+        - key: resourceAttrTwo
+          value:
+            stringValue: resourceC
+    schemaUrl: https://opentelemetry.io/schemas/1.6.1
+    scopeLogs:
+      - attributes:
+          - key: scopeAttrOne
+            value:
+              stringValue: scopeA
+          - key: scopeAttrTwo
+            value:
+              stringValue: scopeB
+        logRecords:
+          - attributes:
+              - key: logAttrOne
+                value:
+                  stringValue: logA
+              - key: logAttrTwo
+                value:
+                  stringValue: logA
+            body:
+              stringValue: resourceC, scopeA, logA
+          - attributes:
+              - key: logAttrOne
+                value:
+                  stringValue: logB
+              - key: logAttrTwo
+                value:
+                  stringValue: logB
+            body:
+              stringValue: resourceC, scopeA, logB
+        schemaUrl: https://opentelemetry.io/schemas/1.6.1
+        scope:
+          name: resourceC, scopeA
+          version: v0.1.0
+      - attributes:
+          - key: scopeAttrOne
+            value:
+              stringValue: scopeB
+          - key: scopeAttrTwo
+            value:
+              stringValue: scopeB
+        logRecords:
+          - attributes:
+              - key: logAttrOne
+                value:
+                  stringValue: logA
+              - key: logAttrTwo
+                value:
+                  stringValue: logA
+            body:
+              stringValue: resourceC, scopeB, logA
+          - attributes:
+              - key: logAttrOne
+                value:
+                  stringValue: logB
+              - key: logAttrTwo
+                value:
+                  stringValue: logB
+            body:
+              stringValue: resourceC, scopeB, logB
+        schemaUrl: https://opentelemetry.io/schemas/1.6.1
+        scope:
+          name: resourceC, scopeB
+          version: v0.1.0
