@@ -1,0 +1,63 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package prometheusremotewrite
+
+import (
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	"testing"
+	"time"
+
+	"github.com/prometheus/prometheus/model/labels"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
+
+func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
+	// TODO add test case with duplicate metrics
+	ts := uint64(time.Now().UnixNano())
+	tests := []struct {
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[uint64]*writev2.TimeSeries
+	}{
+		{
+			name: "gauge",
+			metric: func() pmetric.Metric {
+				return getIntGaugeMetric(
+					"test",
+					pcommon.NewMap(),
+					1, ts,
+				)
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := labels.Labels{
+					labels.Label{
+						Name:  labels.MetricName,
+						Value: "test",
+					},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					labels.Hash(): {
+						LabelsRefs: []uint32{1, 2},
+						Samples: []writev2.Sample{
+							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
+						},
+					},
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+			converter := newPrometheusConverterV2()
+			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), metric.Name())
+
+			assert.Equal(t, tt.want(), converter.unique)
+
+		})
+	}
+}
