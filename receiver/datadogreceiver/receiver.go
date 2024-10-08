@@ -243,7 +243,12 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		}
 	}
 
-	_, _ = w.Write([]byte("OK"))
+	switch version := req.Header.Get(header.TracerVersion); version {
+	case "0.1", "0.2", "0.3":
+		_, _ = w.Write([]byte("OK"))
+	default:
+		_, _ = w.Write([]byte("{}"))
+	}
 
 }
 
