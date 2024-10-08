@@ -8,32 +8,39 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap"
 )
 
 func TestCalculateValue(t *testing.T) {
-	value := calculateValue(100.0, 5.0, "add", zap.NewNop(), "test_metric")
+	value, err := calculateValue(100.0, 5.0, "add", "test_metric")
+	require.NoError(t, err)
 	require.Equal(t, 105.0, value)
 
-	value = calculateValue(100.0, 5.0, "subtract", zap.NewNop(), "test_metric")
+	value, err = calculateValue(100.0, 5.0, "subtract", "test_metric")
+	require.NoError(t, err)
 	require.Equal(t, 95.0, value)
 
-	value = calculateValue(100.0, 5.0, "multiply", zap.NewNop(), "test_metric")
+	value, err = calculateValue(100.0, 5.0, "multiply", "test_metric")
+	require.NoError(t, err)
 	require.Equal(t, 500.0, value)
 
-	value = calculateValue(100.0, 5.0, "divide", zap.NewNop(), "test_metric")
+	value, err = calculateValue(100.0, 5.0, "divide", "test_metric")
+	require.NoError(t, err)
 	require.Equal(t, 20.0, value)
 
-	value = calculateValue(10.0, 200.0, "percent", zap.NewNop(), "test_metric")
+	value, err = calculateValue(10.0, 200.0, "percent", "test_metric")
+	require.NoError(t, err)
 	require.Equal(t, 5.0, value)
 
-	value = calculateValue(100.0, 0, "divide", zap.NewNop(), "test_metric")
+	value, err = calculateValue(100.0, 0, "divide", "test_metric")
+	require.Error(t, err)
 	require.Equal(t, 0.0, value)
 
-	value = calculateValue(100.0, 0, "percent", zap.NewNop(), "test_metric")
+	value, err = calculateValue(100.0, 0, "percent", "test_metric")
+	require.Error(t, err)
 	require.Equal(t, 0.0, value)
 
-	value = calculateValue(100.0, 0, "invalid", zap.NewNop(), "test_metric")
+	value, err = calculateValue(100.0, 0, "invalid", "test_metric")
+	require.Error(t, err)
 	require.Equal(t, 0.0, value)
 }
 

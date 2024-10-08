@@ -53,8 +53,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 		},
 	}
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	assert.Nil(t, r)
 }
 

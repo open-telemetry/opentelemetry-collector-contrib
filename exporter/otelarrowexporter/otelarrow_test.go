@@ -1133,8 +1133,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	// Send two trace items.
 	td := testdata.GenerateTraces(2)
 	err = exp.ConsumeTraces(context.Background(), td)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "test failed")
+	assert.ErrorContains(t, err, "test failed")
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
