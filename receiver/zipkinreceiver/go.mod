@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.111.0
 	go.opentelemetry.io/collector/semconv v0.111.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.35.1
 )
 
 require (
