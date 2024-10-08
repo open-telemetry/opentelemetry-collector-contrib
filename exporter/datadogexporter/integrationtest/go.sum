@@ -203,8 +203,8 @@ github.com/DataDog/datadog-agent/pkg/util/winutil v0.57.1 h1:rZg3ffWzATUsm83YJFJ
 github.com/DataDog/datadog-agent/pkg/util/winutil v0.57.1/go.mod h1:qU64cp6xjH/3/H2V8ZU1MyJXcgC2/03W0yXdWHbuQ/g=
 github.com/DataDog/datadog-agent/pkg/version v0.57.1 h1:evR5HDT1neUIEfqzM1jsSmlTJudQgPy9T1aGGUONzQs=
 github.com/DataDog/datadog-agent/pkg/version v0.57.1/go.mod h1:rcA7LtIB5WLpxsems/bWO1iXkyGEgHHje7vJ0b20ZpU=
-github.com/DataDog/datadog-api-client-go/v2 v2.30.0 h1:WHAo6RA8CqAzaUh3dERqz/n6SuG2GJ/WthBkccn0MIQ=
-github.com/DataDog/datadog-api-client-go/v2 v2.30.0/go.mod h1:QKOu6vscsh87fMY1lHfLEmNSunyXImj8BUaUWJXOehc=
+github.com/DataDog/datadog-api-client-go/v2 v2.31.0 h1:JfJhYlHfLzvauI8u6h23smTooWYe6quNhhg9gpTszWY=
+github.com/DataDog/datadog-api-client-go/v2 v2.31.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go/v5 v5.5.0 h1:G5KHeB8pWBNXT4Jtw0zAkhdxEAWSpWH00geHI6LDrKU=
 github.com/DataDog/datadog-go/v5 v5.5.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
