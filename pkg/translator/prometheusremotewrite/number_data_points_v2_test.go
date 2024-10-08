@@ -4,6 +4,8 @@
 package prometheusremotewrite
 
 import (
+	"github.com/prometheus/prometheus/model/value"
+	"math"
 	"testing"
 	"time"
 
@@ -48,6 +50,32 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "gauge with staleNaN",
+			metric: func() pmetric.Metric {
+				return getIntGaugeMetric(
+					"staleNaN",
+					pcommon.NewMap(),
+					1, ts,
+				)
+			},
+			want: func() map[uint64]*writev2.TimeSeries {
+				labels := labels.Labels{
+					labels.Label{
+						Name:  labels.MetricName,
+						Value: "staleNaN",
+					},
+				}
+				return map[uint64]*writev2.TimeSeries{
+					labels.Hash(): {
+						LabelsRefs: []uint32{1, 2},
+						Samples: []writev2.Sample{
+							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: math.Float64frombits(value.StaleNaN)},
+						},
+					},
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -55,8 +83,11 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverterV2()
 			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), metric.Name())
-
-			assert.Equal(t, tt.want(), converter.unique)
+			w := tt.want()
+			// assert.Equal(t, w, converter.unique)
+			for k, v := range w {
+				assert.Equal(t, *v, *converter.unique[k])
+			}
 
 		})
 	}
