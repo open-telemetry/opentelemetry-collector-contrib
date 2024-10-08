@@ -15,7 +15,6 @@ import (
 )
 
 func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
-	// TODO add test case with duplicate metrics
 	ts := uint64(time.Now().UnixNano())
 	tests := []struct {
 		name   string
@@ -60,4 +59,46 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 
 		})
 	}
+}
+
+// Right now we are not handling duplicates, the second one will just overwrite the first one as this test case shows
+// TODO handle duplicates
+func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
+	ts := uint64(time.Now().UnixNano())
+	metric1 := getIntGaugeMetric(
+		"test",
+		pcommon.NewMap(),
+		1, ts,
+	)
+	metric2 := getIntGaugeMetric(
+		"test",
+		pcommon.NewMap(),
+		2, ts,
+	)
+	want := func() map[uint64]*writev2.TimeSeries {
+		labels := labels.Labels{
+			labels.Label{
+				Name:  labels.MetricName,
+				Value: "test",
+			},
+		}
+		return map[uint64]*writev2.TimeSeries{
+			labels.Hash(): {
+				LabelsRefs: []uint32{1, 2},
+				Samples: []writev2.Sample{
+					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 2},
+				},
+			},
+		}
+	}
+
+	t.Run("gauge duplicate", func(t *testing.T) {
+		converter := newPrometheusConverterV2()
+		converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), metric1.Name())
+		converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), metric2.Name())
+
+		assert.Equal(t, want(), converter.unique)
+
+	})
+
 }
