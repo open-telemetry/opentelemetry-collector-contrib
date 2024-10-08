@@ -72,7 +72,7 @@ func newOcExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 
 // start creates the gRPC client Connection
 func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
-	clientConn, err := oce.cfg.ClientConfig.ToClientConnWithOptions(ctx, host, oce.settings)
+	clientConn, err := oce.cfg.ClientConfig.ToClientConn(ctx, host, oce.settings)
 	if err != nil {
 		return err
 	}

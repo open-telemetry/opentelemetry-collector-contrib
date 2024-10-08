@@ -165,7 +165,7 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	config.GRPC.NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
 	config.HTTP = nil
 
-	return factory.CreateMetricsReceiver(context.Background(), jmx.params, config, jmx.nextConsumer)
+	return factory.CreateMetrics(context.Background(), jmx.params, config, jmx.nextConsumer)
 }
 
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {

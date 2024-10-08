@@ -70,7 +70,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// createMetricsReceiver implements the CreateMetricsReceiver function type.
+// createMetricsReceiver implements the CreateMetrics function type.
 func createMetricsReceiver(
 	_ context.Context,
 	set receiver.Settings,

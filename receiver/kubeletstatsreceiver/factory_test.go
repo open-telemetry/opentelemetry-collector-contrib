@@ -41,9 +41,9 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
-	traceReceiver, err := factory.CreateTracesReceiver(
+	traceReceiver, err := factory.CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig(),
@@ -53,9 +53,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 	require.Nil(t, traceReceiver)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		tlsConfig(),
@@ -70,7 +70,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	cfg := Config{
 		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabel("invalid-label")},
 	}
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&cfg,
@@ -90,7 +90,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 			},
 		},
 	}
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,

@@ -31,9 +31,9 @@ func NewPipelineMetadata(typestr string) *PipelineMetadata {
 	pipelineID := pipeline.MustNewID(typestr)
 	return &PipelineMetadata{
 		PipelineID:  pipelineID,
-		ReceiverID:  componentstatus.NewInstanceIDWithPipelineIDs(component.NewIDWithName(component.MustNewType(typestr), "in"), component.KindReceiver).WithPipelineIDs(pipelineID),
-		ProcessorID: componentstatus.NewInstanceIDWithPipelineIDs(component.MustNewID("batch"), component.KindProcessor).WithPipelineIDs(pipelineID),
-		ExporterID:  componentstatus.NewInstanceIDWithPipelineIDs(component.NewIDWithName(component.MustNewType(typestr), "out"), component.KindExporter).WithPipelineIDs(pipelineID),
+		ReceiverID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(typestr), "in"), component.KindReceiver).WithPipelines(pipelineID),
+		ProcessorID: componentstatus.NewInstanceID(component.MustNewID("batch"), component.KindProcessor).WithPipelines(pipelineID),
+		ExporterID:  componentstatus.NewInstanceID(component.NewIDWithName(component.MustNewType(typestr), "out"), component.KindExporter).WithPipelines(pipelineID),
 	}
 }
 

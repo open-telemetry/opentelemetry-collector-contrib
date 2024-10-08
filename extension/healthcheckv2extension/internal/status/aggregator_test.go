@@ -258,8 +258,8 @@ func TestAggregateStatusExtensions(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 
 	extsID := pipeline.MustNewID("extensions")
-	extInstanceID1 := componentstatus.NewInstanceIDWithPipelineIDs(component.MustNewID("ext1"), component.KindExtension).WithPipelineIDs(extsID)
-	extInstanceID2 := componentstatus.NewInstanceIDWithPipelineIDs(component.MustNewID("ext2"), component.KindExtension).WithPipelineIDs(extsID)
+	extInstanceID1 := componentstatus.NewInstanceID(component.MustNewID("ext1"), component.KindExtension).WithPipelines(extsID)
+	extInstanceID2 := componentstatus.NewInstanceID(component.MustNewID("ext2"), component.KindExtension).WithPipelines(extsID)
 	extInstanceIDs := []*componentstatus.InstanceID{extInstanceID1, extInstanceID2}
 
 	testhelpers.SeedAggregator(agg, extInstanceIDs, componentstatus.StatusOK)
