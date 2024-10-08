@@ -12,6 +12,7 @@ import (
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -50,7 +51,7 @@ func createMetricsExporter(
 	params exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
-	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.GMPConfig.toCollectorConfig(), params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
+	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.GMPConfig.toCollectorConfig(), params.TelemetrySettings.Logger, params.TelemetrySettings.MeterProvider, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -64,5 +65,7 @@ func createMetricsExporter(
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
-		exporterhelper.WithQueue(eCfg.QueueSettings))
+		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
