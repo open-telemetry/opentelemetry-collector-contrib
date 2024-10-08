@@ -4,10 +4,11 @@
 package prometheusremotewrite
 
 import (
-	"github.com/prometheus/prometheus/model/value"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/prometheus/prometheus/model/value"
 
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 
