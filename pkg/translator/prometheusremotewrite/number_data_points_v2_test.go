@@ -57,7 +57,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 				return getDoubleGaugeMetric(
 					"test",
 					pcommon.NewMap(),
-					1, ts,
+					1.5, ts,
 				)
 			},
 			want: func() map[uint64]*writev2.TimeSeries {
@@ -71,7 +71,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 					labels.Hash(): {
 						LabelsRefs: []uint32{1, 2},
 						Samples: []writev2.Sample{
-							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1},
+							{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.5},
 						},
 					},
 				}
