@@ -60,12 +60,12 @@ func TestGenerateUrl(t *testing.T) {
 		{"", "EU", "https://listener-eu.logz.io:8071/?token=token"},
 	}
 	for _, test := range generateURLTests {
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.Endpoint = test.endpoint
 		cfg := &Config{
-			Region: test.region,
-			Token:  "token",
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: test.endpoint,
-			},
+			Region:       test.region,
+			Token:        "token",
+			ClientConfig: clientConfig,
 		}
 		output, _ := generateEndpoint(cfg)
 		require.Equal(t, test.expected, output)
