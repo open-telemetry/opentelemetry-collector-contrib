@@ -86,7 +86,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.FormatType != formatTypeJSON && c.FormatType != formatTypeProto {
-		return errors.New("unknown format type " + c.FormatType)
+		return errors.New("unknown format type: " + c.FormatType)
 	}
 
 	return nil
