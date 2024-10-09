@@ -280,7 +280,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 				Rules: test.rules,
 			}
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -489,7 +489,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
-		mgp, err := factory.CreateMetricsProcessor(
+		mgp, err := factory.CreateMetrics(
 			context.Background(),
 			processortest.NewNopSettings(),
 			cfg,

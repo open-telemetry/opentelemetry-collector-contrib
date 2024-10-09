@@ -81,7 +81,7 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, recv.Start(ctx, &nopHost{
@@ -104,7 +104,7 @@ func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, recv.Start(ctx, &nopHost{
 		reportFunc: func(event *componentstatus.Event) {
@@ -141,7 +141,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	config.ExcludedImages = append(config.ExcludedImages, "*nginx*")
 
 	consumer := new(consumertest.MetricsSink)
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, recv.Start(ctx, &nopHost{
 		reportFunc: func(event *componentstatus.Event) {

@@ -49,7 +49,7 @@ The following settings are optional:
 * `health_path` (default = '/services/collector/health'): The path reporting [health checks](https://docs.splunk.com/Documentation/Splunk/9.0.1/RESTREF/RESTinput#services.2Fcollector.2Fhealth).
 * `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of the source field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of the sourcetype field to a specific unified model attribute.
-* `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'): Specifies the mapping of the  index field to a specific unified model attribute.
+* `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'): Specifies the mapping of the index field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/host` (default = 'host.name'): Specifies the mapping of the host field to a specific unified model attribute.
 * `ack` (no default): defines the ackextension to use for acknowledging events
   * `extension` (no default): Specifies the ack extension ID the receiver should use. If left blank, ack is disabled.
