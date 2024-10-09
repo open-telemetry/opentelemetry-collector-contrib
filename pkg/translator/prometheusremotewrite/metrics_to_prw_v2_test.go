@@ -9,11 +9,10 @@ import (
 	"time"
 
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestFromMetricsV2(t *testing.T) {
