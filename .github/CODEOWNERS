@@ -109,7 +109,7 @@ extension/observer/dockerobserver/                                  @open-teleme
 extension/observer/ecsobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/hostobserver/                                    @open-telemetry/collector-contrib-approvers @MovieStoreGuy
-extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
+extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax @ChrsMark
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampcustommessages/                                      @open-telemetry/collector-contrib-approvers @BinaryFissionGames @evan-bradley
 extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @BinaryFissionGames
@@ -271,6 +271,7 @@ receiver/otlpjsonfilereceiver/                                      @open-teleme
 receiver/podmanreceiver/                                            @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusreceiver/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/prometheusremotewritereceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens
 receiver/pulsarreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                            @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                            @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure

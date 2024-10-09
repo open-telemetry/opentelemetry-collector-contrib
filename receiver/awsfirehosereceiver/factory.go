@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
@@ -65,12 +65,12 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		RecordType: defaultRecordType,
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: localhostgate.EndpointForPort(defaultPort),
+			Endpoint: testutil.EndpointForPort(defaultPort),
 		},
 	}
 }
 
-// createMetricsReceiver implements the CreateMetricsReceiver function type.
+// createMetricsReceiver implements the CreateMetrics function type.
 func createMetricsReceiver(
 	_ context.Context,
 	set receiver.Settings,

@@ -31,7 +31,7 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
@@ -45,7 +45,7 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
