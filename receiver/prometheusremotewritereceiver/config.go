@@ -5,10 +5,13 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config holds common fields and embedded protocol-specific configurations
-type Config struct{}
+type Config struct {
+	confighttp.ServerConfig `mapstructure:",squash"`
+}
 
 var _ component.Config = (*Config)(nil)
 
