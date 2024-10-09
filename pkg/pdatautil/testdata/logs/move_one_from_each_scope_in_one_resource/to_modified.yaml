@@ -26,15 +26,6 @@ resourceLogs:
                   stringValue: logA
             body:
               stringValue: logA
-          - attributes:
-              - key: logName
-                value:
-                  stringValue: logB
-              - key: logNameAgain
-                value:
-                  stringValue: logB
-            body:
-              stringValue: logB
         schemaUrl: https://opentelemetry.io/schemas/1.6.1
         scope:
           name: scopeA
@@ -56,15 +47,6 @@ resourceLogs:
                   stringValue: logA
             body:
               stringValue: logA
-          - attributes:
-              - key: logName
-                value:
-                  stringValue: logB
-              - key: logNameAgain
-                value:
-                  stringValue: logB
-            body:
-              stringValue: logB
         schemaUrl: https://opentelemetry.io/schemas/1.6.1
         scope:
           name: scopeB

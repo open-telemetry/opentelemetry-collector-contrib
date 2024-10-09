@@ -1,32 +1,32 @@
 resourceLogs:
   - resource:
       attributes:
-        - key: resourceAttrOne
+        - key: resourceName
           value:
             stringValue: resourceA
-        - key: resourceAttrTwo
+        - key: resourceNameAgain
           value:
             stringValue: resourceA
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeLogs:
       - attributes:
-          - key: scopeAttrOne
+          - key: scopeName
             value:
               stringValue: scopeB
-          - key: scopeAttrTwo
+          - key: scopeNameAgain
             value:
               stringValue: scopeB
         logRecords:
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logB
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logB
             body:
-              stringValue: resourceA, scopeB, logB
+              stringValue: logB
         schemaUrl: https://opentelemetry.io/schemas/1.6.1
         scope:
-          name: resourceA, scopeB
+          name: scopeB
           version: v0.1.0

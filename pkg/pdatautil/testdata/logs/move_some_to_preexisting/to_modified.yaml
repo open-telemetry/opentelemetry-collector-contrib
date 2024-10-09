@@ -1,152 +1,152 @@
 resourceLogs:
   - resource:
       attributes:
-        - key: resourceAttrOne
+        - key: resourceName
           value:
             stringValue: resourceC
-        - key: resourceAttrTwo
+        - key: resourceNameAgain
           value:
             stringValue: resourceC
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeLogs:
       - attributes:
-          - key: scopeAttrOne
+          - key: scopeName
             value:
               stringValue: scopeA
-          - key: scopeAttrTwo
+          - key: scopeNameAgain
             value:
               stringValue: scopeB
         logRecords:
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logA
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logA
             body:
-              stringValue: resourceC, scopeA, logA
+              stringValue: logA
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logB
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logB
             body:
-              stringValue: resourceC, scopeA, logB
+              stringValue: logB
         schemaUrl: https://opentelemetry.io/schemas/1.6.1
         scope:
-          name: resourceC, scopeA
+          name: scopeA
           version: v0.1.0
       - attributes:
-          - key: scopeAttrOne
+          - key: scopeName
             value:
               stringValue: scopeB
-          - key: scopeAttrTwo
+          - key: scopeNameAgain
             value:
               stringValue: scopeB
         logRecords:
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logA
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logA
             body:
-              stringValue: resourceC, scopeB, logA
+              stringValue: logA
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logB
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logB
             body:
-              stringValue: resourceC, scopeB, logB
+              stringValue: logB
         schemaUrl: https://opentelemetry.io/schemas/1.6.1
         scope:
-          name: resourceC, scopeB
+          name: scopeB
           version: v0.1.0
   - resource:
       attributes:
-        - key: resourceAttrOne
+        - key: resourceName
           value:
             stringValue: resourceA
-        - key: resourceAttrTwo
+        - key: resourceNameAgain
           value:
             stringValue: resourceA
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeLogs:
       - attributes:
-          - key: scopeAttrOne
+          - key: scopeName
             value:
               stringValue: scopeB
-          - key: scopeAttrTwo
+          - key: scopeNameAgain
             value:
               stringValue: scopeB
         logRecords:
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logA
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logA
             body:
-              stringValue: resourceA, scopeB, logA
+              stringValue: logA
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logB
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logB
             body:
-              stringValue: resourceA, scopeB, logB
+              stringValue: logB
         schemaUrl: https://opentelemetry.io/schemas/1.6.1
         scope:
-          name: resourceA, scopeB
+          name: scopeB
           version: v0.1.0
   - resource:
       attributes:
-        - key: resourceAttrOne
+        - key: resourceName
           value:
             stringValue: resourceB
-        - key: resourceAttrTwo
+        - key: resourceNameAgain
           value:
             stringValue: resourceB
     schemaUrl: https://opentelemetry.io/schemas/1.6.1
     scopeLogs:
       - attributes:
-          - key: scopeAttrOne
+          - key: scopeName
             value:
               stringValue: scopeB
-          - key: scopeAttrTwo
+          - key: scopeNameAgain
             value:
               stringValue: scopeB
         logRecords:
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logA
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logA
             body:
-              stringValue: resourceB, scopeB, logA
+              stringValue: logA
           - attributes:
-              - key: logAttrOne
+              - key: logName
                 value:
                   stringValue: logB
-              - key: logAttrTwo
+              - key: logNameAgain
                 value:
                   stringValue: logB
             body:
-              stringValue: resourceB, scopeB, logB
+              stringValue: logB
         schemaUrl: https://opentelemetry.io/schemas/1.6.1
         scope:
-          name: resourceB, scopeB
+          name: scopeB
           version: v0.1.0
 

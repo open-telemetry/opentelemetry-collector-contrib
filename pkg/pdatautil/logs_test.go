@@ -5,11 +5,11 @@ package pdatautil_test
 
 import (
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -20,54 +20,64 @@ import (
 func TestMoveLogRecordsWithContextIf(t *testing.T) {
 	testCases := []struct {
 		name      string
-		condition func(plog.LogRecord) bool
+		condition pdatautil.LogRecordFilter
 	}{
 		{
 			name: "move_none",
-			condition: func(plog.LogRecord) bool {
+			condition: func(pcommon.Resource, pcommon.InstrumentationScope, plog.LogRecord) bool {
 				return false
 			},
 		},
 		{
 			name: "move_all",
-			condition: func(plog.LogRecord) bool {
+			condition: func(pcommon.Resource, pcommon.InstrumentationScope, plog.LogRecord) bool {
 				return true
 			},
 		},
 		{
-			name: "move_one",
-			condition: func(lr plog.LogRecord) bool {
-				return lr.Body().AsString() == "resourceA, scopeB, logB"
+			name: "move_all_from_one_resource",
+			condition: func(r pcommon.Resource, _ pcommon.InstrumentationScope, _ plog.LogRecord) bool {
+				rname, ok := r.Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceB"
 			},
 		},
 		{
 			name: "move_all_from_one_scope",
-			condition: func(lr plog.LogRecord) bool {
-				return strings.HasPrefix(lr.Body().AsString(), "resourceB, scopeA")
-			},
-		},
-		{
-			name: "move_all_from_one_resource",
-			condition: func(lr plog.LogRecord) bool {
-				return strings.HasPrefix(lr.Body().AsString(), "resourceB")
-			},
-		},
-		{
-			name: "move_one_from_each_scope",
-			condition: func(lr plog.LogRecord) bool {
-				return strings.HasSuffix(lr.Body().AsString(), "logA")
+			condition: func(r pcommon.Resource, s pcommon.InstrumentationScope, _ plog.LogRecord) bool {
+				rname, ok := r.Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceB" && s.Name() == "scopeA"
 			},
 		},
 		{
 			name: "move_all_from_one_scope_in_each_resource",
-			condition: func(lr plog.LogRecord) bool {
-				return strings.Contains(lr.Body().AsString(), "scopeB")
+			condition: func(_ pcommon.Resource, s pcommon.InstrumentationScope, _ plog.LogRecord) bool {
+				return s.Name() == "scopeB"
+			},
+		},
+		{
+			name: "move_one",
+			condition: func(r pcommon.Resource, s pcommon.InstrumentationScope, lr plog.LogRecord) bool {
+				rname, ok := r.Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceA" && s.Name() == "scopeB" && lr.Body().AsString() == "logB"
+			},
+		},
+		{
+			name: "move_one_from_each_scope",
+			condition: func(_ pcommon.Resource, _ pcommon.InstrumentationScope, lr plog.LogRecord) bool {
+				return lr.Body().AsString() == "logA"
+			},
+		},
+		{
+			name: "move_one_from_each_scope_in_one_resource",
+			condition: func(r pcommon.Resource, _ pcommon.InstrumentationScope, lr plog.LogRecord) bool {
+				rname, ok := r.Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceB" && lr.Body().AsString() == "logA"
 			},
 		},
 		{
 			name: "move_some_to_preexisting",
-			condition: func(lr plog.LogRecord) bool {
-				return strings.Contains(lr.Body().AsString(), "scopeB")
+			condition: func(_ pcommon.Resource, s pcommon.InstrumentationScope, _ plog.LogRecord) bool {
+				return s.Name() == "scopeB"
 			},
 		},
 	}

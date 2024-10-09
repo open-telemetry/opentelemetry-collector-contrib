@@ -3,13 +3,18 @@
 
 package pdatautil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 
-import "go.opentelemetry.io/collector/pdata/plog"
+import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+)
+
+type LogRecordFilter func(pcommon.Resource, pcommon.InstrumentationScope, plog.LogRecord) bool
 
 // MoveLogRecordsWithContextIf calls f sequentially for each LogRecord present in the first plog.Logs.
 // If f returns true, the element is removed from the first plog.Logs and added to the second plog.Logs.
 // Notably, the Resource and Scope associated with the LogRecord are recreated in the second plog.Logs only once.
 // Resources or Scopes are removed from the original if they become empty. All ordering is preserved.
-func MoveLogRecordsWithContextIf(from, to plog.Logs, f func(plog.LogRecord) bool) {
+func MoveLogRecordsWithContextIf(from, to plog.Logs, f LogRecordFilter) {
 	rls := from.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		if rls.Len() == 0 {
@@ -26,7 +31,7 @@ func MoveLogRecordsWithContextIf(from, to plog.Logs, f func(plog.LogRecord) bool
 			lrs := sl.LogRecords()
 			var slCopy *plog.ScopeLogs
 			moveWithContextIf := func(lr plog.LogRecord) bool {
-				if !f(lr) {
+				if !f(rl.Resource(), sl.Scope(), lr) {
 					return false
 				}
 				if rlCopy == nil {
