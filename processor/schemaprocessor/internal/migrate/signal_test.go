@@ -64,7 +64,7 @@ func TestSignalApply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.sig.Apply(tc.val)
+			tc.sig.Do(StateSelectorApply, tc.val)
 			assert.Equal(t, tc.expect, tc.val.Name(), "Must match expected name")
 		})
 	}
@@ -122,7 +122,7 @@ func TestSignalRollback(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.sig.Rollback(tc.val)
+			tc.sig.Do(StateSelectorRollback, tc.val)
 			assert.Equal(t, tc.expect, tc.val.Name(), "Must match expected name")
 		})
 	}

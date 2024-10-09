@@ -84,7 +84,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.NoError(t, tc.cond.Apply(tc.attr, tc.check))
+			assert.NoError(t, tc.cond.Do(StateSelectorApply, tc.attr, tc.check))
 			assert.Equal(t, tc.expect.AsRaw(), tc.attr.AsRaw(), "Must match the expected value")
 		})
 	}
@@ -164,7 +164,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			assert.NoError(t, tc.cond.Rollback(tc.attr, tc.check))
+			assert.NoError(t, tc.cond.Do(StateSelectorRollback, tc.attr, tc.check))
 			assert.Equal(t, tc.expect.AsRaw(), tc.attr.AsRaw(), "Must match the expected value")
 		})
 	}
