@@ -74,9 +74,8 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if baseCfg.flushInterval > 0 {
 			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
 		}
-		emitterOpts = append(emitterOpts, helper.WithSyncConsumerFunc(rcv.consumeEntries))
 
-		emitter := helper.NewLogEmitter(params.TelemetrySettings, emitterOpts...)
+		emitter := helper.NewLogEmitter(params.TelemetrySettings, rcv.consumeEntries, emitterOpts...)
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,

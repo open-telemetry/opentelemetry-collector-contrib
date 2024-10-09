@@ -98,7 +98,7 @@ func (r *receiver) emitterLoop() {
 }
 
 func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
-	pLogs := convertEntries(entries)
+	pLogs := ConvertEntries(entries)
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
 	logRecordCount := pLogs.LogRecordCount()
 

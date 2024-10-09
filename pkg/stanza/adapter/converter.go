@@ -156,14 +156,14 @@ func (c *Converter) workerLoop() {
 
 	for entries := range c.workerChan {
 
-		pLogs := convertEntries(entries)
+		pLogs := ConvertEntries(entries)
 
 		// Send plogs directly to flushChan
 		c.flushChan <- pLogs
 	}
 }
 
-func convertEntries(entries []*entry.Entry) plog.Logs {
+func ConvertEntries(entries []*entry.Entry) plog.Logs {
 	resourceHashToIdx := make(map[uint64]int)
 	scopeIdxByResource := make(map[uint64]map[string]int)
 

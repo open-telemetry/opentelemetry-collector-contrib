@@ -96,7 +96,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		criConsumers:            &wg,
 	}
 
-	cLogEmitter := helper.NewLogEmitter(set, helper.WithSyncConsumerFunc(p.consumeEntries))
+	cLogEmitter := helper.NewLogEmitter(set, p.consumeEntries)
+	p.criLogEmitter = cLogEmitter
 	recombineParser, err := createRecombine(set, c, cLogEmitter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create internal recombine config: %w", err)
