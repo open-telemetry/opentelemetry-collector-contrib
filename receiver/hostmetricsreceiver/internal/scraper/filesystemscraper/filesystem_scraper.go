@@ -91,7 +91,23 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	usages := make([]*deviceUsage, 0, len(partitions))
+
+	type mountKey struct {
+		mountpoint string
+		device     string
+	}
+	seen := map[mountKey]struct{}{}
+
 	for _, partition := range partitions {
+		key := mountKey{
+			mountpoint: partition.Mountpoint,
+			device:     partition.Device,
+		}
+		if _, ok := seen[key]; partition.Mountpoint != "" && ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
