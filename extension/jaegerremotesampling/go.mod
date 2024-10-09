@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger v1.61.0
+	github.com/jaegertracing/jaeger v1.62.0
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.111.0
 	github.com/stretchr/testify v1.9.0
@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.20.0 // indirect
+	github.com/apache/thrift v0.21.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
