@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
@@ -87,6 +88,7 @@ type Config struct {
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
+	PollsToArchive          int             `mapstructure:"-"` // TODO: activate this config once archiving is set up
 	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
@@ -155,7 +157,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	}
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
-	readerFactory := reader.Factory{
+	readerFactory := &reader.Factory{
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
@@ -181,6 +183,8 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
 
+	a := archive.NewDefaultArchive(readerFactory) // TODO: once archiving is set up, update this.
+
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -194,6 +198,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatches:       c.MaxBatches,
 		tracker:          t,
 		telemetryBuilder: telemetryBuilder,
+		archive:          a,
 	}, nil
 }
 
