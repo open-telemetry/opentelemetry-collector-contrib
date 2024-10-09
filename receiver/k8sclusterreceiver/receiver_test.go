@@ -255,7 +255,7 @@ func setupReceiver(
 }
 
 func newFakeClientWithAllResources() *fake.Clientset {
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.Resources = []*v1.APIResourceList{
 		{
 			GroupVersion: "v1",

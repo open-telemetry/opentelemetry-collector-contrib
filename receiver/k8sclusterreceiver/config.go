@@ -39,6 +39,11 @@ type Config struct {
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
+	// Namespace to fetch resources from. If this is set, certain cluster-wide resources such as Nodes or Namespaces
+	// will not be able to be observed. Setting this option is recommended for sidecar deployment patterns where the collector runs
+	// as a sidecar for a pod, or in environments where due to security restrictions the collector can not be granted cluster-wide permissions.
+	Namespace string `mapstructure:"namespace"`
 }
 
 func (cfg *Config) Validate() error {

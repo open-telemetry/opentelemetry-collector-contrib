@@ -106,7 +106,7 @@ func (rw *resourceWatcher) initialize() error {
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
-	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, rw.config.MetadataCollectionInterval)
+	factory := rw.getInformerFactory()
 
 	// Map of supported group version kinds by name of a kind.
 	// If none of the group versions are supported by k8s server for a specific kind,
@@ -154,6 +154,23 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	rw.informerFactories = append(rw.informerFactories, factory)
 
 	return nil
+}
+
+func (rw *resourceWatcher) getInformerFactory() informers.SharedInformerFactory {
+	var factory informers.SharedInformerFactory
+	if rw.config.Namespace != "" {
+		factory = informers.NewSharedInformerFactoryWithOptions(
+			rw.client,
+			rw.config.MetadataCollectionInterval,
+			informers.WithNamespace(rw.config.Namespace),
+		)
+	} else {
+		factory = informers.NewSharedInformerFactoryWithOptions(
+			rw.client,
+			rw.config.MetadataCollectionInterval,
+		)
+	}
+	return factory
 }
 
 func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, error) {
