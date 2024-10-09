@@ -48,7 +48,13 @@ func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder 
 		copy(actualItems, actual)
 		slices.SortFunc(actualItems, itemRequestsSortFunc)
 	}
-	assert.Equal(t, expectedItems, actualItems)
+
+	assert.Equal(t, len(expectedItems), len(actualItems), "want %d items, got %d", len(expectedItems), len(actualItems))
+	for i, want := range expectedItems {
+		got := actualItems[i]
+		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)
+		assert.JSONEq(t, string(want.Document), string(got.Document), "item %d document", i)
+	}
 }
 
 type itemResponse struct {
