@@ -546,7 +546,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      4,
+						Value:      5,
 						Attributes: attribute.NewSet(attribute.String("processor", "filter"), attribute.String("otel.signal", "metrics")),
 					},
 				},
