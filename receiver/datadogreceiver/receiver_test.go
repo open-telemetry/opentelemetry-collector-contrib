@@ -74,8 +74,9 @@ func TestDatadogServer(t *testing.T) {
 	})
 
 	for _, tc := range []struct {
-		name string
-		op   io.Reader
+		name     string
+		op       io.Reader
+		endpoint string
 
 		expectCode    int
 		expectContent string
@@ -83,14 +84,30 @@ func TestDatadogServer(t *testing.T) {
 		{
 			name:          "invalid data",
 			op:            strings.NewReader("{"),
+			endpoint:      "http://%s/v0.7/traces",
 			expectCode:    http.StatusBadRequest,
 			expectContent: "Unable to unmarshal reqs\n",
 		},
 		{
 			name:          "Fake featuresdiscovery",
 			op:            nil, // Content-length: 0.
+			endpoint:      "http://%s/v0.7/traces",
 			expectCode:    http.StatusBadRequest,
 			expectContent: "Fake featuresdiscovery\n",
+		},
+		{
+			name:          "Older version returns OK",
+			op:            strings.NewReader("[]"),
+			endpoint:      "http://%s/v0.3/traces",
+			expectCode:    http.StatusOK,
+			expectContent: "OK",
+		},
+		{
+			name:          "Older version returns JSON",
+			op:            strings.NewReader("[]"),
+			endpoint:      "http://%s/v0.4/traces",
+			expectCode:    http.StatusOK,
+			expectContent: "{}",
 		},
 	} {
 		tc := tc
@@ -99,7 +116,7 @@ func TestDatadogServer(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				fmt.Sprintf("http://%s/v0.7/traces", dd.(*datadogReceiver).address),
+				fmt.Sprintf(tc.endpoint, dd.(*datadogReceiver).address),
 				tc.op,
 			)
 			require.NoError(t, err, "Must not error when creating request")

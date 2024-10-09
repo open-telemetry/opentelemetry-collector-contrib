@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
@@ -243,8 +244,9 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		}
 	}
 
-	switch version := req.Header.Get(header.TracerVersion); version {
-	case "0.1", "0.2", "0.3":
+	urlSplit := strings.Split(req.RequestURI, "/")
+	switch version := urlSplit[1]; version {
+	case "v0.1", "v0.2", "v0.3":
 		_, _ = w.Write([]byte("OK"))
 	default:
 		_, _ = w.Write([]byte("{}"))
