@@ -245,13 +245,17 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	}
 
 	urlSplit := strings.Split(req.RequestURI, "/")
-	switch version := urlSplit[1]; version {
-	case "v0.1", "v0.2", "v0.3":
+	if len(urlSplit) == 3 {
+		// Match the response logic from dd-agent https://github.com/DataDog/datadog-agent/blob/86b2ae24f93941447a5bf0a2b6419caed77e76dd/pkg/trace/api/api.go#L511-L519
+		switch version := urlSplit[1]; version {
+		case "v0.1", "v0.2", "v0.3":
+			_, _ = w.Write([]byte("OK"))
+		default:
+			_, _ = w.Write([]byte("{}"))
+		}
+	} else {
 		_, _ = w.Write([]byte("OK"))
-	default:
-		_, _ = w.Write([]byte("{}"))
 	}
-
 }
 
 // handleV1Series handles the v1 series endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
