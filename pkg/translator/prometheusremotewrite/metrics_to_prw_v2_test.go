@@ -29,13 +29,6 @@ func TestFromMetricsV2(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	payload := createExportRequestWithTimestamp(5, 0, 1, 3, 0, pcommon.Timestamp(ts))
 	want := func() map[string]*writev2.TimeSeries {
-		// TODO consider translating labels back using symbols table and checking them
-		/*labels := labels.Labels{
-			labels.Label{
-				Name:  labels.MetricName,
-				Value: "test",
-			},
-		}*/
 		return map[string]*writev2.TimeSeries{
 			"0": {
 				LabelsRefs: []uint32{1, 2},
@@ -50,6 +43,7 @@ func TestFromMetricsV2(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, tsMap)
 	require.Equal(t, wanted, tsMap)
+
 }
 
 func createExportRequestWithTimestamp(resourceAttributeCount int, histogramCount int, nonHistogramCount int, labelsPerMetric int, exemplarsPerSeries int, timestamp pcommon.Timestamp) pmetricotlp.ExportRequest {
