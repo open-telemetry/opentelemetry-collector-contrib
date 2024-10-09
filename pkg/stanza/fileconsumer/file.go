@@ -30,6 +30,7 @@ type Manager struct {
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
+	noTracking    bool
 
 	pollInterval   time.Duration
 	persister      operator.Persister
@@ -47,6 +48,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
 		m.set.Logger.Warn("finding files", zap.Error(err))
 	}
+
+	// instantiate the tracker
+	m.instantiateTracker(persister)
 
 	if persister != nil {
 		m.persister = persister
@@ -76,7 +80,9 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	if m.tracker != nil {
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	}
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.set.Logger.Error("save offsets", zap.Error(err))
@@ -139,12 +145,6 @@ func (m *Manager) poll(ctx context.Context) {
 		metadata := m.tracker.GetMetadata()
 		if metadata != nil {
 			if err := checkpoint.Save(context.Background(), m.persister, metadata); err != nil {
-				m.set.Logger.Error("save offsets", zap.Error(err))
-			}
-		}
-		archiveMetadata, key := m.tracker.GetArchiveMetadata()
-		if archiveMetadata != nil {
-			if err := checkpoint.SaveKey(context.Background(), m.persister, metadata, key); err != nil {
 				m.set.Logger.Error("save offsets", zap.Error(err))
 			}
 		}
@@ -269,4 +269,14 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	}
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 	return r, nil
+}
+
+func (m *Manager) instantiateTracker(persister operator.Persister) {
+	var t tracker.Tracker
+	if m.noTracking {
+		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
+	} else {
+		t = tracker.NewFileTracker(m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+	}
+	m.tracker = t
 }
