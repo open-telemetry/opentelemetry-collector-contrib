@@ -115,9 +115,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if err := o.setHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
-		o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
-	}
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
 
 	o.logger.Debug("Starting OpAMP client...")
 
@@ -163,11 +161,13 @@ func (o *opampAgent) Register(capability string, opts ...opampcustommessages.Cus
 }
 
 func (o *opampAgent) Ready() error {
-	return o.setHealth(&protobufs.ComponentHealth{Healthy: true})
+	o.setHealth(&protobufs.ComponentHealth{Healthy: true})
+	return nil
 }
 
 func (o *opampAgent) NotReady() error {
-	return o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+	return nil
 }
 
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
@@ -337,9 +337,10 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	}
 }
 
-func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) error {
+func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	if o.capabilities.ReportsHealth && o.opampClient != nil {
-		return o.opampClient.SetHealth(ch)
+		if err := o.opampClient.SetHealth(ch); err != nil {
+			o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
+		}
 	}
-	return nil
 }
