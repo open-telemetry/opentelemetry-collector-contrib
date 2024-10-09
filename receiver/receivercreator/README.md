@@ -109,6 +109,18 @@ Note that the backticks below are not typos--they indicate the value is set dyna
 | k8s.pod.uid        | \`pod.uid\`       |
 | k8s.namespace.name | \`pod.namespace\` |
 
+`type == "pod.container"`
+
+| Resource Attribute   | Default             |
+|----------------------|---------------------|
+| k8s.pod.name         | \`pod.name\`        |
+| k8s.pod.uid          | \`pod.uid\`         |
+| k8s.namespace.name   | \`pod.namespace\`   |
+| container.name       | \`name\`            |
+| k8s.container.name   | \`container_name\`  |
+| container.image.name | \`container_image\` |
+| container.id         | \`container_id\`    |
+
 `type == "container"`
 
 | Resource Attribute   | Default           |
@@ -133,6 +145,12 @@ None
 | k8s.node.name      | \`name\`          |
 | k8s.node.uid       | \`uid\`           |
 
+`type == "k8s.ingress"`
+
+| Resource Attribute | Default           |
+|--------------------|-------------------|
+| k8s.namespace.name | \`namespace\`     |
+
 See `redis/2` in [examples](#examples).
 
 
@@ -149,7 +167,7 @@ Similar to the per-endpoint type `resource_attributes` described above but for i
 
 ## Rule Expressions
 
-Each rule must start with `type == ("pod"|"port"|"hostport"|"container"|"k8s.service"|"k8s.node") &&` such that the rule matches
+Each rule must start with `type == ("pod"|"port"|"pod.container"|"hostport"|"container"|"k8s.service"|"k8s.node"|"k8s.ingress") &&` such that the rule matches
 only one endpoint type. Depending on the type of endpoint the rule is
 targeting it will have different variables available.
 
@@ -179,6 +197,21 @@ targeting it will have different variables available.
 | pod.uid         | unique id of the pod                    | String                        |
 | pod.labels      | map of labels of the owning pod         | Map with String key and value |
 | pod.annotations | map of annotations of the owning pod    | Map with String key and value |
+
+### Pod Container
+
+| Variable        | Description                          | Data Type                     |
+|-----------------|--------------------------------------|-------------------------------|
+| type            | `"pod.container"`                    | String                        |
+| id              | ID of source endpoint                | String                        |
+| container_name  | container name                       | String                        |
+| container_id    | container id                         | String                        |
+| container_image | container image                      | String                        |
+| pod.name        | name of the owning pod               | String                        |
+| pod.namespace   | namespace of the pod                 | String                        |
+| pod.uid         | unique id of the pod                 | String                        |
+| pod.labels      | map of labels of the owning pod      | Map with String key and value |
+| pod.annotations | map of annotations of the owning pod | Map with String key and value |
 
 ### Host Port
 
@@ -353,6 +386,35 @@ receivers:
           - endpoint: '`scheme`://`endpoint`:`port``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
+  receiver_creator/logs:
+    watch_observers: [ k8s_observer ]
+    receivers:
+      filelog/busybox:
+        rule: type == "pod.container" && container_name == "busybox"
+        config:
+          include:
+            - /var/log/pods/`pod.namespace`_`pod.name`_`pod.uid`/`container_name`/*.log
+          include_file_name: false
+          include_file_path: true
+          operators:
+            - id: container-parser
+              type: container
+            - type: add
+              field: attributes.log.template
+              value: busybox
+      filelog/lazybox:
+        rule: type == "pod.container" && container_name == "lazybox"
+        config:
+          include:
+            - /var/log/pods/`pod.namespace`_`pod.name`_`pod.uid`/`container_name`/*.log
+          include_file_name: false
+          include_file_path: true
+          operators:
+            - id: container-parser
+              type: container
+            - type: add
+              field: attributes.log.template
+              value: lazybox
 
 processors:
   exampleprocessor:
@@ -364,6 +426,10 @@ service:
   pipelines:
     metrics:
       receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+    logs:
+      receivers: [receiver_creator/logs]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
   extensions: [k8s_observer, host_observer]

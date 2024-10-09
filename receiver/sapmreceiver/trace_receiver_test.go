@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -23,9 +24,12 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
@@ -242,7 +246,7 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 	return buff.Bytes(), nil
 }
 
-func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
+func setupReceiver(t *testing.T, config *Config, sink consumer.Traces) receiver.Traces {
 	params := receivertest.NewNopSettings()
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
@@ -431,6 +435,45 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
+func TestStatusCode(t *testing.T) {
+	tlsAddress := testutil.GetAvailableLocalAddress(t)
+
+	tests := []struct {
+		name           string
+		err            error
+		expectedStatus int
+	}{
+		{
+			name:           "non-permanent error",
+			err:            errors.New("non-permanenet error"),
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "permanent error",
+			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: tlsAddress,
+				},
+			}
+			sr := setupReceiver(t, config, consumertest.NewErr(test.err))
+			sapm := &splunksapm.PostSpansRequest{
+				Batches: []*model.Batch{grpcFixture(time.Now().UTC())},
+			}
+			var resp *http.Response
+			resp, err := sendSapm(config.Endpoint, sapm, "", false, "")
+			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
+			assert.Equal(t, test.expectedStatus, resp.StatusCode)
+			require.NoError(t, sr.Shutdown(context.Background()))
+		})
+	}
+}
+
 var _ componentstatus.Reporter = (*nopHost)(nil)
 
 type nopHost struct {
@@ -445,7 +488,7 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

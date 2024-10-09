@@ -72,7 +72,13 @@ func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds 
 			return nil, nil
 		}
 
-		explicitHist := pmetric.NewHistogram()
+		// create new metric and override metric
+		newMetric := pmetric.NewMetric()
+		newMetric.SetName(metric.Name())
+		newMetric.SetDescription(metric.Description())
+		newMetric.SetUnit(metric.Unit())
+		explicitHist := newMetric.SetEmptyHistogram()
+
 		dps := metric.ExponentialHistogram().DataPoints()
 		explicitHist.SetAggregationTemporality(metric.ExponentialHistogram().AggregationTemporality())
 
@@ -87,19 +93,13 @@ func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds 
 			explicitHistDp.SetSum(expDataPoint.Sum())
 			explicitHistDp.SetMin(expDataPoint.Min())
 			explicitHistDp.SetMax(expDataPoint.Max())
-			expDataPoint.Exemplars().CopyTo(explicitHistDp.Exemplars())
+			expDataPoint.Exemplars().MoveAndAppendTo(explicitHistDp.Exemplars())
 			explicitHistDp.ExplicitBounds().FromRaw(explicitBounds)
 			explicitHistDp.BucketCounts().FromRaw(bucketCounts)
-			expDataPoint.Attributes().CopyTo(explicitHistDp.Attributes())
+			expDataPoint.Attributes().MoveTo(explicitHistDp.Attributes())
 		}
 
-		// create new metric and override metric
-		newMetric := pmetric.NewMetric()
-		newMetric.SetName(metric.Name())
-		newMetric.SetDescription(metric.Description())
-		newMetric.SetUnit(metric.Unit())
-		explicitHist.CopyTo(newMetric.SetEmptyHistogram())
-		newMetric.CopyTo(metric)
+		newMetric.MoveTo(metric)
 
 		return nil, nil
 	}, nil
