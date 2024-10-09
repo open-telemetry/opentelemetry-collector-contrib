@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/jaegertracing/jaeger v1.61.0
+	github.com/jaegertracing/jaeger v1.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.111.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae
@@ -25,7 +25,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.20.0 // indirect
+	github.com/apache/thrift v0.21.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fatih/color v1.15.0 // indirect

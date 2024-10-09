@@ -11,7 +11,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.6.0
-	github.com/jaegertracing/jaeger v1.61.0
+	github.com/jaegertracing/jaeger v1.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.111.0
 	github.com/stretchr/testify v1.9.0
@@ -27,7 +27,7 @@ require (
 )
 
 require (
-	github.com/apache/thrift v0.20.0 // indirect
+	github.com/apache/thrift v0.21.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.6 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.16 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.20 // indirect
@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
-	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect

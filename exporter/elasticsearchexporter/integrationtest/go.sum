@@ -133,8 +133,8 @@ github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSAS
 github.com/iancoleman/strcase v0.3.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/jaegertracing/jaeger v1.61.0 h1:9PCP5vkilmoxmSHa9jFvtULoduFJqJ0/bHbRxUMPWTc=
-github.com/jaegertracing/jaeger v1.61.0/go.mod h1:DMy9PNQ7tOgo811jOv7UAQaM0NeSJ95lh6SW3O1s1Xk=
+github.com/jaegertracing/jaeger v1.62.0 h1:YoaJ2e8oVz5sqGGlVAKSUCED8DzJ1q7PojBmZFNKoJA=
+github.com/jaegertracing/jaeger v1.62.0/go.mod h1:jhEIHazwyb+a6xlRBi+p96BAvTYTSmGkghcwdQfV7FM=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jonboulle/clockwork v0.4.0 h1:p4Cf1aMWXnXAUh8lVfewRBx1zaTSYKrKMF2g3ST4RZ4=
 github.com/jonboulle/clockwork v0.4.0/go.mod h1:xgRqUGwRcjKCO1vbZUEtSLrqKoPSsUpK7fnezOII0kc=
