@@ -132,13 +132,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkIoAvgIopsDataPoint(ts, 1, "splunk.host-val")
 
 			allMetricsCount++
-			mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 1, "splunk.kvstore.status-val")
+			mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val")
 
 			allMetricsCount++
-			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status-val")
+			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val")
 
 			allMetricsCount++
-			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status-val")
+			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -520,9 +520,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status")
+					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.status-val", attrVal.Str())
+					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
 				case "splunk.kvstore.replication.status":
 					assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
 					validatedMetrics["splunk.kvstore.replication.status"] = true
@@ -535,9 +535,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status")
+					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.status-val", attrVal.Str())
+					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
 				case "splunk.kvstore.status":
 					assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
 					validatedMetrics["splunk.kvstore.status"] = true
@@ -556,9 +556,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("splunk.kvstore.external")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.kvstore.external-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.kvstore.status")
+					attrVal, ok = dp.Attributes().Get("splunk.kvstore.status.value")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.status-val", attrVal.Str())
+					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
 				case "splunk.license.index.usage":
 					assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
 					validatedMetrics["splunk.license.index.usage"] = true

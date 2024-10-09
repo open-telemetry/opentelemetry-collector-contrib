@@ -104,6 +104,13 @@ type IdxQContent struct {
 }
 
 // '/services/kvstore/status'
+const (
+	// unknown/failed values
+	KVStatusUnknown        = "unknown"
+	KVRestoreStatusUnknown = "Unknown status"
+	KVBackupStatusFailed   = "Failed"
+)
+
 type KVStoreStatus struct {
 	Entries []KVEntry `json:"entry"`
 }

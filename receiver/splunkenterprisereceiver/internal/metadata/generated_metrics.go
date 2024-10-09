@@ -1050,7 +1050,7 @@ func (m *metricSplunkKvstoreBackupStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusAttributeValue string) {
+func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1058,7 +1058,7 @@ func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.kvstore.status", splunkKvstoreStatusAttributeValue)
+	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1101,7 +1101,7 @@ func (m *metricSplunkKvstoreReplicationStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusAttributeValue string) {
+func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1109,7 +1109,7 @@ func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.kvstore.status", splunkKvstoreStatusAttributeValue)
+	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1152,7 +1152,7 @@ func (m *metricSplunkKvstoreStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusAttributeValue string) {
+func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1162,7 +1162,7 @@ func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
 	dp.Attributes().PutStr("splunk.kvstore.external", splunkKvstoreExternalAttributeValue)
-	dp.Attributes().PutStr("splunk.kvstore.status", splunkKvstoreStatusAttributeValue)
+	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1966,18 +1966,18 @@ func (mb *MetricsBuilder) RecordSplunkIoAvgIopsDataPoint(ts pcommon.Timestamp, v
 }
 
 // RecordSplunkKvstoreBackupStatusDataPoint adds a data point to splunk.kvstore.backup.status metric.
-func (mb *MetricsBuilder) RecordSplunkKvstoreBackupStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusAttributeValue string) {
-	mb.metricSplunkKvstoreBackupStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkKvstoreBackupStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
+	mb.metricSplunkKvstoreBackupStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue)
 }
 
 // RecordSplunkKvstoreReplicationStatusDataPoint adds a data point to splunk.kvstore.replication.status metric.
-func (mb *MetricsBuilder) RecordSplunkKvstoreReplicationStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusAttributeValue string) {
-	mb.metricSplunkKvstoreReplicationStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkKvstoreReplicationStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
+	mb.metricSplunkKvstoreReplicationStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue)
 }
 
 // RecordSplunkKvstoreStatusDataPoint adds a data point to splunk.kvstore.status metric.
-func (mb *MetricsBuilder) RecordSplunkKvstoreStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusAttributeValue string) {
-	mb.metricSplunkKvstoreStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStorageEngineAttributeValue, splunkKvstoreExternalAttributeValue, splunkKvstoreStatusAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkKvstoreStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string) {
+	mb.metricSplunkKvstoreStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStorageEngineAttributeValue, splunkKvstoreExternalAttributeValue, splunkKvstoreStatusValueAttributeValue)
 }
 
 // RecordSplunkLicenseIndexUsageDataPoint adds a data point to splunk.license.index.usage metric.
