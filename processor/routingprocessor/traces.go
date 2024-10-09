@@ -175,7 +175,7 @@ func (p *tracesProcessor) recordNonRoutedResourceSpans(ctx context.Context, rout
 func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
-	if value == "" { // "" is a  key for default exporters
+	if value == "" { // "" is a key for default exporters
 		p.telemetry.RoutingProcessorNonRoutedSpans.Add(
 			ctx,
 			int64(t.SpanCount()),
