@@ -43,6 +43,7 @@ func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourcePro
 func (f *ResourceProviderFactory) CreateResourceProvider(
 	params processor.Settings,
 	timeout time.Duration,
+	tickerDetect bool,
 	attributes []string,
 	detectorConfigs ResourceDetectorConfig,
 	detectorTypes ...DetectorType) (*ResourceProvider, error) {
@@ -58,7 +59,7 @@ func (f *ResourceProviderFactory) CreateResourceProvider(
 		}
 	}
 
-	provider := NewResourceProvider(params.Logger, timeout, attributesToKeep, detectors...)
+	provider := NewResourceProvider(params.Logger, timeout, tickerDetect, attributesToKeep, detectors...)
 	return provider, nil
 }
 
@@ -84,6 +85,7 @@ func (f *ResourceProviderFactory) getDetectors(params processor.Settings, detect
 type ResourceProvider struct {
 	logger           *zap.Logger
 	timeout          time.Duration
+	tickerDetect     bool
 	detectors        []Detector
 	detectedResource *resourceResult
 	once             sync.Once
@@ -96,22 +98,27 @@ type resourceResult struct {
 	err       error
 }
 
-func NewResourceProvider(logger *zap.Logger, timeout time.Duration, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
+func NewResourceProvider(logger *zap.Logger, timeout time.Duration, tickerDetect bool, attributesToKeep map[string]struct{}, detectors ...Detector) *ResourceProvider {
 	return &ResourceProvider{
 		logger:           logger,
 		timeout:          timeout,
 		detectors:        detectors,
 		attributesToKeep: attributesToKeep,
+		tickerDetect:     tickerDetect,
 	}
 }
 
 func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resource pcommon.Resource, schemaURL string, err error) {
-	p.once.Do(func() {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, client.Timeout)
-		defer cancel()
+	var cancel context.CancelFunc
+	ctx, cancel = context.WithTimeout(ctx, client.Timeout)
+	defer cancel()
+	if p.tickerDetect {
 		p.detectResource(ctx)
-	})
+	} else {
+		p.once.Do(func() {
+			p.detectResource(ctx)
+		})
+	}
 
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
 }

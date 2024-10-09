@@ -172,7 +172,11 @@ func (f *factory) getResourceDetectionProcessor(
 	if oCfg.Attributes != nil {
 		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
 	}
-	provider, err := f.getResourceProvider(params, oCfg.ClientConfig.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
+	tickerDetect := false
+	if oCfg.DetectInterval > 0 {
+		tickerDetect = true
+	}
+	provider, err := f.getResourceProvider(params, oCfg.ClientConfig.Timeout, tickerDetect, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -182,12 +186,14 @@ func (f *factory) getResourceDetectionProcessor(
 		override:           oCfg.Override,
 		httpClientSettings: oCfg.ClientConfig,
 		telemetrySettings:  params.TelemetrySettings,
+		detectInterval:     oCfg.DetectInterval,
 	}, nil
 }
 
 func (f *factory) getResourceProvider(
 	params processor.Settings,
 	timeout time.Duration,
+	tickerDetect bool,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
 	attributes []string,
@@ -204,7 +210,7 @@ func (f *factory) getResourceProvider(
 		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
 	}
 
-	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, attributes, &detectorConfigs, detectorTypes...)
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(params, timeout, tickerDetect, attributes, &detectorConfigs, detectorTypes...)
 	if err != nil {
 		return nil, err
 	}
