@@ -80,8 +80,8 @@ func TestHandleConsume(t *testing.T) {
 	require.NoError(t, err, "receiver start failed")
 
 	stanzaReceiver := logsReceiver.(*receiver)
-	logChan := stanzaReceiver.emitter.OutChannelForWrite()
-	logChan <- []*entry.Entry{entry.New()}
+
+	stanzaReceiver.consumeEntries(context.Background(), []*entry.Entry{entry.New()})
 
 	// Eventually because of asynchronuous nature of the receiver.
 	require.Eventually(t,
@@ -106,8 +106,8 @@ func TestHandleConsumeRetry(t *testing.T) {
 	require.NoError(t, logsReceiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	stanzaReceiver := logsReceiver.(*receiver)
-	logChan := stanzaReceiver.emitter.OutChannelForWrite()
-	logChan <- []*entry.Entry{entry.New()}
+
+	stanzaReceiver.consumeEntries(context.Background(), []*entry.Entry{entry.New()})
 
 	require.Eventually(t,
 		func() bool {
@@ -174,7 +174,11 @@ func BenchmarkReadLine(b *testing.B) {
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set)
+	emitter := helper.NewLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
+		for _, e := range entries {
+			convert(e)
+		}
+	})
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -202,13 +206,6 @@ func BenchmarkReadLine(b *testing.B) {
 	// Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pipe.Start(storageClient))
-	logChan := emitter.OutChannel()
-	for i := 0; i < b.N; i++ {
-		entries := <-logChan
-		for _, e := range entries {
-			convert(e)
-		}
-	}
 }
 
 func BenchmarkParseAndMap(b *testing.B) {
@@ -241,7 +238,11 @@ func BenchmarkParseAndMap(b *testing.B) {
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set)
+	emitter := helper.NewLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
+		for _, e := range entries {
+			convert(e)
+		}
+	})
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -269,11 +270,4 @@ func BenchmarkParseAndMap(b *testing.B) {
 	// Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pipe.Start(storageClient))
-	logChan := emitter.OutChannel()
-	for i := 0; i < b.N; i++ {
-		entries := <-logChan
-		for _, e := range entries {
-			convert(e)
-		}
-	}
 }
