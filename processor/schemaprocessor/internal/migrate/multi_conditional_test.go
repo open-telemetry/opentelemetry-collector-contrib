@@ -142,7 +142,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			require.NoError(t, tc.cond.Apply(tc.inAttr, tc.inCondData))
+			require.NoError(t, tc.cond.Do(StateSelectorApply, tc.inAttr, tc.inCondData))
 			assert.Equal(t, tc.expect.AsRaw(), tc.inAttr.AsRaw(), "Must match the expected value")
 		})
 	}

@@ -38,14 +38,6 @@ func NewAttributeChangeSet(mappings ast.AttributeMap) AttributeChangeSet {
 
 func (a AttributeChangeSet) IsMigrator() {}
 
-func (a *AttributeChangeSet) Apply(attrs pcommon.Map) error {
-	return a.Do(StateSelectorApply, attrs)
-}
-
-func (a *AttributeChangeSet) Rollback(attrs pcommon.Map) error {
-	return a.Do(StateSelectorRollback, attrs)
-}
-
 func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	var (
 		updated = make(map[string]struct{})

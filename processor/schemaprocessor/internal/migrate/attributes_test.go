@@ -104,7 +104,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := tc.acs.Apply(tc.attrs)
+			err := tc.acs.Do(StateSelectorApply, tc.attrs)
 			if tc.errVal == "" {
 				assert.NoError(t, err, "Must not return an error")
 			} else {
@@ -179,7 +179,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := tc.acs.Rollback(tc.attrs)
+			err := tc.acs.Do(StateSelectorRollback, tc.attrs)
 			if tc.errVal == "" {
 				assert.NoError(t, err, "Must not return an error")
 			} else {

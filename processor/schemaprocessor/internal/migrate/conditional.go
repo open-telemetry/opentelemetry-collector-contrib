@@ -37,21 +37,9 @@ func (ca ConditionalAttributeSet) IsMigrator() {}
 
 func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, values ...string) (errs error) {
 	if ca.check(values...) {
-		switch ss {
-		case StateSelectorApply:
-			errs = ca.attrs.Apply(attrs)
-		case StateSelectorRollback:
-			errs = ca.attrs.Rollback(attrs)
-		}
+		errs = ca.attrs.Do(ss, attrs)
 	}
 	return errs
-}
-func (ca *ConditionalAttributeSet) Apply(attrs pcommon.Map, values ...string) (errs error) {
-	return ca.Do(StateSelectorApply, attrs, values...)
-}
-
-func (ca *ConditionalAttributeSet) Rollback(attrs pcommon.Map, values ...string) (errs error) {
-	return ca.Do(StateSelectorRollback, attrs, values...)
 }
 
 // todo make it harder to misuse this!  diff between no values and 0 values
