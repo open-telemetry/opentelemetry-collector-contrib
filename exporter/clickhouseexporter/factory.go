@@ -60,7 +60,7 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
-	exporter, err := newLogsExporter(set.Logger, c)
+	exporter, err := newLogsExporter(set, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
 	}
@@ -86,7 +86,7 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
-	exporter, err := newTracesExporter(set.Logger, c)
+	exporter, err := newTracesExporter(set, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse traces exporter: %w", err)
 	}
@@ -110,7 +110,7 @@ func createMetricExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
-	exporter, err := newMetricsExporter(set.Logger, c)
+	exporter, err := newMetricsExporter(set, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse metrics exporter: %w", err)
 	}

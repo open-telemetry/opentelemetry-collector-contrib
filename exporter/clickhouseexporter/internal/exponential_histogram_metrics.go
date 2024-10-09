@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 const (
@@ -113,7 +115,7 @@ type expHistogramMetrics struct {
 	count              int
 }
 
-func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
+func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB, telemetry *metadata.TelemetryBuilder) error {
 	if e.count == 0 {
 		return nil
 	}
@@ -180,11 +182,12 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 	})
 	duration := time.Since(start)
 	if err != nil {
+		recordMetricsInternalMetrics(ctx, telemetry, int64(e.count), duration, true)
 		logger.Debug("insert exponential histogram metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert exponential histogram metrics fail:%w", err)
 	}
 
-	// TODO latency metrics
+	recordMetricsInternalMetrics(ctx, telemetry, int64(e.count), duration, false)
 	logger.Debug("insert exponential histogram metrics", zap.Int("records", e.count),
 		zap.Duration("cost", duration))
 	return nil

@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 const (
@@ -93,7 +95,7 @@ type gaugeMetrics struct {
 	count       int
 }
 
-func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
+func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB, telemetry *metadata.TelemetryBuilder) error {
 	if g.count == 0 {
 		return nil
 	}
@@ -149,9 +151,14 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 	})
 	duration := time.Since(start)
 	if err != nil {
+		recordMetricsInternalMetrics(ctx, telemetry, int64(g.count), duration, true)
 		logger.Debug("insert gauge metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert gauge metrics fail:%w", err)
 	}
+
+	recordMetricsInternalMetrics(ctx, telemetry, int64(g.count), duration, false)
+	logger.Debug("insert gauge metrics", zap.Int("records", g.count),
+		zap.Duration("cost", duration))
 	return nil
 }
 

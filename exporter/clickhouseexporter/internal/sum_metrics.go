@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 const (
@@ -97,7 +99,7 @@ type sumMetrics struct {
 	count     int
 }
 
-func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
+func (s *sumMetrics) insert(ctx context.Context, db *sql.DB, telemetry *metadata.TelemetryBuilder) error {
 	if s.count == 0 {
 		return nil
 	}
@@ -155,11 +157,12 @@ func (s *sumMetrics) insert(ctx context.Context, db *sql.DB) error {
 	})
 	duration := time.Since(start)
 	if err != nil {
+		recordMetricsInternalMetrics(ctx, telemetry, int64(s.count), duration, true)
 		logger.Debug("insert sum metrics fail", zap.Duration("cost", duration))
 		return fmt.Errorf("insert sum metrics fail:%w", err)
 	}
 
-	// TODO latency metrics
+	recordMetricsInternalMetrics(ctx, telemetry, int64(s.count), duration, false)
 	logger.Debug("insert sum metrics", zap.Int("records", s.count),
 		zap.Duration("cost", duration))
 	return nil

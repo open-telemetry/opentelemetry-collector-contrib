@@ -13,11 +13,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestLogsExporter_New(t *testing.T) {
@@ -58,7 +57,7 @@ func TestLogsExporter_New(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			var err error
-			exporter, err := newLogsExporter(zap.NewNop(), test.config)
+			exporter, err := newLogsExporter(exportertest.NewNopSettings(), test.config)
 			err = errors.Join(err, err)
 
 			if exporter != nil {
@@ -146,7 +145,7 @@ func TestLogsTableEngineConfig(t *testing.T) {
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
-	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+	exporter, err := newLogsExporter(exportertest.NewNopSettings(), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 

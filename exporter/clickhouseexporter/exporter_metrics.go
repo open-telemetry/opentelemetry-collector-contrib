@@ -10,21 +10,27 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 type metricsExporter struct {
-	client *sql.DB
-
+	client       *sql.DB
 	logger       *zap.Logger
 	cfg          *Config
 	tablesConfig internal.MetricTablesConfigMapper
+	telemetry    *metadata.TelemetryBuilder
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
+func newMetricsExporter(settings exporter.Settings, cfg *Config) (*metricsExporter, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
 		return nil, err
@@ -34,9 +40,10 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 
 	return &metricsExporter{
 		client:       client,
-		logger:       logger,
+		logger:       settings.Logger,
 		cfg:          cfg,
 		tablesConfig: tablesConfig,
+		telemetry:    telemetry,
 	}, nil
 }
 
@@ -109,5 +116,5 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		}
 	}
 	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-	return internal.InsertMetrics(ctx, e.client, metricsMap)
+	return internal.InsertMetrics(ctx, e.client, metricsMap, e.telemetry)
 }

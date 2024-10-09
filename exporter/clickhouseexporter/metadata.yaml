@@ -12,3 +12,83 @@ status:
 # TODO: Update the exporter to pass the tests
 tests:
   skip_lifecycle: true
+
+attributes:
+  error:
+    description: The state of the exporter insert operation
+    type: string
+    enum:
+      - "true"
+      - "false"
+
+telemetry:
+  metrics:
+    exporter_clickhouse_sent_spans:
+      enabled: true
+      description: Number of spans the exporter sent.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [error]
+    exporter_clickhouse_sent_spans_latency:
+      enabled: true
+      description: Latency (in milliseconds) of each sent span batch.
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+      attributes: [error]
+    exporter_clickhouse_sent_spans_batch_size:
+      enabled: true
+      description: How many counts of a batch are sent to Clickhouse. Clickhouse recommend inserting metric in packets of at least 1000 rows, or no more than a single request per second.
+      unit: int
+      histogram:
+        value_type: int
+        bucket_boundaries: [100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]
+    exporter_clickhouse_sent_logs:
+      enabled: true
+      description: Number of logs the exporter sent.
+      unit: "{logs}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [error]
+    exporter_clickhouse_sent_logs_latency:
+      enabled: true
+      description: Latency (in milliseconds) of each sent log batch.
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+      attributes: [error]
+    exporter_clickhouse_sent_logs_batch_size:
+      enabled: true
+      description: How many counts of a batch are sent to Clickhouse. Clickhouse recommend inserting metric in packets of at least 1000 rows, or no more than a single request per second.
+      unit: int
+      histogram:
+        value_type: int
+        bucket_boundaries: [100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]
+    exporter_clickhouse_sent_metric_points:
+      enabled: true
+      description: Number of metric points the exporter sent.
+      unit: "{metric_points}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes: [error]
+    exporter_clickhouse_sent_metric_points_latency:
+      enabled: true
+      description: Metric.
+      unit: "1"
+      histogram:
+        value_type: int
+        bucket_boundaries: [ 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000 ]
+      attributes: [error]
+    exporter_clickhouse_sent_metric_points_batch_size:
+      enabled: true
+      description: How many counts of a batch are sent to Clickhouse. Clickhouse recommend inserting metric in packets of at least 1000 rows, or no more than a single request per second.
+      unit: int
+      histogram:
+        value_type: int
+        bucket_boundaries: [100, 250, 500, 750, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 20000, 30000, 50000, 100000]

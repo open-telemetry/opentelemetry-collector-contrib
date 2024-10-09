@@ -11,11 +11,16 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
 var supportedMetricTypes = map[pmetric.MetricType]string{
@@ -40,7 +45,7 @@ type MetricsModel interface {
 	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
 	Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error
 	// insert is used to insert metric data to clickhouse
-	insert(ctx context.Context, db *sql.DB) error
+	insert(ctx context.Context, db *sql.DB, telemetry *metadata.TelemetryBuilder) error
 }
 
 // MetricsMetaData contain specific metric data
@@ -89,13 +94,13 @@ func NewMetricsModel(tablesConfig MetricTablesConfigMapper) map[pmetric.MetricTy
 }
 
 // InsertMetrics insert metric data into clickhouse concurrently
-func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel) error {
+func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.MetricType]MetricsModel, telemetry *metadata.TelemetryBuilder) error {
 	errsChan := make(chan error, len(supportedMetricTypes))
 	wg := &sync.WaitGroup{}
 	for _, m := range metricsMap {
 		wg.Add(1)
 		go func(m MetricsModel, wg *sync.WaitGroup) {
-			errsChan <- m.insert(ctx, db)
+			errsChan <- m.insert(ctx, db, telemetry)
 			wg.Done()
 		}(m, wg)
 	}
@@ -220,4 +225,12 @@ func newPlaceholder(count int) *string {
 	b.WriteString("),")
 	placeholder := strings.Replace(b.String(), ",", "(", 1)
 	return &placeholder
+}
+
+func recordMetricsInternalMetrics(ctx context.Context, telemetry *metadata.TelemetryBuilder, count int64, duration time.Duration, hasError bool) {
+	if !hasError {
+		telemetry.ExporterClickhouseSentMetricPointsBatchSize.Record(ctx, count)
+	}
+	telemetry.ExporterClickhouseSentMetricPoints.Add(ctx, count, metric.WithAttributes(attribute.KeyValue{Key: "error", Value: attribute.BoolValue(hasError)}))
+	telemetry.ExporterClickhouseSentMetricPointsLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributes(attribute.KeyValue{Key: "error", Value: attribute.BoolValue(hasError)}))
 }

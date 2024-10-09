@@ -14,9 +14,9 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
@@ -520,7 +520,7 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 
 // nolint:unparam // not need to check this func
 func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
-	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+	exporter, err := newMetricsExporter(exportertest.NewNopSettings(), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 
