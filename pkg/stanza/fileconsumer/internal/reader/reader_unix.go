@@ -25,6 +25,10 @@ func (r *Reader) tryLockFile() bool {
 
 func (r *Reader) unlockFile() {
 	if err := unix.Flock(int(r.file.Fd()), unix.LOCK_UN); err != nil {
-		r.set.Logger.Error("Failed to unlock", zap.Error(err))
+		// If delete_after_read is set then the file may already have been deleted by this point,
+		// in which case we'll get EBADF.  This is harmless and not worth logging.
+		if !errors.Is(err, unix.EBADF) {
+			r.set.Logger.Error("Failed to unlock", zap.Error(err))
+		}
 	}
 }
