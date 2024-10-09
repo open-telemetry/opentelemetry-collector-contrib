@@ -72,7 +72,8 @@ func newResourceChangeList(resource ast.Attributes) *changelist.ChangeList {
 	for _, at := range resource.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
 			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
-			values = append(values, attributeChangeSet)
+			resourceOperator := operator.ResourceAttributeOperator{AttributeChange: attributeChangeSet}
+			values = append(values, resourceOperator)
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
@@ -141,7 +142,8 @@ func newLogsChangelist(logs ast.Logs) *changelist.ChangeList {
 	for _, at := range logs.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
 			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
-			values = append(values, attributeChangeSet)
+			logOperator := operator.LogAttributeOperator{AttributeChange: attributeChangeSet}
+			values = append(values, logOperator)
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
