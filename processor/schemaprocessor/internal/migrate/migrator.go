@@ -13,4 +13,5 @@ var (
 	_ Migrator = (*MultiConditionalAttributeSet)(nil)
 	_ Migrator = (*SignalNameChange)(nil)
 	_ Migrator = (*ConditionalAttributeSet)(nil)
+	_ Migrator = (*SignalNameChange)(nil)
 )
