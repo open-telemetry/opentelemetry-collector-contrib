@@ -4,6 +4,7 @@
 package prometheusremotewrite
 
 import (
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"math"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -111,10 +113,9 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 			converter := newPrometheusConverterV2()
 			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), metric.Name())
 			w := tt.want()
-			// assert.Equal(t, w, converter.unique)
-			for k, v := range w {
-				assert.Equal(t, *v, *converter.unique[k])
-			}
+
+			diff := cmp.Diff(w, converter.unique, cmpopts.EquateNaNs())
+			assert.Empty(t, diff)
 
 		})
 	}
