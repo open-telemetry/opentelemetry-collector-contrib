@@ -21,7 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-const instanceNameKey = "sql_instance"
+const (
+	computerNameKey = "computer_name"
+	instanceNameKey = "sql_instance"
+)
 
 type sqlServerScraperHelper struct {
 	id                 component.ID
@@ -106,7 +109,6 @@ func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
-	const computerNameKey = "computer_name"
 	const databaseNameKey = "database_name"
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
@@ -195,6 +197,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
 		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 		switch row[counterKey] {
@@ -283,6 +286,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, row := range rows {
 		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverComputerName(row[computerNameKey])
 		rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))

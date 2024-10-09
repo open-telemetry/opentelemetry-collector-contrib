@@ -55,7 +55,7 @@ func TestNewApacheSparkClient(t *testing.T) {
 			ac, err := newApacheSparkClient(context.Background(), tc.cfg, tc.host, tc.settings)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 

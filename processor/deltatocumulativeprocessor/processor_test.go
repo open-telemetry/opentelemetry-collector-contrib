@@ -1,12 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package deltatocumulativeprocessor_test
+package deltatocumulativeprocessor
 
 import (
 	"context"
 	"math"
 	"math/rand"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -18,9 +19,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
-	self "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest/compare"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
@@ -28,15 +30,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testdata/random"
 )
 
-func setup(t *testing.T, cfg *self.Config) (processor.Metrics, *consumertest.MetricsSink) {
+func setup(t *testing.T, cfg *Config) (processor.Metrics, *consumertest.MetricsSink) {
 	t.Helper()
 
 	next := &consumertest.MetricsSink{}
 	if cfg == nil {
-		cfg = &self.Config{MaxStale: 0, MaxStreams: math.MaxInt}
+		cfg = &Config{MaxStale: 0, MaxStreams: math.MaxInt}
 	}
 
-	proc, err := self.NewFactory().CreateMetricsProcessor(
+	proc, err := NewFactory().CreateMetrics(
 		context.Background(),
 		processortest.NewNopSettings(),
 		cfg,
@@ -171,7 +173,7 @@ func TestTimestamps(t *testing.T) {
 }
 
 func TestStreamLimit(t *testing.T) {
-	proc, sink := setup(t, &self.Config{MaxStale: 5 * time.Minute, MaxStreams: 10})
+	proc, sink := setup(t, &Config{MaxStale: 5 * time.Minute, MaxStreams: 10})
 
 	good := make([]SumBuilder, 10)
 	for i := range good {
@@ -281,4 +283,48 @@ func stream() SumBuilder {
 	sum := random.Sum()
 	_, base := sum.Stream()
 	return SumBuilder{Metric: sum, base: base}
+}
+
+func TestIgnore(t *testing.T) {
+	proc, sink := setup(t, nil)
+
+	dir := "./testdata/notemporality-ignored"
+	open := func(file string) pmetric.Metrics {
+		t.Helper()
+		md, err := golden.ReadMetrics(filepath.Join(dir, file))
+		require.NoError(t, err)
+		return md
+	}
+
+	in := open("in.yaml")
+	out := open("out.yaml")
+
+	ctx := context.Background()
+
+	err := proc.ConsumeMetrics(ctx, in)
+	require.NoError(t, err)
+
+	if diff := compare.Diff([]pmetric.Metrics{out}, sink.AllMetrics()); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestTelemetry(t *testing.T) {
+	tt := setupTestTelemetry()
+
+	next := &consumertest.MetricsSink{}
+	cfg := createDefaultConfig()
+
+	_, err := NewFactory().CreateMetrics(
+		context.Background(),
+		tt.NewSettings(),
+		cfg,
+		next,
+	)
+	require.NoError(t, err)
+
+	var rm metricdata.ResourceMetrics
+	if err := tt.reader.Collect(context.Background(), &rm); err != nil {
+		t.Fatal(err)
+	}
 }
