@@ -147,7 +147,7 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 	assert.Empty(t, filteredItems)
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
-	syncChannel := make(chan bool)
+	syncChannel := make(chan bool, 10)
 
 	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
@@ -208,7 +208,7 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 	assert.Len(t, filteredItems, totalLimit)
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
-	syncChannel := make(chan bool)
+	syncChannel := make(chan bool, 10)
 
 	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
