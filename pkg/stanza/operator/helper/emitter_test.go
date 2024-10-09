@@ -20,7 +20,7 @@ func TestLogEmitter(t *testing.T) {
 	var receivedEntries []*entry.Entry
 	emitter := NewLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
-		func(ctx context.Context, entries []*entry.Entry) {
+		func(_ context.Context, entries []*entry.Entry) {
 			receivedEntries = entries
 		},
 	)
@@ -51,7 +51,7 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 	var receivedEntries []*entry.Entry
 	emitter := NewLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
-		func(ctx context.Context, entries []*entry.Entry) {
+		func(_ context.Context, entries []*entry.Entry) {
 			receivedEntries = entries
 		},
 	)
@@ -84,7 +84,7 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 	var receivedEntries []*entry.Entry
 	emitter := NewLogEmitter(
 		componenttest.NewNopTelemetrySettings(),
-		func(ctx context.Context, entries []*entry.Entry) {
+		func(_ context.Context, entries []*entry.Entry) {
 			receivedEntries = entries
 		},
 	)
