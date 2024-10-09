@@ -416,7 +416,7 @@ Backup and restore status of the KV store.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.kvstore.status | The status returned when reporting on KV store using the introspection endpoint | Any Str |
+| splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
 
 ### splunk.kvstore.replication.status
 
@@ -430,7 +430,7 @@ Replication status of the KV store.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.kvstore.status | The status returned when reporting on KV store using the introspection endpoint | Any Str |
+| splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
 
 ### splunk.kvstore.status
 
@@ -446,7 +446,7 @@ This is the overall status of the kvstore for the given deployment.
 | ---- | ----------- | ------ |
 | splunk.kvstore.storage.engine | The backend storage used by the KV store. | Any Str |
 | splunk.kvstore.external | Value denoting if the KV store is using an external service. | Any Str |
-| splunk.kvstore.status | The status returned when reporting on KV store using the introspection endpoint | Any Str |
+| splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
 
 ### splunk.server.introspection.queues.current
 

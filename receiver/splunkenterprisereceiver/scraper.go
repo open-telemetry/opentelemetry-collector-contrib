@@ -1589,14 +1589,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 	}
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		errs <- err
-		return
-	}
-
-	err = json.Unmarshal(body, &kvs)
-	if err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&kvs); err != nil {
 		errs <- err
 		return
 	}
@@ -1609,8 +1602,28 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 		se = kv.Content.Current.StorageEngine
 		ext = kv.Content.KVService.Status
 
-		s.mb.RecordSplunkKvstoreStatusDataPoint(now, 1, se, ext, st)
-		s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
-		s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs)
+		// a 0 gauge value means that the metric was not reported in the api call
+		// to the introspection endpoint.
+		if st == "" {
+			st = KVStatusUnknown
+			// set to 0 to indicate no status being reported
+			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 0, se, ext, st)
+		} else {
+			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 1, se, ext, st)
+		}
+
+		if rs == "" {
+			rs = KVRestoreStatusUnknown
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 0, rs)
+		} else {
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs)
+		}
+
+		if brs == "" {
+			brs = KVBackupStatusFailed
+			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 0, brs)
+		} else {
+			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
+		}
 	}
 }
