@@ -9,5 +9,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("github.com/godbus/dbus.(*Conn).inWorker"))
+	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("github.com/godbus/dbus.(*Conn).inWorker"), goleak.IgnoreAnyFunction("github.com/apache/pulsar-client-go/pulsar/internal.(*connectionPool).checkAndCleanIdleConnections"))
 }

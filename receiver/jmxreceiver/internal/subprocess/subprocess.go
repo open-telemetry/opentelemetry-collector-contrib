@@ -85,7 +85,7 @@ func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 	}
 
 	return &Subprocess{
-		Stdout:         make(chan string),
+		Stdout:         make(chan string, 100),
 		pid:            pid{pid: noPid, pidLock: sync.Mutex{}},
 		config:         conf,
 		logger:         logger,
@@ -115,6 +115,7 @@ func (subprocess *Subprocess) Start(ctx context.Context) error {
 	go func() {
 		subprocess.run(cancelCtx) // will block for lifetime of process
 		close(subprocess.shutdownSignal)
+		close(subprocess.Stdout)
 	}()
 	return nil
 }
