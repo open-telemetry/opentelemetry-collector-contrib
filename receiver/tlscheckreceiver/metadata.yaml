@@ -1,0 +1,35 @@
+type: tlscheck
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, michael-burt]
+
+
+resource_attributes:
+  tlscheck.url:
+    enabled: true
+    description: Url at which the certificate was accessed.
+    type: string
+
+attributes:
+  tlscheck.x509.issuer:
+    enabled: true
+    description: The entity that issued the certificate.
+    type: string
+  tlscheck.x509.cn:
+    enabled: true
+    description: The commonName in the subject of the certificate.
+    type: string
+
+metrics:
+  tlscheck.time_left:
+    description: Time in seconds until certificate expiry, as specified by `NotAfter` field in the x.509 certificate. Negative values represent time in seconds since expiration.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "s"
+    attributes: [tlscheck.x509.issuer, tlscheck.x509.cn]
