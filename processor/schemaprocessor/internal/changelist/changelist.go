@@ -6,10 +6,11 @@ package changelist // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
 )
@@ -47,22 +48,25 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			} else {
 				return fmt.Errorf("MetricOperator %T can't act on %T", thisMigrator, signal)
 			}
+		case operator.LogOperator:
+			if log, ok := signal.(plog.LogRecord); ok {
+				if err := thisMigrator.Do(ss, log); err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("LogOperator %T can't act on %T", thisMigrator, signal)
+			}
+		case operator.ResourceOperator:
+			if resource, ok := signal.(pcommon.Resource); ok {
+				if err := thisMigrator.Do(ss, resource); err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("ResourceOperator %T can't act on %T", thisMigrator, signal)
+			}
 		case operator.AllOperator:
 			if err := thisMigrator.Do(ss, signal); err != nil {
 				return err
-			}
-
-		// no log operator because the only log operation is an attribute changeset
-		// this block is for the `resource` block, and the `log` block
-		// todo(ankit) switch these to specific typed ones?
-		case migrate.AttributeChangeSet:
-			switch attributeSignal := signal.(type) {
-			case alias.Attributed:
-				if err := thisMigrator.Do(ss, attributeSignal.Attributes()); err != nil {
-					return err
-				}
-			default:
-				return fmt.Errorf("unsupported signal type %T for AttributeChangeSet", attributeSignal)
 			}
 		default:
 			return fmt.Errorf("unsupported migrator type %T", thisMigrator)

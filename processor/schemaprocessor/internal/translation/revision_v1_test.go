@@ -171,9 +171,11 @@ func TestNewRevisionV1(t *testing.T) {
 								"state": "status",
 							}),
 						},
-						ResourceMigrator: migrate.NewAttributeChangeSet(map[string]string{
-							"state": "status",
-						}),
+						ResourceMigrator: operator.ResourceAttributeOperator{
+							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+								"state": "status",
+							}),
+						},
 					},
 					operator.AllOperator{
 						// initialize one of each operator with the attribute set
@@ -197,16 +199,18 @@ func TestNewRevisionV1(t *testing.T) {
 								"status": "state",
 							}),
 						},
-						ResourceMigrator: migrate.NewAttributeChangeSet(map[string]string{
-							"status": "state",
-						}),
+						ResourceMigrator: operator.ResourceAttributeOperator{
+							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+								"status": "state",
+							}),
+						},
 					},
 				},
 				},
 				resources: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					migrate.NewAttributeChangeSet(map[string]string{
-						"service_name": "service.name",
-					}),
+					operator.ResourceAttributeOperator{AttributeChange: migrate.NewAttributeChangeSet(
+						map[string]string{"service_name": "service.name"},
+					)},
 				}},
 				spans: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					operator.SpanConditionalAttributeOperator{Migrator: migrate.NewConditionalAttributeSet(
@@ -243,9 +247,10 @@ func TestNewRevisionV1(t *testing.T) {
 					)},
 				}},
 				logs: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					migrate.NewAttributeChangeSet(map[string]string{
+					operator.LogAttributeOperator{AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 						"ERROR": "error",
 					}),
+					},
 				}},
 			},
 		},
