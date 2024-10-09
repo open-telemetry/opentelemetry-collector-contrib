@@ -28,12 +28,13 @@ func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "http://localhost:80/status"
+	clientConfig.Timeout = 10 * time.Second
+
 	return &Config{
-		ControllerConfig: cfg,
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "http://localhost:80/status",
-			Timeout:  10 * time.Second,
-		},
+		ControllerConfig:     cfg,
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }

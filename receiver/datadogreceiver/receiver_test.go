@@ -215,8 +215,6 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			cfg := createDefaultConfig().(*common.Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
