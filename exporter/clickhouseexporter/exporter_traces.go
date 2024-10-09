@@ -11,11 +11,13 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -74,18 +76,15 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
 			spans := td.ResourceSpans().At(i)
 			res := spans.Resource()
-			resAttr := attributesToMap(res.Attributes())
-			var serviceName string
-			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
+			resAttr := internal.AttributesToMap(res.Attributes())
+			serviceName, _ := res.Attributes().Get(conventions.AttributeServiceName)
 			for j := 0; j < spans.ScopeSpans().Len(); j++ {
 				rs := spans.ScopeSpans().At(j).Spans()
 				scopeName := spans.ScopeSpans().At(j).Scope().Name()
 				scopeVersion := spans.ScopeSpans().At(j).Scope().Version()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
-					spanAttr := attributesToMap(r.Attributes())
+					spanAttr := internal.AttributesToMap(r.Attributes())
 					status := r.Status()
 					eventTimes, eventNames, eventAttrs := convertEvents(r.Events())
 					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())
@@ -97,7 +96,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 						r.TraceState().AsRaw(),
 						r.Name(),
 						r.Kind().String(),
-						serviceName,
+						serviceName.AsString(),
 						resAttr,
 						scopeName,
 						scopeVersion,
@@ -127,36 +126,25 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 	return err
 }
 
-func convertEvents(events ptrace.SpanEventSlice) ([]time.Time, []string, []map[string]string) {
-	var (
-		times []time.Time
-		names []string
-		attrs []map[string]string
-	)
+func convertEvents(events ptrace.SpanEventSlice) (times []time.Time, names []string, attrs []column.IterableOrderedMap) {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
 		names = append(names, event.Name())
-		attrs = append(attrs, attributesToMap(event.Attributes()))
+		attrs = append(attrs, internal.AttributesToMap(event.Attributes()))
 	}
-	return times, names, attrs
+	return
 }
 
-func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []map[string]string) {
-	var (
-		traceIDs []string
-		spanIDs  []string
-		states   []string
-		attrs    []map[string]string
-	)
+func convertLinks(links ptrace.SpanLinkSlice) (traceIDs []string, spanIDs []string, states []string, attrs []column.IterableOrderedMap) {
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))
 		spanIDs = append(spanIDs, traceutil.SpanIDToHexOrEmptyString(link.SpanID()))
 		states = append(states, link.TraceState().AsRaw())
-		attrs = append(attrs, attributesToMap(link.Attributes()))
+		attrs = append(attrs, internal.AttributesToMap(link.Attributes()))
 	}
-	return traceIDs, spanIDs, states, attrs
+	return
 }
 
 const (
