@@ -80,23 +80,6 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// emitterLoop reads the log entries produced by the emitter and batches them
-// in converter.
-func (r *receiver) emitterLoop() {
-	defer r.emitWg.Done()
-
-	// Don't create done channel on every iteration.
-	// emitter.OutChannel is closed on ctx.Done(), no need to handle ctx here
-	// instead we should drain and process the channel to let emitter cancel properly
-	for e := range r.emitter.OutChannel() {
-		if err := r.converter.Batch(e); err != nil {
-			r.set.Logger.Error("Could not add entry to batch", zap.Error(err))
-		}
-	}
-
-	r.set.Logger.Debug("Emitter loop stopped")
-}
-
 func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
 	pLogs := ConvertEntries(entries)
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
