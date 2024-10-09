@@ -28,8 +28,8 @@ go.opentelemetry.io/collector/component/componentstatus v0.111.1-0.2024100815414
 go.opentelemetry.io/collector/component/componentstatus v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:fwY2NdXkOw07ObusogFZChVyyvqXqCJBlGaWwwDJAtI=
 go.opentelemetry.io/collector/config/configtelemetry v0.111.1-0.20241008154146-ea48c09c31ae h1:NmNYRBSP+IUK9CsU1Q/1eS/tXmYTPMYxmGQsxEprq/s=
 go.opentelemetry.io/collector/config/configtelemetry v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:R0MBUxjSMVMIhljuDHWIygzzJWQyZHXXWIgQNxcFwhc=
-go.opentelemetry.io/collector/internal/globalsignal v0.111.0 h1:oq0nSD+7K2Q1Fx5d3s6lPRdKZeTL0FEg4sIaR7ZJzIc=
-go.opentelemetry.io/collector/internal/globalsignal v0.111.0/go.mod h1:GqMXodPWOxK5uqpX8MaMXC2389y2XJTa5nPwf8FYDK8=
+go.opentelemetry.io/collector/internal/globalsignal v0.111.1-0.20241008154146-ea48c09c31ae h1:fublc0EO06p79/OWw2jWVPSPNBMiBcB+0QpLes587DU=
+go.opentelemetry.io/collector/internal/globalsignal v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:GqMXodPWOxK5uqpX8MaMXC2389y2XJTa5nPwf8FYDK8=
 go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae h1:PcwZe1RD8tC4SZExhf0f5HqK+ZuWGsowHaBBU4PiUv0=
 go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
 go.opentelemetry.io/collector/pipeline v0.111.1-0.20241008154146-ea48c09c31ae h1:/NNb1rBd/Y42FzIjpLjlRSb7bPANHyI3/3DnPg5p50U=
