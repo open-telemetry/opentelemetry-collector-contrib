@@ -4,10 +4,11 @@
 package prometheusremotewrite
 
 import (
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/prometheus/prometheus/model/value"
 
