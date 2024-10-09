@@ -134,7 +134,7 @@ func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*Aggrega
 
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
 func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
-	allPipelineIDs := source.AllPipelineIDsWithPipelineIDs
+	allPipelineIDs := source.AllPipelineIDs
 	// extensions are treated as a pseudo-pipeline
 	if source.Kind() == component.KindExtension {
 		allPipelineIDs = extensionIDIter

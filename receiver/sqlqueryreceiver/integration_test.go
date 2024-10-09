@@ -340,7 +340,7 @@ func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiv
 
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
-	receiver, err := factory.CreateLogsReceiver(
+	receiver, err := factory.CreateLogs(
 		context.Background(),
 		receiverCreateSettings,
 		config,
