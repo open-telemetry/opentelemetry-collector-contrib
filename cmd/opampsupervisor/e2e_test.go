@@ -1359,10 +1359,12 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 }
 
 type LogEntry struct {
-	Level string `json:"level"`
+	Level  string `json:"level"`
+	Logger string `json:"logger"`
 }
 
-func TestSupervisorInfoLoggingLevel(t *testing.T) {
+func TestSupervisorLogging(t *testing.T) {
+	// Tests that supervisor only logs at Info level and above && that collector logs passthrough and are present in supervisor log file
 	if runtime.GOOS == "windows" {
 		t.Skip("Zap does not close the log file and Windows disallows removing files that are still opened.")
 	}
@@ -1420,12 +1422,8 @@ func TestSupervisorInfoLoggingLevel(t *testing.T) {
 	require.NoError(t, err)
 
 	scanner := bufio.NewScanner(logFile)
-	check := false
+	seenCollectorLog := false
 	for scanner.Scan() {
-		if !check {
-			check = true
-		}
-
 		line := scanner.Bytes()
 		var log LogEntry
 		err := json.Unmarshal(line, &log)
@@ -1434,9 +1432,13 @@ func TestSupervisorInfoLoggingLevel(t *testing.T) {
 		level, err := zapcore.ParseLevel(log.Level)
 		require.NoError(t, err)
 		require.GreaterOrEqual(t, level, zapcore.InfoLevel)
+
+		if log.Logger == "collector" {
+			seenCollectorLog = true
+		}
 	}
-	// verify at least 1 log was read
-	require.True(t, check)
+	// verify a collector log was read
+	require.True(t, seenCollectorLog)
 	require.NoError(t, logFile.Close())
 }
 
