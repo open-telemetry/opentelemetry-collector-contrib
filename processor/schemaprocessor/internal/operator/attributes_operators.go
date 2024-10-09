@@ -154,12 +154,22 @@ func (o SpanEventAttributeOperator) Do(ss migrate.StateSelector, spanEvent ptrac
 	return o.AttributeChange.Do(ss, spanEvent.Attributes())
 }
 
+type ResourceAttributeOperator struct {
+	AttributeChange migrate.AttributeChangeSet
+}
+
+func (o ResourceAttributeOperator) IsMigrator() {}
+
+func (o ResourceAttributeOperator) Do(ss migrate.StateSelector, resource pcommon.Resource) error {
+	return o.AttributeChange.Do(ss, resource.Attributes())
+}
+
 type AllOperator struct {
 	MetricOperator    MetricAttributeOperator
 	LogOperator       LogAttributeOperator
 	SpanOperator      SpanAttributeOperator
 	SpanEventOperator SpanEventAttributeOperator
-	ResourceMigrator  migrate.AttributeChangeSet
+	ResourceMigrator  ResourceAttributeOperator
 }
 
 func NewAllOperator(set migrate.AttributeChangeSet) AllOperator {
@@ -168,7 +178,7 @@ func NewAllOperator(set migrate.AttributeChangeSet) AllOperator {
 		LogOperator:       LogAttributeOperator{AttributeChange: set},
 		SpanOperator:      SpanAttributeOperator{AttributeChange: set},
 		SpanEventOperator: SpanEventAttributeOperator{AttributeChange: set},
-		ResourceMigrator:  set,
+		ResourceMigrator:  ResourceAttributeOperator{AttributeChange: set},
 	}
 }
 
@@ -185,7 +195,7 @@ func (o AllOperator) Do(ss migrate.StateSelector, data any) error {
 	case ptrace.SpanEvent:
 		return o.SpanEventOperator.Do(ss, typedData)
 	case pcommon.Resource:
-		return o.ResourceMigrator.Do(ss, typedData.Attributes())
+		return o.ResourceMigrator.Do(ss, typedData)
 	default:
 		return fmt.Errorf("AllOperator can't act on %T", typedData)
 	}

@@ -4,6 +4,7 @@
 package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
 
 import (
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -24,4 +25,9 @@ type MetricOperator interface {
 type SpanOperator interface {
 	migrate.Migrator
 	Do(ss migrate.StateSelector, signal ptrace.Span) error
+}
+
+type ResourceOperator interface {
+	migrate.Migrator
+	Do(ss migrate.StateSelector, resource pcommon.Resource) error
 }
