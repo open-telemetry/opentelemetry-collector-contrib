@@ -290,6 +290,7 @@ body:
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog
+      - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront
