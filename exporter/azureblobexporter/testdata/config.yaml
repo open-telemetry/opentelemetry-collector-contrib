@@ -36,3 +36,24 @@ azureblob/conn-string:
     metrics: "test"
     logs: "test"
     traces: "test"
+azureblob/err1:
+  auth:
+    type: "system_managed_identity"
+azureblob/err2:
+  auth:
+    type: "connection_string"
+azureblob/err3:
+  url: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "service_principal"
+    client_id: "<client id>"
+    client_secret: "<client secret>"
+azureblob/err4:
+  url: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "user_managed_identity"
+azureblob/err5:
+  url: "https://<account>.blob.core.windows.net/"
+  auth:
+    type: "system_managed_identity"
+  format: "custom"
