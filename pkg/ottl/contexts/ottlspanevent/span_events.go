@@ -19,6 +19,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
+const (
+	PathContextName = "spanevent"
+)
+
 var _ internal.ResourceContext = (*TransformContext)(nil)
 var _ internal.InstrumentationScopeContext = (*TransformContext)(nil)
 var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
@@ -101,6 +105,17 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 	return p, nil
 }
 
+func WithPathContextNames() Option {
+	return func(p *ottl.Parser[TransformContext]) {
+		ottl.WithPathContextNames[TransformContext]([]string{
+			PathContextName,
+			internal.SpanPathContext,
+			internal.ResourcePathContext,
+			internal.InstrumentationScopePathContext,
+		})(p)
+	}
+}
+
 type StatementSequenceOption func(*ottl.StatementSequence[TransformContext])
 
 func WithStatementSequenceErrorMode(errorMode ottl.ErrorMode) StatementSequenceOption {
@@ -151,36 +166,48 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	if path == nil {
 		return nil, fmt.Errorf("path cannot be nil")
 	}
-	switch path.Name() {
-	case "cache":
-		if path.Keys() == nil {
-			return accessCache(), nil
+
+	if path.Context() == PathContextName || path.Context() == "" {
+		switch path.Name() {
+		case "cache":
+			if path.Keys() == nil {
+				return accessCache(), nil
+			}
+			return accessCacheKey(path.Keys()), nil
+		case "time_unix_nano":
+			return accessSpanEventTimeUnixNano(), nil
+		case "time":
+			return accessSpanEventTime(), nil
+		case "name":
+			return accessSpanEventName(), nil
+		case "attributes":
+			if path.Keys() == nil {
+				return accessSpanEventAttributes(), nil
+			}
+			return accessSpanEventAttributesKey(path.Keys()), nil
+		case "dropped_attributes_count":
+			return accessSpanEventDroppedAttributeCount(), nil
+		default:
+			return pep.parseLowerContextPath(path.Name(), path.Next()) // BC paths without context
 		}
-		return accessCacheKey(path.Keys()), nil
-	case "resource":
-		return internal.ResourcePathGetSetter[TransformContext](path.Next())
-	case "instrumentation_scope":
-		return internal.ScopePathGetSetter[TransformContext](path.Next())
-	case "span":
-		return internal.SpanPathGetSetter[TransformContext](path.Next())
-	case "time_unix_nano":
-		return accessSpanEventTimeUnixNano(), nil
-	case "time":
-		return accessSpanEventTime(), nil
-	case "name":
-		return accessSpanEventName(), nil
-	case "attributes":
-		if path.Keys() == nil {
-			return accessSpanEventAttributes(), nil
-		}
-		return accessSpanEventAttributesKey(path.Keys()), nil
-	case "dropped_attributes_count":
-		return accessSpanEventDroppedAttributeCount(), nil
-	default:
-		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), "Span Event", internal.SpanEventRef)
 	}
 
+	return pep.parseLowerContextPath(path.Context(), path)
 }
+
+func (pep *pathExpressionParser) parseLowerContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	switch context {
+	case internal.ResourcePathContext:
+		return internal.ResourcePathGetSetter(path)
+	case internal.InstrumentationScopePathContext:
+		return internal.ScopePathGetSetter(path)
+	case internal.SpanPathContext:
+		return internal.SpanPathGetSetter(path)
+	default:
+		return nil, internal.FormatDefaultErrorMessage(context, path.String(), "Span Event", internal.SpanEventRef)
+	}
+}
+
 func accessCache() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {

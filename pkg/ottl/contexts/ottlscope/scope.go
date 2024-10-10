@@ -17,6 +17,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
+const (
+	PathContextName = internal.ScopePathContext
+)
+
 var _ internal.ResourceContext = (*TransformContext)(nil)
 var _ internal.InstrumentationScopeContext = (*TransformContext)(nil)
 var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
@@ -83,6 +87,15 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 	return p, nil
 }
 
+func WithPathContextNames() Option {
+	return func(p *ottl.Parser[TransformContext]) {
+		ottl.WithPathContextNames[TransformContext]([]string{
+			PathContextName,
+			internal.ResourcePathContext,
+		})(p)
+	}
+}
+
 type StatementSequenceOption func(*ottl.StatementSequence[TransformContext])
 
 func WithStatementSequenceErrorMode(errorMode ottl.ErrorMode) StatementSequenceOption {
@@ -127,16 +140,30 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	if path == nil {
 		return nil, fmt.Errorf("path cannot be nil")
 	}
-	switch path.Name() {
-	case "cache":
-		if path.Keys() == nil {
-			return accessCache(), nil
+
+	if path.Context() == PathContextName || path.Context() == "" {
+		switch path.Name() {
+		case "cache":
+			if path.Keys() == nil {
+				return accessCache(), nil
+			}
+			return accessCacheKey(path.Keys()), nil
+		case internal.ResourcePathContext:
+			return pep.parseLowerContextPath(path.Name(), path.Next()) // BC paths without context
+		default:
+			return internal.ScopePathGetSetter[TransformContext](path)
 		}
-		return accessCacheKey(path.Keys()), nil
-	case "resource":
-		return internal.ResourcePathGetSetter[TransformContext](path.Next())
+	}
+
+	return pep.parseLowerContextPath(path.Context(), path)
+}
+
+func (pep *pathExpressionParser) parseLowerContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
+	switch context {
+	case internal.ResourcePathContext:
+		return internal.ResourcePathGetSetter[TransformContext](path)
 	default:
-		return internal.ScopePathGetSetter[TransformContext](path)
+		return nil, internal.FormatDefaultErrorMessage(context, path.String(), internal.InstrumentationScopeContextName, internal.InstrumentationScopeRef)
 	}
 }
 
