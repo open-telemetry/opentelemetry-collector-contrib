@@ -18,5 +18,6 @@ components inside the collector.
 
 ### History
 
-`status` was originally developed for the `healthcheckv2extension`. Other extensions that need to collector status
-information needed to use this same implementation to aggregate status information.
+`pkg/status` was originally developed for the `healthcheckv2extension`. It provided a generic way of aggregating
+status information for components. Other extensions that need to implement the `componentstatus.Watcher` can now use
+the same implementation `healthcheckv2extension` uses.
