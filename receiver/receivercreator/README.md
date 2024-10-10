@@ -437,3 +437,144 @@ service:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+
+## Generate receiver configurations from provided Hints
+
+Currently this feature is only supported for K8s environments and the `k8sobserver`.
+
+The feature for K8s is enabled with the following setting:
+
+```yaml
+receiver_creator/metrics:
+  watch_observers: [ k8s_observer ]
+  hints:
+    k8s:
+      metrics:
+        enabled: true
+```
+
+Users can use the following annotations to automatically enable receivers to start collecting metrics from the target Pods/containers.
+
+### Supported metrics annotations
+1. `io.opentelemetry.collector.receiver-creator.metrics/receiver` (example: `nginx`)
+2. `io.opentelemetry.collector.receiver-creator.metrics/endpoint` (example: ```"http://`endpoint`/nginx_status"```, if not provided it defaults to `endpoint` which is of form `pod_ip:container_port`.)
+3. `io.opentelemetry.collector.receiver-creator.metrics/collection_interval` (example: `20s`)
+4. `io.opentelemetry.collector.receiver-creator.metrics/timeout` (example: `1m`)
+5. `io.opentelemetry.collector.receiver-creator.metrics/username` (example: `admin`)
+6. `io.opentelemetry.collector.receiver-creator.metrics/password` (example: `passpass`)
+
+
+### Support multiple target containers
+
+Users can target the annotation to a specific container by suffixing it with the name of the port that container exposes:
+`io.opentelemetry.collector.receiver-creator.metrics.<container_port_name>/endpoint`.
+For example ```io.opentelemetry.collector.receiver-creator.metrics.webserver/endpoint: "http://`endpoint`/nginx_status"``` 
+where `webserver` is the name of the port the target container exposes.
+
+If a Pod is annotated with both container level hints and pod level hints the container level hints have priority and
+the Pod level hints are used as a fallback (see detailed example bellow).
+
+The current implementation relies on the implementation of `k8sobserver` extension and specifically
+the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).
+The hints are evaluated per container by extracting the annotations from each `Port` endpoint that is emitted. 
+
+
+### Examples
+
+#### Metrics example
+
+Collector's configuration:
+```yaml
+receivers:
+  receiver_creator/metrics:
+    watch_observers: [ k8s_observer ]
+    hints:
+      k8s:
+        metrics:
+          enabled: true
+    receivers:
+
+service:
+  extensions: [ k8s_observer]
+  pipelines:
+    metrics:
+      receivers: [ receiver_creator/metrics ]
+      processors: []
+      exporters: [ debug ]
+```
+
+Target Pod annotated with hints:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+data:
+  nginx.conf: |
+    user  nginx;
+    worker_processes  1;
+    error_log  /dev/stderr warn;
+    pid        /var/run/nginx.pid;
+    events {
+      worker_connections  1024;
+    }
+    http {
+      include       /etc/nginx/mime.types;
+      default_type  application/octet-stream;
+  
+      log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"';
+      access_log  /dev/stdout main;
+      server {
+          listen 80;
+          server_name localhost;
+  
+          location /nginx_status {
+              stub_status on;
+          }
+      }
+      include /etc/nginx/conf.d/*;
+    }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+  annotations:
+    io.opentelemetry.collector.receiver-creator.metrics/receiver: redis
+    io.opentelemetry.collector.receiver-creator.metrics/collection_interval: '20s'
+    io.opentelemetry.collector.receiver-creator.metrics.webserver/receiver: nginx 
+    io.opentelemetry.collector.receiver-creator.metrics.webserver/endpoint: "http://`endpoint`/nginx_status"
+  labels:
+    k8s-app: redis
+    app: redis
+spec:
+  volumes:
+  - name: nginx-conf
+    configMap:
+     name: nginx-conf
+     items:
+       - key: nginx.conf
+         path: nginx.conf
+  containers:
+  - name: webserver
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+      name: webserver
+    volumeMounts:
+    - mountPath: /etc/nginx/nginx.conf
+      readOnly: true
+      subPath: nginx.conf
+      name: nginx-conf
+  - image: redis
+    imagePullPolicy: IfNotPresent
+    name: redis
+    ports:
+    - name: redis
+      containerPort: 6379
+      protocol: TCP
+```
