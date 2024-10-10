@@ -127,6 +127,8 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			}
 		}
 		return accessStatus[K](), nil
+	case "flags":
+		return accessFlags[K](), nil
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), SpanContextName, SpanRef)
 	}
@@ -580,6 +582,20 @@ func accessStatusMessage[K SpanContext]() ottl.StandardGetSetter[K] {
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
 				tCtx.GetSpan().Status().SetMessage(str)
+			}
+			return nil
+		},
+	}
+}
+
+func accessFlags[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			return int64(tCtx.GetSpan().Flags()), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			if i, ok := val.(uint32); ok {
+				tCtx.GetSpan().SetFlags(i)
 			}
 			return nil
 		},
