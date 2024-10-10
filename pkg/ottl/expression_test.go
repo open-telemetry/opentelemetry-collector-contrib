@@ -59,6 +59,16 @@ func basicSlice() (ExprFunc[any], error) {
 	}, nil
 }
 
+func basicSliceString() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]string{
+				"pass",
+			},
+		}, nil
+	}, nil
+}
+
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name string
@@ -224,6 +234,25 @@ func Test_newGetter(t *testing.T) {
 				Literal: &mathExprLiteral{
 					Converter: &converter{
 						Function: "Slice",
+						Keys: []key{
+							{
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: "pass",
+		},
+		{
+			name: "function call nested SliceString",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceString",
 						Keys: []key{
 							{
 								Int: ottltest.Intp(0),
@@ -532,6 +561,7 @@ func Test_newGetter(t *testing.T) {
 		createFactory("Map", &struct{}{}, basicMap),
 		createFactory("PSlice", &struct{}{}, pslice),
 		createFactory("Slice", &struct{}{}, basicSlice),
+		createFactory("SliceString", &struct{}{}, basicSliceString),
 	)
 
 	p, _ := NewParser[any](
