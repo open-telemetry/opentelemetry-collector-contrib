@@ -11,11 +11,15 @@ import (
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -23,11 +27,16 @@ type logsExporter struct {
 	client    *sql.DB
 	insertSQL string
 
-	logger *zap.Logger
-	cfg    *Config
+	logger    *zap.Logger
+	cfg       *Config
+	telemetry *metadata.TelemetryBuilder
 }
 
-func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
+func newLogsExporter(settings exporter.Settings, cfg *Config) (*logsExporter, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	client, err := newClickhouseClient(cfg)
 	if err != nil {
 		return nil, err
@@ -36,8 +45,9 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	return &logsExporter{
 		client:    client,
 		insertSQL: renderInsertLogsSQL(cfg),
-		logger:    logger,
+		logger:    settings.Logger,
 		cfg:       cfg,
+		telemetry: telemetry,
 	}, nil
 }
 
@@ -116,6 +126,8 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						logAttr,
 					)
 					if err != nil {
+						duration := time.Since(start)
+						recordLogsInternalMetrics(ctx, e.telemetry, int64(ld.LogRecordCount()), duration, true)
 						return fmt.Errorf("ExecContext:%w", err)
 					}
 				}
@@ -124,6 +136,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		return nil
 	})
 	duration := time.Since(start)
+	recordLogsInternalMetrics(ctx, e.telemetry, int64(ld.LogRecordCount()), duration, false)
 	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
@@ -270,4 +283,12 @@ func doWithTx(_ context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+func recordLogsInternalMetrics(ctx context.Context, telemetry *metadata.TelemetryBuilder, count int64, duration time.Duration, hasError bool) {
+	if !hasError {
+		telemetry.ExporterClickhouseSentLogsBatchSize.Record(ctx, count)
+	}
+	telemetry.ExporterClickhouseSentLogs.Add(ctx, count, metric.WithAttributes(attribute.KeyValue{Key: "error", Value: attribute.BoolValue(hasError)}))
+	telemetry.ExporterClickhouseSentLogsLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributes(attribute.KeyValue{Key: "error", Value: attribute.BoolValue(hasError)}))
 }
