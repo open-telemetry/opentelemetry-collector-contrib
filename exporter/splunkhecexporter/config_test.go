@@ -101,6 +101,12 @@ func TestLoadConfig(t *testing.T) {
 						MaxSizeItems: 10,
 					},
 				},
+				OtelAttrsToHec: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
+				},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "mysource",
 					SourceType: "mysourcetype",
