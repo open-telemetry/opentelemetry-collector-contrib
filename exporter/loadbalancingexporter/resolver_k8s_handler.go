@@ -17,19 +17,31 @@ import (
 
 var _ cache.ResourceEventHandler = (*handler)(nil)
 
+const (
+  epMissingHostnamesMsg = "Endpoints object missing hostnames"
+)
+
 type handler struct {
 	endpoints *sync.Map
 	callback  func(ctx context.Context) ([]string, error)
 	logger    *zap.Logger
 	telemetry *metadata.TelemetryBuilder
+  returnNames bool
 }
 
 func (h handler) OnAdd(obj any, _ bool) {
 	var endpoints []string
+  var ok bool
 
 	switch object := obj.(type) {
 	case *corev1.Endpoints:
-		endpoints = convertToEndpoints(object)
+	  ok, endpoints = convertToEndpoints(h.returnNames, object)
+    if !ok {
+      h.logger.Warn(epMissingHostnamesMsg, zap.Any("obj", obj))
+      h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
+      return
+    }
+
 	default: // unsupported
 		h.logger.Warn("Got an unexpected Kubernetes data type during the inclusion of a new pods for the service", zap.Any("obj", obj))
 		h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
@@ -49,7 +61,13 @@ func (h handler) OnAdd(obj any, _ bool) {
 func (h handler) OnUpdate(oldObj, newObj any) {
 	switch oldEps := oldObj.(type) {
 	case *corev1.Endpoints:
-		epRemove := convertToEndpoints(oldEps)
+		hostnameOk, epRemove := convertToEndpoints(h.returnNames, oldEps)
+    if !hostnameOk {
+      h.logger.Warn(epMissingHostnamesMsg, zap.Any("obj", oldObj))
+      h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
+      return
+    }
+
 		for _, ep := range epRemove {
 			h.endpoints.Delete(ep)
 		}
@@ -63,8 +81,16 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 			h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
 			return
 		}
+
+    hostnameOk, epUpdate := convertToEndpoints(h.returnNames, newEps)
+    if !hostnameOk {
+      h.logger.Warn(epMissingHostnamesMsg, zap.Any("obj", newEps))
+      h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
+      return
+    }
+
 		changed := false
-		for _, ep := range convertToEndpoints(newEps) {
+		for _, ep := range epUpdate {
 			if _, loaded := h.endpoints.LoadOrStore(ep, true); !loaded {
 				changed = true
 			}
@@ -81,13 +107,20 @@ func (h handler) OnUpdate(oldObj, newObj any) {
 
 func (h handler) OnDelete(obj any) {
 	var endpoints []string
+  var ok bool
+
 	switch object := obj.(type) {
 	case *cache.DeletedFinalStateUnknown:
 		h.OnDelete(object.Obj)
 		return
 	case *corev1.Endpoints:
 		if object != nil {
-			endpoints = convertToEndpoints(object)
+			ok, endpoints = convertToEndpoints(h.returnNames, object)
+      if !ok {
+        h.logger.Warn(epMissingHostnamesMsg, zap.Any("obj", obj))
+        h.telemetry.LoadbalancerNumResolutions.Add(context.Background(), 1, metric.WithAttributeSet(k8sResolverFailureAttrSet))
+        return
+      }
 		}
 	default: // unsupported
 		h.logger.Warn("Got an unexpected Kubernetes data type during the removal of the pods for a service", zap.Any("obj", obj))
@@ -102,14 +135,21 @@ func (h handler) OnDelete(obj any) {
 	}
 }
 
-func convertToEndpoints(eps ...*corev1.Endpoints) []string {
-	var ipAddress []string
+func convertToEndpoints(retNames bool, eps ...*corev1.Endpoints) (bool, []string) {
+	var res []string
 	for _, ep := range eps {
 		for _, subsets := range ep.Subsets {
 			for _, addr := range subsets.Addresses {
-				ipAddress = append(ipAddress, addr.IP)
+        if retNames {
+          if addr.Hostname == "" {
+            return false, nil
+          }
+				  res = append(res, addr.Hostname)
+        } else {
+          res = append(res, addr.IP)
+        }
 			}
 		}
 	}
-	return ipAddress
+	return true, res
 }
