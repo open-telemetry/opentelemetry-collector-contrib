@@ -10,10 +10,6 @@ rules:
       - ""
     resources:
       - events
-      - namespaces
-      - namespaces/status
-      - nodes
-      - nodes/spec
       - pods
       - pods/status
       - replicationcontrollers
