@@ -169,6 +169,47 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return result, nil
 }
 
+// PSliceGetter is a Getter that must return a pcommon.Slice.
+type PSliceGetter[K any] interface {
+	Get(ctx context.Context, tCtx K) (pcommon.Slice, error)
+}
+
+// PStandardSliceGetter is a basic implementation of PSliceGetter
+type StandardPSliceGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+// Get retrieves a pcommon.Slice value.
+// If the value is not a pcommon.Slice a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return pcommon.Slice{}, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return pcommon.Slice{}, TypeError("expected pcommon.Slice but got nil")
+	}
+	switch v := val.(type) {
+	case pcommon.Slice:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeSlice {
+			return v.Slice(), nil
+		}
+		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %v", v.Type()))
+	case []any:
+		s := pcommon.NewSlice()
+		err := s.FromRaw(v)
+		if err != nil {
+			return pcommon.Slice{}, err
+		}
+		return s, nil
+	default:
+		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %T", val))
+	}
+}
+
 // TypeError represents that a value was not an expected type.
 type TypeError string
 
