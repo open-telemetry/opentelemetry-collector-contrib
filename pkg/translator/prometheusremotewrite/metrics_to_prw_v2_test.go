@@ -37,11 +37,12 @@ func TestFromMetricsV2(t *testing.T) {
 			},
 		}
 	}
-	tsMap, err := FromMetricsV2(payload.Metrics(), settings)
+	tsMap, symbolsTable, err := FromMetricsV2(payload.Metrics(), settings)
 	wanted := want()
 	require.NoError(t, err)
 	require.NotNil(t, tsMap)
 	require.Equal(t, wanted, tsMap)
+	require.NotNil(t, symbolsTable)
 
 }
 

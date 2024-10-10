@@ -18,7 +18,7 @@ import (
 )
 
 // FromMetricsV2 converts pmetric.Metrics to Prometheus remote write format 2.0.
-func FromMetricsV2(md pmetric.Metrics, settings Settings) (map[string]*writev2.TimeSeries, error) {
+func FromMetricsV2(md pmetric.Metrics, settings Settings) (map[string]*writev2.TimeSeries, writev2.SymbolsTable, error) {
 	c := newPrometheusConverterV2()
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
@@ -27,7 +27,7 @@ func FromMetricsV2(md pmetric.Metrics, settings Settings) (map[string]*writev2.T
 		out[strconv.Itoa(i)] = &tss[i]
 	}
 
-	return out, errs
+	return out, c.symbolTable, errs
 }
 
 // prometheusConverterV2 converts from OTLP to Prometheus write 2.0 format.
