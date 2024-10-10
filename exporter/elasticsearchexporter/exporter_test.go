@@ -82,6 +82,96 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with bodymap encoding", func(t *testing.T) {
+		tableTests := []struct {
+			name     string
+			body     func() pcommon.Map
+			expected string
+		}{
+			{
+				name: "flat",
+				body: func() pcommon.Map {
+					body := pcommon.NewMap()
+					body.PutStr("@timestamp", "2024-03-12T20:00:41.123456789Z")
+					body.PutInt("id", 1)
+					body.PutStr("key", "value")
+					return body
+				},
+				expected: `{"@timestamp":"2024-03-12T20:00:41.123456789Z","id":1,"key":"value"}`,
+			},
+			{
+				name: "dotted key",
+				body: func() pcommon.Map {
+					body := pcommon.NewMap()
+					body.PutInt("a", 1)
+					body.PutInt("a.b", 2)
+					body.PutInt("a.b.c", 3)
+					return body
+				},
+				expected: `{"a":1,"a.b":2,"a.b.c":3}`,
+			},
+			{
+				name: "slice",
+				body: func() pcommon.Map {
+					body := pcommon.NewMap()
+					s := body.PutEmptySlice("a")
+					for i := 0; i < 2; i++ {
+						s.AppendEmpty().SetInt(int64(i))
+					}
+					return body
+				},
+				expected: `{"a":[0,1]}`,
+			},
+			{
+				name: "inner map",
+				body: func() pcommon.Map {
+					body := pcommon.NewMap()
+					m := body.PutEmptyMap("a")
+					m.PutInt("b", 1)
+					m.PutInt("c", 2)
+					return body
+				},
+				expected: `{"a":{"b":1,"c":2}}`,
+			},
+			{
+				name: "nested map",
+				body: func() pcommon.Map {
+					body := pcommon.NewMap()
+					m1 := body.PutEmptyMap("a")
+					m2 := m1.PutEmptyMap("b")
+					m2.PutInt("c", 1)
+					m2.PutInt("d", 2)
+					return body
+				},
+				expected: `{"a":{"b":{"c":1,"d":2}}}`,
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					assert.JSONEq(t, tt.expected, string(docs[0].Document))
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "bodymap"
+				})
+				logs := plog.NewLogs()
+				resourceLogs := logs.ResourceLogs().AppendEmpty()
+				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+				logRecords := scopeLogs.LogRecords()
+				logRecord := logRecords.AppendEmpty()
+				tt.body().CopyTo(logRecord.Body().SetEmptyMap())
+
+				mustSendLogs(t, exporter, logs)
+				rec.WaitItems(1)
+			})
+		}
+	})
+
 	t.Run("publish with dedot", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
