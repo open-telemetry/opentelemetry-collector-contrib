@@ -32,6 +32,7 @@ func TestCreatingExporter(t *testing.T) {
 			name: "Default configuration",
 			conf: applyConfigChanges(func(conf *Config) {
 				conf.AWS.StreamName = "example-test"
+				conf.AWS.StreamARN = "arn:aws:kinesis:us-west-2:123456789012:stream/example-test"
 			}),
 			validateNew: func(tb testing.TB) func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
 				return func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
@@ -45,6 +46,7 @@ func TestCreatingExporter(t *testing.T) {
 			name: "Apply different region",
 			conf: applyConfigChanges(func(conf *Config) {
 				conf.AWS.StreamName = "example-test"
+				conf.AWS.StreamName = "arn:aws:kinesis:us-east-1:123456789012:stream/example-test"
 				conf.AWS.Region = "us-east-1"
 				conf.AWS.Role = "example-role"
 			}),

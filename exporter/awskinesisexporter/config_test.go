@@ -67,6 +67,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				AWS: AWSConfig{
 					StreamName:      "test-stream",
+					StreamARN:       "arn:aws:kinesis:mars-1:123456789012:stream/test-stream",
 					KinesisEndpoint: "awskinesis.mars-1.aws.galactic",
 					Region:          "mars-1",
 					Role:            "arn:test-role",

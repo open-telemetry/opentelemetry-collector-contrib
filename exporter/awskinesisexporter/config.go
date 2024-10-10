@@ -14,6 +14,7 @@ import (
 // AWSConfig contains AWS specific configuration such as awskinesis stream, region, etc.
 type AWSConfig struct {
 	StreamName      string `mapstructure:"stream_name"`
+	StreamARN       string `mapstructure:"stream_arn"`
 	KinesisEndpoint string `mapstructure:"kinesis_endpoint"`
 	Region          string `mapstructure:"region"`
 	Role            string `mapstructure:"role"`
