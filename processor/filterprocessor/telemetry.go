@@ -24,7 +24,7 @@ const (
 type filterProcessorTelemetry struct {
 	exportCtx context.Context
 
-	processorAttr []attribute.KeyValue
+	processorAttr attribute.Set
 
 	telemetryBuilder *metadata.TelemetryBuilder
 }
@@ -36,7 +36,7 @@ func newfilterProcessorTelemetry(set processor.Settings) (*filterProcessorTeleme
 	}
 
 	return &filterProcessorTelemetry{
-		processorAttr:    []attribute.KeyValue{attribute.String(metadata.Type.String(), set.ID.String())},
+		processorAttr:    attribute.NewSet(attribute.String(metadata.Type.String(), set.ID.String())),
 		exportCtx:        context.Background(),
 		telemetryBuilder: telemetryBuilder,
 	}, nil
@@ -45,10 +45,10 @@ func newfilterProcessorTelemetry(set processor.Settings) (*filterProcessorTeleme
 func (fpt *filterProcessorTelemetry) record(trigger trigger, dropped int64) {
 	switch trigger {
 	case triggerMetricDataPointsDropped:
-		fpt.telemetryBuilder.ProcessorFilterDatapointsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
+		fpt.telemetryBuilder.ProcessorFilterDatapointsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributeSet(fpt.processorAttr))
 	case triggerLogsDropped:
-		fpt.telemetryBuilder.ProcessorFilterLogsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
+		fpt.telemetryBuilder.ProcessorFilterLogsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributeSet(fpt.processorAttr))
 	case triggerSpansDropped:
-		fpt.telemetryBuilder.ProcessorFilterSpansFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
+		fpt.telemetryBuilder.ProcessorFilterSpansFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributeSet(fpt.processorAttr))
 	}
 }

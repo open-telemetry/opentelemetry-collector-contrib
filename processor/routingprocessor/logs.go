@@ -173,9 +173,7 @@ func (p *logProcessor) recordNonRoutedResourceLogs(ctx context.Context, routingK
 	p.telemetry.RoutingProcessorNonRoutedLogRecords.Add(
 		ctx,
 		int64(logRecordsCount),
-		metric.WithAttributes(
-			attribute.String("routing_key", routingKey),
-		),
+		metric.WithAttributeSet(attribute.NewSet(attribute.String("routing_key", routingKey))),
 	)
 }
 
@@ -186,9 +184,7 @@ func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 		p.telemetry.RoutingProcessorNonRoutedLogRecords.Add(
 			ctx,
 			int64(l.LogRecordCount()),
-			metric.WithAttributes(
-				attribute.String("routing_key", p.extractor.fromAttr),
-			),
+			metric.WithAttributeSet(attribute.NewSet(attribute.String("routing_key", p.extractor.fromAttr))),
 		)
 	}
 
