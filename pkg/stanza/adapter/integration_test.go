@@ -49,12 +49,11 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	}
 
 	rcv := &receiver{
-		set:       set,
-		id:        component.MustNewID("testReceiver"),
-		pipe:      pipe,
-		consumer:  nextConsumer,
-		converter: NewConverter(componenttest.NewNopTelemetrySettings()),
-		obsrecv:   obsrecv,
+		set:      set,
+		id:       component.MustNewID("testReceiver"),
+		pipe:     pipe,
+		consumer: nextConsumer,
+		obsrecv:  obsrecv,
 	}
 
 	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)

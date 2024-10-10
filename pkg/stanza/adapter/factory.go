@@ -50,7 +50,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 		if baseCfg.numWorkers > 0 {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
 		}
-		converter := NewConverter(params.TelemetrySettings, converterOpts...)
+
 		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
@@ -62,7 +62,6 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			set:       params.TelemetrySettings,
 			id:        params.ID,
 			consumer:  consumerretry.NewLogs(baseCfg.RetryOnFailure, params.Logger, nextConsumer),
-			converter: converter,
 			obsrecv:   obsrecv,
 			storageID: baseCfg.StorageID,
 		}
@@ -84,6 +83,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			return nil, err
 		}
 
+		rcv.emitter = emitter
 		rcv.pipe = pipe
 
 		return rcv, nil

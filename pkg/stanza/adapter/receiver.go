@@ -6,8 +6,6 @@ package adapter // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
-	"sync"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
@@ -22,17 +20,14 @@ import (
 )
 
 type receiver struct {
-	set       component.TelemetrySettings
-	id        component.ID
-	emitWg    sync.WaitGroup
-	consumeWg sync.WaitGroup
-	cancel    context.CancelFunc
+	set    component.TelemetrySettings
+	id     component.ID
+	cancel context.CancelFunc
 
-	pipe      pipeline.Pipeline
-	emitter   *helper.LogEmitter
-	consumer  consumer.Logs
-	converter *Converter
-	obsrecv   *receiverhelper.ObsReport
+	pipe     pipeline.Pipeline
+	emitter  *helper.LogEmitter
+	consumer consumer.Logs
+	obsrecv  *receiverhelper.ObsReport
 
 	storageID     *component.ID
 	storageClient storage.Client
@@ -43,7 +38,7 @@ var _ rcvr.Logs = (*receiver)(nil)
 
 // Start tells the receiver to start
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	rctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 	r.set.Logger.Info("Starting stanza receiver")
 
@@ -54,28 +49,6 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	if err := r.pipe.Start(r.storageClient); err != nil {
 		return fmt.Errorf("start stanza: %w", err)
 	}
-
-	r.converter.Start()
-
-	// Below we're starting 2 loops:
-	// * one which reads all the logs produced by the emitter and then forwards
-	//   them to converter
-	// ...
-	//r.emitWg.Add(1)
-	//go r.emitterLoop()
-
-	// ...
-	// * second one which reads all the logs produced by the converter
-	//   (aggregated by Resource) and then calls consumer to consume them.
-	r.consumeWg.Add(1)
-	go r.consumerLoop(rctx)
-
-	// Those 2 loops are started in separate goroutines because batching in
-	// the emitter loop can cause a flush, caused by either reaching the max
-	// flush size or by the configurable ticker which would in turn cause
-	// a set of log entries to be available for reading in converter's out
-	// channel. In order to prevent backpressure, reading from the converter
-	// channel and batching are done in those 2 goroutines.
 
 	return nil
 }
@@ -92,27 +65,6 @@ func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
 	r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
 }
 
-// consumerLoop reads converter log entries and calls the consumer to consumer them.
-func (r *receiver) consumerLoop(ctx context.Context) {
-	defer r.consumeWg.Done()
-
-	// Don't create done channel on every iteration.
-	// converter.OutChannel is closed on Shutdown before context is cancelled.
-	// Drain the channel and process events before exiting
-	for pLogs := range r.converter.OutChannel() {
-		obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
-		logRecordCount := pLogs.LogRecordCount()
-
-		cErr := r.consumer.ConsumeLogs(ctx, pLogs)
-		if cErr != nil {
-			r.set.Logger.Error("ConsumeLogs() failed", zap.Error(cErr))
-		}
-		r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
-	}
-
-	r.set.Logger.Debug("Consumer loop stopped")
-}
-
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
 	if r.cancel == nil {
@@ -122,10 +74,7 @@ func (r *receiver) Shutdown(ctx context.Context) error {
 	r.set.Logger.Info("Stopping stanza receiver")
 	pipelineErr := r.pipe.Stop()
 
-	r.converter.Stop()
 	r.cancel()
-	// wait for consumers to catch up
-	r.consumeWg.Wait()
 
 	if r.storageClient != nil {
 		clientErr := r.storageClient.Close(ctx)
