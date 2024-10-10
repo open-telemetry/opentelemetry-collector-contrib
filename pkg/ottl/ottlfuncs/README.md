@@ -575,7 +575,7 @@ Convert only attributes within "Record" elements
 
 ### ConvertTextToElementsXML
 
-`ConvertTextToElementsXML(target, Optional[xpath])`
+`ConvertTextToElementsXML(target, Optional[xpath], Optional[elementName])`
 
 The `ConvertTextToElementsXML` Converter returns an edited version of an XML string where all text belongs to a dedicated element.
 
@@ -592,17 +592,17 @@ For example, `<a><b>foo</b>bar</a>` will be converted to `<a><b>foo</b><value>ba
 
 Examples:
 
-Ensure all content in a document is wrapped in a dedicated element
+Ensure all text content in a document is wrapped in a dedicated element
 
 - `ConvertTextToElementsXML(body)`
 
-Use a custom naem for any new elements
+Use a custom name for any new elements
 
-- `ConvertTextToElementsXML(body, "custom")`
+- `ConvertTextToElementsXML(body, elementName = "custom")`
 
 Convert only part of the document
 
-- `ConvertTextToElementsXML(body, "value", "/some/part/)`
+- `ConvertTextToElementsXML(body, "/some/part/", "value")`
 
 ### Day
 

@@ -54,13 +54,13 @@ func convertTextToElementsXML[K any](target ottl.StringGetter[K], xPath string, 
 			return nil, err
 		}
 		for _, n := range xmlquery.Find(doc, xPath) {
-			ConvertTextToElementsForNode(n, elementName)
+			convertTextToElementsForNode(n, elementName)
 		}
 		return doc.OutputXML(false), nil
 	}
 }
 
-func ConvertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
+func convertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
 	switch parent.Type {
 	case xmlquery.ElementNode: // ok
 	case xmlquery.DocumentNode: // ok
@@ -76,7 +76,7 @@ func ConvertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
 	var valueCount, elementCount int
 	for child := parent.FirstChild; child != nil; child = child.NextSibling {
 		if child.Type == xmlquery.ElementNode {
-			ConvertTextToElementsForNode(child, elementName)
+			convertTextToElementsForNode(child, elementName)
 			elementCount++
 		} else if child.Type == xmlquery.TextNode {
 			valueCount++
