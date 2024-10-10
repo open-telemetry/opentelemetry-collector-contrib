@@ -295,6 +295,7 @@ receiver/sshcheckreceiver/                                          @open-teleme
 receiver/statsdreceiver/                                            @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski @andrzej-stencel
 receiver/tcplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/tlscheckreceiver/                                          @open-telemetry/collector-contrib-approvers @atoulme @michael-burt
 receiver/udplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/vcenterreceiver/                                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei @StefanKurek
 receiver/wavefrontreceiver/                                         @open-telemetry/collector-contrib-approvers @samiura
