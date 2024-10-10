@@ -395,16 +395,16 @@ define updatehelper
 			echo "Usage: updatehelper <versions.yaml> <go.mod> <builder-config.yaml>"; \
 			exit 1; \
 	fi
-	grep "go\.opentelemetry\.io" $(1) | sed 's/^\s*-\s*//' | while IFS= read -r line; do \
+	grep "go\.opentelemetry\.io" $(1) | sed 's/^[[:space:]]*-[[:space:]]*//' | while IFS= read -r line; do \
 			if grep -qF "$$line" $(2); then \
 					package=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$1}'); \
 					version=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$2}'); \
 					builder_package=$$(grep -F "$$package" $(3) | awk '{print $$3}'); \
 					builder_version=$$(grep -F "$$package" $(3) | awk '{print $$4}'); \
 					if [ "$$builder_package" == "$$package" ]; then \
-						echo "$$builder_version";\
-						sed -i -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
-						echo "[$(3)]: $$package updated to $$version"; \
+						sed -i.bak -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
+						rm $(3).bak; \
+						echo "[$(3)]: $$package updated from $$builder_version to $$version"; \
 					fi; \
 			fi; \
 	done
