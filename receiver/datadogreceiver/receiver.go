@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
@@ -243,8 +244,18 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		}
 	}
 
-	_, _ = w.Write([]byte("OK"))
-
+	urlSplit := strings.Split(req.RequestURI, "/")
+	if len(urlSplit) == 3 {
+		// Match the response logic from dd-agent https://github.com/DataDog/datadog-agent/blob/86b2ae24f93941447a5bf0a2b6419caed77e76dd/pkg/trace/api/api.go#L511-L519
+		switch version := urlSplit[1]; version {
+		case "v0.1", "v0.2", "v0.3":
+			_, _ = w.Write([]byte("OK"))
+		default:
+			_, _ = w.Write([]byte("{}"))
+		}
+	} else {
+		_, _ = w.Write([]byte("OK"))
+	}
 }
 
 // handleV1Series handles the v1 series endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
