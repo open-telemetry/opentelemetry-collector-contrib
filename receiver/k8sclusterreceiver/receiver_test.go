@@ -54,7 +54,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
 
 	// Setup k8s resources.
 	numPods := 2
@@ -102,7 +102,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt)
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "")
 
 	createPods(t, client, 1)
 
@@ -125,7 +125,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
 
 	numPods := 1000
 	numQuotas := 2
@@ -165,7 +165,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 
 	logsConsumer := new(consumertest.LogsSink)
 
-	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt)
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "")
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -225,7 +225,8 @@ func setupReceiver(
 	metricsConsumer consumer.Metrics,
 	logsConsumer consumer.Logs,
 	initialSyncTimeout time.Duration,
-	tt componenttest.TestTelemetry) *kubernetesReceiver {
+	tt componenttest.TestTelemetry,
+	namespace string) *kubernetesReceiver {
 
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
@@ -238,6 +239,7 @@ func setupReceiver(
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
+		Namespace:                  namespace,
 	}
 
 	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)
