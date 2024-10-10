@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
 
@@ -29,6 +30,7 @@ type k8sObserver struct {
 	podListerWatcher     cache.ListerWatcher
 	serviceListerWatcher cache.ListerWatcher
 	nodeListerWatcher    cache.ListerWatcher
+	ingressListerWatcher cache.ListerWatcher
 	handler              *handler
 	once                 *sync.Once
 	stop                 chan struct{}
@@ -67,6 +69,14 @@ func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 			go nodeInformer.Run(k.stop)
 			if _, err := nodeInformer.AddEventHandler(k.handler); err != nil {
 				k.telemetry.Logger.Error("error adding event handler to node informer", zap.Error(err))
+			}
+		}
+		if k.ingressListerWatcher != nil {
+			k.telemetry.Logger.Debug("creating and starting ingress informer")
+			ingressInformer := cache.NewSharedInformer(k.ingressListerWatcher, &networkingv1.Ingress{}, 0)
+			go ingressInformer.Run(k.stop)
+			if _, err := ingressInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to ingress informer", zap.Error(err))
 			}
 		}
 	})
@@ -117,6 +127,13 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 		set.Logger.Debug("observing nodes")
 		nodeListerWatcher = cache.NewListWatchFromClient(restClient, "nodes", v1.NamespaceAll, nodeSelector)
 	}
+
+	var ingressListerWatcher cache.ListerWatcher
+	if config.ObserveIngresses {
+		var ingressSelector = fields.Everything()
+		set.Logger.Debug("observing ingresses")
+		ingressListerWatcher = cache.NewListWatchFromClient(client.NetworkingV1().RESTClient(), "ingresses", v1.NamespaceAll, ingressSelector)
+	}
 	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.TelemetrySettings.Logger}
 	obs := &k8sObserver{
 		EndpointsWatcher:     observer.NewEndpointsWatcher(h, time.Second, set.TelemetrySettings.Logger),
@@ -124,6 +141,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 		podListerWatcher:     podListerWatcher,
 		serviceListerWatcher: serviceListerWatcher,
 		nodeListerWatcher:    nodeListerWatcher,
+		ingressListerWatcher: ingressListerWatcher,
 		stop:                 make(chan struct{}),
 		config:               config,
 		handler:              h,
