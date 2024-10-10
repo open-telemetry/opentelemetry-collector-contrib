@@ -149,6 +149,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
