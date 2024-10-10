@@ -405,6 +405,55 @@ func newMetricK8sContainerRestarts(cfg MetricConfig) metricK8sContainerRestarts 
 	return m
 }
 
+type metricK8sContainerStatusWaiting struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.status.waiting metric with initial data.
+func (m *metricK8sContainerStatusWaiting) init() {
+	m.data.SetName("k8s.container.status.waiting")
+	m.data.SetDescription("Whether container is in waiting state. (0 for now, 1 for yes)")
+	m.data.SetUnit("")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sContainerStatusWaiting) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerStatusWaiting) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerStatusWaiting) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerStatusWaiting(cfg MetricConfig) metricK8sContainerStatusWaiting {
+	m := metricK8sContainerStatusWaiting{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sContainerStorageLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2203,6 +2252,7 @@ type MetricsBuilder struct {
 	metricK8sContainerMemoryRequest           metricK8sContainerMemoryRequest
 	metricK8sContainerReady                   metricK8sContainerReady
 	metricK8sContainerRestarts                metricK8sContainerRestarts
+	metricK8sContainerStatusWaiting           metricK8sContainerStatusWaiting
 	metricK8sContainerStorageLimit            metricK8sContainerStorageLimit
 	metricK8sContainerStorageRequest          metricK8sContainerStorageRequest
 	metricK8sCronjobActiveJobs                metricK8sCronjobActiveJobs
@@ -2273,6 +2323,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
 		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
 		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
+		metricK8sContainerStatusWaiting:           newMetricK8sContainerStatusWaiting(mbc.Metrics.K8sContainerStatusWaiting),
 		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
 		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
 		metricK8sCronjobActiveJobs:                newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
@@ -2612,6 +2663,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricK8sContainerMemoryRequest.emit(ils.Metrics())
 	mb.metricK8sContainerReady.emit(ils.Metrics())
 	mb.metricK8sContainerRestarts.emit(ils.Metrics())
+	mb.metricK8sContainerStatusWaiting.emit(ils.Metrics())
 	mb.metricK8sContainerStorageLimit.emit(ils.Metrics())
 	mb.metricK8sContainerStorageRequest.emit(ils.Metrics())
 	mb.metricK8sCronjobActiveJobs.emit(ils.Metrics())
@@ -2717,6 +2769,11 @@ func (mb *MetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp,
 // RecordK8sContainerRestartsDataPoint adds a data point to k8s.container.restarts metric.
 func (mb *MetricsBuilder) RecordK8sContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sContainerStatusWaitingDataPoint adds a data point to k8s.container.status.waiting metric.
+func (mb *MetricsBuilder) RecordK8sContainerStatusWaitingDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sContainerStatusWaiting.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerStorageLimitDataPoint adds a data point to k8s.container.storage_limit metric.

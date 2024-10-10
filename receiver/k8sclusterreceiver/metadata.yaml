@@ -272,7 +272,12 @@ metrics:
     unit: ""
     gauge:
       value_type: int
-
+  k8s.container.status.waiting:
+    enabled: false
+    description:  Whether container is in waiting state. (0 for now, 1 for yes)
+    unit: ""
+    gauge:
+      value_type: int
   k8s.pod.phase:
     enabled: true
     description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
