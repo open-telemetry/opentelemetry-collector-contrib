@@ -21,6 +21,7 @@ type S3UploaderConfig struct {
 	FilePrefix       string                 `mapstructure:"file_prefix"`
 	Endpoint         string                 `mapstructure:"endpoint"`
 	RoleArn          string                 `mapstructure:"role_arn"`
+	StorageClass     string                 `mapstructure:"storage_class"`
 	S3ForcePathStyle bool                   `mapstructure:"s3_force_path_style"`
 	DisableSSL       bool                   `mapstructure:"disable_ssl"`
 	Compression      configcompression.Type `mapstructure:"compression"`
@@ -53,6 +54,10 @@ func (c *Config) Validate() error {
 	if c.S3Uploader.S3Bucket == "" && c.S3Uploader.Endpoint == "" {
 		errs = multierr.Append(errs, errors.New("bucket or endpoint is required"))
 	}
+	if c.S3Uploader.StorageClass == "" {
+		c.S3Uploader.StorageClass = "STANDARD"
+	}
+
 	compression := c.S3Uploader.Compression
 	if compression.IsCompressed() {
 		if compression != configcompression.TypeGzip {
