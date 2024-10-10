@@ -1,0 +1,15 @@
+type: rabbitmqmessagereciever
+scope_name: otelcol/rabbitmqmessagereciever
+
+status:
+  class: receiver
+  stability:
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [frzifus]
+
+tests:
+  # Needed because the component intentionally fails during start-up if unable to connect to rabbitmq broker
+  skip_lifecycle: true
+  skip_shutdown: false
