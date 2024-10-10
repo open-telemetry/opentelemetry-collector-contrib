@@ -122,7 +122,7 @@ type MapWithExpiry struct {
 // NewMapWithExpiry automatically starts a sweeper to enforce the maps TTL. ShutDown() must be called to ensure that these
 // go routines are properly cleaned up ShutDown() must be called.
 func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
-	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[any]*MetricValue), doneChan: make(chan struct{})}
+	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[any]*MetricValue), doneChan: make(chan struct{}, 1000)}
 	go m.sweep(m.CleanUp)
 	return m
 }
