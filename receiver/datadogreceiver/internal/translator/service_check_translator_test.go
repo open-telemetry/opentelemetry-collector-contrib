@@ -187,7 +187,7 @@ func TestTranslateCheckRun(t *testing.T) {
 				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				requireGauge(t, metric, "service_check", 1)
+				requireGauge(t, metric, "app.working", 1)
 
 				dp := metric.Gauge().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 1700000000, 0)
@@ -213,7 +213,7 @@ func TestTranslateCheckRun(t *testing.T) {
 				requireScope(t, result, expectedAttrs.scope, component.NewDefaultBuildInfo().Version)
 
 				metric := result.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				requireGauge(t, metric, "service_check", 1)
+				requireGauge(t, metric, "app.working", 1)
 
 				dp := metric.Gauge().DataPoints().At(0)
 				requireDp(t, dp, expectedAttrs.dp, 0, 0)

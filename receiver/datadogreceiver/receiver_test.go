@@ -619,6 +619,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	assert.Equal(t, 1, metrics.Len())
 	metric := metrics.At(0)
+	assert.Equal(t, "app.working", metric.Name())
 	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
 	dps := metric.Gauge().DataPoints()
 	assert.Equal(t, 1, dps.Len())
