@@ -143,7 +143,7 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
 	body := record.Body()
 	if body.Type() != pcommon.ValueTypeMap {
-		return []byte{}, nil
+		return []byte{}, errors.New("record body is not a map")
 	}
 
 	return json.Marshal(body.Map().AsRaw())
