@@ -26,6 +26,17 @@ import (
 )
 
 func TestScraperStart(t *testing.T) {
+	clientConfigNonExistandCA := confighttp.NewDefaultClientConfig()
+	clientConfigNonExistandCA.Endpoint = defaultEndpoint
+	clientConfigNonExistandCA.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+
 	testcases := []struct {
 		desc        string
 		scraper     *rabbitmqScraper
@@ -35,14 +46,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &rabbitmqScraper{
 				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.ClientConfig{
-							Config: configtls.Config{
-								CAFile: "/non/existent",
-							},
-						},
-					},
+					ClientConfig: clientConfigNonExistandCA,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
@@ -52,10 +56,7 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &rabbitmqScraper{
 				cfg: &Config{
-					ClientConfig: confighttp.ClientConfig{
-						TLSSetting: configtls.ClientConfig{},
-						Endpoint:   defaultEndpoint,
-					},
+					ClientConfig: clientConfig,
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
 			},
