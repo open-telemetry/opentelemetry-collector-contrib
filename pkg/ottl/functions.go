@@ -33,19 +33,27 @@ func buildOriginalText(path *path) string {
 	for i, f := range path.Fields {
 		builder.WriteString(f.Name)
 		if len(f.Keys) > 0 {
-			for _, k := range f.Keys {
-				builder.WriteString("[")
-				if k.Int != nil {
-					builder.WriteString(strconv.FormatInt(*k.Int, 10))
-				}
-				if k.String != nil {
-					builder.WriteString(*k.String)
-				}
-				builder.WriteString("]")
-			}
+			builder.WriteString(buildOriginalKeysText(f.Keys))
 		}
 		if i != len(path.Fields)-1 {
 			builder.WriteString(".")
+		}
+	}
+	return builder.String()
+}
+
+func buildOriginalKeysText(keys []key) string {
+	var builder strings.Builder
+	if len(keys) > 0 {
+		for _, k := range keys {
+			builder.WriteString("[")
+			if k.Int != nil {
+				builder.WriteString(strconv.FormatInt(*k.Int, 10))
+			}
+			if k.String != nil {
+				builder.WriteString(*k.String)
+			}
+			builder.WriteString("]")
 		}
 	}
 	return builder.String()
