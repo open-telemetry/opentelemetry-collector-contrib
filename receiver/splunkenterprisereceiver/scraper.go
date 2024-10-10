@@ -101,6 +101,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeAvgIopsByHost,
 		s.scrapeSchedulerRunTimeByHost,
 		s.scrapeIndexerAvgRate,
+		s.scrapeKVStoreStatus,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1558,5 +1559,71 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 		currentQueueSizeBytes := int64(f.Content.CurrentSizeBytes)
 
 		s.mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(now, currentQueueSizeBytes, name)
+	}
+}
+
+// Scrape introspection kv store status
+func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreStatus.Enabled ||
+		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
+		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreBackupStatus.Enabled ||
+		!s.splunkClient.isConfigured(typeCm) {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	var kvs KVStoreStatus
+
+	ept := apiDict[`SplunkKVStoreStatus`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	if err := json.NewDecoder(res.Body).Decode(&kvs); err != nil {
+		errs <- err
+		return
+	}
+
+	var st, brs, rs, se, ext string
+	for _, kv := range kvs.Entries {
+		st = kv.Content.Current.Status // overall status
+		brs = kv.Content.Current.BackupRestoreStatus
+		rs = kv.Content.Current.ReplicationStatus
+		se = kv.Content.Current.StorageEngine
+		ext = kv.Content.KVService.Status
+
+		// a 0 gauge value means that the metric was not reported in the api call
+		// to the introspection endpoint.
+		if st == "" {
+			st = KVStatusUnknown
+			// set to 0 to indicate no status being reported
+			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 0, se, ext, st)
+		} else {
+			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 1, se, ext, st)
+		}
+
+		if rs == "" {
+			rs = KVRestoreStatusUnknown
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 0, rs)
+		} else {
+			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs)
+		}
+
+		if brs == "" {
+			brs = KVBackupStatusFailed
+			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 0, brs)
+		} else {
+			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
+		}
 	}
 }

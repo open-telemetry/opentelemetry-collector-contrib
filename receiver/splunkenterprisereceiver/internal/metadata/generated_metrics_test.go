@@ -131,6 +131,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSplunkIoAvgIopsDataPoint(ts, 1, "splunk.host-val")
 
+			allMetricsCount++
+			mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val")
+
+			allMetricsCount++
+			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val")
+
+			allMetricsCount++
+			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val")
@@ -499,6 +508,57 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.kvstore.backup.status":
+					assert.False(t, validatedMetrics["splunk.kvstore.backup.status"], "Found a duplicate in the metrics slice: splunk.kvstore.backup.status")
+					validatedMetrics["splunk.kvstore.backup.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Backup and restore status of the KV store.", ms.At(i).Description())
+					assert.Equal(t, "{status}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
+				case "splunk.kvstore.replication.status":
+					assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
+					validatedMetrics["splunk.kvstore.replication.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Replication status of the KV store.", ms.At(i).Description())
+					assert.Equal(t, "{status}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
+				case "splunk.kvstore.status":
+					assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
+					validatedMetrics["splunk.kvstore.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "This is the overall status of the kvstore for the given deployment.", ms.At(i).Description())
+					assert.Equal(t, "{status}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.kvstore.storage.engine-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.kvstore.external")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.kvstore.external-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.kvstore.status.value")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
 				case "splunk.license.index.usage":
 					assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
 					validatedMetrics["splunk.license.index.usage"] = true
