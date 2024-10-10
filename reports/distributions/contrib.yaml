@@ -179,6 +179,7 @@ components:
         - statsd
         - syslog
         - tcplog
+        - tlscheck
         - udplog
         - vcenter
         - wavefront

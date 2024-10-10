@@ -12,3 +12,7 @@ status:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+  goleak:
+    ignore:
+      top:
+        - "k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"
