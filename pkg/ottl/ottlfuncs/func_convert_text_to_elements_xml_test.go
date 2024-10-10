@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_ElementizeValuesXML(t *testing.T) {
+func Test_ConvertTextToElementsXML(t *testing.T) {
 	tests := []struct {
 		name        string
 		document    string
@@ -76,10 +76,10 @@ func Test_ElementizeValuesXML(t *testing.T) {
 			want:        `<a><b><c></c><V>foo</V></b><d><c></c>bar</d><b><c></c><V>baz</V></b></a>`,
 		},
 	}
-	factory := NewElementizeValuesXMLFactory[any]()
+	factory := NewConvertTextToElementsXMLFactory[any]()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := &ElementizeValuesXMLArguments[any]{
+			args := &ConvertTextToElementsXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
 						return tt.document, nil
@@ -98,8 +98,8 @@ func Test_ElementizeValuesXML(t *testing.T) {
 	}
 }
 
-func TestCreateElementizeValuesXMLFunc(t *testing.T) {
-	factory := NewElementizeValuesXMLFactory[any]()
+func TestCreateConvertTextToElementsXMLFunc(t *testing.T) {
+	factory := NewConvertTextToElementsXMLFactory[any]()
 	fCtx := ottl.FunctionContext{}
 
 	// Invalid arg type
@@ -109,7 +109,7 @@ func TestCreateElementizeValuesXMLFunc(t *testing.T) {
 
 	// Invalid XPath should error on function creation
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ElementizeValuesXMLArguments[any]{
+		fCtx, &ConvertTextToElementsXMLArguments[any]{
 			XPath: ottl.NewTestingOptional("!"),
 		})
 	assert.Error(t, err)
@@ -117,7 +117,7 @@ func TestCreateElementizeValuesXMLFunc(t *testing.T) {
 
 	// Invalid XML should error on function execution
 	exprFunc, err = factory.CreateFunction(
-		fCtx, &ElementizeValuesXMLArguments[any]{
+		fCtx, &ConvertTextToElementsXMLArguments[any]{
 			Target: invalidXMLGetter(),
 		})
 	assert.NoError(t, err)
