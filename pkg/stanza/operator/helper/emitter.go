@@ -17,7 +17,6 @@ import (
 // LogEmitter is a stanza operator that emits log entries to a channel
 type LogEmitter struct {
 	OutputOperator
-	logChan       chan []*entry.Entry
 	closeChan     chan struct{}
 	stopOnce      sync.Once
 	batchMux      sync.Mutex
@@ -25,6 +24,7 @@ type LogEmitter struct {
 	wg            sync.WaitGroup
 	maxBatchSize  uint
 	flushInterval time.Duration
+	consumerFunc  func(context.Context, []*entry.Entry)
 }
 
 var (
@@ -60,16 +60,28 @@ func (o flushIntervalOption) apply(e *LogEmitter) {
 	e.flushInterval = o.flushInterval
 }
 
+func WithSyncConsumerFunc(f func(context.Context, []*entry.Entry)) EmitterOption {
+	return syncConsumerFuncOption{f: f}
+}
+
+type syncConsumerFuncOption struct {
+	f func(context.Context, []*entry.Entry)
+}
+
+func (o syncConsumerFuncOption) apply(e *LogEmitter) {
+	e.consumerFunc = o.f
+}
+
 // NewLogEmitter creates a new receiver output
-func NewLogEmitter(set component.TelemetrySettings, opts ...EmitterOption) *LogEmitter {
+func NewLogEmitter(set component.TelemetrySettings, consumerFunc func(context.Context, []*entry.Entry), opts ...EmitterOption) *LogEmitter {
 	op, _ := NewOutputConfig("log_emitter", "log_emitter").Build(set)
 	e := &LogEmitter{
 		OutputOperator: op,
-		logChan:        make(chan []*entry.Entry),
 		closeChan:      make(chan struct{}),
 		maxBatchSize:   defaultMaxBatchSize,
 		batch:          make([]*entry.Entry, 0, defaultMaxBatchSize),
 		flushInterval:  defaultFlushInterval,
+		consumerFunc:   consumerFunc,
 	}
 	for _, opt := range opts {
 		opt.apply(e)
@@ -89,21 +101,9 @@ func (e *LogEmitter) Stop() error {
 	e.stopOnce.Do(func() {
 		close(e.closeChan)
 		e.wg.Wait()
-
-		close(e.logChan)
 	})
 
 	return nil
-}
-
-// OutChannel returns the channel on which entries will be sent to.
-func (e *LogEmitter) OutChannel() <-chan []*entry.Entry {
-	return e.logChan
-}
-
-// OutChannelForWrite returns the channel on which entries can be sent to.
-func (e *LogEmitter) OutChannelForWrite() chan []*entry.Entry {
-	return e.logChan
 }
 
 // Process will emit an entry to the output channel
@@ -156,10 +156,7 @@ func (e *LogEmitter) flusher() {
 
 // flush flushes the provided batch to the log channel.
 func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
-	select {
-	case e.logChan <- batch:
-	case <-ctx.Done():
-	}
+	e.consumerFunc(ctx, batch)
 }
 
 // makeNewBatch replaces the current batch on the log emitter with a new batch, returning the old one
