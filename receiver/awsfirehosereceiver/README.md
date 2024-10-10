@@ -83,3 +83,6 @@ For example:
 }
 ```
 
+### otlp_v1
+The OTLP v1 format as produced by CloudWatch metric streams.
+See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html) for details.
