@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func TestScrape(t *testing.T) {
 		name                     string
 		config                   Config
 		rootPath                 string
-		osEnv                    map[string]string
+		osEnv                    map[common.EnvKeyType]string
 		bootTimeFunc             func(context.Context) (uint64, error)
 		partitionsFunc           func(context.Context, bool) ([]disk.PartitionStat, error)
 		usageFunc                func(context.Context, string) (*disk.UsageStat, error)
@@ -198,8 +199,8 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "RootPath at /hostfs but HOST_PROC_MOUNTINFO is set",
-			osEnv: map[string]string{
-				"HOST_PROC_MOUNTINFO": "/proc/1/self",
+			osEnv: map[common.EnvKeyType]string{
+				common.HostProcMountinfo: "/proc/1/self",
 			},
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -387,9 +388,11 @@ func TestScrape(t *testing.T) {
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
+			envMap := common.EnvMap{}
 			for k, v := range test.osEnv {
-				t.Setenv(k, v)
+				envMap[k] = v
 			}
+			test.config.EnvMap = envMap
 			test.config.SetRootPath(test.rootPath)
 			scraper, err := newFileSystemScraper(context.Background(), receivertest.NewNopSettings(), &test.config)
 			if test.newErrRegex != "" {

@@ -6,7 +6,6 @@ package filesystemscraper // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -111,7 +110,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		translatedMountpoint := translateMountpoint(s.config.RootPath, partition.Mountpoint)
+		translatedMountpoint := translateMountpoint(ctx, s.config.RootPath, partition.Mountpoint)
 		usage, usageErr := s.usage(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
@@ -178,9 +177,12 @@ func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 }
 
 // translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
-func translateMountpoint(rootPath, mountpoint string) string {
-	if mountInfo := os.Getenv("HOST_PROC_MOUNTINFO"); mountInfo != "" {
-		return mountpoint
+func translateMountpoint(ctx context.Context, rootPath string, mountpoint string) string {
+	if env, ok := ctx.Value(common.EnvKey).(common.EnvMap); ok {
+		mountInfo := env[common.EnvKeyType("HOST_PROC_MOUNTINFO")]
+		if mountInfo != "" {
+			return mountpoint
+		}
 	}
 	return filepath.Join(rootPath, mountpoint)
 }
