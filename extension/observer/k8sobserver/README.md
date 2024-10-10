@@ -76,3 +76,168 @@ All fields are optional.
 
 More complete configuration examples on how to use this observer along with the `receiver_creator`,
 can be found at the [Receiver Creator](../../../receiver/receivercreator/README.md)'s documentation.
+
+### Setting up RBAC permissions
+
+When using the `serviceAccount` `auth_type`, the service account of the pod running the agent needs to have the required permissions to
+read the K8s resources it should observe (i.e. pods, nodes, services and ingresses).
+Therefore, the service account running the pod needs to have the required `ClusterRole` which grants it the permission to
+read those resources from the Kubernetes API. Below is an example of how to set this up:
+
+1. Create a `ServiceAccount` that the collector should use.
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: otelcontribcol
+  name: otelcontribcol
+EOF
+```
+
+2. Create a `ClusterRole`/`ClusterRoleBinding` that grants permission to read pods, nodes, services and ingresses.
+
+Note: If you do not plan to observe all of these resources (e.g. if you are only interested in services) it is recommended to remove
+the resources you do not intend to observe from the configuration below:
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otelcontribcol
+  labels:
+    app: otelcontribcol
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - services
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: 
+  - "networking.k8s.io"
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - watch
+  - list
+EOF
+```
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otelcontribcol
+  labels:
+    app: otelcontribcol
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otelcontribcol
+subjects:
+- kind: ServiceAccount
+  name: otelcontribcol
+  namespace: default
+EOF
+```
+3. Create a ConfigMap containing the configuration for the collector
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otelcontribcol
+  labels:
+    app: otelcontribcol
+data:
+  config.yaml: |
+    extensions:
+      k8s_observer:
+        auth_type: serviceAccount
+        node: ${env:K8S_NODE_NAME}
+        observe_pods: true
+        observe_nodes: true
+        observe_services: true
+        observe_ingresses: true
+    
+    receivers:
+      receiver_creator:
+        watch_observers: [k8s_observer]
+        receivers:
+          redis:
+            rule: type == "port" && pod.name matches "redis"
+            config:
+              password: '`pod.labels["SECRET"]`'
+          kubeletstats:
+            rule: type == "k8s.node"
+            config:
+              auth_type: serviceAccount
+              collection_interval: 10s
+              endpoint: "`endpoint`:`kubelet_endpoint_port`"
+              extra_metadata_labels:
+                - container.id
+              metric_groups:
+                - container
+                - pod
+                - node
+    
+    exporters:
+      otlp:
+        endpoint: <OTLP_ENDPOINT>
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [receiver_creator]
+          exporters: [otlp]
+EOF
+```
+
+4. Create the collector deployment, referring to the service account created earlier
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otelcontribcol
+  labels:
+    app: otelcontribcol
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otelcontribcol
+  template:
+    metadata:
+      labels:
+        app: otelcontribcol
+    spec:
+      serviceAccountName: otelcontribcol
+      containers:
+      - name: otelcontribcol
+        # This image is created by running `make docker-otelcontribcol`.
+        # If you are not building the collector locally, specify a published image: `otel/opentelemetry-collector-contrib`
+        image: otelcontribcol:latest
+        args: ["--config", "/etc/config/config.yaml"]
+        volumeMounts:
+        - name: config
+          mountPath: /etc/config
+        imagePullPolicy: IfNotPresent
+      volumes:
+        - name: config
+          configMap:
+            name: otelcontribcol
+EOF
+```
