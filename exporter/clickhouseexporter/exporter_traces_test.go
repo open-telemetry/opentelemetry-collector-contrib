@@ -10,11 +10,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 func TestExporter_pushTracesData(t *testing.T) {
@@ -43,6 +46,28 @@ func TestExporter_pushTracesData(t *testing.T) {
 			return nil
 		})
 
+		exporter := newTestTracesExporter(t, defaultEndpoint)
+		mustPushTracesData(t, exporter, simpleTraces(1))
+	})
+
+	t.Run("check OrderMap attributes", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT INTO otel_trace") {
+				require.Equal(t, internal.NewOrderedMapFromMap(map[string]string{
+					"service.name": "test-service",
+				}), values[8])
+				require.Equal(t, internal.NewOrderedMapFromMap(map[string]string{
+					"service.name": "v",
+				}), values[11])
+				require.Equal(t, clickhouse.ArraySet{internal.NewOrderedMapFromMap(map[string]string{
+					"level": "info",
+				})}, values[17])
+				require.Equal(t, clickhouse.ArraySet{internal.NewOrderedMapFromMap(map[string]string{
+					"k": "v",
+				})}, values[21])
+			}
+			return nil
+		})
 		exporter := newTestTracesExporter(t, defaultEndpoint)
 		mustPushTracesData(t, exporter, simpleTraces(1))
 	})

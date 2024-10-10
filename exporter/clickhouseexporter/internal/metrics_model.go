@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -110,15 +111,27 @@ func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.Metri
 
 func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet, clickhouse.ArraySet) {
 	var (
-		attrs    clickhouse.ArraySet
-		times    clickhouse.ArraySet
-		values   clickhouse.ArraySet
-		traceIDs clickhouse.ArraySet
-		spanIDs  clickhouse.ArraySet
+		attrs         column.IterableOrderedMap
+		exemplarAttrs clickhouse.ArraySet
+		times         clickhouse.ArraySet
+		values        clickhouse.ArraySet
+		traceIDs      clickhouse.ArraySet
+		spanIDs       clickhouse.ArraySet
 	)
+
+	attrs = NewOrderedMap()
+
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
+		orderedMap := OtelAttributesToOrderedMap(exemplar.FilteredAttributes())
+		mapIterator := orderedMap.Iterator()
+
+		for mapIterator.Next() {
+			attrs.Put(mapIterator.Key(), mapIterator.Value())
+		}
+
+		exemplarAttrs = append(exemplarAttrs, attrs)
+
 		times = append(times, exemplar.Timestamp().AsTime())
 		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue(), exemplar.ValueType()))
 
@@ -126,7 +139,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 		traceIDs = append(traceIDs, hex.EncodeToString(traceID[:]))
 		spanIDs = append(spanIDs, hex.EncodeToString(spanID[:]))
 	}
-	return attrs, times, values, traceIDs, spanIDs
+	return exemplarAttrs, times, values, traceIDs, spanIDs
 }
 
 // https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L358
@@ -165,13 +178,17 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 	}
 }
 
-func attributesToMap(attributes pcommon.Map) map[string]string {
-	m := make(map[string]string, attributes.Len())
+// OtelAttributesToOrderedMap converts Otel attributes to OrderedMap
+// This will Sort the attributes by key
+func OtelAttributesToOrderedMap(attributes pcommon.Map) column.IterableOrderedMap {
+
+	om := NewOrderedMap()
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.AsString()
+		om.Put(k, v.AsString())
 		return true
 	})
-	return m
+	om.Sort()
+	return om
 }
 
 func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {

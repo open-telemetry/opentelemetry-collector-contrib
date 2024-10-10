@@ -18,6 +18,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 func TestLogsExporter_New(t *testing.T) {
@@ -94,9 +96,9 @@ func TestExporter_pushLogsData(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.4.0", values[8])
-				require.Equal(t, map[string]string{
+				require.Equal(t, internal.NewOrderedMapFromMap(map[string]string{
 					"service.name": "test-service",
-				}, values[9])
+				}), values[9])
 			}
 			return nil
 		})
@@ -109,9 +111,9 @@ func TestExporter_pushLogsData(t *testing.T) {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[10])
 				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[11])
 				require.Equal(t, "1.0.0", values[12])
-				require.Equal(t, map[string]string{
+				require.Equal(t, internal.NewOrderedMapFromMap(map[string]string{
 					"lib": "clickhouse",
-				}, values[13])
+				}), values[13])
 			}
 			return nil
 		})
