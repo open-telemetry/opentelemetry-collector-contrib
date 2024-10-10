@@ -100,7 +100,7 @@ func TestExporterLogs(t *testing.T) {
 				expected: `{"@timestamp":"2024-03-12T20:00:41.123456789Z","id":1,"key":"value"}`,
 			},
 			{
-				name: "dot",
+				name: "dotted key",
 				body: func() pcommon.Map {
 					body := pcommon.NewMap()
 					body.PutInt("a", 1)
@@ -108,18 +108,42 @@ func TestExporterLogs(t *testing.T) {
 					body.PutInt("a.b.c", 3)
 					return body
 				},
-				expected: `{"a":{"value":1,"b":{"value":2,"c":3}}}`,
+				expected: `{"a":1,"a.b":2,"a.b.c":3}`,
+			},
+			{
+				name: "slice",
+				body: func() pcommon.Map {
+					body := pcommon.NewMap()
+					s := body.PutEmptySlice("a")
+					for i := 0; i < 2; i++ {
+						s.AppendEmpty().SetInt(int64(i))
+					}
+					return body
+				},
+				expected: `{"a":[0,1]}`,
+			},
+			{
+				name: "inner map",
+				body: func() pcommon.Map {
+					body := pcommon.NewMap()
+					m := body.PutEmptyMap("a")
+					m.PutInt("b", 1)
+					m.PutInt("c", 2)
+					return body
+				},
+				expected: `{"a":{"b":1,"c":2}}`,
 			},
 			{
 				name: "nested map",
 				body: func() pcommon.Map {
 					body := pcommon.NewMap()
-					body.PutInt("a", 1)
-					b := body.PutEmptyMap("b")
-					b.PutInt("c", 2)
+					m1 := body.PutEmptyMap("a")
+					m2 := m1.PutEmptyMap("b")
+					m2.PutInt("c", 1)
+					m2.PutInt("d", 2)
 					return body
 				},
-				expected: `{"a":1,"b":{"c":2}}`,
+				expected: `{"a":{"b":{"c":1,"d":2}}}`,
 			},
 		}
 

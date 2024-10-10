@@ -1224,17 +1224,21 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	bodyMap.PutStr("@timestamp", "2024-03-12T20:00:41.123456789Z")
 	bodyMap.PutInt("id", 1)
 	bodyMap.PutStr("key", "value")
+	bodyMap.PutStr("key.a", "a")
+	bodyMap.PutStr("key.a.b", "b")
+	bodyMap.PutDouble("pi", 3.14)
 	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
 
-	var buf bytes.Buffer
 	m := encodeModel{}
-	doc := m.encodeLogBodyMapMode(logRecord)
-	require.NoError(t, doc.Serialize(&buf, false, false))
+	got, err := m.encodeLogBodyMapMode(logRecord)
+	require.NoError(t, err)
 
-	got := buf.String()
 	require.JSONEq(t, `{
 		"@timestamp":                 "2024-03-12T20:00:41.123456789Z",
 		"id":                         1,
-		"key":                        "value"	
-	}`, got)
+		"key":                        "value",
+		"key.a":                      "a",
+		"key.a.b":                    "b",
+		"pi":                         3.14
+	}`, string(got))
 }
