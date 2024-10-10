@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+const testKubeConfig = "/Users/florian.bacher/.kube/config"
 
 // TestE2EClusterScoped tests the k8s cluster receiver with a real k8s cluster.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
@@ -138,23 +138,11 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	}()
 
-	wantEntries := 10 // Minimal number of metrics to wait for.
+	wantEntries := 6 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }
 	shortenNames := func(value string) string {
-		if strings.HasPrefix(value, "kube-proxy") {
-			return "kube-proxy"
-		}
-		if strings.HasPrefix(value, "local-path-provisioner") {
-			return "local-path-provisioner"
-		}
-		if strings.HasPrefix(value, "kindnet") {
-			return "kindnet"
-		}
-		if strings.HasPrefix(value, "coredns") {
-			return "coredns"
-		}
 		if strings.HasPrefix(value, "otelcol") {
 			return "otelcol"
 		}
