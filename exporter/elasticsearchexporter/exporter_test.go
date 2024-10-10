@@ -1110,6 +1110,46 @@ func TestExporterMetrics(t *testing.T) {
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
+	t.Run("otel mode metric name conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		fooBarMetric := scopeMetric.Metrics().AppendEmpty()
+		fooBarMetric.SetName("foo.bar")
+		fooBarMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		fooMetric := scopeMetric.Metrics().AppendEmpty()
+		fooMetric.SetName("foo")
+		fooMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		fooBarBazMetric := scopeMetric.Metrics().AppendEmpty()
+		fooBarBazMetric.SetName("foo.bar.baz")
+		fooBarBazMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","_doc_count":10,"data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
 	t.Run("publish summary", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
