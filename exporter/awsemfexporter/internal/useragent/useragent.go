@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awsemfexporter
+package useragent // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/useragent"
 
 import (
 	"context"
@@ -128,6 +128,6 @@ func truncate(s string, n int) string {
 	return s
 }
 
-func (ua *UserAgent) shutDown() {
+func (ua *UserAgent) ShutDown() {
 	ua.cache.Stop()
 }

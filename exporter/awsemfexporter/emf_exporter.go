@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/useragent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -95,9 +96,10 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		stopCacheTtl: func() {},
 	}
 
-	userAgent := NewUserAgent()
+	userAgent := useragent.NewUserAgent()
 	svcStructuredLog.Handlers().Build.PushBackNamed(userAgent.Handler())
 	emfExporter.processResourceLabels = userAgent.Process
+	emfExporter.stopCacheTtl = userAgent.ShutDown
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
 		"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
