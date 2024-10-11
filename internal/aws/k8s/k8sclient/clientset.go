@@ -280,6 +280,8 @@ func (c *K8sClient) init(logger *zap.Logger, options ...Option) error {
 			return err
 		}
 	}
+	config.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
+	config.ContentType = "application/vnd.kubernetes.protobuf"
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		c.logger.Error("failed to build ClientSet", zap.Error(err))
