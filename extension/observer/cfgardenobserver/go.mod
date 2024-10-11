@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.111.0
 	code.cloudfoundry.org/garden v0.0.0-20240916141541-4995881dc952
 	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-alpha.9
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.111.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/confmap v1.17.1-0.20241008154146-ea48c09c31ae
