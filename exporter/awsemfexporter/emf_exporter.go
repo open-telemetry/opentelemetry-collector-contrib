@@ -43,6 +43,9 @@ type emfExporter struct {
 	pusherMapLock sync.Mutex
 	retryCnt      int
 	collectorID   string
+
+	processResourceLabels func(map[string]string)
+	stopCacheTtl func()
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
@@ -88,7 +91,13 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		retryCnt:         *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
 		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
+		processResourceLabels: func(map[string]string) {},
+		stopCacheTtl: func() {},
 	}
+
+	userAgent := NewUserAgent()
+	svcStructuredLog.Handlers().Build.PushBackNamed(userAgent.Handler())
+	emfExporter.processResourceLabels = userAgent.Process
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
 		"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
@@ -110,7 +119,9 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 			})
 		}
 	}
+
 	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
+	emf.processResourceLabels(labels)
 
 	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
@@ -197,6 +208,7 @@ func (emf *emfExporter) shutdown(_ context.Context) error {
 			}
 		}
 	}
+	emf.stopCacheTtl()
 
 	return emf.metricTranslator.Shutdown()
 }
