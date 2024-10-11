@@ -150,13 +150,10 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		}
 	}
 
-	t.Run("gauge duplicate", func(t *testing.T) {
-		converter := newPrometheusConverterV2()
-		converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), metric1.Name())
-		converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), metric2.Name())
+	converter := newPrometheusConverterV2()
+	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), metric1.Name())
+	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), metric2.Name())
 
-		assert.Equal(t, want(), converter.unique)
-
-	})
+	assert.Equal(t, want(), converter.unique)
 
 }
