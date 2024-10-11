@@ -6,6 +6,7 @@ package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -28,8 +29,9 @@ const (
 var (
 	errUnrecognizedRecordType = errors.New("unrecognized record type")
 	availableRecordTypes      = map[string]bool{
-		cwmetricstream.TypeStr: true,
-		cwlog.TypeStr:          true,
+		cwmetricstream.TypeStr:   true,
+		cwlog.TypeStr:            true,
+		otlpmetricstream.TypeStr: true,
 	}
 )
 
