@@ -40,6 +40,8 @@ func converters[K any]() []ottl.Factory[K] {
 		NewDecodeFactory[K](),
 		NewConcatFactory[K](),
 		NewConvertCaseFactory[K](),
+		NewConvertAttributesToElementsXMLFactory[K](),
+		NewConvertTextToElementsXMLFactory[K](),
 		NewDayFactory[K](),
 		NewDoubleFactory[K](),
 		NewDurationFactory[K](),
