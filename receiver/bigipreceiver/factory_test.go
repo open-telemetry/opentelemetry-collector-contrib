@@ -19,6 +19,9 @@ import (
 )
 
 func TestNewFactory(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = 10 * time.Second
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -39,10 +42,7 @@ func TestNewFactory(t *testing.T) {
 					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 					},
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: defaultEndpoint,
-						Timeout:  10 * time.Second,
-					},
+					ClientConfig:         clientConfig,
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 

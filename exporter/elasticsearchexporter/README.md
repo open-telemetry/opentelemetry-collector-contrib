@@ -342,3 +342,13 @@ Otherwise, it is mapped to an empty string ("").
 #### `@timestamp`
 
 In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
+
+## Known issues
+
+### version_conflict_engine_exception
+
+When sending high traffic of metrics to a TSDB metrics data stream, e.g. using OTel mapping mode to a 8.16 Elasticsearch, it is possible to get error logs "failed to index document" with `error.type` "version_conflict_engine_exception" and `error.reason` containing "version conflict, document already exists". It is due to Elasticsearch grouping metrics with the same dimensions, whether it is the same or different metric name, using `@timestamp` in milliseconds precision as opposed to nanoseconds in elasticsearchexporter.
+
+This will be fixed in a future version of Elasticsearch. A possible workaround would be to use a transform processor to truncate the timestamp, but this will cause duplicate data to be dropped silently.
+
+However, if `@timestamp` precision is not the problem, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
