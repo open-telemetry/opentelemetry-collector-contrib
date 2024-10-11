@@ -46,7 +46,7 @@ type emfExporter struct {
 	collectorID   string
 
 	processResourceLabels func(map[string]string)
-	stopCacheTtl func()
+	stopCacheTTL          func()
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
@@ -86,20 +86,20 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 	}
 
 	emfExporter := &emfExporter{
-		svcStructuredLog: svcStructuredLog,
-		config:           config,
-		metricTranslator: newMetricTranslator(*config),
-		retryCnt:         *awsConfig.MaxRetries,
-		collectorID:      collectorIdentifier.String(),
-		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
+		svcStructuredLog:      svcStructuredLog,
+		config:                config,
+		metricTranslator:      newMetricTranslator(*config),
+		retryCnt:              *awsConfig.MaxRetries,
+		collectorID:           collectorIdentifier.String(),
+		pusherMap:             map[cwlogs.StreamKey]cwlogs.Pusher{},
 		processResourceLabels: func(map[string]string) {},
-		stopCacheTtl: func() {},
+		stopCacheTTL:          func() {},
 	}
 
 	userAgent := useragent.NewUserAgent()
 	svcStructuredLog.Handlers().Build.PushBackNamed(userAgent.Handler())
 	emfExporter.processResourceLabels = userAgent.Process
-	emfExporter.stopCacheTtl = userAgent.ShutDown
+	emfExporter.stopCacheTTL = userAgent.ShutDown
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
 		"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
@@ -210,7 +210,7 @@ func (emf *emfExporter) shutdown(_ context.Context) error {
 			}
 		}
 	}
-	emf.stopCacheTtl()
+	emf.stopCacheTTL()
 
 	return emf.metricTranslator.Shutdown()
 }

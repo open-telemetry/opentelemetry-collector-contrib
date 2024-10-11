@@ -68,7 +68,7 @@ func (ua *UserAgent) handle(r *request.Request) {
 }
 
 // Process takes the telemetry SDK language and version and adds them to the cache. If the language already exists in the
-// cache with a different version, then add the new version to the version map. If not, then create a new version map. 
+// cache with a different version, then add the new version to the version map. If not, then create a new version map.
 func (ua *UserAgent) Process(labels map[string]string) {
 	language := labels[semconv.AttributeTelemetrySDKLanguage]
 	version := labels[semconv.AttributeTelemetryDistroVersion]
@@ -83,7 +83,7 @@ func (ua *UserAgent) Process(labels map[string]string) {
 		if value != nil {
 			valueMap = value.Value()
 		}
-		
+
 		if _, exists := valueMap[version]; !exists {
 			valueMap[version] = struct{}{}
 			ua.cache.Set(language, valueMap, ttlcache.DefaultTTL)
@@ -102,7 +102,7 @@ func (ua *UserAgent) build() {
 		var versionStr string
 		for version := range value {
 			if versionStr != "" {
-				versionStr += "," 
+				versionStr += ","
 			}
 			versionStr += version
 		}

@@ -36,15 +36,15 @@ func TestUserAgent(t *testing.T) {
 			labelSets: []map[string]string{
 				{
 					semconv.AttributeTelemetrySDKLanguage: "foo",
-					attributeTelemetryAutoVersion:       "1.1",
+					attributeTelemetryAutoVersion:         "1.1",
 				},
 				{
-					semconv.AttributeTelemetrySDKLanguage: "bar",
+					semconv.AttributeTelemetrySDKLanguage:   "bar",
 					semconv.AttributeTelemetryDistroVersion: "2.0",
-					attributeTelemetryAutoVersion:       "1.0",
+					attributeTelemetryAutoVersion:           "1.0",
 				},
 				{
-					semconv.AttributeTelemetrySDKLanguage: "baz",
+					semconv.AttributeTelemetrySDKLanguage:   "baz",
 					semconv.AttributeTelemetryDistroVersion: "2.0",
 				},
 			},
@@ -53,12 +53,12 @@ func TestUserAgent(t *testing.T) {
 		"WithMultipleVersions": {
 			labelSets: []map[string]string{
 				{
-					semconv.AttributeTelemetrySDKLanguage: "test",
+					semconv.AttributeTelemetrySDKLanguage:   "test",
 					semconv.AttributeTelemetryDistroVersion: "1.1",
 				},
 				{
 					semconv.AttributeTelemetrySDKLanguage: "test",
-					attributeTelemetryAutoVersion:       "1.0",
+					attributeTelemetryAutoVersion:         "1.0",
 				},
 			},
 			want: []string{
@@ -69,7 +69,7 @@ func TestUserAgent(t *testing.T) {
 		"WithTruncatedAttributes": {
 			labelSets: []map[string]string{
 				{
-					semconv.AttributeTelemetrySDKLanguage: " incrediblyverboselanguagename",
+					semconv.AttributeTelemetrySDKLanguage:   " incrediblyverboselanguagename",
 					semconv.AttributeTelemetryDistroVersion: "notsemanticversioningversion",
 				},
 			},
@@ -101,7 +101,7 @@ func TestUserAgentExpiration(t *testing.T) {
 		},
 	}
 	labels := map[string]string{
-		semconv.AttributeTelemetrySDKLanguage: "test",
+		semconv.AttributeTelemetrySDKLanguage:   "test",
 		semconv.AttributeTelemetryDistroVersion: "1.0",
 	}
 	userAgent.Process(labels)
