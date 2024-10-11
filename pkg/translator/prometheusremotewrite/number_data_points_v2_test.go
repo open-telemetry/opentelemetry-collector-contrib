@@ -120,7 +120,7 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 }
 
 // Right now we are not handling duplicates, the second one will just overwrite the first one as this test case shows
-// TODO handle duplicates
+// In follow-up PRs we plan to start handling conflicts and this test will be updated to reflect the new behavior.
 func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 	ts := uint64(time.Now().UnixNano())
 	metric1 := getIntGaugeMetric(
