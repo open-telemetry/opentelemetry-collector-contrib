@@ -15,6 +15,7 @@ import (
 	"slices"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -146,7 +147,7 @@ func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error
 		return []byte{}, errors.New("record body is not a map")
 	}
 
-	return json.Marshal(body.Map().AsRaw())
+	return jsoniter.Marshal(body.Map().AsRaw())
 }
 
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
