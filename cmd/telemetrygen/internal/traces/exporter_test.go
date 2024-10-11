@@ -129,8 +129,8 @@ func TestHTTPExporterOptions_HTTP(t *testing.T) {
 			err = client.UploadTraces(context.Background(), []*tracepb.ResourceSpans{})
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedHTTPPath, httpPath)
-			for k, v := range tc.expectedHeader {
-				assert.Equal(t, v, []string{header.Get(k)})
+			for k, expected := range tc.expectedHeader {
+				assert.Equal(t, expected, []string{header.Get(k)})
 			}
 		})
 	}
