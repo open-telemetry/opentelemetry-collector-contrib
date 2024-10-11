@@ -109,13 +109,14 @@ func TestLoadConfig(t *testing.T) {
 					component.MustNewIDWithName("mock_observer", "with_name"),
 				},
 				ResourceAttributes: map[observer.EndpointType]map[string]string{
-					observer.ContainerType:  {"container.key": "container.value"},
-					observer.PodType:        {"pod.key": "pod.value"},
-					observer.PortType:       {"port.key": "port.value"},
-					observer.HostPortType:   {"hostport.key": "hostport.value"},
-					observer.K8sServiceType: {"k8s.service.key": "k8s.service.value"},
-					observer.K8sIngressType: {"k8s.ingress.key": "k8s.ingress.value"},
-					observer.K8sNodeType:    {"k8s.node.key": "k8s.node.value"},
+					observer.ContainerType:    {"container.key": "container.value"},
+					observer.PodType:          {"pod.key": "pod.value"},
+					observer.PodContainerType: {"pod.container.key": "pod.container.value"},
+					observer.PortType:         {"port.key": "port.value"},
+					observer.HostPortType:     {"hostport.key": "hostport.value"},
+					observer.K8sServiceType:   {"k8s.service.key": "k8s.service.value"},
+					observer.K8sIngressType:   {"k8s.ingress.key": "k8s.ingress.value"},
+					observer.K8sNodeType:      {"k8s.node.key": "k8s.node.value"},
 				},
 			},
 		},
@@ -147,7 +148,7 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
-	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
+	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
 	require.Nil(t, cfg)
 }
 
@@ -162,7 +163,7 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
-	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
+	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
 	require.Nil(t, cfg)
 }
 
@@ -195,7 +196,7 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
-func (*nopWithEndpointFactory) CreateLogsReceiver(
+func (*nopWithEndpointFactory) CreateLogs(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -207,7 +208,7 @@ func (*nopWithEndpointFactory) CreateLogsReceiver(
 	}, nil
 }
 
-func (*nopWithEndpointFactory) CreateMetricsReceiver(
+func (*nopWithEndpointFactory) CreateMetrics(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -219,7 +220,7 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	}, nil
 }
 
-func (*nopWithEndpointFactory) CreateTracesReceiver(
+func (*nopWithEndpointFactory) CreateTraces(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -255,7 +256,7 @@ func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
 	}
 }
 
-func (*nopWithoutEndpointFactory) CreateLogsReceiver(
+func (*nopWithoutEndpointFactory) CreateLogs(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -267,7 +268,7 @@ func (*nopWithoutEndpointFactory) CreateLogsReceiver(
 	}, nil
 }
 
-func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
+func (*nopWithoutEndpointFactory) CreateMetrics(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
@@ -279,7 +280,7 @@ func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	}, nil
 }
 
-func (*nopWithoutEndpointFactory) CreateTracesReceiver(
+func (*nopWithoutEndpointFactory) CreateTraces(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,

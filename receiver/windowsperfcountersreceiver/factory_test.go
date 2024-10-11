@@ -42,7 +42,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, component.ValidateConfig(cfg))
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []ObjectConfig{
@@ -59,13 +59,13 @@ func TestCreateTracesReceiver(t *testing.T) {
 			Gauge:       GaugeMetric{},
 		},
 	}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
-func TestCreateTracesReceiverNoMetrics(t *testing.T) {
+func TestCreateTracesNoMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []ObjectConfig{
@@ -74,13 +74,13 @@ func TestCreateTracesReceiverNoMetrics(t *testing.T) {
 			Counters: []CounterConfig{{Name: "counter"}},
 		},
 	}
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)
 }
 
-func TestCreateLogsReceiver(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []ObjectConfig{
@@ -98,7 +98,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 		},
 	}
 
-	tReceiver, err := factory.CreateLogsReceiver(context.Background(), creationParams, cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
 
 	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	assert.Nil(t, tReceiver)

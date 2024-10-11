@@ -269,3 +269,359 @@ func TestTracesToMetrics(t *testing.T) {
 		})
 	}
 }
+
+// The test input file has a repetitive structure:
+// - There are four resources, each with six metrics, each with four data points.
+// - The four resources have the following sets of attributes:
+//   - resource.required: foo, resource.optional: bar
+//   - resource.required: foo, resource.optional: notbar
+//   - resource.required: notfoo
+//   - (no attributes)
+//
+// - The size metrics have the following sets of types:
+//   - int gauge, double gauge, int sum, double sum, historgram, summary
+//
+// - The four data points on each metric have the following sets of attributes:
+//   - datapoint.required: foo, datapoint.optional: bar
+//   - datapoint.required: foo, datapoint.optional: notbar
+//   - datapoint.required: notfoo
+//   - (no attributes)
+func TestMetricsToMetrics(t *testing.T) {
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "one_attribute",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.sum.by_attr": {
+						Description:     "Data point sum by attribute",
+						SourceAttribute: "beep",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.required",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "one_condition",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.sum.if": {
+						Description:     "Data point sum if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_conditions",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.sum.if": {
+						Description:     "Data point sum if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["datapoint.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_metrics",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.sum.all": {
+						Description:     "All data points sum",
+						SourceAttribute: "beep",
+					},
+					"datapoint.sum.if": {
+						Description:     "Data point sum if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["datapoint.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_attributes",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.sum.by_attr": {
+						Description:     "Data point sum by attributes",
+						SourceAttribute: "beep",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.required",
+							},
+							{
+								Key: "datapoint.optional",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default_attribute_value",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.sum.by_attr": {
+						Description:     "Data point sum by attribute with default",
+						SourceAttribute: "beep",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.required",
+							},
+							{
+								Key:          "datapoint.optional",
+								DefaultValue: "other",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "condition_and_attribute",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.sum.if.by_attr": {
+						Description:     "Data point sum by attribute if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.required",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, tc.cfg.Validate())
+			factory := NewFactory()
+			sink := &consumertest.MetricsSink{}
+			conn, err := factory.CreateMetricsToMetrics(context.Background(),
+				connectortest.NewNopSettings(), tc.cfg, sink)
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.False(t, conn.Capabilities().MutatesData)
+
+			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, conn.Shutdown(context.Background()))
+			}()
+
+			testMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "input.yaml"))
+			assert.NoError(t, err)
+			assert.NoError(t, conn.ConsumeMetrics(context.Background(), testMetrics))
+
+			allMetrics := sink.AllMetrics()
+			assert.Len(t, allMetrics, 1)
+
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", tc.name+".yaml"))
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreMetricFloatPrecision(3),
+				pmetrictest.IgnoreMetricDataPointsOrder()))
+		})
+	}
+}
+
+// The test input file has a repetitive structure:
+// - There are four resources, each with four logs.
+// - The four resources have the following sets of attributes:
+//   - resource.required: foo, resource.optional: bar
+//   - resource.required: foo, resource.optional: notbar
+//   - resource.required: notfoo
+//   - (no attributes)
+//
+// - The four logs on each resource have the following sets of attributes:
+//   - log.required: foo, log.optional: bar
+//   - log.required: foo, log.optional: notbar
+//   - log.required: notfoo
+//   - (no attributes)
+func TestLogsToMetrics(t *testing.T) {
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "one_attribute",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"log.sum.by_attr": {
+						Description:     "Log sum by attribute",
+						SourceAttribute: "beep",
+						Attributes: []AttributeConfig{
+							{
+								Key: "log.required",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "one_condition",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"sum.if": {
+						Description:     "Sum if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_conditions",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"sum.if": {
+						Description:     "Sum if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`attributes["log.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_metrics",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"sum.all": {
+						Description:     "All logs Sum",
+						SourceAttribute: "beep",
+					},
+					"sum.if": {
+						Description:     "Sum if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_attributes",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"log.sum.by_attr": {
+						Description:     "Log sum by attributes",
+						SourceAttribute: "beep",
+						Attributes: []AttributeConfig{
+							{
+								Key: "log.required",
+							},
+							{
+								Key: "log.optional",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default_attribute_value",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"log.sum.by_attr": {
+						Description:     "Log sum by attribute with default",
+						SourceAttribute: "beep",
+						Attributes: []AttributeConfig{
+							{
+								Key: "log.required",
+							},
+							{
+								Key:          "log.optional",
+								DefaultValue: "other",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "condition_and_attribute",
+			cfg: &Config{
+				Logs: map[string]MetricInfo{
+					"log.sum.if.by_attr": {
+						Description:     "Log sum by attribute if ...",
+						SourceAttribute: "beep",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+						Attributes: []AttributeConfig{
+							{
+								Key: "log.required",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, tc.cfg.Validate())
+			factory := NewFactory()
+			sink := &consumertest.MetricsSink{}
+			conn, err := factory.CreateLogsToMetrics(context.Background(),
+				connectortest.NewNopSettings(), tc.cfg, sink)
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.False(t, conn.Capabilities().MutatesData)
+
+			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, conn.Shutdown(context.Background()))
+			}()
+
+			testLogs, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+			assert.NoError(t, err)
+			assert.NoError(t, conn.ConsumeLogs(context.Background(), testLogs))
+
+			allMetrics := sink.AllMetrics()
+			assert.Len(t, allMetrics, 1)
+
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", tc.name+".yaml"))
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreMetricFloatPrecision(3),
+				pmetrictest.IgnoreMetricDataPointsOrder()))
+		})
+	}
+}

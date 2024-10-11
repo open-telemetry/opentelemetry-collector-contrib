@@ -108,7 +108,6 @@
       }
     ],
     "ignoreDeps": [
-      "github.com/mattn/go-ieproxy",
       "github.com/DataDog/datadog-agent/pkg/trace/exportable"
     ],
     "prConcurrentLimit": 200,

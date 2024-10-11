@@ -121,7 +121,7 @@ exclude_metrics:
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.page_faults$/
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.rss$/
   - /^(?i:(k8s\.node)|(k8s\.pod))\.memory\.usage$/
-  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.memory\.working_set$/
+  - /^(?i:(k8s\.node)|(k8s\.pod))\.memory\.working_set$/
 
   # matches (k8s.node|k8s.pod).filesystem...
   - /^k8s\.(?i:(node)|(pod))\.filesystem\.available$/
