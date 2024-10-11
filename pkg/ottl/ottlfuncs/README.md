@@ -414,6 +414,7 @@ Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
+- [ConvertTextToElementsXML](#converttexttoelementsxml)
 - [Day](#day)
 - [Double](#double)
 - [Duration](#duration)
@@ -572,6 +573,36 @@ Convert only attributes within "Record" elements
 
 - `ConvertAttributesToElementsXML(body, "/Log/Record")`
 
+### ConvertTextToElementsXML
+
+`ConvertTextToElementsXML(target, Optional[xpath], Optional[elementName])`
+
+The `ConvertTextToElementsXML` Converter returns an edited version of an XML string where all text belongs to a dedicated element.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
+
+`elementName` (optional) is a string that is used for any element tags that are created to wrap content.
+The default is `"value"`.
+
+For example, `<a><b>foo</b>bar</a>` will be converted to `<a><b>foo</b><value>bar</value></a>`.
+
+Examples:
+
+Ensure all text content in a document is wrapped in a dedicated element
+
+- `ConvertTextToElementsXML(body)`
+
+Use a custom name for any new elements
+
+- `ConvertTextToElementsXML(body, elementName = "custom")`
+
+Convert only part of the document
+
+- `ConvertTextToElementsXML(body, "/some/part/", "value")`
 
 ### Day
 
