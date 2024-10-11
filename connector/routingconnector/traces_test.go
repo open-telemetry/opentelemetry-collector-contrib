@@ -31,7 +31,7 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 				Pipelines: []pipeline.ID{traces0},
 			},
 			{
-				Statement: `route() where attributes["X-Tenant"] == "*"`,
+				Condition: `attributes["X-Tenant"] == "*"`,
 				Pipelines: []pipeline.ID{traces0, traces1},
 			},
 		},
@@ -84,7 +84,7 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		DefaultPipelines: []pipeline.ID{tracesDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where attributes["value"] > 0 and attributes["value"] < 4`,
+				Condition: `attributes["value"] > 0 and attributes["value"] < 4`,
 				Pipelines: []pipeline.ID{traces0},
 			},
 			{
@@ -223,7 +223,7 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 				Pipelines: []pipeline.ID{traces1},
 			},
 			{
-				Statement: `route() where attributes["value"] == 5`,
+				Condition: `attributes["value"] == 5`,
 				Pipelines: []pipeline.ID{tracesDefault, traces0},
 			},
 		},
