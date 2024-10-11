@@ -4,6 +4,8 @@
 package metricstransformprocessor
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -54,7 +56,12 @@ func (b builder) addDoubleDatapoint(start, ts pcommon.Timestamp, val float64, at
 
 func (b builder) setAttrs(attrs pcommon.Map, attrValues []string) {
 	if len(attrValues) != len(b.attrs) {
-		panic(attrValues)
+		panic(
+			fmt.Sprintf(
+				"not enough attributes, expected %d attributes but got %s",
+				len(b.attrs),
+				attrValues),
+		)
 	}
 	for i, a := range b.attrs {
 		attrs.PutStr(a, attrValues[i])

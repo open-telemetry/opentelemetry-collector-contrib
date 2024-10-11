@@ -554,7 +554,7 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
 		case aggregateLabels:
 			if canChangeMetric {
-				attrs := []string{}
+				attrs := make([]string, 0, len(op.labelSetMap))
 				for k, v := range op.labelSetMap {
 					if v {
 						attrs = append(attrs, k)
