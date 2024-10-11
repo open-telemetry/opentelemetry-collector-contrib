@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -39,53 +38,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	}, nil
 }
 
-type LogRecord struct {
-	Timestamp          string
-	TimestampTime      string
-	TraceId            string
-	SpanId             string
-	TraceFlags         int16
-	SeverityText       string
-	SeverityNumber     int16
-	ServiceName        string
-	Body               string
-	ResourceSchemaUrl  string
-	ResourceAttributes string
-	ScopeSchemaUrl     string
-	ScopeName          string
-	ScopeVersion       string
-	ScopeAttributes    string
-	LogAttributes      string
-}
-
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
-	ac, err := e.client.Query("SELECT * FROM " + e.cfg.LogsTableName)
-	for ac.Next() {
-		var logRecord LogRecord
-		err := ac.Scan(
-			&logRecord.Timestamp,
-			&logRecord.TimestampTime,
-			&logRecord.TraceId,
-			&logRecord.SpanId,
-			&logRecord.TraceFlags,
-			&logRecord.SeverityText,
-			&logRecord.SeverityNumber,
-			&logRecord.ServiceName,
-			&logRecord.Body,
-			&logRecord.ResourceSchemaUrl,
-			&logRecord.ResourceAttributes,
-			&logRecord.ScopeSchemaUrl,
-			&logRecord.ScopeName,
-			&logRecord.ScopeVersion,
-			&logRecord.ScopeAttributes,
-			&logRecord.LogAttributes,
-		)
-		if err != nil {
-			log.Fatalf("Scan failed: %v", err)
-		}
-		fmt.Printf("%+v\n", logRecord) // Print the log record
-	}
-	log.Println(ac, err)
 	return createLogsTable(ctx, e.cfg, e.client)
 }
 
@@ -176,8 +129,6 @@ func newPostgresClient(cfg *Config) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, err := db.Exec("select version();")
-	log.Println("checkkkk", r)
 	return db, nil
 }
 
