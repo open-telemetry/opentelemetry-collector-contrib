@@ -61,9 +61,6 @@ func (mgp *metricsGenerationProcessor) processMetrics(_ context.Context, md pmet
 					continue
 				}
 				operand2 = getMetricValue(metric2)
-				if operand2 <= 0 {
-					continue
-				}
 
 			} else if rule.ruleType == string(scale) {
 				operand2 = rule.scaleBy

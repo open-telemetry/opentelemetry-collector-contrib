@@ -90,7 +90,7 @@ func TestTask_PrivateIP(t *testing.T) {
 			assert.Equal(t, mode, errPINF.NetworkMode)
 			// doing contains on error message is not good, but this line increase test coverage from 93% to 98%
 			// not sure how the average coverage is calculated ...
-			assert.Contains(t, err.Error(), mode)
+			assert.ErrorContains(t, err, mode)
 		}
 	})
 }
@@ -185,7 +185,7 @@ func TestTask_MappedPort(t *testing.T) {
 			errMPNF := &errMappedPortNotFound{}
 			require.ErrorAs(t, err, &errMPNF)
 			assert.Equal(t, mode, errMPNF.NetworkMode)
-			assert.Contains(t, err.Error(), mode) // for coverage
+			assert.ErrorContains(t, err, mode) // for coverage
 		}
 	})
 }

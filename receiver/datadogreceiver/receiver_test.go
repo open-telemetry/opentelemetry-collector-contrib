@@ -31,7 +31,7 @@ func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
@@ -45,7 +45,7 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
@@ -213,8 +213,6 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
@@ -621,6 +619,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	assert.Equal(t, 1, metrics.Len())
 	metric := metrics.At(0)
+	assert.Equal(t, "app.working", metric.Name())
 	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
 	dps := metric.Gauge().DataPoints()
 	assert.Equal(t, 1, dps.Len())

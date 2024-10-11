@@ -109,7 +109,7 @@ extension/observer/dockerobserver/                                  @open-teleme
 extension/observer/ecsobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/hostobserver/                                    @open-telemetry/collector-contrib-approvers @MovieStoreGuy
-extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
+extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax @ChrsMark
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampcustommessages/                                      @open-telemetry/collector-contrib-approvers @BinaryFissionGames @evan-bradley
 extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @BinaryFissionGames
@@ -156,6 +156,7 @@ pkg/resourcetotelemetry/                                            @open-teleme
 pkg/sampling/                                                       @open-telemetry/collector-contrib-approvers @kentquirk @jmacd
 pkg/stanza/                                                         @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/stanza/fileconsumer/                                            @open-telemetry/collector-contrib-approvers @djaglowski
+pkg/status/                                                         @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 pkg/translator/azure/                                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
 pkg/translator/azurelogs/                                           @open-telemetry/collector-contrib-approvers @atoulme @cparkins @MikeGoldsmith
 pkg/translator/jaeger/                                              @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
@@ -271,6 +272,7 @@ receiver/otlpjsonfilereceiver/                                      @open-teleme
 receiver/podmanreceiver/                                            @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/prometheusreceiver/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/prometheusremotewritereceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens
 receiver/pulsarreceiver/                                            @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                            @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                            @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
@@ -294,6 +296,7 @@ receiver/sshcheckreceiver/                                          @open-teleme
 receiver/statsdreceiver/                                            @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski @andrzej-stencel
 receiver/tcplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/tlscheckreceiver/                                          @open-telemetry/collector-contrib-approvers @atoulme @michael-burt
 receiver/udplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/vcenterreceiver/                                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei @StefanKurek
 receiver/wavefrontreceiver/                                         @open-telemetry/collector-contrib-approvers @samiura

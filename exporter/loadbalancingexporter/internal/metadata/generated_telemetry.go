@@ -60,7 +60,8 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.LoadbalancerBackendLatency, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
 		"otelcol_loadbalancer_backend_latency",
 		metric.WithDescription("Response latency in ms for the backends."),
-		metric.WithUnit("ms"), metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
+		metric.WithUnit("ms"),
+		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerBackendOutcome, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
