@@ -7,6 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
@@ -90,6 +93,137 @@ func WithEnumParser[K any](parser EnumParser) Option[K] {
 	return func(p *Parser[K]) {
 		p.enumParser = parser
 	}
+}
+
+// Helper of "InterpolateString" that expands a single variable without bells and whistles.
+// The input is expected to be a path to a variable that is convertible to a string.
+func (p *Parser[K]) evalSimpleStringExpression(
+	ctx context.Context, s string, tCtx K) (string, error) {
+	expr := "String(" + s + ")"
+	parsed, parseErr := parser.ParseString("", expr)
+	if parseErr != nil {
+		return "", parseErr
+	}
+
+	converter := parsed.Converter
+	if converter == nil {
+		return "", fmt.Errorf("Expected non-nil converter when parsing: %v", expr)
+	}
+	getter, getterErr := p.newGetterFromConverter(*converter)
+    if getterErr != nil {
+		return "", getterErr
+	}
+	
+	result, resultErr := getter.Get(ctx, tCtx)
+	if resultErr != nil {
+		return "", resultErr
+	}
+	if result == nil {
+		return "", fmt.Errorf("expression [%v] expanded to nil", s)
+	}
+
+	v := reflect.ValueOf(result)
+	return v.String(), nil
+}
+
+// Helper of "InterpolateString" that expands a single sub-expression contained in
+// "${ ... }" syntax. This sub-expression can optionally include a default value
+// as in "attributes["my.feature.enabled"]:false". This sub-expression also supports
+// environment variables via the use of an "env." prefix as in "env.MY_ENV_VAR".
+func (p *Parser[K]) expandInterpolationExpression(
+	ctx context.Context, s string, tCtx K) (string, error) {
+	withoutSpaces := strings.TrimSpace(s)
+	var toExpand = withoutSpaces
+	var hasDefault = false
+	components := strings.SplitN(s, ":", 2)
+	var defaultValue = ""
+	if len(components) == 2 {
+		toExpand = strings.TrimSpace(components[0])
+		defaultValue = strings.TrimSpace(components[1])
+		hasDefault = true
+	}
+
+	if strings.HasPrefix(toExpand, "env.") {
+		envVarName := strings.TrimLeft(toExpand, "env.")
+		val, ok := os.LookupEnv(envVarName)
+		if ok {
+			return val, nil
+		}
+		if hasDefault {
+			return defaultValue, nil
+		}
+		return "", fmt.Errorf("no such environment variable: %v", envVarName)
+	}
+
+	result, err := p.evalSimpleStringExpression(ctx, toExpand, tCtx)
+	if err != nil && hasDefault {
+		return defaultValue, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return result, nil
+}
+
+// InterpolateString interpolates a string, using OTTL variables/sub-expressions.
+// In particular, the input string may contain various substrings of the form "${ expr }".
+// The "expr" will be parsed according to the semantics of OTTL to yield a new string with
+// these various pieces of information successfully interpolated into the resulting string.
+//
+// Example input:
+//
+//     "${attributes["foo"]} is the value of attribute 'foo'"
+//
+// Example output:
+//
+//     "bar is the value of attribute 'foo'"
+//
+// In addition to resolving variables from the OTTL context "tCtx K", the this function
+// also can resolve environment variables prefixed with "env." as in:
+//
+//  "The log level is ${env.OTEL_LOG_LEVEL:info}" -> "The log level is error"
+//
+// As can be seen from above, an optional ":default" suffix can be added to provide a
+// fallback value to use when the referenced name is unset.
+func (p *Parser[K]) InterpolateString(
+	ctx context.Context, s string, tCtx K) (string, error) {
+	var remaining = s
+	var output strings.Builder
+	for len(remaining) > 0 {
+		segments := strings.SplitN(remaining, "$", 2)
+		output.WriteString(segments[0])
+		if (len(segments) == 1) {
+			// Nothing was separated with "$". This means
+			// that segments[0] == remaining, and everything was written.
+			remaining = ""
+			break
+		}
+
+		if strings.HasPrefix(segments[1], "$") {
+			// This was a case of a double-escape "$$"
+			remaining = segments[1][1:]
+			output.WriteRune('$')
+		} else if strings.HasPrefix(segments[1], "{") {
+			// This was the case of "${ ... }" with something to expand
+			remaining_segments := strings.SplitN(segments[1][1:], "}", 2)
+			if len(remaining_segments) != 2 {
+				return "", fmt.Errorf("Missing closing } in %v", s)
+			}
+			sub_expression := remaining_segments[0]
+			remaining = remaining_segments[1]
+			expansion, err := p.expandInterpolationExpression(ctx, sub_expression, tCtx)
+			if err != nil {
+				return "", err
+			}
+			output.WriteString(expansion)
+		} else {
+			// In the future, we might allow "$FOO" rather than "${FOO}"; however,
+			// for now, let's disallow this syntax and mandate explicit braces.
+			return "", fmt.Errorf("Expected $ or { after $ in %v", s)
+		}
+	}
+
+	return output.String(), nil
 }
 
 // WithPathContextNames sets the context names to be considered when parsing a Path value.

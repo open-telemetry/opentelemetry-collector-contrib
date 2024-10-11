@@ -5,10 +5,14 @@ package e2e
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -16,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -1169,4 +1174,346 @@ func Benchmark_XML_Functions(b *testing.B) {
 
 	// Ensure correctness
 	assert.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
+}
+
+func Test_InterpolateString_FromEnvironment(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	os.Setenv("TEST_ENV_VAR", "somevalue")
+	pattern := "prefix-${env.TEST_ENV_VAR}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix-somevalue-suffix")
+}
+
+func Test_InterpolateString_FromEnvironmentSetWithDefault(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	os.Setenv("TEST_ENV_VAR", "somevalue")
+	pattern := "prefix-${env.TEST_ENV_VAR:fallback}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix-somevalue-suffix")
+}
+
+func Test_InterpolateString_FromEnvironmentNotSetWithDefault(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	os.Unsetenv("TEST_ENV_VAR")
+	pattern := "prefix-${env.TEST_ENV_VAR:fallback}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix-fallback-suffix")
+}
+
+func Test_InterpolateString_FromEnvironmentEmptyNoDefault(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	os.Setenv("TEST_ENV_VAR", "")
+	pattern := "prefix-${env.TEST_ENV_VAR}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix--suffix")
+}
+
+func Test_InterpolateString_FromEnvironmentNotSetNoDefault(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	os.Unsetenv("TEST_ENV_VAR")
+	pattern := "prefix-${env.TEST_ENV_VAR}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.ErrorContains(t, err, "TEST_ENV_VAR")
+	assert.Equal(t, result, "")
+}
+
+func Test_InterpolateString_SimpleSpanAttribute(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+	attributes := span.Attributes()
+	attributes.PutStr("somekey", "somevalue")
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	pattern := "prefix-${attributes[\"somekey\"]}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix-somevalue-suffix")
+}
+
+func Test_InterpolateString_SimpleSpanAttributeSetWithDefault(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+	attributes := span.Attributes()
+	attributes.PutStr("somekey", "somevalue")
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	pattern := "prefix-${attributes[\"somekey\"]:fallback}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix-somevalue-suffix")
+}
+
+func Test_InterpolateString_SimpleSpanAttributeNotSetWithDefault(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	pattern := "prefix-${attributes[\"somekey\"]:fallback}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix-fallback-suffix")
+}
+
+func Test_InterpolateString_SimpleSpanAttributeNotSetNoDefault(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspan.NewTransformContext(
+		span, scope, resource, scopeSpans, resourceSpans)
+	spanFuncs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+	parser, parserErr := ottlspan.NewParser(spanFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	pattern := "prefix-${attributes[\"somekey\"]}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.ErrorContains(t, err, "attributes[\"somekey\"]")
+	assert.Equal(t, result, "")
+}
+
+func Test_InterpolateString_SimpleSpanEventAttribute(t *testing.T) {
+	data := ptrace.NewTraces()
+	resourceSpans := data.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	span := scopeSpans.Spans().AppendEmpty()
+	testTraceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	testSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	span.SetName("testspan")
+	span.SetTraceID(testTraceID)
+	span.SetSpanID(testSpanID)
+	span.SetStartTimestamp(pcommon.Timestamp(1))
+	span.SetEndTimestamp(pcommon.Timestamp(2))
+	event := span.Events().AppendEmpty()
+	attributes := event.Attributes()
+	attributes.PutStr("somekey", "somevalue")
+
+	logger, loggerError := zap.NewDevelopment()
+	assert.NoError(t, loggerError)
+
+	telemetrySettings := componenttest.NewNopTelemetrySettings()
+	telemetrySettings.Logger = logger
+	ottlCtx := ottlspanevent.NewTransformContext(
+		event, span, scope, resource, scopeSpans, resourceSpans)
+	spanEventFuncs := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
+	parser, parserErr := ottlspanevent.NewParser(spanEventFuncs, telemetrySettings)
+	assert.NoError(t, parserErr)
+
+	ctx := context.Background()
+	pattern := "prefix-${attributes[\"somekey\"]}-suffix"
+	result, err := parser.InterpolateString(ctx, pattern, ottlCtx)
+	assert.NoError(t, err)
+	assert.Equal(t, result, "prefix-somevalue-suffix")
 }

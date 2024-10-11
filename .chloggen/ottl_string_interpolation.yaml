@@ -1,0 +1,8 @@
+change_type: enhancement
+component: ottl
+note: String interpolation
+issues: [34700, 33737]
+subtext: |
+  Defines an "InterpolateString" function in the OTTL parser.
+  Enables reuse of OTTL expressions in other contexts.
+change_logs: [api]
