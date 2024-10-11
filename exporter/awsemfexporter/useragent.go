@@ -67,8 +67,8 @@ func (ua *UserAgent) handle(r *request.Request) {
 	request.AddToUserAgent(r, ua.prebuiltStr)
 }
 
-// Process takes the telemetry SDK language and version and adds them to the cache. If it already exists in the
-// cache and has the same value, extends the TTL. If not, then it sets it and rebuilds the user agent string.
+// Process takes the telemetry SDK language and version and adds them to the cache. If the language already exists in the
+// cache with a different version, then add the new version to the version map. If not, then create a new version map. 
 func (ua *UserAgent) Process(labels map[string]string) {
 	language := labels[semconv.AttributeTelemetrySDKLanguage]
 	version := labels[semconv.AttributeTelemetryDistroVersion]
