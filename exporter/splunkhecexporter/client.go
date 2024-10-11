@@ -64,7 +64,7 @@ func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *clien
 		logger:            set.Logger,
 		telemetrySettings: set.TelemetrySettings,
 		buildInfo:         set.BuildInfo,
-		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression),
+		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression, cfg.EnforceLengthRestrictionUncompressed),
 		exporterName:      set.ID.String(),
 		meter:             metadata.Meter(set.TelemetrySettings),
 	}
