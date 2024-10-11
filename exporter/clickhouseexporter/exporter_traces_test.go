@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"go.uber.org/zap/zaptest"
 )
 
 func TestExporter_pushTracesData(t *testing.T) {
@@ -49,7 +49,7 @@ func TestExporter_pushTracesData(t *testing.T) {
 }
 
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
-	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+	exporter, err := newTracesExporter(exportertest.NewNopSettings(), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 
