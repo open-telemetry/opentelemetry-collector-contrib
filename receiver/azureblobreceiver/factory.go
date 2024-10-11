@@ -141,6 +141,15 @@ func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logge
 		if err != nil {
 			return nil, err
 		}
+	case DefaultAuth:
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
+		if err != nil {
+			return nil, err
+		}
+		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, logger)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("unknown authentication %v", cfg.Authentication)
 	}

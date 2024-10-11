@@ -25,12 +25,12 @@ func TestType(t *testing.T) {
 	assert.Equal(t, metadata.Type, factory.Type())
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	receiverConfig := cfg.(*Config)
 
-	receiver, err := factory.CreateMetricsReceiver(
+	receiver, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		receiverConfig,
