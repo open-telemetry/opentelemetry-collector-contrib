@@ -13,7 +13,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 type Server struct {
@@ -50,7 +50,7 @@ func NewServer(
 // Start implements the component.Component interface.
 func (s *Server) Start(ctx context.Context, host component.Host) error {
 	var err error
-	s.grpcServer, err = s.config.ToServerWithOptions(ctx, host, s.telemetry)
+	s.grpcServer, err = s.config.ToServer(ctx, host, s.telemetry)
 	if err != nil {
 		return err
 	}
