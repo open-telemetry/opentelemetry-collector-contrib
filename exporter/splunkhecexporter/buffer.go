@@ -68,6 +68,7 @@ type cancellableGzipWriter struct {
 	innerBuffer *bytes.Buffer
 	innerWriter *gzip.Writer
 	maxCapacity uint
+	restrictLengthUncompressed bool
 	rawLen      int
 }
 
@@ -75,6 +76,11 @@ func (c *cancellableGzipWriter) Write(b []byte) (int, error) {
 	if c.maxCapacity == 0 {
 		c.rawLen += len(b)
 		return c.innerWriter.Write(b)
+	}
+
+	// If we are restricting the uncompressed length, we need to check if the new content fits in the buffer.
+	if c.restrictLengthUncompressed && c.rawLen +len(b) > int(c.maxCapacity) {
+		return 0, errOverCapacity
 	}
 
 	// if we see that at a 50% compression rate, we'd be over max capacity, start flushing.
@@ -147,7 +153,7 @@ func (p bufferPool) put(bf buffer) {
 	p.pool.Put(bf)
 }
 
-func newBufferPool(bufCap uint, compressionEnabled bool) bufferPool {
+func newBufferPool(bufCap uint, compressionEnabled bool, restrictLengthUncompressed bool) bufferPool {
 	return bufferPool{
 		&sync.Pool{
 			New: func() any {

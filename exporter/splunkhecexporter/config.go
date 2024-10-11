@@ -107,6 +107,10 @@ type Config struct {
 	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxContentLengthTraces uint `mapstructure:"max_content_length_traces"`
 
+	// Whether to enforce restricting the uncompressed length of the payload by the maximums fields set above.
+	// Default value is false.
+	EnforceLengthRestrictionUncompressed bool `mapstructure:"enforce_length_restriction_uncompressed"`
+
 	// Maximum payload size, raw uncompressed. Default value is 5242880 bytes (5MiB).
 	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxEventSize uint `mapstructure:"max_event_size"`
