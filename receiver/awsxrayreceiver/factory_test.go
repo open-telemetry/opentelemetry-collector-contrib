@@ -26,7 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, metadata.Type, factory.Type())
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	// TODO review if test should succeed on Windows
 	if runtime.GOOS == "windows" {
 		t.Skip()
@@ -35,7 +35,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(
+	_, err := factory.CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
@@ -44,9 +44,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 	assert.NoError(t, err, "trace receiver can be created")
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
