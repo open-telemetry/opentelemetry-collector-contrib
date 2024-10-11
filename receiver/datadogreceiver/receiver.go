@@ -318,7 +318,7 @@ func (ddr *datadogReceiver) handleV2Series(w http.ResponseWriter, req *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	response := map[string]interface{}{
+	response := map[string]any{
 		"errors": []string{},
 	}
 	_ = json.NewEncoder(w).Encode(response)
