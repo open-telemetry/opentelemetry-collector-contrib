@@ -17,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	stanzaerr "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -73,7 +74,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	if format == "" {
 		format, err = p.detectFormat(entry)
 		if err != nil {
-			return fmt.Errorf("failed to detect a valid container log format: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "invalid container log format"))
 		}
 	}
 
@@ -81,12 +82,12 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	case dockerFormat:
 		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleAttributeMappings)
 		if err != nil {
-			return fmt.Errorf("failed to process the docker log: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "docker log"))
 		}
 		timeLayout = goTimeLayout
 		err = parseTime(entry, timeLayout)
 		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse time"))
 		}
 	case containerdFormat, crioFormat:
 		p.criConsumerStartOnce.Do(func() {
@@ -117,35 +118,35 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			// parse the message
 			err = p.ParserOperator.ParseWith(ctx, entry, p.parseContainerd)
 			if err != nil {
-				return fmt.Errorf("failed to parse containerd log: %w", err)
+				return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "containerd log"))
 			}
 			timeLayout = goTimeLayout
 		} else {
 			// parse the message
 			err = p.ParserOperator.ParseWith(ctx, entry, p.parseCRIO)
 			if err != nil {
-				return fmt.Errorf("failed to parse crio log: %w", err)
+				return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse crio log"))
 			}
 			timeLayout = crioTimeLayout
 		}
 
 		err = parseTime(entry, timeLayout)
 		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse time"))
 		}
 
 		err = p.handleAttributeMappings(entry)
 		if err != nil {
-			return fmt.Errorf("failed to handle attribute mappings: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "attribute mappings"))
 		}
 
 		// send it to the recombine operator
 		err = p.recombineParser.Process(ctx, entry)
 		if err != nil {
-			return fmt.Errorf("failed to recombine the crio log: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "recombine the crio log"))
 		}
 	default:
-		return fmt.Errorf("failed to detect a valid container log format")
+		return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "invalid container log format"))
 	}
 
 	return nil
