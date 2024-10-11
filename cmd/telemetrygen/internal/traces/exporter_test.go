@@ -13,12 +13,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
 func TestHTTPExporterOptions_TLS(t *testing.T) {
@@ -49,7 +49,7 @@ func TestHTTPExporterOptions_TLS(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			var called bool
-			var h http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
+			var h http.HandlerFunc = func(http.ResponseWriter, *http.Request) {
 				called = true
 			}
 			var srv *httptest.Server
@@ -111,7 +111,7 @@ func TestHTTPExporterOptions_HTTP(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var httpPath string
 			var header http.Header
-			var h http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
+			var h http.HandlerFunc = func(_ http.ResponseWriter, r *http.Request) {
 				httpPath = r.URL.Path
 				header = r.Header
 			}
