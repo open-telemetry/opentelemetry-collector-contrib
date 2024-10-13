@@ -606,12 +606,12 @@ func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectio
 	var metricKey strings.Builder
 	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
-	for _, dimName := range p.config.Dimensions {
-		dim, ok := edgeDimensions[dimName]
-		if !ok {
-			continue
+	for _, kind := range []string{serverKind, clientKind} {
+		for _, dimName := range p.config.Dimensions {
+			if dim, ok := edgeDimensions[kind+"_"+dimName]; ok {
+				metricKey.WriteString(metricKeySeparator + dim)
+			}
 		}
-		metricKey.WriteString(metricKeySeparator + dim)
 	}
 
 	return metricKey.String()
