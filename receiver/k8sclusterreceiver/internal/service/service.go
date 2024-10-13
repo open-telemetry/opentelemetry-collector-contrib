@@ -24,6 +24,11 @@ func Transform(service *corev1.Service) *corev1.Service {
 	}
 }
 
+// Maximum number of services assigned to a pod that will be added as properties.
+// If a pod has more services than this limit, it's typically an ingress controller or a similar service.
+// In that case, we don't set any service properties to the pod since it's not useful.
+const podServiceLimit = 10
+
 // GetPodServiceTags returns a set of services associated with the pod.
 func GetPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string {
 	properties := map[string]string{}
@@ -33,6 +38,9 @@ func GetPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 		if serObj.Namespace == pod.Namespace &&
 			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
 			properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
+			if len(properties) > podServiceLimit {
+				return nil
+			}
 		}
 	}
 
