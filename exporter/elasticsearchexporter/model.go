@@ -171,11 +171,31 @@ func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcomm
 	_, isEvent := attributes.Get("event.name")
 
 	switch body.Type() {
-	case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
+	case pcommon.ValueTypeMap:
 		if isEvent {
 			doc.AddAttribute("body.structured", body)
 		} else {
 			doc.AddAttribute("body.flattened", body)
+		}
+	case pcommon.ValueTypeSlice:
+		// output must be an array of objects due to ES limitations
+		outVal := pcommon.NewValueSlice()
+		outSlice := outVal.Slice()
+		s := body.Slice()
+		for i := 0; i < s.Len(); i++ {
+			v := s.At(i)
+			switch v.Type() {
+			case pcommon.ValueTypeMap:
+				v.Map().CopyTo(outSlice.AppendEmpty().SetEmptyMap())
+			default:
+				m := outSlice.AppendEmpty().SetEmptyMap()
+				v.CopyTo(m.PutEmpty("value"))
+			}
+		}
+		if isEvent {
+			doc.AddAttribute("body.structured", outVal)
+		} else {
+			doc.AddAttribute("body.flattened", outVal)
 		}
 	case pcommon.ValueTypeStr:
 		doc.AddString("body.text", body.Str())
