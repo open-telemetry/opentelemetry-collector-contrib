@@ -1010,6 +1010,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutBool("isMap", true)
 			},
 		},
+		{
+			name:      "extract value from Split function result slice of type []string",
+			statement: `set(attributes["my.environment.2"], Split(resource.attributes["host.name"],"h")[1])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("my.environment.2", "ost")
+			},
+		},
 	}
 
 	for _, tt := range tests {
