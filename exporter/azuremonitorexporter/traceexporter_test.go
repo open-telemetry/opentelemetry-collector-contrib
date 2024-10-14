@@ -22,19 +22,22 @@ var (
 // Tests the export onTraceData callback with no Spans
 func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
-	exporter := getExporter(defaultConfig, mockTransportChannel)
+	mockTelemetryClient := getMockTelemetryClient()
+	exporter := getExporter(defaultConfig, mockTransportChannel, mockTelemetryClient)
 
 	traces := ptrace.NewTraces()
 
 	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTelemetryClient.AssertNumberOfCalls(t, "Track", 0)
 }
 
 // Tests the export onTraceData callback with a single Span
 func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
-	exporter := getExporter(defaultConfig, mockTransportChannel)
+	mockTelemetryClient := getMockTelemetryClient()
+	exporter := getExporter(defaultConfig, mockTransportChannel, mockTelemetryClient)
 
 	// re-use some test generation method(s) from trace_to_envelope_test
 	resource := getResource()
@@ -50,16 +53,16 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
 	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
-
-	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
+	mockTelemetryClient.Channel().(*mockTelemetryChannel).AssertNumberOfCalls(t, "Flush", 1)
 }
 
 // Tests the export onTraceData callback with a single Span with SpanEvents
 func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
+	mockTelemetryClient := getMockTelemetryClient()
 	config := createDefaultConfig().(*Config)
 	config.SpanEventsEnabled = true
-	exporter := getExporter(config, mockTransportChannel)
+	exporter := getExporter(config, mockTransportChannel, mockTelemetryClient)
 
 	// re-use some test generation method(s) from trace_to_envelope_test
 	resource := getResource()
@@ -83,13 +86,16 @@ func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 
 	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
 
-	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTelemetryClient.AssertNumberOfCalls(t, "Track", 3)
 }
 
 // Tests the export onTraceData callback with a single Span that fails to produce an envelope
+// TODO: Depercate this test when transport channel is removed as we will not be using envelopes anymore
 func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
-	exporter := getExporter(defaultConfig, mockTransportChannel)
+	mockTelemetryClient := getMockTelemetryClient()
+	exporter := getExporter(defaultConfig, mockTransportChannel, mockTelemetryClient)
 
 	// re-use some test generation method(s) from trace_to_envelope_test
 	resource := getResource()
@@ -113,6 +119,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTelemetryClient.AssertNumberOfCalls(t, "Track", 0)
 }
 
 func getMockTransportChannel() *mockTransportChannel {
@@ -121,10 +128,20 @@ func getMockTransportChannel() *mockTransportChannel {
 	return &transportChannelMock
 }
 
-func getExporter(config *Config, transportChannel transportChannel) *traceExporter {
+func getMockTelemetryClient() *mockTelemetryClient {
+	mockClient := mockTelemetryClient{}
+	mockChannel := &mockTelemetryChannel{}
+	mockClient.On("Track", mock.Anything)
+	mockClient.On("Channel").Return(mockChannel)
+	mockChannel.On("Flush")
+	return &mockClient
+}
+
+func getExporter(config *Config, transportChannel transportChannel, telemetryClient telemetryClient) *traceExporter {
 	return &traceExporter{
-		config,
-		transportChannel,
-		zap.NewNop(),
+		config:           config,
+		transportChannel: transportChannel,
+		telemetryClient:  telemetryClient,
+		logger:           zap.NewNop(),
 	}
 }

@@ -6,7 +6,6 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -16,8 +15,10 @@ import (
 )
 
 type traceExporter struct {
-	config           *Config
+	config *Config
+	// TODO: deprecate in favor of telemetryClient
 	transportChannel transportChannel
+	telemetryClient  telemetryClient
 	logger           *zap.Logger
 }
 
@@ -33,9 +34,6 @@ func (v *traceVisitor) visit(
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span) (ok bool) {
 
-	instrumentationKey := string(v.exporter.config.InstrumentationKey)
-	client := appinsights.NewTelemetryClient(instrumentationKey)
-
 	telemetryTraces, err := spanToTelemetryTraces(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
@@ -45,11 +43,11 @@ func (v *traceVisitor) visit(
 
 	for _, trace := range telemetryTraces {
 		// This is a fire and forget operation
-		client.Track(trace)
+		v.exporter.telemetryClient.Track(trace)
 
 	}
 	// Flush the telemetry client to ensure all data is sent and take advantage of batching
-	client.Channel().Flush()
+	v.exporter.telemetryClient.Channel().Flush()
 	v.processed++
 
 	return true
@@ -67,10 +65,11 @@ func (exporter *traceExporter) onTraceData(_ context.Context, traceData ptrace.T
 }
 
 // Returns a new instance of the trace exporter
-func newTracesExporter(config *Config, transportChannel transportChannel, set exporter.Settings) (exporter.Traces, error) {
+func newTracesExporter(config *Config, transportChannel transportChannel, telemetryClient telemetryClient, set exporter.Settings) (exporter.Traces, error) {
 	exporter := &traceExporter{
 		config:           config,
 		transportChannel: transportChannel,
+		telemetryClient:  telemetryClient,
 		logger:           set.Logger,
 	}
 
