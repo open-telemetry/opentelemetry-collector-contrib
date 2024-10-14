@@ -160,36 +160,27 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
 	// Body
-	setOTelLogBody(&document, record.Body())
+	setOTelLogBody(&document, record.Body(), record.Attributes())
 
 	return document
 }
 
-func setOTelLogBody(doc *objmodel.Document, body pcommon.Value) {
+func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcommon.Map) {
+	// Determine if this log record is an event, as they are mapped differently
+	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
+	_, isEvent := attributes.Get("event.name")
+
 	switch body.Type() {
-	case pcommon.ValueTypeMap:
-		doc.AddAttribute("body_structured", body)
-	case pcommon.ValueTypeSlice:
-		slice := body.Slice()
-		for i := 0; i < slice.Len(); i++ {
-			switch slice.At(i).Type() {
-			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
-				doc.AddAttribute("body_structured", body)
-				return
-			}
+	case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
+		if isEvent {
+			doc.AddAttribute("body.structured", body)
+		} else {
+			doc.AddAttribute("body.flattened", body)
 		}
-
-		bodyTextVal := pcommon.NewValueSlice()
-		bodyTextSlice := bodyTextVal.Slice()
-		bodyTextSlice.EnsureCapacity(slice.Len())
-
-		for i := 0; i < slice.Len(); i++ {
-			elem := slice.At(i)
-			bodyTextSlice.AppendEmpty().SetStr(elem.AsString())
-		}
-		doc.AddAttribute("body_text", bodyTextVal)
+	case pcommon.ValueTypeStr:
+		doc.AddString("body.text", body.Str())
 	default:
-		doc.AddString("body_text", body.AsString())
+		doc.AddString("body.text", body.AsString())
 	}
 }
 
