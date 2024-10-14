@@ -62,8 +62,8 @@ func TestUserAgent(t *testing.T) {
 				},
 			},
 			want: []string{
-				"telemetry-sdk (test/1.1,1.0)",
-				"telemetry-sdk (test/1.0,1.1)",
+				"telemetry-sdk (test/1.1;test/1.0)",
+				"telemetry-sdk (test/1.0;test/1.1)",
 			},
 		},
 		"WithTruncatedAttributes": {

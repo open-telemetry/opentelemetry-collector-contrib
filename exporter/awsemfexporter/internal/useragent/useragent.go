@@ -92,21 +92,15 @@ func (ua *UserAgent) Process(labels map[string]string) {
 	}
 }
 
-// build the user agent string from the items in the cache. Format is telemetry-sdk (<lang1>/<ver1>,<ver2>;<lang2>/<ver2>).
+// build the user agent string from the items in the cache. Format is telemetry-sdk (<lang1>/<ver1>;<lang1>/<ver2>).
 func (ua *UserAgent) build() {
 	ua.mu.Lock()
 	defer ua.mu.Unlock()
 	var items []string
 	for _, item := range ua.cache.Items() {
-		value := item.Value()
-		var versionStr string
-		for version := range value {
-			if versionStr != "" {
-				versionStr += ","
-			}
-			versionStr += version
+		for version := range item.Value() {
+			items = append(items, formatStr(item.Key(), version))
 		}
-		items = append(items, formatStr(item.Key(), versionStr))
 	}
 	ua.prebuiltStr = ""
 	if len(items) > 0 {
