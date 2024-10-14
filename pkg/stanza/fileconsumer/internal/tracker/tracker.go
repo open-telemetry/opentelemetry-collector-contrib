@@ -165,8 +165,7 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	if t.pollsToArchive <= 0 || t.persister == nil {
 		return
 	}
-	key := fmt.Sprintf("knownFiles%d", t.archiveIndex)
-	if err := checkpoint.SaveKey(context.Background(), t.persister, metadata.Get(), key); err != nil {
+	if err := t.updateArchive(t.archiveIndex, metadata); err != nil {
 		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
 	}
 	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
@@ -183,8 +182,8 @@ func (t *fileTracker) readArchive(readIndex int) (*fileset.Fileset[*reader.Metad
 	return f, nil
 }
 
-func (t *fileTracker) updateArchive(readIndex int, rmds *fileset.Fileset[*reader.Metadata]) error {
-	key := fmt.Sprintf("knownFiles%d", readIndex)
+func (t *fileTracker) updateArchive(index int, rmds *fileset.Fileset[*reader.Metadata]) error {
+	key := fmt.Sprintf("knownFiles%d", index)
 	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
 }
 
