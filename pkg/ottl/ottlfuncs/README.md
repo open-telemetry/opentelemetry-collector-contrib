@@ -1379,7 +1379,7 @@ An element has "extraneous text content" when it contains both text and element 
 4. Sibling elements that share the same tag will be combined into a slice.
    e.g. `<a> <b>1</b> <c>2</c> <c>3</c> </foo>` becomes `"a": { "b": "1", "c": [ "2", "3" ] }`.
 5. Empty elements are dropped, but they can determine whether a value should be a slice or map.
-   e.g. `<a> <b>1</b> </b> </a>` becomes `"a": { "b": [ "1" ] }` instead of `"a": { "b": "1" }`
+   e.g. `<a> <b>1</b> <b/> </a>` becomes `"a": { "b": [ "1" ] }` instead of `"a": { "b": "1" }`
 
 #### Examples
 
