@@ -11,6 +11,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/featuregate"
@@ -44,8 +45,8 @@ func NewFactory() exporter.Factory {
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: defaultTimeout},
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		Config:          collector.DefaultConfig(),
 	}
 }
@@ -55,7 +56,7 @@ func createLogsExporter(
 	params exporter.Settings,
 	cfg component.Config) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
-	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version)
+	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.TelemetrySettings.MeterProvider, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +69,10 @@ func createLogsExporter(
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithQueue(eCfg.QueueSettings))
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
 // createTracesExporter creates a trace exporter based on this config.
@@ -78,7 +81,7 @@ func createTracesExporter(
 	params exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
-	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.BuildInfo.Version, eCfg.Timeout)
+	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.TelemetrySettings.MeterProvider, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -91,8 +94,10 @@ func createTracesExporter(
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithQueue(eCfg.QueueSettings))
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
@@ -101,7 +106,7 @@ func createMetricsExporter(
 	params exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
-	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version, eCfg.Timeout)
+	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.TelemetrySettings.MeterProvider, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +119,8 @@ func createMetricsExporter(
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithQueue(eCfg.QueueSettings))
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
+	)
 }

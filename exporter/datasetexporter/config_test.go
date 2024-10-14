@@ -135,8 +135,8 @@ func TestConfigString(t *testing.T) {
 			UseHostName: false,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 	}
 
 	assert.Equal(t,

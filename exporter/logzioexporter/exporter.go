@@ -84,7 +84,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 		exporter.pushTraceData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithRetry(config.BackOffConfig),
 	)
@@ -106,7 +106,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 		exporter.pushLogData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithQueue(config.QueueSettings),
 		exporterhelper.WithRetry(config.BackOffConfig),
 	)
@@ -182,10 +182,7 @@ func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
 func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace.Traces) error {
 	// a buffer to store logzio span and services bytes
 	var dataBuffer bytes.Buffer
-	batches, err := jaeger.ProtoFromTraces(traces)
-	if err != nil {
-		return err
-	}
+	batches := jaeger.ProtoFromTraces(traces)
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
@@ -195,7 +192,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 			if transformErr != nil {
 				return transformErr
 			}
-			_, err = dataBuffer.Write(append(logzioSpan, '\n'))
+			_, err := dataBuffer.Write(append(logzioSpan, '\n'))
 			if err != nil {
 				return err
 			}
@@ -220,7 +217,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 			}
 		}
 	}
-	err = exporter.export(ctx, exporter.config.ClientConfig.Endpoint, dataBuffer.Bytes())
+	err := exporter.export(ctx, exporter.config.ClientConfig.Endpoint, dataBuffer.Bytes())
 	// reset the data buffer after each export to prevent duplicated data
 	dataBuffer.Reset()
 	return err

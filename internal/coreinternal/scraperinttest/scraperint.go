@@ -16,6 +16,7 @@ import (
 	"unicode"
 
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"go.opentelemetry.io/collector/component"
@@ -74,7 +75,7 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings.Logger = zap.New(observedZapCore)
 
-	rcvr, err := it.factory.CreateMetricsReceiver(context.Background(), settings, cfg, sink)
+	rcvr, err := it.factory.CreateMetrics(context.Background(), settings, cfg, sink)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -142,7 +143,7 @@ func (it *IntegrationTest) createContainers(t *testing.T) *ContainerInfo {
 	for _, cr := range it.containerRequests {
 		go func(req testcontainers.ContainerRequest) {
 			var errs error
-			require.Eventuallyf(t, func() bool {
+			assert.Eventuallyf(t, func() bool {
 				c, err := testcontainers.GenericContainer(
 					context.Background(),
 					testcontainers.GenericContainerRequest{

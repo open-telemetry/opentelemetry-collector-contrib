@@ -7,18 +7,18 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/knadh/koanf/maps v0.1.1
 	github.com/knadh/koanf/parsers/yaml v0.1.0
-	github.com/knadh/koanf/providers/file v1.1.0
+	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/providers/rawbytes v0.1.0
 	github.com/knadh/koanf/v2 v2.1.1
 	github.com/open-telemetry/opamp-go v0.15.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/configopaque v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/config/configtls v1.14.2-0.20240829190554-7da6b618a7ee
-	go.opentelemetry.io/collector/semconv v0.108.2-0.20240829190554-7da6b618a7ee
+	go.opentelemetry.io/collector/config/configopaque v1.17.1-0.20241008154146-ea48c09c31ae
+	go.opentelemetry.io/collector/config/configtls v1.17.1-0.20241008154146-ea48c09c31ae
+	go.opentelemetry.io/collector/semconv v0.111.1-0.20241008154146-ea48c09c31ae
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.24.0
-	google.golang.org/protobuf v1.34.2
+	golang.org/x/sys v0.26.0
+	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 

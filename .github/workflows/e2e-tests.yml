@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -40,6 +40,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -55,7 +57,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -87,7 +89,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -101,6 +103,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol
@@ -133,7 +137,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache

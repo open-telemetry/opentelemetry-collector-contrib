@@ -227,7 +227,7 @@ func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedNam
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
-	assert.Equal(t, metric.Name(), "system.network.connections")
+	assert.Equal(t, "system.network.connections", metric.Name())
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
 		pcommon.NewValueStr(metadata.AttributeProtocolTcp.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")

@@ -57,6 +57,18 @@ func (b *booleanValue) checkForCustomError() error {
 	return nil
 }
 
+func (b *booleanValue) accept(v grammarVisitor) {
+	if b.Comparison != nil {
+		b.Comparison.accept(v)
+	}
+	if b.ConstExpr != nil && b.ConstExpr.Converter != nil {
+		b.ConstExpr.Converter.accept(v)
+	}
+	if b.SubExpr != nil {
+		b.SubExpr.accept(v)
+	}
+}
+
 // opAndBooleanValue represents the right side of an AND boolean expression.
 type opAndBooleanValue struct {
 	Operator string        `parser:"@OpAnd"`
@@ -65,6 +77,12 @@ type opAndBooleanValue struct {
 
 func (b *opAndBooleanValue) checkForCustomError() error {
 	return b.Value.checkForCustomError()
+}
+
+func (b *opAndBooleanValue) accept(v grammarVisitor) {
+	if b.Value != nil {
+		b.Value.accept(v)
+	}
 }
 
 // term represents an arbitrary number of boolean values joined by AND.
@@ -87,6 +105,17 @@ func (b *term) checkForCustomError() error {
 	return nil
 }
 
+func (b *term) accept(v grammarVisitor) {
+	if b.Left != nil {
+		b.Left.accept(v)
+	}
+	for _, r := range b.Right {
+		if r != nil {
+			r.accept(v)
+		}
+	}
+}
+
 // opOrTerm represents the right side of an OR boolean expression.
 type opOrTerm struct {
 	Operator string `parser:"@OpOr"`
@@ -95,6 +124,12 @@ type opOrTerm struct {
 
 func (b *opOrTerm) checkForCustomError() error {
 	return b.Term.checkForCustomError()
+}
+
+func (b *opOrTerm) accept(v grammarVisitor) {
+	if b.Term != nil {
+		b.Term.accept(v)
+	}
 }
 
 // booleanExpression represents a true/false decision expressed
@@ -116,6 +151,17 @@ func (b *booleanExpression) checkForCustomError() error {
 		}
 	}
 	return nil
+}
+
+func (b *booleanExpression) accept(v grammarVisitor) {
+	if b.Left != nil {
+		b.Left.accept(v)
+	}
+	for _, r := range b.Right {
+		if r != nil {
+			r.accept(v)
+		}
+	}
 }
 
 // compareOp is the type of a comparison operator.
@@ -187,6 +233,11 @@ func (c *comparison) checkForCustomError() error {
 	return err
 }
 
+func (c *comparison) accept(v grammarVisitor) {
+	c.Left.accept(v)
+	c.Right.accept(v)
+}
+
 // editor represents the function call of a statement.
 type editor struct {
 	Function  string     `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
@@ -210,11 +261,26 @@ func (i *editor) checkForCustomError() error {
 	return nil
 }
 
+func (i *editor) accept(v grammarVisitor) {
+	v.visitEditor(i)
+	for _, arg := range i.Arguments {
+		arg.accept(v)
+	}
+}
+
 // converter represents a converter function call.
 type converter struct {
 	Function  string     `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
 	Arguments []argument `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 	Keys      []key      `parser:"( @@ )*"`
+}
+
+func (c *converter) accept(v grammarVisitor) {
+	if c.Arguments != nil {
+		for _, a := range c.Arguments {
+			a.accept(v)
+		}
+	}
 }
 
 type argument struct {
@@ -225,6 +291,10 @@ type argument struct {
 
 func (a *argument) checkForCustomError() error {
 	return a.Value.checkForCustomError()
+}
+
+func (a *argument) accept(v grammarVisitor) {
+	a.Value.accept(v)
 }
 
 // value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
@@ -251,9 +321,29 @@ func (v *value) checkForCustomError() error {
 	return nil
 }
 
+func (v *value) accept(vis grammarVisitor) {
+	vis.visitValue(v)
+	if v.Literal != nil {
+		v.Literal.accept(vis)
+	}
+	if v.MathExpression != nil {
+		v.MathExpression.accept(vis)
+	}
+	if v.Map != nil {
+		v.Map.accept(vis)
+	}
+	if v.List != nil {
+		for _, i := range v.List.Values {
+			i.accept(vis)
+		}
+	}
+}
+
 // path represents a telemetry path mathExpression.
 type path struct {
-	Fields []field `parser:"@@ ( '.' @@ )*"`
+	Pos     lexer.Position
+	Context string  `parser:"(@Lowercase '.')?"`
+	Fields  []field `parser:"@@ ( '.' @@ )*"`
 }
 
 // field is an item within a path.
@@ -273,6 +363,14 @@ type list struct {
 
 type mapValue struct {
 	Values []mapItem `parser:"'{' (@@ ','?)* '}'"`
+}
+
+func (m *mapValue) accept(v grammarVisitor) {
+	for _, i := range m.Values {
+		if i.Value != nil {
+			i.Value.accept(v)
+		}
+	}
 }
 
 type mapItem struct {
@@ -325,6 +423,19 @@ func (m *mathExprLiteral) checkForCustomError() error {
 	return nil
 }
 
+func (m *mathExprLiteral) accept(v grammarVisitor) {
+	v.visitMathExprLiteral(m)
+	if m.Path != nil {
+		v.visitPath(m.Path)
+	}
+	if m.Editor != nil {
+		m.Editor.accept(v)
+	}
+	if m.Converter != nil {
+		m.Converter.accept(v)
+	}
+}
+
 type mathValue struct {
 	Literal       *mathExprLiteral `parser:"( @@"`
 	SubExpression *mathExpression  `parser:"| '(' @@ ')' )"`
@@ -337,6 +448,15 @@ func (m *mathValue) checkForCustomError() error {
 	return m.SubExpression.checkForCustomError()
 }
 
+func (m *mathValue) accept(v grammarVisitor) {
+	if m.Literal != nil {
+		m.Literal.accept(v)
+	}
+	if m.SubExpression != nil {
+		m.SubExpression.accept(v)
+	}
+}
+
 type opMultDivValue struct {
 	Operator mathOp     `parser:"@OpMultDiv"`
 	Value    *mathValue `parser:"@@"`
@@ -344,6 +464,12 @@ type opMultDivValue struct {
 
 func (m *opMultDivValue) checkForCustomError() error {
 	return m.Value.checkForCustomError()
+}
+
+func (m *opMultDivValue) accept(v grammarVisitor) {
+	if m.Value != nil {
+		m.Value.accept(v)
+	}
 }
 
 type addSubTerm struct {
@@ -365,6 +491,17 @@ func (m *addSubTerm) checkForCustomError() error {
 	return nil
 }
 
+func (m *addSubTerm) accept(v grammarVisitor) {
+	if m.Left != nil {
+		m.Left.accept(v)
+	}
+	for _, r := range m.Right {
+		if r != nil {
+			r.accept(v)
+		}
+	}
+}
+
 type opAddSubTerm struct {
 	Operator mathOp      `parser:"@OpAddSub"`
 	Term     *addSubTerm `parser:"@@"`
@@ -372,6 +509,12 @@ type opAddSubTerm struct {
 
 func (m *opAddSubTerm) checkForCustomError() error {
 	return m.Term.checkForCustomError()
+}
+
+func (m *opAddSubTerm) accept(v grammarVisitor) {
+	if m.Term != nil {
+		m.Term.accept(v)
+	}
 }
 
 type mathExpression struct {
@@ -391,6 +534,19 @@ func (m *mathExpression) checkForCustomError() error {
 		}
 	}
 	return nil
+}
+
+func (m *mathExpression) accept(v grammarVisitor) {
+	if m.Left != nil {
+		m.Left.accept(v)
+	}
+	if m.Right != nil {
+		for _, r := range m.Right {
+			if r != nil {
+				r.accept(v)
+			}
+		}
+	}
 }
 
 type mathOp int
@@ -462,4 +618,12 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})
+}
+
+// grammarVisitor allows accessing the grammar AST nodes using the visitor pattern.
+type grammarVisitor interface {
+	visitPath(v *path)
+	visitEditor(v *editor)
+	visitValue(v *value)
+	visitMathExprLiteral(v *mathExprLiteral)
 }

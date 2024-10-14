@@ -44,15 +44,23 @@ type TelemetryBuilder struct {
 	meters                                              map[configtelemetry.Level]metric.Meter
 }
 
-// telemetryBuilderOption applies changes to default builder.
-type telemetryBuilderOption func(*TelemetryBuilder)
+// TelemetryBuilderOption applies changes to default builder.
+type TelemetryBuilderOption interface {
+	apply(*TelemetryBuilder)
+}
+
+type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
+
+func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
+	tbof(mb)
+}
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
-func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
 	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
 	for _, op := range options {
-		op(&builder)
+		op.apply(&builder)
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
@@ -89,13 +97,15 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorTailSamplingSamplingDecisionLatency, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_decision_latency",
 		metric.WithDescription("Latency (in microseconds) of a given sampling policy"),
-		metric.WithUnit("µs"), metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
+		metric.WithUnit("µs"),
+		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
 		"otelcol_processor_tail_sampling_sampling_decision_timer_latency",
 		metric.WithDescription("Latency (in microseconds) of each run of the sampling decision timer"),
-		metric.WithUnit("µs"), metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
+		metric.WithUnit("µs"),
+		metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingLateSpanAge, err = builder.meters[configtelemetry.LevelBasic].Int64Histogram(
