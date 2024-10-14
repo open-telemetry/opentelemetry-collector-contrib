@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"io"
 	"net/http"
 	"reflect"
@@ -72,7 +73,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.ClientConfig.Endpoint, err = generateEndpoint(config)
+	exporter.config.ClientConfig.Endpoint, err = generateTracesEndpoint(config)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.ClientConfig.Endpoint, err = generateEndpoint(config)
+	exporter.config.ClientConfig.Endpoint, err = generateLogsEndpoint(config)
 	if err != nil {
 		return nil, err
 	}
@@ -123,29 +124,13 @@ func (exporter *logzioExporter) start(ctx context.Context, host component.Host) 
 
 func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	var dataBuffer bytes.Buffer
-	resourceLogs := ld.ResourceLogs()
-	for i := 0; i < resourceLogs.Len(); i++ {
-		resource := resourceLogs.At(i).Resource()
-		scopeLogs := resourceLogs.At(i).ScopeLogs()
-		for j := 0; j < scopeLogs.Len(); j++ {
-			logRecords := scopeLogs.At(j).LogRecords()
-			scope := scopeLogs.At(j).Scope()
-			for k := 0; k < logRecords.Len(); k++ {
-				log := logRecords.At(k)
-				details := mergeMapEntries(resource.Attributes(), scope.Attributes(), log.Attributes())
-				details.PutStr(`scopeName`, scope.Name())
-				jsonLog, err := json.Marshal(convertLogRecordToJSON(log, details))
-				if err != nil {
-					return err
-				}
-				_, err = dataBuffer.Write(append(jsonLog, '\n'))
-				if err != nil {
-					return err
-				}
-			}
-		}
+	tr := plogotlp.NewExportRequestFromLogs(ld)
+	request, err := tr.MarshalJSON()
+	if err != nil {
+		return consumererror.NewPermanent(err)
 	}
-	err := exporter.export(ctx, exporter.config.ClientConfig.Endpoint, dataBuffer.Bytes())
+	dataBuffer.Write(request)
+	err = exporter.export(ctx, exporter.config.ClientConfig.Endpoint, dataBuffer.Bytes())
 	// reset the data buffer after each export to prevent duplicated data
 	dataBuffer.Reset()
 	return err
