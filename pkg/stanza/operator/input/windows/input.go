@@ -201,6 +201,9 @@ func (i *Input) read(ctx context.Context) {
 				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
 				return
 			}
+			if err := i.stopRemoteSession(); err != nil {
+				i.Logger().Error("Failed to close remote session", zap.Error(err))
+			}
 			i.Logger().Info("Resubscribing, creating remote subscription")
 			i.subscription = NewRemoteSubscription(i.remote.Server)
 			if err := i.startRemoteSession(); err != nil {
