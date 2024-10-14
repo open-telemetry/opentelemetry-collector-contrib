@@ -167,6 +167,7 @@ behaviours, which may be configured through the following settings:
             :warning: This mode's behavior is unstable, it is currently experimental and undergoing changes.
             It works only for logs where the log record body is a map. Each LogRecord
             body is serialized to JSON as-is and becomes a separate document for ingestion.
+            If the log record body is not a map, it results in an empty document.
   - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
     and will be removed in the future. Object keys are always deduplicated to
     avoid Elasticsearch rejecting documents.
