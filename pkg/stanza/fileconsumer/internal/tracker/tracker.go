@@ -171,8 +171,8 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
 }
 
-func (t *fileTracker) readArchive(readIndex int) (*fileset.Fileset[*reader.Metadata], error) {
-	key := fmt.Sprintf("knownFiles%d", readIndex)
+func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
+	key := fmt.Sprintf("knownFiles%d", index)
 	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
 	if err != nil {
 		return nil, err
@@ -188,7 +188,12 @@ func (t *fileTracker) updateArchive(index int, rmds *fileset.Fileset[*reader.Met
 }
 
 func (t *fileTracker) SyncOffsets() {
-	archiveReadIndex := 0
+	// SyncOffsets goes through all new (unmatched) readers and updates the metadata, if found on archive.
+
+	// To minimize disk access, we first access the index, then review unmatched readers and synchronize their metadata if a match is found.
+	// We exit if no new reader exists.
+
+	archiveReadIndex := t.archiveIndex - 1 // try loading most recently written index and iterate backwards
 	for i := 0; i < t.pollsToArchive; i++ {
 		newFound := false
 		data, _ := t.readArchive(archiveReadIndex)
@@ -201,10 +206,13 @@ func (t *fileTracker) SyncOffsets() {
 			}
 		}
 		if !newFound {
-			// no new reader exists. No need to walk through archive. Just exit to save time
+			// No new reader is available, so there’s no need to go through the rest of the archive.
+			// Just exit to save time.
 			break
 		}
 		t.updateArchive(archiveReadIndex, data)
+
+		archiveReadIndex = (archiveReadIndex - 1) % t.pollsToArchive
 	}
 
 }

@@ -46,8 +46,6 @@ func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.M
 }
 
 // Load loads the most recent set of files to the database
-
-// Save syncs the most recent set of files to the database
 func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata, error) {
 	return LoadKey(ctx, persister, knownFilesKey)
 }
