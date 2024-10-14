@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -1600,16 +1599,8 @@ type mockHost struct {
 	extensions map[component.ID]component.Component
 }
 
-func (h *mockHost) GetFactory(kind component.Kind, typ component.Type) component.Factory {
-	panic(fmt.Errorf("expected call to GetFactory(%v, %v)", kind, typ))
-}
-
 func (h *mockHost) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
-}
-
-func (h *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
-	panic(fmt.Errorf("expected call to GetExporters"))
 }
 
 type roundTripperFunc func(*http.Request) (*http.Response, error)
