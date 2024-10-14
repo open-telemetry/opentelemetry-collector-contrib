@@ -7,7 +7,7 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: []
+    active: [dmitryax]
     emeritus: [rmfitzpatrick]
 
 tests:
