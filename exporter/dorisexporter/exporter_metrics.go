@@ -145,6 +145,10 @@ func (e *metricsExporter) pushMetricDataParallel(ctx context.Context, metricMap 
 	errChan := make(chan error, len(metricMap))
 	wg := &sync.WaitGroup{}
 	for _, m := range metricMap {
+		if m.size() <= 0 {
+			continue
+		}
+
 		wg.Add(1)
 		go func(m metricModel, wg *sync.WaitGroup) {
 			errChan <- e.pushMetricDataInternal(ctx, m)
