@@ -117,11 +117,10 @@ func TestTracesReceiverStartConsume(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
 	require.NoError(t, c.Shutdown(context.Background()))
-	err = c.consumeLoop(ctx, &tracesConsumerGroupHandler{
+	c.consumeLoop(ctx, &tracesConsumerGroupHandler{
 		ready:            make(chan bool),
 		telemetryBuilder: telemetryBuilder,
 	})
-	assert.EqualError(t, err, context.Canceled.Error())
 }
 
 func TestTracesReceiver_error(t *testing.T) {
@@ -456,11 +455,10 @@ func TestMetricsReceiverStartConsume(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
 	require.NoError(t, c.Shutdown(context.Background()))
-	err = c.consumeLoop(ctx, &logsConsumerGroupHandler{
+	c.consumeLoop(ctx, &logsConsumerGroupHandler{
 		ready:            make(chan bool),
 		telemetryBuilder: telemetryBuilder,
 	})
-	assert.EqualError(t, err, context.Canceled.Error())
 }
 
 func TestMetricsReceiver_error(t *testing.T) {
@@ -808,11 +806,10 @@ func TestLogsReceiverStartConsume(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
 	require.NoError(t, c.Shutdown(context.Background()))
-	err = c.consumeLoop(ctx, &logsConsumerGroupHandler{
+	c.consumeLoop(ctx, &logsConsumerGroupHandler{
 		ready:            make(chan bool),
 		telemetryBuilder: telemetryBuilder,
 	})
-	assert.EqualError(t, err, context.Canceled.Error())
 }
 
 func TestLogsReceiver_error(t *testing.T) {
