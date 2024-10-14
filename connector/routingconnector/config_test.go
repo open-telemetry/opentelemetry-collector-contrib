@@ -135,7 +135,7 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			error: "invalid route: no statement provided",
+			error: "invalid route: no condition or statement provided",
 		},
 		{
 			name: "no pipeline provided",
@@ -162,11 +162,56 @@ func TestValidateConfig(t *testing.T) {
 			config: &Config{},
 			error:  "invalid routing table: the routing table is empty",
 		},
+		{
+			name: "condition provided",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "statement provided",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "both condition and statement provided",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Condition: `attributes["attr"] == "acme"`,
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: "invalid route: both condition and statement provided",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.EqualError(t, component.ValidateConfig(tt.config), tt.error)
+			if tt.error == "" {
+				assert.NoError(t, component.ValidateConfig(tt.config))
+			} else {
+				assert.EqualError(t, component.ValidateConfig(tt.config), tt.error)
+			}
 		})
 	}
 }
