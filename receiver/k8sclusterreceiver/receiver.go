@@ -40,7 +40,7 @@ type kubernetesReceiver struct {
 }
 
 type getExporters interface {
-	GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component
+	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -54,7 +54,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	exporters := ge.GetExportersWithSignal()
+	exporters := ge.GetExporters()
 
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[pipeline.SignalMetrics], kr.config.MetadataExporters); err != nil {
