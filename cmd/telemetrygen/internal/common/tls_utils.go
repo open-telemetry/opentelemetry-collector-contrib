@@ -28,52 +28,37 @@ func caPool(caFile string) (*x509.CertPool, error) {
 	return pool, nil
 }
 
-func GetTLSCredentialsForGRPCExporter(caFile string, cAuth ClientAuth) (credentials.TransportCredentials, error) {
-
-	pool, err := caPool(caFile)
+func GetTLSCredentialsForGRPCExporter(
+	caFile string,
+	cAuth ClientAuth,
+	insecureSkipVerify bool,
+) (credentials.TransportCredentials, error) {
+	tlsConfig, err := getTLSConfig(caFile, cAuth, insecureSkipVerify)
 	if err != nil {
 		return nil, err
 	}
-
-	var creds credentials.TransportCredentials
-
-	if caFile != "" {
-		creds = credentials.NewTLS(&tls.Config{
-			RootCAs: pool,
-		})
-	} else {
-		creds = credentials.NewTLS(&tls.Config{})
-	}
-
-	// Configuration for mTLS
-	if cAuth.Enabled {
-		keypair, err := tls.LoadX509KeyPair(cAuth.ClientCertFile, cAuth.ClientKeyFile)
-		if err != nil {
-			return nil, err
-		}
-		creds = credentials.NewTLS(&tls.Config{
-			RootCAs:      pool,
-			Certificates: []tls.Certificate{keypair},
-		})
-	}
-
-	return creds, nil
+	return credentials.NewTLS(tlsConfig), nil
 }
 
-func GetTLSCredentialsForHTTPExporter(caFile string, cAuth ClientAuth) (*tls.Config, error) {
-	pool, err := caPool(caFile)
-	if err != nil {
-		return nil, err
+func GetTLSCredentialsForHTTPExporter(
+	caFile string,
+	cAuth ClientAuth,
+	insecureSkipVerify bool,
+) (*tls.Config, error) {
+	return getTLSConfig(caFile, cAuth, insecureSkipVerify)
+}
+
+func getTLSConfig(caFile string, cAuth ClientAuth, insecureSkipVerify bool) (*tls.Config, error) {
+	tlsCfg := tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
 	}
 
-	var tlsCfg tls.Config
-
 	if caFile != "" {
-		tlsCfg = tls.Config{
-			RootCAs: pool,
+		pool, err := caPool(caFile)
+		if err != nil {
+			return nil, err
 		}
-	} else {
-		tlsCfg = tls.Config{}
+		tlsCfg.RootCAs = pool
 	}
 
 	// Configuration for mTLS
@@ -82,7 +67,6 @@ func GetTLSCredentialsForHTTPExporter(caFile string, cAuth ClientAuth) (*tls.Con
 		if err != nil {
 			return nil, err
 		}
-		tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
 		tlsCfg.Certificates = []tls.Certificate{keypair}
 	}
 	return &tlsCfg, nil
