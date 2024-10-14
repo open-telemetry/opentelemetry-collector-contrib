@@ -26,7 +26,7 @@ func TestAttributeOperators(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
+		name     string
 		operator func() (alias.Attributed, error)
 	}{
 		{
