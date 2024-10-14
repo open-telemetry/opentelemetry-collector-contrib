@@ -143,11 +143,12 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 
 func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
 	body := record.Body()
-	if body.Type() != pcommon.ValueTypeMap {
-		return []byte{}, errors.New("record body is not a map")
+	bm := pcommon.NewMap()
+	if body.Type() == pcommon.ValueTypeMap {
+		bm = body.Map()
 	}
 
-	return jsoniter.Marshal(body.Map().AsRaw())
+	return jsoniter.Marshal(bm.AsRaw())
 }
 
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
