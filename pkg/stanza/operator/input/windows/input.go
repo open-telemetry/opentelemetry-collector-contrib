@@ -39,7 +39,7 @@ type Input struct {
 	remote              RemoteConfig
 	remoteSessionHandle windows.Handle
 	startRemoteSession  func() error
-	processEvent        func(context.Context, Event)
+	processEvent        func(context.Context, Event) error
 }
 
 // newInput creates a new Input operator.
@@ -219,7 +219,9 @@ func (i *Input) read(ctx context.Context) {
 	}
 
 	for n, event := range events {
-		i.processEvent(ctx, event)
+		if err := i.processEvent(ctx, event); err != nil {
+			i.Logger().Error("process event", zap.Error(err))
+		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
 		}
@@ -240,61 +242,58 @@ func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
 	return providerName, false
 }
 
-func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) {
+func (i *Input) renderSimpleAndSend(ctx context.Context, event Event) error {
 	simpleEvent, err := event.RenderSimple(i.buffer)
 	if err != nil {
-		i.Logger().Error("Failed to render simple event", zap.Error(err))
-		return
+		return fmt.Errorf("render simple event: %w", err)
 	}
-	i.sendEvent(ctx, simpleEvent)
+	return i.sendEvent(ctx, simpleEvent)
 }
 
-func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Publisher) {
+func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Publisher) error {
 	deepEvent, err := event.RenderDeep(i.buffer, publisher)
 	if err == nil {
-		i.sendEvent(ctx, deepEvent)
-		return
+		return i.sendEvent(ctx, deepEvent)
 	}
-	i.Logger().Error("Failed to render formatted event", zap.Error(err))
-	i.renderSimpleAndSend(ctx, event)
+	return errors.Join(
+		fmt.Errorf("render deep event: %w", err),
+		i.renderSimpleAndSend(ctx, event),
+	)
 }
 
 // processEvent will process and send an event retrieved from windows event log.
-func (i *Input) processEventWithoutRenderingInfo(ctx context.Context, event Event) {
+func (i *Input) processEventWithoutRenderingInfo(ctx context.Context, event Event) error {
 	if len(i.excludeProviders) == 0 {
-		i.renderSimpleAndSend(ctx, event)
-		return
+		return i.renderSimpleAndSend(ctx, event)
 	}
 	if _, exclude := i.getPublisherName(event); exclude {
-		return
+		return nil
 	}
-	i.renderSimpleAndSend(ctx, event)
+	return i.renderSimpleAndSend(ctx, event)
 }
 
-func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) {
+func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) error {
 	providerName, exclude := i.getPublisherName(event)
 	if exclude {
-		return
+		return nil
 	}
 
 	publisher, err := i.publisherCache.get(providerName)
 	if err != nil {
-		i.Logger().Warn(
-			"Failed to open event source, respective log entries cannot be formatted",
-			zap.String("provider", providerName), zap.Error(err))
-		i.renderSimpleAndSend(ctx, event)
-		return
+		return errors.Join(
+			fmt.Errorf("open event source for provider %q: %w", providerName, err),
+			i.renderSimpleAndSend(ctx, event),
+		)
 	}
 
 	if publisher.Valid() {
-		i.renderDeepAndSend(ctx, event, publisher)
-		return
+		return i.renderDeepAndSend(ctx, event, publisher)
 	}
-	i.renderSimpleAndSend(ctx, event)
+	return i.renderSimpleAndSend(ctx, event)
 }
 
 // sendEvent will send EventXML as an entry to the operator's output.
-func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) {
+func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) error {
 	var body any = eventXML.Original
 	if !i.raw {
 		body = formattedBody(eventXML)
@@ -302,8 +301,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) {
 
 	e, err := i.NewEntry(body)
 	if err != nil {
-		i.Logger().Error("Failed to create entry", zap.Error(err))
-		return
+		return fmt.Errorf("create entry: %w", err)
 	}
 
 	e.Timestamp = parseTimestamp(eventXML.TimeCreated.SystemTime)
@@ -313,7 +311,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML *EventXML) {
 		e.Attributes["server.address"] = i.remote.Server
 	}
 
-	_ = i.Write(ctx, e)
+	return i.Write(ctx, e)
 }
 
 // getBookmarkXML will get the bookmark xml from the offsets database.
