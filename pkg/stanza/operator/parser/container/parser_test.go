@@ -90,7 +90,6 @@ func TestInternalRecombineCfg(t *testing.T) {
 
 func TestProcessOnErrorSendQuiet(t *testing.T) {
 	cfg := NewConfigWithID("test_id")
-	cfg.AddMetadataFromFilePath = false
 	cfg.OnError = "send_quiet"
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
@@ -102,7 +101,7 @@ func TestProcessOnErrorSendQuiet(t *testing.T) {
 	}
 
 	err = op.Process(context.Background(), faultyEntry)
-	// Error is not logged
+	// Error should not be logged
 	require.NoError(t, err, "send_quiet is not working properly")
 }
 
