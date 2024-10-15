@@ -227,15 +227,15 @@ func TestNewRevisionV1(t *testing.T) {
 							"started": "application started",
 						}),
 					},
-					operator.NewSpanEventConditionalAttributeOperator(
-						migrate.NewMultiConditionalAttributeSet(
+					operator.SpanEventConditionalAttributeOperator{
+						MultiConditionalAttributeSet: migrate.NewMultiConditionalAttributeSet(
 							map[string]string{"service.app.name": "service.name"},
 							map[string][]string{
 								"span.name":  {"service running"},
 								"event.name": {"service errored"},
 							},
 						),
-					),
+					},
 				}},
 				metrics: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					operator.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(map[string]string{
