@@ -6,7 +6,8 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [rmfitzpatrick]
+    active: []
+    emeritus: [rmfitzpatrick]
 
 tests:
   config:

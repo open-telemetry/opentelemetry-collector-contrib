@@ -6,7 +6,8 @@ status:
     beta: [extension]
   distributions: []
   codeowners:
-    active: [atoulme, rmfitzpatrick]
+    active: [atoulme]
+    emeritus: [rmfitzpatrick]
 
 tests:
   config:

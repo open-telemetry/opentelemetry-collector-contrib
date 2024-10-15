@@ -6,7 +6,8 @@ status:
     beta: [extension]
   distributions: [contrib]
   codeowners:
-    active: [rmfitzpatrick]
+    active: []
+    emeritus: [rmfitzpatrick]
 
 # TODO: Update the extension to make the tests pass
 tests:
