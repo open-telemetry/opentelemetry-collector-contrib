@@ -203,7 +203,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		err := exporter.ConsumeLogs(context.Background(), logs)
-		assert.ErrorContains(t, err, `dropping log record: failed to encode log event: invalid log record body type for 'bodymap' mapping mode: "Slice"`)
+		assert.NoError(t, err)
 		rec.WaitItems(1)
 	})
 

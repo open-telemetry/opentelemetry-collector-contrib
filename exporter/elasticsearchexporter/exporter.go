@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
@@ -131,7 +132,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 					}
 
 					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
-						errs = append(errs, fmt.Errorf("dropping log record: %w", err))
+						e.Logger.Warn("dropping log record", zap.Error(err))
 						continue
 					}
 
