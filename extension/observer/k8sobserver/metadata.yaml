@@ -6,7 +6,8 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [rmfitzpatrick, dmitryax, ChrsMark]
+    active: [dmitryax, ChrsMark]
+    emeritus: [rmfitzpatrick]
 
 # TODO: Update the extension to make the tests pass
 tests:
