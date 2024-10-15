@@ -69,8 +69,8 @@ type spanAndScope struct {
 }
 
 var (
-	attrSampledTrue     = metric.WithAttributes(attribute.String("sampled", "true"))
-	attrSampledFalse    = metric.WithAttributes(attribute.String("sampled", "false"))
+	attrSampledTrue     = metric.WithAttributeSet(attribute.NewSet(attribute.String("sampled", "true")))
+	attrSampledFalse    = metric.WithAttributeSet(attribute.NewSet(attribute.String("sampled", "false")))
 	decisionToAttribute = map[sampling.Decision]metric.MeasurementOption{
 		sampling.Sampled:          attrSampledTrue,
 		sampling.NotSampled:       attrSampledFalse,
@@ -140,7 +140,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 			p := &policy{
 				name:      policyCfg.Name,
 				evaluator: eval,
-				attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
+				attribute: metric.WithAttributeSet(attribute.NewSet(attribute.String("policy", uniquePolicyName))),
 			}
 			tsp.policies[i] = p
 		}
