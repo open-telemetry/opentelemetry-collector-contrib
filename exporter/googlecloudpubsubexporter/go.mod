@@ -13,12 +13,12 @@ require (
 	go.opentelemetry.io/collector/exporter v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae
 	go.uber.org/zap v1.27.0
-	google.golang.org/api v0.200.0
+	google.golang.org/api v0.201.0
 	google.golang.org/grpc v1.67.1
 )
 
 require (
-	cloud.google.com/go v0.115.1 // indirect
+	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/auth v0.9.8 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
