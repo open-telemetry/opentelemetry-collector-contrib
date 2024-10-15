@@ -66,8 +66,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.133 h1:3tl5zi6NEstCXApCyJCT5LDX5uVKloAch8/W+kVmPnY=
-github.com/DataDog/agent-payload/v5 v5.0.133/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
+github.com/DataDog/agent-payload/v5 v5.0.134 h1:h0oP3vDTOsjW1uKIZxKsCjOV/40jkY2Y+42GKAVH9ig=
+github.com/DataDog/agent-payload/v5 v5.0.134/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
 github.com/DataDog/datadog-agent/cmd/agent/common/path v0.57.1 h1:9WpqKeK4bAc8pSb0sK4fY03bUOqhWUZdGoVh55KBaNI=
 github.com/DataDog/datadog-agent/cmd/agent/common/path v0.57.1/go.mod h1:NhSO8oDfl4gs8SFyRSWoKxajDjkNmhZV9MEqdr4LQ7g=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.57.1 h1:fQGQhFD4ELB1L/NrIgHuC1wfhJHLAOZSPidzor034BE=
