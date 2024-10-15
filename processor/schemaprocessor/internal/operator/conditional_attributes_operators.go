@@ -13,7 +13,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-// MetricDataPointAttributeOperator is a conditional Operator that acts on Metric DataPoints' attributes
+// MetricDataPointAttributeOperator is a conditional Operator that acts on [pmetric.Metric]'s DataPoint's attributes.  It powers the [Metric's rename_attributes] transformation.
+// [Metric's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation-2
 type MetricDataPointAttributeOperator struct {
 	ConditionalAttributeChange migrate.ConditionalAttributeSet
 }
@@ -66,6 +67,8 @@ func (o MetricDataPointAttributeOperator) Do(ss migrate.StateSelector, metric pm
 	return nil
 }
 
+// SpanConditionalAttributeOperator is a conditional Operator that acts on [ptrace.Span]'s name.  It powers the [Span's rename_attributes] transformation.
+// [Span's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation
 type SpanConditionalAttributeOperator struct {
 	Migrator migrate.ConditionalAttributeSet
 }

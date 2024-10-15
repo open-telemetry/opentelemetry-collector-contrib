@@ -12,9 +12,9 @@ import (
 
 type set = map[string]struct{}
 
-// MultiConditionalAttributeSet maps from string keys to possible values for each of those keys.  If a valid key is passed for each value, the conditional returns true
+// MultiConditionalAttributeSet maps from string keys to possible values for each of those keys.  The Do function then checks passed in values for each key against the list provided here in the constructor.  If there is a matching value for each key, the attribute changes are applied.
 type MultiConditionalAttributeSet struct {
-	// map from string keys (in the intended case "event.name" and "span.name" to a set of acceptable values)
+	// map from string keys (in the intended case "event.name" and "span.name") to a set of acceptable values.
 	keysToPossibleValues map[string]set
 	attrs                AttributeChangeSet
 }
@@ -38,7 +38,7 @@ func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap
 
 func (ca MultiConditionalAttributeSet) IsMigrator() {}
 
-// Do function applies the attribute changes if the values match the expected values.  Uses the Do method of the embedded AttributeChangeSet
+// Do function applies the attribute changes if the passed in values match the expected values provided in the constructor.  Uses the Do method of the embedded AttributeChangeSet
 func (ca *MultiConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, keyToCheckVals map[string]string) (errs error) {
 	match, err := ca.check(keyToCheckVals)
 	if err != nil {
