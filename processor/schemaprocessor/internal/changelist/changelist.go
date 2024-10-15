@@ -32,7 +32,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 		// switch between operator types - what do the operators act on?
 		switch thisMigrator := migrator.(type) {
 		// this one acts on both spans and span events!
-		case operator.SpanOperator:
+		case operator.Operator[ptrace.Span]:
 			if span, ok := signal.(ptrace.Span); ok {
 				if err := thisMigrator.Do(ss, span); err != nil {
 					return err
@@ -40,7 +40,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			} else {
 				return fmt.Errorf("SpanOperator %T can't act on %T", thisMigrator, signal)
 			}
-		case operator.MetricOperator:
+		case operator.Operator[pmetric.Metric]:
 			if metric, ok := signal.(pmetric.Metric); ok {
 				if err := thisMigrator.Do(ss, metric); err != nil {
 					return err
@@ -48,7 +48,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			} else {
 				return fmt.Errorf("MetricOperator %T can't act on %T", thisMigrator, signal)
 			}
-		case operator.LogOperator:
+		case operator.Operator[plog.LogRecord]:
 			if log, ok := signal.(plog.LogRecord); ok {
 				if err := thisMigrator.Do(ss, log); err != nil {
 					return err
@@ -56,7 +56,7 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 			} else {
 				return fmt.Errorf("LogOperator %T can't act on %T", thisMigrator, signal)
 			}
-		case operator.ResourceOperator:
+		case operator.Operator[pcommon.Resource]:
 			if resource, ok := signal.(pcommon.Resource); ok {
 				if err := thisMigrator.Do(ss, resource); err != nil {
 					return err
