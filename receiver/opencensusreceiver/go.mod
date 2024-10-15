@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0
 	go.opentelemetry.io/otel v1.31.0
-	go.opentelemetry.io/otel/sdk v1.30.0
+	go.opentelemetry.io/otel/sdk v1.31.0
 	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.67.1
