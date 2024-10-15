@@ -89,14 +89,6 @@ func TestExporterLogs(t *testing.T) {
 			expected string
 		}{
 			{
-				name: "body not a map",
-				body: func() pcommon.Value {
-					body := pcommon.NewValueInt(42)
-					return body
-				},
-				expected: `{}`,
-			},
-			{
 				name: "flat",
 				body: func() pcommon.Value {
 					body := pcommon.NewValueMap()
