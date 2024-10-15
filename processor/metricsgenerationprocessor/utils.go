@@ -6,6 +6,7 @@ package metricsgenerationprocessor // import "github.com/open-telemetry/opentele
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -50,9 +51,115 @@ func getMetricValue(metric pmetric.Metric) float64 {
 	return 0
 }
 
-// generateMetrics creates a new metric based on the given rule and add it to the Resource Metric.
+// generateCalculatedMetrics creates a new metric based on the given rule and adds it to the scope metric.
 // The value for newly calculated metrics is always a floating point number.
-func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
+// Note: This method assumes the matchAttributes feature flag is enabled.
+func generateCalculatedMetrics(rm pmetric.ResourceMetrics, metric2 pmetric.Metric, rule internalRule, logger *zap.Logger) {
+	ilms := rm.ScopeMetrics()
+	for i := 0; i < ilms.Len(); i++ {
+		ilm := ilms.At(i)
+		metricSlice := ilm.Metrics()
+		for j := 0; j < metricSlice.Len(); j++ {
+			metric := metricSlice.At(j)
+
+			if metric.Name() == rule.metric1 {
+				newMetric := generateMetricFromMatchingAttributes(metric, metric2, rule, logger)
+				appendNewMetric(ilm, newMetric, rule.name, rule.unit)
+			}
+		}
+	}
+}
+
+// Calculates a new metric based on the calculation-type rule specified. New data points will be generated for each
+// calculation of the input metrics where overlapping attributes have matching values.
+func generateMetricFromMatchingAttributes(metric1 pmetric.Metric, metric2 pmetric.Metric, rule internalRule, logger *zap.Logger) pmetric.Metric {
+	var metric1DataPoints pmetric.NumberDataPointSlice
+	var toDataPoints pmetric.NumberDataPointSlice
+	to := pmetric.NewMetric()
+
+	// Setup to metric and get metric1 data points
+	switch metricType := metric1.Type(); metricType {
+	case pmetric.MetricTypeGauge:
+		to.SetEmptyGauge()
+		metric1DataPoints = metric1.Gauge().DataPoints()
+		toDataPoints = to.Gauge().DataPoints()
+	case pmetric.MetricTypeSum:
+		to.SetEmptySum()
+		metric1DataPoints = metric1.Sum().DataPoints()
+		toDataPoints = to.Sum().DataPoints()
+	default:
+		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type `%s`", metric1.Name(), metricType.String()))
+		return pmetric.NewMetric()
+	}
+
+	// Get metric2 data points
+	var metric2DataPoints pmetric.NumberDataPointSlice
+	switch metricType := metric2.Type(); metricType {
+	case pmetric.MetricTypeGauge:
+		metric2DataPoints = metric2.Gauge().DataPoints()
+	case pmetric.MetricTypeSum:
+		metric2DataPoints = metric2.Sum().DataPoints()
+	default:
+		logger.Debug(fmt.Sprintf("Calculations are only supported on gauge or sum metric types. Given metric '%s' is of type `%s`", metric2.Name(), metricType.String()))
+		return pmetric.NewMetric()
+	}
+
+	for i := 0; i < metric1DataPoints.Len(); i++ {
+		metric1DP := metric1DataPoints.At(i)
+
+		for j := 0; j < metric2DataPoints.Len(); j++ {
+			metric2DP := metric2DataPoints.At(j)
+			if dataPointAttributesMatch(metric1DP, metric2DP) {
+				val, err := calculateValue(dataPointValue(metric1DP), dataPointValue(metric2DP), rule.operation, rule.name)
+
+				if err != nil {
+					logger.Debug(err.Error())
+				} else {
+					newDP := toDataPoints.AppendEmpty()
+					metric1DP.CopyTo(newDP)
+					newDP.SetDoubleValue(val)
+
+					metric2DP.Attributes().Range(func(k string, v pcommon.Value) bool {
+						v.CopyTo(newDP.Attributes().PutEmpty(k))
+						// Always return true to ensure iteration over all attributes
+						return true
+					})
+				}
+			}
+		}
+	}
+
+	return to
+}
+
+func dataPointValue(dp pmetric.NumberDataPoint) float64 {
+	switch dp.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
+		return dp.DoubleValue()
+	case pmetric.NumberDataPointValueTypeInt:
+		return float64(dp.IntValue())
+	default:
+		return 0
+	}
+}
+
+func dataPointAttributesMatch(dp1, dp2 pmetric.NumberDataPoint) bool {
+	attributesMatch := true
+	dp1.Attributes().Range(func(key string, dp1Val pcommon.Value) bool {
+		dp1Val.Type()
+		if dp2Val, keyExists := dp2.Attributes().Get(key); keyExists && dp1Val.AsRaw() != dp2Val.AsRaw() {
+			attributesMatch = false
+			return false
+		}
+		return true
+	})
+
+	return attributesMatch
+}
+
+// generateScalarMetrics creates a new metric based on a scalar type rule and adds it to the scope metric.
+// The value for newly calculated metrics is always a floating point number.
+func generateScalarMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internalRule, logger *zap.Logger) {
 	ilms := rm.ScopeMetrics()
 	for i := 0; i < ilms.Len(); i++ {
 		ilm := ilms.At(i)
@@ -60,26 +167,14 @@ func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internal
 		for j := 0; j < metricSlice.Len(); j++ {
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
-				newMetric := generateMetric(metric, operand2, rule.operation, logger)
-
-				dataPointCount := 0
-				switch newMetric.Type() {
-				case pmetric.MetricTypeSum:
-					dataPointCount = newMetric.Sum().DataPoints().Len()
-				case pmetric.MetricTypeGauge:
-					dataPointCount = newMetric.Gauge().DataPoints().Len()
-				}
-
-				// Only create a new metric if valid data points were calculated successfully
-				if dataPointCount > 0 {
-					appendMetric(ilm, newMetric, rule.name, rule.unit)
-				}
+				newMetric := generateMetricFromOperand(metric, operand2, rule.operation, logger)
+				appendNewMetric(ilm, newMetric, rule.name, rule.unit)
 			}
 		}
 	}
 }
 
-func generateMetric(from pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) pmetric.Metric {
+func generateMetricFromOperand(from pmetric.Metric, operand2 float64, operation string, logger *zap.Logger) pmetric.Metric {
 	var dataPoints pmetric.NumberDataPointSlice
 	to := pmetric.NewMetric()
 
@@ -126,15 +221,25 @@ func generateMetric(from pmetric.Metric, operand2 float64, operation string, log
 	return to
 }
 
-// Append the scope metrics with the new metric
-func appendMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, unit string) pmetric.Metric {
-	metric := ilm.Metrics().AppendEmpty()
-	newMetric.MoveTo(metric)
+// Append the new metric to the scope metrics. This will only append the new metric if it
+// has data points.
+func appendNewMetric(ilm pmetric.ScopeMetrics, newMetric pmetric.Metric, name, unit string) {
+	dataPointCount := 0
+	switch newMetric.Type() {
+	case pmetric.MetricTypeSum:
+		dataPointCount = newMetric.Sum().DataPoints().Len()
+	case pmetric.MetricTypeGauge:
+		dataPointCount = newMetric.Gauge().DataPoints().Len()
+	}
 
-	metric.SetUnit(unit)
-	metric.SetName(name)
+	// Only create a new metric if valid data points were calculated successfully
+	if dataPointCount > 0 {
+		metric := ilm.Metrics().AppendEmpty()
+		newMetric.MoveTo(metric)
 
-	return metric
+		metric.SetUnit(unit)
+		metric.SetName(name)
+	}
 }
 
 func calculateValue(operand1 float64, operand2 float64, operation string, metricName string) (float64, error) {

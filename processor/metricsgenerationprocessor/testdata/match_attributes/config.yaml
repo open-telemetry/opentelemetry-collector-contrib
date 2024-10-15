@@ -1,0 +1,14 @@
+experimental_metricsgeneration/match_attributes_disabled:
+  rules:
+    - name: new_metric
+      metric1: capacity.total
+      metric2: capacity.used
+      operation: add
+      type: calculate
+experimental_metricsgeneration/match_attributes_enabled:
+  rules:
+    - name: new_metric
+      metric1: capacity.total
+      metric2: capacity.used
+      operation: add
+      type: calculate

@@ -16,13 +16,24 @@
 
 ## Description
 
-The metrics generation processor (`experimental_metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. This processor currently supports the following two approaches for creating a new metric.
+The metrics generation processor (`experimental_metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. This processor currently supports the following two rule types for creating a new metric.
 
-1. It can create a new metric from two existing metrics by applying one of the following arithmetic operations: add, subtract, multiply, divide, or percent. One use case is to calculate the `pod.memory.utilization` metric like the following equation-
+1. `calculate`: It can create a new metric from two existing metrics by applying one of the following arithmetic operations: add, subtract, multiply, divide, or percent. One use case is to calculate the `pod.memory.utilization` metric like the following equation-
 `pod.memory.utilization` = (`pod.memory.usage.bytes` / `node.memory.limit`)
-1. It can create a new metric by scaling the value of an existing metric with a given constant number. One use case is to convert `pod.memory.usage` metric values from Megabytes to Bytes (multiply the existing metric's value by 1,048,576)
+1. `scale`: It can create a new metric by scaling the value of an existing metric with a given constant number. One use case is to convert `pod.memory.usage` metric values from Megabytes to Bytes (multiply the existing metric's value by 1,048,576)
 
-Note: The created metric's type is inherited from the metric configured as `metric1`.
+## `calculate` Rule Functionality
+
+There are some specific behaviors of the `calculate` metric generation rule that users may want to be aware of:
+
+- The created metric will have the same type as the metric configured as `metric1`.
+- If no valid data points are calculated for the metric being created, it will not be created.
+  This ensures the processor is not emitting new metrics that are empty.
+- Users may want to have metric calculations done on data points whose overlapping attributes match. To enable this
+  behavior, please enable the feature gate `metricsgeneration.MatchAttributes`. This feature gate is disabled
+  by default, meaning the value used for `metric2` during the calculations is simply the first data point's value.
+  Refer to [documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md)
+  for more information on how to enable and disable feature gates.
 
 ## Configuration
 

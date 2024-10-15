@@ -6,3 +6,11 @@ experimental_metricsgeneration/sum_gauge_metric:
       metric1: system.filesystem.usage
       metric2: system.filesystem.utilization
       operation: divide
+experimental_metricsgeneration/sum_gauge_metric_match_attrs:
+  rules:
+    - name: system.filesystem.capacity
+      unit: bytes
+      type: calculate
+      metric1: system.filesystem.usage
+      metric2: system.filesystem.utilization
+      operation: divide
