@@ -6,10 +6,8 @@ package opampextension
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -21,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.uber.org/zap"
 )
 
 func TestNewOpampAgent(t *testing.T) {
@@ -54,7 +53,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 func TestCreateAgentDescription(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
-	osDescription := getOSDescription(t)
+	osDescription := getOSDescription(zap.NewNop())
 
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
@@ -245,39 +244,4 @@ func TestParseInstanceIDString(t *testing.T) {
 			require.Equal(t, tc.expectedUUID, id)
 		})
 	}
-}
-
-func getOSDescription(t *testing.T) string {
-	switch runtime.GOOS {
-	case "linux":
-		output, err := exec.Command("lsb_release", "-a").Output()
-		require.NoError(t, err)
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "Description:"); ok {
-				return strings.TrimSpace(raw)
-			}
-		}
-	case "darwin":
-		output, err := exec.Command("sw_vers").Output()
-		require.NoError(t, err)
-		var productName string
-		var productVersion string
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "ProductName:"); ok {
-				productName = strings.TrimSpace(raw)
-			} else if raw, ok = strings.CutPrefix(line, "ProductVersion:"); ok {
-				productVersion = strings.TrimSpace(raw)
-			}
-		}
-		if productName != "" && productVersion != "" {
-			return productName + " " + productVersion
-		}
-	case "windows":
-		output, err := exec.Command("cmd", "/c", "ver").Output()
-		require.NoError(t, err)
-		if string(output) != "" {
-			return strings.TrimSpace(string(output))
-		}
-	}
-	return ""
 }
