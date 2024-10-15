@@ -16,6 +16,10 @@ This exporter can be used to send metrics to [Google Cloud Monitoring](https://c
 (formerly Stackdriver), traces to [Google Cloud Trace](https://cloud.google.com/trace),
 and logs to [Google Cloud Logging](https://cloud.google.com/logging).
 
+To learn more about instrumentation and observability, including opinionated recommendations
+for Google Cloud Observability, visit [Instrumentation and
+observability](https://cloud.google.com/stackdriver/docs/instrumentation/overview).
+
 ## Getting started
 
 ### Prerequisite: Authenticating

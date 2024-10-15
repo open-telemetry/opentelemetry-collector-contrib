@@ -160,36 +160,53 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
 	// Body
-	setOTelLogBody(&document, record.Body())
+	setOTelLogBody(&document, record.Body(), record.Attributes())
 
 	return document
 }
 
-func setOTelLogBody(doc *objmodel.Document, body pcommon.Value) {
+func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcommon.Map) {
+	// Determine if this log record is an event, as they are mapped differently
+	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
+	_, isEvent := attributes.Get("event.name")
+
 	switch body.Type() {
 	case pcommon.ValueTypeMap:
-		doc.AddAttribute("body_structured", body)
+		if isEvent {
+			doc.AddAttribute("body.structured", body)
+		} else {
+			doc.AddAttribute("body.flattened", body)
+		}
 	case pcommon.ValueTypeSlice:
-		slice := body.Slice()
-		for i := 0; i < slice.Len(); i++ {
-			switch slice.At(i).Type() {
-			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
-				doc.AddAttribute("body_structured", body)
-				return
+		// output must be an array of objects due to ES limitations
+		// otherwise, wrap the array in an object
+		s := body.Slice()
+		allMaps := true
+		for i := 0; i < s.Len(); i++ {
+			if s.At(i).Type() != pcommon.ValueTypeMap {
+				allMaps = false
 			}
 		}
 
-		bodyTextVal := pcommon.NewValueSlice()
-		bodyTextSlice := bodyTextVal.Slice()
-		bodyTextSlice.EnsureCapacity(slice.Len())
-
-		for i := 0; i < slice.Len(); i++ {
-			elem := slice.At(i)
-			bodyTextSlice.AppendEmpty().SetStr(elem.AsString())
+		var outVal pcommon.Value
+		if allMaps {
+			outVal = body
+		} else {
+			vm := pcommon.NewValueMap()
+			m := vm.SetEmptyMap()
+			body.Slice().CopyTo(m.PutEmptySlice("value"))
+			outVal = vm
 		}
-		doc.AddAttribute("body_text", bodyTextVal)
+
+		if isEvent {
+			doc.AddAttribute("body.structured", outVal)
+		} else {
+			doc.AddAttribute("body.flattened", outVal)
+		}
+	case pcommon.ValueTypeStr:
+		doc.AddString("body.text", body.Str())
 	default:
-		doc.AddString("body_text", body.AsString())
+		doc.AddString("body.text", body.AsString())
 	}
 }
 
