@@ -11,25 +11,68 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
-func TestSanitize(t *testing.T) {
+func TestNormalizeLabel(t *testing.T) {
+	testCases := []struct {
+		label           string
+		utfAllowed      bool
+		dropSantization bool
+		expected        string
+	}{
+		{
+			label:    "",
+			expected: "",
+		},
+		{
+			label:    "test",
+			expected: "test",
+		},
+		{
+			label:    "__test",
+			expected: "__test",
+		},
+		{
+			label:    "_test",
+			expected: "key_test",
+		},
+		{
+			label:           "_test",
+			dropSantization: true,
+			expected:        "_test",
+		},
+		{
+			label:    "0test",
+			expected: "key_0test",
+		},
+		{
+			label:           "0test",
+			dropSantization: true,
+			expected:        "key_0test",
+		},
+		{
+			label:    "test_/",
+			expected: "test__",
+		},
+		{
+			label:      "test_/",
+			utfAllowed: true,
+			expected:   "test_/",
+		},
+		{
+			label:    "test.test",
+			expected: "test_test",
+		},
+		{
+			label:      "test.test",
+			utfAllowed: true,
+			expected:   "test.test",
+		},
+	}
 
-	defer testutil.SetFeatureGateForTest(t, dropSanitizationGate, false)()
-
-	require.Equal(t, "", NormalizeLabel(""), "")
-	require.Equal(t, "key_test", NormalizeLabel("_test"))
-	require.Equal(t, "key_0test", NormalizeLabel("0test"))
-	require.Equal(t, "test", NormalizeLabel("test"))
-	require.Equal(t, "test__", NormalizeLabel("test_/"))
-	require.Equal(t, "__test", NormalizeLabel("__test"))
-}
-
-func TestSanitizeDropSanitization(t *testing.T) {
-
-	defer testutil.SetFeatureGateForTest(t, dropSanitizationGate, true)()
-
-	require.Equal(t, "", NormalizeLabel(""))
-	require.Equal(t, "_test", NormalizeLabel("_test"))
-	require.Equal(t, "key_0test", NormalizeLabel("0test"))
-	require.Equal(t, "test", NormalizeLabel("test"))
-	require.Equal(t, "__test", NormalizeLabel("__test"))
+	for _, tc := range testCases {
+		t.Run(tc.label, func(t *testing.T) {
+			testutil.SetFeatureGateForTest(t, dropSanitizationGate, tc.dropSantization)
+			testutil.SetFeatureGateForTest(t, AllowUTF8FeatureGate, tc.utfAllowed)
+			require.Equal(t, tc.expected, NormalizeLabel(tc.label))
+		})
+	}
 }

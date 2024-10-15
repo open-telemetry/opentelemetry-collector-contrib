@@ -111,6 +111,8 @@ To enable it run collector with enabled feature gate `exporter.prometheusremotew
 
 OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
 
+Prometheus 2.55.0 introduced support for UTF-8 characters behind the feature-flag `utf8-names`. Prometheus 3.0.0 and later accept UTF-8 by default. This means that name and attribute normalization is not required if you're using those versions. To allow UTF-8 characters to be exposed without normalization, start the collector with the feature gate: `--feature-gates=pkg.translator.prometheus.allow_utf8`.
+
 ## Setting resource attributes as metric labels
 
 By default, resource attributes are added to a special metric called `target_info`. To select and group by metrics by resource attributes, you [need to do join on `target_info`](https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches). For example, to select metrics with `k8s_namespace_name` attribute equal to `my-namespace`:
