@@ -35,7 +35,6 @@ components:
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
-        - instana
         - kafka
         - loadbalancing
         - logicmonitor
@@ -180,6 +179,7 @@ components:
         - statsd
         - syslog
         - tcplog
+        - tlscheck
         - udplog
         - vcenter
         - wavefront

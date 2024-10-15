@@ -108,7 +108,7 @@ func TestEncodeMetric(t *testing.T) {
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
 			"",
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
-			numberDataPoint{metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i)},
+			newNumberDataPoint(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i)),
 		)
 		require.NoError(t, err)
 	}
@@ -960,6 +960,9 @@ func decodeOTelID(data []byte) ([]byte, error) {
 }
 
 func TestEncodeLogOtelMode(t *testing.T) {
+	randomString := strings.Repeat("abcdefghijklmnopqrstuvwxyz0123456789", 10)
+	maxLenNamespace := maxDataStreamBytes - len(disallowedNamespaceRunes)
+	maxLenDataset := maxDataStreamBytes - len(disallowedDatasetRunes) - len(".otel")
 
 	tests := []struct {
 		name   string
@@ -1044,6 +1047,20 @@ func TestEncodeLogOtelMode(t *testing.T) {
 				return assignDatastreamData(or, "", "third.otel")
 			},
 		},
+		{
+			name: "sanitize dataset/namespace",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["data_stream.dataset"] = disallowedDatasetRunes + randomString
+				or.Attributes["data_stream.namespace"] = disallowedNamespaceRunes + randomString
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				deleteDatasetAttributes(or)
+				ds := strings.Repeat("_", len(disallowedDatasetRunes)) + randomString[:maxLenDataset] + ".otel"
+				ns := strings.Repeat("_", len(disallowedNamespaceRunes)) + randomString[:maxLenNamespace]
+				return assignDatastreamData(or, "", ds, ns)
+			},
+		},
 	}
 
 	m := encodeModel{
@@ -1055,7 +1072,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
 
 		// This sets the data_stream values default or derived from the record/scope/resources
-		routeLogRecord(record, scope, resource, "", true)
+		routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
 
 		b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL)
 		require.NoError(t, err)

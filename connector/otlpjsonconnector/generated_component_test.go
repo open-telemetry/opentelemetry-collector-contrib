@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestComponentFactoryType(t *testing.T) {
@@ -35,7 +36,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_logs",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
-				router := connector.NewLogsRouter(map[component.ID]consumer.Logs{component.NewID(component.DataTypeLogs): consumertest.NewNop()})
+				router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{pipeline.NewID(pipeline.SignalLogs): consumertest.NewNop()})
 				return factory.CreateLogsToLogs(ctx, set, cfg, router)
 			},
 		},
@@ -43,7 +44,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_metrics",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
-				router := connector.NewMetricsRouter(map[component.ID]consumer.Metrics{component.NewID(component.DataTypeMetrics): consumertest.NewNop()})
+				router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{pipeline.NewID(pipeline.SignalMetrics): consumertest.NewNop()})
 				return factory.CreateLogsToMetrics(ctx, set, cfg, router)
 			},
 		},
@@ -51,7 +52,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs_to_traces",
 			createFn: func(ctx context.Context, set connector.Settings, cfg component.Config) (component.Component, error) {
-				router := connector.NewTracesRouter(map[component.ID]consumer.Traces{component.NewID(component.DataTypeTraces): consumertest.NewNop()})
+				router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{pipeline.NewID(pipeline.SignalTraces): consumertest.NewNop()})
 				return factory.CreateLogsToTraces(ctx, set, cfg, router)
 			},
 		},

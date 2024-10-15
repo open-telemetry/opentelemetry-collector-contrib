@@ -7,10 +7,10 @@ require (
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/docker/docker v26.1.5+incompatible
 	github.com/hashicorp/consul/api v1.29.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.109.0
-	github.com/shirou/gopsutil/v4 v4.24.8
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.111.0
+	github.com/shirou/gopsutil/v4 v4.24.9
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/semconv v0.109.1-0.20240920203249-d17559b6e89a
+	go.opentelemetry.io/collector/semconv v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/otel v1.30.0
 	go.opentelemetry.io/otel/sdk v1.30.0
 	go.uber.org/goleak v1.3.0
@@ -27,6 +27,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/ebitengine/purego v0.8.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -74,7 +75,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect

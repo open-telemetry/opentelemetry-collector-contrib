@@ -413,16 +413,20 @@ Available Converters:
 - [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
+- [ConvertTextToElementsXML](#converttexttoelementsxml)
 - [Day](#day)
+- [Double](#double)
+- [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Format](#format)
+- [GetXML](#getxml)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
-- [Double](#double)
-- [Duration](#duration)
+- [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
@@ -446,6 +450,7 @@ Available Converters:
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseXML](#parsexml)
+- [RemoveXML](#removexml)
 - [ParseBytes](#parsebytes)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
@@ -457,6 +462,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToKeyValueString](#tokeyvaluestring)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -543,6 +549,61 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### ConvertAttributesToElementsXML
+
+`ConvertAttributesToElementsXML(target, Optional[xpath])`
+
+The `ConvertAttributesToElementsXML` Converter returns an edited version of an XML string where attributes are converted into child elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertAttributesToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Attributes will only be converted within the result(s) of the xpath.
+
+For example, `<a foo="bar"><b>baz</b></a>` will be converted to `<a><b>baz</b><foo>bar</foo></a>`.
+
+Examples:
+
+Convert all attributes in a document
+
+- `ConvertAttributesToElementsXML(body)`
+
+Convert only attributes within "Record" elements
+
+- `ConvertAttributesToElementsXML(body, "/Log/Record")`
+
+### ConvertTextToElementsXML
+
+`ConvertTextToElementsXML(target, Optional[xpath], Optional[elementName])`
+
+The `ConvertTextToElementsXML` Converter returns an edited version of an XML string where all text belongs to a dedicated element.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
+
+`elementName` (optional) is a string that is used for any element tags that are created to wrap content.
+The default is `"value"`.
+
+For example, `<a><b>foo</b>bar</a>` will be converted to `<a><b>foo</b><value>bar</value></a>`.
+
+Examples:
+
+Ensure all text content in a document is wrapped in a dedicated element
+
+- `ConvertTextToElementsXML(body)`
+
+Use a custom name for any new elements
+
+- `ConvertTextToElementsXML(body, elementName = "custom")`
+
+Convert only part of the document
+
+- `ConvertTextToElementsXML(body, "/some/part/", "value")`
 
 ### Day
 
@@ -742,6 +803,37 @@ Examples:
 - `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
 - `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
 
+
+### GetXML
+
+`GetXML(target, xpath)`
+
+The `GetXML` Converter returns an XML string with selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `GetXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Currently, this converter only supports selecting elements.
+
+Examples:
+
+Get all elements at the root of the document with tag "a"
+
+- `GetXML(body, "/a")`
+
+Gel all elements anywhere in the document with tag "a"
+
+- `GetXML(body, "//a")`
+
+Get the first element at the root of the document with tag "a"
+
+- `GetXML(body, "/a[1]")`
+
+Get all elements in the document with tag "a" that have an attribute "b" with value "c"
+
+- `GetXML(body, "//a[@b='c']")`
+
 ### Hex
 
 `Hex(value)`
@@ -796,6 +888,35 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
+
+### InsertXML
+
+`InsertXML(target, xpath, value)`
+
+The `InsertXML` Converter returns an edited version of an XML string with child elements added to selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be modified. If `target` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements.
+
+`value` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be inserted into `target`. If `value` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+Examples:
+
+Add an element "foo" to the root of the document
+
+- `InsertXML(body, "/", "<foo/>")`
+
+Add an element "bar" to any element called "foo"
+
+- `InsertXML(body, "//foo", "<bar/>")`
+
+Fetch and insert an xml document into another
+
+- `InsertXML(body, "/subdoc", attributes["subdoc"])`
 
 ### Int
 
@@ -1286,6 +1407,71 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
+### RemoveXML
+
+`RemoveXML(target, xpath)`
+
+The `RemoveXML` Converter returns an edited version of an XML string with selected elements removed.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `RemoveXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements to remove from the XML document.
+
+For example, the XPath `/Log/Record[./Name/@type="archive"]` applied to the following XML document:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00001</ID>
+    <Name type="archive"></Name>
+    <Data>Some data</Data>
+  </Record>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+will return:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+Examples:
+
+Delete the attribute "foo" from the elements with tag "a"
+
+- `RemoveXML(body, "/a/@foo")`
+
+Delete all elements with tag "b" that are children of elements with tag "a"
+
+- `RemoveXML(body, "/a/b")`
+
+Delete all elements with tag "b" that are children of elements with tag "a" and have the attribute "foo" with value "bar"
+
+- `RemoveXML(body, "/a/b[@foo='bar']")`
+
+Delete all comments
+
+- `RemoveXML(body, "//comment()")`
+
+Delete text from nodes that contain the word "sensitive"
+
+- `RemoveXML(body, "//*[contains(text(), 'sensitive')]")`
+
 ### ParseBytes
 
 `ParseBytes(value)`
@@ -1507,6 +1693,10 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
+|`%i` | Timezone as +/-HH | -07 |
+|`%j` | Timezone as +/-HH:MM | -07:00 |
+|`%k` | Timezone as +/-HH:MM:SS | -07:00:00 |
+|`%w` | Timezone as +/-HHMMSS | -070000 |
 |`%D`, `%x` | Short MM/DD/YYYY date, equivalent to %m/%d/%y | 01/21/2031 |
 |`%F` | Short YYYY-MM-DD date, equivalent to %Y-%m-%d | 2031-01-21 |
 |`%T`,`%X` | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 02:55:02 |
@@ -1546,6 +1736,44 @@ Examples:
 
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
+
+### ToKeyValueString
+
+`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
+
+The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
+
+- `target` is a Getter that returns a `pcommon.Map`. 
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
+
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
+
+```
+`k1=v1 k2=v2 k3=v3`
+```
+
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+
+For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
+
+```
+`k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}`
+```
+
+**Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
+
+For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
+
+```
+`k1=v1 k2="v=2" k3="\"v=3\""`
+```
+
+Examples:
+
+- `ToKeyValueString(body)`
+- `ToKeyValueString(body, ":", ",", true)`
 
 ### TraceID
 

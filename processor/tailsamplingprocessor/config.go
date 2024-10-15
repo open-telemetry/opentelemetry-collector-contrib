@@ -109,7 +109,7 @@ type CompositeCfg struct {
 	RateAllocation         []RateAllocationCfg     `mapstructure:"rate_allocation"`
 }
 
-// RateAllocationCfg  used within composite policy
+// RateAllocationCfg used within composite policy
 type RateAllocationCfg struct {
 	Policy  string `mapstructure:"policy"`
 	Percent int64  `mapstructure:"percent"`

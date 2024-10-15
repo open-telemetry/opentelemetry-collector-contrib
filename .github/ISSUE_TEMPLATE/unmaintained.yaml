@@ -59,7 +59,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
-      - exporter/instana
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing
@@ -152,6 +151,7 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
       - pkg/translator/jaeger
@@ -266,6 +266,7 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
+      - receiver/prometheusremotewrite
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
@@ -289,6 +290,7 @@ body:
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog
+      - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront

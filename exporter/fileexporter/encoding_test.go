@@ -27,16 +27,8 @@ type hostWithEncoding struct {
 	encodings map[component.ID]component.Component
 }
 
-func (h hostWithEncoding) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithEncoding) GetExtensions() map[component.ID]component.Component {
 	return h.encodings
-}
-
-func (h hostWithEncoding) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	panic("unsupported")
 }
 
 func TestEncoding(t *testing.T) {
