@@ -179,19 +179,25 @@ func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcomm
 		}
 	case pcommon.ValueTypeSlice:
 		// output must be an array of objects due to ES limitations
-		outVal := pcommon.NewValueSlice()
-		outSlice := outVal.Slice()
+		// otherwise, wrap the array in an object
 		s := body.Slice()
+		allMaps := true
 		for i := 0; i < s.Len(); i++ {
-			v := s.At(i)
-			switch v.Type() {
-			case pcommon.ValueTypeMap:
-				v.Map().CopyTo(outSlice.AppendEmpty().SetEmptyMap())
-			default:
-				m := outSlice.AppendEmpty().SetEmptyMap()
-				v.CopyTo(m.PutEmpty("value"))
+			if s.At(i).Type() != pcommon.ValueTypeMap {
+				allMaps = false
 			}
 		}
+
+		var outVal pcommon.Value
+		if allMaps {
+			outVal = body
+		} else {
+			vm := pcommon.NewValueMap()
+			m := vm.SetEmptyMap()
+			body.Slice().CopyTo(m.PutEmptySlice("value"))
+			outVal = vm
+		}
+
 		if isEvent {
 			doc.AddAttribute("body.structured", outVal)
 		} else {
