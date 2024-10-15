@@ -5,26 +5,24 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
-
-	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"go.uber.org/zap"
 )
 
 const (
-	otelHints                      = "io.opentelemetry.collector.receiver-creator"
-	metricsHint                    = "metrics"
-	hintsMetricsReceiver           = "receiver"
-	hintsMetricsEndpoint           = "endpoint"
-	hintsMetricsCollectionInterval = "collection_interval"
-	hintsMetricsTimeout            = "timeout"
-	hintsMetricsUsername           = "username"
-	hintsMetricsPassword           = "password"
+	otelHints            = "opentelemetry.io.discovery"
+	discoveryEnabledHint = "enabled"
+	scraperHint          = "scraper"
+	signalsHint          = "signals"
+	configHint           = "config."
 )
 
 // HintsTemplatesBuilder creates configuration templates from provided hints.
 type HintsTemplatesBuilder interface {
-	createReceiverTemplatesFromHints() ([]receiverTemplate, error)
+	createScraperTemplateFromHints() ([]receiverTemplate, error)
 }
 
 // K8sHintsBuilder creates configurations from hints provided as Pod's annotations.
@@ -33,14 +31,23 @@ type K8sHintsBuilder struct {
 	config K8sHintsConfig
 }
 
-// createReceiverTemplateFromHints creates a receiver configuration based on the provided hints.
+// createScraperTemplateFromHints creates a receiver configuration based on the provided hints.
 // Hints are extracted from Pod's annotations.
-// Metrics configurations are only created for Port Endpoints.
-// TODO: Logs configurations are only created for Pod Container Endpoints.
-func (builder *K8sHintsBuilder) createReceiverTemplateFromHints(env observer.EndpointEnv) (*receiverTemplate, error) {
+// Scraper configurations are only created for Port Endpoints.
+// TODO: container_logs configurations are only created for Pod Container Endpoints.
+func (builder *K8sHintsBuilder) createScraperTemplateFromHints(env observer.EndpointEnv) (*receiverTemplate, error) {
 	var endpointType string
 	var podUID string
 	var annotations map[string]string
+
+	endpointType = getStringEnv(env, "type")
+	if endpointType == "" {
+		return nil, fmt.Errorf("could not get endpoint type: %v", zap.Any("env", env))
+	}
+
+	if endpointType != string(observer.PortType) {
+		return nil, nil
+	}
 
 	builder.logger.Debug("handling hints for added endpoint", zap.Any("env", env))
 
@@ -55,47 +62,47 @@ func (builder *K8sHintsBuilder) createReceiverTemplateFromHints(env observer.End
 			if !ok {
 				return nil, fmt.Errorf("could not extract annotations: %v", zap.Any("annotations", ann))
 			}
+			if len(annotations) == 0 {
+				return nil, nil
+			}
 		}
 		podUID = endpointPod["uid"].(string)
 	} else {
 		return nil, nil
 	}
 
-	if valType, ok := env["type"]; ok {
-		endpointType, ok = valType.(string)
-		if !ok {
-			return nil, fmt.Errorf("could not extract endpointType: %v", zap.Any("endpointType", valType))
-		}
-	} else {
-		return nil, fmt.Errorf("could not get endpoint type: %v", zap.Any("env", env))
-	}
-
-	if len(annotations) > 0 {
-		if endpointType == string(observer.PortType) && builder.config.Metrics.Enabled {
-			// Only handle Endpoints of type port for metrics
-			return builder.createMetricsReceiver(annotations, env, podUID)
-		}
+	if builder.config.Enabled {
+		// Only handle Endpoints of type port for scraper
+		return builder.createScraper(annotations, env, podUID)
 	}
 	return nil, nil
 }
 
-func (builder *K8sHintsBuilder) createMetricsReceiver(
+func (builder *K8sHintsBuilder) createScraper(
 	annotations map[string]string,
 	env observer.EndpointEnv,
 	podUID string) (*receiverTemplate, error) {
 
 	var port uint16
+	portName := getStringEnv(env, "name")
 
-	portName := env["name"].(string)
-	subreceiverKey := getHintAnnotation(annotations, metricsHint, hintsMetricsReceiver, portName)
+	if !discoveryEnabled(annotations, portName) {
+		return nil, nil
+	}
 
+	subreceiverKey := getHintAnnotation(annotations, scraperHint, portName)
 	if subreceiverKey == "" {
-		// no metrics hints detected
+		// no scraper hint detected
 		return nil, nil
 	}
 	builder.logger.Debug("handling added hinted receiver", zap.Any("subreceiverKey", subreceiverKey))
 
-	userConfMap := createMetricsConfig(annotations, env, portName)
+	defaultEndpoint := getStringEnv(env, "endpoint")
+	userConfMap := getConfFromAnnotations(annotations, defaultEndpoint, portName)
+
+	signalsAnn := getHintAnnotation(annotations, signalsHint, portName)
+	signals := getSignalsConf(signalsAnn)
+	userConfMap["signals"] = signals
 
 	if p, ok := env["port"]; ok {
 		port = p.(uint16)
@@ -116,50 +123,104 @@ func (builder *K8sHintsBuilder) createMetricsReceiver(
 
 }
 
-func createMetricsConfig(annotations map[string]string, env observer.EndpointEnv, portName string) userConfigMap {
-	confMap := map[string]any{}
+func getConfFromAnnotations(annotations map[string]string, defaultEndpoint string, scopeSuffix string) userConfigMap {
+	var annotationPrefixScoped string
+	annotationPrefix := fmt.Sprintf("%s/%s", otelHints, configHint)
 
-	defaultEndpoint := env["endpoint"]
-	// get endpoint directly from the Port endpoint
+	if scopeSuffix != "" {
+		annotationPrefixScoped = fmt.Sprintf("%s.%s/%s", otelHints, scopeSuffix, configHint)
+	}
+	conf := userConfigMap{}
 	if defaultEndpoint != "" {
-		confMap["endpoint"] = defaultEndpoint
+		conf["endpoint"] = defaultEndpoint
 	}
 
-	subreceiverEndpoint := getHintAnnotation(annotations, metricsHint, hintsMetricsEndpoint, portName)
-	if subreceiverEndpoint != "" {
-		confMap["endpoint"] = subreceiverEndpoint
+	for key, val := range annotations {
+		var dst map[string]any
+		var dstList []any
+		if strings.HasPrefix(key, annotationPrefixScoped) && annotationPrefixScoped != "" {
+			res, _ := strings.CutPrefix(key, annotationPrefixScoped)
+
+			if err := yaml.Unmarshal([]byte(val), &dst); err == nil {
+				conf[res] = dst
+			} else if err = yaml.Unmarshal([]byte(val), &dstList); err == nil {
+				conf[res] = dstList
+			} else {
+				conf[res] = val
+			}
+		} else if strings.HasPrefix(key, annotationPrefix) {
+			res, _ := strings.CutPrefix(key, annotationPrefix)
+
+			if _, ok := conf[res]; !ok {
+				// only use top level annotation in case there is no scope level annotation already set
+				if err := yaml.Unmarshal([]byte(val), &dst); err == nil {
+					conf[res] = dst
+				} else if err = yaml.Unmarshal([]byte(val), &dstList); err == nil {
+					conf[res] = dstList
+				} else {
+					conf[res] = val
+				}
+			}
+		}
 	}
-	subreceiverColInterval := getHintAnnotation(annotations, metricsHint, hintsMetricsCollectionInterval, portName)
-	if subreceiverColInterval != "" {
-		confMap["collection_interval"] = subreceiverColInterval
-	}
-	subreceiverTimeout := getHintAnnotation(annotations, metricsHint, hintsMetricsTimeout, portName)
-	if subreceiverTimeout != "" {
-		confMap["timeout"] = subreceiverTimeout
-	}
-	subreceiverUsername := getHintAnnotation(annotations, metricsHint, hintsMetricsUsername, portName)
-	if subreceiverUsername != "" {
-		confMap["username"] = subreceiverUsername
-	}
-	subreceiverPassword := getHintAnnotation(annotations, metricsHint, hintsMetricsPassword, portName)
-	if subreceiverPassword != "" {
-		confMap["password"] = subreceiverPassword
-	}
-	return confMap
+	return conf
 }
 
-func getHintAnnotation(annotations map[string]string, hintType string, hintKey string, suffix string) string {
+func getHintAnnotation(annotations map[string]string, hintKey string, suffix string) string {
 	// try to scope the hint more on container level by suffixing with .<port_name>
-	containerLevelHint := annotations[fmt.Sprintf("%s.%s.%s/%s", otelHints, hintType, suffix, hintKey)]
+	containerLevelHint := annotations[fmt.Sprintf("%s.%s/%s", otelHints, suffix, hintKey)]
 	if containerLevelHint != "" {
 		return containerLevelHint
 	}
 
 	// if there is no container level hint defined try to use the Pod level hint
-	podHintKey := fmt.Sprintf("%s.%s/%s", otelHints, hintType, hintKey)
+	podHintKey := fmt.Sprintf("%s/%s", otelHints, hintKey)
 	podLevelHint := annotations[podHintKey]
 	if podLevelHint != "" {
 		return podLevelHint
 	}
 	return ""
+}
+
+func getSignalsConf(signalsStr string) receiverSignals {
+	s := strings.Split(signalsStr, ",")
+	if len(s) == 0 || signalsStr == "" {
+		return receiverSignals{true, true, true}
+	}
+	signals := receiverSignals{}
+	for _, signal := range s {
+		if signal == "metrics" {
+			signals.metrics = true
+		}
+		if signal == "logs" {
+			signals.logs = true
+		}
+		if signal == "traces" {
+			signals.traces = true
+		}
+	}
+	return signals
+}
+
+func discoveryEnabled(annotations map[string]string, scopeSuffix string) bool {
+	hintVal := getHintAnnotation(annotations, discoveryEnabledHint, scopeSuffix)
+	if hintVal == "true" {
+		return true
+	} else if hintVal == "" {
+		// default case
+		return true
+	} else {
+		return false
+	}
+}
+
+func getStringEnv(env observer.EndpointEnv, key string) string {
+	var valString string
+	if val, ok := env[key]; ok {
+		valString, ok = val.(string)
+		if !ok {
+			return ""
+		}
+	}
+	return valString
 }

@@ -44,6 +44,12 @@ type observerHandler struct {
 	runner runner
 }
 
+type receiverSignals struct {
+	metrics bool
+	logs    bool
+	traces  bool
+}
+
 // shutdown all receivers started at runtime.
 func (obs *observerHandler) shutdown() error {
 	obs.Lock()
@@ -83,16 +89,19 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			continue
 		}
 
-		if obs.config.Hints.K8s.Metrics.Enabled {
+		if obs.config.Hints.K8s.Enabled {
 			k8sHintsBuilder := K8sHintsBuilder{obs.params.TelemetrySettings.Logger, obs.config.Hints.K8s}
-			subreceiverTemplate, err := k8sHintsBuilder.createReceiverTemplateFromHints(env)
+			subreceiverTemplate, err := k8sHintsBuilder.createScraperTemplateFromHints(env)
 			if err != nil {
 				obs.params.TelemetrySettings.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Any("err", err))
 				break
 			}
 			if subreceiverTemplate != nil {
 				obs.params.TelemetrySettings.Logger.Debug("adding K8s hinted receiver", zap.Any("subreceiver", subreceiverTemplate))
-				obs.startReceiver(*subreceiverTemplate, env, e)
+				signals := subreceiverTemplate.config["signals"]
+				delete(subreceiverTemplate.config, "signals")
+				rSignals := signals.(receiverSignals)
+				obs.startReceiver(*subreceiverTemplate, env, e, rSignals)
 				continue
 			}
 		}
@@ -104,7 +113,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			} else if !matches {
 				continue
 			}
-			obs.startReceiver(template, env, e)
+			obs.startReceiver(template, env, e, receiverSignals{metrics: true, logs: true, traces: true})
 		}
 	}
 }
@@ -144,7 +153,7 @@ func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 	obs.OnAdd(changed)
 }
 
-func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
+func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint, signals receiverSignals) {
 	obs.params.TelemetrySettings.Logger.Info("starting receiver",
 		zap.String("name", template.id.String()),
 		zap.String("endpoint", e.Target),
@@ -199,6 +208,8 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 
+	consumerSignals(consumer, signals)
+
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
 		receiverConfig{
@@ -213,4 +224,16 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 	obs.receiversByEndpointID.Put(e.ID, receiver)
+}
+
+func consumerSignals(consumer *enhancingConsumer, signals receiverSignals) {
+	if !signals.metrics {
+		consumer.metrics = nil
+	}
+	if !signals.logs {
+		consumer.logs = nil
+	}
+	if !signals.metrics {
+		consumer.traces = nil
+	}
 }
