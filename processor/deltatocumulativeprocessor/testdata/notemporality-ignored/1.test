@@ -1,0 +1,76 @@
+-- in --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    resource:
+      attributes:
+        - key: resattr
+          value: { stringValue: stringoo }
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+          attributes:
+            - key: scopeattr
+              value: { stringValue: string }
+        metrics:
+          - name: test.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - timeUnixNano: 1
+                  asInt: 3
+          - name: test.gauge
+            gauge:
+              dataPoints:
+                - timeUnixNano: 1
+                  asDouble: 1
+          - name: test.summary
+            summary:
+              dataPoints:
+                - timeUnixNano: 1
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 25
+
+-- out --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    resource:
+      attributes:
+        - key: resattr
+          value: { stringValue: stringoo }
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+          attributes:
+            - key: scopeattr
+              value: { stringValue: string }
+        metrics:
+          - name: test.sum
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 1
+                  asInt: 3
+          - name: test.gauge
+            gauge:
+              dataPoints:
+                - timeUnixNano: 1
+                  asDouble: 1
+          - name: test.summary
+            summary:
+              dataPoints:
+                - timeUnixNano: 1
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 25
+
+-- telemetry --
+counter otelcol_deltatocumulative.datapoints.linear:
+- int: 1
+
+updown otelcol_deltatocumulative.streams.tracked.linear:
+- int: 1
