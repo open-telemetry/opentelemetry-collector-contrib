@@ -567,7 +567,7 @@ service:
 	})
 	t.Run("RemoteConfig - Invalid Remote Config message is detected and status is set appropriately", func(t *testing.T) {
 
-		const testConfigMessage = "invalid"
+		const testConfigMessage = `invalid`
 
 		remoteConfig := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
@@ -1128,9 +1128,28 @@ func TestSupervisor_setupOwnMetrics(t *testing.T) {
 			DestinationEndpoint: "localhost",
 		})
 
-		ownMetricsFile, err := os.ReadFile("testdata/supervisor_test_own_metrics.yaml")
-		require.NoError(t, err)
-		expectedOwnMetricsSection := string(ownMetricsFile)
+		expectedOwnMetricsSection := `receivers:
+  # Collect own metrics
+  prometheus/own_metrics:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['0.0.0.0:55555']  
+exporters:
+  otlphttp/own_metrics:
+    metrics_endpoint: "localhost"
+
+service:
+  telemetry:
+    metrics:
+      address: ":55555"
+  pipelines:
+    metrics/own_metrics:
+      receivers: [prometheus/own_metrics]
+      exporters: [otlphttp/own_metrics]
+`
 
 		assert.True(t, configChanged)
 
@@ -1188,13 +1207,54 @@ func TestSupervisor_loadAndWriteInitialMergedConfig(t *testing.T) {
 
 		configDir := t.TempDir()
 
-		remoteConfigFile, err := os.ReadFile("testdata/supervisor_test_last_received_remote_config.yaml")
-		require.NoError(t, err)
-		testLastReceivedRemoteConfig := string(remoteConfigFile)
+		const testLastReceivedRemoteConfig = `receiver:
+  debug/remote:
+`
 
-		mergedConfigFile, err := os.ReadFile("testdata/supervisor_test_merged_config.yaml")
-		require.NoError(t, err)
-		expectedMergedConfig := string(mergedConfigFile)
+		const expectedMergedConfig = `exporters:
+    otlphttp/own_metrics:
+        metrics_endpoint: localhost
+extensions:
+    health_check:
+        endpoint: ""
+    opamp:
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receiver:
+    debug/remote: null
+receivers:
+    prometheus/own_metrics:
+        config:
+            scrape_configs:
+                - job_name: otel-collector
+                  scrape_interval: 10s
+                  static_configs:
+                    - targets:
+                        - 0.0.0.0:55555
+service:
+    extensions:
+        - health_check
+        - opamp
+    pipelines:
+        metrics/own_metrics:
+            exporters:
+                - otlphttp/own_metrics
+            receivers:
+                - prometheus/own_metrics
+    telemetry:
+        logs:
+            encoding: json
+        metrics:
+            address: :55555
+        resource:
+            service.name: otelcol
+`
 
 		remoteCfg := &protobufs.AgentRemoteConfig{
 			Config: &protobufs.AgentConfigMap{
@@ -1269,10 +1329,31 @@ func TestSupervisor_loadAndWriteInitialMergedConfig(t *testing.T) {
 }
 
 func TestSupervisor_composeNoopConfig(t *testing.T) {
-	expectedConfigFile, err := os.ReadFile("testdata/supervisor_test_noop_config.yaml")
-	require.NoError(t, err)
-	expectedConfig := string(expectedConfigFile)
 
+	const expectedConfig = `exporters:
+    nop: null
+extensions:
+    opamp:
+        instance_uid: 018fee23-4a51-7303-a441-73faed7d9deb
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
+receivers:
+    nop: null
+service:
+    extensions:
+        - opamp
+    pipelines:
+        traces:
+            exporters:
+                - nop
+            receivers:
+                - nop
+`
 	s := Supervisor{
 		persistentState: &persistentState{
 			InstanceID: uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb"),
