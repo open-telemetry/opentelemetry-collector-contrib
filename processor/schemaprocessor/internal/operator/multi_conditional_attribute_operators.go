@@ -13,10 +13,6 @@ type SpanEventConditionalAttributeOperator struct {
 	migrator migrate.MultiConditionalAttributeSet
 }
 
-func NewSpanEventConditionalAttributeOperator(migrator migrate.MultiConditionalAttributeSet) SpanEventConditionalAttributeOperator {
-	return SpanEventConditionalAttributeOperator{migrator: migrator}
-}
-
 func (o SpanEventConditionalAttributeOperator) IsMigrator() {}
 
 func (o SpanEventConditionalAttributeOperator) Do(ss migrate.StateSelector, span ptrace.Span) error {
