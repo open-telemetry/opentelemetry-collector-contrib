@@ -1,0 +1,10 @@
+receivers:
+  gelfexporter:
+    endpoint: "localhost:12201"
+    protocol: udp
+    # Compression can be one of "gzip" or "zlib" or "none"
+    compression: gzip
+    # Maximum chunks allowed is 128, if the number of chunks exceeds this limit, the message will be dropped
+    send_chunks_with_overflow: true
+    # Default maximum chunk size is 8192 bytes
+    chunk_size: 8192

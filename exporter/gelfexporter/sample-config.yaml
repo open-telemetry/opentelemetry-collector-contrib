@@ -1,0 +1,4 @@
+receivers:
+  gelfexporter:
+    endpoint: "localhost:12201"
+    protocol: udp
