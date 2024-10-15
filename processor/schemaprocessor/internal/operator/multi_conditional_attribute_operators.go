@@ -9,6 +9,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
+// SpanEventConditionalAttributeOperator is an operator that powers the [Span Event's rename_attributes] change.
+// [Span Event's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation-1
 type SpanEventConditionalAttributeOperator struct {
 	migrator migrate.MultiConditionalAttributeSet
 }

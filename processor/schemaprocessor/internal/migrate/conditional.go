@@ -14,7 +14,7 @@ type ValueMatch interface {
 	~string
 }
 
-// ConditionalAttributeSet represents a set of attributes that will
+// ConditionalAttributeSet represents a rename_attribute that will happen only if the passed in value matches the `on` set.
 type ConditionalAttributeSet struct {
 	on    map[string]struct{}
 	attrs AttributeChangeSet
@@ -35,6 +35,7 @@ func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, mat
 
 func (ca ConditionalAttributeSet) IsMigrator() {}
 
+// Do applies the attribute changes specified in the constructor if any of the values in values matches the matches specified in the constructor.
 func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, values ...string) (errs error) {
 	if ca.check(values...) {
 		errs = ca.attrs.Do(ss, attrs)
@@ -42,7 +43,6 @@ func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, value
 	return errs
 }
 
-// todo make it harder to misuse this!  diff between no values and 0 values
 func (ca *ConditionalAttributeSet) check(values ...string) bool {
 	if len(ca.on) == 0 {
 		return true
