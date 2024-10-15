@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-// MetricAttributeOperator is an Operator that acts on Metric DataPoints' attributes
+// MetricAttributeOperator is an Operator that acts on [pmetric.Metric]'s DataPoint's attributes.  It is part of the [AllOperator].
 type MetricAttributeOperator struct {
 	AttributeChange migrate.AttributeChangeSet
 }
@@ -70,7 +70,8 @@ func (o MetricAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Met
 	return nil
 }
 
-// LogAttributeOperator is an Operator that acts on LogRecords' attributes
+// LogAttributeOperator is an Operator that acts on [plog.LogRecord] attributes.  It powers the [Log's rename_attributes] transformation.  It also powers the [AllOperator].
+// [Log's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation-3
 type LogAttributeOperator struct {
 	AttributeChange migrate.AttributeChangeSet
 }
@@ -81,6 +82,8 @@ func (o LogAttributeOperator) Do(ss migrate.StateSelector, log plog.LogRecord) e
 	return o.AttributeChange.Do(ss, log.Attributes())
 }
 
+// SpanAttributeOperator is an Operator that acts on [ptrace.Span] attributes.  It powers the [Span's rename_attributes] transformation.  It also powers the [AllOperator].
+// [Span's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation
 type SpanAttributeOperator struct {
 	AttributeChange migrate.AttributeChangeSet
 }
@@ -91,6 +94,7 @@ func (o SpanAttributeOperator) Do(ss migrate.StateSelector, span ptrace.Span) er
 	return o.AttributeChange.Do(ss, span.Attributes())
 }
 
+// SpanEventAttributeOperator is an Operator that acts on [ptrace.SpanEvent] attributes.  It is part of the [AllOperator].
 type SpanEventAttributeOperator struct {
 	AttributeChange migrate.AttributeChangeSet
 }
@@ -101,6 +105,8 @@ func (o SpanEventAttributeOperator) Do(ss migrate.StateSelector, spanEvent ptrac
 	return o.AttributeChange.Do(ss, spanEvent.Attributes())
 }
 
+// ResourceAttributeOperator is an Operator that acts on [pcommon.Resource] attributes.  It powers the [Resource's rename_attributes] transformation.  It also powers the [AllOperator].
+// [Resource's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#resources-section
 type ResourceAttributeOperator struct {
 	AttributeChange migrate.AttributeChangeSet
 }
@@ -111,6 +117,8 @@ func (o ResourceAttributeOperator) Do(ss migrate.StateSelector, resource pcommon
 	return o.AttributeChange.Do(ss, resource.Attributes())
 }
 
+// AllOperator is an Operator that acts on .  It is a wrapper around the other attribute operators.  It powers the [All rename_attributes] transformation.
+// [All rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#all-section
 type AllOperator struct {
 	MetricOperator    MetricAttributeOperator
 	LogOperator       LogAttributeOperator
