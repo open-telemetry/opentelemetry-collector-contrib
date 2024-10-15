@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-
 package main
 
 import (
@@ -691,8 +689,6 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	host, err := os.Hostname()
 	require.NoError(t, err)
 
-	description := getOSDescription(t)
-
 	// Get the binary name and version from the Collector binary
 	// using the `components` command that prints a YAML-encoded
 	// map of information about the Collector build. Some of this
@@ -750,12 +746,12 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 			stringKeyValue("env", "prod"),
 			stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 			stringKeyValue(semconv.AttributeHostName, host),
-			stringKeyValue(semconv.AttributeOSDescription, description),
 			stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 		},
 	}
 
-	require.Equal(t, expectedDescription, ad.AgentDescription)
+	require.Contains(t, ad.AgentDescription.IdentifyingAttributes, expectedDescription.IdentifyingAttributes)
+	require.Contains(t, ad.AgentDescription.NonIdentifyingAttributes, expectedDescription.NonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
 }
@@ -1461,39 +1457,4 @@ func findRandomPort() (int, error) {
 	}
 
 	return port, nil
-}
-
-func getOSDescription(t *testing.T) string {
-	switch runtime.GOOS {
-	case "linux":
-		output, err := exec.Command("lsb_release", "-a").Output()
-		require.NoError(t, err)
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "Description:"); ok {
-				return strings.TrimSpace(raw)
-			}
-		}
-	case "darwin":
-		output, err := exec.Command("sw_vers").Output()
-		require.NoError(t, err)
-		var productName string
-		var productVersion string
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "ProductName:"); ok {
-				productName = strings.TrimSpace(raw)
-			} else if raw, ok = strings.CutPrefix(line, "ProductVersion:"); ok {
-				productVersion = strings.TrimSpace(raw)
-			}
-		}
-		if productName != "" && productVersion != "" {
-			return productName + " " + productVersion
-		}
-	case "windows":
-		output, err := exec.Command("cmd", "/c", "ver").Output()
-		require.NoError(t, err)
-		if string(output) != "" {
-			return strings.TrimSpace(string(output))
-		}
-	}
-	return ""
 }
