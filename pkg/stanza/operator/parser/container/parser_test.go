@@ -5,6 +5,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -89,20 +90,32 @@ func TestInternalRecombineCfg(t *testing.T) {
 }
 
 func TestProcessOnErrorSendQuiet(t *testing.T) {
-	cfg := NewConfigWithID("test_id")
-	cfg.OnError = "send_quiet"
-	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(set)
-	require.NoError(t, err, "incorrect build")
-
 	// contains incorrect time format
 	faultyEntry := &entry.Entry{
 		Body: `{"log":"INFO: log line here","stream":"stdout","time":"2023033"}`,
 	}
 
-	err = op.Process(context.Background(), faultyEntry)
-	// Error should not be logged
-	require.NoError(t, err, "send_quiet is not working properly")
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	set := componenttest.NewNopTelemetrySettings()
+
+	t.Run("without send_quiet", func(t *testing.T) {
+		cfg.OnError = "send"
+		op, err := cfg.Build(set)
+		require.NoError(t, err, "incorrect build")
+		err = op.Process(context.Background(), faultyEntry)
+		fmt.Println(err)
+		require.ErrorContains(t, err, "parse time", "on_error is not working correctly")
+	})
+
+	t.Run("with send_quiet", func(t *testing.T) {
+		cfg.OnError = "send_quiet"
+		op, err := cfg.Build(set)
+		require.NoError(t, err, "incorrect build")
+		err = op.Process(context.Background(), faultyEntry)
+		require.NoError(t, err, "send_quiet is not working correctly")
+	})
+
 }
 
 func TestProcess(t *testing.T) {
