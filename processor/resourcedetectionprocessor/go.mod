@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.2
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/google/go-cmp v0.6.0
-	github.com/hashicorp/consul/api v1.29.4
+	github.com/hashicorp/consul/api v1.29.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.111.0
