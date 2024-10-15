@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1154,6 +1155,7 @@ service:
 		assert.True(t, configChanged)
 
 		got := s.agentConfigOwnMetricsSection.Load().(string)
+		got = strings.ReplaceAll(got, "\r\n", "\n")
 
 		// replace the port because that changes on each run
 		portRegex := regexp.MustCompile(":[0-9]{5}")
@@ -1320,6 +1322,7 @@ service:
 		assert.Equal(t, remoteCfg.String(), s.remoteConfig.String())
 
 		gotMergedConfig := s.cfgState.Load().(*configState).mergedConfig
+		gotMergedConfig = strings.ReplaceAll(gotMergedConfig, "\r\n", "\n")
 		// replace random port numbers
 		portRegex := regexp.MustCompile(":[0-9]{5}")
 		replacedMergedConfig := portRegex.ReplaceAll([]byte(gotMergedConfig), []byte(":55555"))
@@ -1363,8 +1366,9 @@ service:
 
 	require.NoError(t, s.createTemplates())
 
-	noopConfig, err := s.composeNoopConfig()
+	noopConfigBytes, err := s.composeNoopConfig()
+	noopConfig := strings.ReplaceAll(string(noopConfigBytes), "\r\n", "\n")
 
 	require.NoError(t, err)
-	require.Equal(t, expectedConfig, string(noopConfig))
+	require.Equal(t, expectedConfig, noopConfig)
 }
