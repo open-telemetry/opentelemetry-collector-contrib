@@ -185,6 +185,40 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
+	t.Run("drops log records for bodymap mode if body is not a map", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		logRecords := scopeLogs.LogRecords()
+
+		// Invalid body type should be dropped.
+		logRecords.AppendEmpty().Body().SetEmptySlice()
+
+		// We should still process the valid records in the batch.
+		bodyMap := logRecords.AppendEmpty().Body().SetEmptyMap()
+		bodyMap.PutInt("a", 42)
+
+		rec := newBulkRecorder()
+		var done atomic.Bool
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			defer done.Store(true)
+			rec.Record(docs)
+			assert.Len(t, docs, 1)
+			assert.JSONEq(t, `{"a":42}`, string(docs[0].Document))
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "bodymap"
+		})
+
+		err := exporter.ConsumeLogs(context.Background(), logs)
+		assert.ErrorContains(t, err, `dropping log record: failed to encode log event: invalid log record body type for 'bodymap' mapping mode: "Slice"`)
+		assert.Eventually(t, func() bool {
+			return done.Load()
+		}, 100*time.Millisecond, time.Millisecond, "timeout waiting for valid log to be processed")
+	})
+
 	t.Run("publish with dedot", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {

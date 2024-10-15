@@ -66,6 +66,8 @@ var resourceAttrsToPreserve = map[string]bool{
 	semconv.AttributeHostName: true,
 }
 
+var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
+
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
@@ -143,12 +145,11 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 
 func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
 	body := record.Body()
-	bm := pcommon.NewMap()
-	if body.Type() == pcommon.ValueTypeMap {
-		bm = body.Map()
+	if body.Type() != pcommon.ValueTypeMap {
+		return nil, fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
 	}
 
-	return jsoniter.Marshal(bm.AsRaw())
+	return jsoniter.Marshal(body.Map().AsRaw())
 }
 
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {

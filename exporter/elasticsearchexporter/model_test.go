@@ -1241,4 +1241,10 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 		"key.a.b":                    "b",
 		"pi":                         3.14
 	}`, string(got))
+
+	// invalid body map
+	logRecord.Body().SetEmptySlice()
+	_, err = m.encodeLogBodyMapMode(logRecord)
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
 }
