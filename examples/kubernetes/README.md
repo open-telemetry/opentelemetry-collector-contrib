@@ -8,6 +8,16 @@ This demo is a sample app to build the collector and exercise its kubernetes log
 
 Switch to this directory and run following command: `kubectl apply -n <namespace> -f otel-collector.yaml`
 
+### Kubernetes - Helm
+
+Execute the next commands for create a correct instance of opentelemetry-collector-contrib in your cluster.
+
+~~~
+helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts
+
+helm install opentelemetry-collector open-telemetry/opentelemetry-collector --namespace=<namespace> --set mode=<mode> --set image.repository="otel/opentelemetry-collector-contrib" --set command.name="otelcol-contrib"
+~~~
+
 #### Include/Exclude Specific Logs
 
 Kubernetes logs are being stored in `/var/log/pods`.
