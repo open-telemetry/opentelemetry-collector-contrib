@@ -95,7 +95,6 @@ arrow.waiter_limit -> admission.waiter_limit
 - `sqlqueryreceiver`: Fix reprocessing of logs when tracking_column type is timestamp (#35194)
 - `windowseventlogreceiver`: While collecting from a remote windows host, the stanza operator will no longer log "subscription handle is already open" constantly during successful collection. (#35520)
 - `windowseventlogreceiver`: If collecting from a remote host, the receiver will stop collecting if the host restarts. This change resubscribes when the host restarts. (#35175)
-- `pkg/stanza`: Use HandleEntryError for error handling. (#35758)
 
 ## v0.110.0
 
