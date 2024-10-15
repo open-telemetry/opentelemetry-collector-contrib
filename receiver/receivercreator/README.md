@@ -452,26 +452,64 @@ receiver_creator/metrics:
   watch_observers: [ k8s_observer ]
   hints:
     k8s:
-      metrics:
-        enabled: true
+      enabled: true
 ```
 
-Users can use the following annotations to automatically enable receivers to start collecting metrics from the target Pods/containers.
+Users can use the following annotations to automatically enable receivers to start collecting signals from the target Pods/containers.
 
 ### Supported metrics annotations
-1. `io.opentelemetry.collector.receiver-creator.metrics/receiver` (example: `nginx`)
-2. `io.opentelemetry.collector.receiver-creator.metrics/endpoint` (example: ```"http://`endpoint`/nginx_status"```, if not provided it defaults to `endpoint` which is of form `pod_ip:container_port`.)
-3. `io.opentelemetry.collector.receiver-creator.metrics/collection_interval` (example: `20s`)
-4. `io.opentelemetry.collector.receiver-creator.metrics/timeout` (example: `1m`)
-5. `io.opentelemetry.collector.receiver-creator.metrics/username` (example: `admin`)
-6. `io.opentelemetry.collector.receiver-creator.metrics/password` (example: `passpass`)
+
+#### Enable/disable discovery
+
+`io.opentelemetry.discovery/enabled` (example: `"true"`)
+
+By default `"true"`.
+
+#### Define scraper
+
+`io.opentelemetry.discovery/scraper` (example: `"nginx"`)
+
+#### Enable specific signals
+
+`io.opentelemetry.discovery/signals` (example: `"metrics,logs"`)
+
+By default all signals are enabled.
+
+#### Define configuration
+
+`io.opentelemetry.discovery/config.`
+
+(example: ```io.opentelemetry.discovery/config.endpoint: "http://`endpoint`/nginx_status"```,
+
+For `config.endpoint` specifically, if not provided it defaults to
+```io.opentelemetry.discovery/config.endpoint: "`endpoint`"``` (as it comes from the ) which is
+in form of `pod_ip:container_port`.
+
+**Example:**
+
+```yaml
+# configure scraper behavior
+io.opentelemetry.discovery/signals: "metrics,logs"
+io.opentelemetry.discovery/config.endpoint: "http://`endpoint`/nginx_status"
+io.opentelemetry.discovery/config.collection_interval: '20s'
+io.opentelemetry.discovery/config.initial_delay: '20s'
+io.opentelemetry.discovery/config.read_buffer_size: '10'
+io.opentelemetry.discovery/config.xyz: 'abc'
+
+# nested configs
+io.opentelemetry.discovery/config.nested_example: |
+  zyz: foo
+  bar: baz
+```
 
 
-### Support multiple target containers
+
+
+#### Support multiple target containers
 
 Users can target the annotation to a specific container by suffixing it with the name of the port that container exposes:
-`io.opentelemetry.collector.receiver-creator.metrics.<container_port_name>/endpoint`.
-For example ```io.opentelemetry.collector.receiver-creator.metrics.webserver/endpoint: "http://`endpoint`/nginx_status"``` 
+`io.opentelemetry.discovery.<container_port_name>/endpoint`.
+For example ```io.opentelemetry.discovery.webserver/endpoint: "http://`endpoint`/nginx_status"```
 where `webserver` is the name of the port the target container exposes.
 
 If a Pod is annotated with both container level hints and pod level hints the container level hints have priority and
@@ -489,19 +527,18 @@ The hints are evaluated per container by extracting the annotations from each `P
 Collector's configuration:
 ```yaml
 receivers:
-  receiver_creator/metrics:
+  receiver_creator:
     watch_observers: [ k8s_observer ]
     hints:
       k8s:
-        metrics:
-          enabled: true
+        enabled: true
     receivers:
 
 service:
   extensions: [ k8s_observer]
   pipelines:
     metrics:
-      receivers: [ receiver_creator/metrics ]
+      receivers: [ receiver_creator ]
       processors: []
       exporters: [ debug ]
 ```
@@ -546,10 +583,15 @@ kind: Pod
 metadata:
   name: redis
   annotations:
-    io.opentelemetry.collector.receiver-creator.metrics/receiver: redis
-    io.opentelemetry.collector.receiver-creator.metrics/collection_interval: '20s'
-    io.opentelemetry.collector.receiver-creator.metrics.webserver/receiver: nginx 
-    io.opentelemetry.collector.receiver-creator.metrics.webserver/endpoint: "http://`endpoint`/nginx_status"
+    io.opentelemetry.discovery/scraper: redis
+    io.opentelemetry.discovery/signals: metrics
+    io.opentelemetry.discovery/config.collection_interval: '20s'
+    io.opentelemetry.discovery.webserver/signals: metrics
+    io.opentelemetry.discovery.webserver/scraper: nginx
+    io.opentelemetry.discovery.webserver/config.nested_example: |
+      some: foo
+      bar: baz
+    io.opentelemetry.discovery.webserver/config.endpoint: "http://`endpoint`/nginx_status"
   labels:
     k8s-app: redis
     app: redis

@@ -83,9 +83,9 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			continue
 		}
 
-		if obs.config.Hints.K8s.Metrics.Enabled {
+		if obs.config.Hints.K8s.Enabled {
 			k8sHintsBuilder := K8sHintsBuilder{obs.params.TelemetrySettings.Logger, obs.config.Hints.K8s}
-			subreceiverTemplate, err := k8sHintsBuilder.createReceiverTemplateFromHints(env)
+			subreceiverTemplate, err := k8sHintsBuilder.createScraperTemplateFromHints(env)
 			if err != nil {
 				obs.params.TelemetrySettings.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Any("err", err))
 				break
@@ -199,6 +199,8 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 
+	filterConsumerSignals(consumer, template.signals)
+
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
 		receiverConfig{
@@ -213,4 +215,16 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 	obs.receiversByEndpointID.Put(e.ID, receiver)
+}
+
+func filterConsumerSignals(consumer *enhancingConsumer, signals receiverSignals) {
+	if !signals.metrics {
+		consumer.metrics = nil
+	}
+	if !signals.logs {
+		consumer.logs = nil
+	}
+	if !signals.metrics {
+		consumer.traces = nil
+	}
 }

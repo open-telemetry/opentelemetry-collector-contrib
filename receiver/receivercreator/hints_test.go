@@ -28,7 +28,7 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 		expectedReceiver receiverTemplate
 		wantError        bool
 	}{
-		`metrics_pod_level_hints_only`: {
+		`pod_level_hints_only`: {
 			inputEndpoint: observer.Endpoint{
 				ID:     "namespace/pod-2-UID/redis(6379)",
 				Target: "1.2.3.4:6379",
@@ -39,11 +39,11 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
-							"io.opentelemetry.collector.receiver-creator.metrics/receiver":            "redis",
-							"io.opentelemetry.collector.receiver-creator.metrics/collection_interval": "20s",
-							"io.opentelemetry.collector.receiver-creator.metrics/timeout":             "30s",
-							"io.opentelemetry.collector.receiver-creator.metrics/username":            "username",
-							"io.opentelemetry.collector.receiver-creator.metrics/password":            "changeme",
+							"io.opentelemetry.discovery/scraper":                    "redis",
+							"io.opentelemetry.discovery/config.collection_interval": "20s",
+							"io.opentelemetry.discovery/config.timeout":             "30s",
+							"io.opentelemetry.discovery/config.username":            "username",
+							"io.opentelemetry.discovery/config.password":            "changeme",
 						}},
 					Port: 6379},
 			},
@@ -51,10 +51,10 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 				receiverConfig: receiverConfig{
 					id:     id,
 					config: userConfigMap{"collection_interval": "20s", "endpoint": "1.2.3.4:6379", "password": "changeme", "timeout": "30s", "username": "username"},
-				},
+				}, signals: receiverSignals{metrics: true, logs: true, traces: true},
 			},
 			wantError: false,
-		}, `metrics_container_level_hints`: {
+		}, `pod_level_hints_only_signals_metrics`: {
 			inputEndpoint: observer.Endpoint{
 				ID:     "namespace/pod-2-UID/redis(6379)",
 				Target: "1.2.3.4:6379",
@@ -65,11 +65,12 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/receiver":            "redis",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/collection_interval": "20s",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/timeout":             "30s",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/username":            "username",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/password":            "changeme",
+							"io.opentelemetry.discovery/scraper":                    "redis",
+							"io.opentelemetry.discovery/signals":                    "metrics",
+							"io.opentelemetry.discovery/config.collection_interval": "20s",
+							"io.opentelemetry.discovery/config.timeout":             "30s",
+							"io.opentelemetry.discovery/config.username":            "username",
+							"io.opentelemetry.discovery/config.password":            "changeme",
 						}},
 					Port: 6379},
 			},
@@ -77,10 +78,11 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 				receiverConfig: receiverConfig{
 					id:     id,
 					config: userConfigMap{"collection_interval": "20s", "endpoint": "1.2.3.4:6379", "password": "changeme", "timeout": "30s", "username": "username"},
-				},
+				}, signals: receiverSignals{metrics: true, logs: false, traces: false},
 			},
 			wantError: false,
-		}, `metrics_mix_level_hints`: {
+		},
+		`pod_level_hints_only_signals_metrics_and_logs`: {
 			inputEndpoint: observer.Endpoint{
 				ID:     "namespace/pod-2-UID/redis(6379)",
 				Target: "1.2.3.4:6379",
@@ -91,12 +93,92 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/receiver":      "redis",
-							"io.opentelemetry.collector.receiver-creator.metrics/collection_interval": "20s",
-							"io.opentelemetry.collector.receiver-creator.metrics/timeout":             "30s",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/timeout":       "130s",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/username":      "username",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/password":      "changeme",
+							"io.opentelemetry.discovery/scraper":                    "redis",
+							"io.opentelemetry.discovery/signals":                    "metrics,logs",
+							"io.opentelemetry.discovery/config.collection_interval": "20s",
+							"io.opentelemetry.discovery/config.timeout":             "30s",
+							"io.opentelemetry.discovery/config.username":            "username",
+							"io.opentelemetry.discovery/config.password":            "changeme",
+						}},
+					Port: 6379},
+			},
+			expectedReceiver: receiverTemplate{
+				receiverConfig: receiverConfig{
+					id:     id,
+					config: userConfigMap{"collection_interval": "20s", "endpoint": "1.2.3.4:6379", "password": "changeme", "timeout": "30s", "username": "username"},
+				}, signals: receiverSignals{metrics: true, logs: true, traces: false},
+			},
+			wantError: false,
+		}, `container_level_hints`: {
+			inputEndpoint: observer.Endpoint{
+				ID:     "namespace/pod-2-UID/redis(6379)",
+				Target: "1.2.3.4:6379",
+				Details: &observer.Port{
+					Name: "redis", Pod: observer.Pod{
+						Name:      "pod-2",
+						Namespace: "default",
+						UID:       "pod-2-UID",
+						Labels:    map[string]string{"env": "prod"},
+						Annotations: map[string]string{
+							"io.opentelemetry.discovery.redis/scraper":                    "redis",
+							"io.opentelemetry.discovery.redis/config.collection_interval": "20s",
+							"io.opentelemetry.discovery.redis/config.timeout":             "30s",
+							"io.opentelemetry.discovery.redis/config.username":            "username",
+							"io.opentelemetry.discovery.redis/config.password":            "changeme",
+						}},
+					Port: 6379},
+			},
+			expectedReceiver: receiverTemplate{
+				receiverConfig: receiverConfig{
+					id:     id,
+					config: userConfigMap{"collection_interval": "20s", "endpoint": "1.2.3.4:6379", "password": "changeme", "timeout": "30s", "username": "username"},
+				}, signals: receiverSignals{metrics: true, logs: true, traces: true},
+			},
+			wantError: false,
+		}, `container_level_hints_only_signals_metrics`: {
+			inputEndpoint: observer.Endpoint{
+				ID:     "namespace/pod-2-UID/redis(6379)",
+				Target: "1.2.3.4:6379",
+				Details: &observer.Port{
+					Name: "redis", Pod: observer.Pod{
+						Name:      "pod-2",
+						Namespace: "default",
+						UID:       "pod-2-UID",
+						Labels:    map[string]string{"env": "prod"},
+						Annotations: map[string]string{
+							"io.opentelemetry.discovery.redis/scraper":              "redis",
+							"io.opentelemetry.discovery.redis/signals":              "metrics",
+							"io.opentelemetry.discovery/config.collection_interval": "20s",
+							"io.opentelemetry.discovery/config.timeout":             "30s",
+							"io.opentelemetry.discovery/config.username":            "username",
+							"io.opentelemetry.discovery/config.password":            "changeme",
+						}},
+					Port: 6379},
+			},
+			expectedReceiver: receiverTemplate{
+				receiverConfig: receiverConfig{
+					id:     id,
+					config: userConfigMap{"collection_interval": "20s", "endpoint": "1.2.3.4:6379", "password": "changeme", "timeout": "30s", "username": "username"},
+				}, signals: receiverSignals{metrics: true, logs: false, traces: false},
+			},
+			wantError: false,
+		}, `mix_level_hints`: {
+			inputEndpoint: observer.Endpoint{
+				ID:     "namespace/pod-2-UID/redis(6379)",
+				Target: "1.2.3.4:6379",
+				Details: &observer.Port{
+					Name: "redis", Pod: observer.Pod{
+						Name:      "pod-2",
+						Namespace: "default",
+						UID:       "pod-2-UID",
+						Labels:    map[string]string{"env": "prod"},
+						Annotations: map[string]string{
+							"io.opentelemetry.discovery.redis/scraper":              "redis",
+							"io.opentelemetry.discovery/config.collection_interval": "20s",
+							"io.opentelemetry.discovery/config.timeout":             "30s",
+							"io.opentelemetry.discovery.redis/config.timeout":       "130s",
+							"io.opentelemetry.discovery.redis/config.username":      "username",
+							"io.opentelemetry.discovery.redis/config.password":      "changeme",
 						}},
 					Port: 6379},
 			},
@@ -104,10 +186,10 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 				receiverConfig: receiverConfig{
 					id:     id,
 					config: userConfigMap{"collection_interval": "20s", "endpoint": "1.2.3.4:6379", "password": "changeme", "timeout": "130s", "username": "username"},
-				},
+				}, signals: receiverSignals{metrics: true, logs: true, traces: true},
 			},
 			wantError: false,
-		}, `metrics_no_port_error`: {
+		}, `no_port_error`: {
 			inputEndpoint: observer.Endpoint{
 				ID:     "namespace/pod-2-UID/redis(6379)",
 				Target: "1.2.3.4",
@@ -118,12 +200,12 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/receiver":      "redis",
-							"io.opentelemetry.collector.receiver-creator.metrics/collection_interval": "20s",
-							"io.opentelemetry.collector.receiver-creator.metrics/timeout":             "30s",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/timeout":       "130s",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/username":      "username",
-							"io.opentelemetry.collector.receiver-creator.metrics.redis/password":      "changeme",
+							"io.opentelemetry.discovery/scraper":                    "redis",
+							"io.opentelemetry.discovery/config.collection_interval": "20s",
+							"io.opentelemetry.discovery/config.timeout":             "30s",
+							"io.opentelemetry.discovery.redis/config.timeout":       "130s",
+							"io.opentelemetry.discovery.redis/config.username":      "username",
+							"io.opentelemetry.discovery.redis/config.password":      "changeme",
 						}}},
 			},
 			expectedReceiver: receiverTemplate{},
@@ -133,10 +215,10 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			k8sHintsBuilder := K8sHintsBuilder{logger, K8sHintsConfig{Metrics: MetricsHints{Enabled: true}}}
+			k8sHintsBuilder := K8sHintsBuilder{logger, K8sHintsConfig{Enabled: true}}
 			env, err := test.inputEndpoint.Env()
 			require.NoError(t, err)
-			subreceiverTemplate, err := k8sHintsBuilder.createReceiverTemplateFromHints(env)
+			subreceiverTemplate, err := k8sHintsBuilder.createScraperTemplateFromHints(env)
 			if !test.wantError {
 				require.NoError(t, err)
 				require.Equal(t, subreceiverTemplate.receiverConfig.config, test.expectedReceiver.receiverConfig.config)
@@ -148,21 +230,130 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 	}
 }
 
-func TestGetHintAnnotation(t *testing.T) {
-	metricsHintsAnn := map[string]string{
-		"io.opentelemetry.collector.receiver-creator.metrics/receiver": "redis",
+func TestGetConfFromAnnotations(t *testing.T) {
+	var nestedMap = `
+entries: 
+  - keya1: val1
+    keya2: val2
+foo: bar`
+	var nestedList = `
+- type: regex_parser
+  regex: '^(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$'
+- type: add
+  key: body.some
+  value: awesome`
+
+	tests := map[string]struct {
+		hintsAnn        map[string]string
+		expectedConf    userConfigMap
+		defaultEndpoint string
+		scopeSuffix     string
+	}{"simple_annotation_case": {
+		hintsAnn: map[string]string{
+			"io.opentelemetry.discovery/config.endpoint":            "0.0.0.0:8080",
+			"io.opentelemetry.discovery/config.collection_interval": "20s",
+			"io.opentelemetry.discovery/config.initial_delay":       "20s",
+			"io.opentelemetry.discovery/config.read_buffer_size":    "10",
+		}, expectedConf: userConfigMap{
+			"collection_interval": "20s",
+			"endpoint":            "0.0.0.0:8080",
+			"initial_delay":       "20s",
+			"read_buffer_size":    "10",
+		}, defaultEndpoint: "",
+		scopeSuffix: "",
+	}, "nested_annotation_case": {
+		hintsAnn: map[string]string{
+			"io.opentelemetry.discovery/config.read_buffer_size":        "10",
+			"io.opentelemetry.discovery/config.read_buffer_size_nested": nestedMap,
+		}, expectedConf: userConfigMap{
+			"read_buffer_size": "10",
+			"read_buffer_size_nested": map[string]any{
+				"foo": "bar",
+				"entries": []any{map[string]any{
+					"keya1": "val1",
+					"keya2": "val2"}},
+			},
+		}, defaultEndpoint: "",
+		scopeSuffix: "",
+	}, "nested_list_annotation_case": {
+		hintsAnn: map[string]string{
+			"io.opentelemetry.discovery.webport/config.read_buffer_size": "10",
+			"io.opentelemetry.discovery/config.read_buffer_size":         "20",
+			"io.opentelemetry.discovery/config.listconf":                 nestedList,
+		}, expectedConf: userConfigMap{
+			"read_buffer_size": "10",
+			"listconf": []any{map[string]any{
+				"type":  "regex_parser",
+				"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"},
+				map[string]any{
+					"type":  "add",
+					"key":   "body.some",
+					"value": "awesome"}},
+		}, defaultEndpoint: "",
+		scopeSuffix: "webport",
+	},
 	}
-	assert.Equal(
-		t,
-		"redis",
-		getHintAnnotation(metricsHintsAnn, metricsHint, hintsMetricsReceiver, "webport"),
-	)
-	logsHintsAnn := map[string]string{
-		"io.opentelemetry.collector.receiver-creator.logs/receiver": "redis",
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(
+				t,
+				test.expectedConf,
+				getConfFromAnnotations(test.hintsAnn, test.defaultEndpoint, test.scopeSuffix),
+			)
+		})
 	}
-	assert.Equal(
-		t,
-		"redis",
-		getHintAnnotation(logsHintsAnn, "logs", "receiver", "webport"),
-	)
+}
+
+func TestDiscoveryEnabled(t *testing.T) {
+	tests := map[string]struct {
+		hintsAnn    map[string]string
+		expected    bool
+		scopeSuffix string
+	}{
+		"test_enabled": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery/config.endpoint": "0.0.0.0:8080",
+				"io.opentelemetry.discovery/enabled":         "true",
+			},
+			expected:    true,
+			scopeSuffix: "",
+		}, "test_disabled": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery/config.endpoint": "0.0.0.0:8080",
+				"io.opentelemetry.discovery/enabled":         "false",
+			},
+			expected:    false,
+			scopeSuffix: "",
+		}, "test_default": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery/config.endpoint": "0.0.0.0:8080",
+			},
+			expected:    true,
+			scopeSuffix: "",
+		}, "test_enabled_scope": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery/config.endpoint": "0.0.0.0:8080",
+				"io.opentelemetry.discovery.some/enabled":    "true",
+			},
+			expected:    true,
+			scopeSuffix: "some",
+		}, "test_disabled_scoped": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery/config.endpoint": "0.0.0.0:8080",
+				"io.opentelemetry.discovery.some/enabled":    "false",
+			},
+			expected:    false,
+			scopeSuffix: "some",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			assert.Equal(
+				t,
+				test.expected,
+				discoveryEnabled(test.hintsAnn, test.scopeSuffix),
+			)
+		})
+	}
 }
