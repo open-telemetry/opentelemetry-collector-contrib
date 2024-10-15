@@ -12,13 +12,13 @@ func TestSpanEventConditionalAttributeOperator(t *testing.T) {
 	migrator := migrate.NewMultiConditionalAttributeSet(map[string]string{
 		"event.name": "event_name",
 	}, map[string][]string{
-		"span.name": {"sqlquery.start", "sqlquery.end"},
+		"span.name":  {"sqlquery.start", "sqlquery.end"},
 		"event.name": {"sqlquery"},
 	})
 	c := SpanEventConditionalAttributeOperator{migrator}
 	tests := []struct {
-		name     string
-		span   func() ptrace.Span
+		name    string
+		span    func() ptrace.Span
 		changed bool
 	}{
 		{
@@ -50,7 +50,7 @@ func TestSpanEventConditionalAttributeOperator(t *testing.T) {
 				return span
 			},
 			changed: false,
-		},{
+		}, {
 			name: "bothnamematches",
 			span: func() ptrace.Span {
 				span := ptrace.NewSpan()
