@@ -172,6 +172,7 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 }
 
 func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
+	// readArchive loads data from the archive for a given index and returns a fileset.Filset.
 	key := fmt.Sprintf("knownFiles%d", index)
 	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
 	if err != nil {
@@ -183,6 +184,7 @@ func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata]
 }
 
 func (t *fileTracker) updateArchive(index int, rmds *fileset.Fileset[*reader.Metadata]) error {
+	// updateArchive saves data to the archive for a given index and returns an error, if encountered.
 	key := fmt.Sprintf("knownFiles%d", index)
 	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
 }
