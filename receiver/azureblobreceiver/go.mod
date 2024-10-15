@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.2
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.15.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.4.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.111.0
