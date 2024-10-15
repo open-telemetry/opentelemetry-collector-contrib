@@ -191,10 +191,8 @@ func TestExporterLogs(t *testing.T) {
 		bodyMap.PutInt("a", 42)
 
 		rec := newBulkRecorder()
-		done := make(chan struct{}, 1)
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			defer close(done)
-			rec.Record(docs)
+			defer rec.Record(docs)
 			assert.Len(t, docs, 1)
 			assert.JSONEq(t, `{"a":42}`, string(docs[0].Document))
 			return itemsAllOK(docs)
@@ -206,12 +204,7 @@ func TestExporterLogs(t *testing.T) {
 
 		err := exporter.ConsumeLogs(context.Background(), logs)
 		assert.ErrorContains(t, err, `dropping log record: failed to encode log event: invalid log record body type for 'bodymap' mapping mode: "Slice"`)
-
-		select {
-		case <-done:
-		case <-time.After(100 * time.Millisecond):
-			t.Error("timeout waiting for valid log to be processed")
-		}
+		rec.WaitItems(1)
 	})
 
 	t.Run("publish with dedot", func(t *testing.T) {
