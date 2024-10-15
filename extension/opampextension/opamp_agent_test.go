@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.uber.org/zap"
 )
 
 func TestNewOpampAgent(t *testing.T) {
@@ -55,7 +56,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 func TestCreateAgentDescription(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
-	osDescription := getOSDescription(t)
+	osDescription := getOSDescription(zap.NewNop())
 
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"

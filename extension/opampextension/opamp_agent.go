@@ -31,6 +31,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/util"
 )
 
 var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
@@ -279,10 +280,7 @@ func (o *opampAgent) createAgentDescription() error {
 	if err != nil {
 		return err
 	}
-	description, err := o.getOSDescription()
-	if err != nil {
-		return err
-	}
+	description := getOSDescription(o.logger)
 
 	ident := []*protobufs.KeyValue{
 		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceID.String()),
@@ -294,9 +292,11 @@ func (o *opampAgent) createAgentDescription() error {
 	// are both automatically determined and defined in the config
 	nonIdentifyingAttributeMap := map[string]string{}
 	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
-	nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
 	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
 	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
+	if description != "" {
+		nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
+	}
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v
@@ -374,43 +374,30 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	}
 }
 
-func (o *opampAgent) getOSDescription() (string, error) {
+func (o *opampAgent) getOSDescription(logger *zap.Logger) string {
 	switch runtime.GOOS {
-	case "linux":
-		output, err := exec.Command("lsb_release", "-a").Output()
-		if err != nil {
-			return "", fmt.Errorf("get linux details: %w", err)
-		}
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "Description:"); ok {
-				return strings.TrimSpace(raw), nil
-			}
-		}
 	case "darwin":
 		output, err := exec.Command("sw_vers").Output()
 		if err != nil {
-			return "", fmt.Errorf("get darwin details: %w", err)
+			logger.Error("get darwin OS details using 'sw_vers'", zap.Error(err))
+			return ""
 		}
-		var productName string
-		var productVersion string
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "ProductName:"); ok {
-				productName = strings.TrimSpace(raw)
-			} else if raw, ok = strings.CutPrefix(line, "ProductVersion:"); ok {
-				productVersion = strings.TrimSpace(raw)
-			}
+		return util.ParseDarwinDescription(string(output))
+	case "linux":
+		output, err := exec.Command("lsb_release", "-d").Output()
+		if err != nil {
+			logger.Error("get linux OS details using 'lsb_release -d'", zap.Error(err))
+			return ""
 		}
-		if productName != "" && productVersion != "" {
-			return productName + " " + productVersion, nil
-		}
+		return util.ParseLinuxDescription(string(output))
 	case "windows":
 		output, err := exec.Command("cmd", "/c", "ver").Output()
 		if err != nil {
-			return "", fmt.Errorf("get windows details: %w", err)
+			logger.Error("get windows OS details using 'cmd /c ver'", zap.Error(err))
+			return ""
 		}
-		if string(output) != "" {
-			return strings.TrimSpace(string(output)), nil
-		}
+		return util.ParseWindowsDescription(string(output))
 	}
-	return "", fmt.Errorf("unrecognized os")
+	logger.Error("unrecognized OS to parse details from")
+	return ""
 }
