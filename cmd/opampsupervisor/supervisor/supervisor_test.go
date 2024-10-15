@@ -1370,5 +1370,5 @@ service:
 	noopConfig := strings.ReplaceAll(string(noopConfigBytes), "\r\n", "\n")
 
 	require.NoError(t, err)
-	require.Equal(t, expectedConfig, string(noopConfig))
+	require.Equal(t, expectedConfig, noopConfig)
 }
