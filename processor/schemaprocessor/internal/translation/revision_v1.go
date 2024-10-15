@@ -124,11 +124,11 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList {
 				acceptableEventNames = append(acceptableEventNames, string(eventName))
 			}
 
-			attributeChangeSet := migrate.NewMultiConditionalAttributeSet(renamedAttribute.AttributeMap, map[string][]string{
+			multiConditionalAttributeSet := migrate.NewMultiConditionalAttributeSet(renamedAttribute.AttributeMap, map[string][]string{
 				"span.name":  acceptableSpanNames,
 				"event.name": acceptableEventNames,
 			})
-			spanEventAttributeChangeSet := operator.NewSpanEventConditionalAttributeOperator(attributeChangeSet)
+			spanEventAttributeChangeSet := operator.SpanEventConditionalAttributeOperator{MultiConditionalAttributeSet: multiConditionalAttributeSet}
 			values = append(values, spanEventAttributeChangeSet)
 		} else {
 			panic("spanEvents change must have either RenameEvents or RenameAttributes")
