@@ -5,7 +5,6 @@ package container
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -100,11 +99,9 @@ func TestProcessOnErrorSendQuiet(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 
 	t.Run("without send_quiet", func(t *testing.T) {
-		cfg.OnError = "send"
 		op, err := cfg.Build(set)
 		require.NoError(t, err, "incorrect build")
 		err = op.Process(context.Background(), faultyEntry)
-		fmt.Println(err)
 		require.ErrorContains(t, err, "parse time", "on_error is not working correctly")
 	})
 
