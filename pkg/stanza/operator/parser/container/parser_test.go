@@ -88,6 +88,24 @@ func TestInternalRecombineCfg(t *testing.T) {
 	require.Equal(t, expected, cfg)
 }
 
+func TestProcessOnErrorSendQuiet(t *testing.T) {
+	cfg := NewConfigWithID("test_id")
+	cfg.AddMetadataFromFilePath = false
+	cfg.OnError = "send_quiet"
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
+	require.NoError(t, err, "incorrect build")
+
+	// contains incorrect time format
+	faultyEntry := &entry.Entry{
+		Body: `{"log":"INFO: log line here","stream":"stdout","time":"2023033"}`,
+	}
+
+	err = op.Process(context.Background(), faultyEntry)
+	// Error is not logged
+	require.NoError(t, err, "send_quiet is not working properly")
+}
+
 func TestProcess(t *testing.T) {
 	cases := []struct {
 		name   string
