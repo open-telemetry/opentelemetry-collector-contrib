@@ -1,4 +1,4 @@
-package operator
+package transformer
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-func TestSpanEventSignalNameChangeOperator(t *testing.T) {
+func TestSpanEventSignalNameChangeTransformer(t *testing.T) {
 	s := ptrace.NewSpan()
 	s.Events().AppendEmpty().SetName("event.name")
 	c := SpanEventSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(map[string]string{
@@ -20,7 +20,7 @@ func TestSpanEventSignalNameChangeOperator(t *testing.T) {
 	require.Equal(t, "event_name", s.Events().At(0).Name())
 }
 
-func TestMetricSignalNameChangeOperator(t *testing.T) {
+func TestMetricSignalNameChangeTransformer(t *testing.T) {
 	s := pmetric.NewMetric()
 	s.SetName("event.name")
 	c := MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(map[string]string{
