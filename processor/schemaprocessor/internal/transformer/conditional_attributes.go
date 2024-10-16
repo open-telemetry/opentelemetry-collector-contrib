@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
+package transformer // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/transformer"
 
 import (
 	"errors"
@@ -13,15 +13,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-// MetricDataPointAttributeOperator is a conditional Operator that acts on [pmetric.Metric]'s DataPoint's attributes.  It powers the [Metric's rename_attributes] transformation.
+// MetricDataPointAttributes is a conditional Transformer that acts on [pmetric.Metric]'s DataPoint's attributes.  It powers the [Metric's rename_attributes] transformation.
 // [Metric's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation-2
-type MetricDataPointAttributeOperator struct {
+type MetricDataPointAttributes struct {
 	ConditionalAttributeChange migrate.ConditionalAttributeSet
 }
 
-func (o MetricDataPointAttributeOperator) IsMigrator() {}
+func (o MetricDataPointAttributes) IsMigrator() {}
 
-func (o MetricDataPointAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
+func (o MetricDataPointAttributes) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
 	// todo(ankit) handle MetricTypeEmpty
 	var datam alias.Attributed
 	switch metric.Type() {
@@ -67,14 +67,14 @@ func (o MetricDataPointAttributeOperator) Do(ss migrate.StateSelector, metric pm
 	return nil
 }
 
-// SpanConditionalAttributeOperator is a conditional Operator that acts on [ptrace.Span]'s name.  It powers the [Span's rename_attributes] transformation.
+// SpanConditionalAttributes is a conditional Transformer that acts on [ptrace.Span]'s name.  It powers the [Span's rename_attributes] transformation.
 // [Span's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation
-type SpanConditionalAttributeOperator struct {
+type SpanConditionalAttributes struct {
 	Migrator migrate.ConditionalAttributeSet
 }
 
-func (o SpanConditionalAttributeOperator) IsMigrator() {}
+func (o SpanConditionalAttributes) IsMigrator() {}
 
-func (o SpanConditionalAttributeOperator) Do(ss migrate.StateSelector, span ptrace.Span) error {
+func (o SpanConditionalAttributes) Do(ss migrate.StateSelector, span ptrace.Span) error {
 	return o.Migrator.Do(ss, span.Attributes(), span.Name())
 }

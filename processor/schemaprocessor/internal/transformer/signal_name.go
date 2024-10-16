@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
+package transformer // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/transformer"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-// SpanEventSignalNameChange is an operator that powers the [Span Event's rename_events] change.
+// SpanEventSignalNameChange is an transformer that powers the [Span Event's rename_events] change.
 // [Span Event's rename_events]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_events-transformation
 type SpanEventSignalNameChange struct {
 	SignalNameChange migrate.SignalNameChange
@@ -26,7 +26,7 @@ func (c SpanEventSignalNameChange) Do(ss migrate.StateSelector, span ptrace.Span
 	return nil
 }
 
-// MetricSignalNameChange is an operator that powers the [Metric's rename_metrics] change.
+// MetricSignalNameChange is an transformer that powers the [Metric's rename_metrics] change.
 // [Metric's rename_metrics]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_metrics-transformation
 type MetricSignalNameChange struct {
 	SignalNameChange migrate.SignalNameChange

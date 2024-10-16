@@ -1,4 +1,4 @@
-package operator
+package transformer
 
 import (
 	"testing"
@@ -8,14 +8,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-func TestSpanEventConditionalAttributeOperator(t *testing.T) {
+func TestSpanEventConditionalAttributeTransformer(t *testing.T) {
 	migrator := migrate.NewMultiConditionalAttributeSet(map[string]string{
 		"event.name": "event_name",
 	}, map[string][]string{
 		"span.name":  {"sqlquery.start", "sqlquery.end"},
 		"event.name": {"sqlquery"},
 	})
-	c := SpanEventConditionalAttributeOperator{migrator}
+	c := SpanEventConditionalAttributes{migrator}
 	tests := []struct {
 		name    string
 		span    func() ptrace.Span
