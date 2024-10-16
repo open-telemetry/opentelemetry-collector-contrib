@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -191,6 +192,7 @@ func TestHandleRequest(t *testing.T) {
 		expectedStatusCode int
 		logExpected        bool
 		consumerFailure    bool
+		permanentFailure   bool // indicates a permanent error
 	}{
 		{
 			name: "No secret provided",
@@ -229,7 +231,22 @@ func TestHandleRequest(t *testing.T) {
 			},
 			logExpected:        false,
 			consumerFailure:    true,
-			expectedStatusCode: http.StatusInternalServerError,
+			expectedStatusCode: http.StatusServiceUnavailable,
+		},
+		{
+			name: "Consumer fails - permanent error",
+			request: &http.Request{
+				Method: "POST",
+				URL:    &url.URL{},
+				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
+				Header: map[string][]string{
+					textproto.CanonicalMIMEHeaderKey(secretHeaderName): {"abc123"},
+				},
+			},
+			logExpected:        false,
+			consumerFailure:    true,
+			permanentFailure:   true,
+			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name: "Request succeeds",
@@ -298,6 +315,10 @@ func TestHandleRequest(t *testing.T) {
 			var consumer consumer.Logs
 			if tc.consumerFailure {
 				consumer = consumertest.NewErr(errors.New("consumer failed"))
+				if tc.permanentFailure {
+					consumer = consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer failed")))
+
+				}
 			} else {
 				consumer = &consumertest.LogsSink{}
 			}
