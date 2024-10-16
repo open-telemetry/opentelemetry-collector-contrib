@@ -1,4 +1,4 @@
-package operator
+package transformer
 
 import (
 	"testing"
@@ -19,46 +19,46 @@ func assertAttributeEquals(t *testing.T, attributes pcommon.Map, key string, val
 	require.Equal(t, value, val.Str())
 }
 
-func TestMetricDataPointAttributeOperator(t *testing.T) {
+func TestMetricDataPointAttributesTransformer(t *testing.T) {
 	attrChange := migrate.NewConditionalAttributeSet(map[string]string{
 		"service_version": "service.version",
 	}, "http_request")
-	metricDataPointAttributeOperator := MetricDataPointAttributeOperator{attrChange}
+	metricDataPointAttributeTransformer := MetricDataPointAttributes{attrChange}
 
 	tests := []struct {
 		name      string
 		generator func(metric pmetric.Metric) alias.Attributed
 	}{
 		{
-			name: "MetricOperatorExponentialHistogram",
+			name: "MetricTransformerExponentialHistogram",
 			generator: func(metric pmetric.Metric) alias.Attributed {
 				metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty().Attributes().PutStr("service_version", "1.0.0")
 				return metric.ExponentialHistogram().DataPoints().At(0)
 			},
 		},
 		{
-			name: "MetricOperatorGauge",
+			name: "MetricTransformerGauge",
 			generator: func(metric pmetric.Metric) alias.Attributed {
 				metric.SetEmptyGauge().DataPoints().AppendEmpty().Attributes().PutStr("service_version", "1.0.0")
 				return metric.Gauge().DataPoints().At(0)
 			},
 		},
 		{
-			name: "MetricOperatorHistogram",
+			name: "MetricTransformerHistogram",
 			generator: func(metric pmetric.Metric) alias.Attributed {
 				metric.SetEmptyHistogram().DataPoints().AppendEmpty().Attributes().PutStr("service_version", "1.0.0")
 				return metric.Histogram().DataPoints().At(0)
 			},
 		},
 		{
-			name: "MetricOperatorSum",
+			name: "MetricTransformerSum",
 			generator: func(metric pmetric.Metric) alias.Attributed {
 				metric.SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr("service_version", "1.0.0")
 				return metric.Sum().DataPoints().At(0)
 			},
 		},
 		{
-			name: "MetricOperatorSummary",
+			name: "MetricTransformerSummary",
 			generator: func(metric pmetric.Metric) alias.Attributed {
 				metric.SetEmptySummary().DataPoints().AppendEmpty().Attributes().PutStr("service_version", "1.0.0")
 				return metric.Summary().DataPoints().At(0)
@@ -74,13 +74,13 @@ func TestMetricDataPointAttributeOperator(t *testing.T) {
 			assertAttributeEquals(t, item.Attributes(), "service_version", "1.0.0")
 
 			// name is blank - migrator shouldn't do anything
-			err := metricDataPointAttributeOperator.Do(migrate.StateSelectorApply, metric)
+			err := metricDataPointAttributeTransformer.Do(migrate.StateSelectorApply, metric)
 			require.NoError(t, err)
 			assertAttributeEquals(t, item.Attributes(), "service_version", "1.0.0")
 
 			// name is http_request - migrator should change the attribute
 			metric.SetName("http_request")
-			err = metricDataPointAttributeOperator.Do(migrate.StateSelectorApply, metric)
+			err = metricDataPointAttributeTransformer.Do(migrate.StateSelectorApply, metric)
 			require.NoError(t, err)
 			assertAttributeEquals(t, item.Attributes(), "service.version", "1.0.0")
 
@@ -88,21 +88,21 @@ func TestMetricDataPointAttributeOperator(t *testing.T) {
 	}
 }
 
-func TestSpanConditionalAttributeOperator(t *testing.T) {
+func TestSpanConditionalAttributeTransformer(t *testing.T) {
 	attrChange := migrate.NewConditionalAttributeSet(map[string]string{
 		"service_version": "service.version",
 	}, "http_request")
-	spanConditionalAttributeOperator := SpanConditionalAttributeOperator{attrChange}
+	spanConditionalAttributeTransformer := SpanConditionalAttributes{attrChange}
 
 	span := ptrace.NewSpan()
 	span.Attributes().PutStr("service_version", "1.0.0")
 	// name is blank, migrator shouldn't do anything
-	err := spanConditionalAttributeOperator.Do(migrate.StateSelectorApply, span)
+	err := spanConditionalAttributeTransformer.Do(migrate.StateSelectorApply, span)
 	require.NoError(t, err)
 	assertAttributeEquals(t, span.Attributes(), "service_version", "1.0.0")
 
 	span.SetName("http_request")
-	err = spanConditionalAttributeOperator.Do(migrate.StateSelectorApply, span)
+	err = spanConditionalAttributeTransformer.Do(migrate.StateSelectorApply, span)
 	require.NoError(t, err)
 	assertAttributeEquals(t, span.Attributes(), "service.version", "1.0.0")
 

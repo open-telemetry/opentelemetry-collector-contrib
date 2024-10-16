@@ -1,8 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package operator contains various Operators that represent a high level operation - typically a single "change" block from the schema change file.  They rely on Migrators to do the actual work of applying the change to the data.  Operators accept and operate on a specific type of pdata (logs, metrics, etc)
-package operator // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
+// Package transformer contains various Transformers that represent a high level operation - typically a single "change" block from the schema change file.  They rely on Migrators to do the actual work of applying the change to the data.  Transformers accept and operate on a specific type of pdata (logs, metrics, etc)
+package transformer // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/transformer"
 
 import (
 	"errors"
@@ -17,14 +17,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 )
 
-// MetricAttributeOperator is an Operator that acts on [pmetric.Metric]'s DataPoint's attributes.  It is part of the [AllOperator].
-type MetricAttributeOperator struct {
+// MetricAttributes is a Transformer that acts on [pmetric.Metric]'s DataPoint's attributes.  It is part of the [AllAttributes].
+type MetricAttributes struct {
 	AttributeChange migrate.AttributeChangeSet
 }
 
-func (o MetricAttributeOperator) IsMigrator() {}
+func (o MetricAttributes) IsMigrator() {}
 
-func (o MetricAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
+func (o MetricAttributes) Do(ss migrate.StateSelector, metric pmetric.Metric) error {
 	// todo(ankit) handle MetricTypeEmpty
 	var datam alias.Attributed
 	switch metric.Type() {
@@ -70,88 +70,88 @@ func (o MetricAttributeOperator) Do(ss migrate.StateSelector, metric pmetric.Met
 	return nil
 }
 
-// LogAttributeOperator is an Operator that acts on [plog.LogRecord] attributes.  It powers the [Log's rename_attributes] transformation.  It also powers the [AllOperator].
+// LogAttributes is a Transformer that acts on [plog.LogRecord] attributes.  It powers the [Log's rename_attributes] transformation.  It also powers the [AllAttributes].
 // [Log's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation-3
-type LogAttributeOperator struct {
+type LogAttributes struct {
 	AttributeChange migrate.AttributeChangeSet
 }
 
-func (o LogAttributeOperator) IsMigrator() {}
+func (o LogAttributes) IsMigrator() {}
 
-func (o LogAttributeOperator) Do(ss migrate.StateSelector, log plog.LogRecord) error {
+func (o LogAttributes) Do(ss migrate.StateSelector, log plog.LogRecord) error {
 	return o.AttributeChange.Do(ss, log.Attributes())
 }
 
-// SpanAttributeOperator is an Operator that acts on [ptrace.Span] attributes.  It powers the [Span's rename_attributes] transformation.  It also powers the [AllOperator].
+// SpanAttributes is a Transformer that acts on [ptrace.Span] attributes.  It powers the [Span's rename_attributes] transformation.  It also powers the [AllAttributes].
 // [Span's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#rename_attributes-transformation
-type SpanAttributeOperator struct {
+type SpanAttributes struct {
 	AttributeChange migrate.AttributeChangeSet
 }
 
-func (o SpanAttributeOperator) IsMigrator() {}
+func (o SpanAttributes) IsMigrator() {}
 
-func (o SpanAttributeOperator) Do(ss migrate.StateSelector, span ptrace.Span) error {
+func (o SpanAttributes) Do(ss migrate.StateSelector, span ptrace.Span) error {
 	return o.AttributeChange.Do(ss, span.Attributes())
 }
 
-// SpanEventAttributeOperator is an Operator that acts on [ptrace.SpanEvent] attributes.  It is part of the [AllOperator].
-type SpanEventAttributeOperator struct {
+// SpanEventAttributes is a Transformer that acts on [ptrace.SpanEvent] attributes.  It is part of the [AllAttributes].
+type SpanEventAttributes struct {
 	AttributeChange migrate.AttributeChangeSet
 }
 
-func (o SpanEventAttributeOperator) IsMigrator() {}
+func (o SpanEventAttributes) IsMigrator() {}
 
-func (o SpanEventAttributeOperator) Do(ss migrate.StateSelector, spanEvent ptrace.SpanEvent) error {
+func (o SpanEventAttributes) Do(ss migrate.StateSelector, spanEvent ptrace.SpanEvent) error {
 	return o.AttributeChange.Do(ss, spanEvent.Attributes())
 }
 
-// ResourceAttributeOperator is an Operator that acts on [pcommon.Resource] attributes.  It powers the [Resource's rename_attributes] transformation.  It also powers the [AllOperator].
+// ResourceAttributes is a Transformer that acts on [pcommon.Resource] attributes.  It powers the [Resource's rename_attributes] transformation.  It also powers the [AllAttributes].
 // [Resource's rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#resources-section
-type ResourceAttributeOperator struct {
+type ResourceAttributes struct {
 	AttributeChange migrate.AttributeChangeSet
 }
 
-func (o ResourceAttributeOperator) IsMigrator() {}
+func (o ResourceAttributes) IsMigrator() {}
 
-func (o ResourceAttributeOperator) Do(ss migrate.StateSelector, resource pcommon.Resource) error {
+func (o ResourceAttributes) Do(ss migrate.StateSelector, resource pcommon.Resource) error {
 	return o.AttributeChange.Do(ss, resource.Attributes())
 }
 
-// AllOperator is an Operator that acts on .  It is a wrapper around the other attribute operators.  It powers the [All rename_attributes] transformation.
+// AllAttributes is a Transformer that acts on .  It is a wrapper around the other attribute transformers.  It powers the [All rename_attributes] transformation.
 // [All rename_attributes]: https://opentelemetry.io/docs/specs/otel/schemas/file_format_v1.1.0/#all-section
-type AllOperator struct {
-	MetricOperator    MetricAttributeOperator
-	LogOperator       LogAttributeOperator
-	SpanOperator      SpanAttributeOperator
-	SpanEventOperator SpanEventAttributeOperator
-	ResourceMigrator  ResourceAttributeOperator
+type AllAttributes struct {
+	MetricAttributes    MetricAttributes
+	LogAttributes       LogAttributes
+	SpanAttributes      SpanAttributes
+	SpanEventAttributes SpanEventAttributes
+	ResourceAttributes  ResourceAttributes
 }
 
-func NewAllOperator(set migrate.AttributeChangeSet) AllOperator {
-	return AllOperator{
-		MetricOperator:    MetricAttributeOperator{AttributeChange: set},
-		LogOperator:       LogAttributeOperator{AttributeChange: set},
-		SpanOperator:      SpanAttributeOperator{AttributeChange: set},
-		SpanEventOperator: SpanEventAttributeOperator{AttributeChange: set},
-		ResourceMigrator:  ResourceAttributeOperator{AttributeChange: set},
+func NewAllAttributesTransformer(set migrate.AttributeChangeSet) AllAttributes {
+	return AllAttributes{
+		MetricAttributes:    MetricAttributes{AttributeChange: set},
+		LogAttributes:       LogAttributes{AttributeChange: set},
+		SpanAttributes:      SpanAttributes{AttributeChange: set},
+		SpanEventAttributes: SpanEventAttributes{AttributeChange: set},
+		ResourceAttributes:  ResourceAttributes{AttributeChange: set},
 	}
 }
 
-func (o AllOperator) IsMigrator() {}
+func (o AllAttributes) IsMigrator() {}
 
-func (o AllOperator) Do(ss migrate.StateSelector, data any) error {
+func (o AllAttributes) Do(ss migrate.StateSelector, data any) error {
 	switch typedData := data.(type) {
 	case pmetric.Metric:
-		return o.MetricOperator.Do(ss, typedData)
+		return o.MetricAttributes.Do(ss, typedData)
 	case plog.LogRecord:
-		return o.LogOperator.Do(ss, typedData)
+		return o.LogAttributes.Do(ss, typedData)
 	case ptrace.Span:
-		return o.SpanOperator.Do(ss, typedData)
+		return o.SpanAttributes.Do(ss, typedData)
 	case ptrace.SpanEvent:
-		return o.SpanEventOperator.Do(ss, typedData)
+		return o.SpanEventAttributes.Do(ss, typedData)
 	case pcommon.Resource:
-		return o.ResourceMigrator.Do(ss, typedData)
+		return o.ResourceAttributes.Do(ss, typedData)
 	default:
-		return fmt.Errorf("AllOperator can't act on %T", typedData)
+		return fmt.Errorf("AllAttributes can't act on %T", typedData)
 	}
 }

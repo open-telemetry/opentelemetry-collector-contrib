@@ -3,7 +3,7 @@
 
 package migrate // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
 
-// Migrator is an interface that all migration types must implement.  It is basically a marker interface.  All Operators are also Migrators
+// Migrator is an interface that all migration types must implement.  It is basically a marker interface.  All Transformers are also Migrators
 type Migrator interface {
 	IsMigrator()
 }
