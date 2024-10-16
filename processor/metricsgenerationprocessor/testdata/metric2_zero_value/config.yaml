@@ -4,27 +4,32 @@ experimental_metricsgeneration/metric2_zero_add:
       metric1: capacity.total
       metric2: capacity.used
       operation: add
+      type: calculate
 experimental_metricsgeneration/metric2_zero_subtract:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: subtract
+      type: calculate
 experimental_metricsgeneration/metric2_zero_multiply:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: multiply
+      type: calculate
 experimental_metricsgeneration/metric2_zero_divide:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: divide
+      type: calculate
 experimental_metricsgeneration/metric2_zero_percent:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: percent
+      type: calculate
