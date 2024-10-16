@@ -23,56 +23,56 @@ func TestValidate(t *testing.T) {
 				Targets:          []*targetConfig{},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: errMissingURL,
+			expectedErr: errMissingHost,
 		},
 		{
 			desc: "invalid url",
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						URL: "invalid://endpoint:  12efg",
+						Host: "endpoint:  12efg",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidURL, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 		},
 		{
 			desc: "invalid config with multiple targets",
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						URL: "invalid://endpoint:  12efg",
+						Host: "invalid://endpoint:  12efg",
 					},
 					{
-						URL: "https://example.com",
+						Host: "https://example.com",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidURL, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 		},
 		{
 			desc: "missing scheme",
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						URL: "www.opentelemetry.io/docs",
+						Host: "www.opentelemetry.io/docs",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidURL, `parse "www.opentelemetry.io/docs": invalid URI for request`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `parse "www.opentelemetry.io/docs": invalid URI for request`),
 		},
 		{
 			desc: "valid config",
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						URL: "https://opentelemetry.io",
+						Host: "https://opentelemetry.io",
 					},
 					{
-						URL: "https://opentelemetry.io:80/docs",
+						Host: "https://opentelemetry.io:80/docs",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),

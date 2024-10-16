@@ -16,8 +16,8 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
-	errMissingURL = errors.New(`"url" must be specified`)
-	errInvalidURL = errors.New(`"url" must be in the form of <scheme>://<hostname>[:<port>]`)
+	errMissingHost = errors.New(`"host" must be specified`)
+	errInvalidHost = errors.New(`"host" must be in the form of <hostname>:<port>`)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -28,19 +28,19 @@ type Config struct {
 }
 
 type targetConfig struct {
-	URL string `mapstructure:"url"`
+	Host string `mapstructure:"url"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (cfg *targetConfig) Validate() error {
 	var err error
 
-	if cfg.URL == "" {
-		err = multierr.Append(err, errMissingURL)
+	if cfg.Host == "" {
+		err = multierr.Append(err, errMissingHost)
 	} else {
-		_, parseErr := url.ParseRequestURI(cfg.URL)
+		_, parseErr := url.ParseRequestURI(cfg.Host)
 		if parseErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidURL.Error(), parseErr))
+			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidHost.Error(), parseErr))
 		}
 	}
 
@@ -52,7 +52,7 @@ func (cfg *Config) Validate() error {
 	var err error
 
 	if len(cfg.Targets) == 0 {
-		err = multierr.Append(err, errMissingURL)
+		err = multierr.Append(err, errMissingHost)
 	}
 
 	for _, target := range cfg.Targets {
