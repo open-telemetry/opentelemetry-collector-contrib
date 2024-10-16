@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package aesprovider
+package aesprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider"
 
 import (
 	"context"
