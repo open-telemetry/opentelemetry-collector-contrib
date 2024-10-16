@@ -7,4 +7,13 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [rmfitzpatrick]
+    active: [dmitryax]
+    emeritus: [rmfitzpatrick]
+
+tests:
+  config:
+    endpoint: myendpoint:12345
+  goleak:
+    ignore:
+      top:
+        - "github.com/SAP/go-hdb/driver.(*metrics).collect"
