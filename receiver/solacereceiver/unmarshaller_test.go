@@ -252,11 +252,11 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"messaging.solace.user_properties.special_key":            true,
 				})
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
-					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.destination.type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "session_timeout", 123456789, map[string]any{

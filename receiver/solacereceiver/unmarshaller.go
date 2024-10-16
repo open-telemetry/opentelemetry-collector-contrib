@@ -144,7 +144,7 @@ const (
 	messageBodySizeBytesAttrKey        = "messaging.message.body.size"
 	messageEnvelopeSizeBytesAttrKey    = "messaging.message.envelope.size"
 	destinationNameAttrKey             = "messaging.destination.name"
-	destinationTypeAttrKey             = "messaging.solace.destination_type"
+	destinationTypeAttrKey             = "messaging.solace.destination.type"
 	clientUsernameAttrKey              = "messaging.solace.client_username"
 	clientNameAttrKey                  = "messaging.solace.client_name"
 	partitionNumberKey                 = "messaging.solace.partition_number"

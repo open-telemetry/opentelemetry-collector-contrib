@@ -225,7 +225,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEvents(spanData *receive_v1.SpanDa
 func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *receive_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		enqueueEventSuffix               = " enqueue" // Final should be `<dest> enqueue`
-		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
+		messagingDestinationTypeEventKey = "messaging.solace.destination.type"
 		statusMessageEventKey            = "messaging.solace.enqueue_error_message"
 		rejectsAllEnqueuesKey            = "messaging.solace.rejects_all_enqueues"
 		partitionNumberKey               = "messaging.solace.partition_number"
