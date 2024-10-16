@@ -1101,9 +1101,7 @@ func (s *Supervisor) healthCheck() {
 		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
-		if !s.isBootstrapped {
-			s.isBootstrapped = true
-		}
+		s.isBootstrapped = true
 	}
 
 	s.lastHealth = health
