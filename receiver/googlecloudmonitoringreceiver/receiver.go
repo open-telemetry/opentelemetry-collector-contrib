@@ -285,6 +285,13 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 			}
 		}
 
+		// Add metric-specific labels if they are present
+		if len(timeSeries.Metric.Labels) > 0 {
+			for k, v := range timeSeries.Metric.Labels {
+				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
+			}
+		}
+
 		// Store the newly created ResourceMetrics in the map
 		resourceMetricsMap[resourceKey] = rm
 	}
