@@ -7,7 +7,7 @@ change_type: bug_fix
 component: k8sobserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Enable observation of ingress objects if the `ObserveIngresses` is set to true
+note: Enable observation of ingress objects if the `ObserveIngresses` config option is set to true
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [35324]
