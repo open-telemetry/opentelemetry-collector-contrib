@@ -465,6 +465,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
   - github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
+  - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs => ../../pkg/translator/azurelogs
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../pkg/translator/skywalking
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd => ../../internal/collectd
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
