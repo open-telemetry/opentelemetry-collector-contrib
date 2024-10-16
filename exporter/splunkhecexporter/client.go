@@ -14,6 +14,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -658,7 +659,7 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 
 func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
-	config.ClientConfig.Compression = ""
+	config.ClientConfig.Compression = configcompression.TypeWithLevel{Type: "", Level: 0}
 	return config.ToClient(ctx, host, telemetrySettings)
 }
 
