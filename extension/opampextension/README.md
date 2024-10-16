@@ -25,6 +25,7 @@ The following settings are optional for the websocket client:
   - `ws`: The OpAMP websocket transport settings.
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
+    - `auth`: The ID of an auth extension to use for authentication.
 
 The following settings are optional for the HTTP client:
 
@@ -33,6 +34,7 @@ The following settings are optional for the HTTP client:
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
     - `polling_interval`: The interval at which the extension will poll the server. Defaults to 30s.
+    - `auth`: The ID of an auth extension to use for authentication.
 
 The following settings are optional for both transports:
 
