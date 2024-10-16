@@ -20,3 +20,6 @@ awss3/3:
       suffix: "baz"
     - extension: "nop/nop"
       suffix: "nop"
+  notifications:
+    opampextension: "opamp/bar"
+

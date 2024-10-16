@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
@@ -38,10 +39,16 @@ func createDefaultConfig() component.Config {
 		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
-		MetricsTableName: "otel_metrics",
 		TTL:              0,
 		CreateSchema:     true,
 		AsyncInsert:      true,
+		MetricsTables: MetricTablesConfig{
+			Gauge:                internal.MetricTypeConfig{Name: defaultMetricTableName + defaultGaugeSuffix},
+			Sum:                  internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSumSuffix},
+			Summary:              internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},
+			Histogram:            internal.MetricTypeConfig{Name: defaultMetricTableName + defaultHistogramSuffix},
+			ExponentialHistogram: internal.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
+		},
 	}
 }
 

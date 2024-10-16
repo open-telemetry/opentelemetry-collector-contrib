@@ -44,6 +44,7 @@ type Config struct {
 	Interval          time.Duration `mapstructure:"interval"`
 	Timezone          string        `mapstructure:"timezone"`
 	ExcludeFields     []string      `mapstructure:"exclude_fields"`
+	Conditions        []string      `mapstructure:"conditions"`
 }
 
 // createDefaultConfig returns the default config for the processor.
@@ -53,6 +54,7 @@ func createDefaultConfig() component.Config {
 		Interval:          defaultInterval,
 		Timezone:          defaultTimezone,
 		ExcludeFields:     []string{},
+		Conditions:        []string{},
 	}
 }
 

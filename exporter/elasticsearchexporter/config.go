@@ -152,7 +152,7 @@ type DiscoverySettings struct {
 	Interval time.Duration `mapstructure:"interval"`
 }
 
-// FlushSettings  defines settings for configuring the write buffer flushing
+// FlushSettings defines settings for configuring the write buffer flushing
 // policy in the Elasticsearch exporter. The exporter sends a bulk request with
 // all events already serialized into the send-buffer.
 type FlushSettings struct {

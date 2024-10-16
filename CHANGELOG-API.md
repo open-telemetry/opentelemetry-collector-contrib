@@ -7,6 +7,12 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.111.0
+
+### 💡 Enhancements 💡
+
+- `opampsupervisor`: Pass config structure instead of file path when using NewSupervisor function (#34379)
+
 ## v0.110.0
 
 ### 🛑 Breaking changes 🛑

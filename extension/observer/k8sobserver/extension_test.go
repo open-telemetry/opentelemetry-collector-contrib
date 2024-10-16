@@ -127,6 +127,7 @@ func TestExtensionObserveServices(t *testing.T) {
 	}, sink.removed[0])
 
 	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
 }
 
 func TestExtensionObservePods(t *testing.T) {
@@ -209,6 +210,7 @@ func TestExtensionObservePods(t *testing.T) {
 	}, sink.removed[0])
 
 	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
 }
 
 func TestExtensionObserveNodes(t *testing.T) {
@@ -308,4 +310,5 @@ func TestExtensionObserveNodes(t *testing.T) {
 	}, sink.removed[0])
 
 	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
 }

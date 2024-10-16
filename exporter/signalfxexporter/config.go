@@ -131,7 +131,7 @@ type Config struct {
 	// to be used in a dimension key.
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 
-	// Whether to drop  histogram bucket metrics dispatched to Splunk Observability.
+	// Whether to drop histogram bucket metrics dispatched to Splunk Observability.
 	// Default value is set to false.
 	DropHistogramBuckets bool `mapstructure:"drop_histogram_buckets"`
 

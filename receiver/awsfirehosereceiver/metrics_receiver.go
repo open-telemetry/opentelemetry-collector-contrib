@@ -11,7 +11,10 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 )
+
+const defaultMetricsRecordType = cwmetricstream.TypeStr
 
 // The metricsConsumer implements the firehoseConsumer
 // to use a metrics consumer and unmarshaler.
@@ -35,7 +38,11 @@ func newMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 
-	configuredUnmarshaler := unmarshalers[config.RecordType]
+	recordType := config.RecordType
+	if recordType == "" {
+		recordType = defaultMetricsRecordType
+	}
+	configuredUnmarshaler := unmarshalers[recordType]
 	if configuredUnmarshaler == nil {
 		return nil, errUnrecognizedRecordType
 	}

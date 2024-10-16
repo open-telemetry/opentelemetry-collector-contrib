@@ -158,7 +158,7 @@ func TestMetricSettings(t *testing.T) {
 		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
 	}
 	cfg := &Config{
-		ClientConfig:         confighttp.ClientConfig{},
+		ClientConfig:         confighttp.NewDefaultClientConfig(),
 		MetricsBuilderConfig: mbc,
 	}
 	scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)

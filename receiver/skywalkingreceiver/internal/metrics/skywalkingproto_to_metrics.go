@@ -79,7 +79,7 @@ func buildGCAttrs(gc *agent.GC) pcommon.Map {
 	return attrs
 }
 
-// memoryPoolMetricToMetrics  translate memoryPool metrics
+// memoryPoolMetricToMetrics translate memoryPool metrics
 func memoryPoolMetricToMetrics(timestamp int64, memoryPools []*agent.MemoryPool, sm pmetric.ScopeMetrics) {
 	PoolNameArr := []string{MemoryPoolInitName, MemoryPoolUsedName, MemoryPoolMaxName, MemoryPoolCommittedName}
 	dpsMp := make(map[string]pmetric.NumberDataPointSlice)

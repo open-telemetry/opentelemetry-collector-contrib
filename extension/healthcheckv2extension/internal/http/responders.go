@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 var responseCodes = map[componentstatus.Status]int{

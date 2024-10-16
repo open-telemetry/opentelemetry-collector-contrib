@@ -5,8 +5,6 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"runtime"
-	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	"go.opentelemetry.io/collector/component"
@@ -59,15 +57,14 @@ func createDefaultConfig() component.Config {
 			BalancerName: "round_robin",
 		},
 		Arrow: ArrowConfig{
-			NumStreams:        runtime.NumCPU(),
-			MaxStreamLifetime: time.Hour,
+			NumStreams:        arrow.DefaultNumStreams,
+			MaxStreamLifetime: arrow.DefaultMaxStreamLifetime,
 
 			Zstd:        zstd.DefaultEncoderConfig(),
 			Prioritizer: arrow.DefaultPrioritizer,
 
-			// PayloadCompression is off by default because gRPC
-			// compression is on by default, above.
-			PayloadCompression: "",
+			// Note the default payload compression is
+			PayloadCompression: arrow.DefaultPayloadCompression,
 		},
 	}
 }

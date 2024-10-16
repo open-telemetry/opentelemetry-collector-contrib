@@ -23,9 +23,10 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
+	internalhelpers "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 )
 
 // These are used for the legacy test assertions
@@ -2942,7 +2943,7 @@ func TestStatus(t *testing.T) {
 				tc.legacyConfig,
 				tc.componentHealthConfig,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthConfig)),
+				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthConfig)),
 			)
 
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))

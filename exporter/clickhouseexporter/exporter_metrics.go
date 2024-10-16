@@ -19,8 +19,9 @@ import (
 type metricsExporter struct {
 	client *sql.DB
 
-	logger *zap.Logger
-	cfg    *Config
+	logger       *zap.Logger
+	cfg          *Config
+	tablesConfig internal.MetricTablesConfigMapper
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
@@ -29,10 +30,13 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 		return nil, err
 	}
 
+	tablesConfig := generateMetricTablesConfigMapper(cfg)
+
 	return &metricsExporter{
-		client: client,
-		logger: logger,
-		cfg:    cfg,
+		client:       client,
+		logger:       logger,
+		cfg:          cfg,
+		tablesConfig: tablesConfig,
 	}, nil
 }
 
@@ -48,7 +52,17 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	ttlExpr := generateTTLExpr(e.cfg.TTL, "toDateTime(TimeUnix)")
-	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
+	return internal.NewMetricsTable(ctx, e.tablesConfig, e.cfg.clusterString(), e.cfg.tableEngineString(), ttlExpr, e.client)
+}
+
+func generateMetricTablesConfigMapper(cfg *Config) internal.MetricTablesConfigMapper {
+	return internal.MetricTablesConfigMapper{
+		pmetric.MetricTypeGauge:                cfg.MetricsTables.Gauge,
+		pmetric.MetricTypeSum:                  cfg.MetricsTables.Sum,
+		pmetric.MetricTypeSummary:              cfg.MetricsTables.Summary,
+		pmetric.MetricTypeHistogram:            cfg.MetricsTables.Histogram,
+		pmetric.MetricTypeExponentialHistogram: cfg.MetricsTables.ExponentialHistogram,
+	}
 }
 
 // shutdown will shut down the exporter.
@@ -60,7 +74,7 @@ func (e *metricsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	metricsMap := internal.NewMetricsModel(e.cfg.MetricsTableName)
+	metricsMap := internal.NewMetricsModel(e.tablesConfig)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
 		resAttr := attributesToMap(metrics.Resource().Attributes())

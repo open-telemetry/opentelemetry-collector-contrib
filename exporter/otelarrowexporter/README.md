@@ -101,17 +101,26 @@ to standard OTLP.
 - `disabled` (default: false): disables use of Arrow, causing the exporter to use standard OTLP
 - `disable_downgrade` (default: false): prevents this exporter from using standard OTLP.
 
-The following settings determine the resources that the exporter will use:
+The following setting determines how long a stream will stay open.
+Stream lifetime is limited to 30 seconds because compression benefit
+is limited at that point and shorter streams make load balancing
+easier.
 
-- `num_streams` (default: number of CPUs): the number of concurrent Arrow streams
-- `max_stream_lifetime` (default: unlimited): duration after which streams are recycled.
+- `max_stream_lifetime` (default: 30s): duration after which streams
+  are recycled.
 
-When `num_streams` is greater than one, a configurable policy
-determines how load is assigned across streams.  The supported
-policies are `leastloaded`, which picks the stream with the smallest
-number of outstanding requests, and `leastloadedN` for `N <=
-num_streams`, which limits the decision to a random subset of `N`
-streams.
+The following setting determines memory and CPU resources that the
+exporter will use:
+
+- `num_streams` (default: `max(1, NumCPU()/2)`): the number of concurrent Arrow streams
+
+The `num_streams` default limits the exporter stream count to half the
+number of CPUs or 1, whichever is greater.  When `num_streams` is
+greater than one, a configurable policy determines how load is
+assigned across streams to balance load.  The supported policies are
+`leastloaded`, which picks the stream with the smallest number of
+outstanding requests, and `leastloadedN` for `N <= num_streams`, which
+limits the decision to a random subset of `N` streams.
 
 - `prioritizer` (default: "leastloaded"): policy for distributing load across multiple streams.
 
@@ -229,12 +238,12 @@ The exporter supports configuring compression at the [Arrow
 columnar-protocol
 level](https://arrow.apache.org/docs/format/Columnar.html#format-ipc).
 
-- `payload_compression`: compression applied at the Arrow IPC level, "none" by default, "zstd" supported.
+- `payload_compression` (default "zstd"): compression applied at the Arrow IPC level.
 
-Compression settings at the Arrow IPC level cannot be further
-configured.  We do not recommend configuring both payload and
-gRPC-level compression at once, hwoever these settings are
-independent.
+Compression at the Arrow level is enabled by default because it boosts
+compression slightly and helps Arrow payloads meet gRPC maximum
+request size limits.  Compression settings at the Arrow IPC level
+cannot be further configured.
 
 For example, two exporters may be configured with multiple zstd
 configurations, provided they use different levels:

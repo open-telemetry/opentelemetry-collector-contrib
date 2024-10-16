@@ -108,7 +108,7 @@ func newNopHostWithExporters() component.Host {
 	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+func (n *nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return map[pipeline.Signal]map[component.ID]component.Component{
 		pipeline.SignalMetrics: {
 			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},

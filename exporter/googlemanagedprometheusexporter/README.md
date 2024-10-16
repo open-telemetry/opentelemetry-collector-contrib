@@ -14,6 +14,10 @@
 
 This exporter can be used to send metrics (including trace exemplars) to [Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus). It is one of [several supported approaches for sending metrics to Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus#gmp-data-collection).
 
+To learn more about instrumentation and observability, including opinionated recommendations
+for Google Cloud Observability, visit [Instrumentation and
+observability](https://cloud.google.com/stackdriver/docs/instrumentation/overview).
+
 ## Configuration Reference
 
 The following configuration options are supported:

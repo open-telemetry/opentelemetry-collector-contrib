@@ -19,11 +19,12 @@ func TestConfig(t *testing.T) {
 	factory := Factory{}
 	defaultConfig := factory.CreateDefaultConfig()
 
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 15 * time.Second
+
 	expectedConfig := &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: 15 * time.Second,
-		},
+		ClientConfig:         clientConfig,
 	}
 
 	assert.Equal(t, expectedConfig, defaultConfig)

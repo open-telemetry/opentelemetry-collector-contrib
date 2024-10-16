@@ -36,7 +36,7 @@ func (c *Config) Validate() error {
 // CheckAndWarnDeprecatedOptions Is checking for soon deprecated configuration options (queue_max_length, queue_capacity, drain_interval, custom_endpoint) log a warning message and map to the relevant updated option
 func (c *Config) checkAndWarnDeprecatedOptions(logger hclog.Logger) {
 	if c.QueueCapacity != 0 {
-		logger.Warn("You are using  the deprecated`queue_capacity` option that will be removed in the next release; use exporter helper configuration instead: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md")
+		logger.Warn("You are using the deprecated `queue_capacity` option that will be removed in the next release; use exporter helper configuration instead: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md")
 	}
 	// Warn and map queue_max_length -> QueueSettings.QueueSize
 	if c.QueueMaxLength != 0 {

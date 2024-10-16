@@ -41,7 +41,7 @@ func createTracesAndSpan() (ptrace.Traces, ptrace.Span) {
 	attrs.PutInt("attr2", 40)
 	attrs.PutDouble("attr3", 3.14)
 
-	// add  a span
+	// add a span
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	spans.EnsureCapacity(1)
 	span := spans.AppendEmpty()

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
@@ -30,5 +32,25 @@ func createLogsProcessor(_ context.Context, settings processor.Settings, cfg com
 		return nil, fmt.Errorf("invalid config type: %+v", cfg)
 	}
 
-	return newProcessor(processorCfg, consumer, settings)
+	processor, err := newProcessor(processorCfg, consumer, settings)
+	if err != nil {
+		return nil, fmt.Errorf("error creating processor: %w", err)
+	}
+
+	if len(processorCfg.Conditions) == 0 {
+		processor.conditions = nil
+	} else {
+		conditions, err := filterottl.NewBoolExprForLog(
+			processorCfg.Conditions,
+			filterottl.StandardLogFuncs(),
+			ottl.PropagateError,
+			settings.TelemetrySettings,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("invalid condition: %w", err)
+		}
+		processor.conditions = conditions
+	}
+
+	return processor, nil
 }

@@ -22,7 +22,9 @@ func grpcExporterOptions(cfg *Config) ([]otlptracegrpc.Option, error) {
 	if cfg.Insecure {
 		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithInsecure())
 	} else {
-		credentials, err := common.GetTLSCredentialsForGRPCExporter(cfg.CaFile, cfg.ClientAuth)
+		credentials, err := common.GetTLSCredentialsForGRPCExporter(
+			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
 		}
@@ -47,7 +49,9 @@ func httpExporterOptions(cfg *Config) ([]otlptracehttp.Option, error) {
 	if cfg.Insecure {
 		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
 	} else {
-		tlsCfg, err := common.GetTLSCredentialsForHTTPExporter(cfg.CaFile, cfg.ClientAuth)
+		tlsCfg, err := common.GetTLSCredentialsForHTTPExporter(
+			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
 		}

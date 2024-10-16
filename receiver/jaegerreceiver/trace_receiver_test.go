@@ -95,8 +95,7 @@ func TestReception(t *testing.T) {
 	_, port, _ := net.SplitHostPort(addr)
 	collectorAddr := fmt.Sprintf("http://localhost:%s/api/traces", port)
 	td := generateTraceData()
-	batches, err := jaeger.ProtoFromTraces(td)
-	require.NoError(t, err)
+	batches := jaeger.ProtoFromTraces(td)
 	for _, batch := range batches {
 		require.NoError(t, sendToCollector(collectorAddr, modelToThrift(batch)))
 	}

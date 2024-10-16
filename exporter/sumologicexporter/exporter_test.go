@@ -235,15 +235,15 @@ func TestPartiallyFailed(t *testing.T) {
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	exp, err := initExporter(&Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "test_endpoint",
-			TLSSetting: configtls.ClientConfig{
-				Config: configtls.Config{
-					MinVersion: "invalid",
-				},
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "test_endpoint"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			MinVersion: "invalid",
 		},
+	}
+	exp, err := initExporter(&Config{
+		ClientConfig: clientConfig,
 	}, exportertest.NewNopSettings())
 	require.NoError(t, err)
 
