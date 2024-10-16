@@ -27,7 +27,7 @@ func TestFromMetricsV2(t *testing.T) {
 	want := func() map[string]*writev2.TimeSeries {
 		return map[string]*writev2.TimeSeries{
 			"0": {
-				LabelsRefs: []uint32{1, 2},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
 				Samples: []writev2.Sample{
 					{Timestamp: convertTimeStamp(pcommon.Timestamp(ts)), Value: 1.23},
 				},
