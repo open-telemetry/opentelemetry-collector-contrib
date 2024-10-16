@@ -227,16 +227,18 @@ func (doc *Document) Dedup(appendValueOnConflict bool) {
 	//    field in favor of the `value` field in the document.
 	//
 	//    This step removes potential conflicts when dedotting and serializing fields.
-	var renamed bool
-	for i := 0; i < len(doc.fields)-1; i++ {
-		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
-		if appendValueOnConflict && len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
-			renamed = true
-			doc.fields[i].key = key + ".value"
+	if appendValueOnConflict {
+		var renamed bool
+		for i := 0; i < len(doc.fields)-1; i++ {
+			key, nextKey := doc.fields[i].key, doc.fields[i+1].key
+			if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
+				renamed = true
+				doc.fields[i].key = key + ".value"
+			}
 		}
-	}
-	if renamed {
-		doc.sort()
+		if renamed {
+			doc.sort()
+		}
 	}
 
 	// 3. mark duplicates as 'ignore'
