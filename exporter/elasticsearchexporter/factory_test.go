@@ -149,3 +149,22 @@ func TestFactory_DedotDeprecated(t *testing.T) {
 		assert.Equal(t, "dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only", record.Message)
 	}
 }
+
+func TestFactory_MaxRetries(t *testing.T) {
+	set := exportertest.NewNopSettings()
+
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Retry.MaxRetries = 1
+		cfg.Retry.MaxRequests = 1
+	})
+
+	factory := NewFactory()
+	_, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.ErrorContains(t, err, "should specify at most one of retry::max_requests and retry::max_retries")
+
+	_, err = factory.CreateTracesExporter(context.Background(), set, cfg)
+	require.ErrorContains(t, err, "should specify at most one of retry::max_requests and retry::max_retries")
+
+	_, err = factory.CreateMetricsExporter(context.Background(), set, cfg)
+	require.ErrorContains(t, err, "should specify at most one of retry::max_requests and retry::max_retries")
+}
