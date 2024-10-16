@@ -79,10 +79,10 @@ go.opentelemetry.io/collector/confmap v1.17.1-0.20241008154146-ea48c09c31ae h1:m
 go.opentelemetry.io/collector/confmap v1.17.1-0.20241008154146-ea48c09c31ae/go.mod h1:GrIZ12P/9DPOuTpe2PIS51a0P/ZM6iKtByVee1Uf3+k=
 go.opentelemetry.io/collector/extension v0.111.1-0.20241008154146-ea48c09c31ae h1:akinGdBSY01CI/Jme2QKbYnwqRgLLWKx9U+93KLqZI0=
 go.opentelemetry.io/collector/extension v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:nX8HLUqkaWKJ4gCpPdba/x4+G3emnnjzdmpF6LgtZzg=
-go.opentelemetry.io/collector/extension/auth v0.111.0 h1:V9DfnMsKdVfsQMeGR5H/nAYHlZnr1Td75kkJOKbCevk=
-go.opentelemetry.io/collector/extension/auth v0.111.0/go.mod h1:4O5JQqEdAWuq4giicIy6DKlgkKTC0qgVEJm44RhviZY=
-go.opentelemetry.io/collector/extension/extensioncapabilities v0.111.0 h1:Ps2/2TUbAkxgZu1YxSxDweZDLJx5x7CyNKCINZkLFtY=
-go.opentelemetry.io/collector/extension/extensioncapabilities v0.111.0/go.mod h1:q4kBSWsOX62hAp7si+Y0Y0ZXWyCpXjiRuWWz7IL/MDI=
+go.opentelemetry.io/collector/extension/auth v0.111.1-0.20241008154146-ea48c09c31ae h1:+fhQtSMttCey4XozohoN3BF+I5s+UVyAFIEO16uWLgw=
+go.opentelemetry.io/collector/extension/auth v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:67BknwUsRrFcpJln0gyrWbmR0kZbUy198Ke65CyeJx4=
+go.opentelemetry.io/collector/extension/extensioncapabilities v0.111.1-0.20241008154146-ea48c09c31ae h1:0KiSFDm2VxzQJ6vz1Pec/eTMGPZF4moOcM2+Ku0UZmA=
+go.opentelemetry.io/collector/extension/extensioncapabilities v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:Ha8rgNgcbPTlJ+Ld5285qtOqJPP71l7nBfnMVt2uYBE=
 go.opentelemetry.io/collector/internal/globalsignal v0.111.1-0.20241008154146-ea48c09c31ae h1:fublc0EO06p79/OWw2jWVPSPNBMiBcB+0QpLes587DU=
 go.opentelemetry.io/collector/internal/globalsignal v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:GqMXodPWOxK5uqpX8MaMXC2389y2XJTa5nPwf8FYDK8=
 go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae h1:PcwZe1RD8tC4SZExhf0f5HqK+ZuWGsowHaBBU4PiUv0=
