@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+const testKubeConfig = "/Users/florian.bacher/.kube/config"
 
 // TestE2EClusterScoped tests the k8s cluster receiver with a real k8s cluster.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
