@@ -43,6 +43,13 @@ section below for details.
 
 Default: "azure"
 
+### apply_semantic_conventions (optional)
+Determines whether Azure Resource Logs are translated into OpenTelemetry Logs using semantic
+convention attrobute names or not. When not applying semantic conventions, the log entry
+attribute nates are copied without any changes.
+
+Default: `false` (semantic conventions are not applied)
+
 ### Example Configuration
 
 ```yaml
