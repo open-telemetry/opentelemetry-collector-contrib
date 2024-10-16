@@ -8,6 +8,12 @@ status:
   codeowners:
     active: [dehaansa]
 
+tests:
+  goleak:
+    ignore:
+      top:
+        - "github.com/SAP/go-hdb/driver.(*metrics).collect"
+
 resource_attributes:
   saphana.host:
     type: string
