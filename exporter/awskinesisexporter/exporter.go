@@ -83,6 +83,7 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 	producer, err := producer.NewBatcher(
 		options.NewKinesisClient(awsconf, kinesisOpts...),
 		conf.AWS.StreamName,
+		conf.AWS.StreamARN,
 		producer.WithLogger(log),
 	)
 	if err != nil {

@@ -17,7 +17,7 @@ import (
 
 func benchXEmptyMessages(b *testing.B, msgCount int) {
 	producer, err := producer.NewBatcher(SetPutRecordsOperation(SuccessfulPutRecordsOperation), "benchmark-stream",
-		producer.WithLogger(zaptest.NewLogger(b)),
+		"arn:aws:kinesis:mars-1:123456789012:stream/benchmark-stream", producer.WithLogger(zaptest.NewLogger(b)),
 	)
 
 	require.NoError(b, err, "Must have a valid producer")
