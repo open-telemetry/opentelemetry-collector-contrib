@@ -245,8 +245,8 @@ func DefaultSupervisor() Supervisor {
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
 			SuccessfulHealthChecks:  3,
-			ConfigApplyTimeout:      30 * time.Second,
-			HealthCheckInterval:     10 * time.Second,
+			ConfigApplyTimeout:      5 * time.Second,
+			HealthCheckInterval:     1 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
 		},

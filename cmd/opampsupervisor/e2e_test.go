@@ -1441,8 +1441,8 @@ func TestSupervisorLogging(t *testing.T) {
 	require.True(t, seenCollectorLog)
 	require.NoError(t, logFile.Close())
 }
+
 func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
-	now := time.Now()
 	var agentConfig atomic.Value
 	var healthReport atomic.Value
 	var remoteConfigStatus atomic.Value
