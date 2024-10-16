@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/prometheus/prompb"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -154,5 +156,48 @@ func generateExemplars(exemplars pmetric.ExemplarSlice, count int, ts pcommon.Ti
 		e.SetDoubleValue(2.22)
 		e.SetSpanID(pcommon.SpanID{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08})
 		e.SetTraceID(pcommon.TraceID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f})
+	}
+}
+
+func TestIsSameMetric(t *testing.T) {
+	tests := []struct {
+		name   string
+		labels func() []prompb.Label
+		ts     func() *prompb.TimeSeries
+		same   bool
+	}{
+		{
+			name: "same",
+			same: true,
+			labels: func() []prompb.Label {
+				return getPromLabels(label11, value11, label12, value12)
+			},
+			ts: func() *prompb.TimeSeries {
+				return getTimeSeries(
+					getPromLabels(label11, value11, label12, value12),
+					getSample(float64(intVal1), msTime1),
+				)
+			},
+		},
+		{
+			name: "not_same",
+			same: false,
+			labels: func() []prompb.Label {
+				return getPromLabels(label11, value11, label12, value12)
+			},
+			ts: func() *prompb.TimeSeries {
+				return getTimeSeries(
+					getPromLabels(label11, value11, label21, value21),
+					getSample(float64(intVal1), msTime1),
+				)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			same := isSameMetric(tt.ts(), tt.labels())
+			assert.Equal(t, tt.same, same)
+		})
 	}
 }
