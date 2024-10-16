@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -14,9 +15,10 @@ import (
 )
 
 type FlattenArguments[K any] struct {
-	Target ottl.PMapGetter[K]
-	Prefix ottl.Optional[string]
-	Depth  ottl.Optional[int64]
+	Target   ottl.PMapGetter[K]
+	Prefix   ottl.Optional[string]
+	Depth    ottl.Optional[int64]
+	Conflict ottl.Optional[bool]
 }
 
 func NewFlattenFactory[K any]() ottl.Factory[K] {
@@ -30,10 +32,10 @@ func createFlattenFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 		return nil, fmt.Errorf("FlattenFactory args must be of type *FlattenArguments[K]")
 	}
 
-	return flatten(args.Target, args.Prefix, args.Depth)
+	return flatten(args.Target, args.Prefix, args.Depth, args.Conflict)
 }
 
-func flatten[K any](target ottl.PMapGetter[K], p ottl.Optional[string], d ottl.Optional[int64]) (ottl.ExprFunc[K], error) {
+func flatten[K any](target ottl.PMapGetter[K], p ottl.Optional[string], d ottl.Optional[int64], c ottl.Optional[bool]) (ottl.ExprFunc[K], error) {
 	depth := int64(math.MaxInt64)
 	if !d.IsEmpty() {
 		depth = d.Get()
@@ -47,6 +49,11 @@ func flatten[K any](target ottl.PMapGetter[K], p ottl.Optional[string], d ottl.O
 		prefix = p.Get()
 	}
 
+	conflict := false
+	if !c.IsEmpty() {
+		conflict = c.Get()
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		m, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -54,28 +61,46 @@ func flatten[K any](target ottl.PMapGetter[K], p ottl.Optional[string], d ottl.O
 		}
 
 		result := pcommon.NewMap()
-		flattenHelper(m, result, prefix, 0, depth)
+		existingKeys := map[string]int{}
+		flattenHelper(m, result, prefix, 0, depth, conflict, existingKeys)
 		result.MoveTo(m)
 
 		return nil, nil
 	}, nil
 }
 
-func flattenHelper(m pcommon.Map, result pcommon.Map, prefix string, currentDepth, maxDepth int64) {
+func flattenHelper(m pcommon.Map, result pcommon.Map, prefix string, currentDepth, maxDepth int64, conflict bool, existingKeys map[string]int) {
 	if len(prefix) > 0 {
 		prefix += "."
 	}
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch {
 		case v.Type() == pcommon.ValueTypeMap && currentDepth < maxDepth:
-			flattenHelper(v.Map(), result, prefix+k, currentDepth+1, maxDepth)
+			flattenHelper(v.Map(), result, prefix+k, currentDepth+1, maxDepth, conflict, existingKeys)
 		case v.Type() == pcommon.ValueTypeSlice:
 			for i := 0; i < v.Slice().Len(); i++ {
 				v.Slice().At(i).CopyTo(result.PutEmpty(fmt.Sprintf("%v.%v", prefix+k, i)))
 			}
 		default:
-			v.CopyTo(result.PutEmpty(prefix + k))
+			key := prefix + k
+			if conflict {
+				handleConflict(existingKeys, key, v, &result)
+			} else {
+				v.CopyTo(result.PutEmpty(key))
+			}
+
 		}
 		return true
 	})
+}
+
+func handleConflict(existingKeys map[string]int, key string, v pcommon.Value, result *pcommon.Map) {
+	if val, ok := existingKeys[key]; ok {
+		newKey := key + "." + strconv.Itoa(val)
+		existingKeys[key] = val + 1
+		v.CopyTo(result.PutEmpty(newKey))
+	} else {
+		existingKeys[key] = 1
+		v.CopyTo(result.PutEmpty(key))
+	}
 }
