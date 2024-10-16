@@ -215,7 +215,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
+			expected := "logs-record.dataset.____________-resource.namespace.-____________"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -225,12 +226,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "record.dataset",
+				dataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
 				dataStreamDataset:   "resource.dataset",
-				dataStreamNamespace: "resource.namespace",
+				dataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -293,38 +294,104 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish otel mapping mode", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+		for _, tc := range []struct {
+			body         pcommon.Value
+			isEvent      bool
+			wantDocument []byte
+		}{
+			{
+				body: func() pcommon.Value {
+					return pcommon.NewValueStr("foo")
+				}(),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"text":"foo"}}`),
+			},
+			{
+				body: func() pcommon.Value {
+					vm := pcommon.NewValueMap()
+					m := vm.SetEmptyMap()
+					m.PutBool("true", true)
+					m.PutBool("false", false)
+					m.PutEmptyMap("inner").PutStr("foo", "bar")
+					return vm
+				}(),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"flattened":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+			},
+			{
+				body: func() pcommon.Value {
+					vm := pcommon.NewValueMap()
+					m := vm.SetEmptyMap()
+					m.PutBool("true", true)
+					m.PutBool("false", false)
+					m.PutEmptyMap("inner").PutStr("foo", "bar")
+					return vm
+				}(),
+				isEvent:      true,
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+			},
+			{
+				body: func() pcommon.Value {
+					vs := pcommon.NewValueSlice()
+					s := vs.Slice()
+					s.AppendEmpty().SetStr("foo")
+					s.AppendEmpty().SetBool(false)
+					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
+					return vs
+				}(),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"flattened":{"value":["foo",false,{"foo":"bar"}]}}}`),
+			},
+			{
+				body: func() pcommon.Value {
+					vs := pcommon.NewValueSlice()
+					s := vs.Slice()
+					s.AppendEmpty().SetStr("foo")
+					s.AppendEmpty().SetBool(false)
+					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
+					return vs
+				}(),
+				isEvent:      true,
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
+			},
+		} {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsDynamicIndex.Enabled = true
-			cfg.Mapping.Mode = "otel"
-		})
-		mustSendLogs(t, exporter, newLogsWithAttributes(
-			map[string]any{
+			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+				cfg.LogsDynamicIndex.Enabled = true
+				cfg.Mapping.Mode = "otel"
+			})
+			recordAttrs := map[string]any{
 				"data_stream.dataset": "attr.dataset",
 				"attr.foo":            "attr.foo.value",
-			},
-			nil,
-			map[string]any{
-				"data_stream.dataset":   "resource.attribute.dataset",
-				"data_stream.namespace": "resource.attribute.namespace",
-				"resource.attr.foo":     "resource.attr.foo.value",
-			},
-		))
-		rec.WaitItems(1)
+			}
+			if tc.isEvent {
+				recordAttrs["event.name"] = "foo"
+			}
+			logs := newLogsWithAttributes(
+				recordAttrs,
+				nil,
+				map[string]any{
+					"data_stream.dataset":   "resource.attribute.dataset",
+					"data_stream.namespace": "resource.attribute.namespace",
+					"resource.attr.foo":     "resource.attr.foo.value",
+				},
+			)
+			tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
+			mustSendLogs(t, exporter, logs)
+			rec.WaitItems(1)
 
-		expected := []itemRequest{
-			{
-				Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0}`),
-			},
+			expected := []itemRequest{
+				{
+					Action:   []byte(`{"create":{"_index":"logs-attr.dataset.otel-resource.attribute.namespace"}}`),
+					Document: tc.wantDocument,
+				},
+			}
+
+			assertItemsEqual(t, expected, rec.Items(), false)
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -581,7 +648,7 @@ func TestExporterMetrics(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := "metrics-resource.dataset-data.point.namespace"
+			expected := "metrics-resource.dataset.____________-data.point.namespace.-____________"
 			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
@@ -593,11 +660,11 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				dataStreamNamespace: "data.point.namespace",
+				dataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset",
+				dataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
 				dataStreamNamespace: "resource.namespace",
 			},
 		)
@@ -824,7 +891,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
 
 		err := exporter.ConsumeMetrics(context.Background(), metrics)
-		assert.ErrorContains(t, err, "dropping cumulative temporality histogram \"metric.foo\"")
+		assert.NoError(t, err)
 	})
 
 	t.Run("publish exponential histogram cumulative temporality", func(t *testing.T) {
@@ -855,7 +922,7 @@ func TestExporterMetrics(t *testing.T) {
 		fooDp.Negative().BucketCounts().FromRaw([]uint64{1, 0, 0, 1})
 
 		err := exporter.ConsumeMetrics(context.Background(), metrics)
-		assert.ErrorContains(t, err, "dropping cumulative temporality exponential histogram \"metric.foo\"")
+		assert.NoError(t, err)
 	})
 
 	t.Run("publish only valid data points", func(t *testing.T) {
@@ -894,8 +961,7 @@ func TestExporterMetrics(t *testing.T) {
 		barOtherDp.SetDoubleValue(1.0)
 
 		err := exporter.ConsumeMetrics(context.Background(), metrics)
-		require.ErrorContains(t, err, "invalid histogram data point")
-		require.ErrorContains(t, err, "invalid number data point")
+		assert.NoError(t, err)
 
 		rec.WaitItems(2)
 
@@ -1222,7 +1288,7 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := "traces-span.dataset-default"
+			expected := "traces-span.dataset.____________-default"
 			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
@@ -1234,7 +1300,7 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				dataStreamDataset: "span.dataset",
+				dataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
