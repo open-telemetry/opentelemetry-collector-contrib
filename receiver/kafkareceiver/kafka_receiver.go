@@ -42,6 +42,7 @@ type kafkaTracesConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       TracesUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -63,6 +64,7 @@ type kafkaMetricsConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       MetricsUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -84,6 +86,7 @@ type kafkaLogsConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       LogsUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -111,6 +114,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -205,12 +209,14 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 			headers: c.headers,
 		}
 	}
+	c.consumeLoopWG.Add(1)
 	go c.consumeLoop(ctx, consumerGroup)
 	<-consumerGroup.ready
 	return nil
 }
 
 func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -231,6 +237,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
@@ -247,6 +254,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consu
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -309,12 +317,14 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 			headers: c.headers,
 		}
 	}
+	c.consumeLoopWG.Add(1)
 	go c.consumeLoop(ctx, metricsConsumerGroup)
 	<-metricsConsumerGroup.ready
 	return nil
 }
 
 func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -335,6 +345,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
@@ -351,6 +362,7 @@ func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -416,12 +428,14 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 			headers: c.headers,
 		}
 	}
+	c.consumeLoopWG.Add(1)
 	go c.consumeLoop(ctx, logsConsumerGroup)
 	<-logsConsumerGroup.ready
 	return nil
 }
 
 func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -442,6 +456,7 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
