@@ -527,7 +527,7 @@ func TestGoldenFileMetrics(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
-			sub, err := cm.Sub(fmt.Sprintf("%s/%s", "experimental_metricsgeneration", testCase.name))
+			sub, err := cm.Sub(fmt.Sprintf("%s/%s", "metricsgeneration", testCase.name))
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 

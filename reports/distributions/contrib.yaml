@@ -81,12 +81,12 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
-        - experimental_metricsgeneration
         - filter
         - geoip
         - groupbyattrs
         - groupbytrace
         - k8sattributes
+        - metricsgeneration
         - metricstransform
         - probabilistic_sampler
         - redaction
