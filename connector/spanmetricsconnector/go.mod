@@ -4,7 +4,6 @@ go 1.22.0
 
 require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/lightstep/go-expohisto v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.109.0
