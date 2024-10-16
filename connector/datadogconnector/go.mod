@@ -33,14 +33,14 @@ require (
 	go.opentelemetry.io/collector/receiver v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/semconv v0.111.1-0.20241008154146-ea48c09c31ae
-	go.opentelemetry.io/otel/metric v1.30.0
+	go.opentelemetry.io/otel/metric v1.31.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.35.1
 )
 
 require (
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.133 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.134 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.57.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.57.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.57.1 // indirect
@@ -105,7 +105,7 @@ require (
 	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/viper v1.13.5 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.2 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.3 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/antchfx/xmlquery v1.4.2 // indirect
@@ -200,7 +200,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
-	github.com/prometheus/client_golang v1.20.4 // indirect
+	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.60.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -258,7 +258,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.30.0 // indirect
-	go.opentelemetry.io/otel v1.30.0 // indirect
+	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.6.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.30.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.30.0 // indirect
@@ -270,10 +270,10 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.30.0 // indirect
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.30.0 // indirect
 	go.opentelemetry.io/otel/log v0.6.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.6.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
-	go.opentelemetry.io/otel/trace v1.30.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.31.0 // indirect
+	go.opentelemetry.io/otel/trace v1.31.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/dig v1.17.1 // indirect

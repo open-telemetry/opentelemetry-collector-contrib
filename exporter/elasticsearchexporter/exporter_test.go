@@ -215,7 +215,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
+			expected := "logs-record.dataset.____________-resource.namespace.-____________"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -225,12 +226,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "record.dataset",
+				dataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
 				dataStreamDataset:   "resource.dataset",
-				dataStreamNamespace: "resource.namespace",
+				dataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -647,7 +648,7 @@ func TestExporterMetrics(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := "metrics-resource.dataset-data.point.namespace"
+			expected := "metrics-resource.dataset.____________-data.point.namespace.-____________"
 			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
@@ -659,11 +660,11 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				dataStreamNamespace: "data.point.namespace",
+				dataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset",
+				dataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
 				dataStreamNamespace: "resource.namespace",
 			},
 		)
@@ -1287,7 +1288,7 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := "traces-span.dataset-default"
+			expected := "traces-span.dataset.____________-default"
 			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
@@ -1299,7 +1300,7 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				dataStreamDataset: "span.dataset",
+				dataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
