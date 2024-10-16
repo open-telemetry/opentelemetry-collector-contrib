@@ -25,6 +25,7 @@ type AttributeChangeSet struct {
 // NewAttributeChangeSet allows for typed strings to be used as part
 // of the invocation that will be converted into the default string type.
 func NewAttributeChangeSet(mappings ast.AttributeMap) AttributeChangeSet {
+	// for ambiguous rollbacks (if updates contains entries with multiple keys that have the same value), rollback contains the last key iterated over in mappings
 	attr := AttributeChangeSet{
 		updates:  make(map[string]string, len(mappings)),
 		rollback: make(map[string]string, len(mappings)),
