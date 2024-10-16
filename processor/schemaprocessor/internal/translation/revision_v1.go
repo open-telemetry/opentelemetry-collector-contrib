@@ -8,7 +8,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/changelist"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/transformer"
 )
 
 // RevisionV1 represents all changes that are to be
@@ -59,9 +59,8 @@ func newAllChangeList(all ast.Attributes) *changelist.ChangeList {
 	for _, at := range all.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
 			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
-
-			allOperator := operator.NewAllOperator(attributeChangeSet)
-			values = append(values, allOperator)
+			allTransformer := transformer.NewAllAttributesTransformer(attributeChangeSet)
+			values = append(values, allTransformer)
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
@@ -72,8 +71,8 @@ func newResourceChangeList(resource ast.Attributes) *changelist.ChangeList {
 	for _, at := range resource.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
 			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
-			resourceOperator := operator.ResourceAttributeOperator{AttributeChange: attributeChangeSet}
-			values = append(values, resourceOperator)
+			resourceTransformer := transformer.ResourceAttributes{AttributeChange: attributeChangeSet}
+			values = append(values, resourceTransformer)
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
@@ -83,8 +82,8 @@ func newSpanChangeList(spans ast.Spans) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range spans.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
-			conditionalAttributeChangeSet := operator.SpanConditionalAttributeOperator{Migrator: migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToSpans...)}
-			values = append(values, conditionalAttributeChangeSet)
+			conditionalAttributesChangeSet := transformer.SpanConditionalAttributes{Migrator: migrate.NewConditionalAttributeSet(renamed.AttributeMap, renamed.ApplyToSpans...)}
+			values = append(values, conditionalAttributesChangeSet)
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
@@ -95,12 +94,12 @@ func newMetricChangeList(metrics ast.Metrics) *changelist.ChangeList {
 	values := make([]migrate.Migrator, 0)
 	for _, at := range metrics.Changes {
 		if renameAttributes := at.RenameAttributes; renameAttributes != nil {
-			attributeChangeSet := operator.MetricDataPointAttributeOperator{
+			attributeChangeSet := transformer.MetricDataPointAttributes{
 				ConditionalAttributeChange: migrate.NewConditionalAttributeSet(renameAttributes.AttributeMap, renameAttributes.ApplyToMetrics...),
 			}
 			values = append(values, attributeChangeSet)
 		} else if renamedMetrics := at.RenameMetrics; renamedMetrics != nil {
-			signalNameChange := operator.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(renamedMetrics)}
+			signalNameChange := transformer.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(renamedMetrics)}
 			values = append(values, signalNameChange)
 		}
 	}
@@ -112,7 +111,7 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList {
 	for _, at := range spanEvents.Changes {
 		if renamedEvent := at.RenameEvents; renamedEvent != nil {
 			signalNameChange := migrate.NewSignalNameChange(renamedEvent.EventNameMap)
-			spanEventSignalNameChange := operator.SpanEventSignalNameChange{SignalNameChange: signalNameChange}
+			spanEventSignalNameChange := transformer.SpanEventSignalNameChange{SignalNameChange: signalNameChange}
 			values = append(values, spanEventSignalNameChange)
 		} else if renamedAttribute := at.RenameAttributes; renamedAttribute != nil {
 			acceptableSpanNames := make([]string, 0)
@@ -128,7 +127,7 @@ func newSpanEventChangeList(spanEvents ast.SpanEvents) *changelist.ChangeList {
 				"span.name":  acceptableSpanNames,
 				"event.name": acceptableEventNames,
 			})
-			spanEventAttributeChangeSet := operator.SpanEventConditionalAttributeOperator{MultiConditionalAttributeSet: multiConditionalAttributeSet}
+			spanEventAttributeChangeSet := transformer.SpanEventConditionalAttributes{MultiConditionalAttributeSet: multiConditionalAttributeSet}
 			values = append(values, spanEventAttributeChangeSet)
 		} else {
 			panic("spanEvents change must have either RenameEvents or RenameAttributes")
@@ -142,8 +141,8 @@ func newLogsChangelist(logs ast.Logs) *changelist.ChangeList {
 	for _, at := range logs.Changes {
 		if renamed := at.RenameAttributes; renamed != nil {
 			attributeChangeSet := migrate.NewAttributeChangeSet(renamed.AttributeMap)
-			logOperator := operator.LogAttributeOperator{AttributeChange: attributeChangeSet}
-			values = append(values, logOperator)
+			logTransformer := transformer.LogAttributes{AttributeChange: attributeChangeSet}
+			values = append(values, logTransformer)
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
