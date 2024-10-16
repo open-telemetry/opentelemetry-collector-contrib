@@ -48,6 +48,46 @@ func Test_flatten(t *testing.T) {
 			},
 		},
 		{
+			name: "conflicting map",
+			target: map[string]any{
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+				"address.street": "second",
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"address.street":   "first",
+				"address.house":    int64(1234),
+				"address.street.1": "second",
+			},
+		},
+		{
+			name: "conflicting map with nested slice",
+			target: map[string]any{
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+				"address.street": "second",
+				"occupants": []any{
+					"user 1",
+					"user 2",
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"address.street":   "first",
+				"address.house":    int64(1234),
+				"address.street.1": "second",
+				"occupants.0":      "user 1",
+				"occupants.1":      "user 2",
+			},
+		},
+		{
 			name: "nested slice",
 			target: map[string]any{
 				"occupants": []any{
@@ -157,7 +197,7 @@ func Test_flatten(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := flatten[any](target, tt.prefix, tt.depth)
+			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](true))
 			assert.NoError(t, err)
 			_, err = exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -166,13 +206,14 @@ func Test_flatten(t *testing.T) {
 		})
 	}
 }
+
 func Test_flatten_bad_target(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
 			return 1, nil
 		},
 	}
-	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{})
+	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{}, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
@@ -184,6 +225,6 @@ func Test_flatten_bad_depth(t *testing.T) {
 			return pcommon.NewMap(), nil
 		},
 	}
-	_, err := flatten[any](target, ottl.Optional[string]{}, ottl.NewTestingOptional[int64](-1))
+	_, err := flatten[any](target, ottl.Optional[string]{}, ottl.NewTestingOptional[int64](-1), ottl.NewTestingOptional[bool](false))
 	assert.Error(t, err)
 }
