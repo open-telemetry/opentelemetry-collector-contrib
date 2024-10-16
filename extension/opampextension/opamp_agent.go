@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"runtime"
 	"sort"
 	"strings"
@@ -28,10 +27,12 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension/internal/util"
+	"github.com/shirou/gopsutil/v4/host"
 )
 
 var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
@@ -294,9 +295,7 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
 	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
 	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
-	if description != "" {
-		nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
-	}
+	nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v
@@ -375,29 +374,19 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 }
 
 func (o *opampAgent) getOSDescription(logger *zap.Logger) string {
+	info, err := host.Info()
+	if err != nil {
+		logger.Error("failed getting host info", zap.Error(err))
+		return runtime.GOOS
+	}
 	switch runtime.GOOS {
 	case "darwin":
-		output, err := exec.Command("sw_vers").Output()
-		if err != nil {
-			logger.Error("get darwin OS details using 'sw_vers'", zap.Error(err))
-			return ""
-		}
-		return util.ParseDarwinDescription(string(output))
+		return "macOS " + info.PlatformVersion
 	case "linux":
-		output, err := exec.Command("lsb_release", "-d").Output()
-		if err != nil {
-			logger.Error("get linux OS details using 'lsb_release -d'", zap.Error(err))
-			return ""
-		}
-		return util.ParseLinuxDescription(string(output))
+		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
 	case "windows":
-		output, err := exec.Command("cmd", "/c", "ver").Output()
-		if err != nil {
-			logger.Error("get windows OS details using 'cmd /c ver'", zap.Error(err))
-			return ""
-		}
-		return util.ParseWindowsDescription(string(output))
+		return info.Platform + " " + info.PlatformVersion
+	default:
+		return runtime.GOOS
 	}
-	logger.Error("unrecognized OS to parse details from")
-	return ""
 }
