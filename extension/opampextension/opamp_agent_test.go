@@ -66,23 +66,28 @@ func TestCreateAgentDescription(t *testing.T) {
 		name string
 		cfg  func(*Config)
 
-		expected *protobufs.AgentDescription
+		expected func() *protobufs.AgentDescription
 	}{
 		{
 			name: "No extra attributes",
 			cfg:  func(_ *Config) {},
-			expected: &protobufs.AgentDescription{
-				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
-					stringKeyValue(semconv.AttributeServiceName, serviceName),
-					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
-				},
-				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-					stringKeyValue(semconv.AttributeHostName, hostname),
-					stringKeyValue(semconv.AttributeOSDescription, osDescription),
-					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
-				},
+			expected: func() *protobufs.AgentDescription {
+				ad := &protobufs.AgentDescription{
+					IdentifyingAttributes: []*protobufs.KeyValue{
+						stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
+						stringKeyValue(semconv.AttributeServiceName, serviceName),
+						stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					},
+					NonIdentifyingAttributes: []*protobufs.KeyValue{
+						stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+						stringKeyValue(semconv.AttributeHostName, hostname),
+						stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+					},
+				}
+				if osDescription != "" {
+					ad.NonIdentifyingAttributes = append(ad.NonIdentifyingAttributes, stringKeyValue(semconv.AttributeOSDescription, osDescription))
+				}
+				return ad
 			},
 		},
 		{
@@ -93,20 +98,25 @@ func TestCreateAgentDescription(t *testing.T) {
 					semconv.AttributeK8SPodName: "my-very-cool-pod",
 				}
 			},
-			expected: &protobufs.AgentDescription{
-				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
-					stringKeyValue(semconv.AttributeServiceName, serviceName),
-					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
-				},
-				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue("env", "prod"),
-					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-					stringKeyValue(semconv.AttributeHostName, hostname),
-					stringKeyValue(semconv.AttributeK8SPodName, "my-very-cool-pod"),
-					stringKeyValue(semconv.AttributeOSDescription, osDescription),
-					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
-				},
+			expected: func() *protobufs.AgentDescription {
+				ad := &protobufs.AgentDescription{
+					IdentifyingAttributes: []*protobufs.KeyValue{
+						stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
+						stringKeyValue(semconv.AttributeServiceName, serviceName),
+						stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					},
+					NonIdentifyingAttributes: []*protobufs.KeyValue{
+						stringKeyValue("env", "prod"),
+						stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+						stringKeyValue(semconv.AttributeHostName, hostname),
+						stringKeyValue(semconv.AttributeK8SPodName, "my-very-cool-pod"),
+						stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+					},
+				}
+				if osDescription != "" {
+					ad.NonIdentifyingAttributes = append(ad.NonIdentifyingAttributes, stringKeyValue(semconv.AttributeOSDescription, osDescription))
+				}
+				return ad
 			},
 		},
 		{
@@ -116,18 +126,23 @@ func TestCreateAgentDescription(t *testing.T) {
 					semconv.AttributeHostName: "override-host",
 				}
 			},
-			expected: &protobufs.AgentDescription{
-				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
-					stringKeyValue(semconv.AttributeServiceName, serviceName),
-					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
-				},
-				NonIdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-					stringKeyValue(semconv.AttributeHostName, "override-host"),
-					stringKeyValue(semconv.AttributeOSDescription, osDescription),
-					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
-				},
+			expected: func() *protobufs.AgentDescription {
+				ad := &protobufs.AgentDescription{
+					IdentifyingAttributes: []*protobufs.KeyValue{
+						stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
+						stringKeyValue(semconv.AttributeServiceName, serviceName),
+						stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+					},
+					NonIdentifyingAttributes: []*protobufs.KeyValue{
+						stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+						stringKeyValue(semconv.AttributeHostName, "override-host"),
+						stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+					},
+				}
+				if osDescription != "" {
+					ad.NonIdentifyingAttributes = append(ad.NonIdentifyingAttributes, stringKeyValue(semconv.AttributeOSDescription, osDescription))
+				}
+				return ad
 			},
 		},
 	}
@@ -149,7 +164,9 @@ func TestCreateAgentDescription(t *testing.T) {
 
 			err = o.createAgentDescription()
 			assert.NoError(t, err)
-			require.Equal(t, tc.expected, o.agentDescription)
+			expectedAD := tc.expected()
+			require.ElementsMatch(t, expectedAD.IdentifyingAttributes, o.agentDescription.IdentifyingAttributes)
+			require.ElementsMatch(t, expectedAD.NonIdentifyingAttributes, o.agentDescription.NonIdentifyingAttributes)
 		})
 	}
 }
