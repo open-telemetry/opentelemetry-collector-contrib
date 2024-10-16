@@ -56,9 +56,11 @@ func (c *connectorLogs) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 					c.logger.Error("could not extract logs from otlp json", zap.Error(err))
 					continue
 				}
-				err = c.logsConsumer.ConsumeLogs(ctx, l)
-				if err != nil {
-					c.logger.Error("could not consume logs from otlp json", zap.Error(err))
+				if l.ResourceLogs().Len() != 0 {
+					err = c.logsConsumer.ConsumeLogs(ctx, l)
+					if err != nil {
+						c.logger.Error("could not consume logs from otlp json", zap.Error(err))
+					}
 				}
 			}
 		}
