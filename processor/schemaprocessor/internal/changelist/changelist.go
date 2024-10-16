@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/transformer"
 )
 
 // ChangeList represents a list of changes within a section of the schema processor.  It can take in a list of different migrators for a specific section and will apply them in order, based on whether Apply or Rollback is called
@@ -29,42 +29,42 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 		} else {
 			migrator = c.Migrators[len(c.Migrators)-1-i]
 		}
-		// switch between operator types - what do the operators act on?
+		// switch between transformer types - what do the transformers act on?
 		switch thisMigrator := migrator.(type) {
 		// this one acts on both spans and span events!
-		case operator.Operator[ptrace.Span]:
+		case transformer.Transformer[ptrace.Span]:
 			if span, ok := signal.(ptrace.Span); ok {
 				if err := thisMigrator.Do(ss, span); err != nil {
 					return err
 				}
 			} else {
-				return fmt.Errorf("SpanOperator %T can't act on %T", thisMigrator, signal)
+				return fmt.Errorf("span Transformer %T can't act on %T", thisMigrator, signal)
 			}
-		case operator.Operator[pmetric.Metric]:
+		case transformer.Transformer[pmetric.Metric]:
 			if metric, ok := signal.(pmetric.Metric); ok {
 				if err := thisMigrator.Do(ss, metric); err != nil {
 					return err
 				}
 			} else {
-				return fmt.Errorf("MetricOperator %T can't act on %T", thisMigrator, signal)
+				return fmt.Errorf("metric Transformer %T can't act on %T", thisMigrator, signal)
 			}
-		case operator.Operator[plog.LogRecord]:
+		case transformer.Transformer[plog.LogRecord]:
 			if log, ok := signal.(plog.LogRecord); ok {
 				if err := thisMigrator.Do(ss, log); err != nil {
 					return err
 				}
 			} else {
-				return fmt.Errorf("LogOperator %T can't act on %T", thisMigrator, signal)
+				return fmt.Errorf("log Transformer %T can't act on %T", thisMigrator, signal)
 			}
-		case operator.Operator[pcommon.Resource]:
+		case transformer.Transformer[pcommon.Resource]:
 			if resource, ok := signal.(pcommon.Resource); ok {
 				if err := thisMigrator.Do(ss, resource); err != nil {
 					return err
 				}
 			} else {
-				return fmt.Errorf("ResourceOperator %T can't act on %T", thisMigrator, signal)
+				return fmt.Errorf("resource Transformer %T can't act on %T", thisMigrator, signal)
 			}
-		case operator.AllOperator:
+		case transformer.AllAttributes:
 			if err := thisMigrator.Do(ss, signal); err != nil {
 				return err
 			}

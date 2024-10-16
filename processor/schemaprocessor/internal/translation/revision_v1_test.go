@@ -11,7 +11,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/changelist"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/migrate"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/transformer"
 )
 
 func TestNewRevisionV1(t *testing.T) {
@@ -149,57 +149,57 @@ func TestNewRevisionV1(t *testing.T) {
 			expect: &RevisionV1{
 				ver: &Version{1, 0, 0},
 				all: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					operator.AllOperator{
-						// initialize one of each operator with the attribute set
-						MetricOperator: operator.MetricAttributeOperator{
+					transformer.AllAttributes{
+						// initialize one of each transformer with the attribute set
+						MetricAttributes: transformer.MetricAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"state": "status",
 							}),
 						},
-						LogOperator: operator.LogAttributeOperator{
+						LogAttributes: transformer.LogAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"state": "status",
 							}),
 						},
-						SpanOperator: operator.SpanAttributeOperator{
+						SpanAttributes: transformer.SpanAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"state": "status",
 							}),
 						},
-						SpanEventOperator: operator.SpanEventAttributeOperator{
+						SpanEventAttributes: transformer.SpanEventAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"state": "status",
 							}),
 						},
-						ResourceMigrator: operator.ResourceAttributeOperator{
+						ResourceAttributes: transformer.ResourceAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"state": "status",
 							}),
 						},
 					},
-					operator.AllOperator{
-						// initialize one of each operator with the attribute set
-						MetricOperator: operator.MetricAttributeOperator{
+					transformer.AllAttributes{
+						// initialize one of each transformer with the attribute set
+						MetricAttributes: transformer.MetricAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"status": "state",
 							}),
 						},
-						LogOperator: operator.LogAttributeOperator{
+						LogAttributes: transformer.LogAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"status": "state",
 							}),
 						},
-						SpanOperator: operator.SpanAttributeOperator{
+						SpanAttributes: transformer.SpanAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"status": "state",
 							}),
 						},
-						SpanEventOperator: operator.SpanEventAttributeOperator{
+						SpanEventAttributes: transformer.SpanEventAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"status": "state",
 							}),
 						},
-						ResourceMigrator: operator.ResourceAttributeOperator{
+						ResourceAttributes: transformer.ResourceAttributes{
 							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 								"status": "state",
 							}),
@@ -208,26 +208,26 @@ func TestNewRevisionV1(t *testing.T) {
 				},
 				},
 				resources: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					operator.ResourceAttributeOperator{AttributeChange: migrate.NewAttributeChangeSet(
+					transformer.ResourceAttributes{AttributeChange: migrate.NewAttributeChangeSet(
 						map[string]string{"service_name": "service.name"},
 					)},
 				}},
 				spans: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					operator.SpanConditionalAttributeOperator{Migrator: migrate.NewConditionalAttributeSet(
+					transformer.SpanConditionalAttributes{Migrator: migrate.NewConditionalAttributeSet(
 						map[string]string{"service_version": "service.version"},
 						"application start",
 					)},
-					operator.SpanConditionalAttributeOperator{Migrator: migrate.NewConditionalAttributeSet[string](
+					transformer.SpanConditionalAttributes{Migrator: migrate.NewConditionalAttributeSet[string](
 						map[string]string{"deployment.environment": "service.deployment.environment"},
 					)},
 				}},
 				spanEvents: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					operator.SpanEventSignalNameChange{
+					transformer.SpanEventSignalNameChange{
 						SignalNameChange: migrate.NewSignalNameChange(map[string]string{
 							"started": "application started",
 						}),
 					},
-					operator.SpanEventConditionalAttributeOperator{
+					transformer.SpanEventConditionalAttributes{
 						MultiConditionalAttributeSet: migrate.NewMultiConditionalAttributeSet(
 							map[string]string{"service.app.name": "service.name"},
 							map[string][]string{
@@ -238,16 +238,16 @@ func TestNewRevisionV1(t *testing.T) {
 					},
 				}},
 				metrics: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					operator.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(map[string]string{
+					transformer.MetricSignalNameChange{SignalNameChange: migrate.NewSignalNameChange(map[string]string{
 						"service.computed.uptime": "service.uptime",
 					})},
-					operator.MetricDataPointAttributeOperator{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
+					transformer.MetricDataPointAttributes{ConditionalAttributeChange: migrate.NewConditionalAttributeSet(
 						map[string]string{"runtime": "service.language"},
 						"service.runtime",
 					)},
 				}},
 				logs: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					operator.LogAttributeOperator{AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+					transformer.LogAttributes{AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
 						"ERROR": "error",
 					}),
 					},
@@ -263,7 +263,7 @@ func TestNewRevisionV1(t *testing.T) {
 			rev := NewRevision(tc.inVersion, tc.inDefinition)
 
 			// use go-cmp to compare tc.expect and rev and fail the test if there's a difference
-			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, operator.SpanEventConditionalAttributeOperator{}, migrate.MultiConditionalAttributeSet{})); diff != "" {
+			if diff := cmp.Diff(tc.expect, rev, cmp.AllowUnexported(RevisionV1{}, migrate.AttributeChangeSet{}, migrate.ConditionalAttributeSet{}, migrate.SignalNameChange{}, transformer.SpanEventConditionalAttributes{}, migrate.MultiConditionalAttributeSet{})); diff != "" {
 				t.Errorf("NewRevisionV1() mismatch (-want +got):\n%s", diff)
 			}
 		})
