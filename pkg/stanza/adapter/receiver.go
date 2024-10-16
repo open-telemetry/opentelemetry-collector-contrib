@@ -21,9 +21,8 @@ import (
 )
 
 type receiver struct {
-	set    component.TelemetrySettings
-	id     component.ID
-	cancel context.CancelFunc
+	set component.TelemetrySettings
+	id  component.ID
 
 	pipe     pipeline.Pipeline
 	emitter  *helper.LogEmitter
@@ -39,8 +38,6 @@ var _ rcvr.Logs = (*receiver)(nil)
 
 // Start tells the receiver to start
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	ctx, cancel := context.WithCancel(ctx)
-	r.cancel = cancel
 	r.set.Logger.Info("Starting stanza receiver")
 
 	if err := r.setStorageClient(ctx, host); err != nil {
@@ -55,8 +52,8 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
-	pLogs := ConvertEntries(entries)
 	obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
+	pLogs := ConvertEntries(entries)
 	logRecordCount := pLogs.LogRecordCount()
 
 	cErr := r.consumer.ConsumeLogs(ctx, pLogs)
@@ -68,14 +65,8 @@ func (r *receiver) consumeEntries(ctx context.Context, entries []*entry.Entry) {
 
 // Shutdown is invoked during service shutdown
 func (r *receiver) Shutdown(ctx context.Context) error {
-	if r.cancel == nil {
-		return nil
-	}
-
 	r.set.Logger.Info("Stopping stanza receiver")
 	pipelineErr := r.pipe.Stop()
-
-	r.cancel()
 
 	if r.storageClient != nil {
 		clientErr := r.storageClient.Close(ctx)

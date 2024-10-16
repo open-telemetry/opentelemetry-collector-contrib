@@ -60,18 +60,6 @@ func (o flushIntervalOption) apply(e *LogEmitter) {
 	e.flushInterval = o.flushInterval
 }
 
-func WithSyncConsumerFunc(f func(context.Context, []*entry.Entry)) EmitterOption {
-	return syncConsumerFuncOption{f: f}
-}
-
-type syncConsumerFuncOption struct {
-	f func(context.Context, []*entry.Entry)
-}
-
-func (o syncConsumerFuncOption) apply(e *LogEmitter) {
-	e.consumerFunc = o.f
-}
-
 // NewLogEmitter creates a new receiver output
 func NewLogEmitter(set component.TelemetrySettings, consumerFunc func(context.Context, []*entry.Entry), opts ...EmitterOption) *LogEmitter {
 	op, _ := NewOutputConfig("log_emitter", "log_emitter").Build(set)
@@ -109,7 +97,7 @@ func (e *LogEmitter) Stop() error {
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	if oldBatch := e.appendEntry(ent); len(oldBatch) > 0 {
-		e.flush(ctx, oldBatch)
+		e.consumerFunc(ctx, oldBatch)
 	}
 
 	return nil
@@ -142,21 +130,16 @@ func (e *LogEmitter) flusher() {
 		select {
 		case <-ticker.C:
 			if oldBatch := e.makeNewBatch(); len(oldBatch) > 0 {
-				e.flush(context.Background(), oldBatch)
+				e.consumerFunc(context.Background(), oldBatch)
 			}
 		case <-e.closeChan:
 			// flush currently batched entries
 			if oldBatch := e.makeNewBatch(); len(oldBatch) > 0 {
-				e.flush(context.Background(), oldBatch)
+				e.consumerFunc(context.Background(), oldBatch)
 			}
 			return
 		}
 	}
-}
-
-// flush flushes the provided batch to the log channel.
-func (e *LogEmitter) flush(ctx context.Context, batch []*entry.Entry) {
-	e.consumerFunc(ctx, batch)
 }
 
 // makeNewBatch replaces the current batch on the log emitter with a new batch, returning the old one

@@ -501,7 +501,16 @@ func ScenarioSendingQueuesNotFull(
 	tc.ValidateData()
 }
 
-func ScenarioLong(t *testing.T, sender testbed.DataSender, receiver testbed.DataReceiver, loadOptions testbed.LoadOptions, resultsSummary testbed.TestResultsSummary, sleepTime int, processors map[string]string, resourceLimits testbed.ResourceSpec) {
+func ScenarioLong(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resultsSummary testbed.TestResultsSummary,
+	sleepTime int,
+	processors map[string]string,
+	resourceLimits testbed.ResourceSpec,
+) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 

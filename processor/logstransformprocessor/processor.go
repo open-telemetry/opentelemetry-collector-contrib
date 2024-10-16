@@ -88,9 +88,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 	// fromConverter: converts logs to stanza format ->
 	// converterLoop: forwards converted logs to the stanza pipeline ->
 	// pipeline: performs user configured operations on the logs ->
-	// transformProcessor.consumeStanzaLogEntries: forwards output stanza logs for conversion to OTLP ->
-	// converter: converts stanza logs to OTLP ->
-	// transformProcessor: sends the converted OTLP logs to the next consumer
+	// transformProcessor: receives []*entry.Entries, converts them to plog.Logs and sends the converted OTLP logs to the next consumer
 	//
 	// We should start these components in reverse order of the data flow, then stop them in order of the data flow,
 	// in order to allow for pipeline draining.

@@ -154,6 +154,10 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 // the crioConsumer are stopped in the proper order without being affected by
 // any possible race conditions
 func (p *Parser) Stop() error {
+	if !p.asyncConsumerStarted {
+		// nothing is started return
+		return nil
+	}
 	var stopErrs []error
 	err := p.recombineParser.Stop()
 	if err != nil {
