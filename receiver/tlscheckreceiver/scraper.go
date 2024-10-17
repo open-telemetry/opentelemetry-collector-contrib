@@ -43,10 +43,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 						InsecureSkipVerify: true,
 					})
           if err != nil {
-              mux.Lock()
-              s.mb.RecordTlscheckErrorDataPoint(now, int64(1), host, err.Error())
-              mux.Unlock()
-              return
+              s.logger.error("TCP connection error encountered", zap.String("host", host), zap.Error(err))
           }
           defer conn.Close()
 
