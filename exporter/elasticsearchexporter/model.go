@@ -15,6 +15,7 @@ import (
 	"slices"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -65,6 +66,8 @@ var resourceAttrsToPreserve = map[string]bool{
 	semconv.AttributeHostName: true,
 }
 
+var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
+
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
@@ -107,6 +110,8 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 		document = m.encodeLogECSMode(resource, record, scope)
 	case MappingOTel:
 		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	case MappingBodyMap:
+		return m.encodeLogBodyMapMode(record)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
@@ -136,6 +141,15 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 
 	return document
+}
+
+func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
+	body := record.Body()
+	if body.Type() != pcommon.ValueTypeMap {
+		return nil, fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
+	}
+
+	return jsoniter.Marshal(body.Map().AsRaw())
 }
 
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
