@@ -27,6 +27,7 @@ func TestCreateResourceMetricsScraper(t *testing.T) {
 	if runtime.GOOS == "linux" || runtime.GOOS == "windows" || runtime.GOOS == "darwin" {
 		assert.NoError(t, err)
 		assert.NotNil(t, scraper)
+		assert.Equal(t, scraperType.String(), scraper.ID().String())
 	} else {
 		assert.Error(t, err)
 		assert.Nil(t, scraper)
