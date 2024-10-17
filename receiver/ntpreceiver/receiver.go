@@ -30,8 +30,7 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if err != nil {
 		return pmetric.Metrics{}, err
 	}
-	clockOffset := response.ClockOffset.Seconds()
-	s.mb.RecordNtpOffsetDataPoint(pcommon.NewTimestampFromTime(time.Now()), clockOffset)
+	s.mb.RecordNtpOffsetDataPoint(pcommon.NewTimestampFromTime(time.Now()), response.ClockOffset.Nanoseconds())
 	s.mb.NewResourceBuilder().SetNtpHost(s.endpoint)
 	return s.mb.Emit(), nil
 }

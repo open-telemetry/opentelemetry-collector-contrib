@@ -21,19 +21,19 @@ type metricNtpOffset struct {
 // init fills ntp.offset metric with initial data.
 func (m *metricNtpOffset) init() {
 	m.data.SetName("ntp.offset")
-	m.data.SetDescription("Time difference between local and NTP server clocks in seconds.")
-	m.data.SetUnit("s")
+	m.data.SetDescription("Time difference between local and NTP server clocks")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricNtpOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricNtpOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -210,7 +210,7 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordNtpOffsetDataPoint adds a data point to ntp.offset metric.
-func (mb *MetricsBuilder) RecordNtpOffsetDataPoint(ts pcommon.Timestamp, val float64) {
+func (mb *MetricsBuilder) RecordNtpOffsetDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricNtpOffset.recordDataPoint(mb.startTime, ts, val)
 }
 
