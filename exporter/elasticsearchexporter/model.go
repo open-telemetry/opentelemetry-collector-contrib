@@ -115,7 +115,8 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
-	document.Dedup()
+	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
+	document.Dedup(m.mode != MappingOTel)
 
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
@@ -267,7 +268,8 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 }
 
 func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error) {
-	document.Dedup()
+	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
+	document.Dedup(m.mode != MappingOTel)
 
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
@@ -646,7 +648,8 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 	default:
 		document = m.encodeSpanDefaultMode(resource, span, scope)
 	}
-	document.Dedup()
+	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
+	document.Dedup(m.mode != MappingOTel)
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
 	return buf.Bytes(), err
