@@ -24,8 +24,8 @@ By default, the TLS Check Receiver will emit a single metric, `tlscheck.time_lef
 receivers:
   tlscheck:
     targets:
-      - url: https://example.com
-      - url: https://foobar.com:8080
+      - host: example.com:443
+      - host: foobar.com:8080
 ```
 
 ## Certificate Verification

@@ -10,9 +10,9 @@ status:
 
 
 resource_attributes:
-  tlscheck.url:
+  tlscheck.host:
     enabled: true
-    description: Url at which the certificate was accessed.
+    description: Host at which the certificate was accessed.
     type: string
 
 attributes:
