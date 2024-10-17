@@ -109,27 +109,24 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 		}()
 
 		for _, model := range g.gaugeModels {
-			var serviceName string
-			if v, ok := model.metadata.ResAttr[conventions.AttributeServiceName]; ok {
-				serviceName = v
-			}
+			serviceName, _ := model.metadata.ResAttr.Get(conventions.AttributeServiceName)
 
 			for i := 0; i < model.gauge.DataPoints().Len(); i++ {
 				dp := model.gauge.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 				_, err = statement.ExecContext(ctx,
-					model.metadata.ResAttr,
+					AttributesToMap(model.metadata.ResAttr),
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
 					model.metadata.ScopeInstr.Version(),
-					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					AttributesToMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
-					serviceName,
+					serviceName.AsString(),
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,
-					attributesToMap(dp.Attributes()),
+					AttributesToMap(dp.Attributes()),
 					dp.StartTimestamp().AsTime(),
 					dp.Timestamp().AsTime(),
 					getValue(dp.IntValue(), dp.DoubleValue(), dp.ValueType()),
@@ -155,7 +152,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func (g *gaugeMetrics) Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
+func (g *gaugeMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	gauge, ok := metrics.(pmetric.Gauge)
 	if !ok {
 		return fmt.Errorf("metrics param is not type of Gauge")
