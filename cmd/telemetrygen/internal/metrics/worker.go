@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	rand "math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -38,6 +39,8 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 		w.logger.Error("failed to create the exporter", zap.Error(err))
 		return
 	}
+	randomPCG := rand.NewPCG(0, 0)
+	randomgenerator := rand.New(randomPCG)
 
 	defer func() {
 		w.logger.Info("stopping the exporter")
@@ -78,6 +81,23 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
+						},
+					},
+				},
+			})
+		case metricTypeHistogram:
+			metrics = append(metrics, metricdata.Metrics{
+				Name: w.metricName,
+				Data: metricdata.Histogram[int64]{
+					Temporality: metricdata.DeltaTemporality,
+					DataPoints: []metricdata.HistogramDataPoint[int64]{
+						{
+							StartTime:  time.Now().Add(-1 * time.Second),
+							Time:       time.Now(),
+							Attributes: attribute.NewSet(signalAttrs...),
+							Exemplars:  w.exemplars,
+							Count:      uint64(randomgenerator.Int64N(10)),
+							Sum:        randomgenerator.Int64N(10),
 						},
 					},
 				},
