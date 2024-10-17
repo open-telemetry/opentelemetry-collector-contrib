@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver/internal/metadata"
 )
@@ -23,8 +24,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		id       component.ID
-		expected component.Config
+		id             component.ID
+		disallowInline bool
+		expected       component.Config
+		wantErr        bool
 	}{
 		{
 			id:       component.NewID(metadata.Type),
@@ -33,25 +36,75 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:8765",
+				Protocols: ProtocolTypes{
+					Http: confighttp.ServerConfig{
+						Endpoint: "localhost:8765",
+					},
 				},
 				ParseStringTags: false,
 			},
 		},
 		{
+			id:             component.NewIDWithName(metadata.Type, "customname"),
+			disallowInline: true,
+			wantErr:        true,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "protocols"),
+			expected: &Config{
+				Protocols: ProtocolTypes{
+					Http: confighttp.ServerConfig{
+						Endpoint: "localhost:8765",
+					},
+				},
+				ParseStringTags: false,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "protocols"),
+			expected: &Config{
+				Protocols: ProtocolTypes{
+					Http: confighttp.ServerConfig{
+						Endpoint: "localhost:8765",
+					},
+				},
+				ParseStringTags: false,
+			},
+			disallowInline: true,
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "parse_strings"),
 			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: defaultBindEndpoint,
+				Protocols: ProtocolTypes{
+					Http: confighttp.ServerConfig{
+						Endpoint: defaultBindEndpoint,
+					},
 				},
 				ParseStringTags: true,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "parse_strings"),
+			expected: &Config{
+				Protocols: ProtocolTypes{
+					Http: confighttp.ServerConfig{
+						Endpoint: defaultBindEndpoint,
+					},
+				},
+				ParseStringTags: true,
+			},
+			disallowInline: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
+			if tt.disallowInline {
+				require.Nil(t, featuregate.GlobalRegistry().Set(disallowHttpDefaultProtocol.ID(), true))
+				t.Cleanup(func() {
+					require.Nil(t, featuregate.GlobalRegistry().Set(disallowHttpDefaultProtocol.ID(), false))
+				})
+			}
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
@@ -59,8 +112,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			if tt.wantErr {
+				assert.Error(t, component.ValidateConfig(cfg))
+			} else {
+				assert.NoError(t, component.ValidateConfig(cfg))
+				assert.Equal(t, tt.expected, cfg)
+			}
 		})
 	}
 }

@@ -34,8 +34,10 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for Zipkin receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.EndpointForPort(defaultHTTPPort),
+		Protocols: ProtocolTypes{
+			Http: confighttp.ServerConfig{
+				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
+			},
 		},
 		ParseStringTags: false,
 	}
