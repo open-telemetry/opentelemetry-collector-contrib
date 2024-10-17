@@ -18,7 +18,7 @@ const (
 	totalLogAttributes = 7
 
 	// Number of resource attributes to add to the plog.ResourceLogs.
-	totalResourceAttributes = 6
+	totalResourceAttributes = 8
 )
 
 // Only two types of events are created as of now.
@@ -39,6 +39,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	resourceAttrs.PutStr(semconv.AttributeK8SNodeName, ev.Source.Host)
+	resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, ev.Namespace)
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
