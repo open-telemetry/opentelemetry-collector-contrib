@@ -6,7 +6,9 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
-	"net/url"
+	"net"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -27,7 +29,18 @@ type Config struct {
 }
 
 type targetConfig struct {
-	Host string `mapstructure:"url"`
+	Host string `mapstructure:"host"`
+}
+
+func validatePort(port string) error {
+    portNum, err := strconv.Atoi(port)
+    if err != nil {
+        return fmt.Errorf("provided port is not a number: %s", port)
+    }
+    if portNum < 1 || portNum > 65535 {
+        return fmt.Errorf("provided port is out of valid range (1-65535): %d", portNum)
+    }
+    return nil
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
@@ -35,12 +48,21 @@ func (cfg *targetConfig) Validate() error {
 	var err error
 
 	if cfg.Host == "" {
-		err = multierr.Append(err, ErrMissingTargets)
-	} else {
-		_, parseErr := url.ParseRequestURI(cfg.Host)
-		if parseErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidHost.Error(), parseErr))
-		}
+		return ErrMissingTargets
+	}
+
+  if strings.Contains(cfg.Host, "://") {
+    return fmt.Errorf("host contains a scheme, which is not allowed: %s", cfg.Host)
+  }
+
+	_, port, parseErr := net.SplitHostPort(cfg.Host)
+	if parseErr != nil {
+		return fmt.Errorf("%s: %w", errInvalidHost.Error(), parseErr)
+	}
+
+	portParseErr := validatePort(port)
+	if portParseErr != nil {
+  	return fmt.Errorf("%s: %w", errInvalidHost.Error(), portParseErr)
 	}
 
 	return err

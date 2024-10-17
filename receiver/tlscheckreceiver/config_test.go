@@ -35,22 +35,34 @@ func TestValidate(t *testing.T) {
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, "provided port is not a number:   12efg"),
 		},
 		{
 			desc: "invalid config with multiple targets",
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						Host: "invalid://endpoint:  12efg",
+						Host: "endpoint:  12efg",
 					},
 					{
-						Host: "https://example.com",
+						Host: "https://example.com:80",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `provided port is not a number:   12efg; host contains a scheme, which is not allowed: https://example.com:80`),
+		},
+		{
+			desc: "port out of range",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						Host: "www.opentelemetry.io:67000",
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `provided port is out of valid range (1-65535): 67000`),
 		},
 		{
 			desc: "missing scheme",
@@ -62,17 +74,20 @@ func TestValidate(t *testing.T) {
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `parse "www.opentelemetry.io/docs": invalid URI for request`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `address www.opentelemetry.io/docs: missing port in address`),
 		},
 		{
 			desc: "valid config",
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{
-						Host: "https://opentelemetry.io",
+						Host: "opentelemetry.io:443",
 					},
 					{
-						Host: "https://opentelemetry.io:80/docs",
+						Host: "opentelemetry.io:8080",
+					},
+					{
+						Host: "111.222.33.44:10000",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),

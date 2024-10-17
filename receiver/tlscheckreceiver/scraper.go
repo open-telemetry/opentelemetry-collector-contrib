@@ -29,7 +29,7 @@ type scraper struct {
 }
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
-  if len(s.cfg.Targets) == 0 {
+  if s.cfg == nil || len(s.cfg.Targets) == 0 {
       return pmetric.NewMetrics(), ErrMissingTargets
   }
 
@@ -47,8 +47,21 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 					})
           if err != nil {
               s.logger.Error("TCP connection error encountered", zap.String("host", target.Host), zap.Error(err))
+              return
           }
           defer conn.Close()
+
+          // Ensure conn is not nil before accessing its methods
+          if conn == nil {
+              s.logger.Error("Failed to establish a connection", zap.String("host", target.Host))
+              return
+          }
+
+          state := conn.ConnectionState()
+          if len(state.PeerCertificates) == 0 {
+            s.logger.Error("No TLS certificates found. Verify the host serves TLS certificates.", zap.String("host", target.Host))
+            return
+          }
 
           cert := conn.ConnectionState().PeerCertificates[0]
           issuer := cert.Issuer.String()
@@ -72,6 +85,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 func newScraper(cfg *Config, settings receiver.Settings) *scraper {
 	return &scraper{
+		cfg:    cfg,
 		logger: settings.TelemetrySettings.Logger,
 		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
