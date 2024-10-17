@@ -90,7 +90,7 @@ func (rw *resourceWatcher) initialize() error {
 	}
 	rw.client = client
 
-	if rw.config.Distribution == distributionOpenShift {
+	if rw.config.Distribution == distributionOpenShift && rw.config.Namespace == "" {
 		rw.osQuotaClient, err = rw.makeOpenShiftQuotaClient(rw.config.APIConfig)
 		if err != nil {
 			return fmt.Errorf("Failed to create OpenShift quota API client: %w", err)
