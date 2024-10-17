@@ -960,6 +960,9 @@ func decodeOTelID(data []byte) ([]byte, error) {
 }
 
 func TestEncodeLogOtelMode(t *testing.T) {
+	randomString := strings.Repeat("abcdefghijklmnopqrstuvwxyz0123456789", 10)
+	maxLenNamespace := maxDataStreamBytes - len(disallowedNamespaceRunes)
+	maxLenDataset := maxDataStreamBytes - len(disallowedDatasetRunes) - len(".otel")
 
 	tests := []struct {
 		name   string
@@ -1042,6 +1045,20 @@ func TestEncodeLogOtelMode(t *testing.T) {
 			wantFn: func(or OTelRecord) OTelRecord {
 				deleteDatasetAttributes(or)
 				return assignDatastreamData(or, "", "third.otel")
+			},
+		},
+		{
+			name: "sanitize dataset/namespace",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["data_stream.dataset"] = disallowedDatasetRunes + randomString
+				or.Attributes["data_stream.namespace"] = disallowedNamespaceRunes + randomString
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				deleteDatasetAttributes(or)
+				ds := strings.Repeat("_", len(disallowedDatasetRunes)) + randomString[:maxLenDataset] + ".otel"
+				ns := strings.Repeat("_", len(disallowedNamespaceRunes)) + randomString[:maxLenNamespace]
+				return assignDatastreamData(or, "", ds, ns)
 			},
 		},
 	}
@@ -1207,4 +1224,44 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	assert.False(t, gjson.GetBytes(encoded, "Attributes\\.foo").Exists())
 	fooValue = gjson.GetBytes(encoded, "Attributes\\.foo\\.value")
 	assert.Equal(t, "foovalue", fooValue.Str)
+}
+
+func TestEncodeLogBodyMapMode(t *testing.T) {
+	// craft a log record with a body map
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	logRecords := scopeLogs.LogRecords()
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+
+	logRecord := logRecords.AppendEmpty()
+	logRecord.SetObservedTimestamp(observedTimestamp)
+
+	bodyMap := pcommon.NewMap()
+	bodyMap.PutStr("@timestamp", "2024-03-12T20:00:41.123456789Z")
+	bodyMap.PutInt("id", 1)
+	bodyMap.PutStr("key", "value")
+	bodyMap.PutStr("key.a", "a")
+	bodyMap.PutStr("key.a.b", "b")
+	bodyMap.PutDouble("pi", 3.14)
+	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
+
+	m := encodeModel{}
+	got, err := m.encodeLogBodyMapMode(logRecord)
+	require.NoError(t, err)
+
+	require.JSONEq(t, `{
+		"@timestamp":                 "2024-03-12T20:00:41.123456789Z",
+		"id":                         1,
+		"key":                        "value",
+		"key.a":                      "a",
+		"key.a.b":                    "b",
+		"pi":                         3.14
+	}`, string(got))
+
+	// invalid body map
+	logRecord.Body().SetEmptySlice()
+	_, err = m.encodeLogBodyMapMode(logRecord)
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
 }

@@ -15,6 +15,7 @@ import (
 	"slices"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -65,6 +66,8 @@ var resourceAttrsToPreserve = map[string]bool{
 	semconv.AttributeHostName: true,
 }
 
+var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
+
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
@@ -107,6 +110,8 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 		document = m.encodeLogECSMode(resource, record, scope)
 	case MappingOTel:
 		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	case MappingBodyMap:
+		return m.encodeLogBodyMapMode(record)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
@@ -138,6 +143,15 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	return document
 }
 
+func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
+	body := record.Body()
+	if body.Type() != pcommon.ValueTypeMap {
+		return nil, fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
+	}
+
+	return jsoniter.Marshal(body.Map().AsRaw())
+}
+
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
 	var document objmodel.Document
 
@@ -160,36 +174,53 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
 	// Body
-	setOTelLogBody(&document, record.Body())
+	setOTelLogBody(&document, record.Body(), record.Attributes())
 
 	return document
 }
 
-func setOTelLogBody(doc *objmodel.Document, body pcommon.Value) {
+func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcommon.Map) {
+	// Determine if this log record is an event, as they are mapped differently
+	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
+	_, isEvent := attributes.Get("event.name")
+
 	switch body.Type() {
 	case pcommon.ValueTypeMap:
-		doc.AddAttribute("body_structured", body)
+		if isEvent {
+			doc.AddAttribute("body.structured", body)
+		} else {
+			doc.AddAttribute("body.flattened", body)
+		}
 	case pcommon.ValueTypeSlice:
-		slice := body.Slice()
-		for i := 0; i < slice.Len(); i++ {
-			switch slice.At(i).Type() {
-			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
-				doc.AddAttribute("body_structured", body)
-				return
+		// output must be an array of objects due to ES limitations
+		// otherwise, wrap the array in an object
+		s := body.Slice()
+		allMaps := true
+		for i := 0; i < s.Len(); i++ {
+			if s.At(i).Type() != pcommon.ValueTypeMap {
+				allMaps = false
 			}
 		}
 
-		bodyTextVal := pcommon.NewValueSlice()
-		bodyTextSlice := bodyTextVal.Slice()
-		bodyTextSlice.EnsureCapacity(slice.Len())
-
-		for i := 0; i < slice.Len(); i++ {
-			elem := slice.At(i)
-			bodyTextSlice.AppendEmpty().SetStr(elem.AsString())
+		var outVal pcommon.Value
+		if allMaps {
+			outVal = body
+		} else {
+			vm := pcommon.NewValueMap()
+			m := vm.SetEmptyMap()
+			body.Slice().CopyTo(m.PutEmptySlice("value"))
+			outVal = vm
 		}
-		doc.AddAttribute("body_text", bodyTextVal)
+
+		if isEvent {
+			doc.AddAttribute("body.structured", outVal)
+		} else {
+			doc.AddAttribute("body.flattened", outVal)
+		}
+	case pcommon.ValueTypeStr:
+		doc.AddString("body.text", body.Str())
 	default:
-		doc.AddString("body_text", body.AsString())
+		doc.AddString("body.text", body.AsString())
 	}
 }
 
