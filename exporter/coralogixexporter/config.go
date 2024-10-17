@@ -5,6 +5,7 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -70,6 +71,9 @@ func (c *Config) Validate() error {
 		isEmpty(c.Metrics.Endpoint) &&
 		isEmpty(c.Logs.Endpoint) {
 		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration")
+	}
+	if os.Getenv("CORALOGIX_PRIVATE_KEY") != "" {
+		c.PrivateKey = configopaque.String(os.Getenv("CORALOGIX_PRIVATE_KEY"))
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`private_key` not specified, please fix the configuration")
