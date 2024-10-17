@@ -52,10 +52,8 @@ func (zr *zipkinDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   zipkin:
-    protocols:
-      http:
-        endpoint: http://127.0.0.1:%d/api/v2/spans
-        format: json`, zr.Port)
+    endpoint: http://127.0.0.1:%d/api/v2/spans
+    format: json`, zr.Port)
 }
 
 func (zr *zipkinDataReceiver) ProtocolName() string {
