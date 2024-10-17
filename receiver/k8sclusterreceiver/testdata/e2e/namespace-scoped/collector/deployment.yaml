@@ -21,7 +21,7 @@ spec:
           command:
             - /otelcontribcol
             - --config=/conf/relay.yaml
-          image: "localhost/otelcontribcol:latest"
+          image: "otelcontribcol:latest"
           imagePullPolicy: Never
           ports:
             - name: otlp

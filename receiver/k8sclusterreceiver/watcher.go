@@ -196,11 +196,11 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 	case gvk.Pod:
 		rw.setupInformer(kind, factory.Core().V1().Pods().Informer())
 	case gvk.Node:
-		if rw.config.Namespace != "" {
+		if rw.config.Namespace == "" {
 			rw.setupInformer(kind, factory.Core().V1().Nodes().Informer())
 		}
 	case gvk.Namespace:
-		if rw.config.Namespace != "" {
+		if rw.config.Namespace == "" {
 			rw.setupInformer(kind, factory.Core().V1().Namespaces().Informer())
 		}
 	case gvk.ReplicationController:
