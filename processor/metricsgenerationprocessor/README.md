@@ -16,7 +16,7 @@
 
 ## Description
 
-The metrics generation processor (`experimental_metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. This processor currently supports the following two rule types for creating a new metric.
+The metrics generation processor (`metricsgenerationprocessor`) can be used to create new metrics using existing metrics following a given rule. This processor currently supports the following two rule types for creating a new metric.
 
 1. `calculate`: It can create a new metric from two existing metrics by applying one of the following arithmetic operations: add, subtract, multiply, divide, or percent. One use case is to calculate the `pod.memory.utilization` metric like the following equation-
 `pod.memory.utilization` = (`pod.memory.usage.bytes` / `node.memory.limit`)
@@ -42,8 +42,8 @@ match the given metric names and apply the specified operation to those metrics.
 
 ```yaml
 processors:
-    # processor name: experimental_metricsgeneration
-    experimental_metricsgeneration:
+    # processor name: metricsgeneration
+    metricsgeneration:
 
         # specify the metric generation rules
         rules:
