@@ -100,9 +100,9 @@ func TestLoadConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			if tt.disallowInline {
-				require.Nil(t, featuregate.GlobalRegistry().Set(disallowHttpDefaultProtocol.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(disallowHTTPDefaultProtocol.ID(), true))
 				t.Cleanup(func() {
-					require.Nil(t, featuregate.GlobalRegistry().Set(disallowHttpDefaultProtocol.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(disallowHTTPDefaultProtocol.ID(), false))
 				})
 			}
 			factory := NewFactory()
