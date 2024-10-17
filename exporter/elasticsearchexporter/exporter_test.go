@@ -714,6 +714,35 @@ func TestExporterLogs(t *testing.T) {
 		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
 		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
+
+	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}))
+
+		rec.WaitItems(1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
 }
 
 func TestExporterMetrics(t *testing.T) {
@@ -1300,6 +1329,75 @@ func TestExporterMetrics(t *testing.T) {
 		assertItemsEqual(t, expected, rec.Items(), false)
 	})
 
+	t.Run("otel mode metric name conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		fooBarMetric := scopeMetric.Metrics().AppendEmpty()
+		fooBarMetric.SetName("foo.bar")
+		fooBarMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		fooMetric := scopeMetric.Metrics().AppendEmpty()
+		fooMetric.SetName("foo")
+		fooMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		fooBarBazMetric := scopeMetric.Metrics().AppendEmpty()
+		fooBarBazMetric.SetName("foo.bar.baz")
+		fooBarBazMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
+
+	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}))
+
+		rec.WaitItems(1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
+
 	t.Run("publish summary", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1599,6 +1697,35 @@ func TestExporterTraces(t *testing.T) {
 			assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
 			assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 		}
+	})
+
+	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendTraces(t, exporter, newTracesWithAttributes(map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}))
+
+		rec.WaitItems(1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
