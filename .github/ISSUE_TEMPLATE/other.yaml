@@ -253,6 +253,7 @@ body:
       - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
+      - receiver/ntp
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
