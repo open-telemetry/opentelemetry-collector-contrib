@@ -36,6 +36,9 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -59,6 +62,9 @@ func TestValidate(t *testing.T) {
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -84,6 +90,9 @@ func TestValidate(t *testing.T) {
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -109,6 +118,9 @@ func TestValidate(t *testing.T) {
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -138,6 +150,9 @@ func TestValidate(t *testing.T) {
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -164,6 +179,9 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "",
 					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -190,6 +208,9 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "./path/does/not/exist",
 					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -215,6 +236,9 @@ func TestValidate(t *testing.T) {
 				},
 				Agent: Agent{
 					Executable:              "${file_path}",
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: -1,
 				},
 				Capabilities: Capabilities{
@@ -242,6 +266,9 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         65536,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -269,6 +296,9 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         0,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -295,6 +325,9 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         29848,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -320,6 +353,9 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        -5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -330,6 +366,92 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedError: "agent::bootstrap_timeout must be positive",
+		},
+		{
+			name: "Invalid health check interval",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  1,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     -1 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedError: "agent::health_check_interval must be valid duration",
+		},
+		{
+			name: "Invalid config apply timeout",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  1,
+					HealthCheckInterval:     1 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedError: "agent::config_apply_timeout must be valid duration",
+		},
+		{
+			name: "Invalid successful health checks",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					SuccessfulHealthChecks:  0,
+					ConfigApplyTimeout:      2 * time.Second,
+					HealthCheckInterval:     1 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedError: "agent::successful_health_checks must be positive",
 		},
 	}
 

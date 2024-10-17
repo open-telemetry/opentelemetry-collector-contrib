@@ -21,7 +21,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -89,7 +88,7 @@ type Supervisor struct {
 
 	startedAt time.Time
 
-	healthCheckTicker  *backoff.Ticker
+	healthCheckTicker  *time.Ticker
 	healthChecker      *healthchecker.HTTPHealthChecker
 	lastHealthCheckErr error
 
@@ -129,6 +128,22 @@ type Supervisor struct {
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
+	// waitingForHealthCheckSuccess is true if the agent is starting up and the supervisor is waiting for health checks to succeed.
+	// this is set to true 1. at the init phase 2. when agent receives a remote config
+	waitingForHealthCheckSuccess bool
+	// successfulHealthChecks tracks the number of consecutive successful health checks.
+	successfulHealthChecks int32
+	// requiredHealthChecks is the number of consecutive health checks required for the agent to be considered healthy.
+	requiredHealthChecks int32
+	// configApplyTimeout is the maximum time to wait for the agent to apply a new config.
+	// After this time passes without the agent reporting health as OK, the agent is considered unhealthy.
+	configApplyTimeout time.Duration
+	// lastConfigChangeTime is the time when the last config change was applied.
+	lastConfigChangeTime time.Time
+	// healthCheckInterval is the interval between health checks.
+	healthCheckInterval time.Duration
+	// lastHealth is the last health status of the agent.
+	lastHealth *protobufs.ComponentHealth
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -139,9 +154,13 @@ type Supervisor struct {
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
 
-	agentHasStarted               bool
-	agentStartHealthCheckAttempts int
-	agentRestarting               atomic.Bool
+	// agentHasStarted is true if the agent has started.
+	agentHasStarted bool
+	// isBootstrapped is true if the agent has been bootstrapped.
+	// This is used to determine if the agent is starting up for the first time or if it is restarting.
+	isBootstrapped bool
+	// agentRestarting is true if the agent is restarting.
+	agentRestarting atomic.Bool
 
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
@@ -173,6 +192,10 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
+
+	s.requiredHealthChecks = s.config.Agent.SuccessfulHealthChecks
+	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
+	s.healthCheckInterval = s.config.Agent.HealthCheckInterval
 
 	return s, nil
 }
@@ -226,6 +249,9 @@ func (s *Supervisor) Start() error {
 	s.agentWG.Add(1)
 	go func() {
 		defer s.agentWG.Done()
+		s.waitingForHealthCheckSuccess = true
+		s.successfulHealthChecks = 0
+		s.lastConfigChangeTime = time.Now()
 		s.runAgentProcess()
 	}()
 
@@ -1003,7 +1029,6 @@ func (s *Supervisor) startAgent() {
 	}
 
 	s.agentHasStarted = false
-	s.agentStartHealthCheckAttempts = 0
 	s.startedAt = time.Now()
 	s.startHealthCheckTicker()
 
@@ -1012,28 +1037,30 @@ func (s *Supervisor) startAgent() {
 
 func (s *Supervisor) startHealthCheckTicker() {
 	// Prepare health checker
-	healthCheckBackoff := backoff.NewExponentialBackOff()
-	healthCheckBackoff.MaxInterval = 60 * time.Second
-	healthCheckBackoff.MaxElapsedTime = 0 // Never stop
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
 	}
-	s.healthCheckTicker = backoff.NewTicker(healthCheckBackoff)
+	s.healthCheckTicker = time.NewTicker(s.healthCheckInterval)
 }
 
 func (s *Supervisor) healthCheck() {
-	if !s.commander.IsRunning() {
-		return
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 
 	err := s.healthChecker.Check(ctx)
 	cancel()
 
-	if errors.Is(err, s.lastHealthCheckErr) {
-		// No difference from last check. Nothing new to report.
-		return
+	if s.waitingForHealthCheckSuccess {
+		timeSinceChange := time.Since(s.lastConfigChangeTime)
+		if timeSinceChange > s.configApplyTimeout {
+			if s.isBootstrapped {
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+			}
+			// the config apply timeout has been exceeded
+			// we are no longer waiting for the health check to succeed
+			// we consider the agent to be unhealthy
+			s.waitingForHealthCheckSuccess = false
+		}
 	}
 
 	// Prepare OpAMP health report.
@@ -1042,18 +1069,45 @@ func (s *Supervisor) healthCheck() {
 	}
 
 	if err != nil {
-		health.Healthy = false
-		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
+		if s.waitingForHealthCheckSuccess {
+			s.successfulHealthChecks = 0 // Reset successful checks on error
+		}
+
+		// if the agent has not started, and we are waiting for the health check to succeed
+		// report that it is starting otherwise, report that it is not healthy with the error
+		if !s.agentHasStarted && s.waitingForHealthCheckSuccess {
+			health.Healthy = false
 			health.LastError = "Agent is starting"
-			s.agentStartHealthCheckAttempts++
+			// if we have a last health status, use it
+			if s.lastHealth != nil && s.lastHealth.Healthy {
+				health.Healthy = s.lastHealth.Healthy
+			}
 		} else {
+			health.Healthy = false
 			health.LastError = err.Error()
 			s.logger.Error("Agent is not healthy", zap.Error(err))
 		}
 	} else {
+		if s.waitingForHealthCheckSuccess {
+			s.successfulHealthChecks++
+			if s.successfulHealthChecks >= s.requiredHealthChecks {
+				if s.isBootstrapped {
+					s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+				}
+				s.waitingForHealthCheckSuccess = false
+			}
+		}
+
 		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
+		s.isBootstrapped = true
+	}
+
+	s.lastHealth = health
+	if err != nil && errors.Is(err, s.lastHealthCheckErr) {
+		// No difference from last check. Nothing new to report.
+		return
 	}
 
 	// Report via OpAMP.
@@ -1078,6 +1132,10 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.waitingForHealthCheckSuccess = true
+			s.successfulHealthChecks = 0
+			s.lastConfigChangeTime = time.Now()
+
 			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
@@ -1205,6 +1263,17 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0600)
 }
 
+func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+	err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+		LastRemoteConfigHash: s.remoteConfig.ConfigHash,
+		Status:               status,
+		ErrorMessage:         errorMessage,
+	})
+	if err != nil {
+		s.logger.Error("Could not report OpAMP remote config status", zap.Error(err))
+	}
+}
+
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
 
@@ -1222,6 +1291,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
+
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
@@ -1276,22 +1346,9 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
-		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-			LastRemoteConfigHash: msg.ConfigHash,
-			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
-			ErrorMessage:         err.Error(),
-		})
-		if err != nil {
-			s.logger.Error("Could not report failed OpAMP remote config status", zap.Error(err))
-		}
+		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 	} else {
-		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-			LastRemoteConfigHash: msg.ConfigHash,
-			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
-		})
-		if err != nil {
-			s.logger.Error("Could not report applied OpAMP remote config status", zap.Error(err))
-		}
+		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
 	return configChanged
