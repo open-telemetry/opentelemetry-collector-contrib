@@ -540,14 +540,10 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("no retry", func(t *testing.T) {
 		configurations := map[string]func(*Config){
-			"max_requests limited": func(cfg *Config) {
-				cfg.Retry.MaxRequests = 1
-				cfg.Retry.InitialInterval = 1 * time.Millisecond
-				cfg.Retry.MaxInterval = 10 * time.Millisecond
-			},
 			"retry.enabled is false": func(cfg *Config) {
 				cfg.Retry.Enabled = false
-				cfg.Retry.MaxRequests = 10
+				cfg.Retry.RetryOnStatus = []int{429}
+				cfg.Retry.MaxRetries = 10
 				cfg.Retry.InitialInterval = 1 * time.Millisecond
 				cfg.Retry.MaxInterval = 10 * time.Millisecond
 			},
@@ -557,7 +553,7 @@ func TestExporterLogs(t *testing.T) {
 			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
 					attempts.Add(1)
-					return nil, &httpTestError{message: "oops"}
+					return nil, &httpTestError{message: "oops", status: 429}
 				}
 			},
 			"fail item": func(attempts *atomic.Int64) bulkHandler {
