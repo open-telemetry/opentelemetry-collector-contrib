@@ -161,7 +161,7 @@ func (mp *MatchProperties) ValidateForSpans() error {
 	if len(mp.SpanKinds) > 0 && mp.MatchType == "strict" {
 		for _, kind := range mp.SpanKinds {
 			if !spanKinds[kind] {
-				validSpanKinds := make([]string, len(spanKinds))
+				validSpanKinds := make([]string, 0, len(spanKinds))
 				for k := range spanKinds {
 					validSpanKinds = append(validSpanKinds, k)
 				}
