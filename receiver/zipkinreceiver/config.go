@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var disallowHttpDefaultProtocol = featuregate.GlobalRegistry().MustRegister(
+var disallowHTTPDefaultProtocol = featuregate.GlobalRegistry().MustRegister(
 	"zipkinreceiver.httpDefaultProtocol.disallow",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, usage of the default http configuration is disallowed"),
@@ -42,7 +42,7 @@ var _ component.Config = (*Config)(nil)
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.isServerConfigDefined() {
-		if disallowHttpDefaultProtocol.IsEnabled() {
+		if disallowHTTPDefaultProtocol.IsEnabled() {
 			return fmt.Errorf("the inline setting of http server parameters has been deprecated, please use protocols.http parameter instead")
 		}
 		cfg.Protocols.HTTP = cfg.ServerConfig
