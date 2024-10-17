@@ -125,7 +125,6 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			name: "ecs",
 			config: Config{
 				NumWorkers: 1,
-				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1},
 				Mapping:    MappingsSettings{Mode: MappingECS.String()},
 			},
 			wantRequireDataStream: false,
@@ -134,7 +133,6 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			name: "otel",
 			config: Config{
 				NumWorkers: 1,
-				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1},
 				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
 			},
 			wantRequireDataStream: true,
