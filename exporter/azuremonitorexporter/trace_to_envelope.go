@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -39,6 +40,106 @@ var (
 
 // Used to identify the type of a received Span
 type spanType int8
+
+// Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights TraceTelemetry
+func spanToTelemetryTraces(
+	resource pcommon.Resource,
+	instrumentationScope pcommon.InstrumentationScope,
+	span ptrace.Span,
+	spanEventsEnabled bool,
+	logger *zap.Logger) ([]*appinsights.TraceTelemetry, error) {
+
+	spanKind := span.Kind()
+
+	// According to the SpanKind documentation, we can assume it to be INTERNAL
+	// when we get UNSPECIFIED.
+	if spanKind == ptrace.SpanKindUnspecified {
+		spanKind = ptrace.SpanKindInternal
+	}
+
+	attributeMap := span.Attributes()
+	incomingSpanType := mapIncomingSpanToType(attributeMap)
+
+	// For now, FaaS spans are unsupported
+	if incomingSpanType == faasSpanType {
+		return nil, errUnsupportedSpanType
+	}
+
+	var traces []*appinsights.TraceTelemetry
+
+	// Map the span itself to TraceTelemetry
+	trace := appinsights.NewTraceTelemetry(span.Name(), appinsights.Information)
+	trace.Timestamp = span.StartTimestamp().AsTime()
+
+	// Set operation-level tags
+	trace.Tags["ai.operation.id"] = span.TraceID().String()
+	trace.Tags["ai.operation.parentId"] = span.ParentSpanID().String()
+
+	// Set span-level attributes
+	span.Attributes().Range(func(k string, v pcommon.Value) bool {
+		trace.Properties[k] = v.AsString()
+		return true
+	})
+
+	// Record the raw span status values as properties
+	trace.Properties[attributeOtelStatusCode] = traceutil.StatusCodeStr(span.Status().Code())
+	statusMessage := span.Status().Message()
+	if len(statusMessage) > 0 {
+		trace.Properties[attributeOtelStatusDescription] = statusMessage
+	}
+
+	// Add resource-level properties
+	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+		trace.Properties["resource."+k] = v.AsString()
+		return true
+	})
+
+	// Add instrumentation scope details
+	trace.Properties["instrumentation.library.name"] = instrumentationScope.Name()
+	trace.Properties["instrumentation.library.version"] = instrumentationScope.Version()
+
+	// Add the trace telemetry to the list
+	traces = append(traces, trace)
+
+	// Handle span events (these are OpenTelemetry events within a span)
+	for i := 0; i < span.Events().Len(); i++ {
+		spanEvent := span.Events().At(i)
+
+		// Skip non-exception events if configured
+		if spanEvent.Name() != exceptionSpanEventName && !spanEventsEnabled {
+			continue
+		}
+
+		// Create a new trace for each event (trace event as separate telemetry)
+		eventTelemetry := appinsights.NewTraceTelemetry(spanEvent.Name(), appinsights.Information)
+		eventTelemetry.Timestamp = spanEvent.Timestamp().AsTime()
+		eventTelemetry.Tags["ai.operation.parentId"] = span.SpanID().String()
+
+		// Map event attributes to telemetry properties
+		spanEvent.Attributes().Range(func(k string, v pcommon.Value) bool {
+			eventTelemetry.Properties[k] = v.AsString()
+			return true
+		})
+
+		// If it's an exception, map it accordingly
+		// TODO: Consider using the ExceptionTelemetry instead of TraceTelemetry
+		if spanEvent.Name() == exceptionSpanEventName {
+			eventTelemetry.Properties["exception.type"] = "Exception"
+		}
+
+		// Add resource-level properties to the event telemetry
+		resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+			eventTelemetry.Properties["resource."+k] = v.AsString()
+			return true
+		})
+
+		// Add the event telemetry to the list
+		traces = append(traces, eventTelemetry)
+	}
+	logger.Debug("Converted span to telemetry traces")
+
+	return traces, nil
+}
 
 // Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
