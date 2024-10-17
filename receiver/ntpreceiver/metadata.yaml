@@ -19,9 +19,7 @@ metrics:
     description: Time difference between local and NTP server clocks in seconds.
     unit: "s"
     gauge:
-      value_type: int
+      value_type: double
     enabled: true
 
 tests:
-  skip_lifecycle: true
-  skip_shutdown: true

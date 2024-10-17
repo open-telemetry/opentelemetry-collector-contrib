@@ -18,7 +18,7 @@ Time difference between local and NTP server clocks in seconds.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| s | Gauge | Double |
 
 ## Resource Attributes
 
