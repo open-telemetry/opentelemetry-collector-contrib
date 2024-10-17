@@ -110,9 +110,7 @@ func createLogsExporter(
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 		index = cf.Index
 	}
-	if err := handleDeprecatedConfig(cf, set.Logger); err != nil {
-		return nil, err
-	}
+	handleDeprecatedConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
 
@@ -131,9 +129,8 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
-	if err := handleDeprecatedConfig(cf, set.Logger); err != nil {
-		return nil, err
-	}
+	handleDeprecatedConfig(cf, set.Logger)
+
 	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 
 	return exporterhelper.NewMetricsExporter(
@@ -150,9 +147,7 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
-	if err := handleDeprecatedConfig(cf, set.Logger); err != nil {
-		return nil, err
-	}
+	handleDeprecatedConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 

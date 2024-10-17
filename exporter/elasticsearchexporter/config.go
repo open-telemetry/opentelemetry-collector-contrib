@@ -280,6 +280,9 @@ func (cfg *Config) Validate() error {
 	if cfg.Retry.MaxRetries < 0 {
 		return errors.New("retry::max_retries should be non-negative")
 	}
+	if cfg.Retry.MaxRequests > 0 && cfg.Retry.MaxRetries > 0 {
+		return errors.New("must not specify both retry::max_requests and retry::max_retries")
+	}
 
 	return nil
 }
@@ -363,7 +366,7 @@ func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
 }
 
-func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) error {
+func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	if cfg.Mapping.Dedup != nil {
 		logger.Warn("dedup is deprecated, and is always enabled")
 	}
@@ -371,12 +374,8 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) error {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
 	}
 	if cfg.Retry.MaxRequests != 0 {
-		if cfg.Retry.MaxRetries != 0 {
-			return errors.New("should specify at most one of retry::max_requests and retry::max_retries")
-		}
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
 	}
-	return nil
 }
