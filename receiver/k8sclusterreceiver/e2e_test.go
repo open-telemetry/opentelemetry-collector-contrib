@@ -138,7 +138,7 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	}()
 
-	wantEntries := 6 // Minimal number of metrics to wait for.
+	wantEntries := 4 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }

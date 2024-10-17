@@ -1,48 +1,6 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-        - key: k8s.namespace.uid
-          value:
-            stringValue: caa467a2-d3e8-4e66-8b76-a155464bac79
-    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
-    scopeMetrics:
-      - metrics:
-          - description: The current phase of namespaces (1 for active and 0 for terminating)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  timeUnixNano: "1686772769034865545"
-            name: k8s.namespace.phase
-            unit: ""
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.node.uid
-          value:
-            stringValue: afd51338-8dbe-4234-aed3-0d1a9b3ee38e
-    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
-    scopeMetrics:
-      - metrics:
-          - description: Ready condition status of the node (true=1, false=0, unknown=-1)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  timeUnixNano: "1686772769034865545"
-            name: k8s.node.condition_ready
-            unit: ""
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
         - key: k8s.deployment.name
           value:
             stringValue: otelcol-5ffb893c
