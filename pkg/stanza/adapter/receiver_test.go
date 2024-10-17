@@ -260,7 +260,7 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 		mockConsumer.receivedLogs.Store(0)
 	}
 
-	require.Nil(b, rcv.Shutdown(context.Background()))
+	require.NoError(b, rcv.Shutdown(context.Background()))
 }
 
 func BenchmarkReadLine(b *testing.B) {
@@ -432,12 +432,14 @@ func (t *testInputOperator) Type() string {
 func (t *testInputOperator) Start(_ operator.Persister) error {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	t.cancelFunc = cancelFunc
+
+	e := complexEntry()
 	go func() {
 		for {
 			select {
 			case <-t.nextIteration:
 				for i := 0; i < t.numberOfLogEntries; i++ {
-					_ = t.Write(context.Background(), entry.New())
+					_ = t.Write(context.Background(), e)
 				}
 			case <-ctx.Done():
 				return
