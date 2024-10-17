@@ -103,6 +103,11 @@ func newElasticsearchClient(
 		logResponseBody: config.LogResponseBody,
 	}
 
+	maxRetries := defaultMaxRetries
+	if config.Retry.MaxRetries != 0 {
+		maxRetries = config.Retry.MaxRetries
+	}
+
 	return elasticsearch.NewClient(elasticsearch.Config{
 		Transport: httpClient.Transport,
 
@@ -118,7 +123,7 @@ func newElasticsearchClient(
 		DisableRetry:         !config.Retry.Enabled,
 		EnableRetryOnTimeout: config.Retry.Enabled,
 		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
-		MaxRetries:   config.Retry.MaxRetries,
+		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 
 		// configure sniffing
