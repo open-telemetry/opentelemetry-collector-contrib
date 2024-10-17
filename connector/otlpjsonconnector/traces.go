@@ -54,12 +54,14 @@ func (c *connectorTraces) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 				var t ptrace.Traces
 				t, err := tracesUnmarshaler.UnmarshalTraces([]byte(token.AsString()))
 				if err != nil {
-					c.logger.Error("could extract traces from otlp json", zap.Error(err))
+					c.logger.Error("could not extract traces from otlp json", zap.Error(err))
 					continue
 				}
-				err = c.tracesConsumer.ConsumeTraces(ctx, t)
-				if err != nil {
-					c.logger.Error("could not consume traces from otlp json", zap.Error(err))
+				if t.ResourceSpans().Len() != 0 {
+					err = c.tracesConsumer.ConsumeTraces(ctx, t)
+					if err != nil {
+						c.logger.Error("could not consume traces from otlp json", zap.Error(err))
+					}
 				}
 			}
 		}
