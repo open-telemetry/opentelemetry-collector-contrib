@@ -128,7 +128,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
-			r.set.Logger.Error("decode: %w", zap.Error(err))
+			r.set.Logger.Error("Failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
@@ -145,7 +145,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 
 		if !errors.Is(err, header.ErrEndOfHeader) {
-			r.set.Logger.Error("process: %w", zap.Error(err))
+			r.set.Logger.Error("Failed to process token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
