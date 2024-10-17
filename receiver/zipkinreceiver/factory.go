@@ -35,7 +35,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: ProtocolTypes{
-			Http: confighttp.ServerConfig{
+			HTTP: confighttp.ServerConfig{
 				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 			},
 		},

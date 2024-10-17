@@ -59,7 +59,7 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: tt.args.address,
 					},
 				},
@@ -83,7 +83,7 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
 		Protocols: ProtocolTypes{
-			Http: confighttp.ServerConfig{
+			HTTP: confighttp.ServerConfig{
 				Endpoint: "localhost:" + portStr,
 			},
 		},
@@ -133,7 +133,7 @@ func TestStartTraceReception(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: "localhost:0",
 					},
 				},
@@ -228,7 +228,7 @@ func TestReceiverContentTypes(t *testing.T) {
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: "",
 					},
 				},
@@ -257,7 +257,7 @@ func TestReceiverInvalidContentType(t *testing.T) {
 
 	cfg := &Config{
 		Protocols: ProtocolTypes{
-			Http: confighttp.ServerConfig{
+			HTTP: confighttp.ServerConfig{
 				Endpoint: "",
 			},
 		},
@@ -281,7 +281,7 @@ func TestReceiverConsumerError(t *testing.T) {
 
 	cfg := &Config{
 		Protocols: ProtocolTypes{
-			Http: confighttp.ServerConfig{
+			HTTP: confighttp.ServerConfig{
 				Endpoint: "localhost:9411",
 			},
 		},
@@ -305,7 +305,7 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 
 	cfg := &Config{
 		Protocols: ProtocolTypes{
-			Http: confighttp.ServerConfig{
+			HTTP: confighttp.ServerConfig{
 				Endpoint: "localhost:9411",
 			},
 		},
@@ -433,7 +433,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	next := new(consumertest.TracesSink)
 	cfg := &Config{
 		Protocols: ProtocolTypes{
-			Http: confighttp.ServerConfig{
+			HTTP: confighttp.ServerConfig{
 				Endpoint: "",
 			},
 		},
@@ -476,7 +476,7 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 
 	cfg := &Config{
 		Protocols: ProtocolTypes{
-			Http: confighttp.ServerConfig{
+			HTTP: confighttp.ServerConfig{
 				Endpoint: "",
 			},
 		},

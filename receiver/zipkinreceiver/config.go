@@ -34,7 +34,7 @@ type Config struct {
 }
 
 type ProtocolTypes struct {
-	Http confighttp.ServerConfig `mapstructure:"http"`
+	HTTP confighttp.ServerConfig `mapstructure:"http"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -45,7 +45,7 @@ func (cfg *Config) Validate() error {
 		if disallowHttpDefaultProtocol.IsEnabled() {
 			return fmt.Errorf("the inline setting of http server parameters has been deprecated, please use protocols.http parameter instead")
 		}
-		cfg.Protocols.Http = cfg.ServerConfig
+		cfg.Protocols.HTTP = cfg.ServerConfig
 		cfg.ServerConfig = confighttp.ServerConfig{}
 	}
 
@@ -59,7 +59,7 @@ func (cfg *Config) isServerConfigDefined() bool {
 		cfg.CORS != nil ||
 		cfg.Auth != nil ||
 		cfg.MaxRequestBodySize != 0 ||
-		cfg.IncludeMetadata != false ||
+		cfg.IncludeMetadata ||
 		len(cfg.ResponseHeaders) != 0 ||
 		len(cfg.CompressionAlgorithms) != 0 ||
 		cfg.ReadHeaderTimeout != 0 ||
