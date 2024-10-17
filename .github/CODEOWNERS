@@ -264,6 +264,7 @@ receiver/mysqlreceiver/                                             @open-teleme
 receiver/namedpipereceiver/                                         @open-telemetry/collector-contrib-approvers @sinkingpoint @djaglowski
 receiver/nginxreceiver/                                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nsxtreceiver/                                              @open-telemetry/collector-contrib-approvers @dashpole @schmikei
+receiver/ntpreceiver/                                               @open-telemetry/collector-contrib-approvers @atoulme
 receiver/opencensusreceiver/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 receiver/oracledbreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme
 receiver/osqueryreceiver/                                           @open-telemetry/collector-contrib-approvers @codeboten @nslaughter @smithclay
