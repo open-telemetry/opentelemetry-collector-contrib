@@ -155,11 +155,8 @@ func (c *Converter) workerLoop() {
 	defer c.wg.Done()
 
 	for entries := range c.workerChan {
-
-		pLogs := ConvertEntries(entries)
-
 		// Send plogs directly to flushChan
-		c.flushChan <- pLogs
+		c.flushChan <- ConvertEntries(entries)
 	}
 }
 
