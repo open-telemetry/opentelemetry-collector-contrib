@@ -289,6 +289,7 @@ body:
       - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
+      - receiver/systemd
       - receiver/tcplog
       - receiver/tlscheck
       - receiver/udplog
