@@ -62,6 +62,8 @@ type opampAgent struct {
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+var _ extensioncapabilities.Dependent = (*opampAgent)(nil)
+var _ extensioncapabilities.ConfigWatcher = (*opampAgent)(nil)
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
@@ -84,8 +86,14 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
 
+	headerFunc, err := makeHeadersFunc(o.logger, o.cfg.Server, host)
+	if err != nil {
+		return err
+	}
+
 	settings := types.StartSettings{
 		Header:         header,
+		HeaderFunc:     headerFunc,
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
 		InstanceUid:    types.InstanceUid(o.instanceID),
@@ -146,6 +154,21 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	return err
+}
+
+// Dependencies implements extensioncapabilities.Dependent
+func (o *opampAgent) Dependencies() []component.ID {
+	if o.cfg.Server == nil {
+		return nil
+	}
+
+	var emptyComponentID component.ID
+	authID := o.cfg.Server.GetAuthExtensionID()
+	if authID == emptyComponentID {
+		return nil
+	}
+
+	return []component.ID{authID}
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
@@ -75,6 +76,7 @@ type commonFields struct {
 	Endpoint   string                         `mapstructure:"endpoint"`
 	TLSSetting configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
+	Auth       component.ID                   `mapstructure:"auth,omitempty"`
 }
 
 func (c *commonFields) Scheme() string {
@@ -151,6 +153,17 @@ func (s OpAMPServer) GetEndpoint() string {
 		return s.HTTP.Endpoint
 	}
 	return ""
+}
+
+func (s OpAMPServer) GetAuthExtensionID() component.ID {
+	if s.WS != nil {
+		return s.WS.Auth
+	} else if s.HTTP != nil {
+		return s.HTTP.Auth
+	}
+
+	var emptyComponentID component.ID
+	return emptyComponentID
 }
 
 func (s OpAMPServer) GetPollingInterval() time.Duration {
