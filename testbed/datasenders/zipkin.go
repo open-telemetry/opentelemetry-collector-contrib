@@ -56,7 +56,9 @@ func (zs *zipkinDataSender) Start() error {
 func (zs *zipkinDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   zipkin:
-    endpoint: %s`, zs.GetEndpoint())
+    protocols:
+      http:
+        endpoint: %s`, zs.GetEndpoint())
 }
 
 func (zs *zipkinDataSender) ProtocolName() string {
