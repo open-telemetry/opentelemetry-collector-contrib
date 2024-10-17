@@ -16,7 +16,6 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
-	errMissingHost = errors.New(`"host" must be specified`)
 	errInvalidHost = errors.New(`"host" must be in the form of <hostname>:<port>`)
 )
 
@@ -36,7 +35,7 @@ func (cfg *targetConfig) Validate() error {
 	var err error
 
 	if cfg.Host == "" {
-		err = multierr.Append(err, errMissingHost)
+		err = multierr.Append(err, ErrMissingTargets)
 	} else {
 		_, parseErr := url.ParseRequestURI(cfg.Host)
 		if parseErr != nil {
@@ -52,7 +51,7 @@ func (cfg *Config) Validate() error {
 	var err error
 
 	if len(cfg.Targets) == 0 {
-		err = multierr.Append(err, errMissingHost)
+		err = multierr.Append(err, ErrMissingTargets)
 	}
 
 	for _, target := range cfg.Targets {

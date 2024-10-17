@@ -11,9 +11,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
 
 type MockTLSConn struct {
@@ -25,7 +25,7 @@ func (m *MockTLSConn) ConnectionState() tls.ConnectionState {
 	return m.state
 }
 
-func mockTLSDial(network, address string, config *tls.Config, validity string) (*tls.Conn, error) {
+func mockTLSDial(network, address string, config *tls.Config, validity string) (*MockTLSConn, error) {
 	var cert *x509.Certificate
 	now := time.Now()
 	switch validity {
@@ -52,25 +52,33 @@ func mockTLSDial(network, address string, config *tls.Config, validity string) (
 		}
 	}
 
-	mockConn := &MockTLSConn{
+	return &MockTLSConn{
 		state: tls.ConnectionState{
 			PeerCertificates: []*x509.Certificate{cert},
 		},
-	}
-	return (*tls.Conn)(mockConn), nil
+	}, nil
+}
+
+var tlsDial = func(network, addr string, config *tls.Config) (*MockTLSConn, error) {
+	mockConn, err := mockTLSDial(network, addr, config, "valid") // default to "valid"
+	return (*MockTLSConn)(mockConn), err
 }
 
 func TestScrape_ValidCertificate(t *testing.T) {
 	originalDial := tlsDial
 	defer func() { tlsDial = originalDial }()
-	tlsDial = func(network, addr string, config *tls.Config) (*tls.Conn, error) {
+	tlsDial = func(network, addr string, config *tls.Config) (*MockTLSConn, error) {
 		return mockTLSDial(network, addr, config, "valid")
 	}
 
-	cfg := &Config{Targets: []string{"valid.com:443"}}
-	settings := receivertest.NewNopCreateSettings()
+	cfg := &Config{
+		Targets: []*targetConfig{
+			{Host: "valid.com:443"},
+		},
+	}
+	settings := receivertest.NewNopSettings()
 	s := newScraper(cfg, settings)
-	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings.TelemetrySettings)
+	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
 
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
@@ -81,21 +89,25 @@ func TestScrape_ValidCertificate(t *testing.T) {
 	metric := ilms.Metrics().At(0)
 	dp := metric.Gauge().DataPoints().At(0)
 
-	timeLeft := dp.IntVal()
+	timeLeft := dp.IntValue()
 	assert.Greater(t, timeLeft, int64(0), "Time left should be positive for a valid certificate")
 }
 
 func TestScrape_ExpiredCertificate(t *testing.T) {
 	originalDial := tlsDial
 	defer func() { tlsDial = originalDial }()
-	tlsDial = func(network, addr string, config *tls.Config) (*tls.Conn, error) {
+	tlsDial = func(network, addr string, config *tls.Config) (*MockTLSConn, error) {
 		return mockTLSDial(network, addr, config, "expired")
 	}
 
-	cfg := &Config{Targets: []string{"expired.com:9999"}}
-	settings := receivertest.NewNopCreateSettings()
+	cfg := &Config{
+		Targets: []*targetConfig{
+			{Host: "expired.com:9999"},
+		},
+	}
+	settings := receivertest.NewNopSettings()
 	s := newScraper(cfg, settings)
-	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings.TelemetrySettings)
+	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
 
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
@@ -106,21 +118,25 @@ func TestScrape_ExpiredCertificate(t *testing.T) {
 	metric := ilms.Metrics().At(0)
 	dp := metric.Gauge().DataPoints().At(0)
 
-	timeLeft := dp.IntVal()
+	timeLeft := dp.IntValue()
 	assert.Less(t, timeLeft, int64(0), "Time left should be negative for an expired certificate")
 }
 
 func TestScrape_NotYetValidCertificate(t *testing.T) {
 	originalDial := tlsDial
 	defer func() { tlsDial = originalDial }()
-	tlsDial = func(network, addr string, config *tls.Config) (*tls.Conn, error) {
+	tlsDial = func(network, addr string, config *tls.Config) (*MockTLSConn, error) {
 		return mockTLSDial(network, addr, config, "notYetValid")
 	}
 
-	cfg := &Config{Targets: []string{"notyetvalid.com:8080"}}
-	settings := receivertest.NewNopCreateSettings()
+	cfg := &Config{
+		Targets: []*targetConfig{
+			{Host: "notyetvalid.com:8080"},
+		},
+	}
+	settings := receivertest.NewNopSettings()
 	s := newScraper(cfg, settings)
-	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings.TelemetrySettings)
+	s.mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
 
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
@@ -131,22 +147,26 @@ func TestScrape_NotYetValidCertificate(t *testing.T) {
 	metric := ilms.Metrics().At(0)
 	dp := metric.Gauge().DataPoints().At(0)
 
-	timeLeft := dp.IntVal()
+	timeLeft := dp.IntValue()
 	assert.Greater(t, timeLeft, int64(0), "Time left should be positive for a certificate not yet valid")
 }
 
 func TestScrape_NoTargets(t *testing.T) {
-	cfg := &Config{Targets: []string{}}
-	s := newScraper(cfg, receivertest.NewNopCreateSettings())
+	cfg := &Config{Targets: []*targetConfig{}}
+	s := newScraper(cfg, receivertest.NewNopSettings())
 	metrics, err := s.scrape(context.Background())
 	assert.Error(t, err)
-	assert.Equal(t, errMissingHost, err)
+	assert.Equal(t, ErrMissingTargets, err)
 	assert.Equal(t, 0, metrics.DataPointCount())
 }
 
 func TestScrape_InvalidHost(t *testing.T) {
-	cfg := &Config{Targets: []string{"invalid:1234"}}
-	s := newScraper(cfg, receivertest.NewNopCreateSettings())
+	cfg := &Config{
+		Targets: []*targetConfig{
+			{Host: "invalid:1234"},
+		},
+	}
+	s := newScraper(cfg, receivertest.NewNopSettings())
 	metrics, err := s.scrape(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, 0, metrics.DataPointCount())

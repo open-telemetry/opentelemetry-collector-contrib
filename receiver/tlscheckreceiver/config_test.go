@@ -23,10 +23,10 @@ func TestValidate(t *testing.T) {
 				Targets:          []*targetConfig{},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: errMissingHost,
+			expectedErr: ErrMissingTargets,
 		},
 		{
-			desc: "invalid url",
+			desc: "invalid host",
 			cfg: &Config{
 				Targets: []*targetConfig{
 					{

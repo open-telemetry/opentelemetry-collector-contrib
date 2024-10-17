@@ -6,7 +6,11 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"crypto/tls"
+	"errors"
+	"sync"
+	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -15,7 +19,7 @@ import (
 )
 
 var (
-	errMissingHost = errors.New(`No targets specified`)
+	ErrMissingTargets = errors.New(`No targets specified`)
 )
 
 type scraper struct {
@@ -25,25 +29,24 @@ type scraper struct {
 }
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
-  if len(t.cfg.Targets) == 0 {
-      return pmetric.NewMetrics(), errMissingHost
+  if len(s.cfg.Targets) == 0 {
+      return pmetric.NewMetrics(), ErrMissingTargets
   }
 
   var wg sync.WaitGroup
   wg.Add(len(s.cfg.Targets))
   var mux sync.Mutex
-  for _, host := range s.cfg.Targets {
+  for _, target := range s.cfg.Targets {
       go func(host string) {
           defer wg.Done()
 
           now := pcommon.NewTimestampFromTime(time.Now())
-          start := time.Now()
 
-          conn, err := tls.Dial("tcp", host, &tls.Config{
+          conn, err := tls.Dial("tcp", target.Host, &tls.Config{
 						InsecureSkipVerify: true,
 					})
           if err != nil {
-              s.logger.error("TCP connection error encountered", zap.String("host", host), zap.Error(err))
+              s.logger.Error("TCP connection error encountered", zap.String("host", target.Host), zap.Error(err))
           }
           defer conn.Close()
 
@@ -56,14 +59,15 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
           currentTime := time.Now()
           timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
+          timeLeftInt := int64(timeLeft)
 
-          s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeft, host, issuer, commonName)
+          s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName)
           
-      }(endpoint)
+      }(target.Host)
   }
 
   wg.Wait()
-  return t.mb.Emit(), nil
+  return s.mb.Emit(), nil
 }
 
 func newScraper(cfg *Config, settings receiver.Settings) *scraper {
