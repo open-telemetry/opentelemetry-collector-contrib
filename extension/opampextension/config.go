@@ -54,6 +54,8 @@ type AgentDescription struct {
 type Capabilities struct {
 	// ReportsEffectiveConfig enables the OpAMP ReportsEffectiveConfig Capability. (default: true)
 	ReportsEffectiveConfig bool `mapstructure:"reports_effective_config"`
+	// ReportsHealth enables the OpAMP ReportsHealth Capability. (default: true)
+	ReportsHealth bool `mapstructure:"reports_health"`
 }
 
 func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
@@ -62,6 +64,9 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 
 	if caps.ReportsEffectiveConfig {
 		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
+	}
+	if caps.ReportsHealth {
+		agentCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
 	}
 
 	return agentCapabilities
