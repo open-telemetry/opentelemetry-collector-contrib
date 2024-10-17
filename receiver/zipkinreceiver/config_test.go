@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: "localhost:8765",
 					},
 				},
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "protocols"),
 			expected: &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: "localhost:8765",
 					},
 				},
@@ -64,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "protocols"),
 			expected: &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: "localhost:8765",
 					},
 				},
@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "parse_strings"),
 			expected: &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: defaultBindEndpoint,
 					},
 				},
@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "parse_strings"),
 			expected: &Config{
 				Protocols: ProtocolTypes{
-					Http: confighttp.ServerConfig{
+					HTTP: confighttp.ServerConfig{
 						Endpoint: defaultBindEndpoint,
 					},
 				},
