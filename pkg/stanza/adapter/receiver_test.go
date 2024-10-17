@@ -6,9 +6,6 @@ package adapter
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -19,7 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v2"
 
