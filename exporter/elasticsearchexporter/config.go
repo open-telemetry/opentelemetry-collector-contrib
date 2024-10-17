@@ -274,14 +274,14 @@ func (cfg *Config) Validate() error {
 		return errors.New("compression is not currently configurable")
 	}
 
+	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {
+		return errors.New("must not specify both retry::max_requests and retry::max_retries")
+	}
 	if cfg.Retry.MaxRequests < 0 {
 		return errors.New("retry::max_requests should be non-negative")
 	}
 	if cfg.Retry.MaxRetries < 0 {
 		return errors.New("retry::max_retries should be non-negative")
-	}
-	if cfg.Retry.MaxRequests > 0 && cfg.Retry.MaxRetries > 0 {
-		return errors.New("must not specify both retry::max_requests and retry::max_retries")
 	}
 
 	return nil
