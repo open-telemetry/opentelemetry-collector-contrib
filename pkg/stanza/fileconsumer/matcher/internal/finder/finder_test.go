@@ -166,6 +166,13 @@ func TestFindFiles(t *testing.T) {
 			include:  []string{filepath.Join("**", "*")},
 			expected: []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
 		},
+		{
+			name:     "ExcludeNonexactBase",
+			files:    []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
+			include:  []string{filepath.Join("**", "*")},
+			exclude:  []string{filepath.Join("b", "**", "*.txt")},
+			expected: []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "c", "c1.csv")},
+		},
 	}
 
 	for _, tc := range cases {
@@ -187,7 +194,9 @@ func TestFindFiles(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, file.Close())
 			}
-			files, err := FindFiles(tc.include, tc.exclude)
+			includesByBase, err := GroupByBase(tc.include)
+			require.NoError(t, err)
+			files, err := FindFiles(includesByBase, tc.exclude)
 			assert.NoError(t, err)
 			assert.ElementsMatch(t, tc.expected, files)
 		})
@@ -250,7 +259,9 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			files, err := FindFiles(tc.include, []string{})
+			includesByBase, err := GroupByBase(tc.include)
+			require.NoError(t, err)
+			files, err := FindFiles(includesByBase, []string{})
 			assert.ErrorContains(t, err, tc.failedMsg)
 			assert.ElementsMatch(t, tc.expected, files)
 		})
@@ -273,16 +284,61 @@ func BenchmarkFind10kFiles(b *testing.B) {
 		require.NoError(b, f.Close())
 	}
 
-	includeGlobs := []string{
+	includesByBase, err := GroupByBase([]string{
 		filepath.Join(tmpDir, "log-*.log"),
-	}
-
-	excludeGlobs := []string{}
+	})
+	require.NoError(b, err)
 
 	var r []string
 	b.ResetTimer()
 	for range b.N {
-		r, _ = FindFiles(includeGlobs, excludeGlobs)
+		r, _ = FindFiles(includesByBase, []string{})
+	}
+
+	benchResult = r
+}
+
+func BenchmarkFind10kFilesComplex(b *testing.B) {
+	numFilesPerDir := 100
+	dirs := []string{
+		"a",
+		filepath.Join("a", "1"),
+		filepath.Join("a", "2"),
+		"b",
+		filepath.Join("b", "1"),
+		filepath.Join("b", "1", "z"),
+		filepath.Join("b", "2"),
+		filepath.Join("b", "2", "y"),
+	}
+	tmpDir := b.TempDir()
+
+	for _, dir := range dirs {
+		dirPath := filepath.Join(tmpDir, dir)
+		require.NoError(b, os.MkdirAll(dirPath, 0700))
+		for i := range numFilesPerDir {
+			path := filepath.Join(dirPath, fmt.Sprintf("log-%05d.log", i))
+			f, err := os.Create(path)
+			require.NoError(b, err)
+			require.NoError(b, f.Close())
+		}
+	}
+
+	includesByBase, err := GroupByBase([]string{
+		filepath.Join(tmpDir, "**", "*"),
+		filepath.Join(tmpDir, "a", "**", "*"), // Find some files multiple times
+	})
+	require.NoError(b, err)
+
+	excludes := []string{
+		filepath.Join(tmpDir, "a", "**", "*"),
+		filepath.Join(tmpDir, "b", "1", "**", "*"),
+	}
+	require.NoError(b, err)
+
+	var r []string
+	b.ResetTimer()
+	for range b.N {
+		r, _ = FindFiles(includesByBase, excludes)
 	}
 
 	benchResult = r

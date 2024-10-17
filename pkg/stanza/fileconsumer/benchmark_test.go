@@ -22,10 +22,9 @@ import (
 )
 
 type fileInputBenchmark struct {
-	name      string
-	paths     []string
-	idlePaths []string
-	config    func() *Config
+	name   string
+	paths  []string
+	config func() *Config
 }
 
 func BenchmarkFileInput(b *testing.B) {
@@ -149,23 +148,6 @@ func BenchmarkFileInput(b *testing.B) {
 				return cfg
 			},
 		},
-		{
-			name:  "ManyIdle",
-			paths: []string{"file0.log"},
-			idlePaths: func() []string {
-				paths := make([]string, 1000)
-				for i := range paths {
-					paths[i] = fmt.Sprintf("idle%d.log", i)
-				}
-				return paths
-			}(),
-			config: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = []string{"file*.log", "idle*.log"}
-				cfg.MaxConcurrentFiles = 100
-				return cfg
-			},
-		},
 	}
 
 	// Pregenerate some lines which we can write to the files
@@ -194,19 +176,6 @@ func BenchmarkFileInput(b *testing.B) {
 				}
 				require.NoError(b, f.Sync())
 				files = append(files, f)
-			}
-
-			for _, idle := range bench.idlePaths {
-				f := filetest.OpenFile(b, filepath.Join(rootDir, idle))
-				// Initialize the file to ensure a unique fingerprint
-				_, err := f.WriteString(f.Name() + "\n")
-				require.NoError(b, err)
-				for i := 0; i < 100; i++ {
-					_, err := f.WriteString(severalLines)
-					require.NoError(b, err)
-				}
-				require.NoError(b, f.Sync())
-				require.NoError(b, f.Close())
 			}
 
 			cfg := bench.config()
