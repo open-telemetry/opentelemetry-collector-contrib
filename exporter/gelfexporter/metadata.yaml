@@ -1,0 +1,15 @@
+type: gelfexporter
+scope_name: otelcol/gelfexporter
+
+status:
+  class: exporter
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [BharatKJain]
+    emeritus: [BharatKJain]
+    seeking_new: true
+
+tests:
+  config:
