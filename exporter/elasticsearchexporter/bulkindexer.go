@@ -74,7 +74,6 @@ func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender
 		Pipeline:              config.Pipeline,
 		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
 		RequireDataStream:     config.MappingMode() == MappingOTel,
-
 	}
 }
 
