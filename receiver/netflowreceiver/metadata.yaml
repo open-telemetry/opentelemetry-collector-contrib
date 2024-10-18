@@ -1,0 +1,10 @@
+type: netflow
+scope_name: otelcol/netflowreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: []
+  codeowners:
+    active: [evan-bradley, dlopes7]
