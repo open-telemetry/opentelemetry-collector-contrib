@@ -14,6 +14,8 @@ import (
 )
 
 func TestByte(t *testing.T) {
+	// UTF8 support will be disabled for all tests unless explicitly enabled
+	testutil.SetFeatureGateForTest(t, AllowUTF8FeatureGate, false)
 
 	require.Equal(t, "system_filesystem_usage_bytes", normalizeName(createGauge("system.filesystem.usage", "By"), ""))
 
@@ -95,14 +97,6 @@ func TestEmpty(t *testing.T) {
 
 }
 
-func TestUnsupportedRunes(t *testing.T) {
-
-	require.Equal(t, "unsupported_metric_temperature_F", normalizeName(createGauge("unsupported.metric.temperature", "°F"), ""))
-	require.Equal(t, "unsupported_metric_weird", normalizeName(createGauge("unsupported.metric.weird", "+=.:,!* & #"), ""))
-	require.Equal(t, "unsupported_metric_redundant_test_per_C", normalizeName(createGauge("unsupported.metric.redundant", "__test $/°C"), ""))
-
-}
-
 func TestOtelReceivers(t *testing.T) {
 
 	require.Equal(t, "active_directory_ds_replication_network_io_bytes_total", normalizeName(createCounter("active_directory.ds.replication.network.io", "By"), ""))
@@ -164,15 +158,6 @@ func TestTrimPromSuffixes(t *testing.T) {
 func TestNamespace(t *testing.T) {
 	require.Equal(t, "space_test", normalizeName(createGauge("test", ""), "space"))
 	require.Equal(t, "space_test", normalizeName(createGauge("#test", ""), "space"))
-}
-
-func TestCleanUpString(t *testing.T) {
-	require.Equal(t, "", CleanUpString(""))
-	require.Equal(t, "a_b", CleanUpString("a b"))
-	require.Equal(t, "hello_world", CleanUpString("hello, world!"))
-	require.Equal(t, "hello_you_2", CleanUpString("hello you 2"))
-	require.Equal(t, "1000", CleanUpString("$1000"))
-	require.Equal(t, "", CleanUpString("*+$^=)"))
 }
 
 func TestUnitMapGetOrDefault(t *testing.T) {
@@ -242,4 +227,80 @@ func TestBuildCompliantNameWithoutSuffixes(t *testing.T) {
 	require.Equal(t, ":foo::bar", BuildCompliantName(createGauge(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 	require.Equal(t, ":foo::bar", BuildCompliantName(createCounter(":foo::bar", ""), "", addUnitAndTypeSuffixes))
 
+}
+
+// Tests with UTF8 support are moved to the end to avoid breaking the tests when the feature gate is disabled.
+func TestCleanUpString(t *testing.T) {
+	for _, allowUTF8 := range []bool{true, false} {
+		testutil.SetFeatureGateForTest(t, AllowUTF8FeatureGate, allowUTF8)
+		if allowUTF8 {
+			require.Equal(t, "", CleanUpString(""))
+			require.Equal(t, "a b", CleanUpString("a b"))
+			require.Equal(t, "hello, world!", CleanUpString("hello, world!"))
+			require.Equal(t, "hello you 2", CleanUpString("hello you 2"))
+			require.Equal(t, "$1000", CleanUpString("$1000"))
+			require.Equal(t, "*+$^=)", CleanUpString("*+$^=)"))
+		} else {
+			require.Equal(t, "", CleanUpString(""))
+			require.Equal(t, "a_b", CleanUpString("a b"))
+			require.Equal(t, "hello_world", CleanUpString("hello, world!"))
+			require.Equal(t, "hello_you_2", CleanUpString("hello you 2"))
+			require.Equal(t, "1000", CleanUpString("$1000"))
+			require.Equal(t, "", CleanUpString("*+$^=)"))
+		}
+	}
+}
+
+func TestAllowUTF8(t *testing.T) {
+	for _, allowUTF8 := range []bool{true, false} {
+		testutil.SetFeatureGateForTest(t, AllowUTF8FeatureGate, allowUTF8)
+		if allowUTF8 {
+			require.Equal(t, "unsupported.metric.temperature_°F", normalizeName(createGauge("unsupported.metric.temperature", "°F"), ""))
+			require.Equal(t, "unsupported.metric.weird_+=.:,!* & #", normalizeName(createGauge("unsupported.metric.weird", "+=.:,!* & #"), ""))
+			require.Equal(t, "unsupported.metric.redundant___test $_per_°C", normalizeName(createGauge("unsupported.metric.redundant", "__test $/°C"), ""))
+		} else {
+			require.Equal(t, "unsupported_metric_temperature_F", normalizeName(createGauge("unsupported.metric.temperature", "°F"), ""))
+			require.Equal(t, "unsupported_metric_weird", normalizeName(createGauge("unsupported.metric.weird", "+=.:,!* & #"), ""))
+			require.Equal(t, "unsupported_metric_redundant_test_per_C", normalizeName(createGauge("unsupported.metric.redundant", "__test $/°C"), ""))
+		}
+	}
+}
+
+// AllowUTF8Gate and NormalizeNameGate overlap in functionality, so we need to test the interaction between them.
+func TestGatesInteractions(t *testing.T) {
+	for _, allowUTF8 := range []bool{true, false} {
+		for _, normalizeName := range []bool{true, false} {
+			testutil.SetFeatureGateForTest(t, AllowUTF8FeatureGate, allowUTF8)
+			testutil.SetFeatureGateForTest(t, normalizeNameGate, normalizeName)
+
+			switch {
+			case allowUTF8 && normalizeName:
+				// metric name with UTF8 characters
+				// Type suffixes added
+				// Unit suffixes added
+				// UTF8 characters in unit are preserved
+				require.Equal(t, "metric.with.utf8_°F", BuildCompliantName(createGauge("metric.with.utf8", "°F"), "", normalizeName))
+				require.Equal(t, "metric.with.utf8_bytes_total", BuildCompliantName(createCounter("metric.with.utf8", "By"), "", normalizeName))
+			case allowUTF8 && !normalizeName:
+				// metric name with UTF8 characters
+				// Type suffixes NOT added
+				// Unit suffixes NOT added
+				require.Equal(t, "metric.with.utf8", BuildCompliantName(createGauge("metric.with.utf8", "°F"), "", normalizeName))
+				require.Equal(t, "metric.with.utf8", BuildCompliantName(createCounter("metric.with.utf8", "By"), "", normalizeName))
+			case !allowUTF8 && normalizeName:
+				// metric name WITHOUT UTF8 characters
+				// Type suffixes added
+				// Unit suffixes added
+				// UTF8 characters in unit are REMOVED
+				require.Equal(t, "metric_with_utf8_F", BuildCompliantName(createGauge("metric.with.utf8", "°F"), "", normalizeName))
+				require.Equal(t, "metric_with_utf8_bytes_total", BuildCompliantName(createCounter("metric.with.utf8", "By"), "", normalizeName))
+			case !allowUTF8 && !normalizeName:
+				// metric name WITHOUT UTF8 characters
+				// Type suffixes NOT added
+				// Unit suffixes NOT added
+				require.Equal(t, "metric_with_utf8", BuildCompliantName(createGauge("metric.with.utf8", "°F"), "", normalizeName))
+				require.Equal(t, "metric_with_utf8", BuildCompliantName(createCounter("metric.with.utf8", "By"), "", normalizeName))
+			}
+		}
+	}
 }
