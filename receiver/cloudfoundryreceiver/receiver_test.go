@@ -116,7 +116,7 @@ func TestGetResourceMetrics(t *testing.T) {
 		expected      pmetric.ResourceMetrics
 	}{
 		{
-			name:          "resource attributes true",
+			name:          "resource attributes false",
 			envelope:      loggregator_v2.Envelope{},
 			resourceAttrs: false,
 			metrics:       pmetric.NewMetrics(),
@@ -214,7 +214,7 @@ func TestGetResourceLogs(t *testing.T) {
 		expected      plog.ResourceLogs
 	}{
 		{
-			name:          "resource attributes true",
+			name:          "resource attributes false",
 			envelope:      loggregator_v2.Envelope{},
 			resourceAttrs: false,
 			logs:          plog.NewLogs(),
