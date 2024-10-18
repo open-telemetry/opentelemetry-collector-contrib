@@ -89,3 +89,6 @@ elasticsearch/batcher_disabled:
 elasticsearch/compression_none:
   endpoint: https://elastic.example.com:9200
   compression: none
+elasticsearch/compression_gzip:
+  endpoint: https://elastic.example.com:9200
+  compression: gzip

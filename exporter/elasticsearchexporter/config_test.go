@@ -315,6 +315,15 @@ func TestConfig(t *testing.T) {
 				cfg.Compression = "none"
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "compression_gzip"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.Compression = "gzip"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
