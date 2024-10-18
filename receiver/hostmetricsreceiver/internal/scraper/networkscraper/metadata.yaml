@@ -2,7 +2,7 @@ type: hostmetricsreceiver/network
 
 parent: hostmetrics
 
-sem_conv_version: 1.9.0
+sem_conv_version: 1.27.0
 
 attributes:
   device:
