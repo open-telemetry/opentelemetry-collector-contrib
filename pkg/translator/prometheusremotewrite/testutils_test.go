@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -134,6 +135,18 @@ func getAttributes(labels ...string) pcommon.Map {
 		attributeMap.PutStr(labels[i], labels[i+1])
 	}
 	return attributeMap
+}
+
+// Prometheus TimeSeries
+func getPromLabelsV2(lbs ...string) labels.Labels {
+	pbLbs := labels.Labels{}
+	for i := 0; i < len(lbs); i += 2 {
+		pbLbs = append(pbLbs, labels.Label{
+			Name:  lbs[i],
+			Value: lbs[i+1],
+		})
+	}
+	return pbLbs
 }
 
 // Prometheus TimeSeries
