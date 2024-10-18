@@ -278,7 +278,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 
 			client, err := elasticsearch.NewClient(elasticsearch.Config{
 				Transport: &mockTransport{
-					RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+					RoundTripFunc: func(*http.Request) (*http.Response, error) {
 						return &http.Response{
 							Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 							Body:   io.NopCloser(strings.NewReader(successResp)),
