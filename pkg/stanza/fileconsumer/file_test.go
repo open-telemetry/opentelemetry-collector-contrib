@@ -1598,3 +1598,82 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	operator.poll(context.TODO())
 	sink.ExpectToken(t, []byte("testlog4"))
 }
+
+func TestIncludeFileRecordNumber(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.IncludeFileRecordNumber = true
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "testlog1\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
+		attrs.LogFileName:         filepath.Base(temp.Name()),
+		attrs.LogFileRecordNumber: int64(1),
+	})
+}
+
+func TestIncludeFileRecordNumberWithHeaderConfigured(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.IncludeFileRecordNumber = true
+	cfg = cfg.withHeader("^#", "(?P<header_attr>[A-z]+)")
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "#abc\n#xyz: headerValue2\ntestlog1\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
+		attrs.LogFileName: filepath.Base(temp.Name()),
+		// The record number should be 1, but it's actually 4 = 1 + 2 header lines + 1
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35869
+		attrs.LogFileRecordNumber: int64(4),
+		"header_attr":             "xyz",
+	})
+}
+
+func TestIncludeFileRecordNumberWithHeaderConfiguredButMissing(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.IncludeFileRecordNumber = true
+	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTemp(t, tempDir)
+	filetest.WriteString(t, temp, "testlog1\n")
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
+		attrs.LogFileName: filepath.Base(temp.Name()),
+		// The record number should be 1, but it's actually 2 = 1 + 1
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35869
+		attrs.LogFileRecordNumber: int64(2),
+	})
+}
