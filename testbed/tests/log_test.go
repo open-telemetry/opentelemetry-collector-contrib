@@ -247,6 +247,7 @@ func TestLogLargeFiles(t *testing.T) {
 		sender       testbed.DataSender
 		receiver     testbed.DataReceiver
 		loadOptions  testbed.LoadOptions
+		resourceSpec testbed.ResourceSpec
 		sleepSeconds int
 	}{
 		{
@@ -263,6 +264,10 @@ func TestLogLargeFiles(t *testing.T) {
 				ItemsPerBatch:      1,
 				Parallel:           100,
 			},
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
+			},
 			sleepSeconds: 100,
 		},
 		{
@@ -278,6 +283,10 @@ func TestLogLargeFiles(t *testing.T) {
 				DataItemsPerSecond: 330000,
 				ItemsPerBatch:      10,
 				Parallel:           10,
+			},
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 100,
+				ExpectedMaxRAM: 150,
 			},
 			sleepSeconds: 200,
 		},
@@ -296,6 +305,7 @@ func TestLogLargeFiles(t *testing.T) {
 				performanceResultsSummary,
 				test.sleepSeconds,
 				processors,
+				test.resourceSpec,
 			)
 		})
 	}
