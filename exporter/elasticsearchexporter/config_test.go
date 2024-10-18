@@ -319,7 +319,7 @@ func TestConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
-		t.Run(strings.Replace(tt.id.String(), "/", "_", -1), func(t *testing.T) {
+		t.Run(strings.ReplaceAll(tt.id.String(), "/", "_"), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
