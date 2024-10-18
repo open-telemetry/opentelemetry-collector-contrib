@@ -162,9 +162,8 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 			if errors.Is(err, header.ErrEndOfHeader) {
 				// End of header reached.
 				break
-			} else {
-				r.set.Logger.Error("process header: %w", zap.Error(err))
 			}
+			r.set.Logger.Error("process header: %w", zap.Error(err))
 		}
 
 		r.Offset = s.Pos()
