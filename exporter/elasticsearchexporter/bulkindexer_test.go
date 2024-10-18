@@ -15,6 +15,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -247,6 +248,76 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			for _, wantField := range tt.wantFields {
 				assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
 			}
+		})
+	}
+}
+
+func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
+	tests := []struct {
+		name   string
+		config Config
+	}{
+		{
+			name: "compression none",
+			config: Config{
+				NumWorkers:   1,
+				ClientConfig: confighttp.ClientConfig{Compression: "none"},
+			},
+		},
+		{
+			name: "compression gzip",
+			config: Config{
+				NumWorkers:   1,
+				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			loggerCore, logObserver := observer.New(zap.DebugLevel)
+
+			esLogger := clientLogger{
+				Logger:          zap.New(loggerCore),
+				logRequestBody:  true,
+				logResponseBody: true,
+			}
+
+			client, err := elasticsearch.NewClient(elasticsearch.Config{
+				Transport: &mockTransport{
+					RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+						return &http.Response{
+							Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:   io.NopCloser(strings.NewReader(successResp)),
+						}, nil
+					},
+				},
+				Logger: &esLogger,
+			})
+			require.NoError(t, err)
+
+			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
+			require.NoError(t, err)
+			session, err := bulkIndexer.StartSession(context.Background())
+			require.NoError(t, err)
+
+			requestBody := `{"foo": "bar"}`
+			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(requestBody), nil))
+			assert.NoError(t, bulkIndexer.Close(context.Background()))
+
+			records := logObserver.AllUntimed()
+			assert.Len(t, records, 2)
+
+			assert.Equal(t, "/", records[0].ContextMap()["path"])
+			assert.Nil(t, records[0].ContextMap()["request_body"])
+			assert.JSONEq(t, successResp, records[0].ContextMap()["response_body"].(string))
+
+			assert.Equal(t, "/_bulk", records[1].ContextMap()["path"])
+			assert.Equal(t, "{\"create\":{\"_index\":\"foo\"}}\n{\"foo\": \"bar\"}\n", records[1].ContextMap()["request_body"])
+			assert.JSONEq(t, successResp, records[1].ContextMap()["response_body"].(string))
 		})
 	}
 }
