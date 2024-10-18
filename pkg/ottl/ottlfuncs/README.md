@@ -452,6 +452,7 @@ Available Converters:
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [RemoveXML](#removexml)
+- [ParseBytes](#parsebytes)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -1597,6 +1598,24 @@ Delete all comments
 Delete text from nodes that contain the word "sensitive"
 
 - `RemoveXML(body, "//*[contains(text(), 'sensitive')]")`
+
+### ParseBytes
+
+`ParseBytes(value)`
+
+The `ParseBytes` Converter converts `value` from a humanized, string representation of bytes, into the number of bytes it represents.
+
+The returned type is int64.
+
+If `value` is another type or parsing failed nil is always returned.
+
+Examples:
+
+- `ParseBytes(attributes["system.memory.total"])`
+
+- `ParseBytes("1.24GB")`
+
+- `ParseBytes("1,500 KiB")`
 
 ### Seconds
 
