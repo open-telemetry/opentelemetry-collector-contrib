@@ -60,15 +60,15 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: podmanStats.BlockInput}})
 
 		case "container.cpu.usage.system":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: toSecondsWithNanosecondPrecision(podmanStats.CPUSystemNano)}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{doubleVal: toSecondsWithNanosecondPrecision(podmanStats.CPUSystemNano)}})
 		case "container.cpu.usage.total":
-			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{intVal: toSecondsWithNanosecondPrecision(podmanStats.CPUNano)}})
+			assertMetricEqual(t, m, pmetric.MetricTypeSum, []point{{doubleVal: toSecondsWithNanosecondPrecision(podmanStats.CPUNano)}})
 		case "container.cpu.percent":
 			assertMetricEqual(t, m, pmetric.MetricTypeGauge, []point{{doubleVal: podmanStats.CPU}})
 		case "container.cpu.usage.percpu":
 			points := make([]point, len(podmanStats.PerCPU))
 			for i, v := range podmanStats.PerCPU {
-				points[i] = point{intVal: toSecondsWithNanosecondPrecision(v), attributes: map[string]string{"core": fmt.Sprintf("cpu%d", i)}}
+				points[i] = point{doubleVal: toSecondsWithNanosecondPrecision(v), attributes: map[string]string{"core": fmt.Sprintf("cpu%d", i)}}
 			}
 			assertMetricEqual(t, m, pmetric.MetricTypeSum, points)
 
@@ -79,6 +79,8 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 }
 
 func assertMetricEqual(t *testing.T, m pmetric.Metric, dt pmetric.MetricType, pts []point) {
+	t.Helper()
+
 	assert.Equal(t, m.Type(), dt)
 	switch dt {
 	case pmetric.MetricTypeGauge:
@@ -99,11 +101,13 @@ func assertMetricEqual(t *testing.T, m pmetric.Metric, dt pmetric.MetricType, pt
 }
 
 func assertPoints(t *testing.T, dpts pmetric.NumberDataPointSlice, pts []point) {
+	t.Helper()
+
 	assert.Len(t, pts, dpts.Len())
 	for i, expected := range pts {
 		got := dpts.At(i)
 		assert.Equal(t, got.IntValue(), int64(expected.intVal))
-		assert.Equal(t, expected.doubleVal, got.DoubleValue())
+		assert.InDelta(t, expected.doubleVal, got.DoubleValue(), 0.01)
 		for k, expectedV := range expected.attributes {
 			gotV, exists := got.Attributes().Get(k)
 			assert.True(t, exists)
