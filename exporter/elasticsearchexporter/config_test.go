@@ -301,6 +301,15 @@ func TestConfig(t *testing.T) {
 				cfg.Batcher.Enabled = &enabled
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "compression_none"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.Compression = "none"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -387,9 +396,9 @@ func TestConfig_Validate(t *testing.T) {
 		"compression unsupported": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Compression = configcompression.TypeGzip
+				cfg.Compression = configcompression.TypeSnappy
 			}),
-			err: `compression is not currently configurable`,
+			err: `compression must be set to one of [none, gzip]`,
 		},
 		"both max_retries and max_requests specified": {
 			config: withDefaultConfig(func(cfg *Config) {
