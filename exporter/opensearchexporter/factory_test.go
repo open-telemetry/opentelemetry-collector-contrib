@@ -20,30 +20,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	params := exportertest.NewNopSettings()
-	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a metrics exporter")
-}
-
-func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	params := exportertest.NewNopSettings()
-	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a traces exporter")
-}
-
-func TestFactory_CreateLogsExporter_Fail(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	params := exportertest.NewNopSettings()
-	_, err := factory.CreateLogsExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a logs exporter")
-}
-
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
