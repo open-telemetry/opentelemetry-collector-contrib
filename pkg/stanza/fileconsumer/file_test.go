@@ -1643,10 +1643,8 @@ func TestIncludeFileRecordNumberWithHeaderConfigured(t *testing.T) {
 	}()
 
 	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName: filepath.Base(temp.Name()),
-		// The record number should be 1, but it's actually 4 = 1 + 2 header lines + 1
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35869
-		attrs.LogFileRecordNumber: int64(4),
+		attrs.LogFileName:         filepath.Base(temp.Name()),
+		attrs.LogFileRecordNumber: int64(1),
 		"header_attr":             "xyz",
 	})
 }
@@ -1671,9 +1669,7 @@ func TestIncludeFileRecordNumberWithHeaderConfiguredButMissing(t *testing.T) {
 	}()
 
 	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName: filepath.Base(temp.Name()),
-		// The record number should be 1, but it's actually 2 = 1 + 1
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35869
-		attrs.LogFileRecordNumber: int64(2),
+		attrs.LogFileName:         filepath.Base(temp.Name()),
+		attrs.LogFileRecordNumber: int64(1),
 	})
 }
