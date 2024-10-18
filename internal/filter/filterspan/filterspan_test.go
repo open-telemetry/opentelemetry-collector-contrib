@@ -94,7 +94,7 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 				},
 				Attributes: []filterconfig.Attribute{},
 			},
-			errorString: "span_kinds string must match one of the standard span kinds when match_type=strict: [     SPAN_KIND_CLIENT SPAN_KIND_CONSUMER SPAN_KIND_INTERNAL SPAN_KIND_PRODUCER SPAN_KIND_SERVER]",
+			errorString: "span_kinds string must match one of the standard span kinds when match_type=strict: [SPAN_KIND_CLIENT SPAN_KIND_CONSUMER SPAN_KIND_INTERNAL SPAN_KIND_PRODUCER SPAN_KIND_SERVER]",
 		},
 	}
 	for _, tc := range testcases {
