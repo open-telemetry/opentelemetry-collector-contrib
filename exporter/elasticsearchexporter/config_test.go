@@ -6,6 +6,7 @@ package elasticsearchexporter
 import (
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,6 +39,7 @@ func TestConfig(t *testing.T) {
 
 	defaultMaxIdleConns := 100
 	defaultIdleConnTimeout := 90 * time.Second
+	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
 		configFile string
@@ -80,6 +82,7 @@ func TestConfig(t *testing.T) {
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
+					cfg.Compression = defaultCompression
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -150,6 +153,7 @@ func TestConfig(t *testing.T) {
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
+					cfg.Compression = defaultCompression
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -220,6 +224,7 @@ func TestConfig(t *testing.T) {
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
+					cfg.Compression = defaultCompression
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -313,7 +318,8 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		tt := tt
+		t.Run(strings.Replace(tt.id.String(), "/", "_", -1), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
