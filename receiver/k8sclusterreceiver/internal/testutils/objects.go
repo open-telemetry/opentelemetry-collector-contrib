@@ -288,6 +288,34 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 		},
 	}
 }
+
+func NewCrashLoopPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
+	return &corev1.PodStatus{
+		Phase:    corev1.PodRunning,
+		QOSClass: corev1.PodQOSBestEffort,
+		ContainerStatuses: []corev1.ContainerStatus{
+			{
+				Name:         containerName,
+				Ready:        true,
+				RestartCount: 3,
+				Image:        "container-image-name",
+				ContainerID:  containerID,
+				State: corev1.ContainerState{
+					Waiting: &corev1.ContainerStateWaiting{
+						Reason: "CrashLoopBackOff",
+					},
+				},
+				LastTerminationState: corev1.ContainerState{
+					Terminated: &corev1.ContainerStateTerminated{
+						Reason:   "Error",
+						ExitCode: 1,
+					},
+				},
+			},
+		},
+	}
+}
+
 func WithOwnerReferences(or []v1.OwnerReference, obj any) any {
 	switch o := obj.(type) {
 	case *corev1.Pod:

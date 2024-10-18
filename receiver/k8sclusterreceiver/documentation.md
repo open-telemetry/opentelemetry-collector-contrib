@@ -396,6 +396,14 @@ metrics:
     enabled: true
 ```
 
+### k8s.container.status.waiting
+
+Whether container is in waiting state. (0 for now, 1 for yes)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+|  | Gauge | Int |
+
 ### k8s.node.condition
 
 The condition of a particular Node.
