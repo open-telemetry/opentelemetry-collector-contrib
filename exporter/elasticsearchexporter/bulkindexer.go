@@ -4,6 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/elastic/go-docappender/v2"
 	"github.com/elastic/go-elasticsearch/v7"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.uber.org/zap"
 )
 
@@ -68,11 +70,16 @@ func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender
 			maxDocRetries = config.Retry.MaxRetries
 		}
 	}
+	var compressionLevel int
+	if config.Compression == configcompression.TypeGzip {
+		compressionLevel = gzip.DefaultCompression
+	}
 	return docappender.BulkIndexerConfig{
 		Client:                client,
 		MaxDocumentRetries:    maxDocRetries,
 		Pipeline:              config.Pipeline,
 		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
+		CompressionLevel:      compressionLevel,
 	}
 }
 
