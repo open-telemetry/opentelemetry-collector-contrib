@@ -65,7 +65,7 @@ func (c *Config) Validate() error {
 	for _, object := range c.Objects {
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
-			availableResource := make([]string, len(validObjects))
+			availableResource := make([]string, 0, len(validObjects))
 			for k := range validObjects {
 				availableResource = append(availableResource, k)
 			}
