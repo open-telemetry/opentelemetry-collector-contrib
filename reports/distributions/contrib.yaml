@@ -107,6 +107,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awss3
         - awsxray
         - azureblob
         - azureeventhub
