@@ -42,7 +42,7 @@ func TestJaegerJsonBatchMarshaler(t *testing.T) {
 	}
 	jaegerJSONMessages, err := jaegerJSONMarshaler.Marshal(ptraces, "")
 	require.NoError(t, err)
-	assert.Equal(t, jaegerJSONMessages[0].Payload, jsonBytes)
+	assert.JSONEq(t, string(jaegerJSONMessages[0].Payload), string(jsonBytes))
 }
 
 func TestJaegerProtoBatchMarshaler(t *testing.T) {

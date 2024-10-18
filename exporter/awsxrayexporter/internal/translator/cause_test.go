@@ -193,7 +193,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, errorMsg))
+	assert.Contains(t, jsonStr, errorMsg)
 }
 
 func TestCauseWithHttpStatusMessage(t *testing.T) {
@@ -218,7 +218,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, errorMsg))
+	assert.Contains(t, jsonStr, errorMsg)
 }
 
 func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {

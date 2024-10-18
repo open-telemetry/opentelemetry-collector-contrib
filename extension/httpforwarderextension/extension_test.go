@@ -205,7 +205,7 @@ func TestExtension(t *testing.T) {
 			if test.startUpError {
 				err = hf.Start(ctx, componenttest.NewNopHost())
 				if test.startUpErrorMessage != "" {
-					require.True(t, strings.Contains(err.Error(), test.startUpErrorMessage))
+					require.Contains(t, err.Error(), test.startUpErrorMessage)
 				}
 				require.Error(t, err)
 

@@ -4,7 +4,6 @@
 package translator
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -31,7 +30,7 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestClientSpanWithURLAttributeStable(t *testing.T) {
@@ -49,7 +48,7 @@ func TestClientSpanWithURLAttributeStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
@@ -70,7 +69,7 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
@@ -95,7 +94,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+	assert.Contains(t, jsonStr, "http://kb234.example.com:8080/users/junit")
 }
 
 func TestClientSpanWithPeerAttributesStable(t *testing.T) {
@@ -120,7 +119,7 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+	assert.Contains(t, jsonStr, "http://kb234.example.com:8080/users/junit")
 }
 
 func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
@@ -168,7 +167,7 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "http://10.8.17.36:8080/users/junit"))
+	assert.Contains(t, jsonStr, "http://10.8.17.36:8080/users/junit")
 }
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
@@ -187,7 +186,7 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit"))
+	assert.Contains(t, jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit")
 }
 
 func TestServerSpanWithURLAttribute(t *testing.T) {
@@ -207,7 +206,7 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestServerSpanWithURLAttributeStable(t *testing.T) {
@@ -227,7 +226,7 @@ func TestServerSpanWithURLAttributeStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
@@ -248,7 +247,7 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
@@ -269,7 +268,7 @@ func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
@@ -291,7 +290,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) {
@@ -313,7 +312,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) 
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
@@ -337,7 +336,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+	assert.Contains(t, jsonStr, "http://kb234.example.com:8080/users/junit")
 }
 
 func TestServerSpanWithSchemeNamePortTargetAttributesStable(t *testing.T) {
@@ -361,7 +360,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributesStable(t *testing.T) {
 	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+	assert.Contains(t, jsonStr, "http://kb234.example.com:8080/users/junit")
 }
 
 func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {

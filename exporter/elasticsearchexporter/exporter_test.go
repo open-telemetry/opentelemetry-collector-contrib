@@ -233,7 +233,7 @@ func TestExporterLogs(t *testing.T) {
 	t.Run("publish with dedup", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			assert.Equal(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope":{"name":"","value":"value","version":""},"SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
+			assert.JSONEq(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope":{"name":"","value":"value","version":""},"SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
@@ -706,9 +706,9 @@ func TestExporterLogs(t *testing.T) {
 
 		assert.Len(t, rec.Items(), 1)
 		doc := rec.Items()[0].Document
-		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
@@ -1223,9 +1223,9 @@ func TestExporterMetrics(t *testing.T) {
 
 		assert.Len(t, rec.Items(), 1)
 		doc := rec.Items()[0].Document
-		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("otel mode _doc_count hint", func(t *testing.T) {
@@ -1689,9 +1689,9 @@ func TestExporterTraces(t *testing.T) {
 		assert.Len(t, rec.Items(), 2)
 		for _, item := range rec.Items() {
 			doc := item.Document
-			assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-			assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-			assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+			assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+			assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+			assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 		}
 	})
 
