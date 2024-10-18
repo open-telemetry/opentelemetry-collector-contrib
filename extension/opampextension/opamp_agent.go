@@ -32,6 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
+var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
+
 type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
@@ -121,6 +123,8 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+
 	o.logger.Debug("Starting OpAMP client...")
 
 	if err := o.opampClient.Start(context.Background(), settings); err != nil {
@@ -141,6 +145,7 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	if o.opampClient == nil {
 		return nil
 	}
+
 	o.logger.Debug("Stopping OpAMP client...")
 	err := o.opampClient.Stop(ctx)
 	// Opamp-go considers this an error, but the collector does not.
@@ -176,6 +181,16 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 
 func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
 	return o.customCapabilityRegistry.Register(capability, opts...)
+}
+
+func (o *opampAgent) Ready() error {
+	o.setHealth(&protobufs.ComponentHealth{Healthy: true})
+	return nil
+}
+
+func (o *opampAgent) NotReady() error {
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+	return nil
 }
 
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
@@ -342,5 +357,13 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
+	}
+}
+
+func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
+	if o.capabilities.ReportsHealth && o.opampClient != nil {
+		if err := o.opampClient.SetHealth(ch); err != nil {
+			o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
+		}
 	}
 }
