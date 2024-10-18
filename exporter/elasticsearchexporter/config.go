@@ -274,8 +274,8 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
-	if cfg.Compression != "" && cfg.Compression != configcompression.TypeGzip {
-		return errors.New("compression must be empty or set to gzip")
+	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
+		return errors.New("compression must be set to one of [none, gzip]")
 	}
 
 	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {
