@@ -125,9 +125,7 @@ func Test_FilterAttributes(t *testing.T) {
 			want: func() pmetric.Metric {
 				m := pmetric.NewMetric()
 				s := m.SetEmptySum()
-				d := s.DataPoints().AppendEmpty()
-				d.Attributes().PutStr("attr1", "val1")
-				d.Attributes().PutStr("attr2", "val2")
+				s.DataPoints().AppendEmpty()
 				return m
 			},
 		},

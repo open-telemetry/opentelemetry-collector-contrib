@@ -68,7 +68,7 @@ func (rCfg *Config) validate() error {
 	return nil
 }
 
-// CreateTracesReceiver creates a trace receiver based on provided config.
+// CreateTraces creates a trace receiver based on provided config.
 func createTracesReceiver(
 	_ context.Context,
 	params receiver.Settings,

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const (
