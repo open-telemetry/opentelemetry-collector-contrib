@@ -6,7 +6,7 @@ require (
 	github.com/apache/arrow/go/v16 v16.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.111.0
-	github.com/open-telemetry/otel-arrow v0.27.0
+	github.com/open-telemetry/otel-arrow v0.28.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/client v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae
@@ -22,8 +22,8 @@ require (
 	go.opentelemetry.io/collector/extension v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/extension/auth v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae
-	go.opentelemetry.io/otel v1.30.0
-	go.opentelemetry.io/otel/trace v1.30.0
+	go.opentelemetry.io/otel v1.31.0
+	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.4.0
 	go.uber.org/multierr v1.11.0
@@ -52,7 +52,7 @@ require (
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.10 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -79,9 +79,9 @@ require (
 	go.opentelemetry.io/collector/receiver v0.111.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.111.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 // indirect
-	go.opentelemetry.io/otel/metric v1.30.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.30.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.30.0 // indirect
+	go.opentelemetry.io/otel/metric v1.31.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect

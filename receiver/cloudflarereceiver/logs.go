@@ -25,6 +25,7 @@ import (
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
@@ -185,7 +186,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	}
 
 	if err := l.consumer.ConsumeLogs(req.Context(), l.processLogs(pcommon.NewTimestampFromTime(time.Now()), logs)); err != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
+		errorutil.HTTPError(rw, err)
 		l.logger.Error("Failed to consumer alert as log", zap.Error(err))
 		return
 	}

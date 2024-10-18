@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.111.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.111.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/component/componentstatus v0.111.1-0.20241008154146-ea48c09c31ae
@@ -14,7 +15,6 @@ require (
 	go.opentelemetry.io/collector/confmap v1.17.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/extension v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.111.1-0.20241008154146-ea48c09c31ae
-	go.opentelemetry.io/collector/pipeline v0.111.1-0.20241008154146-ea48c09c31ae
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -51,6 +51,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.17.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/collector/internal/globalsignal v0.111.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae // indirect
+	go.opentelemetry.io/collector/pipeline v0.111.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
@@ -67,3 +68,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status

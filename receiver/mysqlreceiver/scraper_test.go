@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -158,8 +159,9 @@ func (c *mockClient) Connect() error {
 	return nil
 }
 
-func (c *mockClient) getVersion() (string, error) {
-	return "8.0.27", nil
+func (c *mockClient) getVersion() (*version.Version, error) {
+	version, _ := version.NewVersion("8.0.27")
+	return version, nil
 }
 
 func (c *mockClient) getGlobalStats() (map[string]string, error) {

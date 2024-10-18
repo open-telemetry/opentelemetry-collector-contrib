@@ -149,6 +149,9 @@ func (r *router[C]) registerRouteConsumers() error {
 // does not contain a valid OTTL statement then nil is returned.
 func (r *router[C]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[ottlresource.TransformContext], error) {
 	var statement *ottl.Statement[ottlresource.TransformContext]
+	if item.Condition != "" {
+		item.Statement = fmt.Sprintf("route() where %s", item.Condition)
+	}
 	if item.Statement != "" {
 		var err error
 		statement, err = r.parser.ParseStatement(item.Statement)
