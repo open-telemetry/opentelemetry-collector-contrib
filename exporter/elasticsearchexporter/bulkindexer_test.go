@@ -115,6 +115,61 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 	}
 }
 
+func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
+	tests := []struct {
+		name                  string
+		config                Config
+		wantRequireDataStream bool
+	}{
+		{
+			name: "ecs",
+			config: Config{
+				NumWorkers: 1,
+				Mapping:    MappingsSettings{Mode: MappingECS.String()},
+			},
+			wantRequireDataStream: false,
+		},
+		{
+			name: "otel",
+			config: Config{
+				NumWorkers: 1,
+				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
+			},
+			wantRequireDataStream: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			requireDataStreamCh := make(chan bool, 1)
+			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
+				RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+					if r.URL.Path == "/_bulk" {
+						requireDataStreamCh <- r.URL.Query().Get("require_data_stream") == "true"
+					}
+					return &http.Response{
+						Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+						Body:   io.NopCloser(strings.NewReader(successResp)),
+					}, nil
+				},
+			}})
+			require.NoError(t, err)
+
+			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
+			require.NoError(t, err)
+			session, err := bulkIndexer.StartSession(context.Background())
+			require.NoError(t, err)
+
+			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+			assert.NoError(t, bulkIndexer.Close(context.Background()))
+
+			assert.Equal(t, tt.wantRequireDataStream, <-requireDataStreamCh)
+		})
+	}
+}
+
 func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	tests := []struct {
 		name          string
