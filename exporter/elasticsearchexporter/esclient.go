@@ -90,16 +90,6 @@ func newElasticsearchClient(
 	headers := make(http.Header)
 	headers.Set("User-Agent", userAgent)
 
-	// maxRetries configures the maximum number of event publishing attempts,
-	// including the first send and additional retries.
-
-	maxRetries := config.Retry.MaxRequests - 1
-	retryDisabled := !config.Retry.Enabled || maxRetries <= 0
-
-	if retryDisabled {
-		maxRetries = 0
-	}
-
 	// endpoints converts Config.Endpoints, Config.CloudID,
 	// and Config.ClientConfig.Endpoint to a list of addresses.
 	endpoints, err := config.endpoints()
@@ -111,6 +101,11 @@ func newElasticsearchClient(
 		Logger:          telemetry.Logger,
 		logRequestBody:  config.LogRequestBody,
 		logResponseBody: config.LogResponseBody,
+	}
+
+	maxRetries := defaultMaxRetries
+	if config.Retry.MaxRetries != 0 {
+		maxRetries = config.Retry.MaxRetries
 	}
 
 	return elasticsearch.NewClient(elasticsearch.Config{
@@ -125,7 +120,7 @@ func newElasticsearchClient(
 
 		// configure retry behavior
 		RetryOnStatus:        config.Retry.RetryOnStatus,
-		DisableRetry:         retryDisabled,
+		DisableRetry:         !config.Retry.Enabled,
 		EnableRetryOnTimeout: config.Retry.Enabled,
 		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
 		MaxRetries:   maxRetries,

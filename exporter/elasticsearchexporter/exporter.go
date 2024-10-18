@@ -131,6 +131,11 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 						return cerr
 					}
 
+					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
+						e.Logger.Warn("dropping log record", zap.Error(err))
+						continue
+					}
+
 					errs = append(errs, err)
 				}
 			}
