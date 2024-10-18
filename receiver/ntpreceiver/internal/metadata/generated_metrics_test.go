@@ -101,8 +101,8 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["ntp.offset"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Time difference between local and NTP server clocks in seconds.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, "Time difference between local and NTP server clocks", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

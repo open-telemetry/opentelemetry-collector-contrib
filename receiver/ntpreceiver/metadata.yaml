@@ -16,12 +16,10 @@ resource_attributes:
 
 metrics:
   ntp.offset:
-    description: Time difference between local and NTP server clocks in seconds.
-    unit: "s"
+    description: Time difference between local and NTP server clocks
+    unit: "ns"
     gauge:
       value_type: int
     enabled: true
 
 tests:
-  skip_lifecycle: true
-  skip_shutdown: true
