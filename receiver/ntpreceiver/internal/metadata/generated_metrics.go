@@ -21,8 +21,8 @@ type metricNtpOffset struct {
 // init fills ntp.offset metric with initial data.
 func (m *metricNtpOffset) init() {
 	m.data.SetName("ntp.offset")
-	m.data.SetDescription("Time difference between local and NTP server clocks in seconds.")
-	m.data.SetUnit("s")
+	m.data.SetDescription("Time difference between local and NTP server clocks")
+	m.data.SetUnit("ns")
 	m.data.SetEmptyGauge()
 }
 

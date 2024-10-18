@@ -14,11 +14,11 @@ metrics:
 
 ### ntp.offset
 
-Time difference between local and NTP server clocks in seconds.
+Time difference between local and NTP server clocks
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| s | Gauge | Int |
+| ns | Gauge | Int |
 
 ## Resource Attributes
 
