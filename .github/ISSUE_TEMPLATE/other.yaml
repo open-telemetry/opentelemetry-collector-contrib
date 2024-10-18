@@ -253,6 +253,7 @@ body:
       - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
+      - receiver/ntp
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
@@ -284,6 +285,7 @@ body:
       - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
+      - receiver/systemd
       - receiver/tcplog
       - receiver/tlscheck
       - receiver/udplog
