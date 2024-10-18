@@ -404,7 +404,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Compression = configcompression.TypeSnappy
 			}),
-			err: `compression must be set to one of [none, gzip]`,
+			err: `compression must be one of [none, gzip]`,
 		},
 		"both max_retries and max_requests specified": {
 			config: withDefaultConfig(func(cfg *Config) {

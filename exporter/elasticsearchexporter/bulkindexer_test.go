@@ -63,13 +63,8 @@ func TestAsyncBulkIndexer_flushOnClose(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &cfg)
-	require.NoError(t, err)
-	session, err := bulkIndexer.StartSession(context.Background())
-	require.NoError(t, err)
+	bulkIndexer := runBulkIndexerOnce(t, &cfg, client)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
-	assert.NoError(t, bulkIndexer.Close(context.Background()))
 	assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
 }
 
@@ -158,13 +153,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			}})
 			require.NoError(t, err)
 
-			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
-			require.NoError(t, err)
-			session, err := bulkIndexer.StartSession(context.Background())
-			require.NoError(t, err)
-
-			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
-			assert.NoError(t, bulkIndexer.Close(context.Background()))
+			runBulkIndexerOnce(t, &tt.config, client)
 
 			assert.Equal(t, tt.wantRequireDataStream, <-requireDataStreamCh)
 		})
@@ -235,6 +224,8 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 
 			bulkIndexer, err := newAsyncBulkIndexer(zap.New(core), client, &cfg)
 			require.NoError(t, err)
+			defer bulkIndexer.Close(context.Background())
+
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
@@ -242,7 +233,6 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
-			assert.NoError(t, bulkIndexer.Close(context.Background()))
 			messages := observed.FilterMessage(tt.wantMessage)
 			require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
 			for _, wantField := range tt.wantFields {
@@ -299,14 +289,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
-			require.NoError(t, err)
-			session, err := bulkIndexer.StartSession(context.Background())
-			require.NoError(t, err)
-
-			requestBody := `{"foo": "bar"}`
-			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(requestBody), nil))
-			assert.NoError(t, bulkIndexer.Close(context.Background()))
+			runBulkIndexerOnce(t, &tt.config, client)
 
 			records := logObserver.AllUntimed()
 			assert.Len(t, records, 2)
@@ -320,4 +303,16 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			assert.JSONEq(t, successResp, records[1].ContextMap()["response_body"].(string))
 		})
 	}
+}
+
+func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
+	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, config)
+	require.NoError(t, err)
+	session, err := bulkIndexer.StartSession(context.Background())
+	require.NoError(t, err)
+
+	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.NoError(t, bulkIndexer.Close(context.Background()))
+
+	return bulkIndexer
 }

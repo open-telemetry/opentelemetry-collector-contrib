@@ -275,7 +275,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
-		return errors.New("compression must be set to one of [none, gzip]")
+		return errors.New("compression must be one of [none, gzip]")
 	}
 
 	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {
