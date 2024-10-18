@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
@@ -23,7 +23,7 @@ type tracesUnmarshaller interface {
 }
 
 // newUnmarshalleer returns a new unmarshaller ready for message unmarshalling
-func newTracesUnmarshaller(logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder, metricAttrs attribute.Set) tracesUnmarshaller {
+func newTracesUnmarshaller(logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder, metricAttrs metric.MeasurementOption) tracesUnmarshaller {
 	return &solaceTracesUnmarshaller{
 		logger:           logger,
 		telemetryBuilder: telemetryBuilder,

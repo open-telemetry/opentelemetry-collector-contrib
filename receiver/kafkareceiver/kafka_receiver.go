@@ -191,6 +191,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		}
 	}
 	consumerGroup := &tracesConsumerGroupHandler{
+		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
@@ -200,6 +201,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		messageMarking:    c.messageMarking,
 		headerExtractor:   &nopHeaderExtractor{},
 		telemetryBuilder:  c.telemetryBuilder,
+		attrs:             metric.WithAttributeSet(attribute.NewSet(attribute.String(attrInstanceName, c.settings.ID.String()))),
 	}
 	if c.headerExtraction {
 		consumerGroup.headerExtractor = &headerExtractor{
@@ -299,6 +301,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		}
 	}
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
+		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
@@ -308,6 +311,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		messageMarking:    c.messageMarking,
 		headerExtractor:   &nopHeaderExtractor{},
 		telemetryBuilder:  c.telemetryBuilder,
+		attrs:             metric.WithAttributeSet(attribute.NewSet(attribute.String(attrInstanceName, c.settings.ID.String()))),
 	}
 	if c.headerExtraction {
 		metricsConsumerGroup.headerExtractor = &headerExtractor{
@@ -410,6 +414,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		}
 	}
 	logsConsumerGroup := &logsConsumerGroupHandler{
+		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
@@ -419,6 +424,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		messageMarking:    c.messageMarking,
 		headerExtractor:   &nopHeaderExtractor{},
 		telemetryBuilder:  c.telemetryBuilder,
+		attrs:             metric.WithAttributeSet(attribute.NewSet(attribute.String(attrInstanceName, c.settings.ID.String()))),
 	}
 	if c.headerExtraction {
 		logsConsumerGroup.headerExtractor = &headerExtractor{
@@ -473,6 +479,7 @@ type tracesConsumerGroupHandler struct {
 
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
+	attrs            metric.MeasurementOption
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -490,6 +497,7 @@ type metricsConsumerGroupHandler struct {
 
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
+	attrs            metric.MeasurementOption
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -507,6 +515,7 @@ type logsConsumerGroupHandler struct {
 
 	obsrecv          *receiverhelper.ObsReport
 	telemetryBuilder *metadata.TelemetryBuilder
+	attrs            metric.MeasurementOption
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -521,12 +530,12 @@ func (c *tracesConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) 
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, c.attrs)
 	return nil
 }
 
 func (c *tracesConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, c.attrs)
 	return nil
 }
 
@@ -550,18 +559,18 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			}
 
 			ctx := c.obsrecv.StartTracesOp(session.Context())
-			attrs := attribute.NewSet(
+			attrs := metric.WithAttributeSet(attribute.NewSet(
 				attribute.String(attrInstanceName, c.id.String()),
 				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
-			)
-			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
-			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
-			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
+			))
+			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, attrs)
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, attrs)
+			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, attrs)
 
 			traces, err := c.unmarshaler.Unmarshal(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
-				c.telemetryBuilder.KafkaReceiverUnmarshalFailedSpans.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
+				c.telemetryBuilder.KafkaReceiverUnmarshalFailedSpans.Add(session.Context(), 1, c.attrs)
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
 				}
@@ -598,12 +607,12 @@ func (c *metricsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession)
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, c.attrs)
 	return nil
 }
 
 func (c *metricsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, c.attrs)
 	return nil
 }
 
@@ -627,18 +636,18 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			}
 
 			ctx := c.obsrecv.StartMetricsOp(session.Context())
-			attrs := attribute.NewSet(
+			attrs := metric.WithAttributeSet(attribute.NewSet(
 				attribute.String(attrInstanceName, c.id.String()),
 				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
-			)
-			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
-			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
-			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
+			))
+			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, attrs)
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, attrs)
+			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, attrs)
 
 			metrics, err := c.unmarshaler.Unmarshal(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
-				c.telemetryBuilder.KafkaReceiverUnmarshalFailedMetricPoints.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
+				c.telemetryBuilder.KafkaReceiverUnmarshalFailedMetricPoints.Add(session.Context(), 1, c.attrs)
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
 				}
@@ -675,12 +684,12 @@ func (c *logsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) er
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, c.attrs)
 	return nil
 }
 
 func (c *logsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, c.attrs)
 	return nil
 }
 
@@ -704,18 +713,18 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			}
 
 			ctx := c.obsrecv.StartLogsOp(session.Context())
-			attrs := attribute.NewSet(
+			attrs := metric.WithAttributeSet(attribute.NewSet(
 				attribute.String(attrInstanceName, c.id.String()),
 				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
-			)
-			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
-			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
-			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
+			))
+			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, attrs)
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, attrs)
+			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, attrs)
 
 			logs, err := c.unmarshaler.Unmarshal(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
-				c.telemetryBuilder.KafkaReceiverUnmarshalFailedLogRecords.Add(ctx, 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
+				c.telemetryBuilder.KafkaReceiverUnmarshalFailedLogRecords.Add(ctx, 1, c.attrs)
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
 				}

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // wrappedExporter is an exporter that waits for the data processing to complete before shutting down.
@@ -23,18 +24,18 @@ type wrappedExporter struct {
 	consumeWG sync.WaitGroup
 
 	// we store the attributes here for both cases, to avoid new allocations on the hot path
-	endpointAttr attribute.Set
-	successAttr  attribute.Set
-	failureAttr  attribute.Set
+	endpointAttr metric.MeasurementOption
+	successAttr  metric.MeasurementOption
+	failureAttr  metric.MeasurementOption
 }
 
 func newWrappedExporter(exp component.Component, identifier string) *wrappedExporter {
 	ea := attribute.String("endpoint", identifier)
 	return &wrappedExporter{
 		Component:    exp,
-		endpointAttr: attribute.NewSet(ea),
-		successAttr:  attribute.NewSet(ea, attribute.Bool("success", true)),
-		failureAttr:  attribute.NewSet(ea, attribute.Bool("success", false)),
+		endpointAttr: metric.WithAttributeSet(attribute.NewSet(ea)),
+		successAttr:  metric.WithAttributeSet(attribute.NewSet(ea, attribute.Bool("success", true))),
+		failureAttr:  metric.WithAttributeSet(attribute.NewSet(ea, attribute.Bool("success", false))),
 	}
 }
 
