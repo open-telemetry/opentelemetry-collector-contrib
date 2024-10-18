@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 )
 
@@ -51,26 +50,10 @@ type hostWithExtensions struct {
 	encoding encodingExtension
 }
 
-func (h hostWithExtensions) Start(context.Context, component.Host) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) Shutdown(context.Context) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) GetFactory(component.Kind, component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
 	return map[component.ID]component.Component{
 		component.MustNewID("foo"): h.encoding,
 	}
-}
-
-func (h hostWithExtensions) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
-	panic("unsupported")
 }
 
 type encodingExtension struct {

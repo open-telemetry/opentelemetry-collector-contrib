@@ -668,6 +668,35 @@ var (
 			},
 		},
 		{
+			name: "metric_label_aggregation_empty_label_set",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          aggregateLabels,
+								AggregationType: aggregateutil.Sum,
+								LabelSet:        []string{},
+							},
+							labelSetMap: map[string]bool{},
+						},
+					},
+				},
+			},
+			in: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1", "label1", "label2", "label3").
+					addIntDatapoint(0, 1, 1, "a", "b", "c").
+					build(),
+			},
+			out: []pmetric.Metric{
+				metricBuilder(pmetric.MetricTypeGauge, "metric1").
+					addIntDatapoint(0, 1, 1).
+					build(),
+			},
+		},
+		{
 			name: "metric_label_aggregation_ignored_for_partial_metric_match",
 			transforms: []internalTransform{
 				{

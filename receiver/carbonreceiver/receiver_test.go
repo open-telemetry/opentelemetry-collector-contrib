@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
@@ -248,15 +247,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

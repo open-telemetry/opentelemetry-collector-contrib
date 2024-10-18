@@ -67,7 +67,7 @@ func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	err := p.router.registerExporters(ge.GetExportersWithSignal()[pipeline.SignalMetrics])
+	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalMetrics])
 	if err != nil {
 		return err
 	}

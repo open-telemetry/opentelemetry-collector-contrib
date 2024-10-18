@@ -31,6 +31,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.Equal(t, "test version", o.agentVersion)
 	assert.NotEmpty(t, o.instanceID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
+	assert.True(t, o.capabilities.ReportsHealth)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 }
@@ -239,4 +240,41 @@ func TestParseInstanceIDString(t *testing.T) {
 			require.Equal(t, tc.expectedUUID, id)
 		})
 	}
+}
+
+func TestOpAMPAgent_Dependencies(t *testing.T) {
+	t.Run("No server specified", func(t *testing.T) {
+		o := opampAgent{
+			cfg: &Config{},
+		}
+
+		require.Nil(t, o.Dependencies())
+	})
+
+	t.Run("No auth extension specified", func(t *testing.T) {
+		o := opampAgent{
+			cfg: &Config{
+				Server: &OpAMPServer{
+					WS: &commonFields{},
+				},
+			},
+		}
+
+		require.Nil(t, o.Dependencies())
+	})
+
+	t.Run("auth extension specified", func(t *testing.T) {
+		authID := component.MustNewID("basicauth")
+		o := opampAgent{
+			cfg: &Config{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Auth: authID,
+					},
+				},
+			},
+		}
+
+		require.Equal(t, []component.ID{authID}, o.Dependencies())
+	})
 }
