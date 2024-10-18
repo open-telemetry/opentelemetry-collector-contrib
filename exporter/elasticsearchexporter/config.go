@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
@@ -273,9 +274,8 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
-	if cfg.Compression != "" {
-		// TODO support confighttp.ClientConfig.Compression
-		return errors.New("compression is not currently configurable")
+	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
+		return errors.New("compression must be one of [none, gzip]")
 	}
 
 	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {

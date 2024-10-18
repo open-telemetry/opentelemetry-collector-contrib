@@ -11,6 +11,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -32,7 +33,14 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 
 	var fields []zap.Field
 	if cl.logRequestBody && requ != nil && requ.Body != nil {
-		if b, err := io.ReadAll(requ.Body); err == nil {
+		body := requ.Body
+		if requ.Header.Get("Content-Encoding") == "gzip" {
+			if r, err := gzip.NewReader(body); err == nil {
+				defer r.Close()
+				body = r
+			}
+		}
+		if b, err := io.ReadAll(body); err == nil {
 			fields = append(fields, zap.ByteString("request_body", b))
 		}
 	}
