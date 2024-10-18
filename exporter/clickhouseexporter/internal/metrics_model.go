@@ -13,6 +13,8 @@ import (
 	"sync"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column/orderedmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -38,14 +40,14 @@ type MetricTypeConfig struct {
 // any type of metrics need implement it.
 type MetricsModel interface {
 	// Add used to bind MetricsMetaData to a specific metric then put them into a slice
-	Add(resAttr map[string]string, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error
+	Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error
 	// insert is used to insert metric data to clickhouse
 	insert(ctx context.Context, db *sql.DB) error
 }
 
 // MetricsMetaData contain specific metric data
 type MetricsMetaData struct {
-	ResAttr    map[string]string
+	ResAttr    pcommon.Map
 	ResURL     string
 	ScopeURL   string
 	ScopeInstr pcommon.InstrumentationScope
@@ -118,7 +120,7 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) (clickhouse.ArraySet, cli
 	)
 	for i := 0; i < exemplars.Len(); i++ {
 		exemplar := exemplars.At(i)
-		attrs = append(attrs, attributesToMap(exemplar.FilteredAttributes()))
+		attrs = append(attrs, AttributesToMap(exemplar.FilteredAttributes()))
 		times = append(times, exemplar.Timestamp().AsTime())
 		values = append(values, getValue(exemplar.IntValue(), exemplar.DoubleValue(), exemplar.ValueType()))
 
@@ -165,13 +167,12 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 	}
 }
 
-func attributesToMap(attributes pcommon.Map) map[string]string {
-	m := make(map[string]string, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.AsString()
-		return true
-	})
-	return m
+func AttributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
+	return orderedmap.CollectN(func(yield func(string, string) bool) {
+		attributes.Range(func(k string, v pcommon.Value) bool {
+			return yield(k, v.AsString())
+		})
+	}, attributes.Len())
 }
 
 func convertSliceToArraySet[T any](slice []T) clickhouse.ArraySet {
