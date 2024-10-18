@@ -11,24 +11,22 @@ import (
 	"go.uber.org/multierr"
 )
 
-// AttributeChangeSet represents an unscoped entry that can be applied.
-//
+// AttributeChangeSet represents a rename_attributes type operation.
 // The listed changes are duplicated twice
 // to allow for simplified means of transition to or from a revision.
 type AttributeChangeSet struct {
-	updates  ast.AttributeMap
+	// The keys are the old attribute name used in the previous version, the values are the
+	// new attribute name starting from this version (comment from ast.AttributeMap)
+	updates ast.AttributeMap
+	// the inverse of the updates map
 	rollback ast.AttributeMap
 }
 
-// AttributeChangeSetSlice allows for `AttributeChangeSet`
-// to be chained together as they are defined within the schema
-// and be applied sequentially to ensure deterministic behavior.
-type AttributeChangeSetSlice []*AttributeChangeSet
-
 // NewAttributeChangeSet allows for typed strings to be used as part
 // of the invocation that will be converted into the default string type.
-func NewAttributeChangeSet(mappings ast.AttributeMap) *AttributeChangeSet {
-	attr := &AttributeChangeSet{
+func NewAttributeChangeSet(mappings ast.AttributeMap) AttributeChangeSet {
+	// for ambiguous rollbacks (if updates contains entries with multiple keys that have the same value), rollback contains the last key iterated over in mappings
+	attr := AttributeChangeSet{
 		updates:  make(map[string]string, len(mappings)),
 		rollback: make(map[string]string, len(mappings)),
 	}
@@ -39,15 +37,9 @@ func NewAttributeChangeSet(mappings ast.AttributeMap) *AttributeChangeSet {
 	return attr
 }
 
-func (a *AttributeChangeSet) Apply(attrs pcommon.Map) error {
-	return a.do(StateSelectorApply, attrs)
-}
+func (a AttributeChangeSet) IsMigrator() {}
 
-func (a *AttributeChangeSet) Rollback(attrs pcommon.Map) error {
-	return a.do(StateSelectorRollback, attrs)
-}
-
-func (a *AttributeChangeSet) do(ss StateSelector, attrs pcommon.Map) (errs error) {
+func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error) {
 	var (
 		updated = make(map[string]struct{})
 		results = pcommon.NewMap()
@@ -79,35 +71,5 @@ func (a *AttributeChangeSet) do(ss StateSelector, attrs pcommon.Map) (errs error
 		return true
 	})
 	results.CopyTo(attrs)
-	return errs
-}
-
-// NewAttributeChangeSetSlice combines all the provided `AttributeChangeSets`
-// and allows them to be executed in the provided order.
-func NewAttributeChangeSetSlice(changes ...*AttributeChangeSet) *AttributeChangeSetSlice {
-	values := new(AttributeChangeSetSlice)
-	for _, c := range changes {
-		(*values) = append((*values), c)
-	}
-	return values
-}
-
-func (slice *AttributeChangeSetSlice) Apply(attrs pcommon.Map) error {
-	return slice.do(StateSelectorApply, attrs)
-}
-
-func (slice *AttributeChangeSetSlice) Rollback(attrs pcommon.Map) error {
-	return slice.do(StateSelectorRollback, attrs)
-}
-
-func (slice *AttributeChangeSetSlice) do(ss StateSelector, attrs pcommon.Map) (errs error) {
-	for i := 0; i < len(*slice); i++ {
-		switch ss {
-		case StateSelectorApply:
-			errs = multierr.Append(errs, (*slice)[i].Apply(attrs))
-		case StateSelectorRollback:
-			errs = multierr.Append(errs, (*slice)[len(*slice)-1-i].Rollback(attrs))
-		}
-	}
 	return errs
 }
