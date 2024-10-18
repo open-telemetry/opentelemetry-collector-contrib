@@ -328,3 +328,27 @@ func TestTelemetry(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestClone(t *testing.T) {
+	proc, sink := setup(t, nil)
+
+	dir := "./testdata/clone"
+	open := func(file string) pmetric.Metrics {
+		t.Helper()
+		md, err := golden.ReadMetrics(filepath.Join(dir, file))
+		require.NoError(t, err)
+		return md
+	}
+
+	in := open("in.yaml")
+	out := open("out.yaml")
+
+	ctx := context.Background()
+
+	err := proc.ConsumeMetrics(ctx, in)
+	require.NoError(t, err)
+
+	if diff := compare.Diff(sink.AllMetrics(), []pmetric.Metrics{out}); diff != "" {
+		t.Fatal(diff)
+	}
+}
