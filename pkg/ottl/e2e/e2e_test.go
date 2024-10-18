@@ -996,6 +996,14 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "CompileMap with set",
+			statement: `set(attributes["resultMap"], CompileMap(attributes["foo"], "bar"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("resultMap")
+				m.PutStr("bar", "pass")
+			},
+		},
+		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
 			want:      func(_ ottllog.TransformContext) {},
