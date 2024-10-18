@@ -72,7 +72,7 @@ func bulkIndexerConfig(client *elasticsearch.Client, config *Config) docappender
 	}
 	var compressionLevel int
 	if config.Compression == configcompression.TypeGzip {
-		compressionLevel = gzip.DefaultCompression
+		compressionLevel = gzip.BestSpeed
 	}
 	return docappender.BulkIndexerConfig{
 		Client:                client,
