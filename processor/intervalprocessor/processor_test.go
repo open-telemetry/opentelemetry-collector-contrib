@@ -48,7 +48,7 @@ func TestAggregation(t *testing.T) {
 			next := &consumertest.MetricsSink{}
 
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				config,

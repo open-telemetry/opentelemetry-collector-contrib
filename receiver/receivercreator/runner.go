@@ -184,7 +184,7 @@ func (run *receiverRunner) createLogsRuntimeReceiver(
 	runParams := run.params
 	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
 	runParams.ID = id
-	return factory.CreateLogsReceiver(context.Background(), runParams, cfg, nextConsumer)
+	return factory.CreateLogs(context.Background(), runParams, cfg, nextConsumer)
 }
 
 // createMetricsRuntimeReceiver creates a receiver that is discovered at runtime.
@@ -197,7 +197,7 @@ func (run *receiverRunner) createMetricsRuntimeReceiver(
 	runParams := run.params
 	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
 	runParams.ID = id
-	return factory.CreateMetricsReceiver(context.Background(), runParams, cfg, nextConsumer)
+	return factory.CreateMetrics(context.Background(), runParams, cfg, nextConsumer)
 }
 
 // createTracesRuntimeReceiver creates a receiver that is discovered at runtime.
@@ -210,7 +210,7 @@ func (run *receiverRunner) createTracesRuntimeReceiver(
 	runParams := run.params
 	runParams.Logger = runParams.Logger.With(zap.String("name", id.String()))
 	runParams.ID = id
-	return factory.CreateTracesReceiver(context.Background(), runParams, cfg, nextConsumer)
+	return factory.CreateTraces(context.Background(), runParams, cfg, nextConsumer)
 }
 
 var _ component.Component = (*wrappedReceiver)(nil)

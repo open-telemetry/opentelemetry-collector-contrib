@@ -47,10 +47,11 @@ CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CMD_MODS_0 := $(shell find ./cmd/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
-CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otelcontribcol/*" -exec $(TO_MOD_DIR) )
+CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
 CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
+CGO_MODS := ./receiver/hostmetricsreceiver 
 
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
 INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) | uniq)
@@ -134,6 +135,14 @@ gotest:
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
+
+.PHONY: gobuildtest
+gobuildtest:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="buildtest"
+
+.PHONY: gorunbuilttest
+gorunbuilttest:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="runbuilttest"
 
 .PHONY: gointegration-test
 gointegration-test:
@@ -260,6 +269,9 @@ for-other-target: $(OTHER_MODS)
 .PHONY: for-integration-target
 for-integration-target: $(INTEGRATION_MODS)
 
+.PHONY: for-cgo-target
+for-cgo-target: $(CGO_MODS)
+
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -334,33 +346,31 @@ chlog-update: $(CHLOGGEN)
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml --output-path cmd/otelcontribcol
-	$(MAKE) --no-print-directory -C cmd/otelcontribcol fmt
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
-otelcontribcol:
+otelcontribcol: genotelcontribcol
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 # Build the Collector executable without the symbol table, debug information, and the DWARF symbol table.
 .PHONY: otelcontribcollite
-otelcontribcollite:
+otelcontribcollite: genotelcontribcol
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
 	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml --output-path cmd/oteltestbedcol
-	$(MAKE) --no-print-directory -C cmd/oteltestbedcol fmt
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
-oteltestbedcol:
+oteltestbedcol: genoteltestbedcol
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: oteltestbedcollite
-oteltestbedcollite:
+oteltestbedcollite: genoteltestbedcol
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
@@ -541,6 +551,8 @@ clean:
 	find . -type f -name 'coverage.out' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+	@echo "Removing built binary files"
+	find . -type f -name 'builtunitetest.test' -delete
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
@@ -560,4 +572,4 @@ checks:
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
-	git diff --exit-code || (echo 'Some files need committing' &&  git status && exit 1)
+	git diff --exit-code || (echo 'Some files need committing' && git status && exit 1)

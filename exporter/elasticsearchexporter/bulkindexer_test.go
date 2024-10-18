@@ -115,10 +115,67 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 	}
 }
 
+func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
+	tests := []struct {
+		name                  string
+		config                Config
+		wantRequireDataStream bool
+	}{
+		{
+			name: "ecs",
+			config: Config{
+				NumWorkers: 1,
+				Mapping:    MappingsSettings{Mode: MappingECS.String()},
+			},
+			wantRequireDataStream: false,
+		},
+		{
+			name: "otel",
+			config: Config{
+				NumWorkers: 1,
+				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
+			},
+			wantRequireDataStream: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			requireDataStreamCh := make(chan bool, 1)
+			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
+				RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+					if r.URL.Path == "/_bulk" {
+						requireDataStreamCh <- r.URL.Query().Get("require_data_stream") == "true"
+					}
+					return &http.Response{
+						Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+						Body:   io.NopCloser(strings.NewReader(successResp)),
+					}, nil
+				},
+			}})
+			require.NoError(t, err)
+
+			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
+			require.NoError(t, err)
+			session, err := bulkIndexer.StartSession(context.Background())
+			require.NoError(t, err)
+
+			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+			assert.NoError(t, bulkIndexer.Close(context.Background()))
+
+			assert.Equal(t, tt.wantRequireDataStream, <-requireDataStreamCh)
+		})
+	}
+}
+
 func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	tests := []struct {
 		name          string
 		roundTripFunc func(*http.Request) (*http.Response, error)
+		wantMessage   string
+		wantFields    []zap.Field
 	}{
 		{
 			name: "500",
@@ -129,6 +186,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					Body:       io.NopCloser(strings.NewReader("error")),
 				}, nil
 			},
+			wantMessage: "bulk indexer flush error",
 		},
 		{
 			name: "429",
@@ -139,12 +197,27 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 					Body:       io.NopCloser(strings.NewReader("error")),
 				}, nil
 			},
+			wantMessage: "bulk indexer flush error",
 		},
 		{
 			name: "transport error",
 			roundTripFunc: func(*http.Request) (*http.Response, error) {
 				return nil, errors.New("transport error")
 			},
+			wantMessage: "bulk indexer flush error",
+		},
+		{
+			name: "known version conflict error",
+			roundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body: io.NopCloser(strings.NewReader(
+						`{"items":[{"create":{"_index":".ds-metrics-generic.otel-default","status":400,"error":{"type":"version_conflict_engine_exception","reason":""}}}]}`)),
+				}, nil
+			},
+			wantMessage: "failed to index document",
+			wantFields:  []zap.Field{zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs")},
 		},
 	}
 
@@ -169,7 +242,11 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
 			assert.NoError(t, bulkIndexer.Close(context.Background()))
-			assert.Equal(t, 1, observed.FilterMessage("bulk indexer flush error").Len())
+			messages := observed.FilterMessage(tt.wantMessage)
+			require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
+			for _, wantField := range tt.wantFields {
+				assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
+			}
 		})
 	}
 }

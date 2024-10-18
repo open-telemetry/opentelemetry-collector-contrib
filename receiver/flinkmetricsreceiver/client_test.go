@@ -48,6 +48,18 @@ const (
 )
 
 func TestNewClient(t *testing.T) {
+	clientConfigNoCA := confighttp.NewDefaultClientConfig()
+	clientConfigNoCA.Endpoint = defaultEndpoint
+	clientConfigNoCA.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+
 	testCase := []struct {
 		desc        string
 		cfg         *Config
@@ -59,14 +71,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
-						},
-					},
-				},
+				ClientConfig: clientConfigNoCA,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -76,10 +81,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{},
-					Endpoint:   defaultEndpoint,
-				},
+				ClientConfig: clientConfig,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
