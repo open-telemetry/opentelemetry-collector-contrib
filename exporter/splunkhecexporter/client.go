@@ -407,8 +407,8 @@ func (c *client) pushMultiMetricsDataInBatches(ctx context.Context, md pmetric.M
 		latestIterState, batchPermanentErrors := c.fillMetricsBufferMultiMetrics(merged, buf, is)
 		permanentErrors = append(permanentErrors, batchPermanentErrors...)
 		if !buf.Empty() {
-			if err := c.postEvents(ctx, buf, headers); err != nil {
-				return consumererror.NewMetrics(err, md)
+			if err = c.postEvents(ctx, buf, headers); err != nil {
+				return err
 			}
 		}
 
