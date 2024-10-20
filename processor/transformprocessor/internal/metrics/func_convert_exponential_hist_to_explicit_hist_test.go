@@ -4,7 +4,6 @@
 package metrics
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -782,7 +781,7 @@ func Test_convertExponentialHistToExplicitHist_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := convertExponentialHistToExplicitHist("random", tt.sliceExplicitBoundsArgs)
 			assert.Error(t, err)
-			assert.True(t, strings.Contains(err.Error(), "explicit bounds cannot be empty"))
+			assert.Contains(t, err.Error(), "explicit bounds cannot be empty")
 		})
 	}
 }
