@@ -123,6 +123,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
+			SendRW2:             cfg.SendRW2,
 		},
 		telemetry:            prwTelemetry,
 		batchTimeSeriesState: newBatchTimeSericesState(),
@@ -172,22 +173,38 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
+		if !prwe.exporterSettings.SendRW2 {
+			// RW1 case
+			tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
+			if err != nil {
+				prwe.telemetry.recordTranslationFailure(ctx)
+				prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+			}
 
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
-		if err != nil {
-			prwe.telemetry.recordTranslationFailure(ctx)
-			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+			prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+
+			var m []*prompb.MetricMetadata
+			if prwe.exporterSettings.SendMetadata {
+				m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+			}
+
+			// Call export even if a conversion error, since there may be points that were successfully converted.
+			return prwe.handleExport(ctx, tsMap, m)
+		} else {
+			// RW2 case
+			tsMap, symbolsTable, err := prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
+			if err != nil {
+				prwe.telemetry.recordTranslationFailure(ctx)
+				prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+			}
+
+			prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+
+			// TODO handle metadata
+
+			return prwe.handleExportV2(ctx, tsMap, symbolsTable)
 		}
 
-		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
-
-		var m []*prompb.MetricMetadata
-		if prwe.exporterSettings.SendMetadata {
-			m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
-		}
-
-		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return prwe.handleExport(ctx, tsMap, m)
 	}
 }
 

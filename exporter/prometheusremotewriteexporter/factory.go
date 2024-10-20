@@ -95,6 +95,7 @@ func createDefaultConfig() component.Config {
 		BackOffConfig:     retrySettings,
 		AddMetricSuffixes: true,
 		SendMetadata:      false,
+		SendRW2:           false,
 		ClientConfig:      clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
