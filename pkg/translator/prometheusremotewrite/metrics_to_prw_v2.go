@@ -115,8 +115,9 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 	}
 
 	buf := make([]uint32, 0, len(lbls)*2)
+	var off uint32
 	for _, l := range lbls {
-		off := c.symbolTable.Symbolize(l.Name)
+		off = c.symbolTable.Symbolize(l.Name)
 		buf = append(buf, off)
 		off = c.symbolTable.Symbolize(l.Value)
 		buf = append(buf, off)
