@@ -162,7 +162,10 @@ func newSupervisor(t *testing.T, configType string, extraConfigData map[string]s
 	cfg, err := config.Load(cfgFile.Name())
 	require.NoError(t, err)
 
-	s, err := supervisor.NewSupervisor(zap.NewNop(), cfg)
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+
+	s, err := supervisor.NewSupervisor(logger, cfg)
 	require.NoError(t, err)
 
 	return s
@@ -1469,10 +1472,9 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "report_status", map[string]string{
-		"url":                      server.addr,
-		"successful_health_checks": "2",
-		"config_apply_timeout":     "3s",
-		"health_check_interval":    "1s",
+		"url":                   server.addr,
+		"config_apply_timeout":  "3s",
+		"health_check_interval": "1s",
 	})
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1498,13 +1500,13 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING
 	}, 5*time.Second, 100*time.Millisecond, "Remote config status was not set to APPLYING")
 
-	// Wait for the required number of successful health checks
+	// Wait for collector to become healthy
 	require.Eventually(t, func() bool {
 		health, ok := healthReport.Load().(*protobufs.ComponentHealth)
 		return ok && health.Healthy
 	}, 10*time.Second, 10*time.Millisecond, "Collector did not become healthy")
 
-	// Check that the status is set to APPLIED after successful health checks
+	// Check that the status is set to APPLIED
 	require.Eventually(t, func() bool {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED

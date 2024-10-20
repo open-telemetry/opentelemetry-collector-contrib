@@ -153,7 +153,6 @@ type Agent struct {
 	Executable              string
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
-	SuccessfulHealthChecks  int32            `mapstructure:"successful_health_checks"`
 	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
 	HealthCheckInterval     time.Duration    `mapstructure:"health_check_interval"`
 	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
@@ -181,10 +180,6 @@ func (a Agent) Validate() error {
 	_, err := os.Stat(a.Executable)
 	if err != nil {
 		return fmt.Errorf("could not stat agent::executable path: %w", err)
-	}
-
-	if a.SuccessfulHealthChecks <= 0 {
-		return errors.New("agent::successful_health_checks must be positive")
 	}
 
 	if a.ConfigApplyTimeout <= 0 {
@@ -244,7 +239,6 @@ func DefaultSupervisor() Supervisor {
 		},
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
-			SuccessfulHealthChecks:  3,
 			ConfigApplyTimeout:      5 * time.Second,
 			HealthCheckInterval:     1 * time.Second,
 			BootstrapTimeout:        3 * time.Second,

@@ -128,18 +128,11 @@ type Supervisor struct {
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
-	// waitingForHealthCheckSuccess is true if the agent is starting up and the supervisor is waiting for health checks to succeed.
-	// this is set to true 1. at the init phase 2. when agent receives a remote config
-	waitingForHealthCheckSuccess bool
-	// successfulHealthChecks tracks the number of consecutive successful health checks.
-	successfulHealthChecks int32
-	// requiredHealthChecks is the number of consecutive health checks required for the agent to be considered healthy.
-	requiredHealthChecks int32
 	// configApplyTimeout is the maximum time to wait for the agent to apply a new config.
 	// After this time passes without the agent reporting health as OK, the agent is considered unhealthy.
 	configApplyTimeout time.Duration
-	// lastConfigChangeTime is the time when the last config change was applied.
-	lastConfigChangeTime time.Time
+	// lastHealthFromClient is the last health status of the agent received from the client.
+	lastHealthFromClient *protobufs.ComponentHealth
 	// healthCheckInterval is the interval between health checks.
 	healthCheckInterval time.Duration
 	// lastHealth is the last health status of the agent.
@@ -156,9 +149,8 @@ type Supervisor struct {
 
 	// agentHasStarted is true if the agent has started.
 	agentHasStarted bool
-	// isBootstrapped is true if the agent has been bootstrapped.
-	// This is used to determine if the agent is starting up for the first time or if it is restarting.
-	isBootstrapped bool
+	// agentStartHealthCheckAttempts is the number of health check attempts made by the agent since it started.
+	agentStartHealthCheckAttempts int
 	// agentRestarting is true if the agent is restarting.
 	agentRestarting atomic.Bool
 
@@ -193,7 +185,6 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
-	s.requiredHealthChecks = s.config.Agent.SuccessfulHealthChecks
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 	s.healthCheckInterval = s.config.Agent.HealthCheckInterval
 
@@ -249,9 +240,6 @@ func (s *Supervisor) Start() error {
 	s.agentWG.Add(1)
 	go func() {
 		defer s.agentWG.Done()
-		s.waitingForHealthCheckSuccess = true
-		s.successfulHealthChecks = 0
-		s.lastConfigChangeTime = time.Now()
 		s.runAgentProcess()
 	}()
 
@@ -553,6 +541,11 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 				zap.String("type", message.CustomMessage.Type),
 			)
 		}
+	}
+
+	if message.Health != nil {
+		s.logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
+		s.lastHealthFromClient = message.Health
 	}
 }
 
@@ -1029,6 +1022,7 @@ func (s *Supervisor) startAgent() {
 	}
 
 	s.agentHasStarted = false
+	s.agentStartHealthCheckAttempts = 0
 	s.startedAt = time.Now()
 	s.startHealthCheckTicker()
 
@@ -1044,24 +1038,14 @@ func (s *Supervisor) startHealthCheckTicker() {
 }
 
 func (s *Supervisor) healthCheck() {
+	if !s.commander.IsRunning() {
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 
 	err := s.healthChecker.Check(ctx)
 	cancel()
-
-	if s.waitingForHealthCheckSuccess {
-		timeSinceChange := time.Since(s.lastConfigChangeTime)
-		if timeSinceChange > s.configApplyTimeout {
-			if s.isBootstrapped {
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
-			}
-			// the config apply timeout has been exceeded
-			// we are no longer waiting for the health check to succeed
-			// we consider the agent to be unhealthy
-			s.waitingForHealthCheckSuccess = false
-		}
-	}
 
 	// Prepare OpAMP health report.
 	health := &protobufs.ComponentHealth{
@@ -1069,42 +1053,25 @@ func (s *Supervisor) healthCheck() {
 	}
 
 	if err != nil {
-		if s.waitingForHealthCheckSuccess {
-			s.successfulHealthChecks = 0 // Reset successful checks on error
-		}
-
-		// if the agent has not started, and we are waiting for the health check to succeed
-		// report that it is starting otherwise, report that it is not healthy with the error
-		if !s.agentHasStarted && s.waitingForHealthCheckSuccess {
-			health.Healthy = false
+		health.Healthy = false
+		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
 			health.LastError = "Agent is starting"
+			s.agentStartHealthCheckAttempts++
 			// if we have a last health status, use it
 			if s.lastHealth != nil && s.lastHealth.Healthy {
 				health.Healthy = s.lastHealth.Healthy
 			}
 		} else {
-			health.Healthy = false
 			health.LastError = err.Error()
 			s.logger.Error("Agent is not healthy", zap.Error(err))
 		}
 	} else {
-		if s.waitingForHealthCheckSuccess {
-			s.successfulHealthChecks++
-			if s.successfulHealthChecks >= s.requiredHealthChecks {
-				if s.isBootstrapped {
-					s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
-				}
-				s.waitingForHealthCheckSuccess = false
-			}
-		}
-
 		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
-		s.isBootstrapped = true
 	}
-
 	s.lastHealth = health
+
 	if err != nil && errors.Is(err, s.lastHealthCheckErr) {
 		// No difference from last check. Nothing new to report.
 		return
@@ -1129,12 +1096,20 @@ func (s *Supervisor) runAgentProcess() {
 	restartTimer := time.NewTimer(0)
 	restartTimer.Stop()
 
+	configApplyTimeoutTimer := time.NewTimer(0)
+	configApplyTimeoutTimer.Stop()
+
 	for {
 		select {
 		case <-s.hasNewConfig:
-			s.waitingForHealthCheckSuccess = true
-			s.successfulHealthChecks = 0
-			s.lastConfigChangeTime = time.Now()
+			s.lastHealthFromClient = nil
+			if !configApplyTimeoutTimer.Stop() {
+				select {
+				case <-configApplyTimeoutTimer.C: // Try to drain the channel
+				default:
+				}
+			}
+			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
 
 			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
@@ -1173,6 +1148,13 @@ func (s *Supervisor) runAgentProcess() {
 		case <-restartTimer.C:
 			s.logger.Debug("Agent starting after start backoff")
 			s.startAgent()
+
+		case <-configApplyTimeoutTimer.C:
+			if s.lastHealthFromClient == nil || !s.lastHealthFromClient.Healthy {
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+			} else {
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+			}
 
 		case <-s.healthCheckTicker.C:
 			s.healthCheck()
