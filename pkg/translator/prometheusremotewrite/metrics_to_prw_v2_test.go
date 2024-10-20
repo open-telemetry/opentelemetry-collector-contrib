@@ -34,11 +34,9 @@ func TestFromMetricsV2(t *testing.T) {
 			},
 		}
 	}
+	wantedSymbols := []string{"", "series_name_2", "value-2", "series_name_3", "value-3", "__name__", "gauge_1", "series_name_1", "value-1"}
 	tsMap, symbolsTable, err := FromMetricsV2(payload.Metrics(), settings)
-	wanted := want()
 	require.NoError(t, err)
-	require.NotNil(t, tsMap)
-	require.Equal(t, wanted, tsMap)
-	require.NotNil(t, symbolsTable)
-
+	require.Equal(t, want(), tsMap)
+	require.ElementsMatch(t, wantedSymbols, symbolsTable.Symbols())
 }
