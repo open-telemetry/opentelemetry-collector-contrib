@@ -64,7 +64,7 @@ Available Editors:
 
 `append(target, Optional[value], Optional[values])`
 
-The `append` function appends single or multiple string values to `target`. 
+The `append` function appends single or multiple string values to `target`.
 `append` converts scalar values into an array if the field exists but is not an array, and creates an array containing the provided values if the field doesn’t exist.
 
 Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
@@ -128,7 +128,7 @@ Examples:
 
 `flatten(target, Optional[prefix], Optional[depth])`
 
-The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
+The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root.
 
 `target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
 
@@ -145,7 +145,7 @@ For example, the following map
 }
 ```
 
-is converted to 
+is converted to
 
 ```json
 {
@@ -409,70 +409,95 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
-- [Base64Decode](#base64decode)
-- [Decode](#decode)
-- [Concat](#concat)
-- [ConvertCase](#convertcase)
-- [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
-- [ConvertTextToElementsXML](#converttexttoelementsxml)
-- [Day](#day)
-- [Double](#double)
-- [Duration](#duration)
-- [ExtractPatterns](#extractpatterns)
-- [ExtractGrokPatterns](#extractgrokpatterns)
-- [FNV](#fnv)
-- [Format](#format)
-- [GetXML](#getxml)
-- [Hex](#hex)
-- [Hour](#hour)
-- [Hours](#hours)
-- [InsertXML](#insertxml)
-- [Int](#int)
-- [IsBool](#isbool)
-- [IsDouble](#isdouble)
-- [IsInt](#isint)
-- [IsRootSpan](#isrootspan)
-- [IsMap](#ismap)
-- [IsMatch](#ismatch)
-- [IsList](#islist)
-- [IsString](#isstring)
-- [Len](#len)
-- [Log](#log)
-- [MD5](#md5)
-- [Microseconds](#microseconds)
-- [Milliseconds](#milliseconds)
-- [Minute](#minute)
-- [Minutes](#minutes)
-- [Month](#month)
-- [Nanoseconds](#nanoseconds)
-- [Now](#now)
-- [ParseCSV](#parsecsv)
-- [ParseJSON](#parsejson)
-- [ParseKeyValue](#parsekeyvalue)
-- [ParseSimplifiedXML](#parsesimplifiedxml)
-- [ParseXML](#parsexml)
-- [RemoveXML](#removexml)
-- [Seconds](#seconds)
-- [SHA1](#sha1)
-- [SHA256](#sha256)
-- [SHA512](#sha512)
-- [Sort](#sort)
-- [SpanID](#spanid)
-- [Split](#split)
-- [String](#string)
-- [Substring](#substring)
-- [Time](#time)
-- [ToKeyValueString](#tokeyvaluestring)
-- [TraceID](#traceid)
-- [TruncateTime](#truncatetime)
-- [Unix](#unix)
-- [UnixMicro](#unixmicro)
-- [UnixMilli](#unixmilli)
-- [UnixNano](#unixnano)
-- [UnixSeconds](#unixseconds)
-- [UserAgent](#useragent)
-- [UUID](#UUID)
-- [Year](#year)
+- [OTTL Functions](#ottl-functions)
+  - [Design principles](#design-principles)
+  - [Working with functions](#working-with-functions)
+  - [Editors](#editors)
+    - [append](#append)
+    - [delete\_key](#delete_key)
+    - [delete\_matching\_keys](#delete_matching_keys)
+    - [keep\_matching\_keys](#keep_matching_keys)
+    - [flatten](#flatten)
+    - [keep\_keys](#keep_keys)
+    - [limit](#limit)
+    - [merge\_maps](#merge_maps)
+    - [replace\_all\_matches](#replace_all_matches)
+    - [replace\_all\_patterns](#replace_all_patterns)
+    - [replace\_match](#replace_match)
+    - [replace\_pattern](#replace_pattern)
+    - [set](#set)
+    - [truncate\_all](#truncate_all)
+  - [Converters](#converters)
+    - [Base64Decode (Deprecated)](#base64decode-deprecated)
+    - [Decode](#decode)
+    - [Concat](#concat)
+    - [ConvertCase](#convertcase)
+    - [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
+    - [ConvertTextToElementsXML](#converttexttoelementsxml)
+    - [Day](#day)
+    - [Double](#double)
+    - [Duration](#duration)
+    - [ExtractPatterns](#extractpatterns)
+    - [ExtractGrokPatterns](#extractgrokpatterns)
+    - [FNV](#fnv)
+    - [Format](#format)
+    - [GetXML](#getxml)
+    - [Hex](#hex)
+    - [Hour](#hour)
+    - [Hours](#hours)
+    - [InsertXML](#insertxml)
+    - [Int](#int)
+    - [IsBool](#isbool)
+    - [IsDouble](#isdouble)
+    - [IsInt](#isint)
+    - [IsRootSpan](#isrootspan)
+    - [IsMap](#ismap)
+    - [IsMatch](#ismatch)
+    - [IsList](#islist)
+    - [IsString](#isstring)
+    - [Len](#len)
+    - [Log](#log)
+    - [MD5](#md5)
+    - [Microseconds](#microseconds)
+    - [Milliseconds](#milliseconds)
+    - [Minute](#minute)
+    - [Minutes](#minutes)
+    - [Month](#month)
+    - [Nanoseconds](#nanoseconds)
+    - [Now](#now)
+    - [ParseCSV](#parsecsv)
+    - [ParseJSON](#parsejson)
+    - [ParseKeyValue](#parsekeyvalue)
+    - [ParseSimplifiedXML](#parsesimplifiedxml)
+      - [Formal Definitions](#formal-definitions)
+      - [Parsing logic](#parsing-logic)
+      - [Examples](#examples)
+    - [ParseXML](#parsexml)
+    - [RemoveXML](#removexml)
+    - [Seconds](#seconds)
+    - [SHA1](#sha1)
+    - [SHA256](#sha256)
+    - [SHA512](#sha512)
+    - [Sort](#sort)
+    - [SpanID](#spanid)
+    - [Split](#split)
+    - [String](#string)
+    - [Substring](#substring)
+    - [Time](#time)
+    - [ToKeyValueString](#tokeyvaluestring)
+    - [TraceID](#traceid)
+    - [TruncateTime](#truncatetime)
+    - [Unix](#unix)
+    - [UnixMicro](#unixmicro)
+    - [UnixMilli](#unixmilli)
+    - [UnixNano](#unixnano)
+    - [UnixSeconds](#unixseconds)
+    - [UserAgent](#useragent)
+    - [URL](#url)
+    - [UUID](#uuid)
+    - [Year](#year)
+  - [Function syntax](#function-syntax)
+  - [Adding New Editors/Converters](#adding-new-editorsconverters)
 
 ### Base64Decode (Deprecated)
 
@@ -678,14 +703,14 @@ Examples:
 
 `ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly], Optional[patternDefinitions])`
 
-The `ExtractGrokPatterns` Converter parses unstructured data into a format that is structured and queryable. 
+The `ExtractGrokPatterns` Converter parses unstructured data into a format that is structured and queryable.
 It returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
 
-- `target` is a Getter that returns a string. 
-- `pattern` is a grok pattern string. 
-- `namedCapturesOnly` (optional) specifies if non-named captures should be returned. 
-- `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`. 
-This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming. 
+- `target` is a Getter that returns a string.
+- `pattern` is a grok pattern string.
+- `namedCapturesOnly` (optional) specifies if non-named captures should be returned.
+- `patternDefinitions` (optional) is a list of custom pattern definition strings used inside `pattern` in the form of `PATTERN_NAME=PATTERN`.
+This parameter lets you define your own custom patterns to improve readability when the extracted `pattern` is not part of the default set or when you need custom naming.
 
 If `target` is not a string or nil `ExtractGrokPatterns` returns an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` errors on startup.
 
@@ -742,11 +767,11 @@ Examples:
   `ExtractGrokPatterns(body, "%{URI}", true)`
 
 - _Uses more complex pattern consisting of elements from default set and includes only named captures_:
-  
+
   `ExtractGrokPatterns(body, "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}", true)`
 
 - _Uses `LOGLINE` pattern defined in `patternDefinitions` passed as last argument_:
-  
+
   `ExtractGrokPatterns(body, "%{LOGLINE}", true, ["LOGLINE=%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}"])`
 
 - Add custom patterns to parse the password from `/etc/passwd` and making `pattern` readable:
@@ -758,9 +783,9 @@ Examples:
 
     Note that `USERNAME` is in the default pattern set and does not need to be redefined.
 
-  - Target: `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh` 
+  - Target: `smith:pass123:1001:1000:J Smith,1234,(234)567-8910,(234)567-1098,email:/home/smith:/bin/sh`
 
-  - Return values: 
+  - Return values:
      - `user.name`: smith
      - `user.password`: pass123
 
@@ -1674,11 +1699,11 @@ Examples:
 
 The `Sort` Converter sorts the `target` array in either ascending or descending order.
 
-`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted. 
+`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted.
 
 `order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
 
-The Sort Converter preserves the data type of the original elements while sorting. 
+The Sort Converter preserves the data type of the original elements while sorting.
 The behavior varies based on the types of elements in the target slice:
 
 | Element Types | Sorting Behavior                    | Return Value |
@@ -1821,7 +1846,7 @@ When loading `location`, this function will look for the IANA Time Zone database
 - a directory or uncompressed zip file named by the ZONEINFO environment variable
 - on a Unix system, the system standard installation location
 - $GOROOT/lib/time/zoneinfo.zip
-- the `time/tzdata` package, if it was imported. 
+- the `time/tzdata` package, if it was imported.
 
 When building a Collector binary, importing `time/tzdata` in any Go source file will bundle the database into the binary, which guarantees the lookups will work regardless of the setup on the host setup. Note this will add roughly 500kB to binary size.
 
@@ -1834,7 +1859,7 @@ Examples:
 - `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
 - `Time("2023-05-26 12:34:56", "%Y-%m-%d %H:%M:%S", "America/New_York")`
 
-`locale` specifies the input language of the `target` value. It is used to interpret timestamp values written in a specific language, 
+`locale` specifies the input language of the `target` value. It is used to interpret timestamp values written in a specific language,
 ensuring that the function can correctly parse the localized month names, day names, and periods of the day based on the provided language.
 
 The value must be a well-formed BCP 47 language tag, and a known [CLDR](https://cldr.unicode.org) v45 locale.
@@ -1851,10 +1876,10 @@ Examples:
 
 The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
 
-- `target` is a Getter that returns a `pcommon.Map`. 
-- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `target` is a Getter that returns a `pcommon.Map`.
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`.
 - `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
-- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead.
 
 For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
 
@@ -1862,7 +1887,7 @@ For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use defaul
 `k1=v1 k2=v2 k3=v3`
 ```
 
-**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function.
 
 For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
 
@@ -2000,12 +2025,24 @@ Examples:
   "user_agent.name": "curl"
   "user_agent.version": "7.81.0"
   "user_agent.original": "curl/7.81.0"
+  "user_agent.os.name: "Other",
+  "user_agent.os.version" "",
   ```
 - `Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0`
   ```yaml
   "user_agent.name": "Firefox"
   "user_agent.version": "126.0"
   "user_agent.original": "Mozilla/5.0 (X11; Linux x86_64; rv:126.0) Gecko/20100101 Firefox/126.0"
+  "user_agent.os.name: "Linux",
+  "user_agent.os.version" "",
+  ```
+- `"Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/604.1"`
+  ```yaml
+  "user_agent.name": "Mobile Safari"
+  "user_agent.version": "13.1.1"
+  "user_agent.original": ""Mozilla/5.0 (iPhone; CPU iPhone OS 13_5_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Mobile/15E148 Safari/604.1""
+  "user_agent.os.name: "iOS",
+  "user_agent.os.version" "13.5.1",
   ```
 
 ### URL
@@ -2021,7 +2058,7 @@ This URL object includes properties for the URL’s domain, path, fragment, port
 
 - `URL("http://www.example.com")`
 
-results in 
+results in
 ```
   "url.original": "http://www.example.com",
   "url.scheme":   "http",
@@ -2031,7 +2068,7 @@ results in
 
 - `URL("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
 
-results in 
+results in
 ```
   "url.path":      "/foo.gif",
   "url.fragment":  "fragment",

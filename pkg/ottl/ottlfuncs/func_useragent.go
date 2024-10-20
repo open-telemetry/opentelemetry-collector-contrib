@@ -33,15 +33,22 @@ func userAgent[K any](userAgentSource ottl.StringGetter[K]) ottl.ExprFunc[K] { /
 	parser := uaparser.NewFromSaved()
 
 	return func(ctx context.Context, tCtx K) (any, error) {
+		// Remove when UserAgent OS attributes are added to semvconv
+		const semconvAttributeUserAgentOSName = "user_agent." + semconv.AttributeOSName
+		const semconvAttributeUserAgentOSVersion = "user_agent." + semconv.AttributeOSVersion
+
 		userAgentString, err := userAgentSource.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 		parsedUserAgent := parser.ParseUserAgent(userAgentString)
+		parsedOS := parser.ParseOs(userAgentString)
 		return map[string]any{
 			semconv.AttributeUserAgentName:     parsedUserAgent.Family,
 			semconv.AttributeUserAgentOriginal: userAgentString,
 			semconv.AttributeUserAgentVersion:  parsedUserAgent.ToVersionString(),
+			semconvAttributeUserAgentOSName:    parsedOS.Family,
+			semconvAttributeUserAgentOSVersion: parsedOS.ToVersionString(),
 		}, nil
 	}
 }
