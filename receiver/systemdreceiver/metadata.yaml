@@ -1,0 +1,11 @@
+type: systemd
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: []
+  codeowners:
+    active: [Hemansh31, atoulme]
+
+tests:
