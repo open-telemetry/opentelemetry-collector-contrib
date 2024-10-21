@@ -7,18 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
-	"os"
-	"runtime"
-	"sort"
-	"strings"
-	"sync"
-
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
@@ -28,11 +22,21 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
+	"net/http"
+	"os"
+	"runtime"
+	"sort"
+	"strings"
+	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
 var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
+
+type statusAggregator interface {
+	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
+}
 
 type opampAgent struct {
 	cfg    *Config
@@ -59,6 +63,10 @@ type opampAgent struct {
 	opampClient client.OpAMPClient
 
 	customCapabilityRegistry *customCapabilityRegistry
+
+	statusAggregator     statusAggregator
+	statusSubscriptionWg *sync.WaitGroup
+	startTimeUnixNano    uint64
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
@@ -123,7 +131,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+	o.initHealthReporting()
 
 	o.logger.Debug("Starting OpAMP client...")
 
@@ -140,6 +148,8 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	if o.lifetimeCtxCancel != nil {
 		o.lifetimeCtxCancel()
 	}
+
+	o.statusSubscriptionWg.Wait()
 
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient == nil {
@@ -244,7 +254,12 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		instanceID:               uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
+		statusSubscriptionWg:     &sync.WaitGroup{},
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
+	}
+
+	if agent.capabilities.ReportsHealth {
+		agent.statusAggregator = status.NewAggregator(status.PriorityPermanent)
 	}
 
 	return agent, nil
@@ -362,8 +377,79 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 
 func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	if o.capabilities.ReportsHealth && o.opampClient != nil {
+
+		if ch.Healthy && o.startTimeUnixNano == 0 {
+			ch.StartTimeUnixNano = ch.StatusTimeUnixNano
+		} else {
+			ch.StartTimeUnixNano = o.startTimeUnixNano
+		}
 		if err := o.opampClient.SetHealth(ch); err != nil {
 			o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 	}
+}
+
+func (o *opampAgent) initHealthReporting() {
+	if !o.capabilities.ReportsHealth {
+		return
+	}
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+
+	statusChan, unsubscribeFunc := o.statusAggregator.Subscribe(status.ScopeAll, status.Verbose)
+
+	o.statusSubscriptionWg.Add(1)
+	go func() {
+		for {
+			select {
+			case <-o.lifetimeCtx.Done():
+				unsubscribeFunc()
+				o.statusSubscriptionWg.Done()
+				return
+			case statusUpdate, ok := <-statusChan:
+				if !ok {
+					unsubscribeFunc()
+					o.statusSubscriptionWg.Done()
+					return
+				}
+
+				if statusUpdate == nil {
+					continue
+				}
+
+				componentHealth := convertOverallStatus(statusUpdate)
+				componentHealth.ComponentHealthMap = convertComponentStatusMap(statusUpdate.ComponentStatusMap)
+
+				o.setHealth(componentHealth)
+			}
+		}
+	}()
+}
+
+func convertOverallStatus(statusUpdate *status.AggregateStatus) *protobufs.ComponentHealth {
+	var isHealthy bool
+	if statusUpdate.Status() == componentstatus.StatusOK {
+		isHealthy = true
+	} else {
+		isHealthy = false
+	}
+
+	componentHealth := &protobufs.ComponentHealth{
+		Healthy:            isHealthy,
+		Status:             statusUpdate.Status().String(),
+		StatusTimeUnixNano: uint64(statusUpdate.Timestamp().UnixNano()),
+	}
+
+	if statusUpdate.Err() != nil {
+		componentHealth.LastError = statusUpdate.Err().Error()
+	}
+	return componentHealth
+}
+
+func convertComponentStatusMap(statusMap map[string]*status.AggregateStatus) map[string]*protobufs.ComponentHealth {
+	res := map[string]*protobufs.ComponentHealth{}
+
+	for comp, stat := range statusMap {
+		res[comp] = convertOverallStatus(stat)
+	}
+	return res
 }
