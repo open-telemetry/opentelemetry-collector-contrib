@@ -80,7 +80,7 @@ func TestEndpointsAreWired(t *testing.T) {
 			resp.Body.Close()
 
 			body := string(samplingStrategiesBytes)
-			assert.Equal(t, `{"probabilisticSampling":{"samplingRate":1}}`, body)
+			assert.JSONEq(t, `{"probabilisticSampling":{"samplingRate":1}}`, body)
 		})
 	}
 }
