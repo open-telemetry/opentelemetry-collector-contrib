@@ -44,6 +44,15 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
 	resourceAttrs.PutStr("k8s.object.name", ev.InvolvedObject.Name)
 	resourceAttrs.PutStr("k8s.object.uid", string(ev.InvolvedObject.UID))
+
+	if ev.InvolvedObject.Kind == "Pod" {
+		resourceAttrs.PutStr("k8s.pod.uid", string(ev.InvolvedObject.UID))
+	}
+
+	if ev.InvolvedObject.Kind == "Node" {
+		resourceAttrs.PutStr("k8s.node.uid", string(ev.InvolvedObject.UID))
+	}
+
 	resourceAttrs.PutStr("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
 	resourceAttrs.PutStr("k8s.object.api_version", ev.InvolvedObject.APIVersion)
 	resourceAttrs.PutStr("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)

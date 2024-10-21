@@ -1,0 +1,16 @@
+# Base image
+FROM ubuntu:24.04
+
+# Install necessary packages
+RUN apt-get update && apt-get install -y \
+    ca-certificates vim net-tools tcpdump \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the pre-built OpenTelemetry Contrib Collector binary
+COPY otelcontribcol /usr/local/bin/otelcontribcol
+
+# Expose necessary ports
+EXPOSE 4317 55680 8888
+
+# Start the collector with your config
+CMD ["/usr/bin/tail", "-f", "/dev/null"]
