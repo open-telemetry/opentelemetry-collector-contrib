@@ -53,5 +53,10 @@ func (cfg *Config) Validate() error {
 	default:
 		return fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", cfg.Distribution)
 	}
+
+	if cfg.Namespace != "" && (len(cfg.NodeConditionTypesToReport) > 0 || len(cfg.AllocatableTypesToReport) > 0) {
+		return fmt.Errorf("node specific options \"node_conditions_to_report\" and \"allocatable_types_to_report\" can not be used in combination with \"namespace\" filter")
+	}
+
 	return nil
 }
