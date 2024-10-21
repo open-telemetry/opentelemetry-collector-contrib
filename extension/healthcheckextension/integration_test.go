@@ -37,7 +37,7 @@ func Test_SimpleHealthCheck(t *testing.T) {
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	require.NoError(t, err)
-	assert.Equal(t, `{"status":"Server not available","upSince":"0001-01-01T00:00:00Z","uptime":""}`, buf.String())
+	assert.JSONEq(t, `{"status":"Server not available","upSince":"0001-01-01T00:00:00Z","uptime":""}`, buf.String())
 	err = e.(*healthCheckExtension).Ready()
 	require.NoError(t, err)
 	resp, err = http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/", port))
