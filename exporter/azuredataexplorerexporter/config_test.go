@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "2"),
-			errorMessage: `either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_default_auth"] must be provided for auth`,
+			errorMessage: `either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_azure_auth"] must be provided for auth`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "3"),
@@ -114,13 +114,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "9"),
 			expected: &Config{
-				ClusterURI:     "https://CLUSTER.kusto.windows.net",
-				Database:       "oteldb",
-				MetricTable:    "OTELMetrics",
-				LogTable:       "OTELLogs",
-				TraceTable:     "OTELTraces",
-				UseDefaultAuth: true,
-				IngestionType:  queuedIngestTest,
+				ClusterURI:    "https://CLUSTER.kusto.windows.net",
+				Database:      "oteldb",
+				MetricTable:   "OTELMetrics",
+				LogTable:      "OTELLogs",
+				TraceTable:    "OTELTraces",
+				UseAzureAuth:  true,
+				IngestionType: queuedIngestTest,
 			},
 		},
 	}

@@ -178,7 +178,7 @@ func TestCreateKcsb(t *testing.T) {
 		name              string // name of the test
 		config            Config // config for the test
 		isMsi             bool   // is MSI enabled
-		isDefaultAuth     bool   // is default authentication enabled
+		isAzureAuth       bool   // is azure authentication enabled
 		applicationID     string // application id
 		managedIdentityID string // managed identity id
 	}{
@@ -218,13 +218,13 @@ func TestCreateKcsb(t *testing.T) {
 			applicationID:     "",
 		},
 		{
-			name: "workload identity",
+			name: "azure auth",
 			config: Config{
-				ClusterURI:     "https://CLUSTER.kusto.windows.net",
-				Database:       "tests",
-				UseDefaultAuth: true,
+				ClusterURI:   "https://CLUSTER.kusto.windows.net",
+				Database:     "tests",
+				UseAzureAuth: true,
 			},
-			isDefaultAuth: true,
+			isAzureAuth: true,
 		},
 	}
 	for i := range tests {
@@ -239,8 +239,8 @@ func TestCreateKcsb(t *testing.T) {
 			wantManagedID := tt.managedIdentityID
 			assert.Equal(t, wantManagedID, gotKcsb.ManagedServiceIdentity)
 			assert.Equal(t, "https://CLUSTER.kusto.windows.net", gotKcsb.DataSource)
-			wantIsDefault := tt.isDefaultAuth
-			assert.Equal(t, wantIsDefault, gotKcsb.DefaultAuth)
+			wantIsAzure := tt.isAzureAuth
+			assert.Equal(t, wantIsAzure, gotKcsb.DefaultAuth)
 		})
 	}
 }

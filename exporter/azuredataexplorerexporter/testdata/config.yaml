@@ -150,4 +150,4 @@ azuredataexplorer/9:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
   # weather to use the default azure auth
-  use_default_auth: true
+  use_azure_auth: true

@@ -24,7 +24,7 @@ type Config struct {
 	ApplicationKey            configopaque.String `mapstructure:"application_key"`
 	TenantID                  string              `mapstructure:"tenant_id"`
 	ManagedIdentityID         string              `mapstructure:"managed_identity_id"`
-	UseDefaultAuth            bool                `mapstructure:"use_default_auth"`
+	UseAzureAuth              bool                `mapstructure:"use_azure_auth"`
 	Database                  string              `mapstructure:"db_name"`
 	MetricTable               string              `mapstructure:"metrics_table_name"`
 	LogTable                  string              `mapstructure:"logs_table_name"`
@@ -58,12 +58,12 @@ func (adxCfg *Config) Validate() error {
 		authMethods++
 	}
 
-	if adxCfg.UseDefaultAuth {
+	if adxCfg.UseAzureAuth {
 		authMethods++
 	}
 
 	if authMethods != 1 {
-		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_default_auth"] must be provided for auth`)
+		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_azure_auth"] must be provided for auth`)
 	}
 
 	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {

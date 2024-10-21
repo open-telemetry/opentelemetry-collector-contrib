@@ -31,7 +31,7 @@ One authentication method is required:
 - Managed identity:
   - `managed_identity_id` (no default): The managed identity id to authenticate with. Set to "system" for system-assigned managed identity. Set the MI client Id (GUID) for user-assigned managed identity.
 - Default authentication:
-  - `use_default_auth` (no default): Set to true to use the Azure [default authentication](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#2-authenticate-with-azure). This is an optional setting and is set to false by default.
+  - `use_azure_auth` (default: false): Set to true to use the Azure [default authentication](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#2-authenticate-with-azure).
 
 The following settings can be optionally configured and have default values:
 > Note that the database tables are expected to be created upfront before the exporter is in operation , the definition of these are in the section [Database and Table definition scripts](#database-and-table-definition-scripts)
