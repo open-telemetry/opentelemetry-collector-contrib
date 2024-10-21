@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -160,7 +161,11 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		tsStart := time.Now()
 		var items []itemRequest
 
-		dec := json.NewDecoder(req.Body)
+		body := req.Body
+		if req.Header.Get("Content-Encoding") == "gzip" {
+			body, _ = gzip.NewReader(req.Body)
+		}
+		dec := json.NewDecoder(body)
 		for dec.More() {
 			var action, doc json.RawMessage
 			if err := dec.Decode(&action); err != nil {

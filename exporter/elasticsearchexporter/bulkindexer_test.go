@@ -15,6 +15,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -62,13 +63,8 @@ func TestAsyncBulkIndexer_flushOnClose(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &cfg)
-	require.NoError(t, err)
-	session, err := bulkIndexer.StartSession(context.Background())
-	require.NoError(t, err)
+	bulkIndexer := runBulkIndexerOnce(t, &cfg, client)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
-	assert.NoError(t, bulkIndexer.Close(context.Background()))
 	assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
 }
 
@@ -157,13 +153,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			}})
 			require.NoError(t, err)
 
-			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
-			require.NoError(t, err)
-			session, err := bulkIndexer.StartSession(context.Background())
-			require.NoError(t, err)
-
-			assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
-			assert.NoError(t, bulkIndexer.Close(context.Background()))
+			runBulkIndexerOnce(t, &tt.config, client)
 
 			assert.Equal(t, tt.wantRequireDataStream, <-requireDataStreamCh)
 		})
@@ -234,6 +224,8 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 
 			bulkIndexer, err := newAsyncBulkIndexer(zap.New(core), client, &cfg)
 			require.NoError(t, err)
+			defer bulkIndexer.Close(context.Background())
+
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
@@ -241,7 +233,6 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
-			assert.NoError(t, bulkIndexer.Close(context.Background()))
 			messages := observed.FilterMessage(tt.wantMessage)
 			require.Equal(t, 1, messages.Len(), "message not found; observed.All()=%v", observed.All())
 			for _, wantField := range tt.wantFields {
@@ -249,4 +240,79 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
+	tests := []struct {
+		name   string
+		config Config
+	}{
+		{
+			name: "compression none",
+			config: Config{
+				NumWorkers:   1,
+				ClientConfig: confighttp.ClientConfig{Compression: "none"},
+			},
+		},
+		{
+			name: "compression gzip",
+			config: Config{
+				NumWorkers:   1,
+				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			loggerCore, logObserver := observer.New(zap.DebugLevel)
+
+			esLogger := clientLogger{
+				Logger:          zap.New(loggerCore),
+				logRequestBody:  true,
+				logResponseBody: true,
+			}
+
+			client, err := elasticsearch.NewClient(elasticsearch.Config{
+				Transport: &mockTransport{
+					RoundTripFunc: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+							Body:   io.NopCloser(strings.NewReader(successResp)),
+						}, nil
+					},
+				},
+				Logger: &esLogger,
+			})
+			require.NoError(t, err)
+
+			runBulkIndexerOnce(t, &tt.config, client)
+
+			records := logObserver.AllUntimed()
+			assert.Len(t, records, 2)
+
+			assert.Equal(t, "/", records[0].ContextMap()["path"])
+			assert.Nil(t, records[0].ContextMap()["request_body"])
+			assert.JSONEq(t, successResp, records[0].ContextMap()["response_body"].(string))
+
+			assert.Equal(t, "/_bulk", records[1].ContextMap()["path"])
+			assert.Equal(t, "{\"create\":{\"_index\":\"foo\"}}\n{\"foo\": \"bar\"}\n", records[1].ContextMap()["request_body"])
+			assert.JSONEq(t, successResp, records[1].ContextMap()["response_body"].(string))
+		})
+	}
+}
+
+func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
+	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, config)
+	require.NoError(t, err)
+	session, err := bulkIndexer.StartSession(context.Background())
+	require.NoError(t, err)
+
+	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.NoError(t, bulkIndexer.Close(context.Background()))
+
+	return bulkIndexer
 }

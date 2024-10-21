@@ -6,6 +6,7 @@ package elasticsearchexporter
 import (
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -38,6 +39,7 @@ func TestConfig(t *testing.T) {
 
 	defaultMaxIdleConns := 100
 	defaultIdleConnTimeout := 90 * time.Second
+	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
 		configFile string
@@ -80,6 +82,7 @@ func TestConfig(t *testing.T) {
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
+					cfg.Compression = defaultCompression
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -150,6 +153,7 @@ func TestConfig(t *testing.T) {
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
+					cfg.Compression = defaultCompression
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -220,6 +224,7 @@ func TestConfig(t *testing.T) {
 					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
+					cfg.Compression = defaultCompression
 				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
@@ -301,10 +306,29 @@ func TestConfig(t *testing.T) {
 				cfg.Batcher.Enabled = &enabled
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "compression_none"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.Compression = "none"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "compression_gzip"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.Compression = "gzip"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		tt := tt
+		t.Run(strings.ReplaceAll(tt.id.String(), "/", "_"), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
@@ -387,9 +411,9 @@ func TestConfig_Validate(t *testing.T) {
 		"compression unsupported": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Compression = configcompression.TypeGzip
+				cfg.Compression = configcompression.TypeSnappy
 			}),
-			err: `compression is not currently configurable`,
+			err: `compression must be one of [none, gzip]`,
 		},
 		"both max_retries and max_requests specified": {
 			config: withDefaultConfig(func(cfg *Config) {
