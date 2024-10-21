@@ -78,7 +78,7 @@ GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 
 GOTESTSUM_OPT?= --rerun-fails=1
-TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run
+TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run,encoded-compare
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
