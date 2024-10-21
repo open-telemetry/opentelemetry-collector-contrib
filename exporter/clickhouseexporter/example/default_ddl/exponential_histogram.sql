@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS otel_metrics_exponential_histogram
     INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE = MergeTree
-      TTL toDateTime(TimeUnix) + toIntervalDay(7)
+      TTL toDateTime(TimeUnix) + toIntervalDay(180)
       PARTITION BY toDate(TimeUnix)
       ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
       SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;

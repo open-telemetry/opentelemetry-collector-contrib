@@ -30,5 +30,5 @@ CREATE TABLE IF NOT EXISTS otel_metrics_gauge
 ) ENGINE = MergeTree
       PARTITION BY toDate(TimeUnix)
       ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
-      TTL toDateTime(TimeUnix) + toIntervalDay(7)
+      TTL toDateTime(TimeUnix) + toIntervalDay(180)
       SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
