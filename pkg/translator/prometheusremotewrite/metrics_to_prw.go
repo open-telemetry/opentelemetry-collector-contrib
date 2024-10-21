@@ -75,7 +75,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes, false)
 
 				// handle individual metrics based on type
 				//exhaustive:enforce

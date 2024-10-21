@@ -51,7 +51,7 @@ func (c *GMPConfig) toCollectorConfig() collector.Config {
 	cfg.MetricConfig.ServiceResourceLabels = false
 	// Update metric naming to match GMP conventions
 	cfg.MetricConfig.GetMetricName = func(baseName string, metric pmetric.Metric) (string, error) {
-		compliantName := prometheus.BuildCompliantName(metric, "", c.MetricConfig.Config.AddMetricSuffixes)
+		compliantName := prometheus.BuildCompliantName(metric, "", c.MetricConfig.Config.AddMetricSuffixes, false)
 		return googlemanagedprometheus.GetMetricName(baseName, compliantName, metric)
 	}
 	// Map to the prometheus_target monitored resource

@@ -166,7 +166,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						testdata.TestGaugeDoubleMetricName,
 						pcommon.NewMap(),
 						1, ts,
-					), "", false),
+					), "", false, false),
 					Help: "gauge description",
 				},
 				{
@@ -175,7 +175,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						testdata.TestGaugeIntMetricName,
 						pcommon.NewMap(),
 						1, ts,
-					), "", false),
+					), "", false, false),
 					Help: "gauge description",
 				},
 				{
@@ -184,7 +184,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						testdata.TestSumDoubleMetricName,
 						pcommon.NewMap(),
 						1, ts,
-					), "", false),
+					), "", false, false),
 					Help: "sum description",
 				},
 				{
@@ -193,7 +193,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						testdata.TestSumIntMetricName,
 						pcommon.NewMap(),
 						1, ts,
-					), "", false),
+					), "", false, false),
 					Help: "sum description",
 				},
 				{
@@ -202,7 +202,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						testdata.TestDoubleHistogramMetricName,
 						pcommon.NewMap(),
 						1, ts,
-					), "", false),
+					), "", false, false),
 					Help: "histogram description",
 				},
 				{
@@ -211,7 +211,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 						testdata.TestDoubleSummaryMetricName,
 						pcommon.NewMap(),
 						1, ts,
-					), "", false),
+					), "", false, false),
 					Help: "summary description",
 				},
 			},

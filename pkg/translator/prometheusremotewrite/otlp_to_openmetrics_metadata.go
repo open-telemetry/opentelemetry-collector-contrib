@@ -64,7 +64,7 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []*prompb
 				metric := scopeMetrics.Metrics().At(k)
 				entry := prompb.MetricMetadata{
 					Type:             otelMetricTypeToPromMetricType(metric),
-					MetricFamilyName: prometheustranslator.BuildCompliantName(metric, "", addMetricSuffixes),
+					MetricFamilyName: prometheustranslator.BuildCompliantName(metric, "", addMetricSuffixes, false),
 					Help:             metric.Description(),
 				}
 				metadata = append(metadata, &entry)

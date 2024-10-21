@@ -130,7 +130,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	sort.Stable(ByLabelName(labels))
 
 	for _, label := range labels {
-		var finalKey = prometheustranslator.NormalizeLabel(label.Name)
+		var finalKey = prometheustranslator.NormalizeLabel(label.Name, false)
 		if existingValue, alreadyExists := l[finalKey]; alreadyExists {
 			l[finalKey] = existingValue + ";" + label.Value
 		} else {
@@ -170,7 +170,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		// internal labels should be maintained
 		name := extras[i]
 		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
-			name = prometheustranslator.NormalizeLabel(name)
+			name = prometheustranslator.NormalizeLabel(name, false)
 		}
 		l[name] = extras[i+1]
 	}

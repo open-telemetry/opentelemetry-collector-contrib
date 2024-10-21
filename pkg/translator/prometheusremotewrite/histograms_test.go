@@ -743,7 +743,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
-				prometheustranslator.BuildCompliantName(metric, "", true),
+				prometheustranslator.BuildCompliantName(metric, "", true, false),
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)

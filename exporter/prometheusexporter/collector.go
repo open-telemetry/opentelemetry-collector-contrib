@@ -36,7 +36,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
 		accumulator:       newAccumulator(logger, config.MetricExpiration),
 		logger:            logger,
-		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		namespace:         prometheustranslator.CleanUpString(config.Namespace, false),
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
@@ -110,7 +110,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 	values := make([]string, 0, attributes.Len()+2)
 
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		keys = append(keys, prometheustranslator.NormalizeLabel(k))
+		keys = append(keys, prometheustranslator.NormalizeLabel(k, false))
 		values = append(values, v.AsString())
 		return true
 	})
@@ -125,7 +125,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 	}
 
 	return prometheus.NewDesc(
-		prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes),
+		prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes, false),
 		metric.Description(),
 		keys,
 		c.constLabels,
@@ -327,7 +327,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		})
 
 		attributes.Range(func(k string, v pcommon.Value) bool {
-			finalKey := prometheustranslator.NormalizeLabel(k)
+			finalKey := prometheustranslator.NormalizeLabel(k, false)
 			if existingVal, ok := labels[finalKey]; ok {
 				labels[finalKey] = existingVal + ";" + v.AsString()
 			} else {
