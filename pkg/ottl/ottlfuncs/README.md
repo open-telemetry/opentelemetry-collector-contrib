@@ -413,16 +413,20 @@ Available Converters:
 - [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
+- [ConvertTextToElementsXML](#converttexttoelementsxml)
 - [Day](#day)
+- [Double](#double)
+- [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Format](#format)
+- [GetXML](#getxml)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
-- [Double](#double)
-- [Duration](#duration)
+- [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
@@ -445,6 +449,7 @@ Available Converters:
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [RemoveXML](#removexml)
 - [Seconds](#seconds)
@@ -457,6 +462,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToKeyValueString](#tokeyvaluestring)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -543,6 +549,61 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### ConvertAttributesToElementsXML
+
+`ConvertAttributesToElementsXML(target, Optional[xpath])`
+
+The `ConvertAttributesToElementsXML` Converter returns an edited version of an XML string where attributes are converted into child elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertAttributesToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Attributes will only be converted within the result(s) of the xpath.
+
+For example, `<a foo="bar"><b>baz</b></a>` will be converted to `<a><b>baz</b><foo>bar</foo></a>`.
+
+Examples:
+
+Convert all attributes in a document
+
+- `ConvertAttributesToElementsXML(body)`
+
+Convert only attributes within "Record" elements
+
+- `ConvertAttributesToElementsXML(body, "/Log/Record")`
+
+### ConvertTextToElementsXML
+
+`ConvertTextToElementsXML(target, Optional[xpath], Optional[elementName])`
+
+The `ConvertTextToElementsXML` Converter returns an edited version of an XML string where all text belongs to a dedicated element.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
+
+`elementName` (optional) is a string that is used for any element tags that are created to wrap content.
+The default is `"value"`.
+
+For example, `<a><b>foo</b>bar</a>` will be converted to `<a><b>foo</b><value>bar</value></a>`.
+
+Examples:
+
+Ensure all text content in a document is wrapped in a dedicated element
+
+- `ConvertTextToElementsXML(body)`
+
+Use a custom name for any new elements
+
+- `ConvertTextToElementsXML(body, elementName = "custom")`
+
+Convert only part of the document
+
+- `ConvertTextToElementsXML(body, "/some/part/", "value")`
 
 ### Day
 
@@ -742,6 +803,37 @@ Examples:
 - `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
 - `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
 
+
+### GetXML
+
+`GetXML(target, xpath)`
+
+The `GetXML` Converter returns an XML string with selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `GetXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Currently, this converter only supports selecting elements.
+
+Examples:
+
+Get all elements at the root of the document with tag "a"
+
+- `GetXML(body, "/a")`
+
+Gel all elements anywhere in the document with tag "a"
+
+- `GetXML(body, "//a")`
+
+Get the first element at the root of the document with tag "a"
+
+- `GetXML(body, "/a[1]")`
+
+Get all elements in the document with tag "a" that have an attribute "b" with value "c"
+
+- `GetXML(body, "//a[@b='c']")`
+
 ### Hex
 
 `Hex(value)`
@@ -796,6 +888,35 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
+
+### InsertXML
+
+`InsertXML(target, xpath, value)`
+
+The `InsertXML` Converter returns an edited version of an XML string with child elements added to selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be modified. If `target` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements.
+
+`value` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be inserted into `target`. If `value` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+Examples:
+
+Add an element "foo" to the root of the document
+
+- `InsertXML(body, "/", "<foo/>")`
+
+Add an element "bar" to any element called "foo"
+
+- `InsertXML(body, "//foo", "<bar/>")`
+
+Fetch and insert an xml document into another
+
+- `InsertXML(body, "/subdoc", attributes["subdoc"])`
 
 ### Int
 
@@ -1215,6 +1336,132 @@ Examples:
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(attributes["pairs"])`
 
+### ParseSimplifiedXML
+
+`ParseSimplifiedXML(target)`
+
+The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
+
+The goal of this Converter is to produce a more user-friendly representation of XML data than the `ParseXML` Converter.
+This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
+
+This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
+a direct representation of XML data. Users are encouraged to simplify their XML documents prior to using `ParseSimplifiedXML`.
+
+See other functions which may be useful for preparing XML documents:
+
+- `ConvertAttributesToElementsXML`
+- `ConvertTextToElementsXML`
+- `RemoveXML`
+- `InsertXML`
+- `GetXML`
+
+#### Formal Definitions
+
+A "Simplified XML" document contains no attributes and no extraneous text content.
+
+An element has "extraneous text content" when it contains both text and element content. e.g.
+
+```xml
+<foo>
+    bar <!-- extraneous text content -->
+    <hello>world</hello> <!-- element content -->
+</foo>
+```
+
+#### Parsing logic
+
+1. Declaration elements, attributes, comments, and extraneous text content are ignored.
+2. Elements which contain a value are converted into key/value pairs.
+   e.g. `<foo>bar</foo>` becomes `"foo": "bar"`
+3. Elements which contain child elements are converted into a key/value pair where the value is a map.
+   e.g. `<foo> <bar>baz</bar> </foo>` becomes `"foo": { "bar": "baz" }`
+4. Sibling elements that share the same tag will be combined into a slice.
+   e.g. `<a> <b>1</b> <c>2</c> <c>3</c> </foo>` becomes `"a": { "b": "1", "c": [ "2", "3" ] }`.
+5. Empty elements are dropped, but they can determine whether a value should be a slice or map.
+   e.g. `<a> <b>1</b> <b/> </a>` becomes `"a": { "b": [ "1" ] }` instead of `"a": { "b": "1" }`
+
+#### Examples
+
+Parse a Simplified XML document from the body:
+
+```xml
+<event>
+    <id>1</id>
+    <user>jane</user>
+    <details>
+      <time>2021-10-01T12:00:00Z</time>
+      <description>Something happened</description>
+      <cause>unknown</cause>
+    </details>
+</event>
+```
+
+```json
+{
+  "event": {
+    "id": 1,
+    "user": "jane",
+    "details": {
+      "time": "2021-10-01T12:00:00Z",
+      "description": "Something happened",
+      "cause": "unknown"
+    }
+  }
+}
+```
+
+Parse a Simplified XML document with unique child elements:
+
+```xml
+<x>
+  <y>1</y>
+  <z>2</z>
+</x>
+```
+
+```json
+{
+  "x": {
+    "y": "1",
+    "z": "2"
+  }
+}
+```
+
+Parse a Simplified XML document with multiple elements of the same tag:
+
+```xml
+<a>
+  <b>1</b>
+  <b>2</b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
+
+Parse a Simplified XML document with CDATA element:
+
+```xml
+<a>
+  <b>1</b>
+  <b><![CDATA[2]]></b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
 
 ### ParseXML
 
@@ -1597,6 +1844,44 @@ Examples:
 
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
+
+### ToKeyValueString
+
+`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
+
+The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
+
+- `target` is a Getter that returns a `pcommon.Map`. 
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
+
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
+
+```
+`k1=v1 k2=v2 k3=v3`
+```
+
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+
+For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
+
+```
+`k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}`
+```
+
+**Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
+
+For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
+
+```
+`k1=v1 k2="v=2" k3="\"v=3\""`
+```
+
+Examples:
+
+- `ToKeyValueString(body)`
+- `ToKeyValueString(body, ":", ",", true)`
 
 ### TraceID
 

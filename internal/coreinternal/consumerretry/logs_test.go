@@ -88,8 +88,7 @@ func TestConsumeLogs_ContextDeadline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 	defer cancel()
 	err := consumer.ConsumeLogs(ctx, testdata.GenerateLogsTwoLogRecordsSameResource())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "context is cancelled or timed out retry later")
+	assert.ErrorContains(t, err, "context is cancelled or timed out retry later")
 }
 
 func TestConsumeLogs_PartialRetry(t *testing.T) {

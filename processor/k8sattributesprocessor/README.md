@@ -5,7 +5,8 @@
 | Stability     | [beta]: logs, metrics, traces   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@rmfitzpatrick](https://www.github.com/rmfitzpatrick), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -102,6 +103,7 @@ Additional container level attributes can be extracted provided that certain res
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
 2. If the `k8s.container.name` resource attribute is provided, the following additional attributes will be available:
+   - container.id (if the `k8s.container.restart_count` resource attribute is not provided, it's not guaranteed to get the right container ID.)
    - container.image.name
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))

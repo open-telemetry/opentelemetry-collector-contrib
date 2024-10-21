@@ -35,7 +35,6 @@ components:
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
-        - instana
         - kafka
         - loadbalancing
         - logicmonitor
@@ -82,12 +81,12 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
-        - experimental_metricsgeneration
         - filter
         - geoip
         - groupbyattrs
         - groupbytrace
         - k8sattributes
+        - metricsgeneration
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -180,6 +179,7 @@ components:
         - statsd
         - syslog
         - tcplog
+        - tlscheck
         - udplog
         - vcenter
         - wavefront

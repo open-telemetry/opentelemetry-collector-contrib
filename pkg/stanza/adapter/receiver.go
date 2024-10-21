@@ -65,7 +65,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 
 	// ...
 	// * second one which reads all the logs produced by the converter
-	//   (aggregated by Resource) and then calls consumer to consumer them.
+	//   (aggregated by Resource) and then calls consumer to consume them.
 	r.consumeWg.Add(1)
 	go r.consumerLoop(rctx)
 
