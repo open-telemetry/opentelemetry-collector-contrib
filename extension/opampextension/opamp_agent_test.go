@@ -6,9 +6,6 @@ package opampextension
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opamp-go/client/types"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
-	"go.opentelemetry.io/collector/component/componentstatus"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,14 +14,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 func TestNewOpampAgent(t *testing.T) {
@@ -400,7 +401,7 @@ func TestHealthReportingDisabled(t *testing.T) {
 
 	o.capabilities.ReportsHealth = false
 	o.opampClient = &mockOpAMPClient{
-		setHealthFunc: func(health *protobufs.ComponentHealth) error {
+		setHealthFunc: func(_ *protobufs.ComponentHealth) error {
 			t.Errorf("setHealth is not supposed to be called with deactivated ReportsHealth capability")
 			return nil
 		},
@@ -499,19 +500,19 @@ type mockOpAMPClient struct {
 	setHealthFunc func(health *protobufs.ComponentHealth) error
 }
 
-func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+func (m mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
 	return nil
 }
 
-func (mockOpAMPClient) Stop(_ context.Context) error {
+func (m mockOpAMPClient) Stop(_ context.Context) error {
 	return nil
 }
 
-func (mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
+func (m mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
 	return nil
 }
 
-func (mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
+func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return nil
 }
 
@@ -519,33 +520,31 @@ func (m mockOpAMPClient) SetHealth(health *protobufs.ComponentHealth) error {
 	return m.setHealthFunc(health)
 }
 
-func (mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error {
+func (m mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error {
 	return nil
 }
 
-func (mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
+func (m mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
 	return nil
 }
 
-func (mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+func (m mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
 	return nil
 }
 
-func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+func (m mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
 	return nil
 }
 
-func (mockOpAMPClient) SetCustomCapabilities(_ *protobufs.CustomCapabilities) error {
+func (m mockOpAMPClient) SetCustomCapabilities(_ *protobufs.CustomCapabilities) error {
 	return nil
 }
 
-func (mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
+func (m mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
 	return nil, nil
 }
 
-func (mockOpAMPClient) SetFlags(flags protobufs.AgentToServerFlags) {
-
-}
+func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
 
 type mockStatusEvent struct {
 	status    componentstatus.Status

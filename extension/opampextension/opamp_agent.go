@@ -7,12 +7,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"runtime"
+	"sort"
+	"strings"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
@@ -22,14 +28,9 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
-	"net/http"
-	"os"
-	"runtime"
-	"sort"
-	"strings"
-	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
