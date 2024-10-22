@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"reflect"
@@ -83,7 +84,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 		"Content-Type": "application/json",
 	}
 	return exporterhelper.NewTracesExporter(
-		context.TODO(),
+		context.Background(),
 		set,
 		config,
 		exporter.pushTraceData,
@@ -109,7 +110,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	return exporterhelper.NewLogsExporter(
-		context.TODO(),
+		context.Background(),
 		set,
 		config,
 		exporter.pushLogData,
@@ -132,12 +133,12 @@ func (exporter *logzioExporter) start(ctx context.Context, host component.Host) 
 
 func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	tr := plogotlp.NewExportRequestFromLogs(ld)
+	var request []byte
 	request, err := tr.MarshalProto()
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	err = exporter.export(ctx, exporter.config.ClientConfig.Endpoint, request)
-	return err
+	return exporter.export(ctx, exporter.config.ClientConfig.Endpoint, request)
 }
 
 func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
@@ -220,6 +221,9 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
+	for key, value := range exporter.config.ClientConfig.Headers {
+		req.Header.Set(key, string(value))
+	}
 	resp, err := exporter.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to make an HTTP request: %w", err)
@@ -227,7 +231,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		_, _ = io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes)
+		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
 		resp.Body.Close()
 	}()
 	exporter.logger.Debug(fmt.Sprintf("Response status code: %d", resp.StatusCode))
@@ -235,7 +239,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 		// Request is successful.
 		return nil
 	}
-	respStatus := readResponse(resp)
+	respStatus := readResponseStatus(resp)
 	// Format the error message. Use the status if it is present in the response.
 	var formattedErr error
 	if respStatus != nil {
@@ -270,31 +274,90 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 	return formattedErr
 }
 
+func readResponseBody(resp *http.Response) ([]byte, error) {
+	if resp.ContentLength == 0 {
+		return nil, nil
+	}
+
+	maxRead := resp.ContentLength
+
+	// if maxRead == -1, the ContentLength header has not been sent, so read up to
+	// the maximum permitted body size. If it is larger than the permitted body
+	// size, still try to read from the body in case the value is an error. If the
+	// body is larger than the maximum size, proto unmarshaling will likely fail.
+	if maxRead == -1 || maxRead > maxHTTPResponseReadBytes {
+		maxRead = maxHTTPResponseReadBytes
+	}
+	protoBytes := make([]byte, maxRead)
+	n, err := io.ReadFull(resp.Body, protoBytes)
+
+	// No bytes read and an EOF error indicates there is no body to read.
+	if n == 0 && (err == nil || errors.Is(err, io.EOF)) {
+		return nil, nil
+	}
+
+	// io.ReadFull will return io.ErrorUnexpectedEOF if the Content-Length header
+	// wasn't set, since we will try to read past the length of the body. If this
+	// is the case, the body will still have the full message in it, so we want to
+	// ignore the error and parse the message.
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return nil, err
+	}
+
+	return protoBytes[:n], nil
+}
+
 // Read the response and decode the status.Status from the body.
 // Returns nil if the response is empty or cannot be decoded.
-func readResponse(resp *http.Response) *status.Status {
+func readResponseStatus(resp *http.Response) *status.Status {
 	var respStatus *status.Status
 	if resp.StatusCode >= 400 && resp.StatusCode <= 599 {
 		// Request failed. Read the body. OTLP spec says:
 		// "Response body for all HTTP 4xx and HTTP 5xx responses MUST be a
 		// Protobuf-encoded Status message that describes the problem."
-		maxRead := resp.ContentLength
-		if maxRead == -1 || maxRead > maxHTTPResponseReadBytes {
-			maxRead = maxHTTPResponseReadBytes
+		respBytes, err := readResponseBody(resp)
+		if err != nil {
+			return nil
 		}
-		respBytes := make([]byte, maxRead)
-		n, err := io.ReadFull(resp.Body, respBytes)
-		if err == nil && n > 0 {
-			// Decode it as Status struct. See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures
-			respStatus = &status.Status{}
-			err = proto.Unmarshal(respBytes, respStatus)
-			if err != nil {
-				respStatus = nil
-			}
+
+		// Decode it as Status struct. See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#failures
+		respStatus = &status.Status{}
+		err = proto.Unmarshal(respBytes, respStatus)
+		if err != nil {
+			return nil
 		}
 	}
 
 	return respStatus
+}
+func (exporter *logzioExporter) logsPartialSuccessHandler(protoBytes []byte, contentType string) error {
+	if protoBytes == nil {
+		return nil
+	}
+	exportResponse := plogotlp.NewExportResponse()
+	switch contentType {
+	case "application/x-protobuf":
+		err := exportResponse.UnmarshalProto(protoBytes)
+		if err != nil {
+			return fmt.Errorf("error parsing protobuf response: %w", err)
+		}
+	case "application/json":
+		err := exportResponse.UnmarshalJSON(protoBytes)
+		if err != nil {
+			return fmt.Errorf("error parsing json response: %w", err)
+		}
+	default:
+		return nil
+	}
+
+	partialSuccess := exportResponse.PartialSuccess()
+	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
+		exporter.logger.Warn("Partial success response",
+			zap.String("message", partialSuccess.ErrorMessage()),
+			zap.Int64("dropped_log_records", partialSuccess.RejectedLogRecords()),
+		)
+	}
+	return nil
 }
 
 func (exporter *logzioExporter) dropEmptyTags(tags []model.KeyValue) []model.KeyValue {
