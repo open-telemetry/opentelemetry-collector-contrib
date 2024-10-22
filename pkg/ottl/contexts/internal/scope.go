@@ -11,6 +11,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	InstrumentationScopeContextName = "Instrumentation Scope"
+	InstrumentationScopePathContext = "instrumentation_scope"
+	ScopePathContext                = "scope"
+)
+
 type InstrumentationScopeContext interface {
 	GetInstrumentationScope() pcommon.InstrumentationScope
 	GetScopeSchemaURLItem() SchemaURLItem
@@ -36,7 +42,7 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.
 	case "schema_url":
 		return accessInstrumentationScopeSchemaURLItem[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
+		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), InstrumentationScopeContextName, InstrumentationScopeRef)
 	}
 }
 

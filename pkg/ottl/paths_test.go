@@ -4,10 +4,13 @@
 package ottl
 
 import (
+	"context"
 	"testing"
 
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -447,4 +450,125 @@ func Test_getBooleanExpressionPaths(t *testing.T) {
 
 	paths := getBooleanExpressionPaths(c)
 	require.Equal(t, expected, paths)
+}
+
+func Test_AppendStatementPathsContext_InvalidStatement(t *testing.T) {
+	ps, err := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"foo", "bar"}),
+	)
+	require.NoError(t, err)
+	_, err = ps.AppendStatementPathsContext("foo", "this is invalid")
+	require.ErrorContains(t, err, `statement has invalid syntax`)
+}
+
+func Test_AppendStatementPathsContext_InvalidContext(t *testing.T) {
+	ps, err := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"foo", "bar"}),
+	)
+	require.NoError(t, err)
+	_, err = ps.AppendStatementPathsContext("foobar", "set(foo, 1)")
+	require.ErrorContains(t, err, `unknown context "foobar" for parser`)
+}
+
+func Test_AppendStatementPathsContext_Success(t *testing.T) {
+	tests := []struct {
+		name             string
+		statement        string
+		context          string
+		pathContextNames []string
+		expected         string
+	}{
+		{
+			name:      "no paths",
+			statement: `set("foo", 1)`,
+			context:   "bar",
+		},
+		{
+			name:      "no modification needed",
+			statement: `set(span.value, 1)`,
+			context:   "span",
+		},
+		{
+			name:      "single modifiable path",
+			statement: "set(value, 1)",
+			expected:  "set(span.value, 1)",
+			context:   "span",
+		},
+		{
+			name:             "single path with valid context",
+			statement:        "set(span.value, 1)",
+			expected:         "set(span.value, 1)",
+			pathContextNames: []string{"spanevent", "span"},
+			context:          "spanevent",
+		},
+		{
+			name:             "multiple paths with contexts",
+			statement:        `set(span.value, 1) where span.attributes["foo"] == "foo" and span.id == 1`,
+			pathContextNames: []string{"another", "span"},
+			context:          "another",
+		},
+		{
+			name:             "multiple paths with and without contexts",
+			statement:        `set(value, 1) where span.attributes["foo"] == "foo" and id == 1`,
+			expected:         "set(spanevent.value, 1) where span.attributes[\"foo\"] == \"foo\" and spanevent.id == 1",
+			pathContextNames: []string{"spanevent", "span"},
+			context:          "spanevent",
+		},
+		{
+			name:      "multiple modifiable paths",
+			statement: `set(value, 1) where name == attributes["foo.name"]`,
+			expected:  `set(span.value, 1) where span.name == span.attributes["foo.name"]`,
+			context:   "span",
+		},
+		{
+			name:      "where with function path parameter",
+			statement: `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]")`,
+			context:   "log",
+			expected:  `set(log.attributes["test"], "pass") where IsMatch(log.name, "operation[AC]")`,
+		},
+	}
+
+	mockSetFactory := NewFactory("set", &mockSetArguments[any]{},
+		func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+			return func(_ context.Context, _ any) (any, error) {
+				return nil, nil
+			}, nil
+		})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if len(tt.pathContextNames) == 0 {
+				tt.pathContextNames = append(tt.pathContextNames, tt.context)
+			}
+
+			ps, err := NewParser(
+				CreateFactoryMap[any](mockSetFactory),
+				testParsePath[any],
+				componenttest.NewNopTelemetrySettings(),
+				WithEnumParser[any](testParseEnum),
+				WithPathContextNames[any](tt.pathContextNames),
+			)
+
+			require.NoError(t, err)
+
+			var expected string
+			if tt.expected != "" {
+				expected = tt.expected
+			} else {
+				expected = tt.statement
+			}
+
+			result, err := ps.AppendStatementPathsContext(tt.context, tt.statement)
+			require.NoError(t, err)
+			assert.Equal(t, expected, result)
+		})
+	}
 }

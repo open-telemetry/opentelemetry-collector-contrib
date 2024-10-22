@@ -16,6 +16,11 @@ type ResourceContext interface {
 	GetResourceSchemaURLItem() SchemaURLItem
 }
 
+const (
+	ResourceContextName = "Resource"
+	ResourcePathContext = "resource"
+)
+
 func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return accessResource[K](), nil
@@ -31,7 +36,7 @@ func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter
 	case "schema_url":
 		return accessResourceSchemaURLItem[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Resource", ResourceContextRef)
+		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), ResourceContextName, ResourceContextRef)
 	}
 }
 

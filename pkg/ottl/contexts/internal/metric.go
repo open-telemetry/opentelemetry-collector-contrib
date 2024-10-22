@@ -11,6 +11,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	MetricContextName = "Metric"
+	MetricPathContext = "metric"
+)
+
 type MetricContext interface {
 	GetMetric() pmetric.Metric
 }
@@ -47,7 +52,7 @@ func MetricPathGetSetter[K MetricContext](path ottl.Path[K]) (ottl.GetSetter[K],
 	case "data_points":
 		return accessDataPoints[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Metric", MetricRef)
+		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), MetricContextName, MetricRef)
 	}
 }
 
