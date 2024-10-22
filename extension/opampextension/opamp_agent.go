@@ -373,7 +373,7 @@ func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	}
 }
 
-func (o *opampAgent) getOSDescription(logger *zap.Logger) string {
+func getOSDescription(logger *zap.Logger) string {
 	info, err := host.Info()
 	if err != nil {
 		logger.Error("failed getting host info", zap.Error(err))

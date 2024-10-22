@@ -6,10 +6,8 @@ package opampextension
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -284,39 +282,4 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 
 		require.Equal(t, []component.ID{authID}, o.Dependencies())
 	})
-}
-
-func getOSDescription(t *testing.T) string {
-	switch runtime.GOOS {
-	case "linux":
-		output, err := exec.Command("lsb_release", "-a").Output()
-		require.NoError(t, err)
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "Description:"); ok {
-				return strings.TrimSpace(raw)
-			}
-		}
-	case "darwin":
-		output, err := exec.Command("sw_vers").Output()
-		require.NoError(t, err)
-		var productName string
-		var productVersion string
-		for _, line := range strings.Split(string(output), "\n") {
-			if raw, ok := strings.CutPrefix(line, "ProductName:"); ok {
-				productName = strings.TrimSpace(raw)
-			} else if raw, ok = strings.CutPrefix(line, "ProductVersion:"); ok {
-				productVersion = strings.TrimSpace(raw)
-			}
-		}
-		if productName != "" && productVersion != "" {
-			return productName + " " + productVersion
-		}
-	case "windows":
-		output, err := exec.Command("cmd", "/c", "ver").Output()
-		require.NoError(t, err)
-		if string(output) != "" {
-			return strings.TrimSpace(string(output))
-		}
-	}
-	return ""
 }
