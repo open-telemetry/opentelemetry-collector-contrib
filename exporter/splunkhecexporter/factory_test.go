@@ -21,7 +21,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
@@ -31,7 +31,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
@@ -41,7 +41,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
@@ -58,7 +58,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings()
-	exp, err := factory.CreateMetricsExporter(
+	exp, err := factory.CreateMetrics(
 		context.Background(), params,
 		cfg)
 	assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
 	cfg.ClientConfig.Endpoint = "https://example.com"
-	exp, err = factory.CreateMetricsExporter(
+	exp, err = factory.CreateMetrics(
 		context.Background(), params,
 		cfg)
 	assert.NoError(t, err)
@@ -76,7 +76,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateMetricsExporter(t *testing.T) {
+func TestFactory_CreateMetrics(t *testing.T) {
 	config := &Config{
 		Token: "testToken",
 		ClientConfig: confighttp.ClientConfig{

@@ -41,15 +41,15 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.CreateExtension(context.Background(), extensiontest.NewNopSettings(), efCfg)
+	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(), efCfg)
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	me, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-	te, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-	le, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	host := hostWithEncoding{
 		map[component.ID]component.Component{id: ext},

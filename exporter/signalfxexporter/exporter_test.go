@@ -545,7 +545,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -793,7 +793,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -1260,7 +1260,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), rCfg)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)

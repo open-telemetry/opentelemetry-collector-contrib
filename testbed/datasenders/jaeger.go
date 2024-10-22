@@ -111,7 +111,7 @@ func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (export
 		clientSettings:            &cfg.ClientConfig,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),

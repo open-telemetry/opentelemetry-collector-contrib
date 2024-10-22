@@ -19,7 +19,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Endpoint = ""
@@ -31,7 +31,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.Nil(t, exp)
 }
 
-func TestCreateMetricsExporterExportHelperError(t *testing.T) {
+func TestCreateMetricsExportHelperError(t *testing.T) {
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
 

@@ -45,7 +45,7 @@ func createLogsExporter(ctx context.Context, settings exporter.Settings, exporte
 
 	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		settings,
 		expCfg,

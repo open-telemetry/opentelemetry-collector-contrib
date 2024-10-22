@@ -641,7 +641,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}()
 
 			if tt.metric {
-				exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+				exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
@@ -657,7 +657,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
-				exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+				exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
@@ -726,7 +726,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
-			exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			defer func() {
@@ -827,7 +827,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 
-			exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+			exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			defer func() {
 				require.NoError(t, exporter.Shutdown(context.Background()))

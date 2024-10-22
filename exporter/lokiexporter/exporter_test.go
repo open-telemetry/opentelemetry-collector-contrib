@@ -82,7 +82,7 @@ func TestPushLogData(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -261,7 +261,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())

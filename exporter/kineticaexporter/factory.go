@@ -55,7 +55,7 @@ func createLogsExporter(
 
 	exporter := newLogsExporter(set.Logger, cf)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -79,7 +79,7 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	exporter := newTracesExporter(set.Logger, cf)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -102,7 +102,7 @@ func createMetricsExporter(ctx context.Context,
 
 	cf := cfg.(*Config)
 	exporter := newMetricsExporter(set.Logger, cf)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

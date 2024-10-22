@@ -175,7 +175,7 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	}, receiverCfg, testCon)
 	require.NoError(t, err)
 
-	exporter, err := efact.CreateTracesExporter(ctx, exporter.Settings{
+	exporter, err := efact.CreateTraces(ctx, exporter.Settings{
 		ID:                component.MustNewID("otelarrowexporter"),
 		TelemetrySettings: expTset,
 	}, exporterCfg)
