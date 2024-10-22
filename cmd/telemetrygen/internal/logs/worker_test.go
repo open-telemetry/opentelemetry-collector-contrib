@@ -229,6 +229,58 @@ func TestLogsWithTraceIDAndSpanID(t *testing.T) {
 	}
 }
 
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		wantErrMessage string
+	}{
+		{
+			name: "No duration or NumLogs",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				TraceID: "123",
+			},
+			wantErrMessage: "either `logs` or `duration` must be greater than 0",
+		},
+		{
+			name: "TraceID invalid",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumLogs: 5,
+				TraceID: "123",
+			},
+			wantErrMessage: "TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'",
+		},
+		{
+			name: "SpanID invalid",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumLogs: 5,
+				TraceID: "ae87dadd90e9935a4bc9660628efd569",
+				SpanID:  "123",
+			},
+			wantErrMessage: "SpanID must be a 16 character hex string, like: '5828fa4960140870'",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockExporter{}
+			expFunc := func() (sdklog.Exporter, error) {
+				return m, nil
+			}
+			logger, _ := zap.NewDevelopment()
+			require.EqualError(t, Run(tt.cfg, expFunc, logger), tt.wantErrMessage)
+		})
+	}
+}
+
 func configWithNoAttributes(qty int, body string) *Config {
 	return &Config{
 		Body:    body,

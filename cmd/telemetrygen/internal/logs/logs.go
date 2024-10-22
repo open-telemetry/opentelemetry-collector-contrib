@@ -60,7 +60,6 @@ func Start(cfg *Config) error {
 	}
 
 	if err = Run(cfg, expFunc, logger); err != nil {
-		logger.Error("failed to stop the exporter", zap.Error(err))
 		return err
 	}
 
@@ -69,10 +68,12 @@ func Start(cfg *Config) error {
 
 // Run executes the test scenario.
 func Run(c *Config, exp func() (sdklog.Exporter, error), logger *zap.Logger) error {
+	if err := c.Validate(); err != nil {
+		return err
+	}
+
 	if c.TotalDuration > 0 {
 		c.NumLogs = 0
-	} else if c.NumLogs <= 0 {
-		return fmt.Errorf("either `logs` or `duration` must be greater than 0")
 	}
 
 	limit := rate.Limit(c.Rate)
