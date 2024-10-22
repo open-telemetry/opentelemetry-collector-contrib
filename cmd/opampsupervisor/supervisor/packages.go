@@ -385,7 +385,9 @@ func parsePackageSignature(signature []byte) (b64Cert, b64Signature []byte, err 
 	return splitSignature[0], splitSignature[1], nil
 }
 
-// sig is the decoded signature of
+// verifyPackageSignature verifies that the b64Signature is a valid signature for packageBytes.
+// b64Cert is used to validate the identity of the signature against the identities in the
+// provided checkOpts.
 func verifyPackageSignature(ctx context.Context, checkOpts *cosign.CheckOpts, packageBytes, b64Cert, b64Signature []byte) error {
 	decodedCert, err := base64.StdEncoding.AppendDecode(nil, b64Cert)
 	if err != nil {
