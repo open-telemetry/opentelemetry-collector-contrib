@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/solarwindscloud/apm-proto v1.0.7
+	github.com/solarwindscloud/apm-proto v1.0.8
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae
 	go.opentelemetry.io/collector/config/configgrpc v0.111.1-0.20241008154146-ea48c09c31ae
