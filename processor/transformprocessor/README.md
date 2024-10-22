@@ -669,7 +669,7 @@ transform:
 ## Copy attributes matching regular expression to a separate location
 
 If you want to move resource attributes, which keys are matching the regular expression `pod_labels_.*` to a new attribute
-location `kubernetes,labels`, use the following configuration:
+location `kubernetes.labels`, use the following configuration:
 
 ```yaml
 transform:
