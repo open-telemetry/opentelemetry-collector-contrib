@@ -1751,7 +1751,7 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	config.DisableCompression = !compressionEnabled
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushLogData)
 	require.NoError(b, err)
 	exp = &baseLogsExporter{
@@ -1901,7 +1901,7 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 	config.UseMultiMetricFormat = useMultiMetricFormat
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewMetricsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewMetrics(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushMetricsData)
 	require.NoError(b, err)
 
@@ -1922,7 +1922,7 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{failSend: true}
 
-	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushLogData)
 	require.NoError(b, err)
 
