@@ -1394,8 +1394,6 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		if err != nil {
 			s.logger.Error("Failed to sync PackagesAvailable message", zap.Error(err))
 		}
-		// TODO: Should we wait for the sync to be done somehow? Should it be in a separate goroutine
-		// <-msg.PackageSyncer.Done()
 	}
 
 	// Update the agent config if any messages have touched the config
