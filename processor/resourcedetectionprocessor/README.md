@@ -16,6 +16,18 @@ The resource detection processor can be used to detect resource information from
 in a format that conforms to the [OpenTelemetry resource semantic conventions](https://github.com/open-telemetry/semantic-conventions/tree/main/docs/resource), and append or
 override the resource value in telemetry data with this information.
 
+## Configuration
+
+The following settings are required:
+
+- `detectors`: an ordered list of named detectors that should be run to attempt to detect resource information.
+- `override`: Override indicates whether any existing resource attributes should be overridden or preserved. 
+  - Default: `true`
+
+The following settings can be optionally configured:
+
+- `detect_interval`: interval of periodically do detect action. If not configured, detection is performed only once.
+
 ## Supported detectors
 
 ### Environment Variable

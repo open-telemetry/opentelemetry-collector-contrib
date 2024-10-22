@@ -5,6 +5,8 @@ package resourcedetectionprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"net/http"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -12,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -19,6 +22,7 @@ import (
 type resourceDetectionProcessor struct {
 	provider           *internal.ResourceProvider
 	resource           pcommon.Resource
+	detectInterval     time.Duration
 	schemaURL          string
 	override           bool
 	httpClientSettings confighttp.ClientConfig
@@ -30,8 +34,26 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 	client, _ := rdp.httpClientSettings.ToClient(ctx, host, rdp.telemetrySettings)
 	ctx = internal.ContextWithClient(ctx, client)
 	var err error
+
 	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)
+
+	if rdp.detectInterval > 0 {
+		go rdp.tickerDetect(ctx, client)
+	}
 	return err
+}
+
+func (rdp *resourceDetectionProcessor) tickerDetect(ctx context.Context, client *http.Client) {
+	intervalTicker := time.NewTicker(rdp.detectInterval)
+	defer intervalTicker.Stop()
+
+	var err error
+	for range intervalTicker.C {
+		rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)
+		if err != nil {
+			rdp.telemetrySettings.Logger.Error("failed to retrieve resource from provider: %v", zap.Error(err))
+		}
+	}
 }
 
 // processTraces implements the ProcessTracesFunc type.
