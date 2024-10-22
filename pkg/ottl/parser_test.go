@@ -14,6 +14,7 @@ import (
 
 	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -2193,70 +2194,80 @@ func Test_ParseConditions_Error(t *testing.T) {
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
 // It's a fast way to check a large range of possible syntaxes.
 func Test_parseStatement(t *testing.T) {
+	converterNameErrorPrefix := "converter names must start with an uppercase letter"
+	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
+
 	tests := []struct {
-		statement string
-		wantErr   bool
+		statement         string
+		wantErr           bool
+		wantErrContaining string
 	}{
-		{`set(`, true},
-		{`set("foo)`, true},
-		{`set(name.)`, true},
-		{`("foo")`, true},
-		{`set("foo") where name =||= "fido"`, true},
-		{`set(span_id, SpanIDWrapper{not a hex string})`, true},
-		{`set(span_id, SpanIDWrapper{01})`, true},
-		{`set(span_id, SpanIDWrapper{010203040506070809})`, true},
-		{`set(trace_id, TraceIDWrapper{not a hex string})`, true},
-		{`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`, true},
-		{`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`, true},
-		{`set("foo") where name = "fido"`, true},
-		{`set("foo") where name or "fido"`, true},
-		{`set("foo") where name and "fido"`, true},
-		{`set("foo") where name and`, true},
-		{`set("foo") where name or`, true},
-		{`set("foo") where (`, true},
-		{`set("foo") where )`, true},
-		{`set("foo") where (name == "fido"))`, true},
-		{`set("foo") where ((name == "fido")`, true},
-		{`Set()`, true},
-		{`set(int())`, true},
-		{`set(1 + int())`, true},
-		{`set(int() + 1)`, true},
-		{`set(1 * int())`, true},
-		{`set(1 * 1 + (2 * int()))`, true},
-		{`set() where int() == 1`, true},
-		{`set() where 1 == int()`, true},
-		{`set() where true and 1 == int() `, true},
-		{`set() where false or 1 == int() `, true},
-		{`set(foo.attributes["bar"].cat, "dog")`, false},
-		{`set(set = foo.attributes["animal"], val = "dog") where animal == "cat"`, false},
-		{`test() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`test() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`test() where animal > "cat"`, false},
-		{`test() where animal >= "cat"`, false},
-		{`test() where animal <= "cat"`, false},
-		{`test() where animal < "cat"`, false},
-		{`test() where animal =< "dog"`, true},
-		{`test() where animal => "dog"`, true},
-		{`test() where animal <> "dog"`, true},
-		{`test() where animal = "dog"`, true},
-		{`test() where animal`, true},
-		{`test() where animal ==`, true},
-		{`test() where ==`, true},
-		{`test() where == animal`, true},
-		{`test() where attributes["path"] == "/healthcheck"`, false},
-		{`test() where one() == 1`, true},
-		{`test(fail())`, true},
-		{`Test()`, true},
+		{statement: `set(`, wantErr: true},
+		{statement: `set("foo)`, wantErr: true},
+		{statement: `set(name.)`, wantErr: true},
+		{statement: `("foo")`, wantErr: true},
+		{statement: `set("foo") where name =||= "fido"`, wantErr: true},
+		{statement: `set(span_id, SpanIDWrapper{not a hex string})`, wantErr: true},
+		{statement: `set(span_id, SpanIDWrapper{01})`, wantErr: true},
+		{statement: `set(span_id, SpanIDWrapper{010203040506070809})`, wantErr: true},
+		{statement: `set(trace_id, TraceIDWrapper{not a hex string})`, wantErr: true},
+		{statement: `set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`, wantErr: true},
+		{statement: `set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`, wantErr: true},
+		{statement: `set("foo") where name = "fido"`, wantErr: true},
+		{statement: `set("foo") where name or "fido"`, wantErr: true},
+		{statement: `set("foo") where name and "fido"`, wantErr: true},
+		{statement: `set("foo") where name and`, wantErr: true},
+		{statement: `set("foo") where name or`, wantErr: true},
+		{statement: `set("foo") where (`, wantErr: true},
+		{statement: `set("foo") where )`, wantErr: true},
+		{statement: `set("foo") where (name == "fido"))`, wantErr: true},
+		{statement: `set("foo") where ((name == "fido")`, wantErr: true},
+		{statement: `Set()`, wantErr: true},
+		{statement: `set(int())`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set(1 + int())`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set(int() + 1)`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set(1 * int())`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set(1 * 1 + (2 * int()))`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set() where int() == 1`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set() where 1 == int()`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set() where true and 1 == int() `, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set() where false or 1 == int() `, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set(foo.attributes["bar"].cat)["key"]`, wantErrContaining: editorWithIndexErrorPrefix},
+		{statement: `set(foo.attributes["bar"].cat, "dog")`},
+		{statement: `set(set = foo.attributes["animal"], val = "dog") where animal == "cat"`},
+		{statement: `test() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`},
+		{statement: `test() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`},
+		{statement: `test() where animal > "cat"`},
+		{statement: `test() where animal >= "cat"`},
+		{statement: `test() where animal <= "cat"`},
+		{statement: `test() where animal < "cat"`},
+		{statement: `test() where animal =< "dog"`, wantErr: true},
+		{statement: `test() where animal => "dog"`, wantErr: true},
+		{statement: `test() where animal <> "dog"`, wantErr: true},
+		{statement: `test() where animal = "dog"`, wantErr: true},
+		{statement: `test() where animal`, wantErr: true},
+		{statement: `test() where animal ==`, wantErr: true},
+		{statement: `test() where ==`, wantErr: true},
+		{statement: `test() where == animal`, wantErr: true},
+		{statement: `test() where attributes["path"] == "/healthcheck"`},
+		{statement: `test() where one() == 1`, wantErr: true},
+		{statement: `test(fail())`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `Test()`, wantErr: true},
+		{statement: `set() where test(foo)["key"] == "bar"`, wantErrContaining: converterNameErrorPrefix},
+		{statement: `set() where test(foo)["key"] == "bar"`, wantErrContaining: editorWithIndexErrorPrefix},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
 		name := pat.ReplaceAllString(tt.statement, "_")
 		t.Run(name, func(t *testing.T) {
 			ast, err := parseStatement(tt.statement)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseStatement(%s) error = %v, wantErr %v", tt.statement, err, tt.wantErr)
+			if (err != nil) != (tt.wantErr || tt.wantErrContaining != "") {
+				t.Errorf("parseStatement(%s) error = %v, wantErr %v, wantErrContaining %v", tt.statement, err, tt.wantErr, tt.wantErrContaining)
 				t.Errorf("AST: %+v", ast)
 				return
+			}
+			if tt.wantErrContaining != "" {
+				require.ErrorContains(t, err, tt.wantErrContaining)
 			}
 		})
 	}
@@ -2265,58 +2276,68 @@ func Test_parseStatement(t *testing.T) {
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
 // It's a fast way to check a large range of possible syntaxes.
 func Test_parseCondition(t *testing.T) {
+	converterNameErrorPrefix := "converter names must start with an uppercase letter"
+	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
+
 	tests := []struct {
-		condition string
-		wantErr   bool
+		condition         string
+		wantErr           bool
+		wantErrContaining string
 	}{
-		{`set(`, true},
-		{`set("foo)`, true},
-		{`set(name.)`, true},
-		{`("foo")`, true},
-		{`name =||= "fido"`, true},
-		{`name = "fido"`, true},
-		{`name or "fido"`, true},
-		{`name and "fido"`, true},
-		{`name and`, true},
-		{`name or`, true},
-		{`(`, true},
-		{`)`, true},
-		{`(name == "fido"))`, true},
-		{`((name == "fido")`, true},
-		{`set()`, true},
-		{`Int() == 1`, false},
-		{`1 == Int()`, false},
-		{`true and 1 == Int() `, false},
-		{`false or 1 == Int() `, false},
-		{`service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
-		{`animal > "cat"`, false},
-		{`animal >= "cat"`, false},
-		{`animal <= "cat"`, false},
-		{`animal < "cat"`, false},
-		{`animal =< "dog"`, true},
-		{`animal => "dog"`, true},
-		{`animal <> "dog"`, true},
-		{`animal = "dog"`, true},
-		{`animal`, true},
-		{`animal ==`, true},
-		{`==`, true},
-		{`== animal`, true},
-		{`attributes["path"] == "/healthcheck"`, false},
-		{`One() == 1`, false},
-		{`test(fail())`, true},
-		{`Test()`, false},
-		{`"test" == Foo`, true},
+		{condition: `set(`, wantErr: true},
+		{condition: `set("foo)`, wantErr: true},
+		{condition: `set(name.)`, wantErr: true},
+		{condition: `("foo")`, wantErr: true},
+		{condition: `name =||= "fido"`, wantErr: true},
+		{condition: `name = "fido"`, wantErr: true},
+		{condition: `name or "fido"`, wantErr: true},
+		{condition: `name and "fido"`, wantErr: true},
+		{condition: `name and`, wantErr: true},
+		{condition: `name or`, wantErr: true},
+		{condition: `(`, wantErr: true},
+		{condition: `)`, wantErr: true},
+		{condition: `(name == "fido"))`, wantErr: true},
+		{condition: `((name == "fido")`, wantErr: true},
+		{condition: `set()`, wantErr: true},
+		{condition: `Int() == 1`},
+		{condition: `1 == Int()`},
+		{condition: `true and 1 == Int() `},
+		{condition: `false or 1 == Int() `},
+		{condition: `service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`},
+		{condition: `service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`},
+		{condition: `animal > "cat"`},
+		{condition: `animal >= "cat"`},
+		{condition: `animal <= "cat"`},
+		{condition: `animal < "cat"`},
+		{condition: `animal =< "dog"`, wantErr: true},
+		{condition: `animal => "dog"`, wantErr: true},
+		{condition: `animal <> "dog"`, wantErr: true},
+		{condition: `animal = "dog"`, wantErr: true},
+		{condition: `animal`, wantErr: true},
+		{condition: `animal ==`, wantErr: true},
+		{condition: `==`, wantErr: true},
+		{condition: `== animal`, wantErr: true},
+		{condition: `attributes["path"] == "/healthcheck"`},
+		{condition: `One() == 1`},
+		{condition: `test(fail())`, wantErr: true},
+		{condition: `Test()`},
+		{condition: `"test" == Foo`, wantErr: true},
+		{condition: `test(animal) == "dog"`, wantErrContaining: converterNameErrorPrefix},
+		{condition: `test(animal)["kind"] == "birds"`, wantErrContaining: converterNameErrorPrefix},
+		{condition: `test(animal)["kind"] == "birds"`, wantErrContaining: editorWithIndexErrorPrefix},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
 		name := pat.ReplaceAllString(tt.condition, "_")
 		t.Run(name, func(t *testing.T) {
 			ast, err := parseCondition(tt.condition)
-			if (err != nil) != tt.wantErr {
+			if (err != nil) != (tt.wantErr || tt.wantErrContaining != "") {
 				t.Errorf("parseCondition(%s) error = %v, wantErr %v", tt.condition, err, tt.wantErr)
 				t.Errorf("AST: %+v", ast)
 				return
+			}
+			if tt.wantErrContaining != "" {
+				require.ErrorContains(t, err, tt.wantErrContaining)
 			}
 		})
 	}
