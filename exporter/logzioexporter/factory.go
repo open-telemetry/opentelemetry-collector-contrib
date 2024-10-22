@@ -77,21 +77,21 @@ func getLogsListenerURL(region string) string {
 	lowerCaseRegion := strings.ToLower(region)
 	switch lowerCaseRegion {
 	case "us":
-		url = "https://listener-otlp.logz.io:8071"
+		url = "https://otlp-listener.logz.io/v1/logs"
 	case "ca":
-		url = "https://listener-ca-otlp.logz.io:8071"
+		url = "https://otlp-listener-ca.logz.io/v1/logs"
 	case "eu":
-		url = "https://listener-eu-otlp.logz.io:8071"
+		url = "https://otlp-listener-eu.logz.io/v1/logs"
 	case "uk":
-		url = "https://listener-uk-otlp.logz.io:8071"
+		url = "https://otlp-listener-uk.logz.io/v1/logs"
 	case "au":
-		url = "https://listener-au-otlp.logz.io:8071"
+		url = "https://otlp-listener-au.logz.io/v1/logs"
 	case "nl":
-		url = "https://listener-nl-otlp.logz.io:8071"
+		url = "https://otlp-listener-nl.logz.io/v1/logs"
 	case "wa":
-		url = "https://listener-wa-otlp.logz.io:8071"
+		url = "https://otlp-listener-wa.logz.io/v1/logs"
 	default:
-		url = "https://listener-otlp.logz.io:8071"
+		url = "https://otlp-listener.logz.io/v1/logs"
 	}
 	return url
 }
@@ -111,9 +111,9 @@ func generateLogsEndpoint(cfg *Config) (string, error) {
 		return cfg.ClientConfig.Endpoint, nil
 	}
 	if cfg.Region != "" {
-		return fmt.Sprintf("%s/?token=%s", getLogsListenerURL(cfg.Region), string(cfg.Token)), nil
+		return getLogsListenerURL(cfg.Region), nil
 	}
-	return fmt.Sprintf("%s/?token=%s", getLogsListenerURL(""), string(cfg.Token)), errors.New("failed to generate endpoint, Endpoint or Region must be set")
+	return getLogsListenerURL(""), errors.New("failed to generate endpoint, Endpoint or Region must be set")
 }
 
 func createTracesExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {

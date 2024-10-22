@@ -67,7 +67,7 @@ func TestGenerateUrl(t *testing.T) {
 			Token:        "token",
 			ClientConfig: clientConfig,
 		}
-		output, _ := generateEndpoint(cfg)
+		output, _ := generateTracesEndpoint(cfg)
 		require.Equal(t, test.expected, output)
 	}
 }
@@ -91,7 +91,7 @@ func TestGetListenerURL(t *testing.T) {
 		{"Us", "https://listener.logz.io:8071"},
 	}
 	for _, test := range getListenerURLTests {
-		output := getListenerURL(test.arg1)
+		output := getTracesListenerURL(test.arg1)
 		require.Equal(t, test.expected, output)
 	}
 }
