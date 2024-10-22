@@ -224,12 +224,23 @@ func (a Agent) Validate() error {
 	return nil
 }
 
-// TODO: The Fulcio root certificate can be specified via SIGSTORE_ROOT_FILE for now
-// But we should add it as a config option.
-// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35931
+// AgentSignature represents options for verifying an agent's signature when it received
+// through a PackagesAvailable message.
+// You can read more about Cosign and signing here.
+// https://docs.sigstore.dev/cosign/signing/overview/
 type AgentSignature struct {
-	CertGithubWorkflowRepository string                   `mapstructure:"github_workflow_repository"`
-	Identities                   []AgentSignatureIdentity `mapstructure:"identities"`
+	// TODO: The Fulcio root certificate can be specified via SIGSTORE_ROOT_FILE for now
+	// But we should add it as a config option.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3593
+
+	// github_workflow_repository defines the expected repository field
+	// on the sigstore certificate.
+	CertGithubWorkflowRepository string `mapstructure:"github_workflow_repository"`
+
+	// Identities is a list of valid identities to use when verifying the agent.
+	// Only one needs to match the identity on the certificate for signature
+	// verification to pass.
+	Identities []AgentSignatureIdentity `mapstructure:"identities"`
 }
 
 func (a AgentSignature) Validate() error {
@@ -242,10 +253,19 @@ func (a AgentSignature) Validate() error {
 	return nil
 }
 
+// AgentSignatureIdentity represents an Issuer/Subject pair that identifies
+// the signer of the agent. This allows restricting the valid signers, such
+// that only very specific sources are trusted as signers for an agent.
+// You can read more about Cosign and signing here.
+// https://docs.sigstore.dev/cosign/signing/overview/
 type AgentSignatureIdentity struct {
-	Issuer        string `mapstructure:"issuer"`
-	Subject       string `mapstructure:"subject"`
-	IssuerRegExp  string `mapstructure:"issuer_regex"`
+	// Issuer is the OIDC Issuer for the identity
+	Issuer string `mapstructure:"issuer"`
+	// Subject is the OIDC Subject for the identity
+	Subject string `mapstructure:"subject"`
+	// IssuerRegExp is a regular expression for matching the OIDC Issuer for the identity
+	IssuerRegExp string `mapstructure:"issuer_regex"`
+	// SubjectRegExp is a regular expression for matching the OIDC Subject for the identity.
 	SubjectRegExp string `mapstructure:"subject_regex"`
 }
 
