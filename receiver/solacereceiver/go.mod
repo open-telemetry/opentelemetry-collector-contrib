@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.18.0
 	go.opentelemetry.io/collector/confmap v1.18.0
 	go.opentelemetry.io/collector/consumer v0.112.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.112.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
 	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/pipeline v0.112.0
@@ -33,7 +34,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -46,7 +47,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.111.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
