@@ -166,9 +166,7 @@ func (p *tracesProcessor) recordNonRoutedResourceSpans(ctx context.Context, rout
 	p.telemetry.RoutingProcessorNonRoutedSpans.Add(
 		ctx,
 		int64(spanCount),
-		metric.WithAttributes(
-			attribute.String("routing_key", routingKey),
-		),
+		metric.WithAttributeSet(attribute.NewSet(attribute.String("routing_key", routingKey))),
 	)
 }
 
@@ -179,9 +177,7 @@ func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) 
 		p.telemetry.RoutingProcessorNonRoutedSpans.Add(
 			ctx,
 			int64(t.SpanCount()),
-			metric.WithAttributes(
-				attribute.String("routing_key", p.extractor.fromAttr),
-			),
+			metric.WithAttributeSet(attribute.NewSet(attribute.String("routing_key", p.extractor.fromAttr))),
 		)
 	}
 

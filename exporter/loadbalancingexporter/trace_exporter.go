@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
@@ -126,11 +125,11 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		exp.consumeWG.Done()
 		errs = multierr.Append(errs, err)
 		duration := time.Since(start)
-		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
+		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), exp.endpointAttr)
 		if err == nil {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, exp.successAttr)
 		} else {
-			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, exp.failureAttr)
 		}
 	}
 
