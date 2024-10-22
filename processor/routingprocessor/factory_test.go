@@ -220,7 +220,7 @@ func newMockHost(exps map[pipeline.Signal]map[component.ID]component.Component) 
 	}
 }
 
-func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+func (m *mockHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return m.exps
 }
 

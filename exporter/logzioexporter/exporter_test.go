@@ -186,12 +186,13 @@ func TestExportErrors(tester *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 			rw.WriteHeader(test.status)
 		}))
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.Endpoint = server.URL
+
 		cfg := &Config{
-			Region: "",
-			Token:  "token",
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: server.URL,
-			},
+			Region:       "",
+			Token:        "token",
+			ClientConfig: clientConfig,
 		}
 		td := newTestTracesWithAttributes()
 		ld := testdata.GenerateLogs(10)
@@ -240,13 +241,13 @@ func TestPushTraceData(tester *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.Compression = configcompression.TypeGzip
 	cfg := Config{
-		Token:  "token",
-		Region: "",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint:    server.URL,
-			Compression: configcompression.TypeGzip,
-		},
+		Token:        "token",
+		Region:       "",
+		ClientConfig: clientConfig,
 	}
 	defer server.Close()
 	td := newTestTraces()
@@ -273,13 +274,13 @@ func TestPushLogsData(tester *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.Compression = configcompression.TypeGzip
 	cfg := Config{
-		Token:  "token",
-		Region: "",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint:    server.URL,
-			Compression: configcompression.TypeGzip,
-		},
+		Token:        "token",
+		Region:       "",
+		ClientConfig: clientConfig,
 	}
 	defer server.Close()
 	ld := generateLogsOneEmptyTimestamp()

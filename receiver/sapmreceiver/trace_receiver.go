@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -91,8 +92,7 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// handle the request payload
 	err := sr.handleRequest(req)
 	if err != nil {
-		// TODO account for this error (throttled logging or metrics)
-		rw.WriteHeader(http.StatusBadRequest)
+		errorutil.HTTPError(rw, err)
 		return
 	}
 
