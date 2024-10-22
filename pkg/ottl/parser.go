@@ -110,10 +110,10 @@ func (p *Parser[K]) evalSimpleStringExpression(
 		return "", fmt.Errorf("Expected non-nil converter when parsing: %v", expr)
 	}
 	getter, getterErr := p.newGetterFromConverter(*converter)
-    if getterErr != nil {
+	if getterErr != nil {
 		return "", getterErr
 	}
-	
+
 	result, resultErr := getter.Get(ctx, tCtx)
 	if resultErr != nil {
 		return "", resultErr
@@ -172,16 +172,16 @@ func (p *Parser[K]) expandInterpolationExpression(
 //
 // Example input:
 //
-//     "${attributes["foo"]} is the value of attribute 'foo'"
+//	"${attributes["foo"]} is the value of attribute 'foo'"
 //
 // Example output:
 //
-//     "bar is the value of attribute 'foo'"
+//	"bar is the value of attribute 'foo'"
 //
 // In addition to resolving variables from the OTTL context "tCtx K", the this function
 // also can resolve environment variables prefixed with "env." as in:
 //
-//  "The log level is ${env.OTEL_LOG_LEVEL:info}" -> "The log level is error"
+//	"The log level is ${env.OTEL_LOG_LEVEL:info}" -> "The log level is error"
 //
 // As can be seen from above, an optional ":default" suffix can be added to provide a
 // fallback value to use when the referenced name is unset.
@@ -192,7 +192,7 @@ func (p *Parser[K]) InterpolateString(
 	for len(remaining) > 0 {
 		segments := strings.SplitN(remaining, "$", 2)
 		output.WriteString(segments[0])
-		if (len(segments) == 1) {
+		if len(segments) == 1 {
 			// Nothing was separated with "$". This means
 			// that segments[0] == remaining, and everything was written.
 			remaining = ""
