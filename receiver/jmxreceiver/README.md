@@ -37,7 +37,11 @@ receivers:
   jmx:
     jar_path: /opt/opentelemetry-java-contrib-jmx-metrics.jar
     endpoint: my_jmx_host:12345
-    target_system: jvm
+    # you can use pre-defined groovy scripts via one or more target systems
+    target_system: jvm,kafka
+    # and/or you con use your own groovy script to gather more specific metrics
+    # that might not be supported by existing target systems
+    groovy_script: /some_script.groovy
     collection_interval: 10s
     initial_delay: 1s
     # optional: the same as specifying OTLP receiver endpoint.
@@ -89,6 +93,16 @@ go build -ldflags "-X github.com/open-telemetry/opentelemetry-collector-contrib/
 ```
 
 Corresponds to the `otel.jmx.target.system` property.
+
+### groovy_script
+
+Target systems pre-define groovy scripts for you. Sometimes you need to gather metrics
+that are not defined by existing target systems. You can specify a path to a groovy
+script that will be loaded by itself or alongside your target system groovy scripts at
+runtime. Make sure the groovy script is indeed available at the provided path at
+runtime.
+
+Corresponds to the `otel.jmx.groovy.script` property.
 
 ### collection_interval (default: `10s`)
 

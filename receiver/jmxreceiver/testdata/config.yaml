@@ -3,6 +3,7 @@ jmx/all:
   jar_path: testdata/fake_jmx.jar
   endpoint: myendpoint:12345
   target_system: jvm
+  groovy_script: /some_script.groovy
   collection_interval: 15s
   username: myusername
   password: mypassword
@@ -27,7 +28,7 @@ jmx/all:
 jmx/missingendpoint:
   jar_path: testdata/fake_jmx.jar
   target_system: jvm
-jmx/missingtarget:
+jmx/missingtargetandgroovyscript:
   jar_path: testdata/fake_jmx.jar
   endpoint: service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi
 jmx/invalidinterval:

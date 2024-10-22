@@ -25,8 +25,10 @@ type Config struct {
 	JARPath string `mapstructure:"jar_path"`
 	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
 	Endpoint string `mapstructure:"endpoint"`
-	// The target system for the metric gatherer whose built in groovy script to run.
+	// The target system for the metric gatherer whose built in groovy script to run (optional if using a groovy script)
 	TargetSystem string `mapstructure:"target_system"`
+	// Path to the groovy script to run (optional if using target system(s))
+	GroovyScript string `mapstructure:"groovy_script"`
 	// The duration in between groovy script invocations and metric exports (10 seconds by default).
 	// Will be converted to milliseconds.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
@@ -223,8 +225,8 @@ func (c *Config) Validate() error {
 	if c.Endpoint == "" {
 		missingFields = append(missingFields, "`endpoint`")
 	}
-	if c.TargetSystem == "" {
-		missingFields = append(missingFields, "`target_system`")
+	if c.TargetSystem == "" && c.GroovyScript == "" {
+		missingFields = append(missingFields, "`target_system` or `groovy_script`")
 	}
 	if missingFields != nil {
 		return fmt.Errorf("missing required field(s): %v", strings.Join(missingFields, ", "))
@@ -257,9 +259,11 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	for _, system := range strings.Split(c.TargetSystem, ",") {
-		if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
-			return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
+	if c.TargetSystem != "" {
+		for _, system := range strings.Split(c.TargetSystem, ",") {
+			if _, ok := validTargetSystems[strings.ToLower(system)]; !ok {
+				return fmt.Errorf("`target_system` list may only be a subset of %s", listKeys(validTargetSystems))
+			}
 		}
 	}
 
