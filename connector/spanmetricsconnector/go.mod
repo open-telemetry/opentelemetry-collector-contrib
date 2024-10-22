@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanm
 go 1.22.0
 
 require (
-	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/lightstep/go-expohisto v1.0.0
