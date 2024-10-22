@@ -96,28 +96,4 @@ func TestInvalidConfig(t *testing.T) {
 	err = component.ValidateConfig(cfg)
 	assert.Error(t, err)
 	assert.Equal(t, "\"wrong\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", err.Error())
-
-	// namespace filter together with node specific options (allocatable_types_to_report)
-	cfg = &Config{
-		APIConfig:                k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
-		Distribution:             "kubernetes",
-		CollectionInterval:       30 * time.Second,
-		Namespace:                "test-namespace",
-		AllocatableTypesToReport: []string{"cpu"},
-	}
-	err = component.ValidateConfig(cfg)
-	assert.Error(t, err)
-	assert.Equal(t, "node specific options \"node_conditions_to_report\" and \"allocatable_types_to_report\" can not be used in combination with \"namespace\" filter", err.Error())
-
-	// namespace filter together with node specific options (node_conditions_to_report)
-	cfg = &Config{
-		APIConfig:                  k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
-		Distribution:               "kubernetes",
-		CollectionInterval:         30 * time.Second,
-		Namespace:                  "test-namespace",
-		NodeConditionTypesToReport: []string{"Ready"},
-	}
-	err = component.ValidateConfig(cfg)
-	assert.Error(t, err)
-	assert.Equal(t, "node specific options \"node_conditions_to_report\" and \"allocatable_types_to_report\" can not be used in combination with \"namespace\" filter", err.Error())
 }

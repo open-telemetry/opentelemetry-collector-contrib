@@ -159,6 +159,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 func (rw *resourceWatcher) getInformerFactory() informers.SharedInformerFactory {
 	var factory informers.SharedInformerFactory
 	if rw.config.Namespace != "" {
+		rw.logger.Info("Namespace filter has been enabled. Nodes and namespaces will not be observed.", zap.String("namespace", rw.config.Namespace))
 		factory = informers.NewSharedInformerFactoryWithOptions(
 			rw.client,
 			rw.config.MetadataCollectionInterval,
