@@ -39,7 +39,7 @@ receivers:
     endpoint: my_jmx_host:12345
     # you can use pre-defined groovy scripts via one or more target systems
     target_system: jvm,kafka
-    # and/or you con use your own groovy script to gather more specific metrics
+    # and/or you can use your own groovy script to gather more specific metrics
     # that might not be supported by existing target systems
     groovy_script: /some_script.groovy
     collection_interval: 10s
