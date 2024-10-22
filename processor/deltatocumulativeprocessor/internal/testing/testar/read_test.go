@@ -42,12 +42,12 @@ func ExampleParser() {
 		Foobar int `testar:"foobar,atoi"`
 	}
 
-	_ = Read(data, &into, Parser("atoi", func(file []byte, into any) error {
+	_ = Read(data, &into, Parser("atoi", func(file []byte, into *int) error {
 		n, err := strconv.Atoi(strings.TrimSpace(string(file)))
 		if err != nil {
 			return err
 		}
-		*(into.(*int)) = n
+		*into = n
 		return nil
 	}))
 
