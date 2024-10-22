@@ -4,7 +4,6 @@
 package translator
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -35,7 +34,7 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	require.NoError(t, w.Encode(sqlData))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "mysql://db.example.com:3306/customers"))
+	assert.Contains(t, jsonStr, "mysql://db.example.com:3306/customers")
 }
 
 func TestClientSpanWithNonSQLDatabase(t *testing.T) {
