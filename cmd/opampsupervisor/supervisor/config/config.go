@@ -224,7 +224,9 @@ func (a Agent) Validate() error {
 	return nil
 }
 
-// TODO: Certificate paths? The certificate can be specified via SIGSTORE_ROOT_FILE for now
+// TODO: The Fulcio root certificate can be specified via SIGSTORE_ROOT_FILE for now
+// But we should add it as a config option.
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35931
 type AgentSignature struct {
 	CertGithubWorkflowRepository string                   `mapstructure:"github_workflow_repository"`
 	Identities                   []AgentSignatureIdentity `mapstructure:"identities"`
