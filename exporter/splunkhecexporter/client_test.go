@@ -234,7 +234,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -287,7 +287,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -347,7 +347,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := NewFactory().CreateLogs(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1303,7 +1303,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1351,7 +1351,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1392,7 +1392,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
@@ -1431,7 +1431,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Heartbeat.Startup = false
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
@@ -1466,7 +1466,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
