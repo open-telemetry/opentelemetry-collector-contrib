@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"io"
 	"net/http"
@@ -78,6 +79,9 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
+	exporter.config.ClientConfig.Headers = map[string]configopaque.String{
+		"Content-Type": "application/json",
+	}
 	return exporterhelper.NewTracesExporter(
 		context.TODO(),
 		set,
@@ -96,6 +100,10 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 		return nil, err
 	}
 	exporter.config.ClientConfig.Endpoint, err = generateLogsEndpoint(config)
+	exporter.config.ClientConfig.Headers = map[string]configopaque.String{
+		"Authorization": "Bearer " + config.Token,
+		"Content-Type":  "application/x-protobuf",
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -123,16 +131,12 @@ func (exporter *logzioExporter) start(ctx context.Context, host component.Host) 
 }
 
 func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	var dataBuffer bytes.Buffer
 	tr := plogotlp.NewExportRequestFromLogs(ld)
-	request, err := tr.MarshalJSON()
+	request, err := tr.MarshalProto()
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	dataBuffer.Write(request)
-	err = exporter.export(ctx, exporter.config.ClientConfig.Endpoint, dataBuffer.Bytes())
-	// reset the data buffer after each export to prevent duplicated data
-	dataBuffer.Reset()
+	err = exporter.export(ctx, exporter.config.ClientConfig.Endpoint, request)
 	return err
 }
 
@@ -216,7 +220,6 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := exporter.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to make an HTTP request: %w", err)
