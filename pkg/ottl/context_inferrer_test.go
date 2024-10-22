@@ -12,11 +12,10 @@ import (
 
 func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 	tests := []struct {
-		name          string
-		priority      []string
-		ignoreUnknown bool
-		statements    []string
-		expected      string
+		name       string
+		priority   []string
+		statements []string
+		expected   string
 	}{
 		{
 			name:       "with priority and contexts",
@@ -45,32 +44,17 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			expected:   "foo",
 		},
 		{
-			name:          "with ignore unknown false",
-			priority:      []string{"foo", "bar"},
-			ignoreUnknown: false,
-			statements:    []string{"set(span.foo, true) where span.bar == true"},
-			expected:      "span",
-		},
-		{
-			name:          "with ignore unknown true",
-			priority:      []string{"foo", "bar"},
-			ignoreUnknown: true,
-			statements:    []string{"set(span.foo, true) where span.bar == true"},
-			expected:      "",
-		},
-		{
-			name:          "with ignore unknown true and mixed statement contexts",
-			priority:      []string{"foo", "span"},
-			ignoreUnknown: true,
-			statements:    []string{"set(bar.foo, true) where span.bar == true"},
-			expected:      "span",
+			name:       "with unknown context",
+			priority:   []string{"foo", "bar"},
+			statements: []string{"set(span.foo, true) where span.bar == true"},
+			expected:   "span",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			inferrer := NewPriorityContextInferrer(tt.priority, tt.ignoreUnknown)
-			inferredContext, err := inferrer.Infer(tt.statements)
+			inferrer := newPriorityContextInferrer(tt.priority)
+			inferredContext, err := inferrer.infer(tt.statements)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})
@@ -78,9 +62,9 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 }
 
 func Test_NewPriorityContextInferrer_InvalidStatement(t *testing.T) {
-	inferrer := NewPriorityContextInferrer([]string{"foo"}, false)
+	inferrer := newPriorityContextInferrer([]string{"foo"})
 	statements := []string{"set(foo.field,"}
-	_, err := inferrer.Infer(statements)
+	_, err := inferrer.infer(statements)
 	require.ErrorContains(t, err, "unexpected token")
 }
 
@@ -96,9 +80,8 @@ func Test_DefaultPriorityContextInferrer(t *testing.T) {
 		"instrumentation_scope",
 	}
 
-	inferrer := DefaultPriorityContextInferrer().(*priorityContextInferrer)
+	inferrer := defaultPriorityContextInferrer().(*priorityContextInferrer)
 	require.NotNil(t, inferrer)
-	require.False(t, inferrer.ignoreUnknownContext)
 
 	for pri, ctx := range expectedPriority {
 		require.Equal(t, pri, inferrer.contextPriority[ctx])

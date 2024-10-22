@@ -18,18 +18,17 @@ var (
 	}
 )
 
-// ContextInferrer is an interface used to infer the OTTL context from statements paths.
-type ContextInferrer interface {
-	// Infer returns the OTTL context inferred from the given statements paths.
-	Infer(statements []string) (string, error)
+// contextInferrer is an interface used to infer the OTTL context from statements paths.
+type contextInferrer interface {
+	// infer returns the OTTL context inferred from the given statements paths.
+	infer(statements []string) (string, error)
 }
 
 type priorityContextInferrer struct {
-	contextPriority      map[string]int
-	ignoreUnknownContext bool
+	contextPriority map[string]int
 }
 
-func (s *priorityContextInferrer) Infer(statements []string) (string, error) {
+func (s *priorityContextInferrer) infer(statements []string) (string, error) {
 	var inferredContext string
 	var inferredContextPriority int
 
@@ -42,10 +41,6 @@ func (s *priorityContextInferrer) Infer(statements []string) (string, error) {
 		for _, p := range getParsedStatementPaths(parsed) {
 			pathContextPriority, ok := s.contextPriority[p.Context]
 			if !ok {
-				if s.ignoreUnknownContext {
-					continue
-				}
-
 				// Lowest priority
 				pathContextPriority = math.MaxInt
 			}
@@ -60,26 +55,25 @@ func (s *priorityContextInferrer) Infer(statements []string) (string, error) {
 	return inferredContext, nil
 }
 
-// DefaultPriorityContextInferrer is like NewPriorityContextInferrer, but using the default
+// defaultPriorityContextInferrer is like newPriorityContextInferrer, but using the default
 // context priorities and ignoring unknown/non-prioritized contexts.
-func DefaultPriorityContextInferrer() ContextInferrer {
-	return NewPriorityContextInferrer(defaultContextInferPriority, false)
+func defaultPriorityContextInferrer() contextInferrer {
+	return newPriorityContextInferrer(defaultContextInferPriority)
 }
 
-// NewPriorityContextInferrer creates a new priority-based context inferrer.
+// newPriorityContextInferrer creates a new priority-based context inferrer.
 // To infer the context, it compares all [ottl.Path.Context] values, prioritizing them based
 // on the provide contextsPriority argument, the lower the context position is in the array,
 // the more priority it will have over other items.
 // If unknown/non-prioritized contexts are found on the statements, they can be either ignored
 // or considered when no other prioritized context is found. To skip unknown contexts, the
 // ignoreUnknownContext argument must be set to false.
-func NewPriorityContextInferrer(contextsPriority []string, ignoreUnknownContext bool) ContextInferrer {
+func newPriorityContextInferrer(contextsPriority []string) contextInferrer {
 	contextPriority := make(map[string]int, len(contextsPriority))
 	for i, ctx := range contextsPriority {
 		contextPriority[ctx] = i
 	}
 	return &priorityContextInferrer{
-		contextPriority:      contextPriority,
-		ignoreUnknownContext: ignoreUnknownContext,
+		contextPriority: contextPriority,
 	}
 }
