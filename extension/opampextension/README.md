@@ -25,6 +25,7 @@ The following settings are optional for the websocket client:
   - `ws`: The OpAMP websocket transport settings.
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
+    - `auth`: The ID of an auth extension to use for authentication.
 
 The following settings are optional for the HTTP client:
 
@@ -33,6 +34,7 @@ The following settings are optional for the HTTP client:
     - `tls`: TLS settings.
     - `headers`: HTTP headers to set.
     - `polling_interval`: The interval at which the extension will poll the server. Defaults to 30s.
+    - `auth`: The ID of an auth extension to use for authentication.
 
 The following settings are optional for both transports:
 
@@ -41,6 +43,7 @@ The following settings are optional for both transports:
   instance UID remains constant across process restarts.
 - `capabilities`: Keys with boolean true/false values that enable a particular OpAMP capability.
   - `reports_effective_config`: Whether to enable the OpAMP ReportsEffectiveConfig capability. Default is `true`.
+  - `reports_health`: Whether to enable the OpAMP ReportsHealth capability. Default is `true`.
 - `agent_description`: Setting that modifies the agent description reported to the OpAMP server.
   - `non_identifying_attributes`: A map of key value pairs that will be added to the [non-identifying attributes](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionnon_identifying_attributes) reported to the OpAMP server. If an attribute collides with the default non-identifying attributes that are automatically added, the ones specified here take precedence.
 - `ppid`: An optional process ID to monitor. When this process is no longer running, the extension will emit a fatal error, causing the collector to exit. This is meant to be set by the Supervisor or some other parent process, and should not be configured manually.

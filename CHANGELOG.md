@@ -7,6 +7,95 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.111.0
+
+### 🛑 Breaking changes 🛑
+
+- `instanaexporter`: Remove deprecated instanaexporter (#35367)
+  Use the `otlp` exporter instead as explained in IBM's [documentation](https://www.ibm.com/docs/en/instana-observability/current?topic=opentelemetry-sending-data-instana-backend).
+- `elasticsearchexporter`: Drop cumulative temporality histogram and exponential histogram (#35442)
+  Cumulative temporality histogram and exponential histogram are not supported by Elasticsearch. Use cumulativetodeltaprocessor to convert cumulative temporality to delta temporality.
+- `elasticsearchexporter`: Implement receiver-based routing under *_dynamic_index config (#34246)
+- `config`: Move component.UseLocalHostAsDefaultHost feature gate to stable. (#35569)
+- `metricsgenerationprocessor`: Generate metrics even when the second metric's value is 0 (#35533)
+- `signalfxexporter`: Do not exclude the metric `container.memory.working_set` (#35475)
+- `sqlqueryreceiver`: Fail if value for log column in result set is missing, collect errors (#35068)
+- `windowseventlogreceiver`: The 'raw' flag no longer suppresses rendering info. (#34720)
+  Previously, this flag controlled two behaviors simultaneously:
+    1. Whether or not the body of the log record was an XML string or structured object.
+    2. Whether or not rendering info was resolved.
+  A separate 'suppress_rendering_info' option now controls rendering info resolution.
+  This is considered a breaking change because users setting only the 'raw' flag without also setting the
+  new 'suppress_rendering_info' flag may see a performance decrease along with more detailed events.
+  
+
+### 🚩 Deprecations 🚩
+
+- `sapmreceiver`: `access_token_passthrough` is deprecated (#35330)
+  - "`access_token_passthrough` is deprecated."
+  - "Please enable include_metadata in the receiver and add the following config to the batch processor:"
+  ```yaml
+  batch:
+    metadata_keys: [X-Sf-Token]
+  ```
+  
+
+### 🚀 New components 🚀
+
+- `receiver/prometheusremotewrite`: Add a new receiver for Prometheus Remote Write.
+ (#33782)
+
+### 💡 Enhancements 💡
+
+- `sumconnector`: adds connector and summing logic along with tests (#32669)
+- `receivercreator`: Validate endpoint's configuration before starting receivers (#33145)
+- `otelarrowreceiver`: Add admission control in the otelarrow receiver's standard otlp data path.
+Also moves admission control config options to a separate block.
+arrow.admission_limit_mib -> admission.request_limit_mib
+arrow.waiter_limit -> admission.waiter_limit
+ (#35021)
+- `clickhouseexporter`: Upgrading stability for traces to beta (#35186)
+  The trace exporter has proven to be stable for production deployments.
+  Trace configuration is unlikely to receive any significant changes.
+  
+- `clickhouseexporter`: Updated the default trace table (#34245)
+  Reduced data types, improved partitioning and time range queries
+- `opampsupervisor`: Add configurable logging for the supervisor. (#35466)
+- `datadogreceiver`: Move receiver's metrics stability to alpha. (#18278)
+- `datadogreceiver`: Add container id from v0.5 request header (#35345)
+- `elasticsearchexporter`: Implement elasticsearch.mapping.hints attribute handling for data points in OTel mapping mode (#35479)
+  elasticsearch.mapping.hints takes a slice of strings. `_doc_count` enables emitting `_doc_count` for the document. `aggregate_metric_double` causes histogram or exponential histogram to be emitted as aggregate_metric_double.
+- `elasticsearchexporter`: Revert TSDB array dimension workaround for metrics OTel mode (#35291)
+  Remove the workaround to stringify array dimensions as the limitation has been lifted in Elasticsearch v8.16.0.
+- `receiver/statsd`: Add support for aggregating on Host/IP.
+ (#23809)
+- `opampsupervisor`: Skip executing the collector if no config is provided (#33680)
+- `googlecloudmonitoringreceiver`: Move receiver's stability to alpha. (#33762)
+- `hostmetricsreceiver`: Add ability to mute all errors (mainly due to access rights) coming from process scraper of the hostmetricsreceiver (#20435)
+- `kubeletstats`: Introduce feature gate for deprecation of container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics (#35139)
+- `opampsupervisor`: Make supervisor runnable as a Windows Service. (#34774)
+- `opampsupervisor`: Add config option for setting the timeout for the initial bootstrap information retrieval from the agent (#34996)
+- `pkg/ottl`: Add InsertXML Converter (#35436)
+- `pkg/ottl`: Add GetXML Converter (#35462)
+- `pkg/ottl`: Add ToKeyValueString Converter (#35334)
+- `pkg/ottl`: Add RemoveXML Converter (#35301)
+- `geoipprocessor`: No longer return an error when geo metadata is not found by a provider. (#35047)
+- `sqlserverreceiver`: Add computer name resource attribute to relevant metrics (#35040)
+- `windowseventlogreceiver`: Add 'suppress_rendering_info' option. (#34720)
+  When this flag is enabled, the receiver will not attempt to resolve rendering info. This can improve performance
+  but comes at a cost of losing some details in the event log.
+  
+- `windowseventlogreceiver`: Move artificial "remote_server" field to 'attributes["server.address"]'. (#34720)
+
+### 🧰 Bug fixes 🧰
+
+- `webhookeventreceiver`: Fixed a bug where request bodies containing newline characters caused the results to split into multiple log entries (#35028)
+- `opampsupervisor`: Only use TLS config when connecting to OpAMP server if using `wss` or `https` protocols. (#35283)
+- `metricsgenerationprocessor`: Allow metric calculations to be done on sum metrics (#35428)
+- `sqlqueryreceiver`: Fix reprocessing of logs when tracking_column type is timestamp (#35194)
+- `windowseventlogreceiver`: While collecting from a remote windows host, the stanza operator will no longer log "subscription handle is already open" constantly during successful collection. (#35520)
+- `windowseventlogreceiver`: If collecting from a remote host, the receiver will stop collecting if the host restarts. This change resubscribes when the host restarts. (#35175)
+
 ## v0.110.0
 
 ### 🛑 Breaking changes 🛑
