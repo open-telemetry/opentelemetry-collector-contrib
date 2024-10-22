@@ -5,20 +5,27 @@ package opampextension
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 func TestNewOpampAgent(t *testing.T) {
@@ -205,6 +212,205 @@ func TestStart(t *testing.T) {
 	assert.NoError(t, o.Shutdown(context.TODO()))
 }
 
+func TestHealthReporting(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := extensiontest.NewNopSettings()
+	o, err := newOpampAgent(cfg.(*Config), set)
+	assert.NoError(t, err)
+
+	statusUpdateChannel := make(chan *status.AggregateStatus)
+	sa := &mockStatusAggregator{
+		statusChan: statusUpdateChannel,
+	}
+	o.statusAggregator = sa
+
+	mtx := &sync.RWMutex{}
+	now := time.Now()
+	expectedHealthUpdates := []*protobufs.ComponentHealth{
+		{
+			Healthy: false,
+		},
+		{
+			Healthy:            true,
+			StartTimeUnixNano:  uint64(now.UnixNano()),
+			Status:             "StatusOK",
+			StatusTimeUnixNano: uint64(now.UnixNano()),
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"test-receiver": {
+					Healthy:            true,
+					Status:             "StatusOK",
+					StatusTimeUnixNano: uint64(now.UnixNano()),
+				},
+			},
+		},
+		{
+			Healthy:            false,
+			Status:             "StatusPermanentError",
+			StatusTimeUnixNano: uint64(now.UnixNano()),
+			LastError:          "unexpected error",
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"test-receiver": {
+					Healthy:            false,
+					Status:             "StatusPermanentError",
+					StatusTimeUnixNano: uint64(now.UnixNano()),
+					LastError:          "unexpected error",
+				},
+			},
+		},
+	}
+	receivedHealthUpdates := 0
+
+	o.opampClient = &mockOpAMPClient{
+		setHealthFunc: func(health *protobufs.ComponentHealth) error {
+			mtx.Lock()
+			defer mtx.Unlock()
+			require.Equal(t, expectedHealthUpdates[receivedHealthUpdates], health)
+			receivedHealthUpdates++
+			return nil
+		},
+	}
+
+	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
+
+	statusUpdateChannel <- nil
+	statusUpdateChannel <- &status.AggregateStatus{
+		Event: &mockStatusEvent{
+			status:    componentstatus.StatusOK,
+			err:       nil,
+			timestamp: now,
+		},
+		ComponentStatusMap: map[string]*status.AggregateStatus{
+			"test-receiver": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusOK,
+					err:       nil,
+					timestamp: now,
+				},
+			},
+		},
+	}
+	statusUpdateChannel <- &status.AggregateStatus{
+		Event: &mockStatusEvent{
+			status:    componentstatus.StatusPermanentError,
+			err:       fmt.Errorf("unexpected error"),
+			timestamp: now,
+		},
+		ComponentStatusMap: map[string]*status.AggregateStatus{
+			"test-receiver": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusPermanentError,
+					err:       fmt.Errorf("unexpected error"),
+					timestamp: now,
+				},
+			},
+		},
+	}
+
+	close(statusUpdateChannel)
+
+	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
+		return receivedHealthUpdates == len(expectedHealthUpdates)
+	}, 1*time.Second, 100*time.Millisecond)
+
+	assert.NoError(t, o.Shutdown(context.TODO()))
+	require.True(t, sa.unsubscribed)
+}
+
+func TestHealthReportingExitsOnClosedContext(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := extensiontest.NewNopSettings()
+	o, err := newOpampAgent(cfg.(*Config), set)
+	assert.NoError(t, err)
+
+	statusUpdateChannel := make(chan *status.AggregateStatus)
+	sa := &mockStatusAggregator{
+		statusChan: statusUpdateChannel,
+	}
+	o.statusAggregator = sa
+
+	mtx := &sync.RWMutex{}
+	now := time.Now()
+	expectedHealthUpdates := []*protobufs.ComponentHealth{
+		{
+			Healthy: false,
+		},
+		{
+			Healthy:            true,
+			StartTimeUnixNano:  uint64(now.UnixNano()),
+			Status:             "StatusOK",
+			StatusTimeUnixNano: uint64(now.UnixNano()),
+			ComponentHealthMap: map[string]*protobufs.ComponentHealth{
+				"test-receiver": {
+					Healthy:            true,
+					Status:             "StatusOK",
+					StatusTimeUnixNano: uint64(now.UnixNano()),
+				},
+			},
+		},
+	}
+	receivedHealthUpdates := 0
+
+	o.opampClient = &mockOpAMPClient{
+		setHealthFunc: func(health *protobufs.ComponentHealth) error {
+			mtx.Lock()
+			defer mtx.Unlock()
+			require.Equal(t, expectedHealthUpdates[receivedHealthUpdates], health)
+			receivedHealthUpdates++
+			return nil
+		},
+	}
+
+	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
+
+	statusUpdateChannel <- nil
+	statusUpdateChannel <- &status.AggregateStatus{
+		Event: &mockStatusEvent{
+			status:    componentstatus.StatusOK,
+			err:       nil,
+			timestamp: now,
+		},
+		ComponentStatusMap: map[string]*status.AggregateStatus{
+			"test-receiver": {
+				Event: &mockStatusEvent{
+					status:    componentstatus.StatusOK,
+					err:       nil,
+					timestamp: now,
+				},
+			},
+		},
+	}
+
+	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
+		return receivedHealthUpdates == len(expectedHealthUpdates)
+	}, 1*time.Second, 100*time.Millisecond)
+
+	// invoke Shutdown before health update channel has been closed
+	assert.NoError(t, o.Shutdown(context.TODO()))
+	require.True(t, sa.unsubscribed)
+}
+
+func TestHealthReportingDisabled(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := extensiontest.NewNopSettings()
+	o, err := newOpampAgent(cfg.(*Config), set)
+	assert.NoError(t, err)
+
+	o.capabilities.ReportsHealth = false
+	o.opampClient = &mockOpAMPClient{
+		setHealthFunc: func(_ *protobufs.ComponentHealth) error {
+			t.Errorf("setHealth is not supposed to be called with deactivated ReportsHealth capability")
+			return nil
+		},
+	}
+
+	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
+	assert.NoError(t, o.Shutdown(context.TODO()))
+}
+
 func TestParseInstanceIDString(t *testing.T) {
 	testCases := []struct {
 		name         string
@@ -277,4 +483,83 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 
 		require.Equal(t, []component.ID{authID}, o.Dependencies())
 	})
+}
+
+type mockStatusAggregator struct {
+	statusChan   chan *status.AggregateStatus
+	unsubscribed bool
+}
+
+func (m *mockStatusAggregator) Subscribe(_ status.Scope, _ status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc) {
+	return m.statusChan, func() {
+		m.unsubscribed = true
+	}
+}
+
+type mockOpAMPClient struct {
+	setHealthFunc func(health *protobufs.ComponentHealth) error
+}
+
+func (m mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+	return nil
+}
+
+func (m mockOpAMPClient) Stop(_ context.Context) error {
+	return nil
+}
+
+func (m mockOpAMPClient) SetAgentDescription(_ *protobufs.AgentDescription) error {
+	return nil
+}
+
+func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
+	return nil
+}
+
+func (m mockOpAMPClient) SetHealth(health *protobufs.ComponentHealth) error {
+	return m.setHealthFunc(health)
+}
+
+func (m mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error {
+	return nil
+}
+
+func (m mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
+	return nil
+}
+
+func (m mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+	return nil
+}
+
+func (m mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+	return nil
+}
+
+func (m mockOpAMPClient) SetCustomCapabilities(_ *protobufs.CustomCapabilities) error {
+	return nil
+}
+
+func (m mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
+	return nil, nil
+}
+
+func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+
+type mockStatusEvent struct {
+	status    componentstatus.Status
+	err       error
+	timestamp time.Time
+}
+
+func (m mockStatusEvent) Status() componentstatus.Status {
+	return m.status
+}
+
+func (m mockStatusEvent) Err() error {
+	return m.err
+}
+
+func (m mockStatusEvent) Timestamp() time.Time {
+	return m.timestamp
 }
