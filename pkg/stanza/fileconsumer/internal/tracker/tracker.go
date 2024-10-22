@@ -198,7 +198,11 @@ func (t *fileTracker) SyncOffsets() {
 	archiveReadIndex := t.archiveIndex - 1 // try loading most recently written index and iterate backwards
 	for i := 0; i < t.pollsToArchive; i++ {
 		newFound := false
-		data, _ := t.readArchive(archiveReadIndex)
+		data, err := t.readArchive(archiveReadIndex)
+		if err != nil {
+			t.set.Logger.Error("error while opening archive", zap.Error(err))
+			continue
+		}
 		for _, v := range t.currentPollFiles.Get() {
 			if v.IsNew() {
 				newFound = true
@@ -212,7 +216,10 @@ func (t *fileTracker) SyncOffsets() {
 			// Just exit to save time.
 			break
 		}
-		t.updateArchive(archiveReadIndex, data)
+		if err := t.updateArchive(archiveReadIndex, data); err != nil {
+			t.set.Logger.Error("error while opening archive", zap.Error(err))
+			continue
+		}
 
 		archiveReadIndex = (archiveReadIndex - 1) % t.pollsToArchive
 	}
