@@ -5,8 +5,8 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/alecthomas/participle/v2/lexer"
 )
@@ -493,6 +493,34 @@ func buildLexer() *lexer.StatefulDefinition {
 	})
 }
 
+// grammarCustomError represents a grammar error in which the statement has a valid syntax
+// according to the grammar's definition, but is still logically invalid.
+type grammarCustomError struct {
+	errs []error
+}
+
+// Error returns all errors messages separate by semicolons.
+func (e *grammarCustomError) Error() string {
+	switch len(e.errs) {
+	case 0:
+		return ""
+	case 1:
+		return e.errs[0].Error()
+	default:
+		var b strings.Builder
+		b.WriteString(e.errs[0].Error())
+		for _, err := range e.errs[1:] {
+			b.WriteString("; ")
+			b.WriteString(err.Error())
+		}
+		return b.String()
+	}
+}
+
+func (e *grammarCustomError) Unwrap() []error {
+	return e.errs
+}
+
 // grammarVisitor allows accessing the grammar AST nodes using the visitor pattern.
 type grammarVisitor interface {
 	visitPath(v *path)
@@ -503,18 +531,18 @@ type grammarVisitor interface {
 
 // grammarCustomErrorsVisitor is used to execute custom validations on the grammar AST.
 type grammarCustomErrorsVisitor struct {
-	errors []error
+	errs []error
 }
 
 func (g *grammarCustomErrorsVisitor) add(err error) {
-	g.errors = append(g.errors, err)
+	g.errs = append(g.errs, err)
 }
 
 func (g *grammarCustomErrorsVisitor) join() error {
-	if len(g.errors) == 0 {
+	if len(g.errs) == 0 {
 		return nil
 	}
-	return errors.Join(g.errors...)
+	return &grammarCustomError{errs: g.errs}
 }
 
 func (g *grammarCustomErrorsVisitor) visitPath(_ *path) {}
