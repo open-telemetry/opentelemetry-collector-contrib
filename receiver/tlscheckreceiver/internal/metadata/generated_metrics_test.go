@@ -42,15 +42,6 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
-		{
-			name:        "filter_set_include",
-			resAttrsSet: testDataSetAll,
-		},
-		{
-			name:        "filter_set_exclude",
-			resAttrsSet: testDataSetAll,
-			expectEmpty: true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -70,11 +61,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val")
+			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", "tlscheck.host-val")
 
-			rb := mb.NewResourceBuilder()
-			rb.SetTlscheckURL("tlscheck.url-val")
-			res := rb.Emit()
+			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 
 			if tt.expectEmpty {
@@ -114,6 +103,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("tlscheck.x509.cn")
 					assert.True(t, ok)
 					assert.EqualValues(t, "tlscheck.x509.cn-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("tlscheck.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "tlscheck.host-val", attrVal.Str())
 				}
 			}
 		})

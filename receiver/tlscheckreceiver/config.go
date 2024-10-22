@@ -6,7 +6,9 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
-	"net/url"
+	"net"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -16,8 +18,7 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
-	errMissingURL = errors.New(`"url" must be specified`)
-	errInvalidURL = errors.New(`"url" must be in the form of <scheme>://<hostname>[:<port>]`)
+	errInvalidHost = errors.New(`"host" must be in the form of <hostname>:<port>`)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -28,31 +29,49 @@ type Config struct {
 }
 
 type targetConfig struct {
-	URL string `mapstructure:"url"`
+	Host string `mapstructure:"host"`
 }
 
-// Validate validates the configuration by checking for missing or invalid fields
+func validatePort(port string) error {
+	portNum, err := strconv.Atoi(port)
+	if err != nil {
+		return fmt.Errorf("provided port is not a number: %s", port)
+	}
+	if portNum < 1 || portNum > 65535 {
+		return fmt.Errorf("provided port is out of valid range (1-65535): %d", portNum)
+	}
+	return nil
+}
+
 func (cfg *targetConfig) Validate() error {
 	var err error
 
-	if cfg.URL == "" {
-		err = multierr.Append(err, errMissingURL)
-	} else {
-		_, parseErr := url.ParseRequestURI(cfg.URL)
-		if parseErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidURL.Error(), parseErr))
-		}
+	if cfg.Host == "" {
+		return ErrMissingTargets
+	}
+
+	if strings.Contains(cfg.Host, "://") {
+		return fmt.Errorf("host contains a scheme, which is not allowed: %s", cfg.Host)
+	}
+
+	_, port, parseErr := net.SplitHostPort(cfg.Host)
+	if parseErr != nil {
+		return fmt.Errorf("%s: %w", errInvalidHost.Error(), parseErr)
+	}
+
+	portParseErr := validatePort(port)
+	if portParseErr != nil {
+		return fmt.Errorf("%s: %w", errInvalidHost.Error(), portParseErr)
 	}
 
 	return err
 }
 
-// Validate validates the configuration by checking for missing or invalid fields
 func (cfg *Config) Validate() error {
 	var err error
 
 	if len(cfg.Targets) == 0 {
-		err = multierr.Append(err, errMissingURL)
+		err = multierr.Append(err, ErrMissingTargets)
 	}
 
 	for _, target := range cfg.Targets {
