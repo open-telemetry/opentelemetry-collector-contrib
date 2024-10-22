@@ -1,0 +1,31 @@
+datalayers/default-config:
+datalayers/override-config:
+  endpoint: http://localhost:8361
+  db: demo
+  username: admin
+  password: public 
+  timeout: 500ms
+  trace:
+    table: spans
+    span_dimensions:
+    - service.name
+    - trace.id
+    span_fields: []
+    custom:
+    - key: emqx
+      table: emqx
+      span_dimensions:
+      - service.name
+      - client_id
+      span_fields:
+      - attr1
+    - key: ecp
+      table: ecp
+      span_dimensions:
+      - service.name
+  token: my-token
+  metrics_schema: telegraf-prometheus-v1
+  log_record_dimensions:
+    - service.name
+  payload_max_lines: 72
+  payload_max_bytes: 27

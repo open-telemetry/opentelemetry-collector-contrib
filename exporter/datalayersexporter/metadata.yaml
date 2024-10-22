@@ -1,0 +1,7 @@
+type: datalayers
+
+status:
+  class: exporter
+  stability:
+    alpha: [traces]
+  distributions: [contrib]
