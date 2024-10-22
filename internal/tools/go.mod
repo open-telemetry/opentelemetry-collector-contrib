@@ -230,10 +230,10 @@ require (
 	go.opentelemetry.io/build-tools v0.14.0 // indirect
 	go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.111.1-0.20241008154146-ea48c09c31ae // indirect
-	go.opentelemetry.io/collector/confmap v1.17.1-0.20241008154146-ea48c09c31ae // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.17.1-0.20241008154146-ea48c09c31ae // indirect
+	go.opentelemetry.io/collector/confmap v1.18.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.18.0 // indirect
 	go.opentelemetry.io/collector/filter v0.111.1-0.20241008154146-ea48c09c31ae // indirect
-	go.opentelemetry.io/collector/pdata v1.17.1-0.20241008154146-ea48c09c31ae // indirect
+	go.opentelemetry.io/collector/pdata v1.18.0 // indirect
 	go.opentelemetry.io/otel v1.30.0 // indirect
 	go.opentelemetry.io/otel/metric v1.30.0 // indirect
 	go.opentelemetry.io/otel/trace v1.30.0 // indirect
