@@ -39,6 +39,8 @@ var (
 	lastPackageStatusFileName = "last-reported-package-statuses.proto"
 )
 
+// maxAgentBytes is the max size of an agent package that will be accepted.
+// It is 1 gibibyte.
 const maxAgentBytes = 1024 * 1024 * 1024
 
 type hexEncodedBytes []byte
@@ -256,7 +258,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		}
 	}
 
-	// Truncate and seek to beginning of agent file
+	// Seek to beginning of and truncate the current agent file
 	_, err = agentFile.Seek(0, io.SeekStart)
 	if err != nil {
 		return fmt.Errorf("seek to beginning of agent file: %w", err)
