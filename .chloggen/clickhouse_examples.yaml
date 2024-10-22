@@ -4,7 +4,7 @@
 change_type: docs
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: clickhouseexporter
+component: exporter/clickhouse
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Adding missing examples of DDL created by the clickhouse exporter
