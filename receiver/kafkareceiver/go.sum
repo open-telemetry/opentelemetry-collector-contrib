@@ -126,8 +126,6 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 go.opentelemetry.io/collector v0.111.0 h1:D3LJTYrrK2ac94E2PXPSbVkArqxbklbCLsE4MAJQdRo=
 go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae h1:dXAMqXGJp1vWG7qwS/2sjIyJgmyOSfEOm6Gcmkzp1cQ=
 go.opentelemetry.io/collector/component v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:iWUfPxpVwZhkI4v3/Gh5wt4iKyJn4lriPFAug8iLXno=
-go.opentelemetry.io/collector/component/componentstatus v0.111.1-0.20241008154146-ea48c09c31ae h1:BVTz/s8fmI5UA4Q6zAndl0Pds4RrkhxEXkx9TMelleM=
-go.opentelemetry.io/collector/component/componentstatus v0.111.1-0.20241008154146-ea48c09c31ae/go.mod h1:fwY2NdXkOw07ObusogFZChVyyvqXqCJBlGaWwwDJAtI=
 go.opentelemetry.io/collector/config/configopaque v1.17.1-0.20241008154146-ea48c09c31ae h1:Mh1ZBO6U5X8iXGFBTguBvLBydg+aLuoWX0Ij7QzHU3c=
 go.opentelemetry.io/collector/config/configopaque v1.17.1-0.20241008154146-ea48c09c31ae/go.mod h1:6zlLIyOoRpJJ+0bEKrlZOZon3rOp5Jrz9fMdR4twOS4=
 go.opentelemetry.io/collector/config/configretry v1.17.1-0.20241008154146-ea48c09c31ae h1:2iWFdlGM2sRZd2WBrivau/cBZzc5iZMgHFcheoh1xvM=
