@@ -7,6 +7,104 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.112.0
+
+### 🛑 Breaking changes 🛑
+
+- `elasticsearchexporter`: Enable gzip compression by default (#35865)
+  To disable compression, set config `compression` to `none`.
+- `elasticsearchexporter`: Set body.* for log body in OTel mode (#35771)
+  Log record body in OTel mapping mode will be stored in body.text, body.structured, body.flattened based on body value type and presence of event.name attribute
+- `processor/metricsgeneration`: Remove "experimental_" prefix from metrics generator processor name. (#35426)
+
+### 🚩 Deprecations 🚩
+
+- `sapmreceiver`: Deprecate SAPM receiver (#32125)
+- `elasticsearchexporter`: Deprecate retry::max_requests in favor of retry::max_retries (#32344)
+  retry::max_retries will be exactly retry::max_requests - 1
+
+### 🚀 New components 🚀
+
+- `confmap/aesprovider`: Initial aes encryption provider. Allows configurations to decrypt secrets using AES encryption. (#35550)
+- `systemdreceiver`: Introduce the scaffolding of a new component, systemdreceiver (#33532)
+- `ntpreceiver`: Introduce new receiver reporting the offset between the local machine and a NTP server. (#34375)
+- `tlscheckreceiver`: Add TLS Check Receiver component to monitor x.509 certificate expiry (#35423)
+
+### 💡 Enhancements 💡
+
+- `awsfirehosereceiver`: Add support for CloudWatch logs (#35077)
+- `awsfirehosereceiver`: added OTLP v1 support to Firehose receiver (#34982)
+- `awss3receiver`: Add support for monitoring the progress of ingesting data from an S3 bucket via OpAMP custom messages. (#30750)
+- `azureeventshubreceiver`: Updates the Azure Event Hub receiver to use the new Resource Logs translator. (#35357)
+- `cloudflarereceiver`: Respond 503 on non-permanent and 400 on permanent errors (#35642)
+- `elasticsearchexporter`: Add hint in error logs for TSDB version_conflict_engine_exception error (#35546)
+- `pkg/ottl`: Add ConvertAttributesToElementsXML Converter (#35328)
+- `logdedupprocessor`: Add a `condition` field to the Log DeDuplication Processor. (#35440)
+- `opampextension`: Support using auth extensions for authenticating with opamp servers (#35507)
+- `azureblobreceiver`: adds support for using azidentity default auth, enabling the use of Azure Managed Identities, e.g. Workload Identities on AKS (#35636)
+  This change allows to use authentication type "default", which makes the receiver use azidentity default Credentials, 
+  which automatically picks up, identities assigned to e.g. a container or a VirtualMachine
+  
+- `elasticsearchexporter`: Introduce an experimental bodymap mapping mode for logs (#35444)
+- `googlecloudexporter`: Google Cloud exporter is marked as mutating. (#35366)
+- `googlemanagedprometheusexporter`: GMP exporter is marked as mutating. (#35366)
+- `k8sobserver`: Emit endpoint per Pod's container (#35491)
+- `mongodbreceiver`: Add support for MongoDB direct connection (#35427)
+- `exporter/clickhouse`: Add the ability to override default table names for all metric types. (#34225)
+  'metrics_table_name' of the clickhouse exporter config is deprecated and newly introduced parameter 'metrics_tables' should be used instead.
+  
+- `metricsgenerationprocessor`: Introduce functionality to only do metric calculations on data points whose attributes match (#35425)
+  This functionality can be enabled by the `metricsgeneration.MatchAttributes` feature gate, which is disabled by default.
+  
+- `chronyreceiver`: Move chronyreceiver to beta (#35913)
+- `opampextension`: Implement `ReportsHealth` capability in OpAMP extension (#35433)
+- `opampextension`: Report OS description semantic convention (`os.description`) as a part of non-identifying agent description. (#35555)
+- `otelarrowexporter`: Adjust defaults from https://opentelemetry.io/blog/2024/otel-arrow-production/ experiments. (#35477)
+- `pkg/ottl`: Parsing invalid statements and conditions now prints all errors instead of just the first one found. (#35728)
+- `pkg/ottl`: Add ParseSimplifiedXML Converter (#35421)
+- `receiver/prometheusremotewrite`: Add HTTP Server to handler Prometheus Remote Write requests (#35535)
+  Warning - The HTTP Server still doesn't do anything. It's just a placeholder for now.
+- `rabbitmqexporter`: Allow to configure the name of the AMQP connection in the rabbitmqexporter (#34681)
+- `routingconnector`: Allow routing based on OTTL Conditions (#35731)
+  Each route must contain either a statement or a condition.
+  
+- `sapmreceiver`: Respond 503 on non-permanent and 400 on permanent errors (#35300)
+- `opampsupervisor`: Allow collector logs to passthrough to supervisor output to facilitate running in a containerized environment. (#35473)
+- `hostmetricsreceiver`: Use HOST_PROC_MOUNTINFO as part of configuration instead of environment variable (#35504)
+- `pkg/ottl`: Add ConvertTextToElements Converter (#35364)
+
+### 🧰 Bug fixes 🧰
+
+- `metricstransform`: The previously removed functionality of aggregating against an empty label set is restored. (#34430)
+- `datadogreceiver`: Use `Check` name from Service Check structure as metric name rather than hardcoded string `service_check` (#35718)
+- `azuredataexplorerexporter`: Fix compression type for Azure Data Explorer exporter by adding the compression type in ingestion properties. (#35353)
+- `telemetrygen`: ensure validate is called (#35745)
+- `deltatocumulative`: fix meter panic on startup (#35685)
+  properly constructs the TelemetryBuilder, so it does not panic on startup, rendering the entire component unusable
+- `elasticsearchexporter`: Log and drop invalid metrics instead of returning error to avoid upstream retries (#35740)
+- `elasticsearchexporter`: Preserve attribute names and metric names on prefix conflict in OTel mapping mode (#35651)
+  e.g. if there are attributes "a" and "a.b", they should be sent to Elasticsearch as is, instead of "a.value" and "a.b", in OTel mapping mode
+- `elasticsearchexporter`: Make OTel mapping mode send to data streams only (#35839)
+  This prevents auto creating regular indices in OTel mapping mode due to a race condition in Elasticsearch where otel-data index templates are not ready.
+- `elasticsearchexporter`: Sanitize datastream routing fields (#34285)
+  Sanitize the dataset and namespace fields according to https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html.
+- `oidcauthextension`: Fix a goroutine leak during shutdown. (#30438)
+  A goroutine leak was found in oidcauthextension. The goroutine leak was caused by the oidcauthextension not closing the idle connections in the client and transport.
+  
+- `filelogreceiver`: Supports `add_metadata_from_filepath` for Windows filepaths (#35558)
+- `filelogreceiver`: Suppress errors on EBADF when unlocking files. (#35706)
+  This error is harmless and happens regularly when delete_after_read is set. This is because we acquire the lock right at the start of the ReadToEnd function and then defer the unlock, but that function also performs the delete. So, by the time it returns and the defer runs the file descriptor is no longer valid.
+- `kafkareceiver`: Fixes issue causing kafkareceiver to block during Shutdown(). (#30789)
+- `hostmetrics receiver`: Fix duplicate filesystem metrics (#34635, #34512)
+  The hostmetrics exposes duplicate metrics of identical mounts exposed in namespaces. The duplication causes errors in exporters that are sensitive to duplicate metrics. We can safely drop the duplicates as the metrics should be exactly the same.
+- `pkg/translator/prometheusremotewrite`: Fix metric comparison func in prom translation layer (#35741)
+- `pkg/ottl`: Allow indexing string slice type (#29441)
+- `mysqlreceiver`: Add replica metric support for versions of MySQL earlier than 8.0.22. (#35217)
+- `stanza/input/windows`: Close remote session while resubscribing (#35577)
+- `telemetrygen`: Enable the `--otlp-insecure-skip-verify` flag (#35735)
+- `receiver/windowseventlog`: Errors returned when passing data downstream will now be propagated correctly. (#35461)
+- `datadogreceiver`: Changes response message for `/api/v1/series` and `/api/v2/series` 202 response to be JSON and on par with Datadog API spec (#35743)
+
 ## v0.111.0
 
 ### 🛑 Breaking changes 🛑

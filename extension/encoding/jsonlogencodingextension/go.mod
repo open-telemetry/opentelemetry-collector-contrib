@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.111.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.112.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.112.0
 	go.opentelemetry.io/collector/confmap v1.18.0
