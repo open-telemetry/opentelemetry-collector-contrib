@@ -1,0 +1,16 @@
+type: hostmetricsreceiver/uptime
+
+parent: hostmetrics
+
+sem_conv_version: 1.9.0
+
+metrics:
+  system.uptime:
+    enabled: true
+    description: The time the system has been running
+    unit: s
+    sum:
+      value_type: double
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
