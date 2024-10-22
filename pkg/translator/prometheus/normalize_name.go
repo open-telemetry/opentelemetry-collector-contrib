@@ -80,16 +80,20 @@ var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 //
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
 // and https://prometheus.io/docs/practices/naming/#metric-and-label-naming
-func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffixes bool) string {
+func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffixes, allowUTF8 bool) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
 	if addMetricSuffixes && normalizeNameGate.IsEnabled() {
-		return normalizeName(metric, namespace)
+		return normalizeName(metric, namespace, allowUTF8)
 	}
 
-	// Simple case (no full normalization, no units, etc.), we simply trim out forbidden chars
-	metricName = RemovePromForbiddenRunes(metric.Name())
+	if !allowUTF8 {
+		// Simple case (no full normalization, no units, etc.), we simply trim out forbidden chars
+		metricName = RemovePromForbiddenRunes(metric.Name())
+	} else {
+		metricName = metric.Name()
+	}
 
 	// Namespace?
 	if namespace != "" {
@@ -105,10 +109,9 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 }
 
 // Build a normalized name for the specified metric
-func normalizeName(metric pmetric.Metric, namespace string) string {
-
-	// Split metric name in "tokens" (remove all non-alphanumeric)
-	nameTokens := strings.FieldsFunc(
+func normalizeName(metric pmetric.Metric, namespace string, allowUTF8 bool) string {
+	// Split metric name into "tokens"
+	nameTokens, separators := fieldsFunc(
 		metric.Name(),
 		func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) },
 	)
@@ -121,7 +124,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	if len(unitTokens) > 0 {
 		mainUnitOtel := strings.TrimSpace(unitTokens[0])
 		if mainUnitOtel != "" && !strings.ContainsAny(mainUnitOtel, "{}") {
-			mainUnitProm := CleanUpString(unitMapGetOrDefault(mainUnitOtel))
+			mainUnitProm := CleanUpString(unitMapGetOrDefault(mainUnitOtel), allowUTF8)
 			if mainUnitProm != "" && !contains(nameTokens, mainUnitProm) {
 				nameTokens = append(nameTokens, mainUnitProm)
 			}
@@ -132,7 +135,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 		if len(unitTokens) > 1 && unitTokens[1] != "" {
 			perUnitOtel := strings.TrimSpace(unitTokens[1])
 			if perUnitOtel != "" && !strings.ContainsAny(perUnitOtel, "{}") {
-				perUnitProm := CleanUpString(perUnitMapGetOrDefault(perUnitOtel))
+				perUnitProm := CleanUpString(perUnitMapGetOrDefault(perUnitOtel), allowUTF8)
 				if perUnitProm != "" && !contains(nameTokens, perUnitProm) {
 					nameTokens = append(append(nameTokens, "per"), perUnitProm)
 				}
@@ -160,8 +163,12 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 		nameTokens = append([]string{namespace}, nameTokens...)
 	}
 
-	// Build the string from the tokens, separated with underscores
-	normalizedName := strings.Join(nameTokens, "_")
+	// Build the string from the tokens + separators.
+	// If UTF-8 isn't allowed, we'll use underscores as separators.
+	if !allowUTF8 {
+		separators = []string{}
+	}
+	normalizedName := join(nameTokens, separators, "_")
 
 	// Metric name cannot start with a digit, so prefix it with "_" in this case
 	if normalizedName != "" && unicode.IsDigit(rune(normalizedName[0])) {
@@ -232,8 +239,11 @@ func removeSuffix(tokens []string, suffix string) []string {
 }
 
 // Clean up specified string so it's Prometheus compliant
-func CleanUpString(s string) string {
-	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), "_")
+func CleanUpString(s string, allowUTF8 bool) string {
+	if !allowUTF8 {
+		return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), "_")
+	}
+	return s
 }
 
 func RemovePromForbiddenRunes(s string) string {
