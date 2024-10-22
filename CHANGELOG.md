@@ -1483,7 +1483,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `k8sclusterreceiver`: add optional status_last_terminated_reason resource attribute (#31282)
 - `awsproxyextension`: Expose service_name as configurable option. Previously, it was hardcoded as xray. (#29550)
 - `datadogexporter`: Add new telemetry metric, `otelcol_datadog_otlp_translator_resources_missing_source` that counts OTLP resources missing a hostname-identifying attribute. (#31805)
-  - Enable Collector metrics https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/troubleshooting.md#metrics to check for this metric.
+  - Enable Collector metrics https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics to check for this metric.
   
 - `extension/opamp`: Promote the OpAMP extension to alpha stability (#31616)
 - `prometheusremotewriteexporter`: Publish telemetry about translation of metrics from Otel to Prometheus. Don't drop all data points if some fail translation. (#29729)
