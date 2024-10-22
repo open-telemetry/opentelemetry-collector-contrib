@@ -155,7 +155,7 @@ func isSameMetric(ts *prompb.TimeSeries, lbls []prompb.Label) bool {
 		return false
 	}
 	for i, l := range ts.Labels {
-		if l.Name != ts.Labels[i].Name || l.Value != ts.Labels[i].Value {
+		if l.Name != lbls[i].Name || l.Value != lbls[i].Value {
 			return false
 		}
 	}
