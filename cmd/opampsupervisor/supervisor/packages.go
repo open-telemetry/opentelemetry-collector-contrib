@@ -93,7 +93,6 @@ func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts
 	agentHash := h.Sum(nil)
 
 	// Load persisted package state, if it exists
-	// TODO: use packagesStatusPath method somehow
 	packageStatePath := filepath.Join(storageDir, packagesStateFileName)
 	state, err := loadPackageState(packageStatePath)
 	switch {
