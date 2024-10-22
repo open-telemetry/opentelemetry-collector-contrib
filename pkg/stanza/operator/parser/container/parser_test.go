@@ -93,6 +93,7 @@ func TestProcessOnErrorSendQuiet(t *testing.T) {
 	faultyEntry := &entry.Entry{
 		Body: `{"log":"INFO: log line here","stream":"stdout","time":"2023033"}`,
 	}
+	expectedError := "parsing time \"2023033\" as \"2006-01-02T15:04:05.999Z\": cannot parse \"033\" as \"-\""
 
 	cfg := NewConfigWithID("test_id")
 	cfg.AddMetadataFromFilePath = false
@@ -102,7 +103,7 @@ func TestProcessOnErrorSendQuiet(t *testing.T) {
 		op, err := cfg.Build(set)
 		require.NoError(t, err, "incorrect build")
 		err = op.Process(context.Background(), faultyEntry)
-		require.ErrorContains(t, err, "parse time", "on_error is not working correctly")
+		require.ErrorContains(t, err, expectedError, "on_error is not working correctly")
 	})
 
 	t.Run("with send_quiet", func(t *testing.T) {

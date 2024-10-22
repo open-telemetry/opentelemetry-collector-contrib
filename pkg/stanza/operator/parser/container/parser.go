@@ -68,7 +68,6 @@ type Parser struct {
 
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
-	var timeLayout string
 
 	format := p.format
 	if format == "" {
@@ -80,15 +79,8 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 	switch format {
 	case dockerFormat:
-		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleAttributeMappings)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "docker log"))
-		}
-		timeLayout = goTimeLayout
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse time"))
-		}
+		return p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.cbGoTimeLayout)
+
 	case containerdFormat, crioFormat:
 		p.criConsumerStartOnce.Do(func() {
 			err = p.criLogEmitter.Start(nil)
@@ -116,28 +108,17 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParserOperator.ParseWithCallback(ctx, entry, p.parseContainerd, p.cbGoTimeLayout)
 			if err != nil {
 				return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "containerd log"))
 			}
-			timeLayout = goTimeLayout
+
 		} else {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParserOperator.ParseWithCallback(ctx, entry, p.parseCRIO, p.cbCrioTimeLayout)
 			if err != nil {
 				return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse crio log"))
 			}
-			timeLayout = crioTimeLayout
-		}
-
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse time"))
-		}
-
-		err = p.handleAttributeMappings(entry)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "attribute mappings"))
 		}
 
 		// send it to the recombine operator
@@ -263,6 +244,35 @@ func (p *Parser) handleAttributeMappings(e *entry.Entry) error {
 		return err
 	}
 
+	return nil
+}
+
+func (p *Parser) cbGoTimeLayout(e *entry.Entry) error {
+	timeLayout := goTimeLayout
+	err := parseTime(e, timeLayout)
+	if err != nil {
+		return fmt.Errorf("failed to parse time: %w", err)
+	}
+
+	err = p.handleAttributeMappings(e)
+	if err != nil {
+		return fmt.Errorf("failed to handle attribute mappings: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Parser) cbCrioTimeLayout(e *entry.Entry) error {
+	timeLayout := crioTimeLayout
+	err := parseTime(e, timeLayout)
+	if err != nil {
+		return fmt.Errorf("failed to parse time: %w", err)
+	}
+
+	err = p.handleAttributeMappings(e)
+	if err != nil {
+		return fmt.Errorf("failed to handle attribute mappings: %w", err)
+	}
 	return nil
 }
 
