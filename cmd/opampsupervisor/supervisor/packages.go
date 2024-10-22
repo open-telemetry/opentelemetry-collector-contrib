@@ -237,13 +237,13 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	}
 
 	// Create reader for new agent
-	var r io.Reader
-	r, err = gzip.NewReader(bytes.NewBuffer(by))
+	gzipReader, err := gzip.NewReader(bytes.NewBuffer(by))
 	if err != nil {
 		return fmt.Errorf("create gzip reader: %w", err)
 	}
+	defer gzipReader.Close()
 
-	tar := tar.NewReader(r)
+	tar := tar.NewReader(gzipReader)
 	h, err := tar.Next()
 	if err != nil {
 		return fmt.Errorf("read tarball for collector: %w", err)
