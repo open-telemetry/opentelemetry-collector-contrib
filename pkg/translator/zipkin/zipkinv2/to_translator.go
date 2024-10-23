@@ -183,6 +183,7 @@ func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) ptrace.
 	}
 }
 
+// TagsToSpanLinks translates span tags into ptrace.SpanLinkSlice.
 func TagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 	for i := 0; i < 128; i++ {
 		key := fmt.Sprintf("otlp.link.%d", i)
