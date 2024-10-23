@@ -35,27 +35,52 @@ import (
 
 func TestNewTracesExporter(t *testing.T) {
 	for _, tt := range []struct {
-		desc   string
-		config *Config
-		err    error
+		desc                    string
+		config                  *Config
+		wantRoutingKey          routingKey
+		wantRoutingResourceKeys []string
+		err                     error
 	}{
 		{
 			"simple",
 			simpleConfig(),
+			traceIDRouting,
+			nil,
+			nil,
+		},
+		{
+			"service",
+			serviceBasedRoutingConfig(),
+			resourceKeysRouting,
+			[]string{conventions.AttributeServiceName},
+			nil,
+		},
+		{
+			"resource_keys",
+			resourceKeysBasedRoutingConfig(),
+			resourceKeysRouting,
+			[]string{"resource.key_1", "resource.key_2"},
 			nil,
 		},
 		{
 			"empty",
 			&Config{},
+			0,
+			nil,
 			errNoResolver,
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newTracesExporter(exportertest.NewNopCreateSettings(), tt.config)
+			te, err := newTracesExporter(exportertest.NewNopCreateSettings(), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
+			if err != nil {
+				return
+			}
+			require.Equal(t, tt.wantRoutingKey, te.routingKey)
+			require.Equal(t, tt.wantRoutingResourceKeys, te.routingResourceKeys)
 		})
 	}
 }
@@ -219,7 +244,8 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, svcRouting)
+	assert.Equal(t, p.routingKey, resourceKeysRouting)
+	assert.Equal(t, p.routingResourceKeys, []string{"service.name"})
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -245,29 +271,113 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestConsumeTracesResourceKeysBased(t *testing.T) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), resourceKeysBasedRoutingConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(exportertest.NewNopCreateSettings(), resourceKeysBasedRoutingConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, resourceKeysRouting)
+	assert.Equal(t, p.routingResourceKeys, []string{"resource.key_1", "resource.key_2"})
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
+	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(_ context.Context) ([]string, error) {
+			return []string{"endpoint-1", "endpoint-2"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// test
+	res := p.ConsumeTraces(context.Background(), simpleTracesWithResourceKeys())
+
+	// verify
+	assert.Nil(t, res)
+}
+
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	for _, tt := range []struct {
-		desc       string
-		batch      ptrace.Traces
-		routingKey routingKey
-		res        map[string]bool
+		te    *traceExporterImp
+		desc  string
+		batch ptrace.Traces
+		res   map[string]bool
 	}{
 		{
+			&traceExporterImp{
+				routingKey:          resourceKeysRouting,
+				routingResourceKeys: []string{"service.name"},
+			},
 			"same trace id and different services - service based routing",
 			twoServicesWithSameTraceID(),
-			svcRouting,
 			map[string]bool{"ad-service-1": true, "get-recommendations-7": true},
 		},
 		{
+			&traceExporterImp{
+				routingKey: traceIDRouting,
+			},
 			"same trace id and different services - trace id routing",
 			twoServicesWithSameTraceID(),
-			traceIDRouting,
 			map[string]bool{string(b[:]): true},
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			res, err := tt.te.routingIdentifiersFromTraces(tt.batch)
+			assert.Equal(t, err, nil)
+			assert.Equal(t, res, tt.res)
+		})
+	}
+}
+
+func TestResourceKeysBasedRoutingIdentifiers(t *testing.T) {
+	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
+	for _, tt := range []struct {
+		te    *traceExporterImp
+		desc  string
+		batch ptrace.Traces
+		res   map[string]bool
+	}{
+		{
+			&traceExporterImp{
+				routingKey:          resourceKeysRouting,
+				routingResourceKeys: []string{"resource.key_1", "resource.key_2"},
+			},
+			"two resource_keys values",
+			simpleTracesWithResourceKeys(),
+			map[string]bool{
+				"val-1": true,
+				"val-2": true,
+			},
+		},
+		{
+			&traceExporterImp{
+				routingKey:          resourceKeysRouting,
+				routingResourceKeys: []string{"resource.key_1"},
+			},
+			"single resource_keys value with trace ID as default",
+			simpleTracesWithResourceKeys(),
+			map[string]bool{
+				"val-1":      true,
+				string(b[:]): true,
+			},
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			res, err := tt.te.routingIdentifiersFromTraces(tt.batch)
 			assert.Equal(t, err, nil)
 			assert.Equal(t, res, tt.res)
 		})
@@ -405,40 +515,46 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 func TestNoTracesInBatch(t *testing.T) {
 	for _, tt := range []struct {
-		desc       string
-		batch      ptrace.Traces
-		routingKey routingKey
-		err        error
+		te    *traceExporterImp
+		desc  string
+		batch ptrace.Traces
+		err   error
 	}{
 		{
+			&traceExporterImp{
+				routingKey: svcRouting,
+			},
 			"no resource spans",
 			ptrace.NewTraces(),
-			traceIDRouting,
 			errors.New("empty resource spans"),
 		},
 		{
+			&traceExporterImp{
+				routingKey: traceIDRouting,
+			},
 			"no instrumentation library spans",
 			func() ptrace.Traces {
 				batch := ptrace.NewTraces()
 				batch.ResourceSpans().AppendEmpty()
 				return batch
 			}(),
-			traceIDRouting,
 			errors.New("empty scope spans"),
 		},
 		{
+			&traceExporterImp{
+				routingKey: svcRouting,
+			},
 			"no spans",
 			func() ptrace.Traces {
 				batch := ptrace.NewTraces()
 				batch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 				return batch
 			}(),
-			svcRouting,
 			errors.New("empty spans"),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			res, err := tt.te.routingIdentifiersFromTraces(tt.batch)
 			assert.Equal(t, err, tt.err)
 			assert.Equal(t, res, map[string]bool(nil))
 		})
@@ -684,6 +800,29 @@ func simpleTraces() ptrace.Traces {
 	return traces
 }
 
+func simpleTracesWithResourceKeys() ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(1)
+
+	rSpans := traces.ResourceSpans().AppendEmpty()
+	rAttrs := rSpans.Resource().Attributes()
+	rAttrs.PutStr("resource.key_1", "val-1")
+	rSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	rSpans = traces.ResourceSpans().AppendEmpty()
+	rAttrs = rSpans.Resource().Attributes()
+	rAttrs.PutStr("resource.key_2", "val-2")
+	rSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	rSpans = traces.ResourceSpans().AppendEmpty()
+	rAttrs = rSpans.Resource().Attributes()
+	rAttrs.PutStr("resource.key_1", "val-1")
+	rAttrs.PutStr("resource.key_2", "val-2")
+	rSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID([16]byte{1, 2, 3, 4})
+
+	return traces
+}
+
 func simpleTracesWithServiceName() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
@@ -733,6 +872,16 @@ func serviceBasedRoutingConfig() *Config {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 		RoutingKey: "service",
+	}
+}
+
+func resourceKeysBasedRoutingConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
+		},
+		RoutingKey:   "resource_keys",
+		ResourceKeys: []string{"resource.key_1", "resource.key_2"},
 	}
 }
 
