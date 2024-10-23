@@ -32,7 +32,7 @@ body:
       label: Sponsor (optional)
       description: "A sponsor is an approver who will be in charge of being the official reviewer of the code.
         Having a sponsor means that your use-case has been validated. If there are no sponsors yet for the component,
-        it's fine: use the issue as a means to try to find a sponsor for your component."
+        it's fine: use the issue as a means to try to find a sponsor for your component. If you are unable to find a sponsor, the component can still live in your own source repository and can be included in Collector distributions using the Collector builder."
   - type: textarea
     attributes:
       label: Additional context
