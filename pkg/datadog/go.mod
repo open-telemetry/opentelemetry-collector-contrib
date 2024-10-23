@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
 go 1.22.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.57.1
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.58.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.112.0
 	go.opentelemetry.io/collector/config/configauth v0.112.0
@@ -18,8 +18,8 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/util/log v0.57.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.57.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.58.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.112.0
-	github.com/open-telemetry/otel-arrow v0.28.0
+	github.com/open-telemetry/otel-arrow v0.29.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/client v1.18.0
 	go.opentelemetry.io/collector/component v0.112.0
@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.31.0
 	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.30.0
