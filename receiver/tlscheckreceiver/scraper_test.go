@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+//nolint:revive
 func mockGetConnectionStateValid(host string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
 		NotBefore: time.Now().Add(-1 * time.Hour),
@@ -29,6 +30,7 @@ func mockGetConnectionStateValid(host string) (tls.ConnectionState, error) {
 	}, nil
 }
 
+//nolint:revive
 func mockGetConnectionStateExpired(host string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
 		NotBefore: time.Now().Add(-48 * time.Hour),
@@ -41,6 +43,7 @@ func mockGetConnectionStateExpired(host string) (tls.ConnectionState, error) {
 	}, nil
 }
 
+//nolint:revive
 func mockGetConnectionStateNotYetValid(host string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
 		NotBefore: time.Now().Add(48 * time.Hour),
