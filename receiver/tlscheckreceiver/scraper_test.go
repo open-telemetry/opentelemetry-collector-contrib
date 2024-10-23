@@ -111,7 +111,7 @@ func TestScrape_ExpiredCertificate(t *testing.T) {
 
 	// Ensure that timeLeft is negative for an expired cert
 	timeLeft := dp.IntValue()
-	assert.Less(t, timeLeft, int64(0), "Time left should be negative for an expired certificate")
+	assert.Negative(t, timeLeft, int64(0), "Time left should be negative for an expired certificate")
 }
 
 func TestScrape_NotYetValidCertificate(t *testing.T) {
@@ -142,5 +142,5 @@ func TestScrape_NotYetValidCertificate(t *testing.T) {
 
 	// Ensure that timeLeft is positive for a not-yet-valid cert
 	timeLeft := dp.IntValue()
-	assert.Greater(t, timeLeft, int64(0), "Time left should be positive for a not-yet-valid cert")
+	assert.Positive(t, timeLeft, "Time left should be positive for a not-yet-valid cert")
 }
