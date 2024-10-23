@@ -4,11 +4,14 @@
 package zipkinv2
 
 import (
+	"encoding/hex"
+	"strconv"
 	"testing"
 	"time"
 
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -261,4 +264,163 @@ func TestV2SpanWithoutTimestampGetsTag(t *testing.T) {
 	wasAbsent, mapContainedKey := gs.Attributes().Get(zipkin.StartTimeAbsent)
 	assert.True(t, mapContainedKey)
 	assert.True(t, wasAbsent.Bool())
+}
+
+func TestTagsToSpanLinks(t *testing.T) {
+	tests := []struct {
+		name          string
+		tags          map[string]string
+		expectedLinks []ptrace.SpanLink
+		expectedError bool
+	}{
+		{
+			name: "Single valid link",
+			tags: map[string]string{
+				"otlp.link.0": "0102030405060708090a0b0c0d0e0f10|0102030405060708|state|{\"attr1\":\"value1\",\"attr2\":123}|0",
+			},
+			expectedLinks: []ptrace.SpanLink{
+				func() ptrace.SpanLink {
+					link := ptrace.NewSpanLink()
+					traceID, _ := hex.DecodeString("0102030405060708090a0b0c0d0e0f10")
+					link.SetTraceID(pcommon.TraceID(traceID))
+					spanID, _ := hex.DecodeString("0102030405060708")
+					link.SetSpanID(pcommon.SpanID(spanID))
+					link.TraceState().FromRaw("state")
+					attrs := link.Attributes()
+					attrs.PutStr("attr1", "value1")
+					attrs.PutInt("attr2", 123)
+					link.SetDroppedAttributesCount(0)
+					return link
+				}(),
+			},
+			expectedError: false,
+		},
+		{
+			name: "Multiple valid links",
+			tags: map[string]string{
+				"otlp.link.0": "0102030405060708090a0b0c0d0e0f10|0102030405060708|state1|{\"attr1\":\"value1\"}|0",
+				"otlp.link.1": "1112131415161718191a1b1c1d1e1f20|1112131415161718|state2|{\"attr2\":456}|1",
+			},
+			expectedLinks: []ptrace.SpanLink{
+				func() ptrace.SpanLink {
+					link := ptrace.NewSpanLink()
+					traceID, _ := hex.DecodeString("0102030405060708090a0b0c0d0e0f10")
+					link.SetTraceID(pcommon.TraceID(traceID))
+					spanID, _ := hex.DecodeString("0102030405060708")
+					link.SetSpanID(pcommon.SpanID(spanID))
+					link.TraceState().FromRaw("state1")
+					attrs := link.Attributes()
+					attrs.PutStr("attr1", "value1")
+					link.SetDroppedAttributesCount(0)
+					return link
+				}(),
+				func() ptrace.SpanLink {
+					link := ptrace.NewSpanLink()
+					traceID, _ := hex.DecodeString("1112131415161718191a1b1c1d1e1f20")
+					link.SetTraceID(pcommon.TraceID(traceID))
+					spanID, _ := hex.DecodeString("1112131415161718")
+					link.SetSpanID(pcommon.SpanID(spanID))
+					link.TraceState().FromRaw("state2")
+					attrs := link.Attributes()
+					attrs.PutInt("attr2", 456)
+					link.SetDroppedAttributesCount(1)
+					return link
+				}(),
+			},
+			expectedError: false,
+		},
+		{
+			name: "Invalid format (too few parts)",
+			tags: map[string]string{
+				"otlp.link.0": "invalid|value",
+			},
+			expectedLinks: []ptrace.SpanLink{},
+			expectedError: false,
+		},
+		{
+			name: "Invalid hex in trace ID",
+			tags: map[string]string{
+				"otlp.link.0": "nothex|0102030405060708|state|{\"attr1\":\"value1\"}|0",
+			},
+			expectedLinks: nil,
+			expectedError: true,
+		},
+		{
+			name: "Invalid dropped attributes count",
+			tags: map[string]string{
+				"otlp.link.0": "0102030405060708090a0b0c0d0e0f10|0102030405060708|state|{\"attr1\":\"value1\"}|notanumber",
+			},
+			expectedLinks: nil,
+			expectedError: true,
+		},
+		{
+			name: "Attributes with pipe character",
+			tags: map[string]string{
+				"otlp.link.0": "0102030405060708090a0b0c0d0e0f10|0102030405060708|state|{\"attr1\":\"value1|with|pipes\"}|0",
+			},
+			expectedLinks: []ptrace.SpanLink{
+				func() ptrace.SpanLink {
+					link := ptrace.NewSpanLink()
+					traceID, _ := hex.DecodeString("0102030405060708090a0b0c0d0e0f10")
+					link.SetTraceID(pcommon.TraceID(traceID))
+					spanID, _ := hex.DecodeString("0102030405060708")
+					link.SetSpanID(pcommon.SpanID(spanID))
+					link.TraceState().FromRaw("state")
+					attrs := link.Attributes()
+					attrs.PutStr("attr1", "value1|with|pipes")
+					link.SetDroppedAttributesCount(0)
+					return link
+				}(),
+			},
+			expectedError: false,
+		},
+		{
+			name:          "No links in tags",
+			tags:          map[string]string{},
+			expectedLinks: []ptrace.SpanLink{},
+			expectedError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dest := ptrace.NewSpanLinkSlice()
+			err := TagsToSpanLinks(tt.tags, dest)
+			if tt.expectedError {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, len(tt.expectedLinks), dest.Len())
+
+			for i, expected := range tt.expectedLinks {
+				link := dest.At(i)
+
+				assert.Equal(t, expected.TraceID(), link.TraceID(), "TraceID mismatch")
+				assert.Equal(t, expected.SpanID(), link.SpanID(), "SpanID mismatch")
+				assert.Equal(t, expected.TraceState().AsRaw(), link.TraceState().AsRaw())
+
+				assert.Equal(t, expected.DroppedAttributesCount(), link.DroppedAttributesCount())
+
+				// Verify attributes
+				expectedAttrs := expected.Attributes()
+				actualAttrs := link.Attributes()
+				assert.Equal(t, expectedAttrs.Len(), actualAttrs.Len(), "Attributes length mismatch")
+
+				expectedAttrs.Range(func(k string, v pcommon.Value) bool {
+					actualVal, ok := actualAttrs.Get(k)
+					assert.True(t, ok, "Attribute %s not found in link", k)
+					assert.Equal(t, v, actualVal, "Attribute %s value mismatch", k)
+					return true
+				})
+			}
+
+			// Verify that link tags are removed
+			for i := 0; i < 128; i++ {
+				key := "otlp.link." + strconv.Itoa(i)
+				_, ok := tt.tags[key]
+				assert.False(t, ok, "Expected tag %s to be deleted", key)
+			}
+		})
+	}
 }
