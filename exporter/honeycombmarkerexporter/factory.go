@@ -39,12 +39,12 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		logsExp.exportMarkers,
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cf.BackOffConfig),
 		exporterhelper.WithQueue(cf.QueueSettings),
 		exporterhelper.WithStart(logsExp.start),

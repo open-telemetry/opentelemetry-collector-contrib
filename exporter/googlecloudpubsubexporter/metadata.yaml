@@ -1,5 +1,4 @@
 type: googlecloudpubsub
-scope_name: otelcol/googlecloudpubsub
 
 status:
   class: exporter

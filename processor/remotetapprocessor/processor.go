@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -51,7 +52,7 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", w.config.Endpoint, err)
 	}
-	w.server, err = w.config.ServerConfig.ToServer(ctx, host, w.telemetrySettings, websocket.Handler(w.handleConn))
+	w.server, err = w.config.ServerConfig.ToServer(ctx, host, w.telemetrySettings, websocket.Server{Handler: w.handleConn})
 	if err != nil {
 		return err
 	}
@@ -59,7 +60,7 @@ func (w *wsprocessor) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		defer w.shutdownWG.Done()
 		if errHTTP := w.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			w.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 	return nil

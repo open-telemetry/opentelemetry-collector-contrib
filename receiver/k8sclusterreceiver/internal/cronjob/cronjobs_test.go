@@ -43,7 +43,7 @@ func TestCronJobMetadata(t *testing.T) {
 
 	actualMetadata := GetMetadata(cj)
 
-	require.Equal(t, 1, len(actualMetadata))
+	require.Len(t, actualMetadata, 1)
 
 	// Assert metadata from Pod.
 	require.Equal(t,

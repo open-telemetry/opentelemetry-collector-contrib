@@ -91,5 +91,5 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/timestampNormalization
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/timestampNormalization
           version: latest

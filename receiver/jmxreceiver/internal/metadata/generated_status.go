@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("jmx")
+	Type      = component.MustNewType("jmx")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 )
 
 const (

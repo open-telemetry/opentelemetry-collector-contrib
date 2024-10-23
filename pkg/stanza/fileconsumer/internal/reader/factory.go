@@ -44,6 +44,7 @@ type Factory struct {
 	DeleteAtEOF             bool
 	IncludeFileRecordNumber bool
 	Compression             string
+	AcquireFSLock           bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -77,6 +78,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		deleteAtEOF:          f.DeleteAtEOF,
 		includeFileRecordNum: f.IncludeFileRecordNumber,
 		compression:          f.Compression,
+		acquireFSLock:        f.AcquireFSLock,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 

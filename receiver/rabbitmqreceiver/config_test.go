@@ -19,6 +19,12 @@ import (
 )
 
 func TestValidate(t *testing.T) {
+	clientConfigInvalid := confighttp.NewDefaultClientConfig()
+	clientConfigInvalid.Endpoint = "invalid://endpoint:  12efg"
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+
 	testCases := []struct {
 		desc        string
 		cfg         *Config
@@ -27,9 +33,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username, password, and invalid endpoint",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				ClientConfig: clientConfigInvalid,
 			},
 			expectedErr: errors.Join(
 				errMissingUsername,
@@ -39,10 +43,8 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing password and invalid endpoint",
 			cfg: &Config{
-				Username: "otelu",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				Username:     "otelu",
+				ClientConfig: clientConfigInvalid,
 			},
 			expectedErr: errors.Join(
 				errMissingPassword,
@@ -52,10 +54,8 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username and invalid endpoint",
 			cfg: &Config{
-				Password: "otelp",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				Password:     "otelp",
+				ClientConfig: clientConfigInvalid,
 			},
 			expectedErr: errors.Join(
 				errMissingUsername,
@@ -65,11 +65,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				Username: "otelu",
-				Password: "otelp",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				Username:     "otelu",
+				Password:     "otelp",
+				ClientConfig: clientConfigInvalid,
 			},
 			expectedErr: errors.Join(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
@@ -78,11 +76,9 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				Username: "otelu",
-				Password: "otelp",
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-				},
+				Username:     "otelu",
+				Password:     "otelp",
+				ClientConfig: clientConfig,
 			},
 			expectedErr: nil,
 		},

@@ -1,0 +1,28 @@
+doris:
+  endpoint: http://localhost:8030
+  mysql_endpoint: localhost:9030
+doris/full:
+  endpoint: http://localhost:8030
+  database: otel
+  username: admin
+  password: admin
+  table:
+    logs: otel_logs
+    traces: otel_traces
+    metrics: otel_metrics
+  create_schema: true
+  mysql_endpoint: localhost:9030
+  history_days: 0
+  create_history_days: 0
+  replication_num: 2
+  timezone: Asia/Shanghai
+  timeout: 5s
+  sending_queue:
+    enabled: true
+    num_consumers: 10
+    queue_size: 1000
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 30s
+    max_elapsed_time: 300s

@@ -1,11 +1,10 @@
 type: httpcheck
-scope_name: otelcol/httpcheckreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: []
   codeowners:
     active: [codeboten]

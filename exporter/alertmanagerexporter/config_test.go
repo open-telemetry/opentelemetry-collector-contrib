@@ -4,6 +4,7 @@
 package alertmanagerexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+	defaultTransport := http.DefaultTransport.(*http.Transport)
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -46,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				GeneratorURL:      "opentelemetry-collector",
 				DefaultSeverity:   "info",
 				SeverityAttribute: "foo",
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
 				BackoffConfig: configretry.BackOffConfig{
@@ -57,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -74,9 +76,13 @@ func TestLoadConfig(t *testing.T) {
 							CAFile: "/var/lib/mycert.pem",
 						},
 					},
-					ReadBufferSize:  0,
-					WriteBufferSize: 524288,
-					Timeout:         time.Second * 10,
+					ReadBufferSize:      0,
+					WriteBufferSize:     524288,
+					Timeout:             time.Second * 10,
+					MaxIdleConns:        &defaultTransport.MaxIdleConns,
+					MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
+					MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
+					IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
 				},
 			},
 		},

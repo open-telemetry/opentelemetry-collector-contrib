@@ -22,7 +22,7 @@ func TestNilFieldSet(t *testing.T) {
 	nilField := NewNilField()
 	err := nilField.Set(entry, "value")
 	require.NoError(t, err)
-	require.Equal(t, *entry, Entry{})
+	require.Equal(t, Entry{}, *entry)
 }
 
 func TestNilFieldDelete(t *testing.T) {
@@ -31,7 +31,7 @@ func TestNilFieldDelete(t *testing.T) {
 	value, ok := nilField.Delete(entry)
 	require.True(t, ok)
 	require.Nil(t, value)
-	require.Equal(t, *entry, Entry{})
+	require.Equal(t, Entry{}, *entry)
 }
 
 func TestNilFieldString(t *testing.T) {

@@ -102,9 +102,14 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
 		writeErr := t.Write(ctx, entry)
 		if writeErr != nil {
-			return fmt.Errorf("failed to send entry after error: %w", writeErr)
+			err = fmt.Errorf("failed to send entry after error: %w", writeErr)
 		}
 	}
+
+	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
+		return nil
+	}
+
 	return err
 }
 

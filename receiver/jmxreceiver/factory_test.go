@@ -28,7 +28,7 @@ func TestWithValidConfig(t *testing.T) {
 	cfg.(*Config).TargetSystem = "jvm"
 
 	params := receivertest.NewNopSettings()
-	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	r, err := f.CreateMetrics(context.Background(), params, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	receiver := r.(*jmxMetricReceiver)

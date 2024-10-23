@@ -14,6 +14,7 @@ import (
 
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -72,7 +73,7 @@ func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) err
 		defer h.shutdownWG.Done()
 
 		if err := h.srv.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			h.telemetry.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 

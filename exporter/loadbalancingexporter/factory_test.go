@@ -22,7 +22,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg)
 
 	// verify
 	assert.NoError(t, err)
@@ -40,7 +40,7 @@ func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateLogsExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateLogs(context.Background(), creationParams, cfg)
 
 	// verify
 	assert.NoError(t, err)

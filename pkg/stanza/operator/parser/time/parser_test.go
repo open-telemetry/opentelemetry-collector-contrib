@@ -531,7 +531,7 @@ func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr
 		require.Equal(t, ots, ent.ObservedTimestamp, "time parsing should not change observed timestamp")
 
 		diff := time.Duration(math.Abs(float64(expected.Sub(ent.Timestamp))))
-		require.True(t, diff <= maxLoss)
+		require.LessOrEqual(t, diff, maxLoss)
 	}
 }
 

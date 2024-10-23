@@ -79,7 +79,7 @@ func TestPriorityQueueImpl(t *testing.T) {
 	// And the inner lookup map should also be empty
 	require.IsType(t, &heapPriorityQueue{}, pq)
 	heapQueue := pq.(*heapPriorityQueue)
-	require.Len(t, heapQueue.itemLookup, 0)
+	require.Empty(t, heapQueue.itemLookup)
 }
 
 func generateStreamID(t *testing.T, attributes map[string]any) identity.Stream {

@@ -59,7 +59,7 @@ func TestReadPipe(t *testing.T) {
 	converter.Start()
 	defer converter.Stop()
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, rcvr.Shutdown(context.Background())) }()

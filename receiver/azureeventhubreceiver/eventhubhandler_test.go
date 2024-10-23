@@ -57,13 +57,18 @@ func (m mockListenerHandleWrapper) Err() error {
 }
 
 type mockDataConsumer struct {
-	logsUnmarshaler  eventLogsUnmarshaler
-	nextLogsConsumer consumer.Logs
-	obsrecv          *receiverhelper.ObsReport
+	logsUnmarshaler    eventLogsUnmarshaler
+	nextLogsConsumer   consumer.Logs
+	nextTracesConsumer consumer.Traces
+	obsrecv            *receiverhelper.ObsReport
 }
 
 func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 	m.nextLogsConsumer = nextLogsConsumer
+}
+
+func (m *mockDataConsumer) setNextTracesConsumer(nextTracesConsumer consumer.Traces) {
+	m.nextTracesConsumer = nextTracesConsumer
 }
 
 func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}

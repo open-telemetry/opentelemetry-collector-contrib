@@ -1,5 +1,4 @@
 type: datadog
-scope_name: otelcol/datadog
 
 status:
   class: connector

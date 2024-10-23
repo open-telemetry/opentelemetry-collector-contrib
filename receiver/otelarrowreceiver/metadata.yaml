@@ -1,11 +1,10 @@
 type: otelarrow
-scope_name: otelcol/otelarrowreceiver
 
 status:
   class: receiver
   stability:
-    alpha: [traces, metrics, logs]
-  distributions: [contrib]
+    beta: [traces, metrics, logs]
+  distributions: [contrib, k8s]
   codeowners:
     active: [jmacd, moh-osman3]
 

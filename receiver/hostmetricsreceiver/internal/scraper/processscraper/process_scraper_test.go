@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
@@ -88,7 +89,17 @@ func TestScrape(t *testing.T) {
 			if test.mutateMetricsConfig != nil {
 				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
-			scraper, err := newProcessScraper(receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
+			cfg := &Config{MetricsBuilderConfig: metricsBuilderConfig}
+			cfg.EnvMap = common.EnvMap{
+				common.HostProcEnvKey:    "/proc",
+				common.HostSysEnvKey:     "/sys",
+				common.HostEtcEnvKey:     "/etc",
+				common.HostVarEnvKey:     "/var",
+				common.HostRunEnvKey:     "/run",
+				common.HostDevEnvKey:     "/dev",
+				common.HostProcMountinfo: "",
+			}
+			scraper, err := newProcessScraper(receivertest.NewNopSettings(), cfg)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -110,8 +121,8 @@ func TestScrape(t *testing.T) {
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				noProcessesErrored := scraperErr.Failed
-				require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
-				require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
+				require.Positivef(t, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
+				require.Positivef(t, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
 			}
 
 			require.Greater(t, md.ResourceMetrics().Len(), 1)
@@ -1003,6 +1014,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 		muteProcessExeError  bool
 		muteProcessIOError   bool
 		muteProcessUserError bool
+		muteProcessAllErrors bool
 		skipProcessNameError bool
 		omitConfigField      bool
 		expectedError        string
@@ -1093,6 +1105,30 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				return 4
 			}(),
 		},
+		{
+			name:                 "All Process Errors Muted",
+			muteProcessNameError: false,
+			muteProcessExeError:  false,
+			muteProcessIOError:   false,
+			muteProcessUserError: false,
+			muteProcessAllErrors: true,
+			expectedCount:        0,
+		},
+		{
+			name:                 "Process User Error Enabled and All Process Errors Muted",
+			muteProcessUserError: false,
+			skipProcessNameError: true,
+			muteProcessExeError:  true,
+			muteProcessNameError: true,
+			muteProcessAllErrors: true,
+			expectedCount: func() int {
+				if runtime.GOOS == "darwin" {
+					// disk.io is not collected on darwin
+					return 3
+				}
+				return 4
+			}(),
+		},
 	}
 
 	for _, test := range testCases {
@@ -1106,6 +1142,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				config.MuteProcessExeError = test.muteProcessExeError
 				config.MuteProcessIOError = test.muteProcessIOError
 				config.MuteProcessUserError = test.muteProcessUserError
+				config.MuteProcessAllErrors = test.muteProcessAllErrors
 			}
 			scraper, err := newProcessScraper(receivertest.NewNopSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
@@ -1135,7 +1172,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 
 			assert.Equal(t, test.expectedCount, md.MetricCount())
 
-			if config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError {
+			if (config.MuteProcessNameError && config.MuteProcessExeError && config.MuteProcessUserError) || config.MuteProcessAllErrors {
 				assert.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.expectedError)

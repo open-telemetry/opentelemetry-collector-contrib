@@ -4,9 +4,13 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
+	"io"
+	"net/http"
+	"strings"
 	"time"
 
-	datadogV1 "github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
+	"github.com/DataDog/agent-payload/v5/gogen"
+	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -21,6 +25,22 @@ const (
 
 type SeriesList struct {
 	Series []datadogV1.Series `json:"series"`
+}
+
+// TODO: add handling for JSON format in additional to protobuf?
+func (mt *MetricsTranslator) HandleSeriesV2Payload(req *http.Request) (mp []*gogen.MetricPayload_MetricSeries, err error) {
+	buf := GetBuffer()
+	defer PutBuffer(buf)
+	if _, err := io.Copy(buf, req.Body); err != nil {
+		return mp, err
+	}
+
+	pl := new(gogen.MetricPayload)
+	if err := pl.Unmarshal(buf.Bytes()); err != nil {
+		return mp, err
+	}
+
+	return pl.GetSeries(), nil
 }
 
 func (mt *MetricsTranslator) TranslateSeriesV1(series SeriesList) pmetric.Metrics {
@@ -86,4 +106,69 @@ func (mt *MetricsTranslator) TranslateSeriesV1(series SeriesList) pmetric.Metric
 		}
 	}
 	return bt.Metrics
+}
+
+func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_MetricSeries) pmetric.Metrics {
+	bt := newBatcher()
+
+	for _, serie := range series {
+		var dps pmetric.NumberDataPointSlice
+
+		// The V2 payload stores the host name under in the Resources field
+		resourceMap := getV2Resources(serie.Resources)
+		// TODO(jesus.vazquez) (Do this with string interning)
+		dimensions := parseSeriesProperties(serie.Metric, strings.ToLower(serie.Type.String()), serie.Tags, resourceMap["host"], mt.buildInfo.Version, mt.stringPool)
+		for k, v := range resourceMap {
+			if k == "host" {
+				continue // Host has already been added as a resource attribute in parseSeriesProperties(), so avoid duplicating that attribute
+			}
+			dimensions.resourceAttrs.PutStr(k, v)
+		}
+		dimensions.resourceAttrs.PutStr("source", serie.SourceTypeName) //TODO: check if this is correct handling of SourceTypeName field
+		metric, metricID := bt.Lookup(dimensions)
+
+		switch serie.Type {
+		case gogen.MetricPayload_COUNT:
+			metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+			metric.Sum().SetIsMonotonic(false) // See https://docs.datadoghq.com/metrics/types/?tab=count#definition
+			dps = metric.Sum().DataPoints()
+		case gogen.MetricPayload_GAUGE:
+			dps = metric.Gauge().DataPoints()
+		case gogen.MetricPayload_RATE:
+			metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta) //TODO: verify that this is always the case
+			dps = metric.Sum().DataPoints()
+		case gogen.MetricPayload_UNSPECIFIED:
+			// Type is unset/unspecified
+			continue
+		}
+
+		dps.EnsureCapacity(len(serie.Points))
+
+		for _, point := range serie.Points {
+			dp := dps.AppendEmpty()
+			dp.SetTimestamp(pcommon.Timestamp(point.Timestamp * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
+			dimensions.dpAttrs.CopyTo(dp.Attributes())                                      // TODO(jesus.vazquez) Review this copy
+			val := point.Value
+			if serie.Type == gogen.MetricPayload_RATE && serie.Interval != 0 {
+				val *= float64(serie.Interval)
+			}
+			dp.SetDoubleValue(val)
+
+			stream := identity.OfStream(metricID, dp)
+			ts, ok := mt.streamHasTimestamp(stream)
+			if ok {
+				dp.SetStartTimestamp(ts)
+			}
+			mt.updateLastTsForStream(stream, dp.Timestamp())
+		}
+	}
+	return bt.Metrics
+}
+
+func getV2Resources(resources []*gogen.MetricPayload_Resource) map[string]string {
+	resourceMap := make(map[string]string)
+	for i := range resources {
+		resourceMap[resources[i].Type] = resources[i].Name
+	}
+	return resourceMap
 }

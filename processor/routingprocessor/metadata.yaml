@@ -1,5 +1,4 @@
 type: routing
-scope_name: otelcol/routing
 
 status:
   class: processor
@@ -11,6 +10,7 @@ status:
 
 tests:
   config:
+  host: "&mockHost{}"
 
 telemetry:
   metrics:

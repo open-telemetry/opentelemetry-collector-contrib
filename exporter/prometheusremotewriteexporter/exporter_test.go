@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -30,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -38,11 +41,11 @@ import (
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{},
+		TimeoutSettings: exporterhelper.TimeoutConfig{},
 		BackOffConfig:   configretry.BackOffConfig{},
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
-		ClientConfig:    confighttp.ClientConfig{Endpoint: ""},
+		ClientConfig:    confighttp.NewDefaultClientConfig(),
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
@@ -134,7 +137,7 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings:   exporterhelper.TimeoutSettings{},
+		TimeoutSettings:   exporterhelper.TimeoutConfig{},
 		BackOffConfig:     configretry.BackOffConfig{},
 		MaxBatchSizeBytes: 3000000,
 		Namespace:         "",
@@ -152,6 +155,21 @@ func Test_Start(t *testing.T) {
 	}
 	set := exportertest.NewNopSettings()
 	set.BuildInfo = buildInfo
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "https://some.url:9411/api/prom/push"
+	clientConfigTLS := confighttp.NewDefaultClientConfig()
+	clientConfigTLS.Endpoint = "https://some.url:9411/api/prom/push"
+	clientConfigTLS.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "non-existent file",
+			CertFile: "",
+			KeyFile:  "",
+		},
+		Insecure:   false,
+		ServerName: "",
+	}
+
 	tests := []struct {
 		name                 string
 		config               *Config
@@ -170,7 +188,7 @@ func Test_Start(t *testing.T) {
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
 			set:            set,
-			clientSettings: confighttp.ClientConfig{Endpoint: "https://some.url:9411/api/prom/push"},
+			clientSettings: clientConfig,
 		},
 		{
 			name:                 "invalid_tls",
@@ -180,18 +198,7 @@ func Test_Start(t *testing.T) {
 			externalLabels:       map[string]string{"Key1": "Val1"},
 			set:                  set,
 			returnErrorOnStartUp: true,
-			clientSettings: confighttp.ClientConfig{
-				Endpoint: "https://some.url:9411/api/prom/push",
-				TLSSetting: configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   "non-existent file",
-						CertFile: "",
-						KeyFile:  "",
-					},
-					Insecure:   false,
-					ServerName: "",
-				},
-			},
+			clientSettings:       clientConfigTLS,
 		},
 	}
 
@@ -269,7 +276,7 @@ func Test_export(t *testing.T) {
 		ok := proto.Unmarshal(dest, writeReq)
 		require.NoError(t, ok)
 
-		assert.EqualValues(t, 1, len(writeReq.Timeseries))
+		assert.Len(t, writeReq.Timeseries, 1)
 		require.NotNil(t, writeReq.GetTimeseries())
 		assert.Equal(t, *ts1, writeReq.GetTimeseries()[0])
 		w.WriteHeader(code)
@@ -456,8 +463,8 @@ func Test_PushMetrics(t *testing.T) {
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
 		ok := proto.Unmarshal(dest, wr)
-		require.Nil(t, ok)
-		assert.EqualValues(t, expected, len(wr.Timeseries))
+		require.NoError(t, ok)
+		assert.Len(t, wr.Timeseries, expected)
 		if isStaleMarker {
 			assert.True(t, value.IsStaleNaN(wr.Timeseries[0].Samples[0].Value))
 		}
@@ -702,14 +709,13 @@ func Test_PushMetrics(t *testing.T) {
 						MaxInterval:     1 * time.Second,        // Shorter max interval
 						MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
 					}
+					clientConfig := confighttp.NewDefaultClientConfig()
+					clientConfig.Endpoint = server.URL
+					clientConfig.ReadBufferSize = 0
+					clientConfig.WriteBufferSize = 512 * 1024
 					cfg := &Config{
-						Namespace: "",
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: server.URL,
-							// We almost read 0 bytes, so no need to tune ReadBufferSize.
-							ReadBufferSize:  0,
-							WriteBufferSize: 512 * 1024,
-						},
+						Namespace:         "",
+						ClientConfig:      clientConfig,
 						MaxBatchSizeBytes: 3000000,
 						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: &TargetInfo{
@@ -734,6 +740,15 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					tel := setupTestTelemetry()
 					set := tel.NewSettings()
+					mp := set.LeveledMeterProvider(configtelemetry.LevelBasic)
+					set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
+						// detailed level enables otelhttp client instrumentation which we
+						// dont want to test here
+						if level == configtelemetry.LevelDetailed {
+							return noop.MeterProvider{}
+						}
+						return mp
+					}
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
@@ -926,11 +941,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// 2. Create the WAL configuration, create the
 	// exporter and export some time series!
 	tempDir := t.TempDir()
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = prweServer.URL
 	cfg := &Config{
-		Namespace: "test_ns",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: prweServer.URL,
-		},
+		Namespace:        "test_ns",
+		ClientConfig:     clientConfig,
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
 		WAL: &WALConfig{
 			Directory:  tempDir,
@@ -1007,10 +1022,10 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		assert.NoError(t, err)
 		reqs = append(reqs, req)
 	}
-	assert.Equal(t, 1, len(reqs))
+	assert.Len(t, reqs, 1)
 	// We MUST have 2 time series as were passed into tsMap.
 	gotFromWAL := reqs[0]
-	assert.Equal(t, 2, len(gotFromWAL.Timeseries))
+	assert.Len(t, gotFromWAL.Timeseries, 2)
 	want := &prompb.WriteRequest{
 		Timeseries: orderBySampleTimestamp([]prompb.TimeSeries{
 			*ts1, *ts2,

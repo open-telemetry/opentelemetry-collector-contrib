@@ -1,0 +1,6 @@
+googlecloudmonitoring:
+  collection_interval: 2m # Can be specified in seconds (s), minutes (m), or hours (h)
+  project_id: my-project-id
+  metrics_list:
+    - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
+    - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"

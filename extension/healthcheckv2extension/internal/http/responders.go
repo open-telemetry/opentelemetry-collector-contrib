@@ -9,21 +9,21 @@ import (
 	"net/http"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
-var responseCodes = map[component.Status]int{
-	component.StatusNone:             http.StatusServiceUnavailable,
-	component.StatusStarting:         http.StatusServiceUnavailable,
-	component.StatusOK:               http.StatusOK,
-	component.StatusRecoverableError: http.StatusOK,
-	component.StatusPermanentError:   http.StatusOK,
-	component.StatusFatalError:       http.StatusInternalServerError,
-	component.StatusStopping:         http.StatusServiceUnavailable,
-	component.StatusStopped:          http.StatusServiceUnavailable,
+var responseCodes = map[componentstatus.Status]int{
+	componentstatus.StatusNone:             http.StatusServiceUnavailable,
+	componentstatus.StatusStarting:         http.StatusServiceUnavailable,
+	componentstatus.StatusOK:               http.StatusOK,
+	componentstatus.StatusRecoverableError: http.StatusOK,
+	componentstatus.StatusPermanentError:   http.StatusOK,
+	componentstatus.StatusFatalError:       http.StatusInternalServerError,
+	componentstatus.StatusStopping:         http.StatusServiceUnavailable,
+	componentstatus.StatusStopped:          http.StatusServiceUnavailable,
 }
 
 type serializationErr struct {
@@ -69,15 +69,15 @@ func componentHealthResponder(
 ) responderFunc {
 	healthyFunc := func(now *time.Time) func(status.Event) bool {
 		return func(ev status.Event) bool {
-			if ev.Status() == component.StatusPermanentError {
+			if ev.Status() == componentstatus.StatusPermanentError {
 				return !config.IncludePermanent
 			}
 
-			if ev.Status() == component.StatusRecoverableError && config.IncludeRecoverable {
+			if ev.Status() == componentstatus.StatusRecoverableError && config.IncludeRecoverable {
 				return now.Before(ev.Timestamp().Add(config.RecoveryDuration))
 			}
 
-			return ev.Status() != component.StatusFatalError
+			return ev.Status() != componentstatus.StatusFatalError
 		}
 	}
 	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
@@ -106,15 +106,15 @@ func componentHealthResponder(
 
 // legacyResponseCodes match the current response code mapping with the exception
 // of FatalError, which maps to 503 instead of 500.
-var legacyResponseCodes = map[component.Status]int{
-	component.StatusNone:             http.StatusServiceUnavailable,
-	component.StatusStarting:         http.StatusServiceUnavailable,
-	component.StatusOK:               http.StatusOK,
-	component.StatusRecoverableError: http.StatusOK,
-	component.StatusPermanentError:   http.StatusOK,
-	component.StatusFatalError:       http.StatusServiceUnavailable,
-	component.StatusStopping:         http.StatusServiceUnavailable,
-	component.StatusStopped:          http.StatusServiceUnavailable,
+var legacyResponseCodes = map[componentstatus.Status]int{
+	componentstatus.StatusNone:             http.StatusServiceUnavailable,
+	componentstatus.StatusStarting:         http.StatusServiceUnavailable,
+	componentstatus.StatusOK:               http.StatusOK,
+	componentstatus.StatusRecoverableError: http.StatusOK,
+	componentstatus.StatusPermanentError:   http.StatusOK,
+	componentstatus.StatusFatalError:       http.StatusServiceUnavailable,
+	componentstatus.StatusStopping:         http.StatusServiceUnavailable,
+	componentstatus.StatusStopped:          http.StatusServiceUnavailable,
 }
 
 func legacyDefaultResponder(startTimestamp *time.Time) responderFunc {

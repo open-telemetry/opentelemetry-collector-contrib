@@ -45,7 +45,7 @@ resourceMetrics:
             name: k8s.pod.memory_request_utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest
   - resource:
       attributes:
@@ -96,5 +96,5 @@ resourceMetrics:
             name: k8s.container.memory_request_utilization
             unit: "1"
         scope:
-          name: otelcol/kubeletstatsreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
           version: latest

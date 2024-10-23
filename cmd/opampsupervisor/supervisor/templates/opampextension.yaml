@@ -3,7 +3,7 @@ extensions:
     instance_uid: "{{.InstanceUid}}"
     server:
       ws:
-        endpoint: "ws://localhost:{{.SupervisorPort}}/v1/opamp"
+        endpoint: "ws://127.0.0.1:{{.SupervisorPort}}/v1/opamp"
         tls:
           insecure: true
     ppid: {{.PID}}

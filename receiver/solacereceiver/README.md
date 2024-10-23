@@ -76,7 +76,7 @@ service:
       receivers: [solace]
 ```
 
-High availability  setup with SASL plain authentication (TLS enabled by default)
+High availability setup with SASL plain authentication (TLS enabled by default)
 ```yaml
 receivers:
   solace/primary:

@@ -119,8 +119,10 @@ func (f Faults[T]) Store(id streams.Ident, v T) error {
 		return err
 	case errors.As(err, &olderStart):
 		inc(f.dps.dropped, reason("older-start"))
+		return streams.Drop
 	case errors.As(err, &outOfOrder):
 		inc(f.dps.dropped, reason("out-of-order"))
+		return streams.Drop
 	case errors.As(err, &limit):
 		inc(f.dps.dropped, reason("stream-limit"))
 		// no space to store stream, drop it instead of failing silently

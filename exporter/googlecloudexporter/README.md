@@ -16,6 +16,10 @@ This exporter can be used to send metrics to [Google Cloud Monitoring](https://c
 (formerly Stackdriver), traces to [Google Cloud Trace](https://cloud.google.com/trace),
 and logs to [Google Cloud Logging](https://cloud.google.com/logging).
 
+To learn more about instrumentation and observability, including opinionated recommendations
+for Google Cloud Observability, visit [Instrumentation and
+observability](https://cloud.google.com/stackdriver/docs/instrumentation/overview).
+
 ## Getting started
 
 ### Prerequisite: Authenticating
@@ -136,7 +140,7 @@ These instructions are to get you up and running quickly with the GCP exporter i
         section](#prerequisite-authenticating) above.
 
 
-4.  **Run the collector.** The following  runs the collector in the foreground, so please execute it in a separate terminal.
+4.  **Run the collector.** The following runs the collector in the foreground, so please execute it in a separate terminal.
 
     ```sh
     ./otelcol-contrib --config=config.yaml
@@ -435,7 +439,7 @@ By default, the exporter sends telemetry to the project specified by `project` i
 The `gcp.project.id` label can be combined with the `destination_project_quota` option to attribute quota usage to the project parsed by the label. This feature is currently only available
 for traces and metrics. The Collector's default service account will need `roles/serviceusage.serviceUsageConsumer` IAM permissions in the destination quota project.
 
-Note that this option will not work  if a quota project is already defined in your Collector's GCP credentials. In this case, the telemetry will fail to export with a "project not found" error.
+Note that this option will not work if a quota project is already defined in your Collector's GCP credentials. In this case, the telemetry will fail to export with a "project not found" error.
 This can be done by manually editing your [ADC file](https://cloud.google.com/docs/authentication/application-default-credentials#personal) (if it exists) to remove the `quota_project_id` entry line.
 
 ## Features and Feature-Gates

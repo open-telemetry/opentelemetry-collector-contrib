@@ -68,30 +68,30 @@ func TestGetMetricAttributes(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			pool := newStringPool()
-			resourceAttrs, scopeAttrs, dpAttrs := tagsToAttributes(c.tags, c.host, pool)
+			attrs := tagsToAttributes(c.tags, c.host, pool)
 
-			assert.Equal(t, c.expectedResourceAttrs.Len(), resourceAttrs.Len())
+			assert.Equal(t, c.expectedResourceAttrs.Len(), attrs.resource.Len())
 			c.expectedResourceAttrs.Range(func(k string, _ pcommon.Value) bool {
 				ev, _ := c.expectedResourceAttrs.Get(k)
-				av, ok := resourceAttrs.Get(k)
+				av, ok := attrs.resource.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, ev, av)
 				return true
 			})
 
-			assert.Equal(t, c.expectedScopeAttrs.Len(), scopeAttrs.Len())
+			assert.Equal(t, c.expectedScopeAttrs.Len(), attrs.scope.Len())
 			c.expectedScopeAttrs.Range(func(k string, _ pcommon.Value) bool {
 				ev, _ := c.expectedScopeAttrs.Get(k)
-				av, ok := scopeAttrs.Get(k)
+				av, ok := attrs.scope.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, ev, av)
 				return true
 			})
 
-			assert.Equal(t, c.expectedDpAttrs.Len(), dpAttrs.Len())
+			assert.Equal(t, c.expectedDpAttrs.Len(), attrs.dp.Len())
 			c.expectedDpAttrs.Range(func(k string, _ pcommon.Value) bool {
 				ev, _ := c.expectedDpAttrs.Get(k)
-				av, ok := dpAttrs.Get(k)
+				av, ok := attrs.dp.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, ev, av)
 				return true
@@ -99,7 +99,6 @@ func TestGetMetricAttributes(t *testing.T) {
 		})
 
 	}
-
 }
 
 func newMapFromKV(t *testing.T, kv map[string]any) pcommon.Map {

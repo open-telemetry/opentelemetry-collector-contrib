@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("awskinesis")
+	Type      = component.MustNewType("awskinesis")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 )
 
 const (

@@ -44,7 +44,7 @@ func (zs *zipkinDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateTraces(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

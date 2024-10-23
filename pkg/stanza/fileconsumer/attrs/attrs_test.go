@@ -86,7 +86,7 @@ func TestResolver(t *testing.T) {
 				assert.Empty(t, attributes[LogFileOwnerGroupName])
 				assert.Empty(t, attributes[LogFileOwnerGroupName])
 			}
-			assert.Equal(t, expectLen, len(attributes))
+			assert.Len(t, attributes, expectLen)
 		})
 	}
 }

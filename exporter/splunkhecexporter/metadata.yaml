@@ -1,5 +1,4 @@
 type: splunk_hec
-scope_name: otelcol/splunkhec
 
 status:
   class: exporter
@@ -17,8 +16,3 @@ tests:
     retry_on_failure:
       enabled: false
   expect_consumer_error: true
-  goleak:
-    ignore:
-      top:
-        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
-        - "go.opencensus.io/stats/view.(*worker).start"

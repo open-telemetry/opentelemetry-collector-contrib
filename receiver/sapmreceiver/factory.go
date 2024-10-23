@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
@@ -36,7 +36,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: localhostgate.EndpointForPort(defaultPort),
+			Endpoint: testutil.EndpointForPort(defaultPort),
 		},
 	}
 }
@@ -68,7 +68,7 @@ func (rCfg *Config) validate() error {
 	return nil
 }
 
-// CreateTracesReceiver creates a trace receiver based on provided config.
+// CreateTraces creates a trace receiver based on provided config.
 func createTracesReceiver(
 	_ context.Context,
 	params receiver.Settings,

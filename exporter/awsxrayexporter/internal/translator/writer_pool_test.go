@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 )
 
@@ -59,7 +59,7 @@ func BenchmarkWithPool(b *testing.B) {
 		w := wp.borrow()
 		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil, false)
 		err := w.Encode(*segment)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 		logger.Info(w.String())
 	}
 }

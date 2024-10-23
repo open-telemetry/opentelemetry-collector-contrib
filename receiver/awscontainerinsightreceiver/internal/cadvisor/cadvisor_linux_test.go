@@ -89,6 +89,7 @@ func TestGetMetrics(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 	assert.NotNil(t, c.GetMetrics())
+	assert.NoError(t, c.Shutdown())
 }
 
 func TestGetMetricsNoEnv(t *testing.T) {
@@ -109,6 +110,7 @@ func TestGetMetricsNoClusterName(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 	assert.Nil(t, c.GetMetrics())
+	assert.NoError(t, c.Shutdown())
 }
 
 func TestGetMetricsErrorWhenCreatingManager(t *testing.T) {

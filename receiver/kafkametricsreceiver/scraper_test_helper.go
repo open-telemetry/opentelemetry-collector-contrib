@@ -5,17 +5,24 @@ package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/mock"
 )
 
 const (
-	testBroker         = "test_broker"
-	testGroup          = "test_group"
-	testTopic          = "test_topic"
-	testConsumerClient = "test_consumer_client"
-	testPartition      = 1
+	testBroker            = "test_broker"
+	testClusterAlias      = "test_cluster"
+	testGroup             = "test_group"
+	testTopic             = "test_topic"
+	testConsumerClient    = "test_consumer_client"
+	testPartition         = 1
+	testReplicationFactor = 2
+	testMinInsyncReplicas = 1
+	testLogRetentionBytes = -1
+	testLogRetentionMs    = 86_400_000
+	testLogRetentionHours = 168
 )
 
 var newSaramaClient = sarama.NewClient
@@ -102,8 +109,8 @@ func newMockClient() *mockSaramaClient {
 	client := new(mockSaramaClient)
 	client.close = nil
 	r := sarama.NewBroker(testBroker)
-	testBrokers[0] = r
 
+	testBrokers[0] = r
 	client.closed = false
 	client.offset = 1
 	client.brokers = testBrokers
@@ -118,7 +125,7 @@ func newMockClient() *mockSaramaClient {
 type mockClusterAdmin struct {
 	mock.Mock
 	sarama.ClusterAdmin
-
+	brokerConfigs             []sarama.ConfigEntry
 	topics                    map[string]sarama.TopicDetail
 	consumerGroups            map[string]string
 	consumerGroupDescriptions []*sarama.GroupDescription
@@ -153,14 +160,50 @@ func (s *mockClusterAdmin) ListConsumerGroupOffsets(string, map[string][]int32) 
 	return s.consumerGroupOffsets, nil
 }
 
+func (s *mockClusterAdmin) DescribeConfig(cr sarama.ConfigResource) ([]sarama.ConfigEntry, error) {
+	topicName := cr.Name
+	if cr.Type == sarama.BrokerResource {
+		return s.brokerConfigs, nil
+	}
+	if s.topics[topicName].ConfigEntries == nil {
+		return nil, fmt.Errorf("no config entries found for topic")
+	}
+	configEntry := make([]sarama.ConfigEntry, 1)
+	for name, entry := range s.topics[topicName].ConfigEntries {
+		configEntry = append(configEntry, sarama.ConfigEntry{
+			Name:  name,
+			Value: *entry,
+		})
+	}
+	return configEntry, nil
+}
+
 func newMockClusterAdmin() *mockClusterAdmin {
 	clusterAdmin := new(mockClusterAdmin)
 	r := make(map[string]string)
 	r[testGroup] = testGroup
 	clusterAdmin.consumerGroups = r
 
+	strMinInsyncReplicas := strconv.Itoa(testMinInsyncReplicas)
+	strLogRetentionMs := strconv.Itoa(testLogRetentionMs)
+	strLogRetentionBytes := strconv.Itoa(testLogRetentionBytes)
+
+	brokerConfigEntry := sarama.ConfigEntry{
+		Name:  logRetentionHours,
+		Value: strconv.Itoa(testLogRetentionHours),
+	}
+	configEntries := make([]sarama.ConfigEntry, 1)
+	configEntries = append(configEntries, brokerConfigEntry)
+	clusterAdmin.brokerConfigs = configEntries
 	td := make(map[string]sarama.TopicDetail)
-	td[testTopic] = sarama.TopicDetail{}
+	td[testTopic] = sarama.TopicDetail{
+		ReplicationFactor: testReplicationFactor,
+		ConfigEntries: map[string]*string{
+			minInsyncRelicas: &strMinInsyncReplicas,
+			retentionMs:      &strLogRetentionMs,
+			retentionBytes:   &strLogRetentionBytes,
+		},
+	}
 	clusterAdmin.topics = td
 
 	desc := sarama.GroupMemberDescription{

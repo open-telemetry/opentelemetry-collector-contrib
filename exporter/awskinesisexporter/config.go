@@ -26,9 +26,9 @@ type Encoding struct {
 
 // Config contains the main configuration options for the awskinesis exporter
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	Encoding           `mapstructure:"encoding"`
 	AWS                AWSConfig `mapstructure:"aws"`

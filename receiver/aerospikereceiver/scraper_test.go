@@ -171,5 +171,5 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	err = receiverConnErr.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	require.Equal(t, receiverConnErr.client, nil, "client should be set to nil because of connection error")
+	require.Nil(t, receiverConnErr.client, "client should be set to nil because of connection error")
 }

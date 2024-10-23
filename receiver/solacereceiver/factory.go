@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
@@ -49,7 +50,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// CreateTracesReceiver creates a trace receiver based on provided config. Component is not shared
+// CreateTraces creates a trace receiver based on provided config. Component is not shared
 func createTracesReceiver(
 	_ context.Context,
 	params receiver.Settings,
@@ -58,7 +59,7 @@ func createTracesReceiver(
 ) (receiver.Traces, error) {
 	cfg, ok := receiverConfig.(*Config)
 	if !ok {
-		return nil, component.ErrDataTypeIsNotSupported
+		return nil, pipeline.ErrSignalNotSupported
 	}
 	// pass cfg, params and next consumer through
 	return newTracesReceiver(cfg, params, nextConsumer)

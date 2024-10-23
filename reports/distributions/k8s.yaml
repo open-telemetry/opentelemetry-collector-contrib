@@ -1,0 +1,64 @@
+name: k8s
+url: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
+maintainers: []
+components:
+    connector:
+        - count
+        - exceptions
+        - failover
+        - otlpjson
+        - roundrobin
+        - routing
+        - servicegraph
+    exporter:
+        - file
+        - loadbalancing
+        - otelarrow
+    extension:
+        - ack
+        - basicauth
+        - bearertokenauth
+        - file_storage
+        - headers_setter
+        - health_check
+        - host_observer
+        - http_forwarder
+        - k8s_observer
+        - oauth2client
+        - oidc
+        - opamp
+        - pprof
+    processor:
+        - attributes
+        - cumulativetodelta
+        - deltatocumulative
+        - deltatorate
+        - filter
+        - groupbyattrs
+        - groupbytrace
+        - k8sattributes
+        - logdedup
+        - metricstransform
+        - probabilistic_sampler
+        - redaction
+        - remotetap
+        - resource
+        - resourcedetection
+        - tail_sampling
+        - transform
+    receiver:
+        - filelog
+        - fluentforward
+        - hostmetrics
+        - httpcheck
+        - jaeger
+        - journald
+        - k8s_cluster
+        - k8s_events
+        - k8sobjects
+        - kubeletstats
+        - opencensus
+        - otelarrow
+        - prometheus
+        - receiver_creator
+        - zipkin

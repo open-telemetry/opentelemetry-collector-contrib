@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("oauth2client")
+	Type      = component.MustNewType("oauth2client")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 )
 
 const (

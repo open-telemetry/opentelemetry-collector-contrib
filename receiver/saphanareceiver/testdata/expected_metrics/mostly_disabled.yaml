@@ -50,7 +50,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{threads}'
         scope:
-          name: otelcol/saphanareceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
           version: latest
   - resource:
       attributes:
@@ -103,5 +103,5 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: '{threads}'
         scope:
-          name: otelcol/saphanareceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
           version: latest

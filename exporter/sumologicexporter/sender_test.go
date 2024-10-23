@@ -76,7 +76,7 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	cfg.ClientConfig.Auth = nil
 	httpSettings := cfg.ClientConfig
 	host := componenttest.NewNopHost()
-	client, err := httpSettings.ToClient(context.Background(), host, component.TelemetrySettings{})
+	client, err := httpSettings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	if err != nil {
 		return nil
@@ -335,7 +335,7 @@ func TestSendLogsSplitFailedOne(t *testing.T) {
 				`{"id":"1TIRY-KGIVX-TPQRJ","errors":[{"code":"internal.error","message":"Internal server error."}]}`,
 			)
 
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log", body)
@@ -987,7 +987,7 @@ func TestSendCompressGzip(t *testing.T) {
 			res.WriteHeader(200)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.FailNow(t, "err: %v", err)
+				assert.Fail(t, "err: %v", err)
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1008,7 +1008,7 @@ func TestSendCompressGzipDeprecated(t *testing.T) {
 			res.WriteHeader(200)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.FailNow(t, "err: %v", err)
+				assert.Fail(t, "err: %v", err)
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1029,7 +1029,7 @@ func TestSendCompressZstd(t *testing.T) {
 			res.WriteHeader(200)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.FailNow(t, "err: %v", err)
+				assert.Fail(t, "err: %v", err)
 				return
 			}
 			body := decodeZstd(t, req.Body)
@@ -1050,7 +1050,7 @@ func TestSendCompressDeflate(t *testing.T) {
 			res.WriteHeader(200)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.FailNow(t, "err: %v", err)
+				assert.Fail(t, "err: %v", err)
 				return
 			}
 			body := decodeZlib(t, req.Body)
@@ -1126,9 +1126,9 @@ func TestSendOTLPHistogram(t *testing.T) {
 		func(_ http.ResponseWriter, req *http.Request) {
 			unmarshaler := pmetric.ProtoUnmarshaler{}
 			body, err := io.ReadAll(req.Body)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			metrics, err := unmarshaler.UnmarshalMetrics(body)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, 3, metrics.MetricCount())
 			assert.Equal(t, 16, metrics.DataPointCount())
 		},

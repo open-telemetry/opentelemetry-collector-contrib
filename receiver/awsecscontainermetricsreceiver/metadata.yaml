@@ -1,5 +1,4 @@
 type: awsecscontainermetrics
-scope_name: otelcol/awsecscontainermetricsreceiver
 
 status:
   class: receiver

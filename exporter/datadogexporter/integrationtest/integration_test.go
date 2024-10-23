@@ -51,8 +51,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
-// seriesMap represents an unmarshalled series payload
-type seriesMap struct {
+// seriesSlice represents an unmarshalled series payload
+type seriesSlice struct {
 	Series []series
 }
 
@@ -466,10 +466,6 @@ func TestIntegrationLogs(t *testing.T) {
 	t.Setenv("SERVER_URL", server.URL)
 
 	// 2. Start in-process collector
-	assert.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true))
-	defer func() {
-		assert.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false))
-	}()
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
 	go func() {
@@ -484,13 +480,13 @@ func TestIntegrationLogs(t *testing.T) {
 
 	// 4. Validate logs and metrics from the mock server
 	// Wait until `doneChannel` is closed and prometheus metrics are received.
-	var metricMap seriesMap
+	var metricMap seriesSlice
 	for len(metricMap.Series) < 4 {
 		select {
 		case <-doneChannel:
 			assert.Len(t, logsData, 5)
 		case metricsBytes := <-seriesRec.ReqChan:
-			var smap seriesMap
+			var smap seriesSlice
 			gz := getGzipReader(t, metricsBytes)
 			dec := json.NewDecoder(gz)
 			assert.NoError(t, dec.Decode(&smap))
@@ -512,12 +508,12 @@ func TestIntegrationLogs(t *testing.T) {
 		if s.Metric == "otelcol_receiver_accepted_log_records" {
 			numAcceptedLogRecords++
 			assert.Len(t, s.Points, 1)
-			assert.Equal(t, s.Points[0].Value, 5.0)
+			assert.Equal(t, 5.0, s.Points[0].Value)
 		}
 		if s.Metric == "otelcol_exporter_sent_log_records" {
 			numSentLogRecords++
 			assert.Len(t, s.Points, 1)
-			assert.Equal(t, s.Points[0].Value, 5.0)
+			assert.Equal(t, 5.0, s.Points[0].Value)
 		}
 	}
 	assert.Equal(t, 2, numAcceptedLogRecords)

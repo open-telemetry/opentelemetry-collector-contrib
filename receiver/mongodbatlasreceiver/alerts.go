@@ -22,6 +22,7 @@ import (
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
@@ -130,11 +131,11 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 	return recv, nil
 }
 
-func (a *alertsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
+func (a *alertsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
 	if a.mode == alertModePoll {
 		return a.startPolling(ctx, storageClient)
 	}
-	return a.startListening(ctx)
+	return a.startListening(ctx, host)
 }
 
 func (a *alertsReceiver) startPolling(ctx context.Context, storageClient storage.Client) error {
@@ -209,7 +210,7 @@ func (a *alertsReceiver) pollAndProcess(ctx context.Context, pc *ProjectConfig, 
 	}
 }
 
-func (a *alertsReceiver) startListening(ctx context.Context) error {
+func (a *alertsReceiver) startListening(ctx context.Context, host component.Host) error {
 	a.telemetrySettings.Logger.Debug("starting alerts receiver in listening mode")
 	// We use a.server.Serve* over a.server.ListenAndServe*
 	// So that we can catch and return errors relating to binding to network interface on start.
@@ -236,7 +237,7 @@ func (a *alertsReceiver) startListening(ctx context.Context) error {
 
 			if err != http.ErrServerClosed {
 				a.telemetrySettings.Logger.Error("ServeTLS failed", zap.Error(err))
-				a.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}()
 	} else {
@@ -250,7 +251,7 @@ func (a *alertsReceiver) startListening(ctx context.Context) error {
 			a.telemetrySettings.Logger.Debug("Serve done")
 
 			if err != http.ErrServerClosed {
-				a.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 		}()
 	}

@@ -30,7 +30,7 @@ The following settings are optional:
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
 - `maximum_number_of_records_per_resource` (default = 10): Maximum number of records to fetch per resource.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
-- `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Either `AzureCloud` or `AzureUSGovernment`
+- `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Valid values: `AzureCloud`, `AzureUSGovernment`, `AzureChinaCloud`.
 
 Authenticating using service principal requires following additional settings:
 

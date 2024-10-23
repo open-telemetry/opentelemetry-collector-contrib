@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("alibabacloud_logservice")
+	Type      = component.MustNewType("alibabacloud_logservice")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 )
 
 const (

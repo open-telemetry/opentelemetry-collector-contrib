@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
@@ -59,6 +61,22 @@ func (s *redaction) processTraces(ctx context.Context, batch ptrace.Traces) (ptr
 	return batch, nil
 }
 
+func (s *redaction) processLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		rl := logs.ResourceLogs().At(i)
+		s.processResourceLog(ctx, rl)
+	}
+	return logs, nil
+}
+
+func (s *redaction) processMetrics(ctx context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		s.processResourceMetric(ctx, rm)
+	}
+	return metrics, nil
+}
+
 // processResourceSpan processes the RS and all of its spans and then returns the last
 // view metric context. The context can be used for tests
 func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
@@ -75,6 +93,63 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 			// Attributes can also be part of span
 			s.processAttrs(ctx, spanAttrs)
+		}
+	}
+}
+
+// processResourceLog processes the log resource and all of its logs and then returns the last
+// view metric context. The context can be used for tests
+func (s *redaction) processResourceLog(ctx context.Context, rl plog.ResourceLogs) {
+	rsAttrs := rl.Resource().Attributes()
+
+	s.processAttrs(ctx, rsAttrs)
+
+	for j := 0; j < rl.ScopeLogs().Len(); j++ {
+		ils := rl.ScopeLogs().At(j)
+		for k := 0; k < ils.LogRecords().Len(); k++ {
+			log := ils.LogRecords().At(k)
+			s.processAttrs(ctx, log.Attributes())
+		}
+	}
+}
+
+func (s *redaction) processResourceMetric(ctx context.Context, rm pmetric.ResourceMetrics) {
+	rsAttrs := rm.Resource().Attributes()
+
+	s.processAttrs(ctx, rsAttrs)
+
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		ils := rm.ScopeMetrics().At(j)
+		for k := 0; k < ils.Metrics().Len(); k++ {
+			metric := ils.Metrics().At(k)
+			switch metric.Type() {
+			case pmetric.MetricTypeGauge:
+				dps := metric.Gauge().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeSum:
+				dps := metric.Sum().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeHistogram:
+				dps := metric.Histogram().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeExponentialHistogram:
+				dps := metric.ExponentialHistogram().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeSummary:
+				dps := metric.Summary().DataPoints()
+				for i := 0; i < dps.Len(); i++ {
+					s.processAttrs(ctx, dps.At(i).Attributes())
+				}
+			case pmetric.MetricTypeEmpty:
+			}
 		}
 	}
 }

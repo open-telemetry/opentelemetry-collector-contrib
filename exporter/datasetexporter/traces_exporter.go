@@ -26,7 +26,7 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, config com
 		return nil, fmt.Errorf("cannot get DataSetExporter: %w", err)
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		config,

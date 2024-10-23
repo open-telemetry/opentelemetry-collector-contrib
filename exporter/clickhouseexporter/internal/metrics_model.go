@@ -18,15 +18,21 @@ import (
 	"go.uber.org/zap"
 )
 
-var supportedMetricTypes = map[string]struct{}{
-	createGaugeTableSQL:        {},
-	createSumTableSQL:          {},
-	createHistogramTableSQL:    {},
-	createExpHistogramTableSQL: {},
-	createSummaryTableSQL:      {},
+var supportedMetricTypes = map[pmetric.MetricType]string{
+	pmetric.MetricTypeGauge:                createGaugeTableSQL,
+	pmetric.MetricTypeSum:                  createSumTableSQL,
+	pmetric.MetricTypeHistogram:            createHistogramTableSQL,
+	pmetric.MetricTypeExponentialHistogram: createExpHistogramTableSQL,
+	pmetric.MetricTypeSummary:              createSummaryTableSQL,
 }
 
 var logger *zap.Logger
+
+type MetricTablesConfigMapper map[pmetric.MetricType]MetricTypeConfig
+
+type MetricTypeConfig struct {
+	Name string `mapstructure:"name"`
+}
 
 // MetricsModel is used to group metric data and insert into clickhouse
 // any type of metrics need implement it.
@@ -37,7 +43,7 @@ type MetricsModel interface {
 	insert(ctx context.Context, db *sql.DB) error
 }
 
-// MetricsMetaData  contain specific metric data
+// MetricsMetaData contain specific metric data
 type MetricsMetaData struct {
 	ResAttr    map[string]string
 	ResURL     string
@@ -51,9 +57,9 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableName, cluster, engine, ttlExpr string, db *sql.DB) error {
-	for table := range supportedMetricTypes {
-		query := fmt.Sprintf(table, tableName, cluster, engine, ttlExpr)
+func NewMetricsTable(ctx context.Context, tablesConfig MetricTablesConfigMapper, cluster, engine, ttlExpr string, db *sql.DB) error {
+	for key, queryTemplate := range supportedMetricTypes {
+		query := fmt.Sprintf(queryTemplate, tablesConfig[key].Name, cluster, engine, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
@@ -62,22 +68,22 @@ func NewMetricsTable(ctx context.Context, tableName, cluster, engine, ttlExpr st
 }
 
 // NewMetricsModel create a model for contain different metric data
-func NewMetricsModel(tableName string) map[pmetric.MetricType]MetricsModel {
+func NewMetricsModel(tablesConfig MetricTablesConfigMapper) map[pmetric.MetricType]MetricsModel {
 	return map[pmetric.MetricType]MetricsModel{
 		pmetric.MetricTypeGauge: &gaugeMetrics{
-			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertGaugeTableSQL, tablesConfig[pmetric.MetricTypeGauge].Name),
 		},
 		pmetric.MetricTypeSum: &sumMetrics{
-			insertSQL: fmt.Sprintf(insertSumTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertSumTableSQL, tablesConfig[pmetric.MetricTypeSum].Name),
 		},
 		pmetric.MetricTypeHistogram: &histogramMetrics{
-			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertHistogramTableSQL, tablesConfig[pmetric.MetricTypeHistogram].Name),
 		},
 		pmetric.MetricTypeExponentialHistogram: &expHistogramMetrics{
-			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertExpHistogramTableSQL, tablesConfig[pmetric.MetricTypeExponentialHistogram].Name),
 		},
 		pmetric.MetricTypeSummary: &summaryMetrics{
-			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tableName),
+			insertSQL: fmt.Sprintf(insertSummaryTableSQL, tablesConfig[pmetric.MetricTypeSummary].Name),
 		},
 	}
 }

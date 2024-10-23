@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -95,7 +95,7 @@ func TestConvertSpansToTraceSpans_protobuf(t *testing.T) {
 	// 3. Get that payload converted to OpenCensus proto spans.
 	reqs, err := zi.v2ToTraceSpans(protoBlob, hdr)
 	require.NoError(t, err, "Failed to parse convert Zipkin spans in Protobuf to Trace spans: %v", err)
-	require.Equal(t, reqs.ResourceSpans().Len(), 2, "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", reqs.ResourceSpans().Len())
+	require.Equal(t, 2, reqs.ResourceSpans().Len(), "Expecting exactly 2 requests since spans have different node/localEndpoint: %v", reqs.ResourceSpans().Len())
 
 	want := ptrace.NewTraces()
 	want.ResourceSpans().EnsureCapacity(2)

@@ -61,5 +61,5 @@ resourceMetrics:
               isMonotonic: true
             unit: requests
         scope:
-          name: otelcol/nginxreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver
           version: latest

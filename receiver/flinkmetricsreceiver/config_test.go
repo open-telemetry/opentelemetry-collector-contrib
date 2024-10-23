@@ -20,6 +20,11 @@ import (
 )
 
 func TestValidate(t *testing.T) {
+	clientConfigInvalidEndpoint := confighttp.NewDefaultClientConfig()
+	clientConfigInvalidEndpoint.Endpoint = "invalid://endpoint:  12efg"
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
 	testCases := []struct {
 		desc        string
 		cfg         *Config
@@ -28,9 +33,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "invalid://endpoint:  12efg",
-				},
+				ClientConfig:     clientConfigInvalidEndpoint,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: fmt.Errorf("\"endpoint\" must be in the form of <scheme>://<hostname>:<port>: %w", errors.New(`parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
@@ -38,9 +41,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "valid config",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-				},
+				ClientConfig:     clientConfig,
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: nil,

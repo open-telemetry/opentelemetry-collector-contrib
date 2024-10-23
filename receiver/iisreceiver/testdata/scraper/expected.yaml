@@ -152,7 +152,7 @@ resourceMetrics:
             name: iis.uptime
             unit: s
         scope:
-          name: otelcol/iisreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
           version: latest
   - resource:
       attributes:
@@ -189,7 +189,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{requests}'
         scope:
-          name: otelcol/iisreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
           version: latest
   - resource: {}
     scopeMetrics:
@@ -204,5 +204,5 @@ resourceMetrics:
                   timeUnixNano: "1664375532831495700"
             unit: '{threads}'
         scope:
-          name: otelcol/iisreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
           version: latest

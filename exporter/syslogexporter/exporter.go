@@ -62,7 +62,7 @@ func newLogsExporter(
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		cfg,
@@ -73,18 +73,18 @@ func newLogsExporter(
 	)
 }
 
-func (se *syslogexporter) pushLogsData(_ context.Context, logs plog.Logs) error {
+func (se *syslogexporter) pushLogsData(ctx context.Context, logs plog.Logs) error {
 	batchMessages := se.config.Network == string(confignet.TransportTypeTCP)
 	var err error
 	if batchMessages {
-		err = se.exportBatch(logs)
+		err = se.exportBatch(ctx, logs)
 	} else {
-		err = se.exportNonBatch(logs)
+		err = se.exportNonBatch(ctx, logs)
 	}
 	return err
 }
 
-func (se *syslogexporter) exportBatch(logs plog.Logs) error {
+func (se *syslogexporter) exportBatch(ctx context.Context, logs plog.Logs) error {
 	var payload strings.Builder
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		resourceLogs := logs.ResourceLogs().At(i)
@@ -99,12 +99,12 @@ func (se *syslogexporter) exportBatch(logs plog.Logs) error {
 	}
 
 	if payload.Len() > 0 {
-		sender, err := connect(se.logger, se.config, se.tlsConfig)
+		sender, err := connect(ctx, se.logger, se.config, se.tlsConfig)
 		if err != nil {
 			return consumererror.NewLogs(err, logs)
 		}
 		defer sender.close()
-		err = sender.Write(payload.String())
+		err = sender.Write(ctx, payload.String())
 		if err != nil {
 			return consumererror.NewLogs(err, logs)
 		}
@@ -112,8 +112,8 @@ func (se *syslogexporter) exportBatch(logs plog.Logs) error {
 	return nil
 }
 
-func (se *syslogexporter) exportNonBatch(logs plog.Logs) error {
-	sender, err := connect(se.logger, se.config, se.tlsConfig)
+func (se *syslogexporter) exportNonBatch(ctx context.Context, logs plog.Logs) error {
+	sender, err := connect(ctx, se.logger, se.config, se.tlsConfig)
 	if err != nil {
 		return consumererror.NewLogs(err, logs)
 	}
@@ -130,7 +130,7 @@ func (se *syslogexporter) exportNonBatch(logs plog.Logs) error {
 			for k := 0; k < scopeLogs.LogRecords().Len(); k++ {
 				logRecord := scopeLogs.LogRecords().At(k)
 				formatted := se.formatter.format(logRecord)
-				err = sender.Write(formatted)
+				err = sender.Write(ctx, formatted)
 				if err != nil {
 					errs = append(errs, err)
 					droppedLogRecord := droppedScopeLogs.LogRecords().AppendEmpty()

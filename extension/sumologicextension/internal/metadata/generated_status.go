@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("sumologic")
+	Type      = component.MustNewType("sumologic")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 )
 
 const (

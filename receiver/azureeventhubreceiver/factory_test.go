@@ -21,14 +21,14 @@ func Test_NewFactory(t *testing.T) {
 
 func Test_NewLogsReceiver(t *testing.T) {
 	f := NewFactory()
-	receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	receiver, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
 func Test_NewMetricsReceiver(t *testing.T) {
 	f := NewFactory()
-	receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	receiver, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }

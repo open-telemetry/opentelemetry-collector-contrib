@@ -111,7 +111,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config
 		logger:           set.Logger,
 		telemetryBuilder: telemetryBuilder,
 	}
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,

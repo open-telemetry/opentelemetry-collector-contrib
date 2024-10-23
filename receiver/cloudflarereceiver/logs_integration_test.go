@@ -49,7 +49,7 @@ func TestReceiverTLSIntegration(t *testing.T) {
 			_, testPort, err := net.SplitHostPort(testAddr)
 			require.NoError(t, err)
 
-			recv, err := fact.CreateLogsReceiver(
+			recv, err := fact.CreateLogs(
 				context.Background(),
 				receivertest.NewNopSettings(),
 				&Config{

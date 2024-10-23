@@ -1,5 +1,4 @@
 type: awscloudwatchlogs
-scope_name: otelcol/awscloudwatchlogs
 
 status:
   class: exporter
@@ -23,3 +22,5 @@ tests:
       top:
         # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
         - "go.opencensus.io/stats/view.(*worker).start"
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"

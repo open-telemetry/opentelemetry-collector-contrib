@@ -92,7 +92,7 @@ func TestMatchedContainer_MergeTargets(t *testing.T) {
 		}
 		m.MergeTargets(newTargets)
 		assert.Len(t, m.Targets, 4)
-		assert.Equal(t, m.Targets[3].MetricsPath, "/m1") // order is append
+		assert.Equal(t, "/m1", m.Targets[3].MetricsPath) // order is append
 	})
 
 	t.Run("respect existing targets", func(t *testing.T) {

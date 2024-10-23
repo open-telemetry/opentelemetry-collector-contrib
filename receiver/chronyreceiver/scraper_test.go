@@ -58,7 +58,7 @@ func TestChronyScraper(t *testing.T) {
 				rMetrics := metrics.ResourceMetrics().AppendEmpty()
 
 				metric := rMetrics.ScopeMetrics().AppendEmpty()
-				metric.Scope().SetName("otelcol/chronyreceiver")
+				metric.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver")
 				metric.Scope().SetVersion("latest")
 
 				m := metric.Metrics().AppendEmpty()

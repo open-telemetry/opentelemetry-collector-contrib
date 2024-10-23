@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("awsxray")
+	Type      = component.MustNewType("awsxray")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 )
 
 const (

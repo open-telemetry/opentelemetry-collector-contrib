@@ -50,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 					{Name: "http.method", Default: &defaultMethod},
 					{Name: "http.status_code", Default: (*string)(nil)},
 				},
+				Namespace:                DefaultNamespace,
 				DimensionsCacheSize:      1500,
 				ResourceMetricsCacheSize: 1600,
 				MetricsFlushInterval:     30 * time.Second,
@@ -70,6 +71,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
 			expected: &Config{
+				Namespace:                DefaultNamespace,
 				AggregationTemporality:   cumulative,
 				DimensionsCacheSize:      defaultDimensionsCacheSize,
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
@@ -103,6 +105,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
 				Exemplars:                ExemplarsConfig{Enabled: true},
+				Namespace:                DefaultNamespace,
 			},
 		},
 		{
@@ -114,6 +117,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
 				Exemplars:                ExemplarsConfig{Enabled: true, MaxPerDataPoint: &defaultMaxPerDatapoint},
+				Namespace:                DefaultNamespace,
 			},
 		},
 		{
@@ -125,6 +129,7 @@ func TestLoadConfig(t *testing.T) {
 				ResourceMetricsKeyAttributes: []string{"service.name", "telemetry.sdk.language", "telemetry.sdk.name"},
 				MetricsFlushInterval:         60 * time.Second,
 				Histogram:                    HistogramConfig{Disable: false, Unit: defaultUnit},
+				Namespace:                    DefaultNamespace,
 			},
 		},
 		{
@@ -136,6 +141,7 @@ func TestLoadConfig(t *testing.T) {
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Namespace:                DefaultNamespace,
 			},
 		},
 		{
@@ -146,6 +152,7 @@ func TestLoadConfig(t *testing.T) {
 				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
 				MetricsFlushInterval:     60 * time.Second,
 				Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
+				Namespace:                DefaultNamespace,
 			},
 			extraAssertions: func(config *Config) {
 				assert.Equal(t, defaultDeltaTimestampCacheSize, config.GetDeltaTimestampCacheSize())

@@ -151,21 +151,3 @@ service:
 2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(instrumentation_scope.attributes[\"test\"], [\"pass\"])", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
 2024-05-29T16:38:09.601-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(attributes[\"test\"], true)", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log", "test": true}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
 ```
-
-If configured to do so, the collector also emits traces for the execution of OTTL statement sequences.
-These traces contain spans for the execution of each statement, including the statement itself and whether it has
-been applied or not. To make use of this, enable the self monitoring of the collector by setting the
-`--feature-gates=telemetry.useOtelWithSDKConfigurationForInternalTelemetry` flag, and using the following configuration
-to export the traces to e.g. an OTLP API endpoint:
-
-```yaml
-service:
-  telemetry:
-    traces:
-      processors:
-        - batch:
-            exporter:
-              otlp:
-                protocol: http/protobuf
-                endpoint: ${env:OTLP_ENDPOINT}/v1/traces
-```

@@ -109,7 +109,7 @@ func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 
 	// Inspection time!
 	gotSpanData := tt.SpanRecorder.Ended()
-	assert.Equal(t, n+1, len(gotSpanData))
+	assert.Len(t, gotSpanData, n+1)
 
 	receiverSpanData := gotSpanData[0]
 	assert.Len(t, receiverSpanData.Links(), 1)

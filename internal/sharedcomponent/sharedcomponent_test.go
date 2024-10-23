@@ -17,7 +17,7 @@ var id = component.MustNewID("test")
 
 func TestNewSharedComponents(t *testing.T) {
 	comps := NewSharedComponents()
-	assert.Len(t, comps.comps, 0)
+	assert.Empty(t, comps.comps)
 }
 
 type mockComponent struct {
@@ -37,7 +37,7 @@ func TestSharedComponents_GetOrAdd(t *testing.T) {
 
 	// Shutdown nop will remove
 	assert.NoError(t, got.Shutdown(context.Background()))
-	assert.Len(t, comps.comps, 0)
+	assert.Empty(t, comps.comps)
 	assert.NotSame(t, got, comps.GetOrAdd(id, createNop))
 }
 

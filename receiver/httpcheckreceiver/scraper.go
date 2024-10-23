@@ -46,7 +46,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 
 // scrape connects to the endpoint and produces metrics based on the response
 func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	if h.clients == nil || len(h.clients) == 0 {
+	if len(h.clients) == 0 {
 		return pmetric.NewMetrics(), errClientNotInit
 	}
 

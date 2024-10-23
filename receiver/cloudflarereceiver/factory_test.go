@@ -19,10 +19,10 @@ func TestType(t *testing.T) {
 	require.EqualValues(t, metadata.Type, ft)
 }
 
-func TestCreateLogsReceiver(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	_, err := NewFactory().CreateLogsReceiver(
+	_, err := NewFactory().CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,

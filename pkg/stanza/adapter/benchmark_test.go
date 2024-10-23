@@ -33,7 +33,7 @@ func TestEndToEnd(t *testing.T) {
 	cfg.BenchOpConfig.NumHosts = numHosts
 	sink := new(consumertest.LogsSink)
 
-	rcvr, err := f.CreateLogsReceiver(ctx, receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -62,7 +62,7 @@ func (bc benchCase) run(b *testing.B) {
 		cfg.BenchOpConfig.NumHosts = numHosts
 		sink := new(consumertest.LogsSink)
 
-		rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 		require.NoError(b, err)
 
 		b.ReportAllocs()

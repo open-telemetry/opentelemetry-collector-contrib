@@ -144,7 +144,7 @@ resourceMetrics:
             name: haproxy.sessions.rate
             unit: '{sessions}'
         scope:
-          name: otelcol/haproxyreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
           version: latest
   - resource:
       attributes:
@@ -291,7 +291,7 @@ resourceMetrics:
             name: haproxy.sessions.rate
             unit: '{sessions}'
         scope:
-          name: otelcol/haproxyreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
           version: latest
   - resource:
       attributes:
@@ -480,7 +480,7 @@ resourceMetrics:
             name: haproxy.sessions.rate
             unit: '{sessions}'
         scope:
-          name: otelcol/haproxyreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
           version: latest
   - resource:
       attributes:
@@ -659,7 +659,7 @@ resourceMetrics:
             name: haproxy.sessions.rate
             unit: '{sessions}'
         scope:
-          name: otelcol/haproxyreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
           version: latest
   - resource:
       attributes:
@@ -838,5 +838,5 @@ resourceMetrics:
             name: haproxy.sessions.rate
             unit: '{sessions}'
         scope:
-          name: otelcol/haproxyreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver
           version: latest

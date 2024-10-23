@@ -785,7 +785,7 @@ func TestMatcher(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tc.expected, files)
+			assert.ElementsMatch(t, tc.expected, files)
 		})
 	}
 }

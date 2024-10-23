@@ -36,6 +36,7 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -163,6 +164,7 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "",
 					OrphanDetectionInterval: 5 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -188,6 +190,7 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "./path/does/not/exist",
 					OrphanDetectionInterval: 5 * time.Second,
+					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -222,6 +225,111 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedError: "agent::orphan_detection_interval must be positive",
+		},
+		{
+			name: "Invalid port number",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					HealthCheckPort:         65536,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedError: "agent::health_check_port must be a valid port number",
+		},
+		{
+			name: "Zero value port number",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					HealthCheckPort:         0,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+		},
+		{
+			name: "Normal port number",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					HealthCheckPort:         29848,
+					BootstrapTimeout:        5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+		},
+		{
+			name: "config with invalid agent bootstrap timeout",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${file_path}",
+					OrphanDetectionInterval: 5 * time.Second,
+					BootstrapTimeout:        -5 * time.Second,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedError: "agent::bootstrap_timeout must be positive",
 		},
 	}
 

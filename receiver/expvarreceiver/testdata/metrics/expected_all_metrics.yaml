@@ -241,5 +241,5 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/expvarreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver
           version: latest

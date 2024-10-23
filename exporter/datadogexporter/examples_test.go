@@ -74,7 +74,7 @@ func TestExamples(t *testing.T) {
 		require.NoError(t, err)
 		err = yaml.Unmarshal(slurp, &out)
 		require.NoError(t, err)
-		require.Equal(t, out.Kind, "ConfigMap")
+		require.Equal(t, "ConfigMap", out.Kind)
 		require.NotEmpty(t, out.Data.YAML)
 
 		data := []byte(out.Data.YAML)
@@ -82,7 +82,7 @@ func TestExamples(t *testing.T) {
 		require.NoError(t, err)
 		n, err := f.Write(data)
 		require.NoError(t, err)
-		require.Equal(t, n, len(data))
+		require.Len(t, data, n)
 		require.NoError(t, f.Close())
 		defer os.RemoveAll(f.Name())
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594

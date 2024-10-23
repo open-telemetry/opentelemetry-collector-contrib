@@ -27,17 +27,18 @@ create table simple_logs
 (
     id number primary key,
     insert_time timestamp with time zone,
-    body varchar2(4000)
+    body varchar2(4000),
+    attribute varchar2(100)
 );
 grant select on simple_logs to otel;
 
-insert into simple_logs (id, insert_time, body) values
-(1, TIMESTAMP '2022-06-03 21:59:26 +00:00', '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6197 4 "-" "-" 445af8e6c428303f -');
-insert into simple_logs (id, insert_time, body) values
-(2, TIMESTAMP '2022-06-03 21:59:26 +00:00', '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6205 5 "-" "-" 3285f43cd4baa202 -');
-insert into simple_logs (id, insert_time, body) values
-(3, TIMESTAMP '2022-06-03 21:59:29 +00:00', '- - - [03/Jun/2022:21:59:29 +0000] "GET /api/health HTTP/1.1" 200 6233 4 "-" "-" 579e8362d3185b61 -');
-insert into simple_logs (id, insert_time, body) values
-(4, TIMESTAMP '2022-06-03 21:59:31 +00:00', '- - - [03/Jun/2022:21:59:31 +0000] "GET /api/health HTTP/1.1" 200 6207 5 "-" "-" 8c6ac61ae66e509f -');
-insert into simple_logs (id, insert_time, body) values
-(5, TIMESTAMP '2022-06-03 21:59:31 +00:00', '- - - [03/Jun/2022:21:59:31 +0000] "GET /api/health HTTP/1.1" 200 6200 4 "-" "-" c163495861e873d8 -');
+insert into simple_logs (id, insert_time, body, attribute) values
+(1, TIMESTAMP '2022-06-03 21:59:26 +00:00', '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6197 4 "-" "-" 445af8e6c428303f -', 'TLSv1.2');
+insert into simple_logs (id, insert_time, body, attribute) values
+(2, TIMESTAMP '2022-06-03 21:59:26.692991 +00:00', '- - - [03/Jun/2022:21:59:26 +0000] "GET /api/health HTTP/1.1" 200 6205 5 "-" "-" 3285f43cd4baa202 -', 'TLSv1');
+insert into simple_logs (id, insert_time, body, attribute) values
+(3, TIMESTAMP '2022-06-03 21:59:29.212212 +00:00', '- - - [03/Jun/2022:21:59:29 +0000] "GET /api/health HTTP/1.1" 200 6233 4 "-" "-" 579e8362d3185b61 -', 'TLSv1.2');
+insert into simple_logs (id, insert_time, body, attribute) values
+(4, TIMESTAMP '2022-06-03 21:59:31 +00:00', '- - - [03/Jun/2022:21:59:31 +0000] "GET /api/health HTTP/1.1" 200 6207 5 "-" "-" 8c6ac61ae66e509f -', 'TLSv1');
+insert into simple_logs (id, insert_time, body, attribute) values
+(5, TIMESTAMP '2022-06-03 21:59:31.332121 +00:00', '- - - [03/Jun/2022:21:59:31 +0000] "GET /api/health HTTP/1.1" 200 6200 4 "-" "-" c163495861e873d8 -', 'TLSv1.2');

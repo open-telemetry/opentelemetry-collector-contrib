@@ -6,6 +6,7 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -17,10 +18,31 @@ const (
 	providersKey = "providers"
 )
 
+type ContextID string
+
+const (
+	resource ContextID = "resource"
+	record   ContextID = "record"
+)
+
+func (c *ContextID) UnmarshalText(text []byte) error {
+	str := ContextID(strings.ToLower(string(text)))
+	switch str {
+	case resource, record:
+		*c = str
+		return nil
+	default:
+		return fmt.Errorf("unknown context %s, available values: %s, %s", str, resource, record)
+	}
+}
+
 // Config holds the configuration for the GeoIP processor.
 type Config struct {
 	// Providers specifies the sources to extract geographical information about a given IP.
 	Providers map[string]provider.Config `mapstructure:"-"`
+
+	// Context section allows specifying the source type to look for the IP. Available options: resource or record.
+	Context ContextID `mapstructure:"context"`
 }
 
 var (
@@ -39,6 +61,7 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("error validating provider %s: %w", providerID, err)
 		}
 	}
+
 	return nil
 }
 

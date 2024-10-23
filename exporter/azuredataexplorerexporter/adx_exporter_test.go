@@ -168,7 +168,7 @@ func TestIngestedDataRecordCount(t *testing.T) {
 	recordstoingest := genRand.Intn(20)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
-	assert.Equal(t, recordstoingest, len(ingestedrecordsactual), "Number of metrics created should match number of records ingested")
+	assert.Len(t, ingestedrecordsactual, recordstoingest, "Number of metrics created should match number of records ingested")
 	assert.NoError(t, err)
 }
 

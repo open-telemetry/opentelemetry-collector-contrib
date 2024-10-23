@@ -1,5 +1,4 @@
 type: awscontainerinsightreceiver
-scope_name: otelcol/awscontainerinsightreceiver
 
 status:
   class: receiver

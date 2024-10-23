@@ -29,7 +29,7 @@ func TestRespondWithJSON(t *testing.T) {
 	require.NoError(t, respondWithJSON(http.StatusOK, content, w))
 	resp := w.Result()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, resp.Header.Get("Content-Type"), "application/json")
+	assert.Equal(t, "application/json", resp.Header.Get("Content-Type"))
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

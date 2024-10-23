@@ -226,7 +226,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 		}
 		err := m.init(logger)
 		assert.NoError(t, err)
-		assert.Equal(t, 3, len(m.metricRegexList))
+		assert.Len(t, m.metricRegexList, 3)
 	})
 
 	t.Run("with dimensions", func(t *testing.T) {
@@ -239,8 +239,8 @@ func TestMetricDeclarationInit(t *testing.T) {
 		}
 		err := m.init(logger)
 		assert.NoError(t, err)
-		assert.Equal(t, 3, len(m.metricRegexList))
-		assert.Equal(t, 2, len(m.Dimensions))
+		assert.Len(t, m.metricRegexList, 3)
+		assert.Len(t, m.Dimensions, 2)
 	})
 
 	// Test removal of dimension sets with more than 10 elements
@@ -256,8 +256,8 @@ func TestMetricDeclarationInit(t *testing.T) {
 		obsLogger := zap.New(obs)
 		err := m.init(obsLogger)
 		assert.NoError(t, err)
-		assert.Equal(t, 3, len(m.metricRegexList))
-		assert.Equal(t, 1, len(m.Dimensions))
+		assert.Len(t, m.metricRegexList, 3)
+		assert.Len(t, m.Dimensions, 1)
 		// Check logged warning message
 		expectedLogs := []observer.LoggedEntry{{
 			Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped dimension set: > 10 dimensions specified."},
@@ -281,7 +281,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 		obsLogger := zap.New(obs)
 		err := m.init(obsLogger)
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(m.Dimensions))
+		assert.Len(t, m.Dimensions, 1)
 		assert.Equal(t, []string{"a", "b", "c"}, m.Dimensions[0])
 		// Check logged warning message
 		expectedLogs := []observer.LoggedEntry{
@@ -324,7 +324,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 		}
 		err := m.init(logger)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(m.LabelMatchers))
+		assert.Len(t, m.LabelMatchers, 2)
 		assert.Equal(t, ";", m.LabelMatchers[0].Separator)
 		assert.Equal(t, ".+", m.LabelMatchers[0].Regex)
 		assert.NotNil(t, m.LabelMatchers[0].compiledRegex)

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
@@ -898,7 +899,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				require.NoError(t, recombine.Process(ctx, next))
+				assert.NoError(t, recombine.Process(ctx, next))
 
 			}
 		}
@@ -950,9 +951,9 @@ func TestSourceBatchDelete(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, recombine.Process(ctx, start))
-	require.Equal(t, 1, len(recombine.batchMap))
+	require.Len(t, recombine.batchMap, 1)
 	require.NoError(t, recombine.Process(ctx, next))
-	require.Equal(t, 0, len(recombine.batchMap))
+	require.Empty(t, recombine.batchMap)
 	fake.ExpectEntry(t, expect)
 	require.NoError(t, recombine.Stop())
 }

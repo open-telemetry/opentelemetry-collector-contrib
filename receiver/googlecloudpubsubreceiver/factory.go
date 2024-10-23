@@ -27,9 +27,9 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		f.CreateDefaultConfig,
-		receiver.WithTraces(f.CreateTracesReceiver, metadata.TracesStability),
-		receiver.WithMetrics(f.CreateMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(f.CreateLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(f.CreateTraces, metadata.TracesStability),
+		receiver.WithMetrics(f.CreateMetrics, metadata.MetricsStability),
+		receiver.WithLogs(f.CreateLogs, metadata.LogsStability),
 	)
 }
 
@@ -65,7 +65,7 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.Settings, c
 	return receiver, nil
 }
 
-func (factory *pubsubReceiverFactory) CreateTracesReceiver(
+func (factory *pubsubReceiverFactory) CreateTraces(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
@@ -83,7 +83,7 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	return receiver, nil
 }
 
-func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
+func (factory *pubsubReceiverFactory) CreateMetrics(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
@@ -101,7 +101,7 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	return receiver, nil
 }
 
-func (factory *pubsubReceiverFactory) CreateLogsReceiver(
+func (factory *pubsubReceiverFactory) CreateLogs(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,

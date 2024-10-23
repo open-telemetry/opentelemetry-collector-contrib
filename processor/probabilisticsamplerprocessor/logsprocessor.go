@@ -199,7 +199,7 @@ func newLogsProcessor(ctx context.Context, set processor.Settings, nextConsumer 
 		telemetryBuilder: telemetryBuilder,
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

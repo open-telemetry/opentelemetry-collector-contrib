@@ -67,7 +67,7 @@ func TestIntegration(t *testing.T) {
 
 			consumer := new(consumertest.MetricsSink)
 			settings := receivertest.NewNopSettings()
-			rcvr, err := factory.CreateMetricsReceiver(context.Background(), settings, snmpConfig, consumer)
+			rcvr, err := factory.CreateMetrics(context.Background(), settings, snmpConfig, consumer)
 			require.NoError(t, err, "failed creating metrics receiver")
 			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 			require.Eventuallyf(t, func() bool {

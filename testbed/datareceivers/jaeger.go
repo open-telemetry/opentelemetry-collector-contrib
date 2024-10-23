@@ -38,7 +38,7 @@ func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	}
 	var err error
 	set := receivertest.NewNopSettings()
-	jr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+	jr.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
 	}

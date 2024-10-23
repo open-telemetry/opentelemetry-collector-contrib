@@ -1,5 +1,4 @@
 type: kafka
-scope_name: otelcol/kafkareceiver
 
 status:
   class: receiver

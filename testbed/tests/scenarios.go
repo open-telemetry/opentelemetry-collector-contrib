@@ -501,6 +501,52 @@ func ScenarioSendingQueuesNotFull(
 	tc.ValidateData()
 }
 
+func ScenarioLong(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resultsSummary testbed.TestResultsSummary,
+	sleepTime int,
+	processors map[string]string,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.CorrectnessLogTestValidator{},
+		resultsSummary,
+	)
+	t.Cleanup(tc.Stop)
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(loadOptions)
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
+	tc.Sleep(time.Second * time.Duration(sleepTime))
+
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, 60*time.Second, "all logs received")
+
+	tc.ValidateData()
+}
+
 func constructLoadOptions(test TestCase) testbed.LoadOptions {
 	options := testbed.LoadOptions{DataItemsPerSecond: 1000, ItemsPerBatch: 10}
 	options.Attributes = make(map[string]string)

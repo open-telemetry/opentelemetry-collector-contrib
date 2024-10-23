@@ -1,5 +1,4 @@
 type: active_directory_ds
-scope_name: otelcol/activedirectorydsreceiver
 
 status:
   class: receiver

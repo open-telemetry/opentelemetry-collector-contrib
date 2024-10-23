@@ -20,6 +20,12 @@ processors:
     send_batch_max_size: 1000
     send_batch_size: 100
     timeout: 10s
+  transform:
+    log_statements:
+      - context: log
+        statements:
+          # Set the ddtags attribute in order to add custom Datadog tags on your logs.
+          - set(attributes["ddtags"], "first_custom:tag, second_custom:tag")
 
 exporters:
   datadog:
@@ -32,5 +38,5 @@ service:
   pipelines:
     logs:
       receivers: [filelog]
-      processors: [batch]
+      processors: [transform, batch]
       exporters: [datadog]

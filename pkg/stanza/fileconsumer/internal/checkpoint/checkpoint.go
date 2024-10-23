@@ -18,6 +18,10 @@ const knownFilesKey = "knownFiles"
 
 // Save syncs the most recent set of files to the database
 func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata) error {
+	return SaveKey(ctx, persister, rmds, knownFilesKey)
+}
+
+func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string) error {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
@@ -34,7 +38,7 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 		}
 	}
 
-	if err := persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
+	if err := persister.Set(ctx, key, buf.Bytes()); err != nil {
 		errs = append(errs, fmt.Errorf("persist known files: %w", err))
 	}
 

@@ -41,11 +41,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	r1 := cfg.(*Config)
-	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
-	assert.Equal(t, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval), 5*time.Second)
-	assert.Equal(t, r1.UseStartTimeMetric, true)
-	assert.Equal(t, r1.TrimMetricSuffixes, true)
-	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
+	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
+	assert.Equal(t, 5*time.Second, time.Duration(r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval))
+	assert.True(t, r1.UseStartTimeMetric)
+	assert.True(t, r1.TrimMetricSuffixes)
+	assert.Equal(t, "^(.+_)*process_start_time_seconds$", r1.StartTimeMetricRegex)
 	assert.True(t, r1.ReportExtraScrapeMetrics)
 
 	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
@@ -90,7 +90,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, r0.TargetAllocator.Interval)
 	assert.Equal(t, "collector-1", r0.TargetAllocator.CollectorID)
 
-	assert.Equal(t, 1, len(r1.PrometheusConfig.ScrapeConfigs))
+	assert.Len(t, r1.PrometheusConfig.ScrapeConfigs, 1)
 	assert.Equal(t, "demo", r1.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r1.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
 
@@ -101,9 +101,22 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	r2 := cfg.(*Config)
-	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
+	assert.Len(t, r2.PrometheusConfig.ScrapeConfigs, 1)
 	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+}
+
+func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_scrape_config_files.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	require.NoError(t, component.ValidateConfig(cfg))
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
@@ -340,35 +353,4 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateAuthorization(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.Authorization = &promConfig.Authorization{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.Authorization.CredentialsFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.Authorization.CredentialsFile = filepath.Join("testdata", "dummy-tls-cert-file")
-	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateTLSConfig(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.CertFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.CertFile = filepath.Join("testdata", "dummy-tls-cert-file")
-	cfg.TLSConfig.KeyFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.KeyFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateMain(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.BearerToken = "foo"
-	cfg.BearerTokenFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.Error(t, component.ValidateConfig(cfg))
 }

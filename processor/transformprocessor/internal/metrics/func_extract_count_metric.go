@@ -13,12 +13,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
+const sumCountName = "extract_count_metric"
+
 type extractCountMetricArguments struct {
 	Monotonic bool
 }
 
 func newExtractCountMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("extract_count_metric", &extractCountMetricArguments{}, createExtractCountMetricFunction)
+	return ottl.NewFactory(sumCountName, &extractCountMetricArguments{}, createExtractCountMetricFunction)
 }
 
 func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
@@ -34,11 +36,10 @@ func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
-		invalidMetricTypeError := fmt.Errorf("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", metric.Type())
 
 		aggTemp := getAggregationTemporality(metric)
 		if aggTemp == pmetric.AggregationTemporalityUnspecified {
-			return nil, invalidMetricTypeError
+			return nil, invalidMetricTypeError(sumCountName, metric)
 		}
 
 		countMetric := pmetric.NewMetric()
@@ -66,7 +67,7 @@ func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformConte
 				addCountDataPoint(dataPoints.At(i), countMetric.Sum().DataPoints())
 			}
 		default:
-			return nil, invalidMetricTypeError
+			return nil, invalidMetricTypeError(sumCountName, metric)
 		}
 
 		if countMetric.Sum().DataPoints().Len() > 0 {

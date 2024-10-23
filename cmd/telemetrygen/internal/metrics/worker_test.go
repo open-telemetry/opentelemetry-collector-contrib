@@ -93,9 +93,9 @@ func TestRateOfMetrics(t *testing.T) {
 
 	// assert
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(m.rms) >= 6, "there should have been more than 6 metrics, had %d", len(m.rms))
+	assert.GreaterOrEqual(t, len(m.rms), 6, "there should have been more than 6 metrics, had %d", len(m.rms))
 	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(m.rms) <= 20, "there should have been less than 20 metrics, had %d", len(m.rms))
+	assert.LessOrEqual(t, len(m.rms), 20, "there should have been less than 20 metrics, had %d", len(m.rms))
 }
 
 func TestUnthrottled(t *testing.T) {
@@ -117,7 +117,7 @@ func TestUnthrottled(t *testing.T) {
 	require.NoError(t, Run(cfg, expFunc, logger))
 
 	// assert
-	assert.True(t, len(m.rms) > 100, "there should have been more than 100 metrics, had %d", len(m.rms))
+	assert.Greater(t, len(m.rms), 100, "there should have been more than 100 metrics, had %d", len(m.rms))
 }
 
 func TestSumNoTelemetryAttrs(t *testing.T) {
@@ -202,7 +202,7 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
 		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
-		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 	}
 }
 
@@ -232,7 +232,7 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
 		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
-		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 	}
 }
 
@@ -297,6 +297,61 @@ func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
 		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
 		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be "+telemetryAttrValueTwo)
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		wantErrMessage string
+	}{
+		{
+			name: "No duration or NumMetrics",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				MetricType: metricTypeSum,
+				TraceID:    "123",
+			},
+			wantErrMessage: "either `metrics` or `duration` must be greater than 0",
+		},
+		{
+			name: "TraceID invalid",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumMetrics: 5,
+				MetricType: metricTypeSum,
+				TraceID:    "123",
+			},
+			wantErrMessage: "TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'",
+		},
+		{
+			name: "SpanID invalid",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumMetrics: 5,
+				MetricType: metricTypeSum,
+				TraceID:    "ae87dadd90e9935a4bc9660628efd569",
+				SpanID:     "123",
+			},
+			wantErrMessage: "SpanID must be a 16 character hex string, like: '5828fa4960140870'",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockExporter{}
+			expFunc := func() (sdkmetric.Exporter, error) {
+				return m, nil
+			}
+			logger, _ := zap.NewDevelopment()
+			require.EqualError(t, Run(tt.cfg, expFunc, logger), tt.wantErrMessage)
+		})
 	}
 }
 

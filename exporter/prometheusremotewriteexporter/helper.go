@@ -5,19 +5,39 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"errors"
+	"math"
 	"sort"
 
 	"github.com/prometheus/prometheus/prompb"
 )
 
+type batchTimeSeriesState struct {
+	// Track batch sizes sent to avoid over allocating huge buffers.
+	// This helps in the case where large batches are sent to avoid allocating too much unused memory
+	nextTimeSeriesBufferSize     int
+	nextMetricMetadataBufferSize int
+	nextRequestBufferSize        int
+}
+
+func newBatchTimeSericesState() batchTimeSeriesState {
+	return batchTimeSeriesState{
+		nextTimeSeriesBufferSize:     math.MaxInt,
+		nextMetricMetadataBufferSize: math.MaxInt,
+		nextRequestBufferSize:        0,
+	}
+}
+
 // batchTimeSeries splits series into multiple batch write requests.
-func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, m []*prompb.MetricMetadata) ([]*prompb.WriteRequest, error) {
+func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, m []*prompb.MetricMetadata, state *batchTimeSeriesState) ([]*prompb.WriteRequest, error) {
 	if len(tsMap) == 0 {
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 
-	requests := make([]*prompb.WriteRequest, 0, len(tsMap)+len(m))
-	tsArray := make([]prompb.TimeSeries, 0, len(tsMap))
+	// Allocate a buffer size of at least 10, or twice the last # of requests we sent
+	requests := make([]*prompb.WriteRequest, 0, max(10, state.nextRequestBufferSize))
+
+	// Allocate a time series buffer 2x the last time series batch size or the length of the input if smaller
+	tsArray := make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)))
 	sizeOfCurrentBatch := 0
 
 	i := 0
@@ -25,10 +45,11 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 		sizeOfSeries := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
+			state.nextTimeSeriesBufferSize = max(10, 2*len(tsArray))
 			wrapped := convertTimeseriesToRequest(tsArray)
 			requests = append(requests, wrapped)
 
-			tsArray = make([]prompb.TimeSeries, 0, len(tsMap)-i)
+			tsArray = make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)-i))
 			sizeOfCurrentBatch = 0
 		}
 
@@ -42,17 +63,19 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 		requests = append(requests, wrapped)
 	}
 
-	mArray := make([]prompb.MetricMetadata, 0, len(m))
+	// Allocate a metric metadata buffer 2x the last metric metadata batch size or the length of the input if smaller
+	mArray := make([]prompb.MetricMetadata, 0, min(state.nextMetricMetadataBufferSize, len(m)))
 	sizeOfCurrentBatch = 0
 	i = 0
 	for _, v := range m {
 		sizeOfM := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfM >= maxBatchByteSize {
+			state.nextMetricMetadataBufferSize = max(10, 2*len(mArray))
 			wrapped := convertMetadataToRequest(mArray)
 			requests = append(requests, wrapped)
 
-			mArray = make([]prompb.MetricMetadata, 0, len(m)-i)
+			mArray = make([]prompb.MetricMetadata, 0, min(state.nextMetricMetadataBufferSize, len(m)-i))
 			sizeOfCurrentBatch = 0
 		}
 
@@ -66,6 +89,7 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 		requests = append(requests, wrapped)
 	}
 
+	state.nextRequestBufferSize = 2 * len(requests)
 	return requests, nil
 }
 

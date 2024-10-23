@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("routing")
+	Type      = component.MustNewType("routing")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 )
 
 const (

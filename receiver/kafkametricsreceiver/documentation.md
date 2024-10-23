@@ -169,3 +169,89 @@ Number of partitions in topic.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### kafka.broker.log_retention_period
+
+log retention time (s) of a broker.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID of the kafka broker | Any Str |
+
+### kafka.topic.log_retention_period
+
+log retention period of a topic (s).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.topic.log_retention_size
+
+log retention size of a topic in Bytes, The value (-1) indicates infinite size.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.topic.min_insync_replicas
+
+minimum insync replicas of a topic.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {replicas} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+### kafka.topic.replication_factor
+
+replication factor of a topic.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| topic | The ID (integer) of a topic | Any Str |
+
+## Resource Attributes
+
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| kafka.cluster.alias | The alias name (string) of the cluster | Any Str | false |

@@ -48,7 +48,7 @@ resourceMetrics:
                 - asInt: "18352"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The number of datastores in the datacenter.
             name: vcenter.datacenter.datastore.count
             sum:
@@ -120,7 +120,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{virtual_machines}'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -140,7 +140,7 @@ resourceMetrics:
                 - asInt: "6882"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The amount of CPU available to the cluster.
             name: vcenter.cluster.cpu.limit
             sum:
@@ -149,7 +149,7 @@ resourceMetrics:
                 - asInt: "6882"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: '{MHz}'
+            unit: MHz
           - description: The number of hosts in the cluster.
             name: vcenter.cluster.host.count
             sum:
@@ -225,7 +225,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{virtual_machine_templates}'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -266,7 +266,7 @@ resourceMetrics:
             name: vcenter.datastore.disk.utilization
             unit: '%'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -322,7 +322,7 @@ resourceMetrics:
             name: vcenter.host.memory.utilization
             unit: '%'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -381,7 +381,7 @@ resourceMetrics:
             name: vcenter.host.memory.utilization
             unit: '%'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -440,7 +440,7 @@ resourceMetrics:
             name: vcenter.host.memory.utilization
             unit: '%'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -499,7 +499,7 @@ resourceMetrics:
             name: vcenter.host.memory.utilization
             unit: '%'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -536,7 +536,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{shares}'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -573,7 +573,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{shares}'
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -662,7 +662,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -751,7 +751,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -843,7 +843,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest
   - resource:
       attributes:
@@ -935,5 +935,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: MiBy
         scope:
-          name: otelcol/vcenterreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
           version: latest

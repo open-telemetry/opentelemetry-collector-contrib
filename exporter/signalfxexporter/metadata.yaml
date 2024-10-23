@@ -1,5 +1,4 @@
 type: signalfx
-scope_name: otelcol/signalfx
 
 status:
   class: exporter
@@ -18,5 +17,3 @@ tests:
     retry_on_failure:
       enabled: false
   expect_consumer_error: true
-  goleak:
-    skip: true

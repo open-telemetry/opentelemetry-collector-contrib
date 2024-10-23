@@ -27,7 +27,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				logger:     zap.NewExample(),
 			}
 
-			mtp, err := processorhelper.NewMetricsProcessor(
+			mtp, err := processorhelper.NewMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				&Config{},
@@ -37,7 +37,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			caps := mtp.Capabilities()
-			assert.Equal(t, true, caps.MutatesData)
+			assert.True(t, caps.MutatesData)
 
 			// process
 			inMetrics := pmetric.NewMetrics()
@@ -50,7 +50,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			// get and check results
 			got := next.AllMetrics()
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 			gotMetricsSlice := pmetric.NewMetricSlice()
 			if got[0].ResourceMetrics().Len() > 0 {
 				gotMetricsSlice = got[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()

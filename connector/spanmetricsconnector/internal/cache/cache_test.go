@@ -127,7 +127,7 @@ func TestCache_Get(t *testing.T) {
 			t.Parallel()
 			c := tt.lruCache()
 			gotValue, gotOk := c.Get(tt.key)
-			if !assert.Equal(t, gotValue, tt.wantValue) {
+			if !assert.Equal(t, tt.wantValue, gotValue) {
 				t.Errorf("Get() gotValue = %v, want %v", gotValue, tt.wantValue)
 			}
 			if gotOk != tt.wantOk {

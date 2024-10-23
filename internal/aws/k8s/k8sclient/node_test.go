@@ -302,8 +302,8 @@ func TestNodeClient(t *testing.T) {
 	clusterFailedNodeCount := client.ClusterFailedNodeCount()
 	log.Printf("clusterNodeCount: %v, clusterFailedNodeCount: %v", clusterNodeCount, clusterFailedNodeCount)
 
-	assert.Equal(t, clusterNodeCount, expectedClusterNodeCount)
-	assert.Equal(t, clusterFailedNodeCount, expectedClusterFailedNodeCount)
+	assert.Equal(t, expectedClusterNodeCount, clusterNodeCount)
+	assert.Equal(t, expectedClusterFailedNodeCount, clusterFailedNodeCount)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

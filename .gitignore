@@ -9,6 +9,9 @@ vendor/
 .vscode
 *.code-workspace
 
+# Project IDX
+.idx/
+
 # Binaries for programs and plugins
 *.exe
 *.exe~

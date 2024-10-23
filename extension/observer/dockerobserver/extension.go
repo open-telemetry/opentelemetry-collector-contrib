@@ -26,9 +26,11 @@ var (
 	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
 )
 
-var _ extension.Extension = (*dockerObserver)(nil)
-var _ observer.EndpointsLister = (*dockerObserver)(nil)
-var _ observer.Observable = (*dockerObserver)(nil)
+var (
+	_ extension.Extension      = (*dockerObserver)(nil)
+	_ observer.EndpointsLister = (*dockerObserver)(nil)
+	_ observer.Observable      = (*dockerObserver)(nil)
+)
 
 type dockerObserver struct {
 	*observer.EndpointsWatcher
@@ -60,11 +62,9 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 	d.ctx = dCtx
 
 	// Create new Docker client
-	dConfig, err := docker.NewConfig(d.config.Endpoint, d.config.Timeout, d.config.ExcludedImages, d.config.DockerAPIVersion)
-	if err != nil {
-		return err
-	}
+	dConfig := docker.NewConfig(d.config.Endpoint, d.config.Timeout, d.config.ExcludedImages, d.config.DockerAPIVersion)
 
+	var err error
 	d.dClient, err = docker.NewDockerClient(dConfig, d.logger)
 	if err != nil {
 		return fmt.Errorf("could not create docker client: %w", err)
@@ -104,6 +104,7 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 }
 
 func (d *dockerObserver) Shutdown(_ context.Context) error {
+	d.StopListAndWatch()
 	d.cancel()
 	return nil
 }
@@ -119,7 +120,6 @@ func (d *dockerObserver) ListEndpoints() []observer.Endpoint {
 // containerEndpoints generates a list of observer.Endpoint given a Docker ContainerJSON.
 // This function will only generate endpoints if a container is in the Running state and not Paused.
 func (d *dockerObserver) containerEndpoints(c *dtypes.ContainerJSON) []observer.Endpoint {
-
 	if !c.State.Running || c.State.Running && c.State.Paused {
 		return nil
 	}

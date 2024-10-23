@@ -69,7 +69,7 @@ func TestSwKvPairsToInternalAttributes(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			swKvPairsToInternalAttributes(test.swSpan.GetSpans()[0].Tags, test.dest.Attributes())
-			assert.Equal(t, test.dest.Attributes().Len(), len(test.swSpan.GetSpans()[0].Tags))
+			assert.Len(t, test.swSpan.GetSpans()[0].Tags, test.dest.Attributes().Len())
 			for _, tag := range test.swSpan.GetSpans()[0].Tags {
 				value, _ := test.dest.Attributes().Get(tag.Key)
 				assert.Equal(t, tag.Value, value.AsString())

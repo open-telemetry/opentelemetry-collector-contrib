@@ -54,6 +54,8 @@ Additionally, each `query` section supports the following properties:
   See the below section [Tracking processed results](#tracking-processed-results).
 - `tracking_start_value` (optional, default `""`) Applies only to logs. In case of a parameterized query, defines the initial value for the parameter.
   See the below section [Tracking processed results](#tracking-processed-results).
+- `attribute_columns`(optional): a list of column names in the returned dataset used to set attributes on the signal.
+  These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 
 Example:
 
@@ -104,8 +106,6 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 - `metric_name`(required): the name assigned to the OTel metric.
 - `value_column`(required): the column name in the returned dataset used to set the value of the metric's datapoint.
   This may be case-sensitive, depending on the driver (e.g. Oracle DB).
-- `attribute_columns`(optional): a list of column names in the returned dataset used to set attibutes on the datapoint.
-  These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 - `data_type` (optional): can be `gauge` or `sum`; defaults to `gauge`.
 - `value_type` (optional): can be `int` or `double`; defaults to `int`.
 - `monotonic` (optional): boolean; whether a cumulative sum's value is monotonically increasing (i.e. never rolls over
@@ -135,6 +135,7 @@ receivers:
         tracking_column: log_id
         logs:
           - body_column: log_body
+            attribute_columns: [ "log_attribute_1", "log_attribute_2" ]
       - sql: "select count(*) as count, genre from movie group by genre"
         metrics:
           - metric_name: movie.genres

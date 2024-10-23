@@ -35,6 +35,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "maxmind"),
 			expected: &Config{
+				Context: resource,
+				Providers: map[string]provider.Config{
+					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "maxmind_record_context"),
+			expected: &Config{
+				Context: record,
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},
@@ -43,6 +53,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:                    component.NewIDWithName(metadata.Type, "invalid_providers_config"),
 			unmarshalErrorMessage: "unexpected sub-config value kind for key:providers value:this should be a map kind:string",
+		},
+		{
+			id:                    component.NewIDWithName(metadata.Type, "invalid_source"),
+			unmarshalErrorMessage: "unknown context not.an.otlp.context, available values: resource, record",
 		},
 	}
 
@@ -58,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.unmarshalErrorMessage != "" {
-				assert.EqualError(t, sub.Unmarshal(cfg), tt.unmarshalErrorMessage)
+				assert.ErrorContains(t, sub.Unmarshal(cfg), tt.unmarshalErrorMessage)
 				return
 			}
 			require.NoError(t, sub.Unmarshal(cfg))
@@ -82,7 +96,7 @@ func TestLoadConfig_InvalidProviderKey(t *testing.T) {
 	factories.Processors[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidProviderKey.yaml"), factories)
 
-	require.Contains(t, err.Error(), "error reading configuration for \"geoip\": invalid provider key: invalidProviderKey")
+	require.ErrorContains(t, err, "error reading configuration for \"geoip\": invalid provider key: invalidProviderKey")
 }
 
 func TestLoadConfig_ValidProviderKey(t *testing.T) {
@@ -138,5 +152,5 @@ func TestLoadConfig_ProviderValidateError(t *testing.T) {
 	factories.Processors[metadata.Type] = factory
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
-	require.Contains(t, err.Error(), "error validating provider mock")
+	require.ErrorContains(t, err, "error validating provider mock")
 }

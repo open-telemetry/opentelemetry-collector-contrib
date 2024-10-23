@@ -19,7 +19,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createMetricsExporter(
 		context.Background(),
@@ -29,7 +29,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NotNil(t, exp)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createTracesExporter(
 		context.Background(),
@@ -39,7 +39,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NotNil(t, exp)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createLogsExporter(
 		context.Background(),

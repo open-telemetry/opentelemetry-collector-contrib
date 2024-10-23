@@ -61,6 +61,40 @@ func TestReqToLog(t *testing.T) {
 			},
 		},
 		{
+			desc: "new lines present in body",
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte("{\n\"key\":\"value\"\n}")))
+				return bufio.NewScanner(reader)
+			}(),
+			query: func() url.Values {
+				v, err := url.ParseQuery(`qparam1=hello&qparam2=world`)
+				if err != nil {
+					log.Fatal("failed to parse query")
+				}
+				return v
+			}(),
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+				require.Equal(t, 1, reqLen)
+
+				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
+				require.Equal(t, 2, attributes.Len())
+
+				scopeLogsScope := reqLog.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
+				require.Equal(t, 2, scopeLogsScope.Attributes().Len())
+
+				if v, ok := attributes.Get("qparam1"); ok {
+					require.Equal(t, "hello", v.AsString())
+				} else {
+					require.Fail(t, "faild to set attribute from query parameter 1")
+				}
+				if v, ok := attributes.Get("qparam2"); ok {
+					require.Equal(t, "world", v.AsString())
+				} else {
+					require.Fail(t, "faild to set attribute query parameter 2")
+				}
+			},
+		},
+		{
 			desc: "Query is empty",
 			sc: func() *bufio.Scanner {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))

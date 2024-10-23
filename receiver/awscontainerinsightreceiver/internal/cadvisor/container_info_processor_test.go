@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
@@ -49,8 +50,7 @@ func TestIsContainerInContainer(t *testing.T) {
 
 func TestProcessContainers(t *testing.T) {
 	// set the metrics extractors for testing
-	originalMetricsExtractors := metricsExtractors
-	metricsExtractors = []extractors.MetricExtractor{}
+	metricsExtractors := []extractors.MetricExtractor{}
 	metricsExtractors = append(metricsExtractors, extractors.NewCPUMetricExtractor(zap.NewNop()))
 	metricsExtractors = append(metricsExtractors, extractors.NewMemMetricExtractor(zap.NewNop()))
 	metricsExtractors = append(metricsExtractors, extractors.NewDiskIOMetricExtractor(zap.NewNop()))
@@ -63,9 +63,10 @@ func TestProcessContainers(t *testing.T) {
 	containerInContainerInfos := testutils.LoadContainerInfo(t, "./extractors/testdata/ContainerInContainer.json")
 	containerInfos = append(containerInfos, containerInContainerInfos...)
 	mInfo := testutils.MockCPUMemInfo{}
-	metrics := processContainers(containerInfos, mInfo, "eks", zap.NewNop())
-	assert.Equal(t, 3, len(metrics))
+	metrics := processContainers(containerInfos, mInfo, "eks", zap.NewNop(), metricsExtractors)
+	assert.Len(t, metrics, 3)
 
-	// restore the original value of metrics extractors
-	metricsExtractors = originalMetricsExtractors
+	for _, e := range metricsExtractors {
+		require.NoError(t, e.Shutdown())
+	}
 }

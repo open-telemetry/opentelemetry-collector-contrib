@@ -21,7 +21,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	prev := newMetricsReceiver
 	newMetricsReceiver = func(context.Context, Config, receiver.Settings, consumer.Metrics) (receiver.Metrics, error) {
 		return nil, nil

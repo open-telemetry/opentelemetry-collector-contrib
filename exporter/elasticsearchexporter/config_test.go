@@ -6,6 +6,7 @@ package elasticsearchexporter
 import (
 	"net/http"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -37,6 +39,7 @@ func TestConfig(t *testing.T) {
 
 	defaultMaxIdleConns := 100
 	defaultIdleConnTimeout := 90 * time.Second
+	defaultCompression := configcompression.TypeGzip
 
 	tests := []struct {
 		configFile string
@@ -52,10 +55,10 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      false,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
 				Index:     "",
@@ -72,14 +75,15 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+					cfg.Compression = defaultCompression
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -93,7 +97,7 @@ func TestConfig(t *testing.T) {
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
-					MaxRequests:     5,
+					MaxRetries:      5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
@@ -107,16 +111,25 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
+				},
 			},
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
@@ -133,14 +146,15 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+					cfg.Compression = defaultCompression
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -154,7 +168,7 @@ func TestConfig(t *testing.T) {
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
-					MaxRequests:     5,
+					MaxRetries:      5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
@@ -168,16 +182,25 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
+				},
 			},
 		},
 		{
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
@@ -194,14 +217,15 @@ func TestConfig(t *testing.T) {
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:         2 * time.Minute,
-					MaxIdleConns:    &defaultMaxIdleConns,
-					IdleConnTimeout: &defaultIdleConnTimeout,
-					Headers: map[string]configopaque.String{
+				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
+					cfg.Timeout = 2 * time.Minute
+					cfg.MaxIdleConns = &defaultMaxIdleConns
+					cfg.IdleConnTimeout = &defaultIdleConnTimeout
+					cfg.Headers = map[string]configopaque.String{
 						"myheader": "test",
-					},
-				},
+					}
+					cfg.Compression = defaultCompression
+				}),
 				Authentication: AuthenticationSettings{
 					User:     "elastic",
 					Password: "search",
@@ -215,7 +239,7 @@ func TestConfig(t *testing.T) {
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
-					MaxRequests:     5,
+					MaxRetries:      5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
@@ -228,6 +252,15 @@ func TestConfig(t *testing.T) {
 					Enabled:         false,
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
+				},
+				Batcher: BatcherConfig{
+					FlushTimeout: 30 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{
+						MinSizeItems: 5000,
+					},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+						MaxSizeItems: 10000,
+					},
 				},
 			},
 		},
@@ -263,10 +296,39 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "batcher_disabled"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				enabled := false
+				cfg.Batcher.Enabled = &enabled
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "compression_none"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.Compression = "none"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "compression_gzip"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.Compression = "gzip"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		tt := tt
+		t.Run(strings.ReplaceAll(tt.id.String(), "/", "_"), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
@@ -349,16 +411,23 @@ func TestConfig_Validate(t *testing.T) {
 		"compression unsupported": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
-				cfg.Compression = configcompression.TypeGzip
+				cfg.Compression = configcompression.TypeSnappy
 			}),
-			err: `compression is not currently configurable`,
+			err: `compression must be one of [none, gzip]`,
+		},
+		"both max_retries and max_requests specified": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Retry.MaxRetries = 1
+				cfg.Retry.MaxRequests = 1
+			}),
+			err: `must not specify both retry::max_requests and retry::max_retries`,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			err := tt.config.Validate()
-			assert.EqualError(t, err, tt.err)
+			assert.EqualError(t, component.ValidateConfig(tt.config), tt.err)
 		})
 	}
 }
@@ -367,13 +436,13 @@ func TestConfig_Validate_Environment(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://test:9200")
 		config := withDefaultConfig()
-		err := config.Validate()
+		err := component.ValidateConfig(config)
 		require.NoError(t, err)
 	})
 	t.Run("invalid", func(t *testing.T) {
 		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
 		config := withDefaultConfig()
-		err := config.Validate()
+		err := component.ValidateConfig(config)
 		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
 	})
 }
@@ -382,6 +451,14 @@ func withDefaultConfig(fns ...func(*Config)) *Config {
 	cfg := createDefaultConfig().(*Config)
 	for _, fn := range fns {
 		fn(cfg)
+	}
+	return cfg
+}
+
+func withDefaultHTTPClientConfig(fns ...func(config *confighttp.ClientConfig)) confighttp.ClientConfig {
+	cfg := confighttp.NewDefaultClientConfig()
+	for _, fn := range fns {
+		fn(&cfg)
 	}
 	return cfg
 }

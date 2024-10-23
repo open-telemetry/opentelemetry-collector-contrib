@@ -41,7 +41,7 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 	assert.Equal(t, "ec2", fetchResp.LaunchType)
 	assert.Equal(t, "us-west-2a", fetchResp.AvailabilityZone)
 	assert.Equal(t, "1", fetchResp.Revision)
-	assert.Equal(t, 3, len(fetchResp.Containers))
+	assert.Len(t, fetchResp.Containers, 3)
 }
 
 func Test_ecsMetadata_fetchContainer(t *testing.T) {

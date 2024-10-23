@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 )
 
 const (
@@ -139,7 +139,7 @@ func TestStartTraceReception(t *testing.T) {
 			err = zr.Start(context.Background(), tt.host)
 			assert.Equal(t, tt.wantErr, err != nil)
 			if !tt.wantErr {
-				require.Nil(t, zr.Shutdown(context.Background()))
+				require.NoError(t, zr.Shutdown(context.Background()))
 			}
 		})
 	}

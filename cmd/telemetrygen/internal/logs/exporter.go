@@ -22,7 +22,9 @@ func grpcExporterOptions(cfg *Config) ([]otlploggrpc.Option, error) {
 	if cfg.Insecure {
 		grpcExpOpt = append(grpcExpOpt, otlploggrpc.WithInsecure())
 	} else {
-		credentials, err := common.GetTLSCredentialsForGRPCExporter(cfg.CaFile, cfg.ClientAuth)
+		credentials, err := common.GetTLSCredentialsForGRPCExporter(
+			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
 		}
@@ -30,7 +32,7 @@ func grpcExporterOptions(cfg *Config) ([]otlploggrpc.Option, error) {
 	}
 
 	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlploggrpc.WithHeaders(cfg.Headers))
+		grpcExpOpt = append(grpcExpOpt, otlploggrpc.WithHeaders(cfg.GetHeaders()))
 	}
 
 	return grpcExpOpt, nil
@@ -47,7 +49,9 @@ func httpExporterOptions(cfg *Config) ([]otlploghttp.Option, error) {
 	if cfg.Insecure {
 		httpExpOpt = append(httpExpOpt, otlploghttp.WithInsecure())
 	} else {
-		tlsCfg, err := common.GetTLSCredentialsForHTTPExporter(cfg.CaFile, cfg.ClientAuth)
+		tlsCfg, err := common.GetTLSCredentialsForHTTPExporter(
+			cfg.CaFile, cfg.ClientAuth, cfg.InsecureSkipVerify,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get TLS credentials: %w", err)
 		}
@@ -55,7 +59,7 @@ func httpExporterOptions(cfg *Config) ([]otlploghttp.Option, error) {
 	}
 
 	if len(cfg.Headers) > 0 {
-		httpExpOpt = append(httpExpOpt, otlploghttp.WithHeaders(cfg.Headers))
+		httpExpOpt = append(httpExpOpt, otlploghttp.WithHeaders(cfg.GetHeaders()))
 	}
 
 	return httpExpOpt, nil

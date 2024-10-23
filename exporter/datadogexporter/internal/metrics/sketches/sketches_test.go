@@ -92,7 +92,7 @@ func TestSketchSeriesListMarshal(t *testing.T) {
 		assert.Equal(t, in.Host, pb.Host)
 		assert.Equal(t, in.Name, pb.Metric)
 		assert.Equal(t, in.Tags, pb.Tags)
-		assert.Len(t, pb.Distributions, 0)
+		assert.Empty(t, pb.Distributions)
 
 		require.Len(t, pb.Dogsketches, len(in.Points))
 		for j, pointPb := range pb.Dogsketches {

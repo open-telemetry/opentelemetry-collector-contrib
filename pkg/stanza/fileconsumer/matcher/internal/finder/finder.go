@@ -6,8 +6,10 @@ package finder // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"golang.org/x/exp/maps"
 )
 
 func Validate(globs []string) error {
@@ -23,7 +25,8 @@ func Validate(globs []string) error {
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
 func FindFiles(includes []string, excludes []string) ([]string, error) {
 	var errs error
-	all := make([]string, 0, len(includes))
+
+	allSet := make(map[string]struct{}, len(includes))
 	for _, include := range includes {
 		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
 		if err != nil {
@@ -40,15 +43,11 @@ func FindFiles(includes []string, excludes []string) ([]string, error) {
 				}
 			}
 
-			for _, existing := range all {
-				if existing == match {
-					continue INCLUDE
-				}
-			}
-
-			all = append(all, match)
+			allSet[match] = struct{}{}
 		}
 	}
 
-	return all, errs
+	keys := maps.Keys(allSet)
+	slices.Sort(keys)
+	return keys, errs
 }

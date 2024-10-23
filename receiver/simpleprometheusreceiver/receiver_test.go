@@ -45,7 +45,7 @@ func TestReceiver(t *testing.T) {
 			cfg := (f.CreateDefaultConfig()).(*Config)
 			cfg.UseServiceAccount = tt.useServiceAccount
 
-			r, err := f.CreateMetricsReceiver(
+			r, err := f.CreateMetrics(
 				context.Background(),
 				receivertest.NewNopSettings(),
 				cfg,

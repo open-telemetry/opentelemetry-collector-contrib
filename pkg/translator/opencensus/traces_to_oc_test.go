@@ -345,7 +345,7 @@ func TestInternalTracesToOCTracesAndBack(t *testing.T) {
 	assert.NoError(t, err)
 	for _, td := range tds {
 		ocNode, ocResource, ocSpans := ResourceSpansToOC(td.ResourceSpans().At(0))
-		assert.Equal(t, td.SpanCount(), len(ocSpans))
+		assert.Len(t, ocSpans, td.SpanCount())
 		tdFromOC := OCToTraces(ocNode, ocResource, ocSpans)
 		assert.NotNil(t, tdFromOC)
 		assert.Equal(t, td.SpanCount(), tdFromOC.SpanCount())

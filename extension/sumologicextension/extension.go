@@ -25,6 +25,7 @@ import (
 	"github.com/shirou/gopsutil/process"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/featuregate"
@@ -297,7 +298,7 @@ func (se *SumologicExtension) getHTTPClient(
 	httpClient, err := httpClientSettings.ToClient(
 		ctx,
 		se.host,
-		component.TelemetrySettings{},
+		componenttest.NewNopTelemetrySettings(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create HTTP client: %w", err)

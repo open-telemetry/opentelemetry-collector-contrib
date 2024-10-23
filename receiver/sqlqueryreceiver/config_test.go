@@ -126,7 +126,8 @@ func TestLoadConfig(t *testing.T) {
 							TrackingStartValue: "10",
 							Logs: []sqlquery.LogsCfg{
 								{
-									BodyColumn: "log_body",
+									BodyColumn:       "log_body",
+									AttributeColumns: []string{"log_attribute_1", "log_attribute_2"},
 								},
 							},
 						},

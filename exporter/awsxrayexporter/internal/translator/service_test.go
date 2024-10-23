@@ -4,13 +4,12 @@
 package translator
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 )
 
 func TestServiceFromResource(t *testing.T) {
@@ -23,7 +22,7 @@ func TestServiceFromResource(t *testing.T) {
 	require.NoError(t, w.Encode(service))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "semver:1.1.4"))
+	assert.Contains(t, jsonStr, "semver:1.1.4")
 }
 
 func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
@@ -36,7 +35,7 @@ func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
 	require.NoError(t, w.Encode(service))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "v1"))
+	assert.Contains(t, jsonStr, "v1")
 }
 
 func TestServiceFromNullResource(t *testing.T) {

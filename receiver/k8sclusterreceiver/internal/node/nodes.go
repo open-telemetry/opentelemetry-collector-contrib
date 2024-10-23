@@ -106,7 +106,7 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 
 	// TODO: Generate a schema URL for the node metrics in the metadata package and use them here.
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	sm.Scope().SetName("otelcol/k8sclusterreceiver")
+	sm.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver")
 	sm.Scope().SetVersion(set.BuildInfo.Version)
 
 	rb.SetK8sNodeUID(string(node.UID))

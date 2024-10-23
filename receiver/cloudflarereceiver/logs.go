@@ -18,12 +18,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
@@ -38,8 +40,6 @@ type logsReceiver struct {
 }
 
 const secretHeaderName = "X-CF-Secret"
-
-var receiverScopeName = "otelcol/" + metadata.Type.String()
 
 func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
@@ -84,7 +84,7 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) error {
+func (l *logsReceiver) startListening(ctx context.Context, host component.Host) error {
 	l.logger.Debug("starting receiver HTTP server")
 	// We use l.server.Serve* over l.server.ListenAndServe*
 	// So that we can catch and return errors relating to binding to network interface on start.
@@ -111,7 +111,7 @@ func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) err
 
 			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("ServeTLS failed", zap.Error(err))
-				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 
 		} else {
@@ -124,7 +124,7 @@ func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) err
 
 			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("Serve failed", zap.Error(err))
-				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
 
 		}
@@ -186,7 +186,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	}
 
 	if err := l.consumer.ConsumeLogs(req.Context(), l.processLogs(pcommon.NewTimestampFromTime(time.Now()), logs)); err != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
+		errorutil.HTTPError(rw, err)
 		l.logger.Error("Failed to consumer alert as log", zap.Error(err))
 		return
 	}
@@ -233,7 +233,7 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 			resource.Attributes().PutStr("cloudflare.zone", zone)
 		}
 		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-		scopeLogs.Scope().SetName(receiverScopeName)
+		scopeLogs.Scope().SetName(metadata.ScopeName)
 
 		for _, log := range logGroup {
 			logRecord := scopeLogs.LogRecords().AppendEmpty()

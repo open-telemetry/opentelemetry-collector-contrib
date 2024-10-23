@@ -133,7 +133,7 @@ func TestMetrics(t *testing.T) {
 			name:         "empty",
 			createMetric: pmetric.NewMetric,
 			test: func(m pmetric.Metric) {
-				require.Equal(t, m.Type(), pmetric.MetricTypeEmpty)
+				require.Equal(t, pmetric.MetricTypeEmpty, m.Type())
 			},
 		},
 		{
@@ -149,7 +149,7 @@ func TestMetrics(t *testing.T) {
 				s := pmetric.NewMetric().SetEmptySum()
 				s.DataPoints().AppendEmpty().Attributes().PutEmptyMap("a").PutStr("c", "x")
 
-				require.Equal(t, m.Type(), pmetric.MetricTypeSum)
+				require.Equal(t, pmetric.MetricTypeSum, m.Type())
 				require.Equal(t, s.DataPoints().At(0).Attributes().AsRaw(), m.Sum().DataPoints().At(0).Attributes().AsRaw())
 			},
 		},
@@ -166,7 +166,7 @@ func TestMetrics(t *testing.T) {
 				s := pmetric.NewMetric().SetEmptyGauge()
 				s.DataPoints().AppendEmpty().Attributes().PutEmptyMap("a").PutStr("c", "x")
 
-				require.Equal(t, m.Type(), pmetric.MetricTypeGauge)
+				require.Equal(t, pmetric.MetricTypeGauge, m.Type())
 				require.Equal(t, s.DataPoints().At(0).Attributes().AsRaw(), m.Gauge().DataPoints().At(0).Attributes().AsRaw())
 			},
 		},
@@ -183,7 +183,7 @@ func TestMetrics(t *testing.T) {
 				s := pmetric.NewMetric().SetEmptyHistogram()
 				s.DataPoints().AppendEmpty().Attributes().PutEmptyMap("a").PutStr("c", "x")
 
-				require.Equal(t, m.Type(), pmetric.MetricTypeHistogram)
+				require.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 				require.Equal(t, s.DataPoints().At(0).Attributes().AsRaw(), m.Histogram().DataPoints().At(0).Attributes().AsRaw())
 			},
 		},
@@ -200,7 +200,7 @@ func TestMetrics(t *testing.T) {
 				s := pmetric.NewMetric().SetEmptyExponentialHistogram()
 				s.DataPoints().AppendEmpty().Attributes().PutEmptyMap("a").PutStr("c", "x")
 
-				require.Equal(t, m.Type(), pmetric.MetricTypeExponentialHistogram)
+				require.Equal(t, pmetric.MetricTypeExponentialHistogram, m.Type())
 				require.Equal(t, s.DataPoints().At(0).Attributes().AsRaw(), m.ExponentialHistogram().DataPoints().At(0).Attributes().AsRaw())
 			},
 		},
@@ -217,7 +217,7 @@ func TestMetrics(t *testing.T) {
 				s := pmetric.NewMetric().SetEmptySummary()
 				s.DataPoints().AppendEmpty().Attributes().PutEmptyMap("a").PutStr("c", "x")
 
-				require.Equal(t, m.Type(), pmetric.MetricTypeSummary)
+				require.Equal(t, pmetric.MetricTypeSummary, m.Type())
 				require.Equal(t, s.DataPoints().At(0).Attributes().AsRaw(), m.Summary().DataPoints().At(0).Attributes().AsRaw())
 			},
 		},

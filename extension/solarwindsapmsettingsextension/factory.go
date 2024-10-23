@@ -13,7 +13,7 @@ import (
 )
 
 func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newSolarwindsApmSettingsExtension(cfg.(*Config), settings.Logger)
+	return newSolarwindsApmSettingsExtension(cfg.(*Config), settings)
 }
 
 func NewFactory() extension.Factory {

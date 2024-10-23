@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	Type = component.MustNewType("chrony")
+	Type      = component.MustNewType("chrony")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 )
 
 const (
-	MetricsStability = component.StabilityLevelAlpha
+	MetricsStability = component.StabilityLevelBeta
 )
