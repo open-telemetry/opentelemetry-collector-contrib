@@ -106,7 +106,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp := newTracesExporter(oCfg, set)
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		&oCfg,
@@ -134,7 +134,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp := newMetricsExporter(oCfg, set)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		&oCfg,
@@ -162,7 +162,7 @@ func (f *kafkaExporterFactory) createLogsExporter(
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp := newLogsExporter(oCfg, set)
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		&oCfg,
