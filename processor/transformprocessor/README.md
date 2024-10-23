@@ -666,6 +666,24 @@ transform:
         - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
 ```
 
+## Copy attributes matching regular expression to a separate location
+
+If you want to move resource attributes, which keys are matching the regular expression `pod_labels_.*` to a new attribute
+location `kubernetes.labels`, use the following configuration:
+
+```yaml
+transform:
+  error_mode: ignore
+  trace_statements:
+    - context: resource
+      statements:
+        - set(cache["attrs"], attributes)
+        - keep_matching_keys(cache["attrs"], "pod_labels_.*")
+        - set(attributes["kubernetes.labels"], cache["attrs"])
+```
+
+The configuration can be used also with `delete_matching_keys()` to copy the attributes that do not match the regular expression.
+
 ## Troubleshooting
 
 When using OTTL you can enable debug logging in the collector to print out useful information,

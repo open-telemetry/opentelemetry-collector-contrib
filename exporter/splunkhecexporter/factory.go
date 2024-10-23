@@ -114,7 +114,7 @@ func createTracesExporter(
 
 	c := newTracesClient(set, cfg)
 
-	e, err := exporterhelper.NewTracesExporter(
+	e, err := exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -149,7 +149,7 @@ func createMetricsExporter(
 
 	c := newMetricsClient(set, cfg)
 
-	e, err := exporterhelper.NewMetricsExporter(
+	e, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -183,7 +183,7 @@ func createLogsExporter(
 
 	c := newLogsClient(set, cfg)
 
-	logsExporter, err := exporterhelper.NewLogsExporter(
+	logsExporter, err := exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

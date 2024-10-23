@@ -221,7 +221,7 @@ If the receiver is being used to track a symlinked file and the symlink target i
 to set the value of the `poll_interval` setting to something lower than the symlink update frequency.
 
 ### Telemetry metrics
-Enabling [Collector metrics](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/troubleshooting.md#metrics)
+Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics)
 will also provide telemetry metrics for the state of the receiver's file consumption.
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
 are provided.
