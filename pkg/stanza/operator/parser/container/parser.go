@@ -253,7 +253,7 @@ func (p *Parser) cbGoTimeLayout(e *entry.Entry) error {
 }
 
 func (p *Parser) cbCrioTimeLayout(e *entry.Entry) error {
-	err := parseTime(e, crioTimeLayout)
+	err := parseTime(e, criTimeLayout)
 	if err != nil {
 		return fmt.Errorf("failed to parse time: %w", err)
 	}
