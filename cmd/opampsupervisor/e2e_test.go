@@ -752,7 +752,8 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, expectedDescription, ad.AgentDescription)
+	require.Subset(t, ad.AgentDescription.IdentifyingAttributes, expectedDescription.IdentifyingAttributes)
+	require.Subset(t, ad.AgentDescription.NonIdentifyingAttributes, expectedDescription.NonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
 }

@@ -29,7 +29,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.TCPAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
