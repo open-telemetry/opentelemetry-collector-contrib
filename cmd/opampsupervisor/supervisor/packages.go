@@ -10,7 +10,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -24,7 +23,6 @@ import (
 	"github.com/sigstore/cosign/v2/pkg/oci/static"
 	"github.com/sigstore/rekor/pkg/client"
 	"google.golang.org/protobuf/proto"
-	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 )
@@ -43,31 +41,12 @@ var (
 // It is 1 gibibyte.
 const maxAgentBytes = 1024 * 1024 * 1024
 
-type hexEncodedBytes []byte
-
-var _ yaml.Marshaler = (*hexEncodedBytes)(nil)
-var _ yaml.Unmarshaler = (*hexEncodedBytes)(nil)
-
-func (h hexEncodedBytes) MarshalYAML() (any, error) {
-	return hex.EncodeToString(h), nil
-}
-
-func (h *hexEncodedBytes) UnmarshalYAML(value *yaml.Node) error {
-	var err error
-	*h, err = hex.DecodeString(value.Value)
-	return err
-}
-
-type packageState struct {
-	AllPackagesHash hexEncodedBytes `yaml:"all_packages_hash"`
-}
-
 // packageManager manages the persistent state of downloadable packages.
 // It persists the packages to the file system.
 // Currently, it only allows for a single top-level package containing the agent
 // to be received.
 type packageManager struct {
-	packageState    *packageState
+	persistentState *persistentState
 	topLevelHash    []byte
 	topLevelVersion string
 
@@ -81,7 +60,14 @@ type agentManager interface {
 	stopAgentProcess(ctx context.Context) (chan struct{}, error)
 }
 
-func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts config.AgentSignature, am agentManager) (*packageManager, error) {
+func newPackageManager(
+	agentPath,
+	storageDir,
+	agentVersion string,
+	persistentState *persistentState,
+	signatureOpts config.AgentSignature,
+	am agentManager,
+) (*packageManager, error) {
 	// Read actual hash of the on-disk agent
 	f, err := os.Open(agentPath)
 	if err != nil {
@@ -94,24 +80,13 @@ func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts
 	}
 	agentHash := h.Sum(nil)
 
-	// Load persisted package state, if it exists
-	packageStatePath := filepath.Join(storageDir, packagesStateFileName)
-	state, err := loadPackageState(packageStatePath)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		// initialize default state
-		state = &packageState{}
-	case err != nil:
-		return nil, fmt.Errorf("load package state: %w", err)
-	}
-
 	checkOpts, err := createCosignCheckOpts(signatureOpts)
 	if err != nil {
 		return nil, fmt.Errorf("create signature verification options: %w", err)
 	}
 
 	return &packageManager{
-		packageState:    state,
+		persistentState: persistentState,
 		topLevelHash:    agentHash,
 		topLevelVersion: agentVersion,
 		storageDir:      storageDir,
@@ -122,12 +97,11 @@ func newPackageManager(agentPath, storageDir, agentVersion string, signatureOpts
 }
 
 func (p packageManager) AllPackagesHash() ([]byte, error) {
-	return p.packageState.AllPackagesHash, nil
+	return p.persistentState.AllPackagesHash, nil
 }
 
 func (p packageManager) SetAllPackagesHash(hash []byte) error {
-	p.packageState.AllPackagesHash = hash
-	return savePackageState(p.packagesStatusPath(), p.packageState)
+	return p.persistentState.SetAllPackagesHash(hash)
 }
 
 func (packageManager) Packages() ([]string, error) {
@@ -334,39 +308,6 @@ func (p *packageManager) lastPackageStatusPath() string {
 
 func (p *packageManager) packagesStatusPath() string {
 	return filepath.Join(p.storageDir, packagesStateFileName)
-}
-
-func loadPackageState(path string) (*packageState, error) {
-	by, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read file: %w", err)
-	}
-
-	var pkgState packageState
-	if err := yaml.Unmarshal(by, &pkgState); err != nil {
-		return nil, fmt.Errorf("unmarshal yaml: %w", err)
-	}
-
-	return &pkgState, nil
-}
-
-func savePackageState(path string, ps *packageState) error {
-	by, err := yaml.Marshal(ps)
-	if err != nil {
-		return fmt.Errorf("marshal yaml: %w", err)
-	}
-
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return fmt.Errorf("open file: %w", err)
-	}
-	defer f.Close()
-
-	if _, err := f.Write(by); err != nil {
-		return fmt.Errorf("write package state: %w", err)
-	}
-
-	return nil
 }
 
 func verifyPackageIntegrity(packageBytes, expectedHash []byte) error {
