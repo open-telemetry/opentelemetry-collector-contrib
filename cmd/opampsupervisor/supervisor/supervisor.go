@@ -226,6 +226,7 @@ func (s *Supervisor) Start() error {
 			s.config.Agent.Executable,
 			s.config.Storage.Directory,
 			agentVersion,
+			s.persistentState,
 			s.config.Agent.Signature,
 			s,
 		)
