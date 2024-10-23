@@ -22,6 +22,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - confmap/provider/aesprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
@@ -235,7 +236,6 @@ body:
       - receiver/github
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
-      - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
@@ -258,6 +258,7 @@ body:
       - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
+      - receiver/ntp
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
@@ -289,6 +290,7 @@ body:
       - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
+      - receiver/systemd
       - receiver/tcplog
       - receiver/tlscheck
       - receiver/udplog

@@ -21,6 +21,7 @@ cmd/otelcontribcol/                                                 @open-teleme
 cmd/oteltestbedcol/                                                 @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                                   @open-telemetry/collector-contrib-approvers @mx-psi @codeboten
 
+confmap/provider/aesprovider/                                       @open-telemetry/collector-contrib-approvers @djaglowski @shazlehu
 confmap/provider/s3provider/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9
 confmap/provider/secretsmanagerprovider/                            @open-telemetry/collector-contrib-approvers @driverpt @atoulme
 
@@ -264,6 +265,7 @@ receiver/mysqlreceiver/                                             @open-teleme
 receiver/namedpipereceiver/                                         @open-telemetry/collector-contrib-approvers @sinkingpoint @djaglowski
 receiver/nginxreceiver/                                             @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nsxtreceiver/                                              @open-telemetry/collector-contrib-approvers @dashpole @schmikei
+receiver/ntpreceiver/                                               @open-telemetry/collector-contrib-approvers @atoulme
 receiver/opencensusreceiver/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 receiver/oracledbreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme
 receiver/osqueryreceiver/                                           @open-telemetry/collector-contrib-approvers @codeboten @nslaughter @smithclay
@@ -295,6 +297,7 @@ receiver/sqlserverreceiver/                                         @open-teleme
 receiver/sshcheckreceiver/                                          @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
 receiver/statsdreceiver/                                            @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski @andrzej-stencel
+receiver/systemdreceiver/                                           @open-telemetry/collector-contrib-approvers @Hemansh31 @atoulme
 receiver/tcplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tlscheckreceiver/                                          @open-telemetry/collector-contrib-approvers @atoulme @michael-burt
 receiver/udplogreceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
@@ -319,5 +322,3 @@ reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 
 
 ## UNMAINTAINED components
-
-receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers 
