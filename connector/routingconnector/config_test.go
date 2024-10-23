@@ -24,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 		expected   component.Config
 	}{
 		{
-			configPath: "config_traces.yaml",
+			configPath: filepath.Join("testdata", "config", "traces.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []pipeline.ID{
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			configPath: "config_metrics.yaml",
+			configPath: filepath.Join("testdata", "config", "metrics.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []pipeline.ID{
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			configPath: "config_logs.yaml",
+			configPath: filepath.Join("testdata", "config", "logs.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []pipeline.ID{
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.configPath, func(t *testing.T) {
-			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configPath))
+			cm, err := confmaptest.LoadConf(tt.configPath)
 			require.NoError(t, err)
 
 			factory := NewFactory()

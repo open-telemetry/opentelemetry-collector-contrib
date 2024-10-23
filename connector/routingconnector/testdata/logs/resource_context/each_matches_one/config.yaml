@@ -1,0 +1,10 @@
+routing:
+  default_pipelines:
+    - logs/default
+  table:
+    - condition: attributes["resourceName"] == "resourceB"
+      pipelines:
+        - logs/0
+    - condition: attributes["resourceName"] == "resourceA"
+      pipelines:
+        - logs/1
