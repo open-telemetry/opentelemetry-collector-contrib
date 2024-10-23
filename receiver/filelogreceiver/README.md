@@ -45,7 +45,7 @@ Tails and parses logs from files.
 | `resource`                            | {}                                   | A map of `key: value` pairs to add to the entry's resource.                                                                                                                                                                                                     |
 | `operators`                           | []                                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details.                                                                                                                                    |
 | `storage`                             | none                                 | The ID of a storage extension to be used to store file offsets. File offsets allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage offsets in memory only.              |
-| `header`                              | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must be `false` when `start_at` is set to `end`.                                                          |
+| `header`                              | nil                                  | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. Must not be set when `start_at` is set to `end`.                                                          |
 | `header.pattern`                      | required for header metadata parsing | A regex that matches every header line.                                                                                                                                                                                                                         |
 | `header.metadata_operators`           | required for header metadata parsing | A list of operators used to parse metadata from the header.                                                                                                                                                                                                     |
 | `retry_on_failure.enabled`            | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                                         |
@@ -221,7 +221,7 @@ If the receiver is being used to track a symlinked file and the symlink target i
 to set the value of the `poll_interval` setting to something lower than the symlink update frequency.
 
 ### Telemetry metrics
-Enabling [Collector metrics](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/troubleshooting.md#metrics)
+Enabling [Collector metrics](https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-metrics)
 will also provide telemetry metrics for the state of the receiver's file consumption.
 Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
 are provided.
