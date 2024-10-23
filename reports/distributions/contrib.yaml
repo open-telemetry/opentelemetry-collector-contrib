@@ -69,6 +69,7 @@ components:
         - headers_setter
         - health_check
         - host_observer
+        - http_forwarder
         - jaegerremotesampling
         - k8s_observer
         - oauth2client
