@@ -1,0 +1,21 @@
+type: blobuploadconnector
+scope_name: otelcol/blobuploadconnector
+
+status:
+  class: connector
+  stability:
+    # Implementation still in-progress. Please follow along at:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33737
+    development: [traces_to_traces, logs_to_logs]
+  distributions: [contrib]
+  codeowners:
+    active: [michaelsafyan, dashpole]
+
+tests:
+  config:
+  goleak:
+    skip: false
+    ignore:
+      # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+      top: go.opencensus.io/stats/view.(*worker).start
+  
