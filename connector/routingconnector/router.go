@@ -83,6 +83,8 @@ func (r *router[C]) registerConsumers(defaultPipelineIDs []pipeline.ID) error {
 		return err
 	}
 
+	r.normalizeConditions()
+
 	// register pipelines for each route
 	err = r.registerRouteConsumers()
 	if err != nil {
@@ -107,6 +109,16 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []pipeline.ID) error {
 	r.defaultConsumer = consumer
 
 	return nil
+}
+
+// convert conditions to statements
+func (r *router[C]) normalizeConditions() {
+	for i := range r.table {
+		item := &r.table[i]
+		if item.Condition != "" {
+			item.Statement = fmt.Sprintf("route() where %s", item.Condition)
+		}
+	}
 }
 
 // registerRouteConsumers registers a consumer for the pipelines configured
