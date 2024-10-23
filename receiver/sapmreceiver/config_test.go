@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver/internal/metadata"
 )
 
@@ -59,9 +58,6 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:7276",
-				},
-				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-					AccessTokenPassthrough: true,
 				},
 			},
 		},
