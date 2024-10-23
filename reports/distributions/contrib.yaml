@@ -43,6 +43,7 @@ components:
         - mezmo
         - opencensus
         - opensearch
+        - otelarrow
         - prometheus
         - prometheusremotewrite
         - pulsar
@@ -87,6 +88,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - k8sattributes
+        - logdedup
         - metricsgeneration
         - metricstransform
         - probabilistic_sampler
