@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -27,11 +26,11 @@ func (c *passThroughTracesConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func createTracesToTracesConnector(deps Deps) connector.CreateTracesToTracesFunc {
+func createTracesToTracesConnector(_ Deps) connector.CreateTracesToTracesFunc {
 	return func(
-		ctx context.Context,
-		settings connector.Settings,
-		config component.Config,
+		_ context.Context,
+		_ connector.Settings,
+		_ component.Config,
 		nextConsumer consumer.Traces) (connector.Traces, error) {
 		// TODO: implement actual, non-pass through implementation when
 		// there is a config present with a non-empty "traces" config.

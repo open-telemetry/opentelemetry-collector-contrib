@@ -12,5 +12,5 @@ import (
 func TestDefaultConfigIsValid(t *testing.T) {
 	cfg := NewDefaultConfig()
 	assert.NotNil(t, cfg)
-	assert.Nil(t, cfg.Validate())
+	assert.NoError(t, cfg.Validate())
 }
