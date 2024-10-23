@@ -124,7 +124,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		// send it to the recombine operator
 		err = p.recombineParser.Process(ctx, entry)
 		if err != nil {
-			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "recombine the crio log"))
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "recombine the cri log"))
 		}
 	default:
 		return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "invalid container log format"))
