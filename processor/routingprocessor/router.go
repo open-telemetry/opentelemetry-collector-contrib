@@ -26,7 +26,7 @@ type router[E component.Component, K any] struct {
 	table              []RoutingTableItem
 
 	defaultExporters []E
-	routes           map[string]routingItem[E, K]
+	routes           []routingItem[E, K]
 }
 
 // newRouter creates a new router instance with its type parameter constrained
@@ -44,12 +44,11 @@ func newRouter[E component.Component, K any](
 
 		table:              table,
 		defaultExporterIDs: defaultExporterIDs,
-
-		routes: make(map[string]routingItem[E, K]),
 	}
 }
 
 type routingItem[E component.Component, K any] struct {
+	key       string
 	exporters []E
 	statement *ottl.Statement[K]
 }
@@ -90,17 +89,14 @@ func (r *router[E, K]) registerDefaultExporters(available map[component.ID]compo
 // registerRouteExporters registers route exporters using the provided
 // available exporters map to check if they were available.
 func (r *router[E, K]) registerRouteExporters(available map[component.ID]component.Component) error {
+	var routes []routingItem[E, K]
 	for _, item := range r.table {
 		statement, err := r.getStatementFrom(item)
 		if err != nil {
 			return err
 		}
 
-		route, ok := r.routes[key(item)]
-		if !ok {
-			route.statement = statement
-		}
-
+		var exporters []E
 		for _, name := range item.Exporters {
 			e, err := r.extractExporter(name, available)
 			if errors.Is(err, errExporterNotFound) {
@@ -109,10 +105,16 @@ func (r *router[E, K]) registerRouteExporters(available map[component.ID]compone
 			if err != nil {
 				return err
 			}
-			route.exporters = append(route.exporters, e)
+			exporters = append(exporters, e)
 		}
-		r.routes[key(item)] = route
+		routes = append(routes, routingItem[E, K]{
+			key:       key(item),
+			exporters: exporters,
+			statement: statement,
+		})
 	}
+	r.routes = routes
+
 	return nil
 }
 
@@ -171,9 +173,11 @@ func (r *router[E, K]) extractExporter(name string, available map[component.ID]c
 }
 
 func (r *router[E, K]) getExporters(key string) []E {
-	e, ok := r.routes[key]
-	if !ok {
-		return r.defaultExporters
+	for _, route := range r.routes {
+		if route.key == key {
+			return route.exporters
+		}
 	}
-	return e.exporters
+
+	return r.defaultExporters
 }

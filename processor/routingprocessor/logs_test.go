@@ -5,6 +5,7 @@ package routingprocessor
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -128,6 +129,63 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 	})
 }
 
+func TestLogs_RoutingWorks_Context_Ordered(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	lExpFirst := &mockLogsExporter{}
+	lExpSecond := &mockLogsExporter{}
+	lExpThird := &mockLogsExporter{}
+
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
+			component.MustNewID("otlp"):                   defaultExp,
+			component.MustNewIDWithName("otlp", "first"):  lExpFirst,
+			component.MustNewIDWithName("otlp", "second"): lExpSecond,
+			component.MustNewIDWithName("otlp", "third"):  lExpThird,
+		},
+	})
+
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
+		FromAttribute:    "X-Tenant",
+		AttributeSource:  contextAttributeSource,
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Value:     "order-second",
+				Exporters: []string{"otlp/second"},
+			},
+			{
+				Value:     "order-first",
+				Exporters: []string{"otlp/first"},
+			},
+			{
+				Value:     "order-third",
+				Exporters: []string{"otlp/third"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	for i := 1; i <= 5; i++ {
+		t.Run(fmt.Sprintf("run %d time", i), func(t *testing.T) {
+			l := plog.NewLogs()
+			ll := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+			ll.AppendEmpty().Body().SetStr("this is a log")
+
+			assert.NoError(t, exp.ConsumeLogs(
+				metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
+					"X-Tenant": "order-third",
+				})),
+				l,
+			))
+			assert.Empty(t, defaultExp.AllLogs())
+			assert.Empty(t, lExpFirst.AllLogs())
+			assert.Empty(t, lExpSecond.AllLogs())
+			assert.Len(t, lExpThird.AllLogs(), i, "log should only be routed to lExpThird exporter")
+		})
+	}
+}
+
 func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
 	lExp := &mockLogsExporter{}
@@ -181,6 +239,59 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 			"log should not be routed to non default exporter",
 		)
 	})
+}
+
+func TestLogs_RoutingWorks_ResourceAttribute_Ordered(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	lExpFirst := &mockLogsExporter{}
+	lExpSecond := &mockLogsExporter{}
+	lExpThird := &mockLogsExporter{}
+
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
+			component.MustNewID("otlp"):                   defaultExp,
+			component.MustNewIDWithName("otlp", "first"):  lExpFirst,
+			component.MustNewIDWithName("otlp", "second"): lExpSecond,
+			component.MustNewIDWithName("otlp", "third"):  lExpThird,
+		},
+	})
+
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
+		FromAttribute:    "X-Tenant",
+		AttributeSource:  resourceAttributeSource,
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Value:     "order-second",
+				Exporters: []string{"otlp/second"},
+			},
+			{
+				Value:     "order-first",
+				Exporters: []string{"otlp/first"},
+			},
+			{
+				Value:     "order-third",
+				Exporters: []string{"otlp/third"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	for i := 1; i <= 5; i++ {
+		t.Run(fmt.Sprintf("run %d time", i), func(t *testing.T) {
+			l := plog.NewLogs()
+			rl := l.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("X-Tenant", "order-third")
+			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("this is a log")
+
+			assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
+			assert.Empty(t, defaultExp.AllLogs())
+			assert.Empty(t, lExpFirst.AllLogs())
+			assert.Empty(t, lExpSecond.AllLogs())
+			assert.Len(t, lExpThird.AllLogs(), i, "log should only be routed to lExpThird exporter")
+		})
+	}
 }
 
 func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T) {
@@ -399,6 +510,117 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.True(t, ok, "routing attribute must exists")
 		assert.Equal(t, "something-else", attr.AsString())
 	})
+}
+
+func TestLogs_RoutingWorks_ResourceAttribute_WithOTTL_Ordered(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	lExpFirst := &mockLogsExporter{}
+	lExpSecond := &mockLogsExporter{}
+
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
+			component.MustNewID("otlp"):                   defaultExp,
+			component.MustNewIDWithName("otlp", "first"):  lExpFirst,
+			component.MustNewIDWithName("otlp", "second"): lExpSecond,
+		},
+	})
+
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
+		FromAttribute:    "__otel_enabled__",
+		AttributeSource:  resourceAttributeSource,
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where resource.attributes["non-matching"] != nil`,
+				Exporters: []string{"otlp/first"},
+			},
+			{
+				Statement: `route() where resource.attributes["non-matching"] == "true"`,
+				Exporters: []string{"otlp/first"},
+			},
+			{
+				Statement: `route() where resource.attributes["matching"] == "true"`,
+				Exporters: []string{"otlp/second"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	for i := 1; i <= 5; i++ {
+		t.Run(fmt.Sprintf("run %d time", i), func(t *testing.T) {
+			l := plog.NewLogs()
+			rl := l.ResourceLogs().AppendEmpty()
+			rl.Resource().Attributes().PutStr("matching", "true")
+			rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("this is a log")
+
+			assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
+
+			assert.Empty(t, defaultExp.AllLogs())
+			assert.Empty(t, lExpFirst.AllLogs())
+
+			// we expect Statement eval in order and log should only be routed to lExpSecond exporter
+			assert.Len(t, lExpSecond.AllLogs(), i, "log should only be routed to lExpSecond exporter")
+		})
+	}
+}
+
+/*
+# before
+BenchmarkLogs_Routing
+BenchmarkLogs_Routing-8        18951       63102 ns/op
+
+# after
+BenchmarkLogs_Routing
+BenchmarkLogs_Routing-8   	   21171	     57387 ns/op
+*/
+func BenchmarkLogs_Routing(t *testing.B) {
+	defaultExp := &mockLogsExporter{}
+	lExpFirst := &mockLogsExporter{}
+	lExpSecond := &mockLogsExporter{}
+
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalLogs: {
+			component.MustNewID("otlp"):                   defaultExp,
+			component.MustNewIDWithName("otlp", "first"):  lExpFirst,
+			component.MustNewIDWithName("otlp", "second"): lExpSecond,
+		},
+	})
+
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
+		FromAttribute:    "__otel_enabled__",
+		AttributeSource:  resourceAttributeSource,
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where resource.attributes["non-matching"] != nil`,
+				Exporters: []string{"otlp/first"},
+			},
+			{
+				Statement: `route() where resource.attributes["non-matching"] == "true"`,
+				Exporters: []string{"otlp/first"},
+			},
+			{
+				Statement: `route() where resource.attributes["matching"] == "true"`,
+				Exporters: []string{"otlp/second"},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	mockLogs := plog.NewLogs()
+	for i := 0; i < 100; i++ {
+		rl := mockLogs.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("matching", "true")
+	}
+
+	for i := 0; i < t.N; i++ {
+		l := plog.NewLogs()
+		mockLogs.CopyTo(l)
+
+		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
+	}
 }
 
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
