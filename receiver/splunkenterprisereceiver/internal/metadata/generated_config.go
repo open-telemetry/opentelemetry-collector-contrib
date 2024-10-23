@@ -47,6 +47,9 @@ type MetricsConfig struct {
 	SplunkIndexesMedianDataAge                  MetricConfig `mapstructure:"splunk.indexes.median.data.age"`
 	SplunkIndexesSize                           MetricConfig `mapstructure:"splunk.indexes.size"`
 	SplunkIoAvgIops                             MetricConfig `mapstructure:"splunk.io.avg.iops"`
+	SplunkKvstoreBackupStatus                   MetricConfig `mapstructure:"splunk.kvstore.backup.status"`
+	SplunkKvstoreReplicationStatus              MetricConfig `mapstructure:"splunk.kvstore.replication.status"`
+	SplunkKvstoreStatus                         MetricConfig `mapstructure:"splunk.kvstore.status"`
 	SplunkLicenseIndexUsage                     MetricConfig `mapstructure:"splunk.license.index.usage"`
 	SplunkParseQueueRatio                       MetricConfig `mapstructure:"splunk.parse.queue.ratio"`
 	SplunkPipelineSetCount                      MetricConfig `mapstructure:"splunk.pipeline.set.count"`
@@ -119,6 +122,15 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SplunkIoAvgIops: MetricConfig{
 			Enabled: true,
+		},
+		SplunkKvstoreBackupStatus: MetricConfig{
+			Enabled: false,
+		},
+		SplunkKvstoreReplicationStatus: MetricConfig{
+			Enabled: false,
+		},
+		SplunkKvstoreStatus: MetricConfig{
+			Enabled: false,
 		},
 		SplunkLicenseIndexUsage: MetricConfig{
 			Enabled: true,
