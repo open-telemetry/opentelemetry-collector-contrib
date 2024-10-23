@@ -106,7 +106,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		} else {
 			// parse the message
-			err = p.ParserOperator.ParseWithCallback(ctx, entry, p.parseCRIO, p.cbCrioTimeLayout)
+			err = p.ParserOperator.ParseWithCallback(ctx, entry, p.parseCRIO, p.cbCRITimeLayout)
 			if err != nil {
 				return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse crio log"))
 			}
@@ -239,21 +239,16 @@ func (p *Parser) handleAttributeMappings(e *entry.Entry) error {
 }
 
 func (p *Parser) cbGoTimeLayout(e *entry.Entry) error {
-	err := parseTime(e, goTimeLayout)
-	if err != nil {
-		return fmt.Errorf("failed to parse time: %w", err)
-	}
+	return p.handleTimeAndAttributes(e, goTimeLayout)
 
-	err = p.handleAttributeMappings(e)
-	if err != nil {
-		return fmt.Errorf("failed to handle attribute mappings: %w", err)
-	}
-
-	return nil
 }
 
 func (p *Parser) cbCRITimeLayout(e *entry.Entry) error {
-	err := parseTime(e, criTimeLayout)
+	return p.handleTimeAndAttributes(e, crioTimeLayout)
+}
+
+func (p *Parser) handleTimeAndAttributes(e *entry.Entry, layout string) error {
+	err := parseTime(e, layout)
 	if err != nil {
 		return fmt.Errorf("failed to parse time: %w", err)
 	}
