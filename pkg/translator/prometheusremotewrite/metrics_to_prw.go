@@ -27,8 +27,7 @@ type Settings struct {
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
-func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
-	c := newPrometheusConverter()
+func (c *PrometheusConverter) FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
 	out := make(map[string]*prompb.TimeSeries, len(tss))
@@ -39,21 +38,37 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.Time
 	return out, errs
 }
 
-// prometheusConverter converts from OTel write format to Prometheus write format.
-type prometheusConverter struct {
+// PrometheusConverter converts from OTel write format to Prometheus write format.
+// Internally it keeps a buffer of labels to avoid expensive allocations, so it is
+// best to keep it around for the lifetime of the Go process. Due to this shared
+// state, PrometheusConverter is NOT thread-safe and is only intended to be used by
+// a single go-routine at a time.
+// Each FromMetrics call should be followed by a Reset when the metrics can be safely
+// discarded.
+type PrometheusConverter struct {
 	unique    map[uint64]*prompb.TimeSeries
 	conflicts map[uint64][]*prompb.TimeSeries
+	labels    []prompb.Label
+	labelsMap map[string]string
 }
 
-func newPrometheusConverter() *prometheusConverter {
-	return &prometheusConverter{
+func NewPrometheusConverter() *PrometheusConverter {
+	return &PrometheusConverter{
 		unique:    map[uint64]*prompb.TimeSeries{},
 		conflicts: map[uint64][]*prompb.TimeSeries{},
+		labelsMap: make(map[string]string),
 	}
 }
 
+func (c *PrometheusConverter) Reset() {
+	clear(c.labels)
+	c.labels = c.labels[:0]
+	clear(c.unique)
+	clear(c.conflicts)
+}
+
 // fromMetrics converts pmetric.Metrics to Prometheus remote write format.
-func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
+func (c *PrometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -132,7 +147,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 }
 
 // timeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.
-func (c *prometheusConverter) timeSeries() []prompb.TimeSeries {
+func (c *PrometheusConverter) timeSeries() []prompb.TimeSeries {
 	conflicts := 0
 	for _, ts := range c.conflicts {
 		conflicts += len(ts)
@@ -164,7 +179,7 @@ func isSameMetric(ts *prompb.TimeSeries, lbls []prompb.Label) bool {
 
 // addExemplars adds exemplars for the dataPoint. For each exemplar, if it can find a bucket bound corresponding to its value,
 // the exemplar is added to the bucket bound's time series, provided that the time series' has samples.
-func (c *prometheusConverter) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsData) {
+func (c *PrometheusConverter) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsData) {
 	if len(bucketBounds) == 0 {
 		return
 	}
@@ -189,7 +204,7 @@ func (c *prometheusConverter) addExemplars(dataPoint pmetric.HistogramDataPoint,
 // If there is no corresponding TimeSeries already, it's created.
 // The corresponding TimeSeries is returned.
 // If either lbls is nil/empty or sample is nil, nothing is done.
-func (c *prometheusConverter) addSample(sample *prompb.Sample, lbls []prompb.Label) *prompb.TimeSeries {
+func (c *PrometheusConverter) addSample(sample *prompb.Sample, lbls []prompb.Label) *prompb.TimeSeries {
 	if sample == nil || len(lbls) == 0 {
 		// This shouldn't happen
 		return nil

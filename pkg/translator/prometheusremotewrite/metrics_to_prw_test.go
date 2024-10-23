@@ -36,10 +36,12 @@ func BenchmarkFromMetrics(b *testing.B) {
 										b.Run(fmt.Sprintf("exemplars per series: %v", exemplarsPerSeries), func(b *testing.B) {
 											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries, pcommon.Timestamp(uint64(time.Now().UnixNano())))
 
+											c := NewPrometheusConverter()
 											for i := 0; i < b.N; i++ {
-												tsMap, err := FromMetrics(payload.Metrics(), Settings{})
+												tsMap, err := c.FromMetrics(payload.Metrics(), Settings{})
 												require.NoError(b, err)
 												require.NotNil(b, tsMap)
+												c.Reset()
 											}
 										})
 									}
@@ -73,10 +75,11 @@ func BenchmarkPrometheusConverter_FromMetrics(b *testing.B) {
 										b.Run(fmt.Sprintf("exemplars per series: %v", exemplarsPerSeries), func(b *testing.B) {
 											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries, pcommon.Timestamp(uint64(time.Now().UnixNano())))
 
+											c := NewPrometheusConverter()
 											for i := 0; i < b.N; i++ {
-												converter := newPrometheusConverter()
-												require.NoError(b, converter.fromMetrics(payload.Metrics(), Settings{}))
-												require.NotNil(b, converter.timeSeries())
+												require.NoError(b, c.fromMetrics(payload.Metrics(), Settings{}))
+												require.NotNil(b, c.timeSeries())
+												c.Reset()
 											}
 										})
 									}
