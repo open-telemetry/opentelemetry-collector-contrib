@@ -149,7 +149,7 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 		APIURL:      "http://localhost",
 		AccessToken: "access_token",
 	}
-	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
+	exp, err := signalfxexporter.NewFactory().CreateMetrics(
 		context.Background(),
 		exportertest.NewNopSettings(),
 		expCfg)

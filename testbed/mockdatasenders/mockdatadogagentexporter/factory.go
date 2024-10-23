@@ -51,7 +51,7 @@ func CreateTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.Background(),
 		set,
 		dd.pushTraces,

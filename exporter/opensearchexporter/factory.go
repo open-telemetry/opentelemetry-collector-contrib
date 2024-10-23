@@ -46,7 +46,7 @@ func createTracesExporter(ctx context.Context,
 	c := cfg.(*Config)
 	te := newSSOTracesExporter(c, set)
 
-	return exporterhelper.NewTracesExporter(ctx, set, cfg,
+	return exporterhelper.NewTraces(ctx, set, cfg,
 		te.pushTraceData,
 		exporterhelper.WithStart(te.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -61,7 +61,7 @@ func createLogsExporter(ctx context.Context,
 	c := cfg.(*Config)
 	le := newLogExporter(c, set)
 
-	return exporterhelper.NewLogsExporter(ctx, set, cfg,
+	return exporterhelper.NewLogs(ctx, set, cfg,
 		le.pushLogData,
 		exporterhelper.WithStart(le.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
