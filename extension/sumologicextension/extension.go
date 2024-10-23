@@ -22,8 +22,8 @@ import (
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
 
-	"github.com/shirou/gopsutil/process"
 	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
