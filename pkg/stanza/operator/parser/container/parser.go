@@ -97,15 +97,6 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			p.asyncConsumerStarted = true
 		})
 
-		// Short circuit if the "if" condition does not match
-		skip, err := p.Skip(ctx, entry)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, err)
-		}
-		if skip {
-			return p.Write(ctx, entry)
-		}
-
 		if format == containerdFormat {
 			// parse the message
 			err = p.ParserOperator.ParseWithCallback(ctx, entry, p.parseContainerd, p.cbGoTimeLayout)
@@ -248,8 +239,7 @@ func (p *Parser) handleAttributeMappings(e *entry.Entry) error {
 }
 
 func (p *Parser) cbGoTimeLayout(e *entry.Entry) error {
-	timeLayout := goTimeLayout
-	err := parseTime(e, timeLayout)
+	err := parseTime(e, goTimeLayout)
 	if err != nil {
 		return fmt.Errorf("failed to parse time: %w", err)
 	}
@@ -263,8 +253,7 @@ func (p *Parser) cbGoTimeLayout(e *entry.Entry) error {
 }
 
 func (p *Parser) cbCrioTimeLayout(e *entry.Entry) error {
-	timeLayout := crioTimeLayout
-	err := parseTime(e, timeLayout)
+	err := parseTime(e, crioTimeLayout)
 	if err != nil {
 		return fmt.Errorf("failed to parse time: %w", err)
 	}
