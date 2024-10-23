@@ -128,7 +128,6 @@ components:
         - fluentforward
         - github
         - googlecloudmonitoring
-        - googlecloudspanner
         - haproxy
         - hostmetrics
         - httpcheck
