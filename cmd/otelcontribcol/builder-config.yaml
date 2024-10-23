@@ -452,6 +452,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter => ../../exporter/syslogexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+  - github.com/open-telemetry/opentelemetry-collector-contrib/connector/blobuploadconnector => ../../connector/blobuploadconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector => ../../connector/countconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector => ../../connector/datadogconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector => ../../connector/exceptionsconnector
