@@ -6,7 +6,6 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@BharatKJain](https://www.github.com/BharatKJain) |
-<!-- | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fudplog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fudplog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fudplog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fudplog) | -->
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -24,6 +23,7 @@ Sends GELF logs over UDP/TCP.
 | `send_chunks_with_overflow`                | false                  | Maximum chunks allowed is 128, if the number of chunks exceeds this limit, the message will be dropped. If set to true then |
 | `chunk_size`          | 1420                | Default maximum chunk size is 1420 bytes. |
 | `hostname`| "localhost"| hostname is the name of the host, which is added to the gelf message |
+| `tcp_timeout_millis` | 2000 miliseconds | If TCP protocol is used then 2 seconds default timeout is used. Timeout must be less than 30000 milliseconds.
 
 
 ## Example Configuration

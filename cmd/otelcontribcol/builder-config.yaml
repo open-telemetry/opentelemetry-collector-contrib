@@ -97,6 +97,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.112.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/gelfexporter v0.112.0
 
 processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.112.0
@@ -496,3 +497,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver => ../../receiver/googlecloudmonitoringreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/gelfexporter => ../../exporter/gelfexporter

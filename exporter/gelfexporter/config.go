@@ -18,6 +18,7 @@ type Config struct {
 	ChunksOverflow  bool   `mapstructure:"send_chunks_with_overflow,omitempty"`
 	ChunkSize       int    `mapstructure:"chunk_size,omitempty"`
 	Hostname        string `mapstructure:"hostname,omitempty"`
+	TCPTimeout      int    `mapstructure:"tcp_timeout_millis,omitempty"`
 }
 
 // Validate checks if the exporter configuration is valid
@@ -35,7 +36,16 @@ func (cfg *Config) Validate() error {
 	}
 
 	if strings.ToLower(cfg.Protocol) != "udp" && strings.ToLower(cfg.Protocol) != "tcp" {
+		cfg.Protocol = strings.ToLower(cfg.Protocol)
 		return fmt.Errorf(fmt.Sprintf("Protocol must be either 'udp' or 'tcp', got %s", cfg.Protocol))
+	}
+
+	if cfg.Protocol == "tcp" && cfg.TCPTimeout < 0 {
+		cfg.TCPTimeout = defaultTCPTimeout
+	}else{
+		if cfg.TCPTimeout > 30000 {
+			return fmt.Errorf("TCP timeout must be less than 30000")
+		}
 	}
 
 	// Compression types can be zlib, gzip or none

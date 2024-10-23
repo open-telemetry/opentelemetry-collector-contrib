@@ -1,4 +1,4 @@
-receivers:
+exporters:
   gelfexporter:
     endpoint: "localhost:12201"
     protocol: udp
@@ -8,3 +8,6 @@ receivers:
     send_chunks_with_overflow: true
     # Default maximum chunk size is 8192 bytes
     chunk_size: 8192
+    # hostname is the name of the host, which is added to the gelf message
+    hostname: "test-host"
+    tcp_timeout_millis: 1000

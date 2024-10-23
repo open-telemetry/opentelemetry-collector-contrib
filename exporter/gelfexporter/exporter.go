@@ -11,10 +11,13 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"sync"
+	"syscall"
 	"time"
 
 	"go.opentelemetry.io/collector/exporter"
@@ -24,6 +27,7 @@ import (
 )
 
 var (
+	defaultTCPTimeout      = 2000
 	defaultChunkSize       = 1420
 	magicChunked           = []byte{0x1e, 0x0f}
 	magicZlib              = []byte{0x78}
@@ -83,13 +87,37 @@ func newBuffer() *bytes.Buffer {
 	return bytes.NewBuffer(nil)
 }
 
-func initExporter(cfg *Config, createSettings exporter.Settings) (*gelfexporter, error) {
-
+func makeConn(protocol string, endpoint string) (net.Conn, error) {
 	var err error
 	var conn net.Conn
+	switch protocol {
+	case "udp":
+		udpAddr, err := net.ResolveUDPAddr(protocol, endpoint)
+		if err != nil {
+			fmt.Println("Error resolving UDP address:", err)
+			os.Exit(1)
+		}
+		if conn, err = net.DialUDP(protocol, nil, udpAddr); err != nil {
+			return nil, err
+		}
+		return conn, nil
+	case "tcp":
+		if conn, err = net.Dial(protocol, endpoint); err != nil {
+			return nil, err
+		}
+		return conn, nil
+	default:
+		return nil, fmt.Errorf("Could not create connection! Invalid protocol: %s", protocol)
+	}
 
-	if conn, err = net.Dial("udp", cfg.Endpoint); err != nil {
-		return nil, err
+}
+
+func initExporter(cfg *Config, createSettings exporter.Settings) (*gelfexporter, error) {
+
+	conn, err := makeConn(cfg.Protocol, cfg.Endpoint)
+
+	if err != nil {
+		return nil, fmt.Errorf("Error while creating connection: %w", err)
 	}
 
 	g := &gelfexporter{
@@ -180,13 +208,53 @@ func (m *GELFMessage) MarshalJSONBuf(buf *bytes.Buffer) error {
 }
 
 func (g *gelfexporter) send(payload []byte) error {
-	n, err := g.conn.Write(payload)
-	if err != nil {
-		return err
+	var err error
+	var n int
+	if g.conn == nil {
+		g.conn, err = makeConn(g.config.Protocol, g.config.Endpoint)
+		if err != nil {
+			return fmt.Errorf("Error while creating connection: %w", err)
+		}
 	}
+
+	if g.config.Protocol == "tcp" {
+		timeout := time.Duration(g.config.TCPTimeout) * time.Millisecond
+		err := g.conn.SetWriteDeadline(time.Now().Add(timeout))
+		if err != nil {
+			return fmt.Errorf("failed to set write deadline(timeout): %w", err)
+		}
+	}
+
+	n, err = g.conn.Write(payload)
+
+	if err != nil {
+		g.logger.Error("Error while sending response", zap.Error(err))
+
+		// FOR TCP ONLY:
+		// Trap "broken pipe" which might happen due to stale broken connections.
+		// One case for this is when the upstream server was down momentarily and the connection was closed.
+		if errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
+			g.logger.Debug("Gelf-exporter connection closed, re-creating connection")
+			g.conn, err = makeConn(g.config.Protocol, g.config.Endpoint)
+
+			if err != nil {
+				return fmt.Errorf("Error while re-creating connection: %w", err)
+			}
+
+			n, err = g.conn.Write(payload)
+
+			if err != nil {
+				return fmt.Errorf("Write timeout: %w", err)
+			}
+			g.logger.Debug("Re-sent message")
+		}
+		return fmt.Errorf("Error while sending response: %w", err)
+	}
+
 	if n != len(payload) {
 		return fmt.Errorf("Error while validating UDP response, (received length/payload length): (%d/%d)", n, len(payload))
 	}
+
 	return nil
 }
 
