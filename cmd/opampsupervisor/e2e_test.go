@@ -2030,7 +2030,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 			Packages: map[string]*protobufs.PackageAvailable{
 				"": {
 					Type:    protobufs.PackageType_PackageType_TopLevel,
-					Version: "v" + agentVersion,
+					Version: agentVersion,
 					Hash:    []byte{0x01, 0x02},
 					File: &protobufs.DownloadableFile{
 						DownloadUrl: agentURL,
@@ -2053,7 +2053,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 				Name:                 "",
 				AgentHasVersion:      "",
 				AgentHasHash:         nil,
-				ServerOfferedVersion: "v" + agentVersion,
+				ServerOfferedVersion: agentVersion,
 				ServerOfferedHash:    []byte{0x01, 0x02},
 				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
 			},
@@ -2066,9 +2066,9 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		Packages: map[string]*protobufs.PackageStatus{
 			"": {
 				Name:                 "",
-				AgentHasVersion:      "v" + agentVersion,
+				AgentHasVersion:      agentVersion,
 				AgentHasHash:         []byte{0x01, 0x02},
-				ServerOfferedVersion: "v" + agentVersion,
+				ServerOfferedVersion: agentVersion,
 				ServerOfferedHash:    []byte{0x01, 0x02},
 				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
 			},
