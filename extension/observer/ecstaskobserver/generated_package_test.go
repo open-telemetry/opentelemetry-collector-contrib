@@ -3,8 +3,9 @@
 package ecstaskobserver
 
 import (
-	"go.uber.org/goleak"
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
