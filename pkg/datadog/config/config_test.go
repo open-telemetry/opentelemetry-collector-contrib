@@ -411,7 +411,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			TracesConfig: TracesConfig{
-				IgnoreResources: []string{},
+				IgnoreResources:        []string{},
+				PeerServiceAggregation: true,
+				PeerTagsAggregation:    true,
+				ComputeStatsBySpanKind: true,
 			},
 		},
 		Logs: LogsConfig{
@@ -480,7 +483,10 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					TracesConfig: TracesConfig{
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
@@ -540,6 +546,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 						SpanNameAsResourceName: true,
 						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 					TraceBuffer: 10,
 				},
@@ -598,7 +607,10 @@ func TestLoadConfig(t *testing.T) {
 							"old_name3": "new_name3",
 							"old_name4": "new_name4",
 						},
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
