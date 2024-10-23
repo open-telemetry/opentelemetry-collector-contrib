@@ -4,7 +4,7 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: []
+  distributions: [contrib]
   codeowners:
     active: [atoulme]
     emeritus: [rmfitzpatrick]
