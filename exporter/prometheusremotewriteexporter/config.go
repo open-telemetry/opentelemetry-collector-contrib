@@ -52,6 +52,9 @@ type Config struct {
 
 	// SendMetadata controls whether prometheus metadata will be generated and sent
 	SendMetadata bool `mapstructure:"send_metadata"`
+
+	// SendRW2 controls whether prometheus remote write v1 or v2 is sent
+	SendRW2 bool `mapstructure:"send_remote_write_v2"`
 }
 
 type CreatedMetric struct {
