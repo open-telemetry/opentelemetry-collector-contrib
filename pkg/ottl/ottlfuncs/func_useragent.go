@@ -38,10 +38,13 @@ func userAgent[K any](userAgentSource ottl.StringGetter[K]) ottl.ExprFunc[K] { /
 			return nil, err
 		}
 		parsedUserAgent := parser.ParseUserAgent(userAgentString)
+		parsedOS := parser.ParseOs(userAgentString)
 		return map[string]any{
 			semconv.AttributeUserAgentName:     parsedUserAgent.Family,
 			semconv.AttributeUserAgentOriginal: userAgentString,
 			semconv.AttributeUserAgentVersion:  parsedUserAgent.ToVersionString(),
+			semconv.AttributeOSName:            parsedOS.Family,
+			semconv.AttributeOSVersion:         parsedOS.ToVersionString(),
 		}, nil
 	}
 }
