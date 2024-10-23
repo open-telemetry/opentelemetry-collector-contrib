@@ -153,19 +153,31 @@ func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
 		}
 	}
 
+	existsInSlice := func(key string, slice []string) bool {
+		found := false
+		for _, k := range slice {
+			if key == k {
+				found = true
+				break
+			}
+		}
+		return found
+	}
+
 	if len(kr.config.IncludeInvolvedObject) != 0 {
 		if prop, exists := kr.config.IncludeInvolvedObject[ev.InvolvedObject.Kind]; !exists {
-			return false
-		} else {
-			if len(prop.IncludeReasons) != 0 {
-				found := false
-				for _, reason := range prop.IncludeReasons {
-					if reason == ev.Reason {
-						found = true
-						break
+			if prop, exists := kr.config.IncludeInvolvedObject["Other"]; !exists {
+				return false
+			} else {
+				if len(prop.IncludeReasons) != 0 {
+					if !existsInSlice(ev.Reason, prop.IncludeReasons) {
+						return false
 					}
 				}
-				if !found {
+			}
+		} else {
+			if len(prop.IncludeReasons) != 0 {
+				if !existsInSlice(ev.Reason, prop.IncludeReasons) {
 					return false
 				}
 			}
