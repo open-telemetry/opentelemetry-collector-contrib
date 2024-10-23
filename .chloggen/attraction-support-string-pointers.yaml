@@ -1,0 +1,9 @@
+change_type: enhancement
+component: internal/attraction
+note: Add support for string pointers in `client.Info.AuthData`
+issues: [34284]
+subtext: |
+  `processor/attributesprocessor` and other components using `internal/attraction` under the hood only supported string values and slices of string values.
+  
+  In some cases, such as modeling optional attributes, it can be useful to support string pointers (`*string`) and slices of string pointers (`[]*string`).
+change_logs: []
