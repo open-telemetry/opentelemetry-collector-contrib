@@ -114,22 +114,11 @@ issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/
 providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
-  for the component. Generally, you will need to find a sponsor for the component in order for it to be accepted. For vendor-specific
-  components, a sponsor may be assigned under certain circumstances. See additional details below.
+  for the component. You will need to find a sponsor for the component in order for it to be accepted.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
 * The configuration options your component will accept. This will give us a better understanding of what it does, and 
   how it may be implemented.
-
-### Vendor-specific components
-
-A vendor-specific component directly interfaces with a vendor-specific API and is expected to be maintained by a representative of the same vendor.
-It is always preferred to find a sponsor. However in an effort to ensure vendor neutrality, a sponsor will be assigned to a vendor-specific
-component using a round-robin fashion if the following circumstances are met:
-
-1. A member of the OpenTelemetry project proposes to contribute and support the component on behalf of the vendor.
-2. The proposed component is either a receiver or exporter. With this, we aim to foster an interoperable ecosystem.
-3. The vendor does not yet have a component of the same kind (receiver or exporter) in the repository.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
@@ -249,29 +238,6 @@ When submitting a component to the community, consider breaking it down into sep
 After a component has been merged it must be added to the
 [OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
 to be included in the distributed otelcol-contrib binaries and docker images.
-
-### Rotating sponsors
-
-The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
-
-* [@mwear](https://github.com/mwear)
-* [@djaglowski](https://github.com/djaglowski)
-* [@codeboten](https://github.com/codeboten)
-* [@mx-psi](https://github.com/mx-psi)
-* [@dmitryax](https://github.com/dmitryax)
-* [@evan-bradley](https://github.com/evan-bradley)
-* [@MovieStoreGuy](https://github.com/MovieStoreGuy)
-* [@bogdandrutu](https://github.com/bogdandrutu)
-* [@jpkrohling](https://github.com/jpkrohling)
-* [@dashpole](https://github.com/dashpole)
-* [@TylerHelmuth](https://github.com/TylerHelmuth)
-* [@fatsheep9146](https://github.com/fatsheep9146)
-* [@andrzej-stencel](https://github.com/andrzej-stencel)
-* [@songy23](https://github.com/songy23)
-* [@atoulme](https://github.com/atoulme)
-* [@crobert-1](https://github.com/crobert-1)
-
-Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
 ## Adding metrics to existing receivers
 Following these steps for contributing additional metrics to existing receivers.
