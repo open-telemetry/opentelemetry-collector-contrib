@@ -143,9 +143,6 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
-	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
-	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
-
 	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
 		kp.logger.Debug("res-attributes", zap.Any(k, v.Str()))
 		return true
@@ -162,6 +159,9 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			}
 		}
 	}
+
+	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
+	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
@@ -257,8 +257,6 @@ func (kp *kubernetesprocessor) processEventBody(resourceLogs plog.ResourceLogs) 
 func (kp *kubernetesprocessor) addOpsrampEventResourceAttributes(ctx context.Context, resource pcommon.Resource) {
 
 	if val, found := resource.Attributes().Get("type"); found && val.Str() == "event" {
-		kp.logger.Debug("addOpsrampEventResourceAttributes ")
-
 		resource.Attributes().PutStr("source", "kubernetes")
 		resource.Attributes().PutStr("level", "Unknown")
 		resource.Attributes().PutStr("cluster_name", kp.redisConfig.ClusterName)
@@ -266,7 +264,6 @@ func (kp *kubernetesprocessor) addOpsrampEventResourceAttributes(ctx context.Con
 		resource.Attributes().PutStr("resourceUUID", kp.redisConfig.ClusterUid)
 
 		if val, found := resource.Attributes().Get("k8s.namespace.name"); found {
-			kp.logger.Debug("addOpsrampEventResourceAttributes ", zap.Any("namespace", val.Str()))
 			resource.Attributes().PutStr("namespace", val.Str())
 		}
 
@@ -275,13 +272,9 @@ func (kp *kubernetesprocessor) addOpsrampEventResourceAttributes(ctx context.Con
 			host = val.Str()
 			if host != "" {
 				//overwrite node opsramp resource UUID in resourceUUID
-				kp.logger.Debug("addOpsrampEventResourceAttributes ", zap.Any("host", host))
-
 				resource.Attributes().PutStr("host", host)
 
 				if resourceUuid := kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid != "" {
-					kp.logger.Debug("addOpsrampEventResourceAttributes ", zap.Any("resourceUUID", resourceUuid))
-
 					resource.Attributes().PutStr("resourceUUID", resourceUuid)
 				}
 			}
