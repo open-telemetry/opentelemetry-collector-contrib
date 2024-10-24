@@ -143,8 +143,8 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
-							"io.opentelemetry.discovery.redis/scraper": "redis",
-							"io.opentelemetry.discovery.redis/config":  config,
+							"io.opentelemetry.discovery.6379/scraper": "redis",
+							"io.opentelemetry.discovery.6379/config":  config,
 						}},
 					Port: 6379},
 			},
@@ -166,9 +166,9 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
-							"io.opentelemetry.discovery.redis/scraper": "redis",
-							"io.opentelemetry.discovery.redis/signals": "metrics",
-							"io.opentelemetry.discovery/config":        config,
+							"io.opentelemetry.discovery.6379/scraper": "redis",
+							"io.opentelemetry.discovery.6379/signals": "metrics",
+							"io.opentelemetry.discovery/config":       config,
 						}},
 					Port: 6379},
 			},
@@ -190,9 +190,9 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
-							"io.opentelemetry.discovery.redis/scraper": "redis",
-							"io.opentelemetry.discovery/config":        config,
-							"io.opentelemetry.discovery.redis/config":  configRedis,
+							"io.opentelemetry.discovery.6379/scraper": "redis",
+							"io.opentelemetry.discovery/config":       config,
+							"io.opentelemetry.discovery.6379/config":  configRedis,
 						}},
 					Port: 6379},
 			},
@@ -217,9 +217,9 @@ password: "changeme"`
 							"io.opentelemetry.discovery/scraper":                    "redis",
 							"io.opentelemetry.discovery/config.collection_interval": "20s",
 							"io.opentelemetry.discovery/config.timeout":             "30s",
-							"io.opentelemetry.discovery.redis/config.timeout":       "130s",
-							"io.opentelemetry.discovery.redis/config.username":      "username",
-							"io.opentelemetry.discovery.redis/config.password":      "changeme",
+							"io.opentelemetry.discovery.6379/config.timeout":        "130s",
+							"io.opentelemetry.discovery.6379/config.username":       "username",
+							"io.opentelemetry.discovery.6379/config.password":       "changeme",
 						}}},
 			},
 			expectedReceiver: receiverTemplate{},
@@ -287,7 +287,7 @@ nested_example:
 		scopeSuffix: "",
 	}, "simple_annotation_case_scoped": {
 		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.webport/config": config,
+			"io.opentelemetry.discovery.8080/config": config,
 		}, expectedConf: userConfigMap{
 			"collection_interval": "20s",
 			"endpoint":            "0.0.0.0:8080",
@@ -295,7 +295,7 @@ nested_example:
 			"read_buffer_size":    "10",
 			"nested_example":      userConfigMap{"foo": "bar"},
 		}, defaultEndpoint: "1.2.3.4:8080",
-		scopeSuffix: "webport",
+		scopeSuffix: "8080",
 	},
 	}
 
@@ -341,17 +341,17 @@ endpoint: "0.0.0.0:8080"`
 		}, "test_enabled_scope": {
 			hintsAnn: map[string]string{
 				"io.opentelemetry.discovery/config":       config,
-				"io.opentelemetry.discovery.some/enabled": "true",
+				"io.opentelemetry.discovery.8080/enabled": "true",
 			},
 			expected:    true,
 			scopeSuffix: "some",
 		}, "test_disabled_scoped": {
 			hintsAnn: map[string]string{
 				"io.opentelemetry.discovery/config":       config,
-				"io.opentelemetry.discovery.some/enabled": "false",
+				"io.opentelemetry.discovery.8080/enabled": "false",
 			},
 			expected:    false,
-			scopeSuffix: "some",
+			scopeSuffix: "8080",
 		},
 	}
 	for name, test := range tests {

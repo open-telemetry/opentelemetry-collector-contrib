@@ -503,8 +503,8 @@ io.opentelemetry.discovery/config: |
 #### Support multiple target containers
 
 Users can target the annotation to a specific container by suffixing it with the name of the port that container exposes:
-`io.opentelemetry.discovery.<container_port_name>/endpoint`.
-For example ```io.opentelemetry.discovery.webserver/endpoint: "http://`endpoint`/nginx_status"```
+`io.opentelemetry.discovery.<container_port>/endpoint`.
+For example ```io.opentelemetry.discovery.80/endpoint: "http://`endpoint`/nginx_status"```
 where `webserver` is the name of the port the target container exposes.
 
 If a Pod is annotated with both container level hints and pod level hints the container level hints have priority and
@@ -578,13 +578,13 @@ kind: Pod
 metadata:
   name: redis
   annotations:
-    io.opentelemetry.discovery.redis/scraper: redis
-    io.opentelemetry.discovery.redis/signals: metrics
-    io.opentelemetry.discovery.redis/config: |
+    io.opentelemetry.discovery.6379/scraper: redis
+    io.opentelemetry.discovery.6379/signals: metrics
+    io.opentelemetry.discovery.6379/config: |
      collection_interval: '20s'
-    io.opentelemetry.discovery.webserver/signals: metrics,logs
-    io.opentelemetry.discovery.webserver/scraper: nginx
-    io.opentelemetry.discovery.webserver/config: |
+    io.opentelemetry.discovery.80/signals: metrics,logs
+    io.opentelemetry.discovery.80/scraper: nginx
+    io.opentelemetry.discovery.80/config: |
       collection_interval: '20s'
       endpoint: "http://`endpoint`/nginx_status"
   labels:

@@ -81,13 +81,21 @@ func (builder *K8sHintsBuilder) createScraper(
 	podUID string) (*receiverTemplate, error) {
 
 	var port uint16
-	portName := getStringEnv(env, "name")
 
-	if !discoveryEnabled(annotations, portName) {
+	if p, ok := env["port"]; ok {
+		port, ok = p.(uint16)
+		if !ok || port == 0 {
+			return nil, fmt.Errorf("could not extract port: %v", zap.Any("env", env))
+		}
+	} else {
+		return nil, fmt.Errorf("could not extract port: %v", zap.Any("env", env))
+	}
+
+	if !discoveryEnabled(annotations, fmt.Sprint(port)) {
 		return nil, nil
 	}
 
-	subreceiverKey := getHintAnnotation(annotations, scraperHint, portName)
+	subreceiverKey := getHintAnnotation(annotations, scraperHint, fmt.Sprint(port))
 	if subreceiverKey == "" {
 		// no scraper hint detected
 		return nil, nil
@@ -95,9 +103,9 @@ func (builder *K8sHintsBuilder) createScraper(
 	builder.logger.Debug("handling added hinted receiver", zap.Any("subreceiverKey", subreceiverKey))
 
 	defaultEndpoint := getStringEnv(env, "endpoint")
-	userConfMap := getConfFromAnnotations(annotations, defaultEndpoint, portName, builder.logger)
+	userConfMap := getConfFromAnnotations(annotations, defaultEndpoint, fmt.Sprint(port), builder.logger)
 
-	signalsAnn := getHintAnnotation(annotations, signalsHint, portName)
+	signalsAnn := getHintAnnotation(annotations, signalsHint, fmt.Sprint(port))
 	signals := getSignalsConf(signalsAnn)
 
 	if p, ok := env["port"]; ok {
