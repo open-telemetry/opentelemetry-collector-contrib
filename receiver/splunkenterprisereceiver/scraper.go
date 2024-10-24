@@ -1640,6 +1640,20 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	var da DispatchArtifacts
 
 	ept := apiDict[`SplunkDispatchArtifacts`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs <- err
@@ -1655,32 +1669,32 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesTotal.Enabled {
 			totalCount := int64(f.Content.TotalCount)
-			s.mb.RecordSplunkServerSearchesTotalDataPoint(now, totalCount)
+			s.mb.RecordSplunkServerSearchesTotalDataPoint(now, totalCount, s.conf.Config.SHEndpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesAdHocTotal.Enabled {
 			adHocCount := int64(f.Content.AdHocCount)
-			s.mb.RecordSplunkServerSearchesAdHocTotalDataPoint(now, adHocCount)
+			s.mb.RecordSplunkServerSearchesAdHocTotalDataPoint(now, adHocCount, s.conf.Config.SHEndpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesScheduledTotal.Enabled {
 			scheduledCount := int64(f.Content.ScheduledCount)
-			s.mb.RecordSplunkServerSearchesScheduledTotalDataPoint(now, scheduledCount)
+			s.mb.RecordSplunkServerSearchesScheduledTotalDataPoint(now, scheduledCount, s.conf.Config.SHEndpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesCompletedTotal.Enabled {
 			completedCount := int64(f.Content.CompletedCount)
-			s.mb.RecordSplunkServerSearchesCompletedTotalDataPoint(now, completedCount)
+			s.mb.RecordSplunkServerSearchesCompletedTotalDataPoint(now, completedCount, s.conf.Config.SHEndpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.IncompleteTotal.Enabled {
 			incompleCount := int64(f.Content.IncompleCount)
-			s.mb.RecordSplunkServerSearchesIncompleteTotalDataPoint(now, incompleCount)
+			s.mb.RecordSplunkServerSearchesIncompleteTotalDataPoint(now, incompleCount, s.conf.Config.SHEndpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.InvalidTotal.Enabled {
 			invalidCount := int64(f.Content.InvalidCount)
-			s.mb.RecordSplunkServerSearchesInvalidTotalDataPoint(now, invalidCount)
+			s.mb.RecordSplunkServerSearchesInvalidTotalDataPoint(now, invalidCount, s.conf.Config.SHEndpoint)
 		}
 	}
 }
