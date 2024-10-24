@@ -4,8 +4,6 @@
 package k8seventsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver"
 
 import (
-	"encoding/json"
-	"os"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -40,8 +38,13 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	//Filled below in opsramp resource attributes
-	//resourceAttrs.PutStr(semconv.AttributeK8SNodeName, ev.Source.Host)
+	eventHost := ""
+	if ev.ReportingInstance != "" {
+		eventHost = ev.ReportingInstance
+	} else if ev.Source.Host != "" {
+		eventHost = ev.Source.Host
+	}
+	resourceAttrs.PutStr(semconv.AttributeK8SNodeName, eventHost)
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
@@ -51,9 +54,13 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs.PutStr("k8s.object.api_version", ev.InvolvedObject.APIVersion)
 	resourceAttrs.PutStr("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
 
-	addOpsrampAttributes(resourceAttrs, ev)
+	resourceAttrs.PutStr("type", "event") // This should come from config. To be enhanced.
 
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(getEventTimestamp(ev)))
+
+	// The Message field contains description about the event,
+	// which is best suited for the "Body" of the LogRecordSlice.
+	lr.Body().SetStr(ev.Message)
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
 	// severity is found.
@@ -80,66 +87,5 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 		attrs.PutInt("k8s.event.count", int64(ev.Count))
 	}
 
-	attrs.PutStr("message", ev.Message)
-
-	// The Message field contains description about the event,
-	// which is best suited for the "Body" of the LogRecordSlice.
-
-	resourceAttrs.Range(func(k string, v pcommon.Value) bool {
-		attrs.PutStr(k, v.Str())
-		return true
-	})
-
-	bodyMap := map[string]string{}
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		bodyMap[k] = v.Str()
-		return true
-	})
-
-	body, err := json.Marshal(bodyMap)
-	if err != nil {
-		logger.Debug("failed to marshal")
-	}
-
-	lr.Body().SetStr(string(body))
-
 	return ld
-}
-
-func addOpsrampAttributes(resourceAttrs pcommon.Map, ev *corev1.Event) {
-	resourceAttrs.PutStr("source", "kubernetes")
-	resourceAttrs.PutStr("type", "event")
-	resourceAttrs.PutStr("level", "Unknown")
-
-	clusterName := os.Getenv("CLUSTER_NAME")
-	if clusterName != "" {
-		resourceAttrs.PutStr("cluster_name", clusterName) // TBD to deprecate
-		resourceAttrs.PutStr("k8s.cluster.name", clusterName)
-	}
-
-	host := ""
-	if ev.ReportingInstance != "" {
-		host = ev.ReportingInstance
-	} else if ev.Source.Host != "" {
-		host = ev.Source.Host
-	} else {
-		host = clusterName
-	}
-
-	resourceAttrs.PutStr(semconv.AttributeK8SNodeName, host)
-	resourceAttrs.PutStr("host", host)
-
-	clusterUuid := os.Getenv("CLUSTER_UUID")
-	resourceAttrs.PutStr("resourceUUID", clusterUuid)
-
-	resourceAttrs.PutStr("namespace", ev.InvolvedObject.Namespace) // TBD to deprecate
-	resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
-
-	if ev.InvolvedObject.Kind == "Pod" {
-		resourceAttrs.PutStr("k8s.pod.uid", string(ev.InvolvedObject.UID))
-	}
-
-	if ev.InvolvedObject.Kind == "Node" {
-		resourceAttrs.PutStr("k8s.node.uid", string(ev.InvolvedObject.UID))
-	}
 }
