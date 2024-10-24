@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -257,10 +258,15 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	}
 
 	var flowControlCount int64
+	var spanCount int
 flowControlLoop:
 	for {
 		// forward to next consumer. Forwarding errors are not fatal so are not propagated to the caller.
 		// Temporary consumer errors will lead to redelivered messages, permanent will be accepted
+		if (traces != ptrace.Traces{}) {
+			spanCount = traces.SpanCount() // get the span count into a variable before we call consumeTraces
+		}
+
 		forwardErr := s.nextConsumer.ConsumeTraces(ctx, traces)
 		if forwardErr != nil {
 			if !consumererror.IsPermanent(forwardErr) {
@@ -288,7 +294,7 @@ flowControlLoop:
 			}
 		} else {
 			// no forward error
-			s.telemetryBuilder.SolacereceiverReportedSpans.Add(ctx, int64(traces.SpanCount()), metric.WithAttributeSet(s.metricAttrs))
+			s.telemetryBuilder.SolacereceiverReportedSpans.Add(ctx, int64(spanCount), metric.WithAttributeSet(s.metricAttrs))
 			break flowControlLoop
 		}
 	}
