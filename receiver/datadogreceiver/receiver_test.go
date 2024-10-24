@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -114,6 +115,55 @@ func TestDatadogServer(t *testing.T) {
 			assert.Equal(t, tc.expectCode, resp.StatusCode, "Must match the expected status code")
 		})
 	}
+}
+
+func TestDatadogResponse(t *testing.T) {
+	tests := []struct {
+		name           string
+		err            error
+		expectedStatus int
+	}{
+		{
+			name:           "non-permanent error",
+			err:            errors.New("non-permanenet error"),
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "permanent error",
+			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+			dd, err := newDataDogReceiver(
+				cfg,
+				receivertest.NewNopSettings(),
+			)
+			require.NoError(t, err, "Must not error when creating receiver")
+			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+
+			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
+			})
+
+			apiPayload := pb.TracerPayload{}
+			var reqBytes []byte
+			bytez, _ := apiPayload.MarshalMsg(reqBytes)
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s/v0.7/traces", dd.(*datadogReceiver).address), bytes.NewReader(bytez))
+			require.NoError(t, err, "Must not error creating request")
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Must not error performing request")
+			require.Equal(t, tc.expectedStatus, resp.StatusCode)
+		})
+	}
+
 }
 
 func TestDatadogInfoEndpoint(t *testing.T) {
