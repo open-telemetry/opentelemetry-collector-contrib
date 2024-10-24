@@ -190,7 +190,7 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 			}
 		}
 
-		err = acir.initDcgmScraper(ctx, host, hostInfo, k8sDecorator)
+		err = acir.initDcgmScraper(ctx, host, hostInfo, localNodeDecorator)
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
 		}
@@ -198,7 +198,7 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start pod resources store", zap.Error(err))
 		}
-		err = acir.initNeuronScraper(ctx, host, hostInfo, k8sDecorator)
+		err = acir.initNeuronScraper(ctx, host, hostInfo, localNodeDecorator)
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start neuron scraper", zap.Error(err))
 		}
@@ -286,7 +286,7 @@ func (acir *awsContainerInsightReceiver) initPrometheusScraper(ctx context.Conte
 	})
 	return err
 }
-func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, decorator *stores.K8sDecorator) error {
+func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
 	if !acir.config.EnableAcceleratedComputeMetrics {
 		return nil
 	}
@@ -296,7 +296,7 @@ func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, ho
 		NextConsumer:          acir.nextConsumer,
 		MetricType:            ci.TypeContainerGPU,
 		MetricToUnitMap:       gpu.MetricToUnit,
-		K8sDecorator:          decorator,
+		K8sDecorator:          localNodeDecorator,
 		Logger:                acir.settings.Logger,
 	}
 
@@ -321,7 +321,7 @@ func (acir *awsContainerInsightReceiver) initPodResourcesStore() error {
 	return err
 }
 
-func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, decorator *stores.K8sDecorator) error {
+func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
 	if !acir.config.EnableAcceleratedComputeMetrics {
 		return nil
 	}
@@ -331,7 +331,7 @@ func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, 
 		ContainerOrchestrator: ci.EKS,
 		NextConsumer:          acir.nextConsumer,
 		MetricType:            ci.TypeContainerNeuron,
-		K8sDecorator:          decorator,
+		K8sDecorator:          localNodeDecorator,
 		Logger:                acir.settings.Logger,
 	}
 
@@ -368,7 +368,7 @@ func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, 
 	return err
 }
 
-func (acir *awsContainerInsightReceiver) initEfaSysfsScraper(localnodeDecorator stores.Decorator) error {
+func (acir *awsContainerInsightReceiver) initEfaSysfsScraper(localNodeDecorator stores.Decorator) error {
 	if !acir.config.EnableAcceleratedComputeMetrics {
 		return nil
 	}
@@ -376,7 +376,7 @@ func (acir *awsContainerInsightReceiver) initEfaSysfsScraper(localnodeDecorator 
 	if acir.podResourcesStore == nil {
 		return errors.New("pod resources store was not initialized")
 	}
-	acir.efaSysfsScraper = efa.NewEfaSyfsScraper(acir.settings.Logger, localnodeDecorator, acir.podResourcesStore)
+	acir.efaSysfsScraper = efa.NewEfaSyfsScraper(acir.settings.Logger, localNodeDecorator, acir.podResourcesStore)
 	return nil
 }
 

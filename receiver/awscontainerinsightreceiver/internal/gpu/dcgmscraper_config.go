@@ -83,8 +83,8 @@ func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config
 			Replacement:  "${1}",
 			Action:       relabel.Replace,
 		},
-		// hacky way to inject static values (clusterName & instanceId) to label set without additional processor
-		// relabel looks up an existing label then creates another label with given key (TargetLabel) and value (static)
+		// hacky way to inject static values (clusterName/instanceId/instanceType)
+		// could be removed since these labels are now set by localNode decorator
 		{
 			SourceLabels: model.LabelNames{"namespace"},
 			TargetLabel:  ci.ClusterNameKey,
