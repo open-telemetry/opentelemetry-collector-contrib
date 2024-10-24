@@ -26,7 +26,16 @@ attributes:
     type: string
   splunk.queue.name:
     description: The name of the queue reporting a specific KPI
-    type: string  
+    type: string
+  splunk.kvstore.status.value:
+    description: The string value of the status returned when reporting on KV store using the introspection endpoint
+    type: string
+  splunk.kvstore.external:
+    description: Value denoting if the KV store is using an external service.
+    type: string
+  splunk.kvstore.storage.engine:
+    description: The backend storage used by the KV store.
+    type: string
 
 metrics:
   splunk.license.index.usage:
@@ -238,6 +247,28 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.queue.name] 
+#'services/kvstore/status'
+  splunk.kvstore.status:
+    enabled: false
+    description: This is the overall status of the kvstore for the given deployment.
+    unit: '{status}'
+    gauge:
+      value_type: int
+    attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value]
+  splunk.kvstore.replication.status:
+    enabled: false
+    description: Replication status of the KV store.
+    unit: '{status}'
+    gauge:
+      value_type: int
+    attributes: [splunk.kvstore.status.value]
+  splunk.kvstore.backup.status:
+    enabled: false
+    description: Backup and restore status of the KV store.
+    unit: '{status}'
+    gauge:
+      value_type: int
+    attributes: [splunk.kvstore.status.value]
 
 tests:
   config:

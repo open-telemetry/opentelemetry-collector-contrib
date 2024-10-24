@@ -9,15 +9,15 @@ import (
 )
 
 var (
-	errInvalidTraceIDLenght = fmt.Errorf("TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'")
-	errInvalidSpanIDLenght  = fmt.Errorf("SpanID must be a 16 character hex string, like: '5828fa4960140870'")
+	errInvalidTraceIDLength = fmt.Errorf("TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'")
+	errInvalidSpanIDLength  = fmt.Errorf("SpanID must be a 16 character hex string, like: '5828fa4960140870'")
 	errInvalidTraceID       = fmt.Errorf("failed to create traceID byte array from the given traceID, make sure the traceID is a hex representation of a [16]byte, like: 'ae87dadd90e9935a4bc9660628efd569'")
 	errInvalidSpanID        = fmt.Errorf("failed to create SpanID byte array from the given SpanID, make sure the SpanID is a hex representation of a [8]byte, like: '5828fa4960140870'")
 )
 
 func ValidateTraceID(traceID string) error {
 	if len(traceID) != 32 {
-		return errInvalidTraceIDLenght
+		return errInvalidTraceIDLength
 	}
 
 	_, err := hex.DecodeString(traceID)
@@ -30,7 +30,7 @@ func ValidateTraceID(traceID string) error {
 
 func ValidateSpanID(spanID string) error {
 	if len(spanID) != 16 {
-		return errInvalidSpanIDLenght
+		return errInvalidSpanIDLength
 	}
 	_, err := hex.DecodeString(spanID)
 	if err != nil {
