@@ -31,6 +31,7 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
+	SyncOffsets()
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -164,11 +165,65 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	if t.pollsToArchive <= 0 || t.persister == nil {
 		return
 	}
-	key := fmt.Sprintf("knownFiles%d", t.archiveIndex)
-	if err := checkpoint.SaveKey(context.Background(), t.persister, metadata.Get(), key); err != nil {
+	if err := t.updateArchive(t.archiveIndex, metadata); err != nil {
 		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
 	}
 	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
+}
+
+func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
+	// readArchive loads data from the archive for a given index and returns a fileset.Filset.
+	key := fmt.Sprintf("knownFiles%d", index)
+	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
+	if err != nil {
+		return nil, err
+	}
+	f := fileset.New[*reader.Metadata](len(metadata))
+	f.Add(metadata...)
+	return f, nil
+}
+
+func (t *fileTracker) updateArchive(index int, rmds *fileset.Fileset[*reader.Metadata]) error {
+	// updateArchive saves data to the archive for a given index and returns an error, if encountered.
+	key := fmt.Sprintf("knownFiles%d", index)
+	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
+}
+
+func (t *fileTracker) SyncOffsets() {
+	// SyncOffsets goes through all new (unmatched) readers and updates the metadata, if found on archive.
+
+	// To minimize disk access, we first access the index, then review unmatched readers and synchronize their metadata if a match is found.
+	// We exit if no new reader exists.
+
+	archiveReadIndex := t.archiveIndex - 1 // try loading most recently written index and iterate backwards
+	for i := 0; i < t.pollsToArchive; i++ {
+		newFound := false
+		data, err := t.readArchive(archiveReadIndex)
+		if err != nil {
+			t.set.Logger.Error("error while opening archive", zap.Error(err))
+			continue
+		}
+		for _, v := range t.currentPollFiles.Get() {
+			if v.IsNew() {
+				newFound = true
+				if md := data.Match(v.GetFingerprint(), fileset.StartsWith); md != nil {
+					v.SyncMetadata(md)
+				}
+			}
+		}
+		if !newFound {
+			// No new reader is available, so there’s no need to go through the rest of the archive.
+			// Just exit to save time.
+			break
+		}
+		if err := t.updateArchive(archiveReadIndex, data); err != nil {
+			t.set.Logger.Error("error while opening archive", zap.Error(err))
+			continue
+		}
+
+		archiveReadIndex = (archiveReadIndex - 1) % t.pollsToArchive
+	}
+
 }
 
 // noStateTracker only tracks the current polled files. Once the poll is
@@ -225,3 +280,5 @@ func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
+
+func (t *noStateTracker) SyncOffsets() {}
