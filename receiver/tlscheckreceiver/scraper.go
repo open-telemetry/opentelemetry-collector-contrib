@@ -39,7 +39,7 @@ func getConnectionState(endpoint string) (tls.ConnectionState, error) {
 	return conn.ConnectionState(), nil
 }
 
-func (s *scraper) scrapeTarget(endpoint string, wg *sync.WaitGroup, mux *sync.Mutex) {
+func (s *scraper) scrapeEndpoint(endpoint string, wg *sync.WaitGroup, mux *sync.Mutex) {
 	defer wg.Done()
 
 	mux.Lock()
@@ -78,7 +78,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var mux sync.Mutex
 
 	for _, target := range s.cfg.Targets {
-		go s.scrapeTarget(target.Endpoint, &wg, &mux)
+		go s.scrapeEndpoint(target.Endpoint, &wg, &mux)
 	}
 
 	wg.Wait()

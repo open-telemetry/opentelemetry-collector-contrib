@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confignet"
-
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -41,7 +40,7 @@ func validatePort(port string) error {
 	return nil
 }
 
-func ValidateTarget(cfg *confignet.TCPAddrConfig) error {
+func validateTarget(cfg *confignet.TCPAddrConfig) error {
 	var err error
 
 	if cfg.Endpoint == "" {
@@ -73,7 +72,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	for _, target := range cfg.Targets {
-		err = multierr.Append(err, ValidateTarget(target))
+		err = multierr.Append(err, validateTarget(target))
 	}
 
 	return err
