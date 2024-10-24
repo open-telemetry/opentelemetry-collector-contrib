@@ -6,8 +6,10 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
@@ -18,76 +20,88 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "missing url",
+			desc: "missing targets",
 			cfg: &Config{
-				Targets:          []*targetConfig{},
+				Targets:          []*confignet.TCPAddrConfig{},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: ErrMissingTargets,
 		},
 		{
-			desc: "invalid host",
+			desc: "invalid endpoint",
 			cfg: &Config{
-				Targets: []*targetConfig{
+				Targets: []*confignet.TCPAddrConfig{
 					{
-						Host: "endpoint:  12efg",
+						Endpoint: "bad-endpoint:  12efg",
+						DialerConfig: confignet.DialerConfig{
+							Timeout: 12 * time.Second,
+						},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, "provided port is not a number:   12efg"),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, "provided port is not a number:   12efg"),
 		},
 		{
 			desc: "invalid config with multiple targets",
 			cfg: &Config{
-				Targets: []*targetConfig{
+				Targets: []*confignet.TCPAddrConfig{
 					{
-						Host: "endpoint:  12efg",
+						Endpoint: "endpoint:  12efg",
 					},
 					{
-						Host: "https://example.com:80",
+						Endpoint: "https://example.com:80",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `provided port is not a number:   12efg; host contains a scheme, which is not allowed: https://example.com:80`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, `provided port is not a number:   12efg; host contains a scheme, which is not allowed: https://example.com:80`),
 		},
 		{
 			desc: "port out of range",
 			cfg: &Config{
-				Targets: []*targetConfig{
+				Targets: []*confignet.TCPAddrConfig{
 					{
-						Host: "www.opentelemetry.io:67000",
+						Endpoint: "www.opentelemetry.io:67000",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `provided port is out of valid range (1-65535): 67000`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, `provided port is out of valid range (1-65535): 67000`),
 		},
 		{
-			desc: "missing scheme",
+			desc: "missing port",
 			cfg: &Config{
-				Targets: []*targetConfig{
+				Targets: []*confignet.TCPAddrConfig{
 					{
-						Host: "www.opentelemetry.io/docs",
+						Endpoint: "www.opentelemetry.io/docs",
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidHost, `address www.opentelemetry.io/docs: missing port in address`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, `address www.opentelemetry.io/docs: missing port in address`),
 		},
 		{
 			desc: "valid config",
 			cfg: &Config{
-				Targets: []*targetConfig{
+				Targets: []*confignet.TCPAddrConfig{
 					{
-						Host: "opentelemetry.io:443",
+						Endpoint: "opentelemetry.io:443",
+						DialerConfig: confignet.DialerConfig{
+							Timeout: 3 * time.Second,
+						},
 					},
 					{
-						Host: "opentelemetry.io:8080",
+						Endpoint: "opentelemetry.io:8080",
+						DialerConfig: confignet.DialerConfig{
+							Timeout: 1 * time.Second,
+						},
 					},
 					{
-						Host: "111.222.33.44:10000",
+						Endpoint: "111.222.33.44:10000",
+						DialerConfig: confignet.DialerConfig{
+							Timeout: 5 * time.Second,
+						},
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),

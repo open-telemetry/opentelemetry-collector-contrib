@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -57,8 +58,8 @@ func mockGetConnectionStateNotYetValid(host string) (tls.ConnectionState, error)
 
 func TestScrape_ValidCertificate(t *testing.T) {
 	cfg := &Config{
-		Targets: []*targetConfig{
-			{Host: "example.com:443"},
+		Targets: []*confignet.TCPAddrConfig{
+			{Endpoint: "example.com:443"},
 		},
 	}
 	settings := receivertest.NewNopSettings()
@@ -84,8 +85,8 @@ func TestScrape_ValidCertificate(t *testing.T) {
 
 func TestScrape_ExpiredCertificate(t *testing.T) {
 	cfg := &Config{
-		Targets: []*targetConfig{
-			{Host: "expired.com:443"},
+		Targets: []*confignet.TCPAddrConfig{
+			{Endpoint: "expired.com:443"},
 		},
 	}
 	settings := receivertest.NewNopSettings()
@@ -115,8 +116,8 @@ func TestScrape_ExpiredCertificate(t *testing.T) {
 
 func TestScrape_NotYetValidCertificate(t *testing.T) {
 	cfg := &Config{
-		Targets: []*targetConfig{
-			{Host: "expired.com:443"},
+		Targets: []*confignet.TCPAddrConfig{
+			{Endpoint: "expired.com:443"},
 		},
 	}
 	settings := receivertest.NewNopSettings()

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -34,7 +35,7 @@ func newDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		Targets:              []*targetConfig{},
+		Targets:              []*confignet.TCPAddrConfig{},
 	}
 }
 

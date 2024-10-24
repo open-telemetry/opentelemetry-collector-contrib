@@ -53,14 +53,14 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 			now := pcommon.NewTimestampFromTime(time.Now())
 			mux.Lock()
-			state, err := s.getConnectionState(target.Host)
+			state, err := s.getConnectionState(target.Endpoint)
 			if err != nil {
-				s.settings.Logger.Error("TCP connection error encountered", zap.String("host", target.Host), zap.Error(err))
+				s.settings.Logger.Error("TCP connection error encountered", zap.String("host", target.Endpoint), zap.Error(err))
 			}
 
 			s.settings.Logger.Error("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
 			if len(state.PeerCertificates) == 0 {
-				s.settings.Logger.Error("No TLS certificates found. Verify the host serves TLS certificates.", zap.String("host", target.Host))
+				s.settings.Logger.Error("No TLS certificates found. Verify the host serves TLS certificates.", zap.String("host", target.Endpoint))
 			}
 
 			cert := state.PeerCertificates[0]
@@ -72,7 +72,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, host)
 			mux.Unlock()
 
-		}(target.Host)
+		}(target.Endpoint)
 	}
 
 	wg.Wait()

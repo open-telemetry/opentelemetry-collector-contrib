@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/confignet"
+
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -18,18 +20,18 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
-	errInvalidHost = errors.New(`"host" must be in the form of <hostname>:<port>`)
+	errInvalidEndpoint = errors.New(`"host" must be in the form of <hostname>:<port>`)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*targetConfig `mapstructure:"targets"`
+	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
 }
 
 type targetConfig struct {
-	Host string `mapstructure:"host"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 }
 
 func validatePort(port string) error {
@@ -43,25 +45,25 @@ func validatePort(port string) error {
 	return nil
 }
 
-func (cfg *targetConfig) Validate() error {
+func ValidateTarget(cfg *confignet.TCPAddrConfig) error {
 	var err error
 
-	if cfg.Host == "" {
+	if cfg.Endpoint == "" {
 		return ErrMissingTargets
 	}
 
-	if strings.Contains(cfg.Host, "://") {
-		return fmt.Errorf("host contains a scheme, which is not allowed: %s", cfg.Host)
+	if strings.Contains(cfg.Endpoint, "://") {
+		return fmt.Errorf("host contains a scheme, which is not allowed: %s", cfg.Endpoint)
 	}
 
-	_, port, parseErr := net.SplitHostPort(cfg.Host)
+	_, port, parseErr := net.SplitHostPort(cfg.Endpoint)
 	if parseErr != nil {
-		return fmt.Errorf("%s: %w", errInvalidHost.Error(), parseErr)
+		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
 	}
 
 	portParseErr := validatePort(port)
 	if portParseErr != nil {
-		return fmt.Errorf("%s: %w", errInvalidHost.Error(), portParseErr)
+		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), portParseErr)
 	}
 
 	return err
@@ -75,7 +77,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	for _, target := range cfg.Targets {
-		err = multierr.Append(err, target.Validate())
+		err = multierr.Append(err, ValidateTarget(target))
 	}
 
 	return err
