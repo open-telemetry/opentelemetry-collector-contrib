@@ -218,6 +218,8 @@ func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {
+	case config.UseAzureAuth:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithDefaultAzureCredential()
 	case !isManagedIdentity:
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
 	case isManagedIdentity && isSystemManagedIdentity:

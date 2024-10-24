@@ -24,6 +24,7 @@ type Config struct {
 	ApplicationKey            configopaque.String `mapstructure:"application_key"`
 	TenantID                  string              `mapstructure:"tenant_id"`
 	ManagedIdentityID         string              `mapstructure:"managed_identity_id"`
+	UseAzureAuth              bool                `mapstructure:"use_azure_auth"`
 	Database                  string              `mapstructure:"db_name"`
 	MetricTable               string              `mapstructure:"metrics_table_name"`
 	LogTable                  string              `mapstructure:"logs_table_name"`
@@ -46,9 +47,23 @@ func (adxCfg *Config) Validate() error {
 	if isClusterURIEmpty {
 		return errors.New(`clusterURI config is mandatory`)
 	}
-	// Parameters for AD App Auth or Managed Identity Auth are mandatory
-	if isAppAuthEmpty && isManagedAuthEmpty {
-		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] are needed for auth`)
+	// Parameters for AD App Auth or Managed Identity Auth or Default Auth are mandatory
+	authMethods := 0
+
+	if !isAppAuthEmpty {
+		authMethods++
+	}
+
+	if !isManagedAuthEmpty {
+		authMethods++
+	}
+
+	if adxCfg.UseAzureAuth {
+		authMethods++
+	}
+
+	if authMethods != 1 {
+		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_azure_auth"] must be provided for auth`)
 	}
 
 	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {
