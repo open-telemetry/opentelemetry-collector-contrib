@@ -71,8 +71,13 @@ func New(c Criteria) (*Matcher, error) {
 		return nil, fmt.Errorf("exclude: %w", err)
 	}
 
+	includes, err := finder.GroupByBase(c.Include)
+	if err != nil {
+		return nil, fmt.Errorf("group include by fs: %w", err)
+	}
+
 	m := &Matcher{
-		include: c.Include,
+		include: includes,
 		exclude: c.Exclude,
 	}
 
@@ -154,7 +159,7 @@ func orderingCriteriaNeedsRegex(sorts []Sort) bool {
 }
 
 type Matcher struct {
-	include    []string
+	include    finder.BaseGroups
 	exclude    []string
 	regex      *regexp.Regexp
 	filterOpts []filter.Option
