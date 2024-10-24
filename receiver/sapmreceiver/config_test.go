@@ -53,14 +53,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "passthrough"),
-			expected: &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:7276",
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {
