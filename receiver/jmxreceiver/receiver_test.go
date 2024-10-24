@@ -47,6 +47,7 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 			&Config{
 				Endpoint:           "myhost:12345",
 				TargetSystem:       "mytargetsystem",
+				GroovyScript:       "/some_script.groovy",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "https://myotlpendpoint",
@@ -85,6 +86,7 @@ javax.net.ssl.trustStoreType = ASCII
 otel.exporter.otlp.endpoint = https://myotlpendpoint
 otel.exporter.otlp.headers = one=two,three=four
 otel.exporter.otlp.timeout = 234000
+otel.jmx.groovy.script = /some_script.groovy
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.password = mypass \nword
 otel.jmx.realm = myrealm
@@ -101,6 +103,7 @@ otel.resource.attributes = abc=123,one=two`,
 			&Config{
 				Endpoint:           "myhostwithoutport",
 				TargetSystem:       "mytargetsystem",
+				GroovyScript:       "/some_script.groovy",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
 					Endpoint: "myotlpendpoint",

@@ -39,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "myendpoint:12345",
 				TargetSystem:       "jvm",
+				GroovyScript:       "/some_script.groovy",
 				CollectionInterval: 15 * time.Second,
 				Username:           "myusername",
 				Password:           "mypassword",
@@ -84,8 +85,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:          component.NewIDWithName(metadata.Type, "missingtarget"),
-			expectedErr: "missing required field(s): `target_system`",
+			id:          component.NewIDWithName(metadata.Type, "missingtargetandgroovyscript"),
+			expectedErr: "missing required field(s): `target_system` or `groovy_script`",
 			expected: &Config{
 				JARPath:            "testdata/fake_jmx.jar",
 				Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
@@ -323,7 +324,7 @@ func TestWithInvalidConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	err := cfg.Validate()
-	assert.Equal(t, "missing required field(s): `endpoint`, `target_system`", err.Error())
+	assert.Equal(t, "missing required field(s): `endpoint`, `target_system` or `groovy_script`", err.Error())
 }
 
 func mockJarVersions() {

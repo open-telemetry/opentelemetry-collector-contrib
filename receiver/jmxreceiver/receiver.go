@@ -191,6 +191,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	config["otel.jmx.service.url"] = jmx.config.Endpoint
 	config["otel.jmx.interval.milliseconds"] = strconv.FormatInt(jmx.config.CollectionInterval.Milliseconds(), 10)
 	config["otel.jmx.target.system"] = jmx.config.TargetSystem
+	config["otel.jmx.groovy.script"] = jmx.config.GroovyScript
 
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	if !strings.HasPrefix(endpoint, "http") {
