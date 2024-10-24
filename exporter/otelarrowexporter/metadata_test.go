@@ -51,7 +51,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	bg := context.Background()
-	exp, err := factory.CreateTracesExporter(bg, set, cfg)
+	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -157,7 +157,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	cfg.MetadataKeys = []string{"key1", "key2"}
 	set := exportertest.NewNopSettings()
 	bg := context.Background()
-	exp, err := factory.CreateTracesExporter(bg, set, cfg)
+	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {

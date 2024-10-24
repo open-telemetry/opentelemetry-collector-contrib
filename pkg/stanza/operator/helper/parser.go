@@ -114,7 +114,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 	if cb != nil {
 		err = cb(entry)
 		if err != nil {
-			return err
+			return p.HandleEntryError(ctx, entry, err)
 		}
 	}
 

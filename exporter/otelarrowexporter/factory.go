@@ -105,7 +105,7 @@ func createTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(ctx, e.getSettings(), e.getConfig(),
+	return exporterhelper.NewTraces(ctx, e.getSettings(), e.getConfig(),
 		e.pushTraces,
 		helperOptions(e)...,
 	)
@@ -124,7 +124,7 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(ctx, e.getSettings(), e.getConfig(),
+	return exporterhelper.NewMetrics(ctx, e.getSettings(), e.getConfig(),
 		e.pushMetrics,
 		helperOptions(e)...,
 	)
@@ -143,7 +143,7 @@ func createLogsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(ctx, e.getSettings(), e.getConfig(),
+	return exporterhelper.NewLogs(ctx, e.getSettings(), e.getConfig(),
 		e.pushLogs,
 		helperOptions(e)...,
 	)

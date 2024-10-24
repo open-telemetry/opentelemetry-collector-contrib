@@ -138,10 +138,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
@@ -220,7 +220,7 @@ func newMockHost(exps map[pipeline.Signal]map[component.ID]component.Component) 
 	}
 }
 
-func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+func (m *mockHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return m.exps
 }
 

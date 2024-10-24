@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -61,10 +60,10 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
-	assert.True(t, strings.Contains(jsonStr, "GetItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDB")
+	assert.Contains(t, jsonStr, "GetItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
@@ -94,10 +93,10 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
-	assert.True(t, strings.Contains(jsonStr, "GetItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDB")
+	assert.Contains(t, jsonStr, "GetItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestClientSpanWithPeerService(t *testing.T) {
@@ -253,8 +252,8 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	require.NoError(t, w.Encode(segment))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, spanName))
-	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
+	assert.Contains(t, jsonStr, spanName)
+	assert.Contains(t, jsonStr, enterpriseAppID)
 }
 
 func TestClientSpanWithHttpHost(t *testing.T) {
@@ -376,9 +375,9 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, jsonStr)
-	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "ProducerService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestSpanWithExpiredTraceIdWithoutTimestampValidation(t *testing.T) {
@@ -1088,9 +1087,9 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "PaymentService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "PaymentService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
@@ -1115,10 +1114,10 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
-	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDb")
+	assert.NotContains(t, jsonStr, "DynamoDb.PutItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1143,10 +1142,10 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
-	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDb")
+	assert.NotContains(t, jsonStr, "DynamoDb.PutItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1172,9 +1171,9 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "ProducerService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1191,9 +1190,9 @@ func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "ConsumerService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "ConsumerService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
@@ -1219,9 +1218,9 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "PaymentLocalService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "PaymentLocalService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span, parentID string) {

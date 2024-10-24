@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
@@ -88,7 +89,17 @@ func TestScrape(t *testing.T) {
 			if test.mutateMetricsConfig != nil {
 				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
-			scraper, err := newProcessScraper(receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
+			cfg := &Config{MetricsBuilderConfig: metricsBuilderConfig}
+			cfg.EnvMap = common.EnvMap{
+				common.HostProcEnvKey:    "/proc",
+				common.HostSysEnvKey:     "/sys",
+				common.HostEtcEnvKey:     "/etc",
+				common.HostVarEnvKey:     "/var",
+				common.HostRunEnvKey:     "/run",
+				common.HostDevEnvKey:     "/dev",
+				common.HostProcMountinfo: "",
+			}
+			scraper, err := newProcessScraper(receivertest.NewNopSettings(), cfg)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}

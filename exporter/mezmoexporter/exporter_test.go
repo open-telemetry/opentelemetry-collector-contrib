@@ -268,5 +268,5 @@ func Test404IngestError(t *testing.T) {
 
 	responseField := logLine.Context[0]
 	assert.Equal(t, "response", responseField.Key)
-	assert.Equal(t, `{"foo":"bar"}`, responseField.String)
+	assert.JSONEq(t, `{"foo":"bar"}`, responseField.String)
 }

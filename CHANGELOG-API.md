@@ -7,6 +7,23 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.112.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/translator/jaeger`: Remove error from method signature as it always returns nil (#35560)
+
+### 🚀 New components 🚀
+
+- `pkg/status`: Refactors the extension/healthcheckv2extension/internal/status into pkg/status (#34692)
+
+### 💡 Enhancements 💡
+
+- `pkg/translator/prometheusremotewrite`: add FromMetricsV2 (#33661)
+  The public function is partially implemented and not ready for use
+- `receiver/prometheusremotewrite`: Add HTTP Server to handler Prometheus Remote Write requests (#35535)
+  Warning - The HTTP Server still doesn't do anything. It's just a placeholder for now.
+
 ## v0.111.0
 
 ### 💡 Enhancements 💡

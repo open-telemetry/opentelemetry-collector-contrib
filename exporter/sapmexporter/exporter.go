@@ -61,7 +61,7 @@ func newSAPMTracesExporter(cfg *Config, set exporter.Settings) (exporter.Traces,
 		return nil, err
 	}
 
-	te, err := exporterhelper.NewTracesExporter(
+	te, err := exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		cfg,

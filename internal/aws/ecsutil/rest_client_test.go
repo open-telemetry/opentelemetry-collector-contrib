@@ -23,7 +23,7 @@ func (f *fakeClient) Get(path string) ([]byte, error) {
 
 func TestRestClient(t *testing.T) {
 	u, _ := url.Parse("http://www.test.com")
-	rest, err := NewRestClient(*u, confighttp.ClientConfig{}, componenttest.NewNopTelemetrySettings())
+	rest, err := NewRestClient(*u, confighttp.NewDefaultClientConfig(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, rest)
 }

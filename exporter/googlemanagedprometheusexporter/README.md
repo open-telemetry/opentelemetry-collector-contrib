@@ -115,7 +115,7 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      processors: [batch, memory_limiter, transform, resourcedetection]
+      processors: [memory_limiter, batch, transform, resourcedetection]
       exporters: [googlemanagedprometheus]
 ```
 

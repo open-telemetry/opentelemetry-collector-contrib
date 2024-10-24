@@ -65,7 +65,7 @@ func TestNewExporter(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
@@ -442,7 +442,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()

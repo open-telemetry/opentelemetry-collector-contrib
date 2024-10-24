@@ -83,7 +83,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
-	exp, err := factory.CreateMetricsExporter(
+	exp, err := factory.CreateMetrics(
 		ctx,
 		exportertest.NewNopSettings(),
 		cfg,
@@ -122,7 +122,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		c.API.FailOnInvalidKey = true
 		ctx := context.Background()
 		// metrics exporter
-		mexp, err := factory.CreateMetricsExporter(
+		mexp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -130,7 +130,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, mexp)
 
-		texp, err := factory.CreateTracesExporter(
+		texp, err := factory.CreateTraces(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -138,7 +138,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, texp)
 
-		lexp, err := factory.CreateLogsExporter(
+		lexp, err := factory.CreateLogs(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -149,7 +149,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
 		ctx := context.Background()
-		exp, err := factory.CreateMetricsExporter(
+		exp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -157,7 +157,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
-		texp, err := factory.CreateTracesExporter(
+		texp, err := factory.CreateTraces(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -165,7 +165,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
-		lexp, err := factory.CreateLogsExporter(
+		lexp, err := factory.CreateLogs(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -206,7 +206,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		c.API.FailOnInvalidKey = true
 		ctx := context.Background()
 		// metrics exporter
-		mexp, err := factory.CreateMetricsExporter(
+		mexp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -214,7 +214,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		assert.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, mexp)
 
-		texp, err := factory.CreateTracesExporter(
+		texp, err := factory.CreateTraces(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -222,7 +222,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		assert.EqualError(t, err, "API Key validation failed")
 		assert.Nil(t, texp)
 
-		lexp, err := factory.CreateLogsExporter(
+		lexp, err := factory.CreateLogs(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -233,7 +233,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	t.Run("false", func(t *testing.T) {
 		c.API.FailOnInvalidKey = false
 		ctx := context.Background()
-		exp, err := factory.CreateMetricsExporter(
+		exp, err := factory.CreateMetrics(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -241,7 +241,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
-		texp, err := factory.CreateTracesExporter(
+		texp, err := factory.CreateTraces(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -249,7 +249,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
-		lexp, err := factory.CreateLogsExporter(
+		lexp, err := factory.CreateLogs(
 			ctx,
 			exportertest.NewNopSettings(),
 			cfg,
@@ -279,7 +279,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
-	exp, err := factory.CreateLogsExporter(
+	exp, err := factory.CreateLogs(
 		ctx,
 		exportertest.NewNopSettings(),
 		cfg,
@@ -312,7 +312,7 @@ func TestOnlyMetadata(t *testing.T) {
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
-	expTraces, err := factory.CreateTracesExporter(
+	expTraces, err := factory.CreateTraces(
 		ctx,
 		exportertest.NewNopSettings(),
 		cfg,
@@ -320,7 +320,7 @@ func TestOnlyMetadata(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, expTraces)
 
-	expMetrics, err := factory.CreateMetricsExporter(
+	expMetrics, err := factory.CreateMetrics(
 		ctx,
 		exportertest.NewNopSettings(),
 		cfg,
@@ -361,14 +361,14 @@ func TestStopExporters(t *testing.T) {
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
-	expTraces, err := factory.CreateTracesExporter(
+	expTraces, err := factory.CreateTraces(
 		ctx,
 		exportertest.NewNopSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, expTraces)
-	expMetrics, err := factory.CreateMetricsExporter(
+	expMetrics, err := factory.CreateMetrics(
 		ctx,
 		exportertest.NewNopSettings(),
 		cfg,

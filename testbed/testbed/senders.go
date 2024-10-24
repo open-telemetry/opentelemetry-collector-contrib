@@ -132,7 +132,7 @@ func (ote *otlpHTTPTraceDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateTraces(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (ome *otlpHTTPMetricsDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (olds *otlpHTTPLogsDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateLogs(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func (ote *otlpTraceDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateTraces(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -296,7 +296,7 @@ func (ome *otlpMetricsDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func (olds *otlpLogsDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateLogs(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

@@ -25,7 +25,7 @@ func newLogsExporter(set exporter.Settings, cfg component.Config) (exporter.Logs
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		context.TODO(),
 		set,
 		cfg,

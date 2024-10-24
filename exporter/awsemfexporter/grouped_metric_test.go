@@ -435,7 +435,7 @@ func TestAddKubernetesWrapper(t *testing.T) {
 
 		jsonBytes, _ := json.Marshal(expectedCreatedObj)
 		addKubernetesWrapper(inputs)
-		assert.Equal(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
+		assert.JSONEq(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
 	})
 }
 

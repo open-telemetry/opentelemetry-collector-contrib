@@ -22,39 +22,39 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateLogsExporter(t *testing.T) {
+func TestFactory_CreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoints = []string{"http://test:9200"}
 	})
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
 	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateMetricsExporter(t *testing.T) {
+func TestFactory_CreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoints = []string{"http://test:9200"}
 	})
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
 	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateTracesExporter(t *testing.T) {
+func TestFactory_CreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoints = []string{"http://test:9200"}
 	})
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
@@ -68,12 +68,12 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 		cfg.Index = "test_index"
 	})
 	params := exportertest.NewNopSettings()
-	logsExporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	logsExporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, logsExporter)
 	require.NoError(t, logsExporter.Shutdown(context.Background()))
 
-	tracesExporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	tracesExporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, tracesExporter)
 	require.NoError(t, tracesExporter.Shutdown(context.Background()))
@@ -92,15 +92,15 @@ func TestFactory_DedupDeprecated(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	set.Logger = zap.New(loggerCore)
 
-	logsExporter, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	logsExporter, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NoError(t, logsExporter.Shutdown(context.Background()))
 
-	tracesExporter, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	tracesExporter, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NoError(t, tracesExporter.Shutdown(context.Background()))
 
-	metricsExporter, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	metricsExporter, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NoError(t, metricsExporter.Shutdown(context.Background()))
 
@@ -130,15 +130,15 @@ func TestFactory_DedotDeprecated(t *testing.T) {
 
 	for _, cfg := range []*Config{cfgNoDedotECS, cfgDedotRaw} {
 		factory := NewFactory()
-		logsExporter, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+		logsExporter, err := factory.CreateLogs(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NoError(t, logsExporter.Shutdown(context.Background()))
 
-		tracesExporter, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+		tracesExporter, err := factory.CreateTraces(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NoError(t, tracesExporter.Shutdown(context.Background()))
 
-		metricsExporter, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+		metricsExporter, err := factory.CreateMetrics(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NoError(t, metricsExporter.Shutdown(context.Background()))
 	}

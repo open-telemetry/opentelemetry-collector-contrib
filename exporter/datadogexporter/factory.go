@@ -318,7 +318,7 @@ func (f *factory) createMetricsExporter(
 		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -432,7 +432,7 @@ func (f *factory) createTracesExporter(
 		}
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -519,7 +519,7 @@ func (f *factory) createLogsExporter(
 		}
 		pusher = exp.consumeLogs
 	}
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

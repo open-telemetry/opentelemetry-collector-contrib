@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
     active: [TylerHelmuth, kentquirk, bogdandrutu, evan-bradley]

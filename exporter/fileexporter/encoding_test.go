@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 )
@@ -28,16 +27,8 @@ type hostWithEncoding struct {
 	encodings map[component.ID]component.Component
 }
 
-func (h hostWithEncoding) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithEncoding) GetExtensions() map[component.ID]component.Component {
 	return h.encodings
-}
-
-func (h hostWithEncoding) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
-	panic("unsupported")
 }
 
 func TestEncoding(t *testing.T) {
@@ -50,15 +41,15 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.CreateExtension(context.Background(), extensiontest.NewNopSettings(), efCfg)
+	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(), efCfg)
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	me, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-	te, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-	le, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	host := hostWithEncoding{
 		map[component.ID]component.Component{id: ext},

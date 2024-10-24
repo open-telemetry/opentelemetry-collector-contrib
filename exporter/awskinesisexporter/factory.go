@@ -56,7 +56,7 @@ func newTracesExporter(ctx context.Context, params exporter.Settings, conf compo
 		return nil, err
 	}
 	c := conf.(*Config)
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		params,
 		conf,
@@ -74,7 +74,7 @@ func newMetricsExporter(ctx context.Context, params exporter.Settings, conf comp
 		return nil, err
 	}
 	c := conf.(*Config)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		params,
 		c,
@@ -92,7 +92,7 @@ func newLogsExporter(ctx context.Context, params exporter.Settings, conf compone
 		return nil, err
 	}
 	c := conf.(*Config)
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		c,

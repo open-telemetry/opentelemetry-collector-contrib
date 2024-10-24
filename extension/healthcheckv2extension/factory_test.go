@@ -60,7 +60,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 	ctx, cancel := context.WithCancel(context.Background())

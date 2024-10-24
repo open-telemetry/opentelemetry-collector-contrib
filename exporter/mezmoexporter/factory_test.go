@@ -61,7 +61,7 @@ func TestIngestUrlMustConform(t *testing.T) {
 	assert.Error(t, cfg.Validate(), `"ingest_url" must contain a valid host`)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
 	cfg.IngestKey = "1234-1234"
@@ -71,7 +71,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateLogsExporterNoConfig(t *testing.T) {
+func TestCreateLogsNoConfig(t *testing.T) {
 	params := exportertest.NewNopSettings()
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)
