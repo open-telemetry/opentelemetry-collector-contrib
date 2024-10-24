@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
@@ -237,7 +238,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		spanCount = otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
-			http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
+			errorutil.HTTPError(w, err)
 			ddr.params.Logger.Error("Trace consumer errored out", zap.Error(err))
 			return
 		}
@@ -277,7 +278,7 @@ func (ddr *datadogReceiver) handleV1Series(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
@@ -311,7 +312,7 @@ func (ddr *datadogReceiver) handleV2Series(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
@@ -355,7 +356,7 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
@@ -386,7 +387,7 @@ func (ddr *datadogReceiver) handleSketches(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
@@ -455,7 +456,7 @@ func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
 		ddr.params.Logger.Error("Metrics consumer errored out", zap.Error(err))
-		http.Error(w, "Metrics consumer errored out", http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		return
 	}
 
