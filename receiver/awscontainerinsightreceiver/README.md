@@ -62,6 +62,10 @@ The "PodName" attribute is set based on the name of the relevant controllers lik
 
 The "FullPodName" attribute is the pod name including suffix. If false FullPodName label is not added. The default value is false
 
+**prefer_controller_name_for_stateful_set (optional)**
+
+For StatefulSet deployments the default behaviour is to set the "PodName" attribute to the the pod's own name. However this can make aggregation of these metrics across a set difficult. If this is set to "true" the "PodName" will instead use the name of its controller which allows for metric aggregation.  The default value is false.
+
 ## Sample configuration for Container Insights 
 This is a sample configuration for AWS Container Insights using the `awscontainerinsightreceiver` and `awsemfexporter` for an EKS cluster:
 ```
