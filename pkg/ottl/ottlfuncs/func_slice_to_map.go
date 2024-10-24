@@ -24,7 +24,7 @@ func NewSliceToMapFactory[K any]() ottl.Factory[K] {
 func sliceToMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*SliceToMapArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("AssociateFactory args must be of type *SliceToMapArguments[K")
+		return nil, fmt.Errorf("SliceToMapFactory args must be of type *SliceToMapArguments[K")
 	}
 
 	return SliceToMap(args.Target, args.KeyPath, args.ValuePath)
