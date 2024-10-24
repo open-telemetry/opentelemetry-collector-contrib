@@ -142,8 +142,8 @@ func TestDatadogResponse(t *testing.T) {
 				cfg,
 				receivertest.NewNopSettings(),
 			)
-			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
 			require.NoError(t, err, "Must not error when creating receiver")
+			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
@@ -156,7 +156,7 @@ func TestDatadogResponse(t *testing.T) {
 			apiPayload := pb.TracerPayload{}
 			var reqBytes []byte
 			bytez, _ := apiPayload.MarshalMsg(reqBytes)
-			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://%s/v0.7/traces", dd.(*datadogReceiver).address), io.NopCloser(bytes.NewReader(bytez)))
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s/v0.7/traces", dd.(*datadogReceiver).address), bytes.NewReader(bytez))
 			require.NoError(t, err, "Must not error creating request")
 			resp, err := http.DefaultClient.Do(req)
 			require.NoError(t, err, "Must not error performing request")
