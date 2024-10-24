@@ -1399,7 +1399,7 @@ attributes:
       value: 5
 ```
 
-- `SliceToMap(attributes["things"], ["name"], ["things", "value"])`:
+- `SliceToMap(attributes["things"], ["name"], ["value"])`:
 
 This converts the input above to the following:
 
