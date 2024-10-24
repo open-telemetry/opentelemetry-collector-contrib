@@ -146,18 +146,18 @@ type DispatchArtifactEntry struct {
 }
 
 type DispatchArtifactContent struct {
-	TotalCount                     int `json:"total_count"`
-	AdhocCount                     int `json:"adhoc_count"`
-	AdhocSizeMb                    int `json:"adhoc_size_mb"`
-	ScheduledCount                 int `json:"scheduled_count"`
-	ScheduledSizeMb                int `json:"scheduled_size_mb"`
-	SsCount                        int `json:"ss_count"`
-	CompletedCount                 int `json:"completed_count"`
-	CompletedSizeMb                int `json:"completed_size_mb"`
-	IncompleCount                  int `json:"incomple_count"`
-	IncompleSizeMb                 int `json:"incomple_size_mb"`
-	InvalidCount                   int `json:"invalid_count"`
-	CachedJobStatusInfoCsvSizeMb   int `json:"cached_job_status_info_csv_size_mb"`
-	CachedJobStatusStatusCsvSizeMb int `json:"cached_job_status_status_csv_size_mb"`
-	CachedJobStatusTotalEntries    int `json:"cached_job_status_total_entries"`
+	TotalCount                     string `json:"total_count"`
+	AdhocCount                     string `json:"adhoc_count"`
+	AdhocSizeMb                    string `json:"adhoc_size_mb"`
+	ScheduledCount                 string `json:"scheduled_count"`
+	ScheduledSizeMb                string `json:"scheduled_size_mb"`
+	SsCount                        string `json:"ss_count"`
+	CompletedCount                 string `json:"completed_count"`
+	CompletedSizeMb                string `json:"completed_size_mb"`
+	IncompleCount                  string `json:"incomple_count"`
+	IncompleSizeMb                 string `json:"incomple_size_mb"`
+	InvalidCount                   string `json:"invalid_count"`
+	CachedJobStatusInfoCsvSizeMb   string `json:"cached_job_status_info_csv_size_mb"`
+	CachedJobStatusStatusCsvSizeMb string `json:"cached_job_status_status_csv_size_mb"`
+	CachedJobStatusTotalEntries    string `json:"cached_job_status_total_entries"`
 }

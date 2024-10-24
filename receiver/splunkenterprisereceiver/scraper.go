@@ -1668,32 +1668,56 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	for _, f := range da.Entries {
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesTotal.Enabled {
-			totalCount := int64(f.Content.TotalCount)
+			totalCount, err := strconv.ParseInt(f.Content.TotalCount, 10, 64)
+			if err != nil {
+				errs <- err
+				return
+			}
 			s.mb.RecordSplunkServerSearchesTotalDataPoint(now, totalCount, s.conf.SHEndpoint.Endpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesAdhocTotal.Enabled {
-			adhocCount := int64(f.Content.AdhocCount)
+			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
+			if err != nil {
+				errs <- err
+				return
+			}
 			s.mb.RecordSplunkServerSearchesAdhocTotalDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesScheduledTotal.Enabled {
-			scheduledCount := int64(f.Content.ScheduledCount)
+			scheduledCount, err := strconv.ParseInt(f.Content.ScheduledCount, 10, 64)
+			if err != nil {
+				errs <- err
+				return
+			}
 			s.mb.RecordSplunkServerSearchesScheduledTotalDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesCompletedTotal.Enabled {
-			completedCount := int64(f.Content.CompletedCount)
+			completedCount, err := strconv.ParseInt(f.Content.CompletedCount, 10, 64)
+			if err != nil {
+				errs <- err
+				return
+			}
 			s.mb.RecordSplunkServerSearchesCompletedTotalDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.IncompleteTotal.Enabled {
-			incompleCount := int64(f.Content.IncompleCount)
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesIncompleteTotal.Enabled {
+			incompleCount, err := strconv.ParseInt(f.Content.IncompleCount, 10, 64)
+			if err != nil {
+				errs <- err
+				return
+			}
 			s.mb.RecordSplunkServerSearchesIncompleteTotalDataPoint(now, incompleCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.InvalidTotal.Enabled {
-			invalidCount := int64(f.Content.InvalidCount)
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesInvalidTotal.Enabled {
+			invalidCount, err := strconv.ParseInt(f.Content.InvalidCount, 10, 64)
+			if err != nil {
+				errs <- err
+				return
+			}
 			s.mb.RecordSplunkServerSearchesInvalidTotalDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint)
 		}
 	}
