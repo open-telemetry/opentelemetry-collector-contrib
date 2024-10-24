@@ -1672,9 +1672,9 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchesTotalDataPoint(now, totalCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesAdHocTotal.Enabled {
-			adHocCount := int64(f.Content.AdHocCount)
-			s.mb.RecordSplunkServerSearchesAdHocTotalDataPoint(now, adHocCount, s.conf.SHEndpoint.Endpoint)
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesAdhocTotal.Enabled {
+			adhocCount := int64(f.Content.AdhocCount)
+			s.mb.RecordSplunkServerSearchesAdhocTotalDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint)
 		}
 
 		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesScheduledTotal.Enabled {

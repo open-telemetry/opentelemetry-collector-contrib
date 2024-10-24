@@ -147,8 +147,8 @@ type DispatchArtifactEntry struct {
 
 type DispatchArtifactContent struct {
 	TotalCount                     int `json:"total_count"`
-	AdHocCount                     int `json:"adhoc_count"`
-	AdHocSizeMb                    int `json:"adhoc_size_mb"`
+	AdhocCount                     int `json:"adhoc_count"`
+	AdhocSizeMb                    int `json:"adhoc_size_mb"`
 	ScheduledCount                 int `json:"scheduled_count"`
 	ScheduledSizeMb                int `json:"scheduled_size_mb"`
 	SsCount                        int `json:"ss_count"`
