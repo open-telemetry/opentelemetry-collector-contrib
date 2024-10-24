@@ -1629,7 +1629,6 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 	}
 }
 
-
 // Scrape dispatch artifacts
 func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	if !s.splunkClient.isConfigured(typeSh) {
