@@ -101,12 +101,12 @@ func (se *syslogexporter) exportBatch(ctx context.Context, logs plog.Logs) error
 	if payload.Len() > 0 {
 		sender, err := connect(ctx, se.logger, se.config, se.tlsConfig)
 		if err != nil {
-			return consumererror.NewLogs(err, logs)
+			return err
 		}
 		defer sender.close()
 		err = sender.Write(ctx, payload.String())
 		if err != nil {
-			return consumererror.NewLogs(err, logs)
+			return err
 		}
 	}
 	return nil

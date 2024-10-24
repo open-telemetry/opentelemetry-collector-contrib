@@ -304,7 +304,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	if se.sender.config.LogFormat == OTLPLogFormat {
 		if err := se.sender.sendOTLPLogs(ctx, ld); err != nil {
 			se.handleUnauthorizedErrors(ctx, err)
-			return consumererror.NewLogs(err, ld)
+			return err
 		}
 		return nil
 	}
@@ -363,18 +363,16 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 // it returns number of unsent metrics and error which contains list of dropped records
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	var droppedMetrics pmetric.Metrics
-	var errs []error
 	if se.sender.config.MetricFormat == OTLPMetricFormat {
-		if err := se.sender.sendOTLPMetrics(ctx, md); err != nil {
-			droppedMetrics = md
-			errs = []error{err}
+		err := se.sender.sendOTLPMetrics(ctx, md)
+		if err != nil {
+			se.handleUnauthorizedErrors(ctx, err)
 		}
-	} else {
-		droppedMetrics, errs = se.sender.sendNonOTLPMetrics(ctx, md)
+		return err
 	}
 
-	if len(errs) > 0 {
+	droppedMetrics, errs := se.sender.sendNonOTLPMetrics(ctx, md)
+	if len(errs) != 0 {
 		se.handleUnauthorizedErrors(ctx, errs...)
 		return consumererror.NewMetrics(errors.Join(errs...), droppedMetrics)
 	}

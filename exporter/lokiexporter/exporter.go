@@ -60,7 +60,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 	var errs error
 	for tenant, request := range requests {
-		err := l.sendPushRequest(ctx, tenant, request, ld)
+		err := l.sendPushRequest(ctx, tenant, request)
 		if isErrMissingLabels(err) {
 			l.telemetryBuilder.LokiexporterSendFailedDueToMissingLabels.Add(ctx, int64(ld.LogRecordCount()))
 		}
@@ -71,7 +71,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	return errs
 }
 
-func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, request loki.PushRequest, ld plog.Logs) error {
+func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, request loki.PushRequest) error {
 	pushReq := request.PushRequest
 	report := request.Report
 	if len(pushReq.Streams) == 0 {
@@ -105,7 +105,7 @@ func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, reque
 
 	resp, err := l.client.Do(req)
 	if err != nil {
-		return consumererror.NewLogs(err, ld)
+		return err
 	}
 
 	defer func() {
@@ -128,7 +128,7 @@ func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, reque
 			return consumererror.NewPermanent(err)
 		}
 
-		return consumererror.NewLogs(err, ld)
+		return err
 	}
 
 	return nil
