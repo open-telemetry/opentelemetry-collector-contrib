@@ -24,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	tests := []struct {

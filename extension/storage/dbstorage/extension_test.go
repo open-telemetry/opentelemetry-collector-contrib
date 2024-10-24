@@ -103,7 +103,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg.DriverName = "sqlite3"
 	cfg.DataSource = fmt.Sprintf("file:%s/foo.db?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", t.TempDir())
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

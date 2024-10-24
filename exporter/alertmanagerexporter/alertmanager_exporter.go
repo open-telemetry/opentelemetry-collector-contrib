@@ -216,7 +216,7 @@ func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.S
 
 	s := newAlertManagerExporter(config, set.TelemetrySettings)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,

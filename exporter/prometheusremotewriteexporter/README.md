@@ -54,7 +54,7 @@ The following settings can be optionally configured:
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
-  - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5`) **WARNING:** Currently, num_consumers doesn't have any effect due to incompatibility with Prometheus remote write API. The value will be ignored. Please see https://github.com/open-telemetry/opentelemetry-collector/issues/2949 for more information.
+  - `num_consumers`: minimum number of workers to use to fan out the outgoing requests. (default: `5`)
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `target_info`: customize `target_info` metric
