@@ -128,7 +128,7 @@ func zSpanToInternal(zspan *zipkinmodel.SpanModel, tags map[string]string, dest 
 	dest.SetKind(zipkinKindToSpanKind(zspan.Kind, tags))
 
 	populateSpanStatus(tags, dest.Status())
-	if err := zTagsToSpanLinks(tags, dest.Links()); err != nil {
+	if err := TagsToSpanLinks(tags, dest.Links()); err != nil {
 		return err
 	}
 
@@ -183,7 +183,8 @@ func zipkinKindToSpanKind(kind zipkinmodel.Kind, tags map[string]string) ptrace.
 	}
 }
 
-func zTagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
+// TagsToSpanLinks translates span tags into ptrace.SpanLinkSlice.
+func TagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 	for i := 0; i < 128; i++ {
 		key := fmt.Sprintf("otlp.link.%d", i)
 		val, ok := tags[key]

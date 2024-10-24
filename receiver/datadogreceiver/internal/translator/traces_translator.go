@@ -22,6 +22,7 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
 
@@ -97,6 +98,8 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 				groupByService[span.Service] = slice
 			}
 			newSpan := slice.AppendEmpty()
+
+			_ = zipkinv2.TagsToSpanLinks(span.GetMeta(), newSpan.Links())
 
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))
