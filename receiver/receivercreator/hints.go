@@ -18,7 +18,7 @@ const (
 	discoveryEnabledHint = "enabled"
 	scraperHint          = "scraper"
 	signalsHint          = "signals"
-	configHint           = "config."
+	configHint           = "config"
 )
 
 // HintsTemplatesBuilder creates configuration templates from provided hints.
@@ -95,7 +95,7 @@ func (builder *K8sHintsBuilder) createScraper(
 	builder.logger.Debug("handling added hinted receiver", zap.Any("subreceiverKey", subreceiverKey))
 
 	defaultEndpoint := getStringEnv(env, "endpoint")
-	userConfMap := getConfFromAnnotations(annotations, defaultEndpoint, portName)
+	userConfMap := getConfFromAnnotations(annotations, defaultEndpoint, portName, builder.logger)
 
 	signalsAnn := getHintAnnotation(annotations, signalsHint, portName)
 	signals := getSignalsConf(signalsAnn)
@@ -116,45 +116,18 @@ func (builder *K8sHintsBuilder) createScraper(
 
 }
 
-func getConfFromAnnotations(annotations map[string]string, defaultEndpoint string, scopeSuffix string) userConfigMap {
-	var annotationPrefixScoped string
-	annotationPrefix := fmt.Sprintf("%s/%s", otelHints, configHint)
-
-	if scopeSuffix != "" {
-		annotationPrefixScoped = fmt.Sprintf("%s.%s/%s", otelHints, scopeSuffix, configHint)
-	}
+func getConfFromAnnotations(annotations map[string]string, defaultEndpoint string, scopeSuffix string, logger *zap.Logger) userConfigMap {
 	conf := userConfigMap{}
 	if defaultEndpoint != "" {
 		conf["endpoint"] = defaultEndpoint
 	}
 
-	for key, val := range annotations {
-		var dst map[string]any
-		var dstList []any
-		if strings.HasPrefix(key, annotationPrefixScoped) && annotationPrefixScoped != "" {
-			res, _ := strings.CutPrefix(key, annotationPrefixScoped)
-
-			if err := yaml.Unmarshal([]byte(val), &dst); err == nil {
-				conf[res] = dst
-			} else if err = yaml.Unmarshal([]byte(val), &dstList); err == nil {
-				conf[res] = dstList
-			} else {
-				conf[res] = val
-			}
-		} else if strings.HasPrefix(key, annotationPrefix) {
-			res, _ := strings.CutPrefix(key, annotationPrefix)
-
-			if _, ok := conf[res]; !ok {
-				// only use top level annotation in case there is no scope level annotation already set
-				if err := yaml.Unmarshal([]byte(val), &dst); err == nil {
-					conf[res] = dst
-				} else if err = yaml.Unmarshal([]byte(val), &dstList); err == nil {
-					conf[res] = dstList
-				} else {
-					conf[res] = val
-				}
-			}
-		}
+	configStr := getHintAnnotation(annotations, configHint, scopeSuffix)
+	if configStr == "" {
+		return conf
+	}
+	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
+		logger.Debug("could not unmarshal configuration from hint", zap.Error(err))
 	}
 	return conf
 }

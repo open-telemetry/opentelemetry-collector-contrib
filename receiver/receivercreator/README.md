@@ -477,29 +477,24 @@ By default all signals are enabled.
 
 #### Define configuration
 
-`io.opentelemetry.discovery/config.`
+`io.opentelemetry.discovery/config`
 
 (example: ```io.opentelemetry.discovery/config.endpoint: "http://`endpoint`/nginx_status"```,
 
-For `config.endpoint` specifically, if not provided it defaults to
-```io.opentelemetry.discovery/config.endpoint: "`endpoint`"``` (as it comes from the ) which is
+For `"endpoint"` setting specifically, if not provided it defaults to
+```endpoint: "`endpoint`"``` (as it comes from the Port endpoint) which is
 in form of `pod_ip:container_port`.
 
 **Example:**
 
 ```yaml
-# configure scraper behavior
 io.opentelemetry.discovery/signals: "metrics,logs"
-io.opentelemetry.discovery/config.endpoint: "http://`endpoint`/nginx_status"
-io.opentelemetry.discovery/config.collection_interval: '20s'
-io.opentelemetry.discovery/config.initial_delay: '20s'
-io.opentelemetry.discovery/config.read_buffer_size: '10'
-io.opentelemetry.discovery/config.xyz: 'abc'
-
-# nested configs
-io.opentelemetry.discovery/config.nested_example: |
-  zyz: foo
-  bar: baz
+io.opentelemetry.discovery/config: |
+  endpoint: "http://`endpoint`/nginx_status"
+  collection_interval: "20s"
+  initial_delay: "20s"
+  read_buffer_size: "10"
+  xyz: "abc"
 ```
 
 
@@ -583,15 +578,15 @@ kind: Pod
 metadata:
   name: redis
   annotations:
-    io.opentelemetry.discovery/scraper: redis
-    io.opentelemetry.discovery/signals: metrics
-    io.opentelemetry.discovery/config.collection_interval: '20s'
-    io.opentelemetry.discovery.webserver/signals: metrics
+    io.opentelemetry.discovery.redis/scraper: redis
+    io.opentelemetry.discovery.redis/signals: metrics
+    io.opentelemetry.discovery.redis/config: |
+     collection_interval: '20s'
+    io.opentelemetry.discovery.webserver/signals: metrics,logs
     io.opentelemetry.discovery.webserver/scraper: nginx
-    io.opentelemetry.discovery.webserver/config.nested_example: |
-      some: foo
-      bar: baz
-    io.opentelemetry.discovery.webserver/config.endpoint: "http://`endpoint`/nginx_status"
+    io.opentelemetry.discovery.webserver/config: |
+      collection_interval: '20s'
+      endpoint: "http://`endpoint`/nginx_status"
   labels:
     k8s-app: redis
     app: redis
