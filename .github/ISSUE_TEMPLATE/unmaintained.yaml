@@ -22,6 +22,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - confmap/provider/aesprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
@@ -235,7 +236,6 @@ body:
       - receiver/github
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
-      - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
