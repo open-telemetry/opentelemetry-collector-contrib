@@ -61,7 +61,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", "tlscheck.host-val")
+			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", "tlscheck.endpoint-val")
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -103,9 +103,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("tlscheck.x509.cn")
 					assert.True(t, ok)
 					assert.EqualValues(t, "tlscheck.x509.cn-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("tlscheck.host")
+					attrVal, ok = dp.Attributes().Get("tlscheck.endpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "tlscheck.host-val", attrVal.Str())
+					assert.EqualValues(t, "tlscheck.endpoint-val", attrVal.Str())
 				}
 			}
 		})

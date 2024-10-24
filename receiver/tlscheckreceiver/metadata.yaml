@@ -11,7 +11,7 @@ status:
 resource_attributes:
 
 attributes:
-  tlscheck.endpo:
+  tlscheck.endpoint:
     enabled: true
     description: Endpoint at which the certificate was accessed.
     type: string
