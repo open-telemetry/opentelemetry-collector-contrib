@@ -293,7 +293,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
+	require.JSONEq(t, `{"status": "ok"}`, string(body), "Expected JSON response to be `{\"status\": \"ok\"}`, got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
@@ -371,7 +371,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
+	require.JSONEq(t, `{"errors": []}`, string(body), "Expected JSON response to be `{\"errors\": []}`, got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
@@ -619,6 +619,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	assert.Equal(t, 1, metrics.Len())
 	metric := metrics.At(0)
+	assert.Equal(t, "app.working", metric.Name())
 	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
 	dps := metric.Gauge().DataPoints()
 	assert.Equal(t, 1, dps.Len())

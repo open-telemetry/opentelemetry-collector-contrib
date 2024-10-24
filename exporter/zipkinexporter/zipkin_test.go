@@ -53,7 +53,7 @@ func TestZipkinExporter_roundtripJSON(t *testing.T) {
 		},
 		Format: "json",
 	}
-	zexp, err := NewFactory().CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	zexp, err := NewFactory().CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, zexp)
 
@@ -278,7 +278,7 @@ func TestZipkinExporter_invalidFormat(t *testing.T) {
 	}
 	f := NewFactory()
 	set := exportertest.NewNopSettings()
-	_, err := f.CreateTracesExporter(context.Background(), set, config)
+	_, err := f.CreateTraces(context.Background(), set, config)
 	require.Error(t, err)
 }
 
@@ -300,7 +300,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 		},
 		Format: "proto",
 	}
-	zexp, err := NewFactory().CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	zexp, err := NewFactory().CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, zexp.Start(context.Background(), componenttest.NewNopHost()))
