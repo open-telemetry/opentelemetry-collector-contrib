@@ -1626,6 +1626,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 		} else {
 			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
 		}
+	}
 }
 
 
