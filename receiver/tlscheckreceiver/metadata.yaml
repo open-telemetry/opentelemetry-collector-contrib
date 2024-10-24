@@ -11,9 +11,9 @@ status:
 resource_attributes:
 
 attributes:
-  tlscheck.host:
+  tlscheck.endpo:
     enabled: true
-    description: Host at which the certificate was accessed.
+    description: Endpoint at which the certificate was accessed.
     type: string
   tlscheck.x509.issuer:
     enabled: true
@@ -31,4 +31,4 @@ metrics:
     gauge:
       value_type: int
     unit: "s"
-    attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.host]
+    attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.endpoint]

@@ -55,7 +55,7 @@ func TestValidate(t *testing.T) {
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, `provided port is not a number:   12efg; host contains a scheme, which is not allowed: https://example.com:80`),
+			expectedErr: fmt.Errorf("%w: %s", errInvalidEndpoint, `provided port is not a number:   12efg; endpoint contains a scheme, which is not allowed: https://example.com:80`),
 		},
 		{
 			desc: "port out of range",

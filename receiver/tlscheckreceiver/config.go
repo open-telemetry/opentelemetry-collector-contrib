@@ -20,7 +20,7 @@ import (
 
 // Predefined error responses for configuration validation failures
 var (
-	errInvalidEndpoint = errors.New(`"host" must be in the form of <hostname>:<port>`)
+	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <hostname>:<port>`)
 )
 
 // Config defines the configuration for the various elements of the receiver agent.
@@ -28,10 +28,6 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
-}
-
-type targetConfig struct {
-	confignet.TCPAddrConfig `mapstructure:",squash"`
 }
 
 func validatePort(port string) error {
@@ -53,7 +49,7 @@ func ValidateTarget(cfg *confignet.TCPAddrConfig) error {
 	}
 
 	if strings.Contains(cfg.Endpoint, "://") {
-		return fmt.Errorf("host contains a scheme, which is not allowed: %s", cfg.Endpoint)
+		return fmt.Errorf("endpoint contains a scheme, which is not allowed: %s", cfg.Endpoint)
 	}
 
 	_, port, parseErr := net.SplitHostPort(cfg.Endpoint)

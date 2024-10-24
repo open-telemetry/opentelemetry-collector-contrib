@@ -18,7 +18,7 @@ import (
 )
 
 //nolint:revive
-func mockGetConnectionStateValid(host string) (tls.ConnectionState, error) {
+func mockGetConnectionStateValid(endpoint string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
 		NotBefore: time.Now().Add(-1 * time.Hour),
 		NotAfter:  time.Now().Add(24 * time.Hour),
@@ -31,7 +31,7 @@ func mockGetConnectionStateValid(host string) (tls.ConnectionState, error) {
 }
 
 //nolint:revive
-func mockGetConnectionStateExpired(host string) (tls.ConnectionState, error) {
+func mockGetConnectionStateExpired(endpoint string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
 		NotBefore: time.Now().Add(-48 * time.Hour),
 		NotAfter:  time.Now().Add(-24 * time.Hour),
@@ -44,7 +44,7 @@ func mockGetConnectionStateExpired(host string) (tls.ConnectionState, error) {
 }
 
 //nolint:revive
-func mockGetConnectionStateNotYetValid(host string) (tls.ConnectionState, error) {
+func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
 		NotBefore: time.Now().Add(48 * time.Hour),
 		NotAfter:  time.Now().Add(24 * time.Hour),

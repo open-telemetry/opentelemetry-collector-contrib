@@ -27,16 +27,45 @@ type scraper struct {
 	cfg                *Config
 	settings           component.TelemetrySettings
 	mb                 *metadata.MetricsBuilder
-	getConnectionState func(host string) (tls.ConnectionState, error)
+	getConnectionState func(endpoint string) (tls.ConnectionState, error)
 }
 
-func getConnectionState(host string) (tls.ConnectionState, error) {
-	conn, err := tls.Dial("tcp", host, &tls.Config{InsecureSkipVerify: true})
+func getConnectionState(endpoint string) (tls.ConnectionState, error) {
+	conn, err := tls.Dial("tcp", endpoint, &tls.Config{InsecureSkipVerify: true})
 	if err != nil {
 		return tls.ConnectionState{}, err
 	}
 	defer conn.Close()
 	return conn.ConnectionState(), nil
+}
+
+func (s *scraper) scrapeTarget(endpoint string, wg *sync.WaitGroup, mux *sync.Mutex) {
+	defer wg.Done()
+
+	mux.Lock()
+	defer mux.Unlock()
+
+	state, err := s.getConnectionState(endpoint)
+	if err != nil {
+		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", endpoint), zap.Error(err))
+		return
+	}
+
+	s.settings.Logger.Error("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
+	if len(state.PeerCertificates) == 0 {
+		s.settings.Logger.Error("No TLS certificates found. Verify the endpoint serves TLS certificates.", zap.String("endpoint", endpoint))
+		return
+	}
+
+	cert := state.PeerCertificates[0]
+	issuer := cert.Issuer.String()
+	commonName := cert.Subject.CommonName
+	currentTime := time.Now()
+	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
+	timeLeftInt := int64(timeLeft)
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, endpoint)
 }
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
@@ -47,39 +76,16 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var wg sync.WaitGroup
 	wg.Add(len(s.cfg.Targets))
 	var mux sync.Mutex
+
 	for _, target := range s.cfg.Targets {
-		go func(host string) {
-			defer wg.Done()
-
-			now := pcommon.NewTimestampFromTime(time.Now())
-			mux.Lock()
-			state, err := s.getConnectionState(target.Endpoint)
-			if err != nil {
-				s.settings.Logger.Error("TCP connection error encountered", zap.String("host", target.Endpoint), zap.Error(err))
-			}
-
-			s.settings.Logger.Error("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
-			if len(state.PeerCertificates) == 0 {
-				s.settings.Logger.Error("No TLS certificates found. Verify the host serves TLS certificates.", zap.String("host", target.Endpoint))
-			}
-
-			cert := state.PeerCertificates[0]
-			issuer := cert.Issuer.String()
-			commonName := cert.Subject.CommonName
-			currentTime := time.Now()
-			timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
-			timeLeftInt := int64(timeLeft)
-			s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, host)
-			mux.Unlock()
-
-		}(target.Endpoint)
+		go s.scrapeTarget(target.Endpoint, &wg, &mux)
 	}
 
 	wg.Wait()
 	return s.mb.Emit(), nil
 }
 
-func newScraper(cfg *Config, settings receiver.Settings, getConnectionState func(host string) (tls.ConnectionState, error)) *scraper {
+func newScraper(cfg *Config, settings receiver.Settings, getConnectionState func(endpoint string) (tls.ConnectionState, error)) *scraper {
 	return &scraper{
 		cfg:                cfg,
 		settings:           settings.TelemetrySettings,
