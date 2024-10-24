@@ -431,3 +431,87 @@ Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at speci
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |
+
+### splunk.server.searches.adhoc.total
+
+Counter tracking number of ad hoc search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {searches} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searches.completed.total
+
+Counter tracking number of completed search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {searches} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searches.incomplete.total
+
+Counter tracking number of incomplete search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {searches} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searches.invalid.total
+
+Counter tracking number of invalid search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {searches} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searches.scheduled.total
+
+Counter tracking number of scheduled search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {searches} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searches.total
+
+Counter tracking number of dispatched search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {searches} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |

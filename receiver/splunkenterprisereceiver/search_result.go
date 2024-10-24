@@ -23,6 +23,7 @@ var apiDict = map[string]string{
 	`SplunkIndexerThroughput`:   `/services/server/introspection/indexer?output_mode=json`,
 	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
 	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
+	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
 }
 
 type searchResponse struct {
@@ -100,4 +101,30 @@ type IdxQContent struct {
 	CurrentSizeBytes int `json:"current_size_bytes"`
 	LargestSize      int `json:"largest_size"`
 	MaxSizeBytes     int `json:"max_size_bytes"`
+}
+
+// '/services/server/status/dispatch-artifacts'
+type DispatchArtifacts struct {
+	Entries []IntrQEntry `json:"entry"`
+}
+
+type DispatchArtifactContent struct {
+	Content DispatchArtifactContent `json:"content"`
+}
+
+type DispatchArtifactContent struct {
+	TotalCount                     int `json:"total_count"`
+	AdHocCount                     int `json:"adhoc_count"`
+	AdHocSizeMb                    int `json:"adhoc_size_mb"`
+	ScheduledCount                 int `json:"scheduled_count"`
+	ScheduledSizeMb                int `json:"scheduled_size_mb"`
+	SsCount                        int `json:"ss_count"`
+	CompletedCount                 int `json:"completed_count"`
+	CompletedSizeMb                int `json:"completed_size_mb"`
+	IncompleCount                  int `json:"incomple_count"`
+	IncompleSizeMb                 int `json:"incomple_size_mb"`
+	InvalidCount                   int `json:"invalid_count"`
+	CachedJobStatusInfoCsvSizeMb   int `json:"cached_job_status_info_csv_size_mb"`
+	CachedJobStatusStatusCsvSizeMb int `json:"cached_job_status_status_csv_size_mb"`
+	CachedJobStatusTotalEntries    int `json:"cached_job_status_total_entries"`
 }

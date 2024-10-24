@@ -101,6 +101,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeAvgIopsByHost,
 		s.scrapeSchedulerRunTimeByHost,
 		s.scrapeIndexerAvgRate,
+		s.scrapeSearchArtifacts,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1558,5 +1559,76 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 		currentQueueSizeBytes := int64(f.Content.CurrentSizeBytes)
 
 		s.mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(now, currentQueueSizeBytes, name)
+	}
+}
+
+// Scrape dispatch artifacts
+func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.splunkClient.isConfigured(typeSh) {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeSh)
+	var da DispatchArtifacts
+
+	ept := apiDict[`SplunkDispatchArtifacts`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	err = json.Unmarshal(body, &da)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	for _, f := range da.Entries {
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesTotal.Enabled {
+			totalCount := int64(f.Content.TotalCount)
+			s.mb.RecordSplunkServerSearchesTotalDataPoint(now, totalCount)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesAdHocTotal.Enabled {
+			adHocCount := int64(f.Content.AdHocCount)
+			s.mb.RecordSplunkServerSearchesAdHocTotalDataPoint(now, adHocCount)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesScheduledTotal.Enabled {
+			scheduledCount := int64(f.Content.ScheduledCount)
+			s.mb.RecordSplunkServerSearchesScheduledTotalDataPoint(now, scheduledCount)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchesCompletedTotal.Enabled {
+			completedCount := int64(f.Content.CompletedCount)
+			s.mb.RecordSplunkServerSearchesCompletedTotalDataPoint(now, completedCount)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.IncompleteTotal.Enabled {
+			incompleCount := int64(f.Content.IncompleCount)
+			s.mb.RecordSplunkServerSearchesIncompleteTotalDataPoint(now, incompleCount)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.InvalidTotal.Enabled {
+			invalidCount := int64(f.Content.InvalidCount)
+			s.mb.RecordSplunkServerSearchesInvalidTotalDataPoint(now, invalidCount)
+		}
+
 	}
 }

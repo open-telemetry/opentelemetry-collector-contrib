@@ -1443,6 +1443,324 @@ func newMetricSplunkServerIntrospectionQueuesCurrentBytes(cfg MetricConfig) metr
 	return m
 }
 
+type metricSplunkServerSearchesAdhocTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searches.adhoc.total metric with initial data.
+func (m *metricSplunkServerSearchesAdhocTotal) init() {
+	m.data.SetName("splunk.server.searches.adhoc.total")
+	m.data.SetDescription("Counter tracking number of ad hoc search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.")
+	m.data.SetUnit("{searches}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchesAdhocTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchesAdhocTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchesAdhocTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchesAdhocTotal(cfg MetricConfig) metricSplunkServerSearchesAdhocTotal {
+	m := metricSplunkServerSearchesAdhocTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkServerSearchesCompletedTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searches.completed.total metric with initial data.
+func (m *metricSplunkServerSearchesCompletedTotal) init() {
+	m.data.SetName("splunk.server.searches.completed.total")
+	m.data.SetDescription("Counter tracking number of completed search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.")
+	m.data.SetUnit("{searches}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchesCompletedTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchesCompletedTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchesCompletedTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchesCompletedTotal(cfg MetricConfig) metricSplunkServerSearchesCompletedTotal {
+	m := metricSplunkServerSearchesCompletedTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkServerSearchesIncompleteTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searches.incomplete.total metric with initial data.
+func (m *metricSplunkServerSearchesIncompleteTotal) init() {
+	m.data.SetName("splunk.server.searches.incomplete.total")
+	m.data.SetDescription("Counter tracking number of incomplete search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.")
+	m.data.SetUnit("{searches}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchesIncompleteTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchesIncompleteTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchesIncompleteTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchesIncompleteTotal(cfg MetricConfig) metricSplunkServerSearchesIncompleteTotal {
+	m := metricSplunkServerSearchesIncompleteTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkServerSearchesInvalidTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searches.invalid.total metric with initial data.
+func (m *metricSplunkServerSearchesInvalidTotal) init() {
+	m.data.SetName("splunk.server.searches.invalid.total")
+	m.data.SetDescription("Counter tracking number of invalid search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.")
+	m.data.SetUnit("{searches}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchesInvalidTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchesInvalidTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchesInvalidTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchesInvalidTotal(cfg MetricConfig) metricSplunkServerSearchesInvalidTotal {
+	m := metricSplunkServerSearchesInvalidTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkServerSearchesScheduledTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searches.scheduled.total metric with initial data.
+func (m *metricSplunkServerSearchesScheduledTotal) init() {
+	m.data.SetName("splunk.server.searches.scheduled.total")
+	m.data.SetDescription("Counter tracking number of scheduled search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.")
+	m.data.SetUnit("{searches}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchesScheduledTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchesScheduledTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchesScheduledTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchesScheduledTotal(cfg MetricConfig) metricSplunkServerSearchesScheduledTotal {
+	m := metricSplunkServerSearchesScheduledTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkServerSearchesTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searches.total metric with initial data.
+func (m *metricSplunkServerSearchesTotal) init() {
+	m.data.SetName("splunk.server.searches.total")
+	m.data.SetDescription("Counter tracking number of dispatched search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.")
+	m.data.SetUnit("{searches}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchesTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchesTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchesTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchesTotal(cfg MetricConfig) metricSplunkServerSearchesTotal {
+	m := metricSplunkServerSearchesTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkTypingQueueRatio struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1530,6 +1848,12 @@ type MetricsBuilder struct {
 	metricSplunkSchedulerCompletionRatio              metricSplunkSchedulerCompletionRatio
 	metricSplunkServerIntrospectionQueuesCurrent      metricSplunkServerIntrospectionQueuesCurrent
 	metricSplunkServerIntrospectionQueuesCurrentBytes metricSplunkServerIntrospectionQueuesCurrentBytes
+	metricSplunkServerSearchesAdhocTotal              metricSplunkServerSearchesAdhocTotal
+	metricSplunkServerSearchesCompletedTotal          metricSplunkServerSearchesCompletedTotal
+	metricSplunkServerSearchesIncompleteTotal         metricSplunkServerSearchesIncompleteTotal
+	metricSplunkServerSearchesInvalidTotal            metricSplunkServerSearchesInvalidTotal
+	metricSplunkServerSearchesScheduledTotal          metricSplunkServerSearchesScheduledTotal
+	metricSplunkServerSearchesTotal                   metricSplunkServerSearchesTotal
 	metricSplunkTypingQueueRatio                      metricSplunkTypingQueueRatio
 }
 
@@ -1585,6 +1909,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkSchedulerCompletionRatio:              newMetricSplunkSchedulerCompletionRatio(mbc.Metrics.SplunkSchedulerCompletionRatio),
 		metricSplunkServerIntrospectionQueuesCurrent:      newMetricSplunkServerIntrospectionQueuesCurrent(mbc.Metrics.SplunkServerIntrospectionQueuesCurrent),
 		metricSplunkServerIntrospectionQueuesCurrentBytes: newMetricSplunkServerIntrospectionQueuesCurrentBytes(mbc.Metrics.SplunkServerIntrospectionQueuesCurrentBytes),
+		metricSplunkServerSearchesAdhocTotal:              newMetricSplunkServerSearchesAdhocTotal(mbc.Metrics.SplunkServerSearchesAdhocTotal),
+		metricSplunkServerSearchesCompletedTotal:          newMetricSplunkServerSearchesCompletedTotal(mbc.Metrics.SplunkServerSearchesCompletedTotal),
+		metricSplunkServerSearchesIncompleteTotal:         newMetricSplunkServerSearchesIncompleteTotal(mbc.Metrics.SplunkServerSearchesIncompleteTotal),
+		metricSplunkServerSearchesInvalidTotal:            newMetricSplunkServerSearchesInvalidTotal(mbc.Metrics.SplunkServerSearchesInvalidTotal),
+		metricSplunkServerSearchesScheduledTotal:          newMetricSplunkServerSearchesScheduledTotal(mbc.Metrics.SplunkServerSearchesScheduledTotal),
+		metricSplunkServerSearchesTotal:                   newMetricSplunkServerSearchesTotal(mbc.Metrics.SplunkServerSearchesTotal),
 		metricSplunkTypingQueueRatio:                      newMetricSplunkTypingQueueRatio(mbc.Metrics.SplunkTypingQueueRatio),
 	}
 
@@ -1679,6 +2009,12 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkSchedulerCompletionRatio.emit(ils.Metrics())
 	mb.metricSplunkServerIntrospectionQueuesCurrent.emit(ils.Metrics())
 	mb.metricSplunkServerIntrospectionQueuesCurrentBytes.emit(ils.Metrics())
+	mb.metricSplunkServerSearchesAdhocTotal.emit(ils.Metrics())
+	mb.metricSplunkServerSearchesCompletedTotal.emit(ils.Metrics())
+	mb.metricSplunkServerSearchesIncompleteTotal.emit(ils.Metrics())
+	mb.metricSplunkServerSearchesInvalidTotal.emit(ils.Metrics())
+	mb.metricSplunkServerSearchesScheduledTotal.emit(ils.Metrics())
+	mb.metricSplunkServerSearchesTotal.emit(ils.Metrics())
 	mb.metricSplunkTypingQueueRatio.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -1839,6 +2175,36 @@ func (mb *MetricsBuilder) RecordSplunkServerIntrospectionQueuesCurrentDataPoint(
 // RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint adds a data point to splunk.server.introspection.queues.current.bytes metric.
 func (mb *MetricsBuilder) RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string) {
 	mb.metricSplunkServerIntrospectionQueuesCurrentBytes.recordDataPoint(mb.startTime, ts, val, splunkQueueNameAttributeValue)
+}
+
+// RecordSplunkServerSearchesAdhocTotalDataPoint adds a data point to splunk.server.searches.adhoc.total metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchesAdhocTotalDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	mb.metricSplunkServerSearchesAdhocTotal.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerSearchesCompletedTotalDataPoint adds a data point to splunk.server.searches.completed.total metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchesCompletedTotalDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	mb.metricSplunkServerSearchesCompletedTotal.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerSearchesIncompleteTotalDataPoint adds a data point to splunk.server.searches.incomplete.total metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchesIncompleteTotalDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	mb.metricSplunkServerSearchesIncompleteTotal.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerSearchesInvalidTotalDataPoint adds a data point to splunk.server.searches.invalid.total metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchesInvalidTotalDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	mb.metricSplunkServerSearchesInvalidTotal.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerSearchesScheduledTotalDataPoint adds a data point to splunk.server.searches.scheduled.total metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchesScheduledTotalDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	mb.metricSplunkServerSearchesScheduledTotal.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerSearchesTotalDataPoint adds a data point to splunk.server.searches.total metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchesTotalDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	mb.metricSplunkServerSearchesTotal.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
 }
 
 // RecordSplunkTypingQueueRatioDataPoint adds a data point to splunk.typing.queue.ratio metric.
