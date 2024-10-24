@@ -5,6 +5,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 
@@ -132,6 +134,8 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
 		kp.processResource(ctx, rl.At(i).Resource())
+
+		kp.processEventBody(rl.At(i))
 	}
 
 	return ld, nil
@@ -141,6 +145,23 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
 	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
 	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
+
+	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+		kp.logger.Debug("res-attributes", zap.Any(k, v.Str()))
+		return true
+	})
+
+	if val, found := resource.Attributes().Get("type"); found && val.Str() == "event" {
+		if kind, found := resource.Attributes().Get("k8s.object.kind"); found {
+			if objectuid, found := resource.Attributes().Get("k8s.object.uid"); found {
+				if kind.Str() == "Pod" {
+					resource.Attributes().PutStr("k8s.pod.uid", objectuid.Str())
+				} else if kind.Str() == "Node" {
+					resource.Attributes().PutStr("k8s.node.uid", objectuid.Str())
+				}
+			}
+		}
+	}
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
@@ -195,6 +216,77 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 	kp.processopsrampResources(ctx, resource)
+	kp.addOpsrampEventResourceAttributes(ctx, resource)
+}
+
+func (kp *kubernetesprocessor) processEventBody(resourceLogs plog.ResourceLogs) {
+	if val, found := resourceLogs.Resource().Attributes().Get("type"); found && val.Str() == "event" {
+
+		bodyMap := map[string]string{}
+
+		resourceLogs.Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
+			bodyMap[k] = v.Str()
+			return true
+		})
+
+		ilss := resourceLogs.ScopeLogs()
+		for j := 0; j < ilss.Len(); j++ {
+			ils := ilss.At(j)
+			logs := ils.LogRecords()
+			for k := 0; k < logs.Len(); k++ {
+				lr := logs.At(k)
+
+				lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+					bodyMap[k] = v.Str()
+					return true
+				})
+
+				bodyMap["message"] = lr.Body().AsString()
+
+				body, err := json.Marshal(bodyMap)
+				if err != nil {
+					kp.logger.Error("Failed to marshal attributes as body ")
+				}
+
+				lr.Body().SetStr(string(body))
+			}
+		}
+	}
+}
+
+func (kp *kubernetesprocessor) addOpsrampEventResourceAttributes(ctx context.Context, resource pcommon.Resource) {
+
+	if val, found := resource.Attributes().Get("type"); found && val.Str() == "event" {
+		kp.logger.Debug("addOpsrampEventResourceAttributes ")
+
+		resource.Attributes().PutStr("source", "kubernetes")
+		resource.Attributes().PutStr("level", "Unknown")
+		resource.Attributes().PutStr("cluster_name", kp.redisConfig.ClusterName)
+		resource.Attributes().PutStr("host", kp.redisConfig.ClusterName)
+		resource.Attributes().PutStr("resourceUUID", kp.redisConfig.ClusterUid)
+
+		if val, found := resource.Attributes().Get("k8s.namespace.name"); found {
+			kp.logger.Debug("addOpsrampEventResourceAttributes ", zap.Any("namespace", val.Str()))
+			resource.Attributes().PutStr("namespace", val.Str())
+		}
+
+		host := ""
+		if val, found := resource.Attributes().Get(semconv.AttributeK8SNodeName); found {
+			host = val.Str()
+			if host != "" {
+				//overwrite node opsramp resource UUID in resourceUUID
+				kp.logger.Debug("addOpsrampEventResourceAttributes ", zap.Any("host", host))
+
+				resource.Attributes().PutStr("host", host)
+
+				if resourceUuid := kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource); resourceUuid != "" {
+					kp.logger.Debug("addOpsrampEventResourceAttributes ", zap.Any("resourceUUID", resourceUuid))
+
+					resource.Attributes().PutStr("resourceUUID", resourceUuid)
+				}
+			}
+		}
+	}
 }
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
@@ -203,8 +295,15 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 	var resourceUuid string
 
 	for _, addon := range kp.addons {
-		//fmt.Println(">>>>>> Addons Added key : ", addon.Key, " Value ", addon.Value)
-		resource.Attributes().PutStr(addon.Key, addon.Value)
+		// If receiver has already added some attributes with some value, then we do not overwrite here.
+		// For ex. type = event is already added for kube events. We should not overwrite it with type = RESOURCE.
+		kp.logger.Debug("addon", zap.Any("key", addon.Key))
+
+		if _, found := resource.Attributes().Get(addon.Key); !found {
+			kp.logger.Debug("addon not found adding it", zap.Any("key", addon.Key))
+
+			resource.Attributes().PutStr(addon.Key, addon.Value)
+		}
 	}
 
 	if _, found = resource.Attributes().Get("k8s.pod.uid"); found {
