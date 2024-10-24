@@ -9,6 +9,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.57.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.31.0
 	github.com/DataDog/sketches-go v1.4.6
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.111.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.111.0
 	github.com/stretchr/testify v1.9.0
@@ -71,7 +72,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -127,3 +128,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
