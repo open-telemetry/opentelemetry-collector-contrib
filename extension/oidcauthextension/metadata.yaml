@@ -4,7 +4,7 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
     active: [jpkrohling]
 

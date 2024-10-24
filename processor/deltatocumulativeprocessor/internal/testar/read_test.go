@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testar/crlf"
 )
 
 func ExampleRead() {
@@ -55,4 +58,29 @@ func ExampleParser() {
 
 	// Output:
 	// foobar: int(377927)
+}
+
+func TestCRLF(t *testing.T) {
+	data := crlf.Join(
+		"-- string --",
+		"foobar",
+	)
+
+	var into struct {
+		String string `testar:"string"`
+	}
+
+	err := Read(data, &into)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	must(t, into.String, "foobar\n")
+}
+
+func must[T string | int](t *testing.T, v, want T) {
+	t.Helper()
+	if v != want {
+		t.Fatalf("got '%q' != '%q' want", v, want)
+	}
 }

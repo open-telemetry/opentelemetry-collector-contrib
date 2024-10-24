@@ -322,5 +322,3 @@ reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 
 
 ## UNMAINTAINED components
-
-receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers 

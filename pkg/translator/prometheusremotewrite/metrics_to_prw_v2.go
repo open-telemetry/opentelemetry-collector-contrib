@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -49,6 +49,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
+		resource := resourceMetrics.Resource()
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()
 		// keep track of the most recent timestamp in the ResourceMetrics for
 		// use with the "target" info metric
@@ -77,7 +78,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						errs = multierr.Append(errs, fmt.Errorf("empty data points. %s is dropped", metric.Name()))
 						break
 					}
-					c.addGaugeNumberDataPoints(dataPoints, promName)
+					c.addGaugeNumberDataPoints(dataPoints, resource, settings, promName)
 				case pmetric.MetricTypeSum:
 					// TODO implement
 				case pmetric.MetricTypeHistogram:
@@ -107,16 +108,25 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 	return allTS
 }
 
-func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls labels.Labels) *writev2.TimeSeries {
+func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) *writev2.TimeSeries {
 	if sample == nil || len(lbls) == 0 {
 		// This shouldn't happen
 		return nil
 	}
-	ts := &writev2.TimeSeries{}
-	ts.LabelsRefs = c.symbolTable.SymbolizeLabels(lbls, ts.LabelsRefs)
-	ts.Samples = append(ts.Samples, *sample)
 
-	c.unique[lbls.Hash()] = ts
+	buf := make([]uint32, 0, len(lbls)*2)
+	var off uint32
+	for _, l := range lbls {
+		off = c.symbolTable.Symbolize(l.Name)
+		buf = append(buf, off)
+		off = c.symbolTable.Symbolize(l.Value)
+		buf = append(buf, off)
+	}
+	ts := writev2.TimeSeries{
+		LabelsRefs: buf,
+		Samples:    []writev2.Sample{*sample},
+	}
+	c.unique[timeSeriesSignature(lbls)] = &ts
 
-	return ts
+	return &ts
 }

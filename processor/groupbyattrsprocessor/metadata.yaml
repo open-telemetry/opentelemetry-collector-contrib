@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: []
   codeowners:
     active: [rnishtala-sumo]

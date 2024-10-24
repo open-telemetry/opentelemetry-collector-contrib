@@ -21,24 +21,28 @@ package testar // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"reflect"
 	"strings"
 
 	"golang.org/x/tools/txtar"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testar/crlf"
 )
 
 // Read archive data into the fields of struct *T
 func Read[T any](data []byte, into *T, parsers ...Format) error {
+	data = crlf.Strip(data)
 	ar := txtar.Parse(data)
 	return Decode(ar, into, parsers...)
 }
 
 func ReadFile[T any](file string, into *T, parsers ...Format) error {
-	ar, err := txtar.ParseFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		return err
 	}
-	return Decode(ar, into, parsers...)
+	return Read(data, into, parsers...)
 }
 
 func Decode[T any](ar *txtar.Archive, into *T, parsers ...Format) error {

@@ -83,6 +83,8 @@ func (r *router[C]) registerConsumers(defaultPipelineIDs []pipeline.ID) error {
 		return err
 	}
 
+	r.normalizeConditions()
+
 	// register pipelines for each route
 	err = r.registerRouteConsumers()
 	if err != nil {
@@ -109,11 +111,21 @@ func (r *router[C]) registerDefaultConsumer(pipelineIDs []pipeline.ID) error {
 	return nil
 }
 
+// convert conditions to statements
+func (r *router[C]) normalizeConditions() {
+	for i := range r.table {
+		item := &r.table[i]
+		if item.Condition != "" {
+			item.Statement = fmt.Sprintf("route() where %s", item.Condition)
+		}
+	}
+}
+
 // registerRouteConsumers registers a consumer for the pipelines configured
 // for each route
 func (r *router[C]) registerRouteConsumers() error {
 	for _, item := range r.table {
-		statement, err := r.getStatementFrom(item)
+		statement, err := r.parser.ParseStatement(item.Statement)
 		if err != nil {
 			return err
 		}
@@ -142,24 +154,6 @@ func (r *router[C]) registerRouteConsumers() error {
 		r.routes[key(item)] = route
 	}
 	return nil
-}
-
-// getStatementFrom builds a routing OTTL statement from the provided
-// routing table entry configuration. If the routing table entry configuration
-// does not contain a valid OTTL statement then nil is returned.
-func (r *router[C]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[ottlresource.TransformContext], error) {
-	var statement *ottl.Statement[ottlresource.TransformContext]
-	if item.Condition != "" {
-		item.Statement = fmt.Sprintf("route() where %s", item.Condition)
-	}
-	if item.Statement != "" {
-		var err error
-		statement, err = r.parser.ParseStatement(item.Statement)
-		if err != nil {
-			return statement, err
-		}
-	}
-	return statement, nil
 }
 
 func key(entry RoutingTableItem) string {

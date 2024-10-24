@@ -5,7 +5,7 @@ status:
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv]
 

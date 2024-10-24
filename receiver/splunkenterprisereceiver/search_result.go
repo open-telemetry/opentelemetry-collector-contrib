@@ -23,6 +23,7 @@ var apiDict = map[string]string{
 	`SplunkIndexerThroughput`:   `/services/server/introspection/indexer?output_mode=json`,
 	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
 	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
+	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
 	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
 }
 
@@ -103,12 +104,44 @@ type IdxQContent struct {
 	MaxSizeBytes     int `json:"max_size_bytes"`
 }
 
-// '/services/server/status/dispatch-artifacts'
-type DispatchArtifacts struct {
-	Entries []IntrQEntry `json:"entry"`
+// '/services/kvstore/status'
+const (
+	// unknown/failed values
+	KVStatusUnknown        = "unknown"
+	KVRestoreStatusUnknown = "Unknown status"
+	KVBackupStatusFailed   = "Failed"
+)
+
+type KVStoreStatus struct {
+	Entries []KVEntry `json:"entry"`
 }
 
-type DispatchArtifactContent struct {
+type KVEntry struct {
+	Content KVStatus `json:"content"`
+}
+
+type KVStatus struct {
+	Current   KVStoreCurrent `json:"current"`
+	KVService KVService      `json:"externalKVStore,omitempty"`
+}
+
+type KVService struct {
+	Status string `json:"status"`
+}
+
+type KVStoreCurrent struct {
+	Status              string `json:"status"`
+	BackupRestoreStatus string `json:"backupRestoreStatus"`
+	ReplicationStatus   string `json:"replicationStatus"`
+	StorageEngine       string `json:"storageEngine"`
+}
+
+// '/services/server/status/dispatch-artifacts'
+type DispatchArtifacts struct {
+	Entries []DispatchArtifactEntry `json:"entry"`
+}
+
+type DispatchArtifactEntry struct {
 	Content DispatchArtifactContent `json:"content"`
 }
 

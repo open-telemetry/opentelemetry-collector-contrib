@@ -236,7 +236,6 @@ body:
       - receiver/github
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
-      - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck

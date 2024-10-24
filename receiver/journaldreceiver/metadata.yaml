@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
     active: [sumo-drosiek, djaglowski]
   unsupported_platforms: [darwin, windows]
