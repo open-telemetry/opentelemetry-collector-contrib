@@ -41,7 +41,8 @@ func NewFactory() exporter.Factory {
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
 type factory struct {
-	tChannel transportChannel
+	tChannel        transportChannel
+	telemetryClient telemetryClient
 }
 
 func createDefaultConfig() component.Config {
@@ -65,12 +66,18 @@ func (f *factory) createTracesExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
+	// TODO: deprecate in favor of telemetryClient
 	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
 	if errInstrumentationKeyOrConnectionString != nil {
 		return nil, errInstrumentationKeyOrConnectionString
 	}
 
-	return newTracesExporter(exporterConfig, tc, set)
+	telemetryClient, errInstrumentationKeyOrConnectionString := f.getTelemetryClient(exporterConfig, set.Logger)
+	if errInstrumentationKeyOrConnectionString != nil {
+		return nil, errInstrumentationKeyOrConnectionString
+	}
+
+	return newTracesExporter(exporterConfig, tc, telemetryClient, set)
 }
 
 func (f *factory) createLogsExporter(
@@ -143,4 +150,34 @@ func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 	}
 
 	return f.tChannel, nil
+}
+
+// Configures the telemetry client.
+func (f *factory) getTelemetryClient(exporterConfig *Config, logger *zap.Logger) (telemetryClient, error) {
+
+	if f.telemetryClient == nil {
+		connectionVars, err := parseConnectionString(exporterConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		exporterConfig.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
+		exporterConfig.Endpoint = connectionVars.IngestionURL
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
+		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
+		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
+		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval
+
+		f.telemetryClient = &appInsightsTelemetryClient{
+			client: appinsights.NewTelemetryClientFromConfig(telemetryConfiguration),
+		}
+
+		if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
+			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
+				logger.Debug(msg)
+				return nil
+			})
+		}
+	}
+	return f.telemetryClient, nil
 }
