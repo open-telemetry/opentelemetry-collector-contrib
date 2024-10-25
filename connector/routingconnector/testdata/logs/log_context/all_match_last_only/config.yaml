@@ -1,0 +1,13 @@
+routing:
+  match_once: true
+  default_pipelines:
+    - logs/default
+  table:
+    - context: log
+      condition: attributes["logName"] == "logX"
+      pipelines:
+        - logs/0
+    - context: log
+      condition: attributes["logName"] != nil
+      pipelines:
+        - logs/1

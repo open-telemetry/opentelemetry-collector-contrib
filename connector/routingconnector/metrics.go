@@ -73,7 +73,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 
 		noRoutesMatch := true
 		for _, route := range c.router.routeSlice {
-			_, isMatch, err := route.statement.Execute(ctx, rtx)
+			_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err
