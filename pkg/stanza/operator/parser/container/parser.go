@@ -17,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	stanzaerr "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -67,27 +68,19 @@ type Parser struct {
 
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
-	var timeLayout string
 
 	format := p.format
 	if format == "" {
 		format, err = p.detectFormat(entry)
 		if err != nil {
-			return fmt.Errorf("failed to detect a valid container log format: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "invalid container log format"))
 		}
 	}
 
 	switch format {
 	case dockerFormat:
-		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleAttributeMappings)
-		if err != nil {
-			return fmt.Errorf("failed to process the docker log: %w", err)
-		}
-		timeLayout = goTimeLayout
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
-		}
+		return p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.cbGoTimeLayout)
+
 	case containerdFormat, crioFormat:
 		p.criConsumerStartOnce.Do(func() {
 			err = p.criLogEmitter.Start(nil)
@@ -104,48 +97,28 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			p.asyncConsumerStarted = true
 		})
 
-		// Short circuit if the "if" condition does not match
-		skip, err := p.Skip(ctx, entry)
-		if err != nil {
-			return p.HandleEntryError(ctx, entry, err)
-		}
-		if skip {
-			return p.Write(ctx, entry)
-		}
-
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParserOperator.ParseWithCallback(ctx, entry, p.parseContainerd, p.cbGoTimeLayout)
 			if err != nil {
-				return fmt.Errorf("failed to parse containerd log: %w", err)
+				return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "containerd log"))
 			}
-			timeLayout = goTimeLayout
+
 		} else {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParserOperator.ParseWithCallback(ctx, entry, p.parseCRIO, p.cbCRITimeLayout)
 			if err != nil {
-				return fmt.Errorf("failed to parse crio log: %w", err)
+				return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "parse crio log"))
 			}
-			timeLayout = crioTimeLayout
-		}
-
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
-		}
-
-		err = p.handleAttributeMappings(entry)
-		if err != nil {
-			return fmt.Errorf("failed to handle attribute mappings: %w", err)
 		}
 
 		// send it to the recombine operator
 		err = p.recombineParser.Process(ctx, entry)
 		if err != nil {
-			return fmt.Errorf("failed to recombine the crio log: %w", err)
+			return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "recombine the cri log"))
 		}
 	default:
-		return fmt.Errorf("failed to detect a valid container log format")
+		return p.HandleEntryError(ctx, entry, stanzaerr.Wrap(err, "invalid container log format"))
 	}
 
 	return nil
@@ -262,6 +235,28 @@ func (p *Parser) handleAttributeMappings(e *entry.Entry) error {
 		return err
 	}
 
+	return nil
+}
+
+func (p *Parser) cbGoTimeLayout(e *entry.Entry) error {
+	return p.handleTimeAndAttributes(e, goTimeLayout)
+
+}
+
+func (p *Parser) cbCRITimeLayout(e *entry.Entry) error {
+	return p.handleTimeAndAttributes(e, crioTimeLayout)
+}
+
+func (p *Parser) handleTimeAndAttributes(e *entry.Entry, layout string) error {
+	err := parseTime(e, layout)
+	if err != nil {
+		return fmt.Errorf("failed to parse time: %w", err)
+	}
+
+	err = p.handleAttributeMappings(e)
+	if err != nil {
+		return fmt.Errorf("failed to handle attribute mappings: %w", err)
+	}
 	return nil
 }
 

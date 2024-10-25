@@ -121,6 +121,29 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 	return p.Write(ctx, entry)
 }
 
+func (p *ParserOperator) ParseWithCallback(ctx context.Context, entry *entry.Entry, parse ParseFunction, cb func(*entry.Entry) error) error {
+	// Short circuit if the "if" condition does not match
+	skip, err := p.Skip(ctx, entry)
+	if err != nil {
+		return p.HandleEntryError(ctx, entry, err)
+	}
+	if skip {
+		return p.Write(ctx, entry)
+	}
+
+	if err = p.ParseWith(ctx, entry, parse); err != nil {
+		return err
+	}
+	if cb != nil {
+		err = cb(entry)
+		if err != nil {
+			return p.HandleEntryError(ctx, entry, err)
+		}
+	}
+
+	return nil
+}
+
 // ParseWith will process an entry's field with a parser function.
 func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) error {
 	value, ok := entry.Get(p.ParseFrom)
