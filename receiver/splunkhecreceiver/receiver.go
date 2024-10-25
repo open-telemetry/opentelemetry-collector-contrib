@@ -432,10 +432,10 @@ func (r *splunkReceiver) validateChannelHeader(channelID string) error {
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	if r.logsConsumer != nil {
+	if r.logsConsumer != nil && r.metricsConsumer == nil {
 		ctx = r.obsrecv.StartLogsOp(ctx)
 	}
-	if r.metricsConsumer != nil {
+	if r.metricsConsumer != nil && r.logsConsumer == nil {
 		ctx = r.obsrecv.StartMetricsOp(ctx)
 	}
 
@@ -551,10 +551,10 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if ackErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events)+len(metricEvents), ackErr)
 	} else {
-		if r.logsConsumer != nil {
+		if r.logsConsumer != nil && r.metricsConsumer == nil {
 			r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
 		}
-		if r.metricsConsumer != nil {
+		if r.metricsConsumer != nil && r.logsConsumer == nil {
 			r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
 		}
 	}
@@ -591,10 +591,10 @@ func (r *splunkReceiver) failRequest(
 		}
 	}
 
-	if r.logsConsumer != nil {
+	if r.logsConsumer != nil && r.metricsConsumer == nil {
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
 	}
-	if r.metricsConsumer != nil {
+	if r.metricsConsumer != nil && r.logsConsumer == nil {
 		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
 	}
 
