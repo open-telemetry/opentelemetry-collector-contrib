@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 )
 
 // See:
