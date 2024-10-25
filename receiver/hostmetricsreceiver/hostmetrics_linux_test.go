@@ -52,7 +52,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 	cpuScraperCfg.SetEnvMap(common.EnvMap{
 		common.HostDevEnvKey:     "testdata/dev",
 		common.HostEtcEnvKey:     "testdata/etc",
-		common.HostProcMountinfo: "testdata",
+		common.HostProcMountinfo: "testdata/proc/1",
 		common.HostRunEnvKey:     "testdata/run",
 		common.HostSysEnvKey:     "testdata/sys",
 		common.HostVarEnvKey:     "testdata/var",

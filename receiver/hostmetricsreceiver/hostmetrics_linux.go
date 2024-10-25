@@ -20,7 +20,7 @@ var gopsutilEnvVars = map[common.EnvKeyType]string{
 	common.HostVarEnvKey:     "/var",
 	common.HostRunEnvKey:     "/run",
 	common.HostDevEnvKey:     "/dev",
-	common.HostProcMountinfo: "",
+	common.HostProcMountinfo: "/proc/1",
 }
 
 // This exists to validate that different instances of the hostmetricsreceiver do not
