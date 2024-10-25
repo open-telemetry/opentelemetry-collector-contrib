@@ -54,13 +54,16 @@ func (c *connectorMetrics) ConsumeLogs(ctx context.Context, pl plog.Logs) error 
 				var m pmetric.Metrics
 				m, err := metricsUnmarshaler.UnmarshalMetrics([]byte(token.AsString()))
 				if err != nil {
-					c.logger.Error("could extract metrics from otlp json", zap.Error(err))
+					c.logger.Error("could not extract metrics from otlp json", zap.Error(err))
 					continue
 				}
-				err = c.metricsConsumer.ConsumeMetrics(ctx, m)
-				if err != nil {
-					c.logger.Error("could not consume metrics from otlp json", zap.Error(err))
+				if m.ResourceMetrics().Len() != 0 {
+					err = c.metricsConsumer.ConsumeMetrics(ctx, m)
+					if err != nil {
+						c.logger.Error("could not consume metrics from otlp json", zap.Error(err))
+					}
 				}
+
 			}
 		}
 	}
