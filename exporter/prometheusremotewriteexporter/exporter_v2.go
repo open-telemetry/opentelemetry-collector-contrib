@@ -13,23 +13,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-func (prwe *prwExporter) handleExportV2(ctx context.Context, tsMap map[string]*writev2.TimeSeries, symbolsTable writev2.SymbolsTable) error {
-	// There are no metrics to export, so return.
-	if len(tsMap) == 0 {
-		return nil
-	}
-
-	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeriesV2(tsMap, symbolsTable, prwe.maxBatchSizeBytes, &prwe.batchTimeSeriesState)
-	if err != nil {
-		return err
-	}
-
-	// TODO implement WAl support, can be done after #15277 is fixed
-
-	return prwe.exportV2(ctx, requests)
-}
-
 // TODO update comment
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
 func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Request) error {
