@@ -79,7 +79,6 @@ func flattenHelper(m pcommon.Map, result pcommon.Map, prefix string, currentDept
 			flattenHelper(v.Map(), result, prefix+k, currentDepth+1, maxDepth, conflict, existingKeys)
 		case v.Type() == pcommon.ValueTypeSlice:
 			for i := 0; i < v.Slice().Len(); i++ {
-				//key := fmt.Sprintf("%s.%d", prefix+k, i)
 				if conflict {
 					handleConflict(existingKeys, prefix+k, v.Slice().At(i), &result)
 				} else {
