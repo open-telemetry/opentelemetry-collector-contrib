@@ -1,0 +1,15 @@
+type: gelfreceiver
+scope_name: otelcol/gelfreceiver
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: [BharatKJain]
+    emeritus: [BharatKJain]
+    seeking_new: true
+
+tests:
+  config:
