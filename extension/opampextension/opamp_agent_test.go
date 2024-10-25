@@ -6,6 +6,7 @@ package opampextension
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -212,7 +213,7 @@ func TestStart(t *testing.T) {
 	assert.NoError(t, o.Shutdown(context.TODO()))
 }
 
-func TestHealthReporting(t *testing.T) {
+func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopSettings()
 	o, err := newOpampAgent(cfg.(*Config), set)
@@ -313,6 +314,73 @@ func TestHealthReporting(t *testing.T) {
 		defer mtx.RUnlock()
 		return receivedHealthUpdates == len(expectedHealthUpdates)
 	}, 1*time.Second, 100*time.Millisecond)
+
+	assert.NoError(t, o.Shutdown(context.TODO()))
+	require.True(t, sa.unsubscribed)
+}
+
+func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
+	cfg := createDefaultConfig()
+	set := extensiontest.NewNopSettings()
+	o, err := newOpampAgent(cfg.(*Config), set)
+	assert.NoError(t, err)
+
+	sa := &mockStatusAggregator{}
+	o.statusAggregator = sa
+
+	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
+
+	traces := testhelpers.NewPipelineMetadata("traces")
+
+	// StatusStarting will be sent immediately.
+	for _, id := range traces.InstanceIDs() {
+		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStarting))
+	}
+
+	// StatusOK will be queued until the PipelineWatcher Ready method is called.
+	for _, id := range traces.InstanceIDs() {
+		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusOK))
+	}
+
+	// verify we have received the StatusStarting events
+	require.Eventually(t, func() bool {
+		return len(sa.receivedEvents) == len(traces.InstanceIDs())
+	}, 5*time.Second, 100*time.Millisecond)
+
+	for _, event := range sa.receivedEvents {
+		require.Equal(t, componentstatus.NewEvent(componentstatus.StatusStarting).Status(), event.event.Status())
+	}
+
+	// clean the received events of the mocked status aggregator
+	sa.receivedEvents = nil
+
+	err = o.Ready()
+	require.NoError(t, err)
+
+	// verify we have received the StatusOK events that have been queued while the agent has not been ready
+	require.Eventually(t, func() bool {
+		return len(sa.receivedEvents) == len(traces.InstanceIDs())
+	}, 5*time.Second, 100*time.Millisecond)
+
+	for _, event := range sa.receivedEvents {
+		require.Equal(t, componentstatus.NewEvent(componentstatus.StatusOK).Status(), event.event.Status())
+	}
+
+	// clean the received events of the mocked status aggregator
+	sa.receivedEvents = nil
+
+	// send another set of events - these should be passed through immediately
+	for _, id := range traces.InstanceIDs() {
+		o.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
+	}
+
+	require.Eventually(t, func() bool {
+		return len(sa.receivedEvents) == len(traces.InstanceIDs())
+	}, 5*time.Second, 100*time.Millisecond)
+
+	for _, event := range sa.receivedEvents {
+		require.Equal(t, componentstatus.NewEvent(componentstatus.StatusStopping).Status(), event.event.Status())
+	}
 
 	assert.NoError(t, o.Shutdown(context.TODO()))
 	require.True(t, sa.unsubscribed)
@@ -486,14 +554,22 @@ func TestOpAMPAgent_Dependencies(t *testing.T) {
 }
 
 type mockStatusAggregator struct {
-	statusChan   chan *status.AggregateStatus
-	unsubscribed bool
+	statusChan     chan *status.AggregateStatus
+	receivedEvents []eventSourcePair
+	unsubscribed   bool
 }
 
 func (m *mockStatusAggregator) Subscribe(_ status.Scope, _ status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc) {
 	return m.statusChan, func() {
 		m.unsubscribed = true
 	}
+}
+
+func (m *mockStatusAggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
+	m.receivedEvents = append(m.receivedEvents, eventSourcePair{
+		source: source,
+		event:  event,
+	})
 }
 
 type mockOpAMPClient struct {

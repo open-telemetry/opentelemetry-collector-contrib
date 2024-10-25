@@ -37,6 +37,12 @@ var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
 
 type statusAggregator interface {
 	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
+	RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event)
+}
+
+type eventSourcePair struct {
+	source *componentstatus.InstanceID
+	event  *componentstatus.Event
 }
 
 type opampAgent struct {
@@ -67,7 +73,10 @@ type opampAgent struct {
 
 	statusAggregator     statusAggregator
 	statusSubscriptionWg *sync.WaitGroup
+	componentHealthWg    *sync.WaitGroup
 	startTimeUnixNano    uint64
+	componentStatusCh    chan *eventSourcePair
+	readyCh              chan interface{}
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
@@ -196,12 +205,34 @@ func (o *opampAgent) Register(capability string, opts ...opampcustommessages.Cus
 
 func (o *opampAgent) Ready() error {
 	o.setHealth(&protobufs.ComponentHealth{Healthy: true})
+	close(o.readyCh)
 	return nil
 }
 
 func (o *opampAgent) NotReady() error {
 	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
 	return nil
+}
+
+// ComponentStatusChanged implements the componentstatus.Watcher interface.
+func (o *opampAgent) ComponentStatusChanged(
+	source *componentstatus.InstanceID,
+	event *componentstatus.Event,
+) {
+	// There can be late arriving events after shutdown. We need to close
+	// the event channel so that this function doesn't block and we release all
+	// goroutines, but attempting to write to a closed channel will panic; log
+	// and recover.
+	defer func() {
+		if r := recover(); r != nil {
+			o.logger.Info(
+				"discarding event received after shutdown",
+				zap.Any("source", source),
+				zap.Any("event", event),
+			)
+		}
+	}()
+	o.componentStatusCh <- &eventSourcePair{source: source, event: event}
 }
 
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
@@ -256,6 +287,8 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		statusSubscriptionWg:     &sync.WaitGroup{},
+		componentHealthWg:        &sync.WaitGroup{},
+		readyCh:                  make(chan interface{}),
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
 	}
 
@@ -396,37 +429,85 @@ func (o *opampAgent) initHealthReporting() {
 	}
 	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
 
+	o.componentStatusCh = make(chan *eventSourcePair)
+	o.componentHealthWg.Add(1)
+	go o.componentHealthEventLoop()
+
 	statusChan, unsubscribeFunc := o.statusAggregator.Subscribe(status.ScopeAll, status.Verbose)
-
 	o.statusSubscriptionWg.Add(1)
-	go func() {
-		for {
-			select {
-			case <-o.lifetimeCtx.Done():
-				unsubscribeFunc()
-				o.statusSubscriptionWg.Done()
-				return
-			case statusUpdate, ok := <-statusChan:
-				if !ok {
-					unsubscribeFunc()
-					o.statusSubscriptionWg.Done()
-					return
-				}
-
-				if statusUpdate == nil {
-					continue
-				}
-
-				componentHealth := convertOverallStatus(statusUpdate)
-				componentHealth.ComponentHealthMap = convertComponentStatusMap(statusUpdate.ComponentStatusMap)
-
-				o.setHealth(componentHealth)
-			}
-		}
-	}()
+	go o.statusAggregatorEventLoop(unsubscribeFunc, statusChan)
 }
 
-func convertOverallStatus(statusUpdate *status.AggregateStatus) *protobufs.ComponentHealth {
+func (o *opampAgent) componentHealthEventLoop() {
+	// Record events with component.StatusStarting, but queue other events until
+	// PipelineWatcher.Ready is called. This prevents aggregate statuses from
+	// flapping between StatusStarting and StatusOK as components are started
+	// individually by the service.
+	var eventQueue []*eventSourcePair
+
+	defer o.componentHealthWg.Done()
+	for loop := true; loop; {
+		select {
+		case esp, ok := <-o.componentStatusCh:
+			if !ok {
+				return
+			}
+			if esp.event.Status() != componentstatus.StatusStarting {
+				eventQueue = append(eventQueue, esp)
+				continue
+			}
+			o.statusAggregator.RecordStatus(esp.source, esp.event)
+		case <-o.readyCh:
+			for _, esp := range eventQueue {
+				o.statusAggregator.RecordStatus(esp.source, esp.event)
+			}
+			eventQueue = nil
+			loop = false
+		case <-o.lifetimeCtx.Done():
+			return
+		}
+	}
+
+	// After PipelineWatcher.Ready, record statuses as they are received.
+	for {
+		select {
+		case esp, ok := <-o.componentStatusCh:
+			if !ok {
+				return
+			}
+			o.statusAggregator.RecordStatus(esp.source, esp.event)
+		case <-o.lifetimeCtx.Done():
+			return
+		}
+	}
+}
+
+func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.UnsubscribeFunc, statusChan <-chan *status.AggregateStatus) {
+	defer func() {
+		unsubscribeFunc()
+		o.statusSubscriptionWg.Done()
+	}()
+	for {
+		select {
+		case <-o.lifetimeCtx.Done():
+			return
+		case statusUpdate, ok := <-statusChan:
+			if !ok {
+				return
+			}
+
+			if statusUpdate == nil {
+				continue
+			}
+
+			componentHealth := convertComponentHealth(statusUpdate)
+
+			o.setHealth(componentHealth)
+		}
+	}
+}
+
+func convertComponentHealth(statusUpdate *status.AggregateStatus) *protobufs.ComponentHealth {
 	var isHealthy bool
 	if statusUpdate.Status() == componentstatus.StatusOK {
 		isHealthy = true
@@ -443,14 +524,13 @@ func convertOverallStatus(statusUpdate *status.AggregateStatus) *protobufs.Compo
 	if statusUpdate.Err() != nil {
 		componentHealth.LastError = statusUpdate.Err().Error()
 	}
-	return componentHealth
-}
 
-func convertComponentStatusMap(statusMap map[string]*status.AggregateStatus) map[string]*protobufs.ComponentHealth {
-	res := map[string]*protobufs.ComponentHealth{}
-
-	for comp, stat := range statusMap {
-		res[comp] = convertOverallStatus(stat)
+	if len(statusUpdate.ComponentStatusMap) > 0 {
+		componentHealth.ComponentHealthMap = map[string]*protobufs.ComponentHealth{}
+		for comp, compState := range statusUpdate.ComponentStatusMap {
+			componentHealth.ComponentHealthMap[comp] = convertComponentHealth(compState)
+		}
 	}
-	return res
+
+	return componentHealth
 }
