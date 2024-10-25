@@ -509,6 +509,7 @@ func ScenarioLong(
 	resultsSummary testbed.TestResultsSummary,
 	sleepTime int,
 	processors map[string]string,
+	resourceLimits testbed.ResourceSpec,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
@@ -528,6 +529,7 @@ func ScenarioLong(
 		agentProc,
 		&testbed.CorrectnessLogTestValidator{},
 		resultsSummary,
+		testbed.WithResourceLimits(resourceLimits),
 	)
 	t.Cleanup(tc.Stop)
 
