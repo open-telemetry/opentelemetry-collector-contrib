@@ -523,7 +523,7 @@ As a reminder, a policy voting to sample the trace does not guarantee sampling; 
 ### Policy Evaluation Errors
 
 ```
-sampling_policy_evaluation_error
+otelcol_processor_tail_sampling_sampling_policy_evaluation_error
 ```
 
 [documentation_md]: ./documentation.md
