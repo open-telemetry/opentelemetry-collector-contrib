@@ -43,7 +43,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
 `kubeConfig` to use credentials from `~/.kube/config`.
 - `name`: Name of the resource object to collect
-- `mode`: define in which way it collects this type of object, either "poll" or "watch".
+- `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.
   - `watch` mode will do setup a long connection using the watch API to just get updates.
 - `label_selector`: select objects by label(s)
