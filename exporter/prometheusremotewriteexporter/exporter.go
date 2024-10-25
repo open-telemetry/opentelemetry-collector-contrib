@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"io"
 	"math"
 	"net/http"
@@ -173,37 +174,35 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
+		var tsMap map[string]*prompb.TimeSeries
+		var tsMapv2 map[string]*writev2.TimeSeries
+		var symbolsTable writev2.SymbolsTable
+		var m []*prompb.MetricMetadata
+		var err error
 		if !prwe.exporterSettings.SendRW2 {
 			// RW1 case
-			tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
-			if err != nil {
-				prwe.telemetry.recordTranslationFailure(ctx)
-				prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
-			}
+			tsMap, err = prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 
 			prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
 
-			var m []*prompb.MetricMetadata
 			if prwe.exporterSettings.SendMetadata {
 				m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
 			}
 
-			// Call export even if a conversion error, since there may be points that were successfully converted.
-			return prwe.handleExport(ctx, tsMap, m)
 		} else {
 			// RW2 case
-			tsMap, symbolsTable, err := prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
-			if err != nil {
-				prwe.telemetry.recordTranslationFailure(ctx)
-				prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
-			}
+			tsMapv2, symbolsTable, err = prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
 
-			prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
-
-			// TODO handle metadata
-
-			return prwe.handleExportV2(ctx, tsMap, symbolsTable)
+			prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMapv2))
 		}
+
+		if err != nil {
+			prwe.telemetry.recordTranslationFailure(ctx)
+			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+		}
+
+		// Call export even if a conversion error, since there may be points that were successfully converted.
+		return prwe.handleExport(ctx, tsMap, m, symbolsTable, tsMapv2)
 
 	}
 }
@@ -220,28 +219,41 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata, symbolsTable writev2.SymbolsTable, tsMapv2 map[string]*writev2.TimeSeries) error {
 	// There are no metrics to export, so return.
-	if len(tsMap) == 0 {
+	if len(tsMap) == 0 || len(tsMapv2) == 0 {
 		return nil
 	}
+	if len(tsMapv2) == 0 {
+		// v1 case
+		// Calls the helper function to convert and batch the TsMap to the desired format
+		requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
+		if err != nil {
+			return err
+		}
+		if !prwe.walEnabled() {
+			// Perform a direct export otherwise.
+			return prwe.export(ctx, requests)
+		}
 
+		// Otherwise the WAL is enabled, and just persist the requests to the WAL
+		// and they'll be exported in another goroutine to the RemoteWrite endpoint.
+		if err = prwe.wal.persistToWAL(requests); err != nil {
+			return consumererror.NewPermanent(err)
+		}
+		return nil
+	}
+	// v2 case
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
+	// TODO remove batching for now
+	requests, err := batchTimeSeriesV2(tsMapv2, symbolsTable, prwe.maxBatchSizeBytes, &prwe.batchTimeSeriesState)
 	if err != nil {
 		return err
 	}
-	if !prwe.walEnabled() {
-		// Perform a direct export otherwise.
-		return prwe.export(ctx, requests)
-	}
 
-	// Otherwise the WAL is enabled, and just persist the requests to the WAL
-	// and they'll be exported in another goroutine to the RemoteWrite endpoint.
-	if err = prwe.wal.persistToWAL(requests); err != nil {
-		return consumererror.NewPermanent(err)
-	}
-	return nil
+	// TODO implement WAl support, can be done after #15277 is fixed
+
+	return prwe.exportV2(ctx, requests)
 }
 
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order
@@ -273,7 +285,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 					if !ok {
 						return
 					}
-					if errExecute := prwe.execute(ctx, request); errExecute != nil {
+					if errExecute := prwe.execute(ctx, request, nil, false); errExecute != nil {
 						mu.Lock()
 						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 						mu.Unlock()
@@ -287,9 +299,15 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	return errs
 }
 
-func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
+func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest, writeReqv2 *writev2.Request, v2 bool) error {
 	// Uses proto.Marshal to convert the WriteRequest into bytes array
-	data, errMarshal := proto.Marshal(writeReq)
+	var data []byte
+	var errMarshal error
+	if !v2 {
+		data, errMarshal = proto.Marshal(writeReq)
+	} else {
+		data, errMarshal = proto.Marshal(writeReqv2)
+	}
 	if errMarshal != nil {
 		return consumererror.NewPermanent(errMarshal)
 	}
@@ -317,9 +335,15 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		// Add necessary headers specified by:
 		// https://cortexmetrics.io/docs/apis/#remote-api
 		req.Header.Add("Content-Encoding", "snappy")
-		req.Header.Set("Content-Type", "application/x-protobuf")
-		req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
+
+		if !v2 {
+			req.Header.Set("Content-Type", "application/x-protobuf")
+			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+		} else {
+			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
+			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
+		}
 
 		resp, err := prwe.client.Do(req)
 		if err != nil {
