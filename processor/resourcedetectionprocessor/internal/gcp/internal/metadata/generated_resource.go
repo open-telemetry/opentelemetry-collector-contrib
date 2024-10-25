@@ -98,6 +98,27 @@ func (rb *ResourceBuilder) SetGcpCloudRunJobTaskIndex(val string) {
 	}
 }
 
+// SetGcpGceInstanceGroupManagerName sets provided value as "gcp.gce.instance.group.manager.name" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceGroupManagerName(val string) {
+	if rb.config.GcpGceInstanceGroupManagerName.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance.group.manager.name", val)
+	}
+}
+
+// SetGcpGceInstanceGroupManagerRegion sets provided value as "gcp.gce.instance.group.manager.region" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceGroupManagerRegion(val string) {
+	if rb.config.GcpGceInstanceGroupManagerRegion.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance.group.manager.region", val)
+	}
+}
+
+// SetGcpGceInstanceGroupManagerZone sets provided value as "gcp.gce.instance.group.manager.zone" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceGroupManagerZone(val string) {
+	if rb.config.GcpGceInstanceGroupManagerZone.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance.group.manager.zone", val)
+	}
+}
+
 // SetGcpGceInstanceHostname sets provided value as "gcp.gce.instance.hostname" attribute.
 func (rb *ResourceBuilder) SetGcpGceInstanceHostname(val string) {
 	if rb.config.GcpGceInstanceHostname.Enabled {
