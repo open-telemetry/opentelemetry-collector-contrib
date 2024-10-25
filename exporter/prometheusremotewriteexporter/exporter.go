@@ -244,12 +244,24 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 		return nil
 	}
 	// v2 case
-	// Calls the helper function to convert and batch the TsMap to the desired format
-	// TODO remove batching for now
-	requests, err := batchTimeSeriesV2(tsMapv2, symbolsTable, prwe.maxBatchSizeBytes, &prwe.batchTimeSeriesState)
-	if err != nil {
-		return err
+
+	// TODO implement batching
+	requests := make([]*writev2.Request, 0)
+	tsArray := make([]writev2.TimeSeries, 0, len(tsMap))
+	for _, v := range tsMapv2 {
+		tsArray = append(tsArray, *v)
 	}
+
+	requests = append(requests, &writev2.Request{
+		// TODO sort
+		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
+		// See:
+		// * https://github.com/open-telemetry/wg-prometheus/issues/10
+		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
+		//Timeseries: orderBySampleTimestamp(tsArray),
+		Timeseries: tsArray,
+		Symbols:    symbolsTable.Symbols(),
+	})
 
 	// TODO implement WAl support, can be done after #15277 is fixed
 
