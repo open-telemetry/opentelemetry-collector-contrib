@@ -404,6 +404,50 @@ Gauge tracking average bytes per second throughput of indexer. *Note:** Must be 
 | ---- | ----------- | ------ |
 | splunk.indexer.status | The status message reported for a specific object | Any Str |
 
+### splunk.kvstore.backup.status
+
+Backup and restore status of the KV store.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
+
+### splunk.kvstore.replication.status
+
+Replication status of the KV store.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
+
+### splunk.kvstore.status
+
+This is the overall status of the kvstore for the given deployment.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.kvstore.storage.engine | The backend storage used by the KV store. | Any Str |
+| splunk.kvstore.external | Value denoting if the KV store is using an external service. | Any Str |
+| splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
+
 ### splunk.server.introspection.queues.current
 
 Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
