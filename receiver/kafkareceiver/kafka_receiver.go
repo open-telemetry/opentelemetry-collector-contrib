@@ -127,7 +127,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 	}, nil
 }
 
-func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
+func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.ClientID = config.ClientID
 	saramaConfig.Metadata.Full = config.Metadata.Full
@@ -153,7 +153,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 			return nil, err
 		}
 	}
-	if err := kafka.ConfigureAuthentication(config.Authentication, saramaConfig); err != nil {
+	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
 		return nil, err
 	}
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
@@ -188,7 +188,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
 			return err
 		}
 	}
@@ -296,7 +296,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
 			return err
 		}
 	}
@@ -407,7 +407,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
 			return err
 		}
 	}
