@@ -1169,8 +1169,8 @@ func TestRetries(t *testing.T) {
 					Enabled: true,
 				},
 			}
-
-			err = exporter.execute(tt.ctx, &prompb.WriteRequest{})
+			data, _ := proto.Marshal(&prompb.WriteRequest{})
+			err = exporter.execute(tt.ctx, data)
 			tt.assertError(t, err)
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)

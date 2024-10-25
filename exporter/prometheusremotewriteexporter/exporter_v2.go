@@ -5,10 +5,11 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"context"
-	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"math"
 	"sync"
 
+	"github.com/gogo/protobuf/proto"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/multierr"
 )
@@ -43,7 +44,14 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 					if !ok {
 						return
 					}
-					if errExecute := prwe.execute(ctx, nil, request, true); errExecute != nil {
+
+					// Uses proto.Marshal to convert the WriteRequest into bytes array
+					data, errMarshal := proto.Marshal(request)
+					if errMarshal != nil {
+						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+					}
+
+					if errExecute := prwe.execute(ctx, data); errExecute != nil {
 						mu.Lock()
 						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 						mu.Unlock()
@@ -55,4 +63,33 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 	wg.Wait()
 
 	return errs
+}
+
+func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev2.SymbolsTable, tsMap map[string]*writev2.TimeSeries) error {
+	// There are no metrics to export, so return.
+	if len(tsMap) == 0 {
+		return nil
+	}
+
+	// TODO implement batching
+	requests := make([]*writev2.Request, 0)
+	tsArray := make([]writev2.TimeSeries, 0, len(tsMap))
+	for _, v := range tsMap {
+		tsArray = append(tsArray, *v)
+	}
+
+	requests = append(requests, &writev2.Request{
+		// TODO sort
+		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
+		// See:
+		// * https://github.com/open-telemetry/wg-prometheus/issues/10
+		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
+		//Timeseries: orderBySampleTimestamp(tsArray),
+		Timeseries: tsArray,
+		Symbols:    symbolsTable.Symbols(),
+	})
+
+	// TODO implement WAl support, can be done after #15277 is fixed
+
+	return prwe.exportV2(ctx, requests)
 }
