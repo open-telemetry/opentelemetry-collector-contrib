@@ -10,7 +10,7 @@ resourceMetrics:
         - key: k8s.namespace.name
           value:
             stringValue: test-namespace
-    schemaUrl: "https://opentelemetry.io/schemas/1.18.0"
+    schemaUrl: "https://opentelemetry.io/schemas/1.27.0"
     scopeMetrics:
       - metrics:
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
