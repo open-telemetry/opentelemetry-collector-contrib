@@ -43,3 +43,20 @@ func (rb *ResourceBuilder) SetZoneOrRegion(detect func() (string, gcp.LocationTy
 	}
 	return nil
 }
+
+func (rb *ResourceBuilder) SetManagedInstanceGroup(detect func() (gcp.ManagedInstanceGroup, error)) error {
+	v, err := detect()
+	if err != nil {
+		return err
+	}
+	if v.Name != "" {
+		rb.SetGcpGceInstanceGroupManagerName(v.Name)
+	}
+	switch v.Type {
+	case gcp.Zone:
+		rb.SetGcpGceInstanceGroupManagerZone(v.Location)
+	case gcp.Region:
+		rb.SetGcpGceInstanceGroupManagerRegion(v.Location)
+	}
+	return nil
+}

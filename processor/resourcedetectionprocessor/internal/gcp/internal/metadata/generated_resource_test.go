@@ -24,6 +24,9 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetFaasVersion("faas.version-val")
 			rb.SetGcpCloudRunJobExecution("gcp.cloud_run.job.execution-val")
 			rb.SetGcpCloudRunJobTaskIndex("gcp.cloud_run.job.task_index-val")
+			rb.SetGcpGceInstanceGroupManagerName("gcp.gce.instance.group.manager.name-val")
+			rb.SetGcpGceInstanceGroupManagerRegion("gcp.gce.instance.group.manager.region-val")
+			rb.SetGcpGceInstanceGroupManagerZone("gcp.gce.instance.group.manager.zone-val")
 			rb.SetGcpGceInstanceHostname("gcp.gce.instance.hostname-val")
 			rb.SetGcpGceInstanceName("gcp.gce.instance.name-val")
 			rb.SetHostID("host.id-val")
@@ -36,9 +39,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 18, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 17, res.Attributes().Len())
+				assert.Equal(t, 20, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -100,6 +103,21 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "gcp.cloud_run.job.task_index-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance.group.manager.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance.group.manager.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance.group.manager.region")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance.group.manager.region-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance.group.manager.zone")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance.group.manager.zone-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("gcp.gce.instance.hostname")
 			assert.Equal(t, tt == "all_set", ok)
