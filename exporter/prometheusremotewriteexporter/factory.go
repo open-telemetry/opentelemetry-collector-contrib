@@ -27,6 +27,13 @@ var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
 )
 
+var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.enableSendingRW2",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.113.0"),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2 if configured. Requires exporter.prometheusremotewritexporter.metrics.enableSendingRW2 to be enabled."),
+)
+
 // NewFactory creates a new Prometheus Remote Write exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
