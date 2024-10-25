@@ -481,6 +481,16 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		filepath.Join("testdata", "logs", "resource_context", "each_matches_one"),
 		filepath.Join("testdata", "logs", "resource_context", "match_none_with_default"),
 		filepath.Join("testdata", "logs", "resource_context", "match_none_without_default"),
+		filepath.Join("testdata", "logs", "log_context", "all_match_first_only"),
+		filepath.Join("testdata", "logs", "log_context", "all_match_last_only"),
+		filepath.Join("testdata", "logs", "log_context", "match_none_with_default"),
+		filepath.Join("testdata", "logs", "log_context", "match_none_without_default"),
+		filepath.Join("testdata", "logs", "log_context", "some_match_each_route"),
+		filepath.Join("testdata", "logs", "log_context", "with_resource_condition"),
+		filepath.Join("testdata", "logs", "log_context", "with_scope_condition"),
+		filepath.Join("testdata", "logs", "log_context", "with_resource_and_scope_conditions"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_logs"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_resource"),
 	}
 
 	for _, tt := range testCases {

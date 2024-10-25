@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
@@ -74,29 +75,36 @@ func (c *logsConnector) switchLogs(ctx context.Context, ld plog.Logs) error {
 	var errs error
 	for _, route := range c.router.routeSlice {
 		matchedLogs := plog.NewLogs()
-
-		plogutil.MoveResourcesIf(ld, matchedLogs,
-			func(rl plog.ResourceLogs) bool {
-				rtx := ottlresource.NewTransformContext(rl.Resource(), rl)
-				_, isMatch, err := route.statement.Execute(ctx, rtx)
-				errs = errors.Join(errs, err)
-				return isMatch
-			},
-		)
-
+		switch route.statementContext {
+		case "", "resource":
+			plogutil.MoveResourcesIf(ld, matchedLogs,
+				func(rl plog.ResourceLogs) bool {
+					rtx := ottlresource.NewTransformContext(rl.Resource(), rl)
+					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
+		case "log":
+			plogutil.MoveRecordsWithContextIf(ld, matchedLogs,
+				func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
+					ltx := ottllog.NewTransformContext(lr, sl.Scope(), rl.Resource(), sl, rl)
+					_, isMatch, err := route.logStatement.Execute(ctx, ltx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
+		}
 		if errs != nil {
 			if c.config.ErrorMode == ottl.PropagateError {
 				return errs
 			}
 			groupAll(groups, c.router.defaultConsumer, matchedLogs)
-
 		}
 		groupAll(groups, route.consumer, matchedLogs)
 	}
-
 	// anything left wasn't matched by any route. Send to default consumer
 	groupAll(groups, c.router.defaultConsumer, ld)
-
 	for consumer, group := range groups {
 		errs = errors.Join(errs, consumer.ConsumeLogs(ctx, group))
 	}
@@ -110,14 +118,12 @@ func (c *logsConnector) matchAll(ctx context.Context, ld plog.Logs) error {
 	// higher CPU usage.
 	groups := make(map[consumer.Logs]plog.Logs)
 	var errs error
-
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		rtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
-
 		noRoutesMatch := true
 		for _, route := range c.router.routeSlice {
-			_, isMatch, err := route.statement.Execute(ctx, rtx)
+			_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
 			if err != nil {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err
@@ -129,9 +135,7 @@ func (c *logsConnector) matchAll(ctx context.Context, ld plog.Logs) error {
 				noRoutesMatch = false
 				group(groups, route.consumer, rlogs)
 			}
-
 		}
-
 		if noRoutesMatch {
 			// no route conditions are matched, add resource logs to default exporters group
 			group(groups, c.router.defaultConsumer, rlogs)

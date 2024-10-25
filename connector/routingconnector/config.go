@@ -67,6 +67,16 @@ func (c *Config) Validate() error {
 		if len(item.Pipelines) == 0 {
 			return errNoPipelines
 		}
+
+		switch item.Context {
+		case "", "resource": // ok
+		case "log":
+			if !c.MatchOnce {
+				return errors.New("log context is not supported with match_once: false")
+			}
+		default:
+			return errors.New("invalid context: " + item.Context)
+		}
 	}
 
 	return nil
@@ -74,6 +84,10 @@ func (c *Config) Validate() error {
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
 type RoutingTableItem struct {
+	// One of "resource" or "log" (other OTTL contexts will be added in the future)
+	// Optional. Default "resource".
+	Context string `mapstructure:"context"`
+
 	// Statement is a OTTL statement used for making a routing decision.
 	// One of 'Statement' or 'Condition' must be provided.
 	Statement string `mapstructure:"statement"`
