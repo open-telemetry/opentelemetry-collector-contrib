@@ -24,3 +24,5 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
+extension/observer/ecstaskobserver/
+receiver/jmxreceiver/
