@@ -48,7 +48,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 			return exec.CommandContext(ctx, "journalctl", journalArgs...) // #nosec - ...
 			// journalctl is an executable that is required for this operator to function
 		},
-		json: jsoniter.ConfigFastest,
+		convert_message_bytes: c.ConvertMessageBytes,
+		json:                  jsoniter.ConfigFastest,
 	}, nil
 }
 

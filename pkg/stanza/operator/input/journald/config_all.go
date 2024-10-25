@@ -38,6 +38,7 @@ type Config struct {
 	Dmesg       bool          `mapstructure:"dmesg,omitempty"`
 	All         bool          `mapstructure:"all,omitempty"`
 	Namespace   string        `mapstructure:"namespace,omitempty"`
+	ConvertMessageBytes bool          `mapstructure:"convert_message_bytes,omitempty"`
 }
 
 type MatchConfig map[string]string
