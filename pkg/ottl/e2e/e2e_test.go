@@ -57,6 +57,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("flags")
 				tCtx.GetLogRecord().Attributes().Remove("total.string")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
+				tCtx.GetLogRecord().Attributes().Remove("things")
 			},
 		},
 		{
@@ -67,6 +68,15 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("foo.flags", "pass")
 				tCtx.GetLogRecord().Attributes().PutStr("foo.slice.0", "val")
 				tCtx.GetLogRecord().Attributes().PutStr("foo.nested.test", "pass")
+
+				tCtx.GetLogRecord().Attributes().Remove("things")
+				m1 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.0")
+				m1.PutStr("name", "foo")
+				m1.PutInt("value", 2)
+
+				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.1")
+				m2.PutStr("name", "bar")
+				m2.PutInt("value", 5)
 			},
 		},
 		{
@@ -84,12 +94,29 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.foo.flags", "pass")
 				m.PutStr("test.foo.slice.0", "val")
 				m.PutStr("test.foo.nested.test", "pass")
+
+				m1 := m.PutEmptyMap("test.things.0")
+				m1.PutStr("name", "foo")
+				m1.PutInt("value", 2)
+
+				m2 := m.PutEmptyMap("test.things.1")
+				m2.PutStr("name", "bar")
+				m2.PutInt("value", 5)
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
 		{
 			statement: `flatten(attributes, depth=0)`,
-			want:      func(_ ottllog.TransformContext) {},
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().Remove("things")
+				m1 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.0")
+				m1.PutStr("name", "foo")
+				m1.PutInt("value", 2)
+
+				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.1")
+				m2.PutStr("name", "bar")
+				m2.PutInt("value", 5)
+			},
 		},
 		{
 			statement: `flatten(attributes, depth=1)`,
@@ -105,8 +132,17 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("foo.bar", "pass")
 				m.PutStr("foo.flags", "pass")
 				m.PutStr("foo.slice.0", "val")
-				m2 := m.PutEmptyMap("foo.nested")
-				m2.PutStr("test", "pass")
+
+				m1 := m.PutEmptyMap("things.0")
+				m1.PutStr("name", "foo")
+				m1.PutInt("value", 2)
+
+				m2 := m.PutEmptyMap("things.1")
+				m2.PutStr("name", "bar")
+				m2.PutInt("value", 5)
+
+				m3 := m.PutEmptyMap("foo.nested")
+				m3.PutStr("test", "pass")
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
@@ -117,6 +153,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("http.path")
 				tCtx.GetLogRecord().Attributes().Remove("http.url")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
+				tCtx.GetLogRecord().Attributes().Remove("things")
 			},
 		},
 		{
@@ -131,6 +168,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("http.url")
 				tCtx.GetLogRecord().Attributes().Remove("flags")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
+				tCtx.GetLogRecord().Attributes().Remove("things")
 			},
 		},
 		{
@@ -914,6 +952,28 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutStr("user_agent.version", "7.81.0")
 			},
 		},
+		{
+			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				thing1 := m.PutEmptyMap("foo")
+				thing1.PutStr("name", "foo")
+				thing1.PutInt("value", 2)
+
+				thing2 := m.PutEmptyMap("bar")
+				thing2.PutStr("name", "bar")
+				thing2.PutInt("value", 5)
+			},
+		},
+		{
+			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"], ["value"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutInt("foo", 2)
+				m.PutInt("bar", 5)
+
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1111,6 +1171,15 @@ func constructLogTransformContext() ottllog.TransformContext {
 	v.SetStr("val")
 	m2 := m.PutEmptyMap("nested")
 	m2.PutStr("test", "pass")
+
+	s2 := logRecord.Attributes().PutEmptySlice("things")
+	thing1 := s2.AppendEmpty().SetEmptyMap()
+	thing1.PutStr("name", "foo")
+	thing1.PutInt("value", 2)
+
+	thing2 := s2.AppendEmpty().SetEmptyMap()
+	thing2.PutStr("name", "bar")
+	thing2.PutInt("value", 5)
 
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
