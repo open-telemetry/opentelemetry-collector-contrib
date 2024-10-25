@@ -60,7 +60,7 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, config
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		params,
 		config,
