@@ -6,6 +6,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -84,15 +85,15 @@ func createDefaultConfig() component.Config {
 	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
 	return &Config{
-		Namespace:         "",
-		ExternalLabels:    map[string]string{},
-		MaxBatchSizeBytes: 3000000,
-		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig:     retrySettings,
-		AddMetricSuffixes: true,
-		SendMetadata:      false,
-		SendRW2:           false,
-		ClientConfig:      clientConfig,
+		Namespace:           "",
+		ExternalLabels:      map[string]string{},
+		MaxBatchSizeBytes:   3000000,
+		TimeoutSettings:     exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig:       retrySettings,
+		AddMetricSuffixes:   true,
+		SendMetadata:        false,
+		RemoteWriteProtoMsg: prometheusremotewrite.RemoteWriteProtoMsgV1,
+		ClientConfig:        clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,

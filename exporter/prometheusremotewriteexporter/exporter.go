@@ -124,7 +124,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
-			SendRW2:             cfg.SendRW2,
+			RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		},
 		telemetry:            prwTelemetry,
 		batchTimeSeriesState: newBatchTimeSericesState(),
@@ -179,7 +179,9 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		var symbolsTable writev2.SymbolsTable
 		var m []*prompb.MetricMetadata
 		var err error
-		if !prwe.exporterSettings.SendRW2 {
+
+		switch prwe.exporterSettings.RemoteWriteProtoMsg {
+		case prometheusremotewrite.RemoteWriteProtoMsgV1:
 			// RW1 case
 			tsMap, err = prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
 
@@ -188,27 +190,27 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 			if prwe.exporterSettings.SendMetadata {
 				m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
 			}
-
-		} else {
+			if err != nil {
+				prwe.telemetry.recordTranslationFailure(ctx)
+			}
+			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+			// Call export even if a conversion error, since there may be points that were successfully converted.
+			return prwe.handleExport(ctx, tsMap, m)
+		case prometheusremotewrite.RemoteWriteProtoMsgV2:
 			// RW2 case
 			tsMapv2, symbolsTable, err = prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
 
 			prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMapv2))
-		}
 
-		if err != nil {
-			prwe.telemetry.recordTranslationFailure(ctx)
-		}
-		if !prwe.exporterSettings.SendRW2 {
-			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
-			// Call export even if a conversion error, since there may be points that were successfully converted.
-			return prwe.handleExport(ctx, tsMap, m)
-		} else {
+			if err != nil {
+				prwe.telemetry.recordTranslationFailure(ctx)
+			}
 			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMapv2)))
 			// Call export even if a conversion error, since there may be points that were successfully converted.
 			return prwe.handleExportV2(ctx, symbolsTable, tsMapv2)
+		default:
+			return errors.New("unexpected rw protobuf message")
 		}
-
 	}
 }
 
@@ -322,10 +324,11 @@ func (prwe *prwExporter) execute(ctx context.Context, data []byte) error {
 		req.Header.Add("Content-Encoding", "snappy")
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
-		if !prwe.exporterSettings.SendRW2 {
+		switch prwe.exporterSettings.RemoteWriteProtoMsg {
+		case prometheusremotewrite.RemoteWriteProtoMsgV1:
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-		} else {
+		case prometheusremotewrite.RemoteWriteProtoMsgV2:
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		}
