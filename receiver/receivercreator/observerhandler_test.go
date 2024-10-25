@@ -78,6 +78,7 @@ func TestOnAddForMetrics(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{true, true, true},
 				},
 			}
 
@@ -180,6 +181,7 @@ func TestOnAddForLogs(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -282,6 +284,7 @@ func TestOnAddForTraces(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -339,6 +342,7 @@ func TestOnRemoveForMetrics(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
@@ -368,6 +372,7 @@ func TestOnRemoveForLogs(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
@@ -397,6 +402,7 @@ func TestOnChange(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
