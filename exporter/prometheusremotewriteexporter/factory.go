@@ -6,7 +6,6 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
 var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(

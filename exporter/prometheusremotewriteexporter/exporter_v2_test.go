@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -144,12 +145,12 @@ func Test_PushMetricsV2(t *testing.T) {
 					clientConfig.ReadBufferSize = 0
 					clientConfig.WriteBufferSize = 512 * 1024
 					cfg := &Config{
-						Namespace:         "",
-						ClientConfig:      clientConfig,
-						MaxBatchSizeBytes: 3000000,
-						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
-						SendMetadata:      true,
-						SendRW2:           true,
+						Namespace:           "",
+						ClientConfig:        clientConfig,
+						MaxBatchSizeBytes:   3000000,
+						RemoteWriteQueue:    RemoteWriteQueue{NumConsumers: 1},
+						SendMetadata:        true,
+						RemoteWriteProtoMsg: prometheusremotewrite.RemoteWriteProtoMsgV2,
 						TargetInfo: &TargetInfo{
 							Enabled: true,
 						},
