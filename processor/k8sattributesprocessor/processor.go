@@ -119,13 +119,13 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 }
 
 // processProfiles process profiles and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
-func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.Profiles) (pprofile.Profiles, error) {
+func (kp *kubernetesprocessor) processProfiles(ctx context.Context, pd pprofile.Profiles) pprofile.Profiles {
 	rp := pd.ResourceProfiles()
 	for i := 0; i < rp.Len(); i++ {
 		kp.processResource(ctx, rp.At(i).Resource())
 	}
 
-	return pd, nil
+	return pd
 }
 
 // processResource adds Pod metadata tags to resource based on pod association configuration

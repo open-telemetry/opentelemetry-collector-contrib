@@ -5,7 +5,6 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -158,13 +157,7 @@ func createProfilesProcessorWithOptions(
 	kp := createKubernetesProcessor(set, cfg, options...)
 
 	profilesConsumer, err := consumerprofiles.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) (err error) {
-		pd, err = kp.processProfiles(ctx, pd)
-		if err != nil {
-			if errors.Is(err, processorhelper.ErrSkipProcessingData) {
-				return nil
-			}
-			return err
-		}
+		pd = kp.processProfiles(ctx, pd)
 		return nextProfilesConsumer.ConsumeProfiles(ctx, pd)
 	}, consumer.WithCapabilities(consumerCapabilities))
 	if err != nil {
