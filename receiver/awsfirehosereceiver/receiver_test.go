@@ -57,9 +57,7 @@ func TestStart(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			cfg := &Config{
-				RecordType: defaultRecordType,
-			}
+			cfg := &Config{}
 			ctx := context.TODO()
 			r := testFirehoseReceiver(cfg, nil)
 			got := r.Start(ctx, testCase.host)
@@ -76,7 +74,6 @@ func TestStart(t *testing.T) {
 			require.NoError(t, listener.Close())
 		})
 		cfg := &Config{
-			RecordType: defaultRecordType,
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint: listener.Addr().String(),
 			},
@@ -95,8 +92,7 @@ func TestFirehoseRequest(t *testing.T) {
 	defaultConsumer := newNopFirehoseConsumer(http.StatusOK, nil)
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
-		RecordType: defaultRecordType,
-		AccessKey:  testFirehoseAccessKey,
+		AccessKey: testFirehoseAccessKey,
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
