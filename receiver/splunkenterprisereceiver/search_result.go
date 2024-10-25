@@ -24,6 +24,7 @@ var apiDict = map[string]string{
 	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
 	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
 	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
+	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
 }
 
 type searchResponse struct {
@@ -133,4 +134,30 @@ type KVStoreCurrent struct {
 	BackupRestoreStatus string `json:"backupRestoreStatus"`
 	ReplicationStatus   string `json:"replicationStatus"`
 	StorageEngine       string `json:"storageEngine"`
+}
+
+// '/services/server/status/dispatch-artifacts'
+type DispatchArtifacts struct {
+	Entries []DispatchArtifactEntry `json:"entry"`
+}
+
+type DispatchArtifactEntry struct {
+	Content DispatchArtifactContent `json:"content"`
+}
+
+type DispatchArtifactContent struct {
+	TotalCount                     string `json:"total_count"`
+	AdhocCount                     string `json:"adhoc_count"`
+	AdhocSizeMb                    string `json:"adhoc_size_mb"`
+	ScheduledCount                 string `json:"scheduled_count"`
+	ScheduledSizeMb                string `json:"scheduled_size_mb"`
+	SsCount                        string `json:"ss_count"`
+	CompletedCount                 string `json:"completed_count"`
+	CompletedSizeMb                string `json:"completed_size_mb"`
+	IncompleCount                  string `json:"incomple_count"`
+	IncompleSizeMb                 string `json:"incomple_size_mb"`
+	InvalidCount                   string `json:"invalid_count"`
+	CachedJobStatusInfoCsvSizeMb   string `json:"cached_job_status_info_csv_size_mb"`
+	CachedJobStatusStatusCsvSizeMb string `json:"cached_job_status_status_csv_size_mb"`
+	CachedJobStatusTotalEntries    string `json:"cached_job_status_total_entries"`
 }

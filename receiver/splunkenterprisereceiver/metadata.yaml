@@ -231,8 +231,8 @@ metrics:
     unit: '{buckets}'
     gauge:
       value_type: int
-    attributes: [splunk.index.name, splunk.bucket.dir]  
-  #'services/server/introspection/queues' 
+    attributes: [splunk.index.name, splunk.bucket.dir]
+  #'services/server/introspection/queues'
   splunk.server.introspection.queues.current:
     enabled: false
     description: Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
@@ -268,7 +268,62 @@ metrics:
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.status.value]
+    attributes: [splunk.kvstore.status.value] 
+  #'services/server/status/dispatch-artifacts'
+  splunk.server.searches.total:
+    enabled: false
+    description: Counter tracking number of dispatched search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+    unit: "{searches}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searches.adhoc.total:
+    enabled: false
+    description: Counter tracking number of ad hoc search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+    unit: "{searches}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searches.scheduled.total:
+    enabled: false
+    description: Counter tracking number of scheduled search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+    unit: "{searches}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searches.completed.total:
+    enabled: false
+    description: Counter tracking number of completed search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+    unit: "{searches}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searches.incomplete.total:
+    enabled: false
+    description: Counter tracking number of incomplete search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+    unit: "{searches}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searches.invalid.total:
+    enabled: false
+    description: Counter tracking number of invalid search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.
+    unit: "{searches}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
 
 tests:
   config:

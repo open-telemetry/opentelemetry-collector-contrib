@@ -63,6 +63,18 @@ all_set:
       enabled: true
     splunk.server.introspection.queues.current.bytes:
       enabled: true
+    splunk.server.searches.adhoc.total:
+      enabled: true
+    splunk.server.searches.completed.total:
+      enabled: true
+    splunk.server.searches.incomplete.total:
+      enabled: true
+    splunk.server.searches.invalid.total:
+      enabled: true
+    splunk.server.searches.scheduled.total:
+      enabled: true
+    splunk.server.searches.total:
+      enabled: true
     splunk.typing.queue.ratio:
       enabled: true
 none_set:
@@ -128,6 +140,18 @@ none_set:
     splunk.server.introspection.queues.current:
       enabled: false
     splunk.server.introspection.queues.current.bytes:
+      enabled: false
+    splunk.server.searches.adhoc.total:
+      enabled: false
+    splunk.server.searches.completed.total:
+      enabled: false
+    splunk.server.searches.incomplete.total:
+      enabled: false
+    splunk.server.searches.invalid.total:
+      enabled: false
+    splunk.server.searches.scheduled.total:
+      enabled: false
+    splunk.server.searches.total:
       enabled: false
     splunk.typing.queue.ratio:
       enabled: false

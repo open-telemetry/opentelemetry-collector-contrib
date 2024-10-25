@@ -58,6 +58,12 @@ type MetricsConfig struct {
 	SplunkSchedulerCompletionRatio              MetricConfig `mapstructure:"splunk.scheduler.completion.ratio"`
 	SplunkServerIntrospectionQueuesCurrent      MetricConfig `mapstructure:"splunk.server.introspection.queues.current"`
 	SplunkServerIntrospectionQueuesCurrentBytes MetricConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
+	SplunkServerSearchesAdhocTotal              MetricConfig `mapstructure:"splunk.server.searches.adhoc.total"`
+	SplunkServerSearchesCompletedTotal          MetricConfig `mapstructure:"splunk.server.searches.completed.total"`
+	SplunkServerSearchesIncompleteTotal         MetricConfig `mapstructure:"splunk.server.searches.incomplete.total"`
+	SplunkServerSearchesInvalidTotal            MetricConfig `mapstructure:"splunk.server.searches.invalid.total"`
+	SplunkServerSearchesScheduledTotal          MetricConfig `mapstructure:"splunk.server.searches.scheduled.total"`
+	SplunkServerSearchesTotal                   MetricConfig `mapstructure:"splunk.server.searches.total"`
 	SplunkTypingQueueRatio                      MetricConfig `mapstructure:"splunk.typing.queue.ratio"`
 }
 
@@ -154,6 +160,24 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchesAdhocTotal: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchesCompletedTotal: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchesIncompleteTotal: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchesInvalidTotal: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchesScheduledTotal: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchesTotal: MetricConfig{
 			Enabled: false,
 		},
 		SplunkTypingQueueRatio: MetricConfig{

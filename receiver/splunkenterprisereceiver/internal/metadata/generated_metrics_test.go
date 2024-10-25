@@ -170,6 +170,24 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts, 1, "splunk.queue.name-val")
 
+			allMetricsCount++
+			mb.RecordSplunkServerSearchesAdhocTotalDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchesCompletedTotalDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchesIncompleteTotalDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchesInvalidTotalDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchesScheduledTotalDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchesTotalDataPoint(ts, 1, "splunk.host-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkTypingQueueRatioDataPoint(ts, 1, "splunk.host-val")
@@ -679,6 +697,108 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.queue.name-val", attrVal.Str())
+				case "splunk.server.searches.adhoc.total":
+					assert.False(t, validatedMetrics["splunk.server.searches.adhoc.total"], "Found a duplicate in the metrics slice: splunk.server.searches.adhoc.total")
+					validatedMetrics["splunk.server.searches.adhoc.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Counter tracking number of ad hoc search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{searches}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searches.completed.total":
+					assert.False(t, validatedMetrics["splunk.server.searches.completed.total"], "Found a duplicate in the metrics slice: splunk.server.searches.completed.total")
+					validatedMetrics["splunk.server.searches.completed.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Counter tracking number of completed search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{searches}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searches.incomplete.total":
+					assert.False(t, validatedMetrics["splunk.server.searches.incomplete.total"], "Found a duplicate in the metrics slice: splunk.server.searches.incomplete.total")
+					validatedMetrics["splunk.server.searches.incomplete.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Counter tracking number of incomplete search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{searches}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searches.invalid.total":
+					assert.False(t, validatedMetrics["splunk.server.searches.invalid.total"], "Found a duplicate in the metrics slice: splunk.server.searches.invalid.total")
+					validatedMetrics["splunk.server.searches.invalid.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Counter tracking number of invalid search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{searches}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searches.scheduled.total":
+					assert.False(t, validatedMetrics["splunk.server.searches.scheduled.total"], "Found a duplicate in the metrics slice: splunk.server.searches.scheduled.total")
+					validatedMetrics["splunk.server.searches.scheduled.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Counter tracking number of scheduled search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{searches}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searches.total":
+					assert.False(t, validatedMetrics["splunk.server.searches.total"], "Found a duplicate in the metrics slice: splunk.server.searches.total")
+					validatedMetrics["splunk.server.searches.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Counter tracking number of dispatched search jobs since start-up. *Note:** Must be pointed at specific Search Head `endpoint` and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{searches}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
 				case "splunk.typing.queue.ratio":
 					assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
 					validatedMetrics["splunk.typing.queue.ratio"] = true
