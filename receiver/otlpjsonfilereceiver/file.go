@@ -8,11 +8,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -25,12 +28,13 @@ const (
 
 // NewFactory creates a factory for file receiver
 func NewFactory() receiver.Factory {
-	return receiver.NewFactory(
+	return receiverprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
-		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
+		receiverprofiles.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiverprofiles.WithLogs(createLogsReceiver, metadata.LogsStability),
+		receiverprofiles.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiverprofiles.WithProfiles(createProfilesReceiver, metadata.ProfilesStability))
 }
 
 type Config struct {
@@ -162,6 +166,27 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 				err = traces.ConsumeTraces(ctx, t)
 			}
 			obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
+		}
+		return nil
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+}
+
+func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
+	cfg := configuration.(*Config)
+	opts := make([]fileconsumer.Option, 0)
+	if cfg.ReplayFile {
+		opts = append(opts, fileconsumer.WithNoTracking())
+	}
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
+		p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
+		if p.ResourceProfiles().Len() != 0 {
+			_ = profiles.ConsumeProfiles(ctx, p)
 		}
 		return nil
 	}, opts...)
