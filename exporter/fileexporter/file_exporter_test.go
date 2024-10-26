@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -450,6 +451,100 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	// Cannot call Start since we inject directly the WriterCloser.
 	assert.Error(t, fe.consumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
+}
+
+func TestFileProfilesExporter(t *testing.T) {
+	type args struct {
+		conf        *Config
+		unmarshaler pprofile.Unmarshaler
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "json: default configuration",
+			args: args{
+				conf: &Config{
+					Path:       tempFileName(t),
+					FormatType: "json",
+				},
+				unmarshaler: &pprofile.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "json: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "json",
+					Compression: compressionZSTD,
+				},
+				unmarshaler: &pprofile.JSONUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: default configuration",
+			args: args{
+				conf: &Config{
+					Path:       tempFileName(t),
+					FormatType: "proto",
+				},
+				unmarshaler: &pprofile.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+				},
+				unmarshaler: &pprofile.ProtoUnmarshaler{},
+			},
+		},
+		{
+			name: "Proto: compression configuration--rotation",
+			args: args{
+				conf: &Config{
+					Path:        tempFileName(t),
+					FormatType:  "proto",
+					Compression: compressionZSTD,
+					Rotation: &Rotation{
+						MaxMegabytes: 3,
+						MaxDays:      0,
+						MaxBackups:   defaultMaxBackups,
+						LocalTime:    false,
+					},
+				},
+				unmarshaler: &pprofile.ProtoUnmarshaler{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO
+		})
+	}
+}
+
+func TestFileProfilesExporterErrors(t *testing.T) {
+	mf := &errorWriter{}
+	fe := &fileExporter{
+		marshaller: &marshaller{
+			formatType:        formatTypeJSON,
+			profilesMarshaler: profilesMarshalers[formatTypeJSON],
+			compressor:        noneCompress,
+		},
+		writer: &fileWriter{
+			file:     mf,
+			exporter: exportMessageAsLine,
+		},
+	}
+	require.NotNil(t, fe)
+
+	// TODO
 }
 
 func TestExportMessageAsBuffer(t *testing.T) {
