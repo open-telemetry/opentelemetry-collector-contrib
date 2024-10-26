@@ -38,7 +38,7 @@ func TestECSInstanceInfo(t *testing.T) {
 	respBody := string(data)
 
 	httpResponse := &http.Response{
-		StatusCode:    200,
+		StatusCode:    http.StatusOK,
 		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
@@ -65,7 +65,7 @@ func TestECSInstanceInfo(t *testing.T) {
 
 	httpResponse = &http.Response{
 		Status:        "Bad Request",
-		StatusCode:    400,
+		StatusCode:    http.StatusBadRequest,
 		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
