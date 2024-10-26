@@ -59,13 +59,13 @@ The following configuration options can also be configured:
 - `otel_attrs_to_hec_metadata/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
 - `otel_attrs_to_hec_metadata/host` (default = 'host.name'):  Specifies the mapping of a specific unified model attribute value to the standard host field and the `host.name` field of a HEC event.
 - `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
-  **Deprecated** (v0.111.0): prefer `otel_attrs_to_hec_metadata/source`.
+  **Deprecated** (v0.113.0): prefer `otel_attrs_to_hec_metadata/source`.
 - `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
-  **Deprecated** (v0.111.0): prefer `otel_attrs_to_hec_metadata/sourcetype`.
+  **Deprecated** (v0.113.0): prefer `otel_attrs_to_hec_metadata/sourcetype`.
 - `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
-  **Deprecated** (v0.111.0): prefer `otel_attrs_to_hec_metadata/index`.
+  **Deprecated** (v0.113.0): prefer `otel_attrs_to_hec_metadata/index`.
 - `hec_metadata_to_otel_attrs/host` (default = 'host.name'):  Specifies the mapping of a specific unified model attribute value to the standard host field and the `host.name` field of a HEC event.
-  **Deprecated** (v0.111.0): prefer `otel_attrs_to_hec_metadata/host`.
+  **Deprecated** (v0.113.0): prefer `otel_attrs_to_hec_metadata/host`.
 - `otel_to_hec_fields/severity_text` (default = `otel.log.severity.text`): Specifies the name of the field to map the severity text field of log events.
 - `otel_to_hec_fields/severity_number` (default = `otel.log.severity.number`): Specifies the name of the field to map the severity number field of log events.
 - `otel_to_hec_fields/name` (default = `"otel.log.name`): Specifies the name of the field to map the name field of log events.
