@@ -774,6 +774,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 			} else {
 				s.remoteConfig = config
 			}
+		} else if errors.Is(err, os.ErrNotExist) {
+			s.logger.Info("No last received remote config found")
 		} else {
 			s.logger.Error("error while reading last received config", zap.Error(err))
 		}
