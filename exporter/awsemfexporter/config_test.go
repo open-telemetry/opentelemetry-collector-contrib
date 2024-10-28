@@ -97,9 +97,10 @@ func TestLoadConfig(t *testing.T) {
 				OutputDestination:     "cloudwatch",
 				Version:               "1",
 				MetricDescriptors: []MetricDescriptor{{
-					MetricName: "memcached_current_items",
-					Unit:       "Count",
-					Overwrite:  true,
+					MetricName:        "memcached_current_items",
+					Unit:              "Count",
+					Overwrite:         true,
+					StorageResolution: 1,
 				}},
 				logger: zap.NewNop(),
 			},
@@ -127,6 +128,10 @@ func TestConfigValidate(t *testing.T) {
 		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 		{Unit: "INVALID", MetricName: "404"},
 		{Unit: "Megabytes", MetricName: "memory_usage"},
+		{StorageResolution: 1, MetricName: "saturation"},
+		{StorageResolution: 10, MetricName: "throughput"},
+		{Unit: "Count", MetricName: "error_total", StorageResolution: 1},
+		{Unit: "Count", MetricName: "error_total", StorageResolution: 5, Overwrite: true},
 	}
 	cfg := &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
@@ -140,10 +145,12 @@ func TestConfigValidate(t *testing.T) {
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	assert.Len(t, cfg.MetricDescriptors, 2)
+	assert.Len(t, cfg.MetricDescriptors, 4)
 	assert.Equal(t, []MetricDescriptor{
 		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
 		{Unit: "Megabytes", MetricName: "memory_usage"},
+		{StorageResolution: 1, MetricName: "saturation"},
+		{Unit: "Count", MetricName: "error_total", StorageResolution: 1},
 	}, cfg.MetricDescriptors)
 }
 

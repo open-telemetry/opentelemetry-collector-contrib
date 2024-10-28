@@ -13,3 +13,4 @@ awsemf/metric_descriptors:
     - metric_name: memcached_current_items
       unit: Count
       overwrite: true
+      storage_resolution: 1

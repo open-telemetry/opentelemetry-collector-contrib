@@ -42,8 +42,9 @@ func TestAddToGroupedMetric(t *testing.T) {
 			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
 				"foo": {
-					value: 0.1,
-					unit:  "Count",
+					value:             0.1,
+					unit:              "Count",
+					storageResolution: 60,
 				},
 			},
 		},
@@ -54,8 +55,9 @@ func TestAddToGroupedMetric(t *testing.T) {
 			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
 				"foo": {
-					value: float64(1),
-					unit:  "Count",
+					value:             float64(1),
+					unit:              "Count",
+					storageResolution: 60,
 				},
 			},
 		},
@@ -70,7 +72,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 						Count: 18,
 						Sum:   35.0,
 					},
-					unit: "Seconds",
+					unit:              "Seconds",
+					storageResolution: 60,
 				},
 			},
 		},
@@ -87,7 +90,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 						Count: 5,
 						Sum:   15,
 					},
-					unit: "Seconds",
+					unit:              "Seconds",
+					storageResolution: 60,
 				},
 			},
 		},
@@ -297,8 +301,9 @@ func TestAddToGroupedMetric(t *testing.T) {
 			assert.Len(t, group.metrics, 1)
 			expectedMetrics := map[string]*metricInfo{
 				"int-gauge": {
-					value: float64(1),
-					unit:  "Count",
+					value:             float64(1),
+					unit:              "Count",
+					storageResolution: 60,
 				},
 			}
 			assert.Equal(t, expectedMetrics, group.metrics)

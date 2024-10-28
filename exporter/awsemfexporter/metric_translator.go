@@ -48,7 +48,7 @@ type cWMetrics struct {
 type cWMeasurement struct {
 	Namespace  string
 	Dimensions [][]string
-	Metrics    []map[string]string
+	Metrics    []map[string]any
 }
 
 type cWMetricStats struct {
@@ -228,14 +228,18 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 	// Add on rolled-up dimensions
 	dimensions = append(dimensions, rollupDimensionArray...)
 
-	metrics := make([]map[string]string, len(groupedMetric.metrics))
+	metrics := make([]map[string]any, len(groupedMetric.metrics))
 	idx = 0
 	for metricName, metricInfo := range groupedMetric.metrics {
-		metrics[idx] = map[string]string{
-			"Name": metricName,
+		metrics[idx] = map[string]any{
+			"Name":              metricName,
+			"StorageResolution": 60,
 		}
 		if metricInfo.unit != "" {
 			metrics[idx]["Unit"] = metricInfo.unit
+		}
+		if resErr := cwlogs.ValidateStorageResolution(metricInfo.storageResolution); resErr == nil {
+			metrics[idx]["StorageResolution"] = metricInfo.storageResolution
 		}
 		idx++
 	}
@@ -278,7 +282,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	// Group metrics by matched metric declarations
 	type metricDeclarationGroup struct {
 		metricDeclIdxList []int
-		metrics           []map[string]string
+		metrics           []map[string]any
 	}
 
 	metricDeclGroups := make(map[string]*metricDeclarationGroup)
@@ -299,11 +303,15 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 			continue
 		}
 
-		metric := map[string]string{
-			"Name": metricName,
+		metric := map[string]any{
+			"Name":              metricName,
+			"StorageResolution": 60,
 		}
 		if metricInfo.unit != "" {
 			metric["Unit"] = metricInfo.unit
+		}
+		if resErr := cwlogs.ValidateStorageResolution(metricInfo.storageResolution); resErr == nil {
+			metric["StorageResolution"] = metricInfo.storageResolution
 		}
 		metricDeclKey := fmt.Sprint(metricDeclIdx)
 		if group, ok := metricDeclGroups[metricDeclKey]; ok {
@@ -311,7 +319,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 		} else {
 			metricDeclGroups[metricDeclKey] = &metricDeclarationGroup{
 				metricDeclIdxList: metricDeclIdx,
-				metrics:           []map[string]string{metric},
+				metrics:           []map[string]any{metric},
 			}
 		}
 	}

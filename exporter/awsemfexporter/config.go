@@ -101,6 +101,8 @@ type MetricDescriptor struct {
 	// Overwrite set to true means the existing metric descriptor will be overwritten or a new metric descriptor will be created; false means
 	// the descriptor will only be configured if empty.
 	Overwrite bool `mapstructure:"overwrite"`
+	// Set the storage resolution for this metric in AWS Embedded Metric Format (EMF). Valid values are 1 (for 1 second resolution) and 60 (for 60 second resolution).
+	StorageResolution int `mapstructure:"storage_resolution"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -123,7 +125,14 @@ func (config *Config) Validate() error {
 		if descriptor.MetricName == "" {
 			continue
 		}
-		if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
+		_, unitOk := eMFSupportedUnits[descriptor.Unit]
+		stoResErr := cwlogs.ValidateStorageResolution(descriptor.StorageResolution)
+
+		// store the descriptor if
+		// - it has a valid unit and a valid storage resolution
+		// - it has a valid unit and no specified storage resolution
+		// - no specified unit but a valid storage resolution
+		if (unitOk && stoResErr == nil) || (unitOk && descriptor.StorageResolution == 0) || (stoResErr == nil && descriptor.Unit == "") {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
 			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))

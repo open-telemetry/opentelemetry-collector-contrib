@@ -22,8 +22,9 @@ type groupedMetric struct {
 
 // metricInfo defines value and unit for OT Metrics
 type metricInfo struct {
-	value any
-	unit  string
+	value             any
+	unit              string
+	storageResolution int
 }
 
 // addToGroupedMetric processes OT metrics and adds them into GroupedMetric buckets
@@ -78,8 +79,9 @@ func addToGroupedMetric(
 			}
 
 			metric := &metricInfo{
-				value: dp.value,
-				unit:  translateUnit(pmd, descriptor),
+				value:             dp.value,
+				unit:              translateUnit(pmd, descriptor),
+				storageResolution: translateResolution(pmd, descriptor),
 			}
 
 			if dp.timestampMs > 0 {
@@ -184,6 +186,16 @@ func mapGetHelper(labels map[string]string, key string) string {
 	}
 
 	return ""
+}
+
+func translateResolution(metric pmetric.Metric, descriptor map[string]MetricDescriptor) int {
+	if descriptor, exists := descriptor[metric.Name()]; exists {
+		if descriptor.StorageResolution == 1 || descriptor.StorageResolution == 60 {
+			return descriptor.StorageResolution
+		}
+	}
+
+	return 60
 }
 
 func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor) string {

@@ -163,11 +163,11 @@ func normalizeDimensionality(dims [][]string) [][]string {
 }
 
 // hashMetricSlice hashes a metrics slice for equality checking.
-func hashMetricSlice(metricSlice []map[string]string) []string {
+func hashMetricSlice(metricSlice []map[string]any) []string {
 	// Convert to string for easier sorting
 	stringified := make([]string, len(metricSlice))
 	for i, v := range metricSlice {
-		stringified[i] = v["Name"] + "," + v["Unit"]
+		stringified[i] = fmt.Sprint(v["Name"]) + "," + fmt.Sprint(v["Unit"]) + "," + fmt.Sprint(v["StorageResolution"])
 	}
 	// Sort across metrics for equality checking
 	sort.Strings(stringified)
@@ -270,22 +270,26 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
-			value: float64(1),
-			unit:  "Count",
+			value:             float64(1),
+			unit:              "Count",
+			storageResolution: 60,
 		},
 		"spanDoubleCounter": {
-			value: 0.1,
-			unit:  "Count",
+			value:             0.1,
+			unit:              "Count",
+			storageResolution: 60,
 		},
 	}
 	counterGaugeMetrics := map[string]*metricInfo{
 		"spanGaugeCounter": {
-			value: float64(1),
-			unit:  "Count",
+			value:             float64(1),
+			unit:              "Count",
+			storageResolution: 60,
 		},
 		"spanGaugeDoubleCounter": {
-			value: 0.1,
-			unit:  "Count",
+			value:             0.1,
+			unit:              "Count",
+			storageResolution: 60,
 		},
 	}
 	timerMetrics := map[string]*metricInfo{
@@ -294,7 +298,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				Count: 5,
 				Sum:   15,
 			},
-			unit: "Seconds",
+			unit:              "Seconds",
+			storageResolution: 60,
 		},
 	}
 
@@ -398,24 +403,26 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 			measurements: []cWMeasurement{{
 				Namespace:  "test-emf",
 				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
-				Metrics: []map[string]string{{
-					"Name": "spanCounter",
-					"Unit": "Count",
+				Metrics: []map[string]any{{
+					"Name":              "spanCounter",
+					"Unit":              "Count",
+					"StorageResolution": 1,
 				}},
 			}},
-			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"StorageResolution\":1,\"Unit\":\"Count\"}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 		"WithMeasurementAndEMFV0": {
 			emfVersion: "0",
 			measurements: []cWMeasurement{{
 				Namespace:  "test-emf",
 				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
-				Metrics: []map[string]string{{
-					"Name": "spanCounter",
-					"Unit": "Count",
+				Metrics: []map[string]any{{
+					"Name":              "spanCounter",
+					"Unit":              "Count",
+					"StorageResolution": 60,
 				}},
 			}},
-			expectedEMFLogEvent: "{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+			expectedEMFLogEvent: "{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"StorageResolution\":60,\"Unit\":\"Count\"}]}],\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
 		},
 		"WithNoMeasurementAndEMFV1": {
 			emfVersion:          "1",
@@ -479,8 +486,9 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 1,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -496,10 +504,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []map[string]any{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								"Name":              "metric1",
+								"Unit":              "Count",
+								"StorageResolution": 1,
 							},
 						},
 					},
@@ -519,8 +528,9 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 1,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -541,10 +551,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []map[string]any{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								"Name":              "metric1",
+								"Unit":              "Count",
+								"StorageResolution": 1,
 							},
 						},
 					},
@@ -565,16 +576,19 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric2": {
-						value: 200,
-						unit:  "Count",
+						value:             200,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric3": {
-						value: 3.14,
-						unit:  "Seconds",
+						value:             3.14,
+						unit:              "Seconds",
+						storageResolution: 60,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -590,18 +604,21 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1", "label2"}},
-						Metrics: []map[string]string{
+						Metrics: []map[string]any{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								"Name":              "metric1",
+								"Unit":              "Count",
+								"StorageResolution": 60,
 							},
 							{
-								"Name": "metric2",
-								"Unit": "Count",
+								"Name":              "metric2",
+								"Unit":              "Count",
+								"StorageResolution": 60,
 							},
 							{
-								"Name": "metric3",
-								"Unit": "Seconds",
+								"Name":              "metric3",
+								"Unit":              "Seconds",
+								"StorageResolution": 60,
 							},
 						},
 					},
@@ -625,16 +642,19 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric2": {
-						value: 200,
-						unit:  "Count",
+						value:             200,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric3": {
-						value: 3.14,
-						unit:  "Seconds",
+						value:             3.14,
+						unit:              "Seconds",
+						storageResolution: 60,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -665,20 +685,22 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []map[string]any{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								"Name":              "metric1",
+								"Unit":              "Count",
+								"StorageResolution": 60,
 							},
 						},
 					},
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1", "label2"}},
-						Metrics: []map[string]string{
+						Metrics: []map[string]any{
 							{
-								"Name": "metric2",
-								"Unit": "Count",
+								"Name":              "metric2",
+								"Unit":              "Count",
+								"StorageResolution": 60,
 							},
 						},
 					},
@@ -730,8 +752,9 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 1,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -749,10 +772,11 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 					{
 						Namespace:  namespace,
 						Dimensions: [][]string{{"label1"}},
-						Metrics: []map[string]string{
+						Metrics: []map[string]any{
 							{
-								"Name": "metric1",
-								"Unit": "Count",
+								"Name":              "metric1",
+								"Unit":              "Count",
+								"StorageResolution": 1,
 							},
 						},
 					},
@@ -805,8 +829,9 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -819,10 +844,11 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 			cWMeasurement{
 				Namespace:  namespace,
 				Dimensions: [][]string{{"label1"}},
-				Metrics: []map[string]string{
+				Metrics: []map[string]any{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						"Name":              "metric1",
+						"Unit":              "Count",
+						"StorageResolution": 60,
 					},
 				},
 			},
@@ -837,16 +863,19 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric2": {
-						value: 200,
-						unit:  "Count",
+						value:             200,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric3": {
-						value: 3.14,
-						unit:  "Seconds",
+						value:             3.14,
+						unit:              "Seconds",
+						storageResolution: 60,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -859,18 +888,21 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 			cWMeasurement{
 				Namespace:  namespace,
 				Dimensions: [][]string{{"label1", "label2"}},
-				Metrics: []map[string]string{
+				Metrics: []map[string]any{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						"Name":              "metric1",
+						"Unit":              "Count",
+						"StorageResolution": 60,
 					},
 					{
-						"Name": "metric2",
-						"Unit": "Count",
+						"Name":              "metric2",
+						"Unit":              "Count",
+						"StorageResolution": 60,
 					},
 					{
-						"Name": "metric3",
-						"Unit": "Seconds",
+						"Name":              "metric3",
+						"Unit":              "Seconds",
+						"StorageResolution": 60,
 					},
 				},
 			},
@@ -884,8 +916,9 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 1,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -898,10 +931,11 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 			cWMeasurement{
 				Namespace:  namespace,
 				Dimensions: [][]string{{"label1"}},
-				Metrics: []map[string]string{
+				Metrics: []map[string]any{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						"Name":              "metric1",
+						"Unit":              "Count",
+						"StorageResolution": 1,
 					},
 				},
 			},
@@ -916,16 +950,19 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 				},
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric2": {
-						value: 200,
-						unit:  "Count",
+						value:             200,
+						unit:              "Count",
+						storageResolution: 60,
 					},
 					"metric3": {
-						value: 3.14,
-						unit:  "Seconds",
+						value:             3.14,
+						unit:              "Seconds",
+						storageResolution: 60,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -943,18 +980,21 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 					{"label2"},
 					{},
 				},
-				Metrics: []map[string]string{
+				Metrics: []map[string]any{
 					{
-						"Name": "metric1",
-						"Unit": "Count",
+						"Name":              "metric1",
+						"Unit":              "Count",
+						"StorageResolution": 60,
 					},
 					{
-						"Name": "metric2",
-						"Unit": "Count",
+						"Name":              "metric2",
+						"Unit":              "Count",
+						"StorageResolution": 60,
 					},
 					{
-						"Name": "metric3",
-						"Unit": "Seconds",
+						"Name":              "metric3",
+						"Unit":              "Seconds",
+						"StorageResolution": 60,
 					},
 				},
 			},
@@ -1126,8 +1166,9 @@ func TestGroupedMetricToCWMeasurement(t *testing.T) {
 				labels: tc.labels,
 				metrics: map[string]*metricInfo{
 					"metric1": {
-						value: 1,
-						unit:  "Count",
+						value:             1,
+						unit:              "Count",
+						storageResolution: 1,
 					},
 				},
 				metadata: cWMetricMetadata{
@@ -1157,16 +1198,19 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 	}
 	metrics := map[string]*metricInfo{
 		"metric1": {
-			value: 1,
-			unit:  "Count",
+			value:             1,
+			unit:              "Count",
+			storageResolution: 60,
 		},
 		"metric2": {
-			value: 200,
-			unit:  "Count",
+			value:             200,
+			unit:              "Count",
+			storageResolution: 60,
 		},
 		"metric3": {
-			value: 3.14,
-			unit:  "Seconds",
+			value:             3.14,
+			unit:              "Seconds",
+			storageResolution: 60,
 		},
 	}
 	testCases := []struct {
@@ -1186,18 +1230,21 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"a", "c"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							"Name":              "metric2",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							"Name":              "metric3",
+							"Unit":              "Seconds",
+							"StorageResolution": 60,
 						},
 					},
 				},
@@ -1223,30 +1270,33 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}, {"a", "c"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 					},
 				},
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							"Name":              "metric2",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 					},
 				},
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							"Name":              "metric3",
+							"Unit":              "Seconds",
+							"StorageResolution": 60,
 						},
 					},
 				},
@@ -1268,24 +1318,27 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							"Name":              "metric2",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 					},
 				},
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							"Name":              "metric3",
+							"Unit":              "Seconds",
+							"StorageResolution": 60,
 						},
 					},
 				},
@@ -1307,14 +1360,16 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"a"}, {"b"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							"Name":              "metric2",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 					},
 				},
@@ -1341,14 +1396,16 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							"Name":              "metric3",
+							"Unit":              "Seconds",
+							"StorageResolution": 60,
 						},
 					},
 				},
@@ -1382,18 +1439,21 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{"b"}},
-					Metrics: []map[string]string{
+					Metrics: []map[string]any{
 						{
-							"Name": "metric1",
-							"Unit": "Count",
+							"Name":              "metric1",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 						{
-							"Name": "metric2",
-							"Unit": "Count",
+							"Name":              "metric2",
+							"Unit":              "Count",
+							"StorageResolution": 60,
 						},
 						{
-							"Name": "metric3",
-							"Unit": "Seconds",
+							"Name":              "metric3",
+							"Unit":              "Seconds",
+							"StorageResolution": 60,
 						},
 					},
 				},
@@ -2156,7 +2216,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	cwMeasurement := cWMeasurement{
 		Namespace:  "test-emf",
 		Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
-		Metrics: []map[string]string{{
+		Metrics: []map[string]any{{
 			"Name": "spanCounter",
 			"Unit": "Count",
 		}},
