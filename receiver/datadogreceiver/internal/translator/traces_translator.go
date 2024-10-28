@@ -104,7 +104,7 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
-			newSpan.Status().SetCode(ptrace.StatusCodeOk)
+			newSpan.Status().SetCode(ptrace.StatusCodeUnset)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 			if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
 				newSpan.Attributes().PutStr("sampling.priority", fmt.Sprintf("%f", samplingPriority))
