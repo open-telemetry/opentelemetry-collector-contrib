@@ -33,14 +33,17 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `table (required)`: the routing table for this connector.
+- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource` and `log` are supported.
 - `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided.
 - `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
-- `match_once (optional, default: false)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the first pipeline in the `table` whose routing condition is met.
+- `match_once (optional, default: false)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the first pipeline in the `table` whose routing condition is met. May only be `false` when used with `resource` context.
 
-Example:
+### Examples
+
+Route traces based on an attribute:
 
 ```yaml
 receivers:
@@ -91,6 +94,92 @@ service:
       exporters: [jaeger/ecorp]
 ```
 
+Route logs based on region:
+
+```yaml
+receivers:
+    otlp:
+
+exporters:
+  file/other:
+    path: ./other.log
+  file/east:
+    path: ./east.log
+  file/west:
+    path: ./west.log
+
+connectors:
+  routing:
+    match_once: true
+    default_pipelines: [logs/other]
+    table:
+      - context: log
+        condition: attributes["region"] == "east"
+        pipelines: [logs/east]
+      - context: log
+        condition: attributes["region"] == "west"
+        pipelines: [logs/west]
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [otlp]
+      exporters: [routing]
+    logs/east:
+      receivers: [routing]
+      exporters: [file/east]
+    logs/west:
+      receivers: [routing]
+      exporters: [file/west]
+    logs/other:
+      receivers: [routing]
+      exporters: [file/other]
+```
+
+Route all low level logs to cheap storage. Route the remainder based on service name:
+
+```yaml
+receivers:
+    otlp:
+
+exporters:
+  file/cheap:
+    path: ./cheap.log
+  file/service1:
+    path: ./service1-important.log
+  file/ecorp:
+    path: ./service2-important.log
+
+connectors:
+  routing:
+    match_once: true
+    table:
+      - context: log
+        condition: severity_number < SEVERITY_NUMBER_ERROR
+        pipelines: [logs/cheap]
+      - context: resource
+        condition: attributes["service.name"] == "service1"
+        pipelines: [logs/service1]
+      - context: resource
+        condition: attributes["service.name"] == "service2"
+        pipelines: [logs/service2]
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [otlp]
+      exporters: [routing]
+    logs/cheap:
+      receivers: [routing]
+      exporters: [file/cheap]
+    logs/service1:
+      receivers: [routing]
+      exporters: [file/service1]
+    logs/service2:
+      receivers: [routing]
+      exporters: [file/service2]
+```
+
 A signal may get matched by routing conditions of more than one routing table entry. In this case, the signal will be routed to all pipelines of matching routes.
 Respectively, if none of the routing conditions met, then a signal is routed to default pipelines.
 
@@ -109,10 +198,11 @@ Respectively, if none of the routing conditions met, then a signal is routed to 
 
 The full list of settings exposed for this connector are documented [here](./config.go) with detailed sample configuration files:
 
-- [logs](./testdata/config_logs.yaml)
-- [metrics](./testdata/config_metrics.yaml)
-- [traces](./testdata/config_traces.yaml)
+- [logs](./testdata/config/logs.yaml)
+- [metrics](./testdata/config/metrics.yaml)
+- [traces](./testdata/config/traces.yaml)
 
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 
 [OTTL]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md
+[OTTL Context]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md#contexts
