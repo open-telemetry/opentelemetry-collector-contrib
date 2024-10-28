@@ -1,0 +1,11 @@
+routing:
+  match_once: true
+  default_pipelines:
+    - logs/default
+  table:
+    - condition: attributes["resourceName"] != nil
+      pipelines:
+        - logs/0
+    - condition: attributes["resourceName"] == "resourceA" or attributes["resourceName"] == "resourceB"
+      pipelines:
+        - logs/1

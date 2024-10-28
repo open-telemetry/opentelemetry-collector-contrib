@@ -142,7 +142,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 
 		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
-			r.set.Logger.Error("decode header: %w", zap.Error(err))
+			r.set.Logger.Error("failed to decode header token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
@@ -153,7 +153,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 				// End of header reached.
 				break
 			}
-			r.set.Logger.Error("process header: %w", zap.Error(err))
+			r.set.Logger.Error("failed to process header token", zap.Error(err))
 		}
 
 		r.Offset = s.Pos()
@@ -204,7 +204,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
-			r.set.Logger.Error("decode: %w", zap.Error(err))
+			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
@@ -216,7 +216,7 @@ func (r *Reader) readContents(ctx context.Context) {
 
 		err = r.processFunc(ctx, token, r.FileAttributes)
 		if err != nil {
-			r.set.Logger.Error("process: %w", zap.Error(err))
+			r.set.Logger.Error("failed to process token", zap.Error(err))
 		}
 
 		r.Offset = s.Pos()
