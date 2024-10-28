@@ -208,25 +208,11 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 		Builder: inputBuilder,
 	}
 
-	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set)
-	defer func() {
-		require.NoError(b, emitter.Stop())
-	}()
-
-	pipe, err := pipeline.Config{
-		Operators:     []operator.Config{inputCfg},
-		DefaultOutput: emitter,
-	}.Build(set)
-	require.NoError(b, err)
-
 	storageClient := storagetest.NewInMemoryClient(
 		component.KindReceiver,
 		component.MustNewID("foolog"),
 		"test",
 	)
-
-	converter := NewConverter(set)
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(b, err)
@@ -237,14 +223,26 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 		receivedLogs:    atomic.Uint32{},
 	}
 	rcv := &receiver{
-		set:           set,
-		pipe:          pipe,
-		emitter:       emitter,
 		consumer:      mockConsumer,
-		converter:     converter,
 		obsrecv:       obsrecv,
 		storageClient: storageClient,
 	}
+
+	set := componenttest.NewNopTelemetrySettings()
+	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	defer func() {
+		require.NoError(b, emitter.Stop())
+	}()
+
+	pipe, err := pipeline.Config{
+		Operators:     []operator.Config{inputCfg},
+		DefaultOutput: emitter,
+	}.Build(set)
+	require.NoError(b, err)
+
+	rcv.pipe = pipe
+	rcv.set = set
+	rcv.emitter = emitter
 
 	b.ResetTimer()
 
