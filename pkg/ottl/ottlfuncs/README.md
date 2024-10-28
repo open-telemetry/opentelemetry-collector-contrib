@@ -1292,7 +1292,7 @@ The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
 
-Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Unmarshalling is done using [goccy/go-json](https://github.com/goccy/go-json).
 Each JSON type is converted into a `pdata.Value` using the following map:
 
 ```
