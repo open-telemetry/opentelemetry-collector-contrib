@@ -72,7 +72,7 @@ func TestGenerateUrl(t *testing.T) {
 	}
 }
 
-func TestGetListenerURL(t *testing.T) {
+func TestGetTracesListenerURL(t *testing.T) {
 	type getListenerURLTest struct {
 		arg1     string
 		expected string
@@ -92,6 +92,30 @@ func TestGetListenerURL(t *testing.T) {
 	}
 	for _, test := range getListenerURLTests {
 		output := getTracesListenerURL(test.arg1)
+		require.Equal(t, test.expected, output)
+	}
+}
+
+func TestGetLogsListenerURL(t *testing.T) {
+	type getListenerURLTest struct {
+		arg1     string
+		expected string
+	}
+	var getListenerURLTests = []getListenerURLTest{
+		{"us", "https://otlp-listener.logz.io/v1/logs"},
+		{"eu", "https://otlp-listener-eu.logz.io/v1/logs"},
+		{"au", "https://otlp-listener-au.logz.io/v1/logs"},
+		{"ca", "https://otlp-listener-ca.logz.io/v1/logs"},
+		{"nl", "https://otlp-listener-nl.logz.io/v1/logs"},
+		{"uk", "https://otlp-listener-uk.logz.io/v1/logs"},
+		{"wa", "https://otlp-listener-wa.logz.io/v1/logs"},
+		{"not-valid", "https://otlp-listener.logz.io/v1/logs"},
+		{"", "https://otlp-listener.logz.io/v1/logs"},
+		{"US", "https://otlp-listener.logz.io/v1/logs"},
+		{"Us", "https://otlp-listener.logz.io/v1/logs"},
+	}
+	for _, test := range getListenerURLTests {
+		output := getLogsListenerURL(test.arg1)
 		require.Equal(t, test.expected, output)
 	}
 }
