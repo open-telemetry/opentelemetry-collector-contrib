@@ -24,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 		expected   component.Config
 	}{
 		{
-			configPath: "config_traces.yaml",
+			configPath: filepath.Join("testdata", "config", "traces.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []pipeline.ID{
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			configPath: "config_metrics.yaml",
+			configPath: filepath.Join("testdata", "config", "metrics.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []pipeline.ID{
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			configPath: "config_logs.yaml",
+			configPath: filepath.Join("testdata", "config", "logs.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				DefaultPipelines: []pipeline.ID{
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.configPath, func(t *testing.T) {
-			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configPath))
+			cm, err := confmaptest.LoadConf(tt.configPath)
 			require.NoError(t, err)
 
 			factory := NewFactory()
@@ -202,6 +202,37 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 			error: "invalid route: both condition and statement provided",
+		},
+		{
+			name: "invalid context",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "invalid",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: "invalid context: invalid",
+		},
+		{
+			name: "log context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "log",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: "log context is not supported with match_once: false",
 		},
 	}
 
