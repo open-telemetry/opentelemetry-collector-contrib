@@ -3,7 +3,7 @@ type: sapm
 status:
   class: exporter
   stability:
-    beta: [traces]
+    deprecated: [traces]
   distributions: [contrib]
   codeowners:
     active: [dmitryax, atoulme]
