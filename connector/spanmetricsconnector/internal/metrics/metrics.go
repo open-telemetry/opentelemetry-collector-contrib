@@ -14,8 +14,8 @@ import (
 type Key string
 
 type HistogramMetrics interface {
-	GetOrCreate(key Key, attributes pcommon.Map) Histogram
-	BuildMetrics(pmetric.Metric, generateStartTimestamp, pcommon.Timestamp, pmetric.AggregationTemporality)
+	GetOrCreate(key Key, attributes pcommon.Map, startTimestamp pcommon.Timestamp) Histogram
+	BuildMetrics(pmetric.Metric, pcommon.Timestamp, pmetric.AggregationTemporality)
 	ClearExemplars()
 }
 
@@ -47,6 +47,7 @@ type explicitHistogram struct {
 	bounds []float64
 
 	maxExemplarCount *int
+	startTimestamp   pcommon.Timestamp
 }
 
 type exponentialHistogram struct {
@@ -56,6 +57,7 @@ type exponentialHistogram struct {
 	histogram *structure.Histogram[float64]
 
 	maxExemplarCount *int
+	startTimestamp   pcommon.Timestamp
 }
 
 type generateStartTimestamp = func(Key) pcommon.Timestamp
@@ -76,7 +78,7 @@ func NewExplicitHistogramMetrics(bounds []float64, maxExemplarCount *int) Histog
 	}
 }
 
-func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
+func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimestamp pcommon.Timestamp) Histogram {
 	h, ok := m.metrics[key]
 	if !ok {
 		h = &explicitHistogram{
@@ -94,17 +96,16 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) 
 
 func (m *explicitHistogramMetrics) BuildMetrics(
 	metric pmetric.Metric,
-	startTimestamp generateStartTimestamp,
 	timestamp pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
 	metric.SetEmptyHistogram().SetAggregationTemporality(temporality)
 	dps := metric.Histogram().DataPoints()
 	dps.EnsureCapacity(len(m.metrics))
-	for k, h := range m.metrics {
+	for _, h := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(startTimestamp(k))
 		dp.SetTimestamp(timestamp)
+		dp.SetStartTimestamp(h.startTimestamp)
 		dp.ExplicitBounds().FromRaw(h.bounds)
 		dp.BucketCounts().FromRaw(h.bucketCounts)
 		dp.SetCount(h.count)
@@ -114,6 +115,7 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 		}
 		h.exemplars.CopyTo(dp.Exemplars())
 		h.attributes.CopyTo(dp.Attributes())
+		dp.Attributes().PutInt("startTimestamp", int64(h.startTimestamp))
 	}
 }
 
@@ -123,7 +125,7 @@ func (m *explicitHistogramMetrics) ClearExemplars() {
 	}
 }
 
-func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
+func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimeStamp pcommon.Timestamp) Histogram {
 	h, ok := m.metrics[key]
 	if !ok {
 		histogram := new(structure.Histogram[float64])
@@ -146,23 +148,23 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Ma
 
 func (m *exponentialHistogramMetrics) BuildMetrics(
 	metric pmetric.Metric,
-	startTimestamp generateStartTimestamp,
 	timestamp pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
 	metric.SetEmptyExponentialHistogram().SetAggregationTemporality(temporality)
 	dps := metric.ExponentialHistogram().DataPoints()
 	dps.EnsureCapacity(len(m.metrics))
-	for k, m := range m.metrics {
+	for _, e := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(startTimestamp(k))
+		dp.SetStartTimestamp(e.startTimestamp)
 		dp.SetTimestamp(timestamp)
-		expoHistToExponentialDataPoint(m.histogram, dp)
-		for i := 0; i < m.exemplars.Len(); i++ {
-			m.exemplars.At(i).SetTimestamp(timestamp)
+		expoHistToExponentialDataPoint(e.histogram, dp)
+		for i := 0; i < e.exemplars.Len(); i++ {
+			e.exemplars.At(i).SetTimestamp(timestamp)
 		}
-		m.exemplars.CopyTo(dp.Exemplars())
-		m.attributes.CopyTo(dp.Attributes())
+		e.exemplars.CopyTo(dp.Exemplars())
+		e.attributes.CopyTo(dp.Attributes())
+		dp.Attributes().PutInt("startTimestamp", int64(e.startTimestamp))
 	}
 }
 
@@ -241,13 +243,14 @@ type Sum struct {
 	count            uint64
 	exemplars        pmetric.ExemplarSlice
 	maxExemplarCount *int
+	startTimestamp   pcommon.Timestamp
 }
 
 func (s *Sum) Add(value uint64) {
 	s.count += value
 }
 
-func NewSumMetrics(maxExemplarCount *int) SumMetrics {
+func NewSumMetrics(maxExemplarCount *int, startTimeStamp pcommon.Timestamp) SumMetrics {
 	return SumMetrics{
 		metrics:          make(map[Key]*Sum),
 		maxExemplarCount: maxExemplarCount,
@@ -259,13 +262,14 @@ type SumMetrics struct {
 	maxExemplarCount *int
 }
 
-func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map) *Sum {
+func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimestamp pcommon.Timestamp) *Sum {
 	s, ok := m.metrics[key]
 	if !ok {
 		s = &Sum{
 			attributes:       attributes,
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
+			startTimestamp:   startTimestamp,
 		}
 		m.metrics[key] = s
 	}
@@ -284,7 +288,6 @@ func (s *Sum) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value 
 
 func (m *SumMetrics) BuildMetrics(
 	metric pmetric.Metric,
-	startTimestamp generateStartTimestamp,
 	timestamp pcommon.Timestamp,
 	temporality pmetric.AggregationTemporality,
 ) {
@@ -293,9 +296,9 @@ func (m *SumMetrics) BuildMetrics(
 
 	dps := metric.Sum().DataPoints()
 	dps.EnsureCapacity(len(m.metrics))
-	for k, s := range m.metrics {
+	for _, s := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(startTimestamp(k))
+		dp.SetStartTimestamp(s.startTimestamp)
 		dp.SetTimestamp(timestamp)
 		dp.SetIntValue(int64(s.count))
 		for i := 0; i < s.exemplars.Len(); i++ {
