@@ -8,7 +8,15 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/proto"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -276,7 +284,6 @@ func TestPushLogsData(tester *testing.T) {
 	}))
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = server.URL
-	clientConfig.Compression = configcompression.TypeGzip
 	cfg := Config{
 		Token:        "token",
 		Region:       "",
@@ -289,45 +296,210 @@ func TestPushLogsData(tester *testing.T) {
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
 	err := testLogsExporter(ld, tester, &cfg)
 	require.NoError(tester, err)
-	var jsonLog map[string]any
-	decoded, _ := gUnzipData(recordedRequests)
-	requests := strings.Split(string(decoded), "\n")
-	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &jsonLog))
-	assert.Equal(tester, testHost, jsonLog["host.name"])
-	assert.Equal(tester, testService, jsonLog["service.name"])
-	assert.Equal(tester, "server", jsonLog["app"])
-	assert.Equal(tester, 1.0, jsonLog["instance_num"])
-	assert.Equal(tester, "logScopeName", jsonLog["scopeName"])
-	assert.Equal(tester, "hello there", jsonLog["message"])
-	assert.Equal(tester, "bar", jsonLog["foo"])
-	assert.Equal(tester, 45.0, jsonLog["23"])
+	requests := plogotlp.NewExportRequest()
+	err = requests.UnmarshalProto(recordedRequests)
+	require.NoError(tester, err)
+	resultLogs := requests.Logs()
+	assert.Equal(tester, ld.LogRecordCount(), resultLogs.LogRecordCount())
+	assert.Equal(tester, ld.ResourceLogs().At(0).Resource().Attributes().AsRaw(), resultLogs.ResourceLogs().At(0).Resource().Attributes().AsRaw())
+	assert.Equal(tester, ld.ResourceLogs(), resultLogs.ResourceLogs())
 }
 
-func TestMergeMapEntries(tester *testing.T) {
-	var firstMap = pcommon.NewMap()
-	var secondMap = pcommon.NewMap()
-	var expectedMap = pcommon.NewMap()
-	firstMap.PutStr("name", "exporter")
-	firstMap.PutStr("host", "localhost")
-	firstMap.PutStr("instanceNum", "1")
-	firstMap.PutInt("id", 4)
-	secondMap.PutStr("tag", "test")
-	secondMap.PutStr("host", "ec2")
-	secondMap.PutInt("instanceNum", 3)
-	secondMap.PutEmptyMap("id").PutInt("instance_a", 1)
-	expectedMap.PutStr("name", "exporter")
-	expectedMap.PutStr("tag", "test")
-	var slice = expectedMap.PutEmptySlice("host")
-	slice.AppendEmpty().SetStr("localhost")
-	slice.AppendEmpty().SetStr("ec2")
-	slice = expectedMap.PutEmptySlice("instanceNum")
-	var val = slice.AppendEmpty()
-	val.SetStr("1")
-	val = slice.AppendEmpty()
-	val.SetInt(3)
-	slice = expectedMap.PutEmptySlice("id")
-	slice.AppendEmpty().SetInt(4)
-	slice.AppendEmpty().SetEmptyMap().PutInt("instance_a", 1)
-	var mergedMap = mergeMapEntries(firstMap, secondMap)
-	assert.Equal(tester, expectedMap.AsRaw(), mergedMap.AsRaw())
+func TestTracesPartialSuccessHandler(t *testing.T) {
+	exporter, err := newLogzioExporter(&Config{}, exportertest.NewNopSettings())
+	require.NoError(t, err)
+
+	exportResponse := ptraceotlp.NewExportResponse()
+	partial := exportResponse.PartialSuccess()
+	partial.SetErrorMessage("Partial success error")
+	partial.SetRejectedSpans(5)
+
+	protoBytes, err := exportResponse.MarshalProto()
+	require.NoError(t, err)
+
+	logger, _ := observer.New(zap.WarnLevel)
+	exporter.logger = zap.New(logger)
+
+	err = exporter.tracesPartialSuccessHandler(protoBytes, protobufContentType)
+	require.NoError(t, err)
+
+	err = exporter.tracesPartialSuccessHandler([]byte{0xFF}, protobufContentType)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error parsing protobuf response")
+
+	err = exporter.tracesPartialSuccessHandler(nil, protobufContentType)
+	require.NoError(t, err)
+
+	err = exporter.tracesPartialSuccessHandler(protoBytes, "unknown/content-type")
+	require.NoError(t, err)
+}
+
+func TestLogsPartialSuccessHandler(t *testing.T) {
+	exporter, err := newLogzioExporter(&Config{}, exportertest.NewNopSettings())
+	require.NoError(t, err)
+	// Create a valid ExportResponse with PartialSuccess information
+	exportResponse := plogotlp.NewExportResponse()
+	partial := exportResponse.PartialSuccess()
+	partial.SetErrorMessage("Partial success error")
+	partial.SetRejectedLogRecords(5)
+
+	protoBytes, err := exportResponse.MarshalProto()
+	require.NoError(t, err)
+
+	logger, logs := observer.New(zap.WarnLevel)
+	exporter.logger = zap.New(logger)
+
+	err = exporter.logsPartialSuccessHandler(protoBytes, protobufContentType)
+	require.NoError(t, err)
+
+	warnLogs := logs.FilterLevelExact(zap.WarnLevel).All()
+	require.Len(t, warnLogs, 1)
+	require.Contains(t, warnLogs[0].Message, "Partial success response")
+	require.Equal(t, "Partial success error", warnLogs[0].ContextMap()["message"])
+	require.Equal(t, int64(5), warnLogs[0].ContextMap()["dropped_log_records"])
+
+	// Now test with invalid protoBytes
+	err = exporter.logsPartialSuccessHandler([]byte{0xFF}, protobufContentType)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error parsing protobuf response")
+
+	// Test with nil protoBytes
+	err = exporter.logsPartialSuccessHandler(nil, protobufContentType)
+	require.NoError(t, err)
+
+	// Test with unknown content type
+	err = exporter.logsPartialSuccessHandler(protoBytes, "unknown/content-type")
+	require.NoError(t, err)
+}
+
+func TestReadResponseStatus(t *testing.T) {
+	tests := []struct {
+		name           string
+		response       *http.Response
+		expectedStatus *status.Status
+	}{
+		{
+			name: "Valid status message",
+			response: &http.Response{
+				StatusCode: http.StatusBadRequest,
+				Body: io.NopCloser(bytes.NewReader(func() []byte {
+					statusProto := &status.Status{
+						Code:    int32(codes.InvalidArgument),
+						Message: "Invalid argument",
+					}
+					statusBytes, _ := proto.Marshal(statusProto)
+					return statusBytes
+				}())),
+				Header: http.Header{"Content-Type": []string{protobufContentType}},
+				ContentLength: int64(len(func() []byte {
+					statusProto := &status.Status{
+						Code:    int32(codes.InvalidArgument),
+						Message: "Invalid argument",
+					}
+					statusBytes, _ := proto.Marshal(statusProto)
+					return statusBytes
+				}())),
+			},
+			expectedStatus: &status.Status{
+				Code:    int32(codes.InvalidArgument),
+				Message: "Invalid argument",
+			},
+		},
+		{
+			name: "Invalid status message",
+			response: &http.Response{
+				StatusCode:    http.StatusBadRequest,
+				Body:          io.NopCloser(bytes.NewReader([]byte("invalid"))),
+				Header:        http.Header{"Content-Type": []string{protobufContentType}},
+				ContentLength: int64(len([]byte("invalid"))),
+			},
+			expectedStatus: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			respStatus := readResponseStatus(tt.response)
+			if tt.expectedStatus != nil {
+				require.NotNil(t, respStatus)
+				require.Equal(t, tt.expectedStatus.Message, respStatus.Message)
+			} else {
+				require.Nil(t, respStatus)
+			}
+		})
+	}
+}
+
+func TestReadResponseBody(t *testing.T) {
+	tests := []struct {
+		name           string
+		response       *http.Response
+		expectedOutput []byte
+		expectedError  error
+	}{
+		{
+			name: "Empty body",
+			response: &http.Response{
+				ContentLength: 0,
+				Body:          io.NopCloser(bytes.NewReader(nil)),
+			},
+			expectedOutput: nil,
+			expectedError:  nil,
+		},
+		{
+			name: "Valid body",
+			response: &http.Response{
+				ContentLength: 5,
+				Body:          io.NopCloser(bytes.NewReader([]byte("hello"))),
+			},
+			expectedOutput: []byte("hello"),
+			expectedError:  nil,
+		},
+		{
+			name: "Body larger than max read",
+			response: &http.Response{
+				ContentLength: 100000,
+				Body:          io.NopCloser(bytes.NewReader(make([]byte, 100000))),
+			},
+			expectedOutput: make([]byte, maxHTTPResponseReadBytes),
+			expectedError:  nil,
+		},
+		{
+			name: "Unexpected EOF",
+			response: &http.Response{
+				ContentLength: -1,
+				Body:          io.NopCloser(bytes.NewReader([]byte("partial"))),
+			},
+			expectedOutput: []byte("partial"),
+			expectedError:  nil,
+		},
+		{
+			name: "Error reading body",
+			response: &http.Response{
+				ContentLength: 5,
+				Body:          io.NopCloser(&errorReader{}),
+			},
+			expectedOutput: nil,
+			expectedError:  errors.New("read error"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output, err := readResponseBody(tt.response)
+			if tt.expectedError != nil {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.expectedError.Error())
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tt.expectedOutput, output)
+		})
+	}
+}
+
+type errorReader struct{}
+
+func (e *errorReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read error")
 }
