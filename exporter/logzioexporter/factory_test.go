@@ -25,7 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -37,7 +37,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }

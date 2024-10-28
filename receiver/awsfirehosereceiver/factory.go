@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 )
 
 const (
@@ -28,8 +29,9 @@ const (
 var (
 	errUnrecognizedRecordType = errors.New("unrecognized record type")
 	availableRecordTypes      = map[string]bool{
-		cwmetricstream.TypeStr: true,
-		cwlog.TypeStr:          true,
+		cwmetricstream.TypeStr:   true,
+		cwlog.TypeStr:            true,
+		otlpmetricstream.TypeStr: true,
 	}
 )
 
