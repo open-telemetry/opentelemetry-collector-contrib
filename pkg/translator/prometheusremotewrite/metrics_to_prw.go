@@ -17,26 +17,6 @@ import (
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-// RemoteWriteProtoMsg represents the known protobuf message for the remote write
-// 1.0 and 2.0 specs.
-type RemoteWriteProtoMsg string
-
-var (
-	// RemoteWriteProtoMsgV1 represents the `prometheus.WriteRequest` protobuf
-	// message introduced in the https://prometheus.io/docs/specs/remote_write_spec/,
-	// which will eventually be deprecated.
-	//
-	// NOTE: This string is used for both HTTP header values and config value, so don't change
-	// this reference.
-	RemoteWriteProtoMsgV1 RemoteWriteProtoMsg = "prometheus.WriteRequest"
-	// RemoteWriteProtoMsgV2 represents the `io.prometheus.write.v2.Request` protobuf
-	// message introduced in https://prometheus.io/docs/specs/remote_write_spec_2_0/
-	//
-	// NOTE: This string is used for both HTTP header values and config value, so don't change
-	// this reference.
-	RemoteWriteProtoMsgV2 RemoteWriteProtoMsg = "io.prometheus.write.v2.Request"
-)
-
 type Settings struct {
 	Namespace           string
 	ExternalLabels      map[string]string
@@ -44,7 +24,6 @@ type Settings struct {
 	ExportCreatedMetric bool
 	AddMetricSuffixes   bool
 	SendMetadata        bool
-	RemoteWriteProtoMsg RemoteWriteProtoMsg
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.

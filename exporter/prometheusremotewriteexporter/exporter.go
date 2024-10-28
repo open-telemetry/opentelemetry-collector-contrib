@@ -53,6 +53,26 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
+// RemoteWriteProtoMsg represents the known protobuf message for the remote write
+// 1.0 and 2.0 specs.
+type RemoteWriteProtoMsg string
+
+var (
+	// RemoteWriteProtoMsgV1 represents the `prometheus.WriteRequest` protobuf
+	// message introduced in the https://prometheus.io/docs/specs/remote_write_spec/,
+	// which will eventually be deprecated.
+	//
+	// NOTE: This string is used for both HTTP header values and config value, so don't change
+	// this reference.
+	RemoteWriteProtoMsgV1 RemoteWriteProtoMsg = "prometheus.WriteRequest"
+	// RemoteWriteProtoMsgV2 represents the `io.prometheus.write.v2.Request` protobuf
+	// message introduced in https://prometheus.io/docs/specs/remote_write_spec_2_0/
+	//
+	// NOTE: This string is used for both HTTP header values and config value, so don't change
+	// this reference.
+	RemoteWriteProtoMsgV2 RemoteWriteProtoMsg = "io.prometheus.write.v2.Request"
+)
+
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
 	endpointURL          *url.URL
@@ -71,6 +91,7 @@ type prwExporter struct {
 	exporterSettings     prometheusremotewrite.Settings
 	telemetry            prwTelemetry
 	batchTimeSeriesState batchTimeSeriesState
+	RemoteWriteProtoMsg  RemoteWriteProtoMsg
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -107,17 +128,18 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	prwe := &prwExporter{
-		endpointURL:       endpointURL,
-		wg:                new(sync.WaitGroup),
-		closeChan:         make(chan struct{}),
-		userAgentHeader:   userAgentHeader,
-		maxBatchSizeBytes: cfg.MaxBatchSizeBytes,
-		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:    &cfg.ClientConfig,
-		settings:          set.TelemetrySettings,
-		retrySettings:     cfg.BackOffConfig,
-		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
-		enableSendingRW2:  enableSendingRW2FeatureGate.IsEnabled(),
+		endpointURL:         endpointURL,
+		wg:                  new(sync.WaitGroup),
+		closeChan:           make(chan struct{}),
+		userAgentHeader:     userAgentHeader,
+		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
+		concurrency:         cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:      &cfg.ClientConfig,
+		settings:            set.TelemetrySettings,
+		retrySettings:       cfg.BackOffConfig,
+		retryOnHTTP429:      retryOn429FeatureGate.IsEnabled(),
+		enableSendingRW2:    enableSendingRW2FeatureGate.IsEnabled(),
+		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -125,7 +147,6 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
-			RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		},
 		telemetry:            prwTelemetry,
 		batchTimeSeriesState: newBatchTimeSericesState(),
@@ -194,10 +215,10 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		return errors.New("shutdown has been called")
 	default:
 		if prwe.enableSendingRW2 {
-			switch prwe.exporterSettings.RemoteWriteProtoMsg {
-			case prometheusremotewrite.RemoteWriteProtoMsgV1:
+			switch prwe.RemoteWriteProtoMsg {
+			case RemoteWriteProtoMsgV1:
 				return prwe.pushMetricsV1(ctx, md)
-			case prometheusremotewrite.RemoteWriteProtoMsgV2:
+			case RemoteWriteProtoMsgV2:
 				// RW2 case
 				tsMap, symbolsTable, err := prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
 
@@ -328,11 +349,11 @@ func (prwe *prwExporter) execute(ctx context.Context, data []byte) error {
 		req.Header.Add("Content-Encoding", "snappy")
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
-		switch prwe.exporterSettings.RemoteWriteProtoMsg {
-		case prometheusremotewrite.RemoteWriteProtoMsgV1:
+		switch prwe.RemoteWriteProtoMsg {
+		case RemoteWriteProtoMsgV1:
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-		case prometheusremotewrite.RemoteWriteProtoMsgV2:
+		case RemoteWriteProtoMsgV2:
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		}
