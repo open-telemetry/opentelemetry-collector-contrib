@@ -274,6 +274,16 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
+.PHONY: docker-ubuntu-component # Not intended to be used directly
+docker-ubuntu-component: check-component
+	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
+	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
+	docker build -f ./cmd/$(COMPONENT)/Dockerfile.ubuntu -t $(COMPONENT) ./cmd/$(COMPONENT)/
+	rm ./cmd/$(COMPONENT)/$(COMPONENT)
+
+docker-ubuntu-otelcontribcol:
+	COMPONENT=otelcontribcol $(MAKE) docker-ubuntu-component
+
 .PHONY: docker-telemetrygen
 docker-telemetrygen:
 	GOOS=linux GOARCH=$(GOARCH) $(MAKE) telemetrygen

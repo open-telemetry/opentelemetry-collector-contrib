@@ -135,7 +135,56 @@ func (kr *k8seventsReceiver) startWatchingNamespace(
 // event flood can be avoided upon startup.
 func (kr *k8seventsReceiver) allowEvent(ev *corev1.Event) bool {
 	eventTimestamp := getEventTimestamp(ev)
-	return !eventTimestamp.Before(kr.startTime)
+	if eventTimestamp.Before(kr.startTime) {
+		return false
+	}
+
+	if len(kr.config.EventTypes) != 0 {
+
+		found := false
+		for _, configuredEventType := range kr.config.EventTypes {
+			if ev.Type == string(configuredEventType) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+
+	existsInSlice := func(key string, slice []string) bool {
+		found := false
+		for _, k := range slice {
+			if key == k {
+				found = true
+				break
+			}
+		}
+		return found
+	}
+
+	if len(kr.config.IncludeInvolvedObject) != 0 {
+		if prop, exists := kr.config.IncludeInvolvedObject[ev.InvolvedObject.Kind]; !exists {
+			if prop, exists := kr.config.IncludeInvolvedObject["Other"]; !exists {
+				return false
+			} else {
+				if len(prop.IncludeReasons) != 0 {
+					if !existsInSlice(ev.Reason, prop.IncludeReasons) {
+						return false
+					}
+				}
+			}
+		} else {
+			if len(prop.IncludeReasons) != 0 {
+				if !existsInSlice(ev.Reason, prop.IncludeReasons) {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 // Return the EventTimestamp based on the populated k8s event timestamps.

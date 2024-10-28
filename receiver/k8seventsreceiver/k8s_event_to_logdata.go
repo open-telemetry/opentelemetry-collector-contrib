@@ -38,7 +38,13 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.PutStr(semconv.AttributeK8SNodeName, ev.Source.Host)
+	eventHost := ""
+	if ev.ReportingInstance != "" {
+		eventHost = ev.ReportingInstance
+	} else if ev.Source.Host != "" {
+		eventHost = ev.Source.Host
+	}
+	resourceAttrs.PutStr(semconv.AttributeK8SNodeName, eventHost)
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
@@ -47,6 +53,8 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs.PutStr("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
 	resourceAttrs.PutStr("k8s.object.api_version", ev.InvolvedObject.APIVersion)
 	resourceAttrs.PutStr("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
+
+	resourceAttrs.PutStr("type", "event") // This should come from config. To be enhanced.
 
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(getEventTimestamp(ev)))
 
