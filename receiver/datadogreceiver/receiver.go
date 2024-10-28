@@ -361,8 +361,12 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_, _ = w.Write([]byte("OK"))
+	response := map[string]string{
+		"status": "ok",
+	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // handleSketches handles sketches, the underlying data structure of distributions https://docs.datadoghq.com/metrics/distributions/
