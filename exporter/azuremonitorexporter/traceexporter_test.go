@@ -91,7 +91,7 @@ func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 }
 
 // Tests the export onTraceData callback with a single Span that fails to produce an envelope
-// TODO: Depercate this test when transport channel is removed as we will not be using envelopes anymore
+// TODO: Deprecate this test when transport channel is removed as we will not be using envelopes anymore
 func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
 	mockTelemetryClient := getMockTelemetryClient()

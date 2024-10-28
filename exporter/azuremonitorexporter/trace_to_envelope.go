@@ -106,7 +106,7 @@ func spanToTelemetryTraces(
 		spanEvent := span.Events().At(i)
 
 		// Skip non-exception events if configured
-		if spanEvent.Name() != exceptionSpanEventName && !spanEventsEnabled {
+		if !spanEventsEnabled && spanEvent.Name() != exceptionSpanEventName {
 			continue
 		}
 
