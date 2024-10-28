@@ -6,11 +6,38 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"fmt"
 	"regexp"
+	"strings"
+	"unicode"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var receiverRegex = regexp.MustCompile(`/receiver/(\w*receiver)`)
+
+const (
+	maxDataStreamBytes       = 100
+	disallowedNamespaceRunes = "\\/*?\"<>| ,#:"
+	disallowedDatasetRunes   = "-\\/*?\"<>| ,#:"
+)
+
+// Sanitize the datastream fields (dataset, namespace) to apply restrictions
+// as outlined in https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html
+// The suffix will be appended after truncation of max bytes.
+func sanitizeDataStreamField(field, disallowed, appendSuffix string) string {
+	field = strings.Map(func(r rune) rune {
+		if strings.ContainsRune(disallowed, r) {
+			return '_'
+		}
+		return unicode.ToLower(r)
+	}, field)
+
+	if len(field) > maxDataStreamBytes-len(appendSuffix) {
+		field = field[:maxDataStreamBytes-len(appendSuffix)]
+	}
+	field += appendSuffix
+
+	return field
+}
 
 func routeWithDefaults(defaultDSType string) func(
 	pcommon.Map,
@@ -53,15 +80,20 @@ func routeWithDefaults(defaultDSType string) func(
 			dataset = receiverName
 		}
 
-		// The naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
+		// For dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
 		// This is in order to match the built-in logs-*.otel-* index template.
+		var datasetSuffix string
 		if otel {
-			dataset += ".otel"
+			datasetSuffix += ".otel"
 		}
+
+		dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
+		namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
 
 		recordAttr.PutStr(dataStreamDataset, dataset)
 		recordAttr.PutStr(dataStreamNamespace, namespace)
 		recordAttr.PutStr(dataStreamType, defaultDSType)
+
 		return fmt.Sprintf("%s-%s-%s", defaultDSType, dataset, namespace)
 	}
 }

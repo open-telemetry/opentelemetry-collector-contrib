@@ -235,7 +235,7 @@ func TestLogsExporter(t *testing.T) {
 			params := exportertest.NewNopSettings()
 			f := NewFactory()
 			ctx := context.Background()
-			exp, err := f.CreateLogsExporter(ctx, params, cfg)
+			exp, err := f.CreateLogs(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
 			assert.Equal(t, tt.want, server.LogsData)
@@ -599,7 +599,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			params := exportertest.NewNopSettings()
 			f := NewFactory()
 			ctx := context.Background()
-			exp, err := f.CreateLogsExporter(ctx, params, cfg)
+			exp, err := f.CreateLogs(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
 
