@@ -17,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
 var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -99,7 +98,7 @@ func createDefaultConfig() component.Config {
 		BackOffConfig:       retrySettings,
 		AddMetricSuffixes:   true,
 		SendMetadata:        false,
-		RemoteWriteProtoMsg: prometheusremotewrite.RemoteWriteProtoMsgV1,
+		RemoteWriteProtoMsg: RemoteWriteProtoMsgV1,
 		ClientConfig:        clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{

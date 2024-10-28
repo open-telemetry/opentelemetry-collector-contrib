@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
 // Config defines configuration for Remote Write exporter.
@@ -55,7 +54,7 @@ type Config struct {
 	SendMetadata bool `mapstructure:"send_metadata"`
 
 	// RemoteWriteProtoMsg controls whether prometheus remote write v1 or v2 is sent
-	RemoteWriteProtoMsg prometheusremotewrite.RemoteWriteProtoMsg `mapstructure:"protobuf_message,omitempty"`
+	RemoteWriteProtoMsg RemoteWriteProtoMsg `mapstructure:"protobuf_message,omitempty"`
 }
 
 type CreatedMetric struct {
