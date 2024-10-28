@@ -1,9 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.22.0
+go 1.22.1
 
 require (
-	github.com/Antonboom/testifylint v1.4.3
+	github.com/Antonboom/testifylint v1.5.0
 	github.com/Khan/genqlient v0.7.0
 	github.com/client9/misspell v0.3.4
 	github.com/daixiang0/gci v0.13.5
@@ -16,10 +16,10 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.14.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.14.0
 	go.opentelemetry.io/build-tools/multimod v0.14.0
-	go.opentelemetry.io/collector/cmd/builder v0.110.0
-	go.opentelemetry.io/collector/cmd/mdatagen v0.110.0
+	go.opentelemetry.io/collector/cmd/builder v0.112.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.112.0
 	go.uber.org/goleak v1.3.0
-	golang.org/x/tools v0.25.0
+	golang.org/x/tools v0.26.0
 	golang.org/x/vuln v1.1.3
 	gotest.tools/gotestsum v1.12.0
 )
@@ -90,7 +90,7 @@ require (
 	github.com/go-toolsmith/astp v1.1.0 // indirect
 	github.com/go-toolsmith/strparse v1.1.0 // indirect
 	github.com/go-toolsmith/typep v1.1.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.2 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
@@ -131,8 +131,8 @@ require (
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/parsers/yaml v0.1.0 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/providers/env v0.1.0 // indirect
-	github.com/knadh/koanf/providers/file v1.1.0 // indirect
+	github.com/knadh/koanf/providers/env v1.0.0 // indirect
+	github.com/knadh/koanf/providers/file v1.1.2 // indirect
 	github.com/knadh/koanf/providers/fs v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
@@ -226,34 +226,32 @@ require (
 	go-simpler.org/musttag v0.12.2 // indirect
 	go-simpler.org/sloglint v0.7.1 // indirect
 	go.opentelemetry.io/build-tools v0.14.0 // indirect
-	go.opentelemetry.io/collector/component v0.110.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.110.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.16.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.16.0 // indirect
-	go.opentelemetry.io/collector/filter v0.110.0 // indirect
-	go.opentelemetry.io/collector/internal/globalsignal v0.110.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.16.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.110.0 // indirect
-	go.opentelemetry.io/otel v1.30.0 // indirect
-	go.opentelemetry.io/otel/metric v1.30.0 // indirect
-	go.opentelemetry.io/otel/trace v1.30.0 // indirect
+	go.opentelemetry.io/collector/component v0.112.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.18.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.18.0 // indirect
+	go.opentelemetry.io/collector/filter v0.112.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.18.0 // indirect
+	go.opentelemetry.io/otel v1.31.0 // indirect
+	go.opentelemetry.io/otel/metric v1.31.0 // indirect
+	go.opentelemetry.io/otel/trace v1.31.0 // indirect
 	go.uber.org/automaxprocs v1.5.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.27.0 // indirect
+	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/mod v0.21.0 // indirect
-	golang.org/x/net v0.29.0 // indirect
+	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.25.0 // indirect
+	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
-	golang.org/x/term v0.24.0 // indirect
-	golang.org/x/text v0.18.0 // indirect
+	golang.org/x/term v0.25.0 // indirect
+	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.66.2 // indirect
-	google.golang.org/protobuf v1.34.2 // indirect
+	google.golang.org/grpc v1.67.1 // indirect
+	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -265,9 +263,6 @@ require (
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
-
-// It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
-replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 retract (
 	v0.76.2

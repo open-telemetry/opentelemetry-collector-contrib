@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -280,7 +281,7 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 				Rules: test.rules,
 			}
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -391,106 +392,174 @@ func getOutputForIntGaugeTest() pmetric.Metrics {
 	return intGaugeOutputMetrics
 }
 
-func TestSumCalculateNewMetric(t *testing.T) {
-	next := new(consumertest.MetricsSink)
-	cfg := &Config{
-		Rules: []Rule{
-			{
-				Name:      "system.filesystem.capacity",
-				Unit:      "bytes",
-				Type:      "calculate",
-				Metric1:   "system.filesystem.usage",
-				Metric2:   "system.filesystem.utilization",
-				Operation: "divide",
-			},
-		},
-	}
-	factory := NewFactory()
-	mgp, err := factory.CreateMetricsProcessor(
-		context.Background(),
-		processortest.NewNopSettings(),
-		cfg,
-		next,
-	)
-	assert.NotNil(t, mgp)
-	assert.NoError(t, err)
-
-	assert.True(t, mgp.Capabilities().MutatesData)
-	require.NoError(t, mgp.Start(context.Background(), nil))
-
-	inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "filesystem_metrics_input.yaml"))
-	assert.NoError(t, err)
-
-	err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
-	assert.NoError(t, err)
-
-	got := next.AllMetrics()
-	// golden.WriteMetrics(t, filepath.Join(".", "testdata", "filesystem_metrics_expected.yaml"), got[0])
-	expected, err := golden.ReadMetrics(filepath.Join("testdata", "filesystem_metrics_expected.yaml"))
-	assert.NoError(t, err)
-	assert.Len(t, got, 1)
-	err = pmetrictest.CompareMetrics(expected, got[0],
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreTimestamp())
-	assert.NoError(t, err)
+type goldenTestCases struct {
+	name                       string
+	testDir                    string
+	matchAttributesFlagEnabled bool
 }
 
-func TestResultingMetricTypes(t *testing.T) {
-	testCaseNames := []string{
-		"add_sum_sum",
-		"add_gauge_gauge",
-		"add_gauge_sum",
-		"add_sum_gauge",
-		"multiply_gauge_sum",
-		"multiply_sum_gauge",
-		"divide_gauge_sum",
-		"divide_sum_gauge",
-		"subtract_gauge_sum",
-		"subtract_sum_gauge",
-		"percent_sum_gauge",
-		"percent_gauge_sum",
+func TestGoldenFileMetrics(t *testing.T) {
+	// Test description by test data directory:
+	// 	input_metric_types: These tests are to ensure calculations can be done on both sums and gauges
+	// 	result_metric_types: These tests are to ensure the created metric's type is correct
+	// 	metric2_zero_value: These tests are to ensure metrics are created properly when the second metric's (metric2)
+	//		value is 0.
+	// 	match_attributes: These tests are to ensure the correct data points are generated when the
+	//		match attributes feature gate is enabled.
+	testCaseNames := []goldenTestCases{
+		{
+			// Keep this test case to show that existing behavior has remained unchanged when
+			// feature gate is disabled.
+			name:                       "sum_gauge_metric",
+			testDir:                    "input_metric_types",
+			matchAttributesFlagEnabled: false,
+		},
+		{
+			name:                       "sum_gauge_metric_match_attrs",
+			testDir:                    "input_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "add_sum_sum",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "add_gauge_gauge",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "add_gauge_sum",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "add_sum_gauge",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "multiply_gauge_sum",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "multiply_sum_gauge",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "divide_gauge_sum",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "divide_sum_gauge",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "subtract_gauge_sum",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "subtract_sum_gauge",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "percent_sum_gauge",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "percent_gauge_sum",
+			testDir:                    "result_metric_types",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "metric2_zero_add",
+			testDir:                    "metric2_zero_value",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "metric2_zero_subtract",
+			testDir:                    "metric2_zero_value",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "metric2_zero_multiply",
+			testDir:                    "metric2_zero_value",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "metric2_zero_divide",
+			testDir:                    "metric2_zero_value",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "metric2_zero_percent",
+			testDir:                    "metric2_zero_value",
+			matchAttributesFlagEnabled: true,
+		},
+		{
+			name:                       "match_attributes_disabled",
+			testDir:                    "match_attributes",
+			matchAttributesFlagEnabled: false,
+		},
+		{
+			name:                       "match_attributes_enabled",
+			testDir:                    "match_attributes",
+			matchAttributesFlagEnabled: true,
+		},
 	}
 
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "metric_types", "gauge_sum_metrics_config.yaml"))
-	assert.NoError(t, err)
-
 	for _, testCase := range testCaseNames {
-		next := new(consumertest.MetricsSink)
-		factory := NewFactory()
-		cfg := factory.CreateDefaultConfig()
+		t.Run(testCase.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(matchAttributes.ID(), testCase.matchAttributesFlagEnabled))
 
-		sub, err := cm.Sub(fmt.Sprintf("%s/%s", "experimental_metricsgeneration", testCase))
-		require.NoError(t, err)
-		require.NoError(t, sub.Unmarshal(cfg))
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", testCase.testDir, "config.yaml"))
+			assert.NoError(t, err)
 
-		mgp, err := factory.CreateMetricsProcessor(
-			context.Background(),
-			processortest.NewNopSettings(),
-			cfg,
-			next,
-		)
-		assert.NotNil(t, mgp)
-		assert.NoError(t, err)
+			next := new(consumertest.MetricsSink)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-		assert.True(t, mgp.Capabilities().MutatesData)
-		require.NoError(t, mgp.Start(context.Background(), nil))
+			sub, err := cm.Sub(fmt.Sprintf("%s/%s", "metricsgeneration", testCase.name))
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
 
-		inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metric_types", "gauge_sum_metrics_input.yaml"))
-		assert.NoError(t, err)
+			mgp, err := factory.CreateMetrics(
+				context.Background(),
+				processortest.NewNopSettings(),
+				cfg,
+				next,
+			)
+			assert.NotNil(t, mgp)
+			assert.NoError(t, err)
 
-		err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
-		assert.NoError(t, err)
+			assert.True(t, mgp.Capabilities().MutatesData)
+			require.NoError(t, mgp.Start(context.Background(), nil))
 
-		got := next.AllMetrics()
-		// golden.WriteMetrics(t, filepath.Join("testdata", "metric_types", fmt.Sprintf("%s_%s", testCase, "expected.yaml")), got[0])
-		expected, err := golden.ReadMetrics(filepath.Join("testdata", "metric_types", fmt.Sprintf("%s_%s", testCase, "expected.yaml")))
-		assert.NoError(t, err)
-		assert.Len(t, got, 1)
-		err = pmetrictest.CompareMetrics(expected, got[0],
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp())
-		assert.NoError(t, err)
+			inputMetrics, err := golden.ReadMetrics(filepath.Join("testdata", testCase.testDir, "metrics_input.yaml"))
+			assert.NoError(t, err)
+
+			err = mgp.ConsumeMetrics(context.Background(), inputMetrics)
+			assert.NoError(t, err)
+
+			got := next.AllMetrics()
+			expectedFilePath := filepath.Join("testdata", testCase.testDir, fmt.Sprintf("%s_%s", testCase.name, "expected.yaml"))
+			// golden.WriteMetrics(t, expectedFilePath, got[0])
+			expected, err := golden.ReadMetrics(expectedFilePath)
+			assert.NoError(t, err)
+			assert.Len(t, got, 1)
+			err = pmetrictest.CompareMetrics(expected, got[0],
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp())
+			assert.NoError(t, err)
+		})
 	}
 }

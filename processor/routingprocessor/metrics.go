@@ -67,7 +67,7 @@ func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	err := p.router.registerExporters(ge.GetExportersWithSignal()[pipeline.SignalMetrics])
+	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalMetrics])
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (p *metricsProcessor) recordNonRoutedForResourceMetrics(ctx context.Context
 func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metrics) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
-	if value == "" { // "" is a  key for default exporters
+	if value == "" { // "" is a key for default exporters
 		p.telemetry.RoutingProcessorNonRoutedMetricPoints.Add(
 			ctx,
 			int64(m.MetricCount()),

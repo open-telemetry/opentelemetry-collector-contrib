@@ -22,9 +22,16 @@ This exporter sends metrics, logs and trace data to
 The following settings are required:
 
 - `cluster_uri` (no default): The cluster name of the provisioned ADX cluster to ingest the data.
-- `application_id` (no default): The client id to connect to the cluster and ingest data.
-- `application_key` (no default): The cluster secret corresponding to the client id.
-- `tenant_id` (no default): The tenant id where the application_id is referenced from.
+
+One authentication method is required:
+- Service principal:
+  - `application_id` (no default): The client id to connect to the cluster and ingest data.
+  - `application_key` (no default): The cluster secret corresponding to the client id.
+  - `tenant_id` (no default): The tenant id where the application_id is referenced from.
+- Managed identity:
+  - `managed_identity_id` (no default): The managed identity id to authenticate with. Set to "system" for system-assigned managed identity. Set the MI client Id (GUID) for user-assigned managed identity.
+- Default authentication:
+  - `use_azure_auth` (default: false): Set to true to use the Azure [default authentication](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#2-authenticate-with-azure).
 
 The following settings can be optionally configured and have default values:
 > Note that the database tables are expected to be created upfront before the exporter is in operation , the definition of these are in the section [Database and Table definition scripts](#database-and-table-definition-scripts)
