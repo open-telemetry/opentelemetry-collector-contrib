@@ -106,20 +106,16 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 	}()
 
-	doneReadingFile := r.readHeader(ctx)
-	if doneReadingFile {
-		return
+	if r.headerReader != nil {
+		if r.readHeader(ctx) {
+			return
+		}
 	}
 
 	r.readContents(ctx)
 }
 
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
-	if r.headerReader == nil {
-		r.set.Logger.Debug("no need to read header", zap.Bool("header_finalized", r.HeaderFinalized))
-		return false
-	}
-
 	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
 
 	// Read the tokens from the file until no more header tokens are found or the end of file is reached.
