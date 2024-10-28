@@ -4,7 +4,6 @@
 package translator
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +22,7 @@ func TestServiceFromResource(t *testing.T) {
 	require.NoError(t, w.Encode(service))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "semver:1.1.4"))
+	assert.Contains(t, jsonStr, "semver:1.1.4")
 }
 
 func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
@@ -36,7 +35,7 @@ func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
 	require.NoError(t, w.Encode(service))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "v1"))
+	assert.Contains(t, jsonStr, "v1")
 }
 
 func TestServiceFromNullResource(t *testing.T) {

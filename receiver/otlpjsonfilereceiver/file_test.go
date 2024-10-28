@@ -18,8 +18,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -33,6 +35,33 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestFileProfilesReceiver(t *testing.T) {
+	tempFolder := t.TempDir()
+	factory := NewFactory()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
+	sink := new(consumertest.ProfilesSink)
+	receiver, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	assert.NoError(t, err)
+	err = receiver.Start(context.Background(), nil)
+	require.NoError(t, err)
+
+	pd := testdata.GenerateProfiles(5)
+	marshaler := &pprofile.JSONMarshaler{}
+	b, err := marshaler.MarshalProfiles(pd)
+	assert.NoError(t, err)
+	b = append(b, '\n')
+	err = os.WriteFile(filepath.Join(tempFolder, "profiles.json"), b, 0600)
+	assert.NoError(t, err)
+	time.Sleep(1 * time.Second)
+
+	require.Len(t, sink.AllProfiles(), 1)
+	assert.EqualValues(t, pd, sink.AllProfiles()[0])
+	err = receiver.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
 
 func TestFileTracesReceiver(t *testing.T) {
@@ -213,6 +242,11 @@ func TestFileMixedSignals(t *testing.T) {
 	assert.NoError(t, err)
 	err = lr.Start(context.Background(), nil)
 	assert.NoError(t, err)
+	ps := new(consumertest.ProfilesSink)
+	pr, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), cs, cfg, ps)
+	assert.NoError(t, err)
+	err = pr.Start(context.Background(), nil)
+	assert.NoError(t, err)
 
 	md := testdata.GenerateMetrics(5)
 	marshaler := &pmetric.JSONMarshaler{}
@@ -226,10 +260,16 @@ func TestFileMixedSignals(t *testing.T) {
 	lmarshaler := &plog.JSONMarshaler{}
 	b3, err := lmarshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
+	pd := testdata.GenerateProfiles(5)
+	pmarshaler := &pprofile.JSONMarshaler{}
+	b4, err := pmarshaler.MarshalProfiles(pd)
+	assert.NoError(t, err)
 	b = append(b, '\n')
 	b = append(b, b2...)
 	b = append(b, '\n')
 	b = append(b, b3...)
+	b = append(b, '\n')
+	b = append(b, b4...)
 	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
 	assert.NoError(t, err)
@@ -241,10 +281,14 @@ func TestFileMixedSignals(t *testing.T) {
 	assert.EqualValues(t, td, ts.AllTraces()[0])
 	require.Len(t, ls.AllLogs(), 1)
 	assert.EqualValues(t, ld, ls.AllLogs()[0])
+	require.Len(t, ps.AllProfiles(), 1)
+	assert.EqualValues(t, pd, ps.AllProfiles()[0])
 	err = mr.Shutdown(context.Background())
 	assert.NoError(t, err)
 	err = tr.Shutdown(context.Background())
 	assert.NoError(t, err)
 	err = lr.Shutdown(context.Background())
+	assert.NoError(t, err)
+	err = pr.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
