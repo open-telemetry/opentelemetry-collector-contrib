@@ -5,31 +5,48 @@ package admission
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace/noop"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"google.golang.org/grpc/codes"
+	grpccodes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-func min(x, y int64) int64 {
-	if x <= y {
-		return x
-	}
-	return y
+type bqTest struct {
+	*BoundedQueue
 }
 
-func max(x, y int64) int64 {
-	if x >= y {
-		return x
+var noopTelemetry = componenttest.NewNopTelemetrySettings()
+
+func newBQTest(maxAdmit, maxWait int64) bqTest {
+	return bqTest{
+		BoundedQueue: NewBoundedQueue(noopTelemetry, maxAdmit, maxWait).(*BoundedQueue),
 	}
-	return y
+}
+
+func (bq *bqTest) startWaiter(t *testing.T, ctx context.Context, size int64, relp *ReleaseFunc) N {
+	n := newNotification()
+	go func() {
+		var err error
+		*relp, err = bq.Acquire(ctx, size)
+		require.NoError(t, err)
+		n.Notify()
+	}()
+	return n
+}
+
+func (bq *bqTest) waitForPending(t *testing.T, admitted, waiting int64) {
+	require.Eventually(t, func() bool {
+		bq.lock.Lock()
+		defer bq.lock.Unlock()
+		return bq.currentAdmitted == admitted && bq.currentWaiting == waiting
+	}, time.Second, 20*time.Millisecond)
 }
 
 func abs(x int64) int64 {
@@ -39,175 +56,286 @@ func abs(x int64) int64 {
 	return x
 }
 
-var noopTraces = noop.NewTracerProvider()
-
-func TestAcquireSimpleNoWaiters(t *testing.T) {
-	maxLimitBytes := 1000
-	maxLimitWaiters := 10
-	numRequests := 40
-	requestSize := 21
-
-	bq := NewBoundedQueue(noopTraces, int64(maxLimitBytes), int64(maxLimitWaiters))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	for i := 0; i < numRequests; i++ {
-		go func() {
-			err := bq.Acquire(ctx, int64(requestSize))
-			assert.NoError(t, err)
-		}()
+func mkRepeat(x int64, n int) []int64 {
+	if n == 0 {
+		return nil
 	}
-
-	require.Never(t, func() bool {
-		return bq.waiters.Len() > 0
-	}, 2*time.Second, 10*time.Millisecond)
-
-	for i := 0; i < numRequests; i++ {
-		assert.NoError(t, bq.Release(int64(requestSize)))
-		assert.Equal(t, int64(0), bq.currentWaiters)
-	}
-
-	assert.ErrorContains(t, bq.Release(int64(1)), "released more bytes than acquired")
-	assert.NoError(t, bq.Acquire(ctx, int64(maxLimitBytes)))
+	return append(mkRepeat(x, n-1), x)
 }
 
-func TestAcquireBoundedWithWaiters(t *testing.T) {
-	tests := []struct {
-		name            string
-		maxLimitBytes   int64
-		maxLimitWaiters int64
-		numRequests     int64
-		requestSize     int64
-		timeout         time.Duration
+func mkRange(from, to int64) []int64 {
+	if from > to {
+		return nil
+	}
+	return append([]int64{from}, mkRange(from+1, to)...)
+}
+
+func TestBoundedQueueLimits(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		maxLimitAdmit int64
+		maxLimitWait  int64
+		requestSizes  []int64
+		timeout       time.Duration
+		expectErrs    map[string]int
 	}{
 		{
-			name:            "below max waiters above max bytes",
-			maxLimitBytes:   1000,
-			maxLimitWaiters: 100,
-			numRequests:     100,
-			requestSize:     21,
-			timeout:         5 * time.Second,
+			name:          "simple_no_waiters_25",
+			maxLimitAdmit: 1000,
+			maxLimitWait:  0,
+			requestSizes:  mkRepeat(25, 40),
+			timeout:       0,
+			expectErrs:    map[string]int{},
 		},
 		{
-			name:            "above max waiters above max bytes",
-			maxLimitBytes:   1000,
-			maxLimitWaiters: 100,
-			numRequests:     200,
-			requestSize:     21,
-			timeout:         5 * time.Second,
+			name:          "simple_no_waiters_1",
+			maxLimitAdmit: 1000,
+			maxLimitWait:  0,
+			requestSizes:  mkRepeat(1, 1000),
+			timeout:       0,
+			expectErrs:    map[string]int{},
 		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			bq := NewBoundedQueue(noopTraces, tt.maxLimitBytes, tt.maxLimitWaiters)
-			var blockedRequests int64
-			numReqsUntilBlocked := tt.maxLimitBytes / tt.requestSize
-			requestsAboveLimit := abs(tt.numRequests - numReqsUntilBlocked)
-			tooManyWaiters := requestsAboveLimit > tt.maxLimitWaiters
-			numRejected := max(requestsAboveLimit-tt.maxLimitWaiters, int64(0))
+		{
+			name:          "without_waiting_remainder",
+			maxLimitAdmit: 1000,
+			maxLimitWait:  0,
+			requestSizes:  mkRepeat(30, 40),
+			timeout:       0,
+			expectErrs: map[string]int{
+				// 7 failures with a remainder of 10
+				// 30 * (40 - 7) = 990
+				ErrTooMuchWaiting.Error(): 7,
+			},
+		},
+		{
+			name:          "without_waiting_complete",
+			maxLimitAdmit: 1000,
+			maxLimitWait:  0,
+			requestSizes:  append(mkRepeat(30, 40), 10),
+			timeout:       0,
+			expectErrs: map[string]int{
+				// 30*33+10 succeed, 7 failures (as above)
+				ErrTooMuchWaiting.Error(): 7,
+			},
+		},
+		{
+			name:          "with_waiters_timeout",
+			maxLimitAdmit: 1000,
+			maxLimitWait:  1000,
+			requestSizes:  mkRepeat(20, 100),
+			timeout:       time.Second,
+			expectErrs: map[string]int{
+				// 20*50=1000 is half of the requests timing out
+				status.Error(grpccodes.Canceled, context.DeadlineExceeded.Error()).Error(): 50,
+			},
+		},
+		{
+			name:          "with_size_exceeded",
+			maxLimitAdmit: 1000,
+			maxLimitWait:  2000,
+			requestSizes:  []int64{1001},
+			timeout:       0,
+			expectErrs: map[string]int{
+				ErrRequestTooLarge.Error(): 1,
+			},
+		},
+		{
+			name:          "mixed_sizes",
+			maxLimitAdmit: 45, // 45 is the exact sum of request sizes
+			maxLimitWait:  0,
+			requestSizes:  mkRange(1, 9),
+			timeout:       0,
+			expectErrs:    map[string]int{},
+		},
+		{
+			name:          "too_many_mixed_sizes",
+			maxLimitAdmit: 44, // all but one request will succeed
+			maxLimitWait:  0,
+			requestSizes:  mkRange(1, 9),
+			timeout:       0,
+			expectErrs: map[string]int{
+				ErrTooMuchWaiting.Error(): 1,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			bq := newBQTest(test.maxLimitAdmit, test.maxLimitWait)
+			ctx := context.Background()
 
-			// There should never be more blocked requests than maxLimitWaiters.
-			blockedRequests = min(tt.maxLimitWaiters, requestsAboveLimit)
+			if test.timeout != 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, test.timeout)
+				defer cancel()
+			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), tt.timeout)
-			defer cancel()
-			var errs error
-			for i := 0; i < int(tt.numRequests); i++ {
+			numRequests := len(test.requestSizes)
+			allErrors := make(chan error, numRequests)
+
+			releaseChan := make(chan struct{})
+			var wait1 sync.WaitGroup
+			var wait2 sync.WaitGroup
+
+			wait1.Add(numRequests)
+			wait2.Add(numRequests)
+
+			for _, requestSize := range test.requestSizes {
 				go func() {
-					err := bq.Acquire(ctx, tt.requestSize)
-					bq.lock.Lock()
-					defer bq.lock.Unlock()
-					errs = multierr.Append(errs, err)
+					release, err := bq.Acquire(ctx, requestSize)
+					allErrors <- err
+
+					wait1.Done()
+
+					<-releaseChan
+
+					release()
+
+					wait2.Done()
 				}()
 			}
 
-			require.Eventually(t, func() bool {
-				bq.lock.Lock()
-				defer bq.lock.Unlock()
-				return bq.waiters.Len() == int(blockedRequests)
-			}, 3*time.Second, 10*time.Millisecond)
+			wait1.Wait()
 
-			assert.NoError(t, bq.Release(tt.requestSize))
-			assert.Equal(t, bq.waiters.Len(), int(blockedRequests)-1)
+			close(releaseChan)
 
-			for i := 0; i < int(tt.numRequests-numRejected)-1; i++ {
-				assert.NoError(t, bq.Release(tt.requestSize))
+			wait2.Wait()
+
+			close(allErrors)
+
+			errCounts := map[string]int{}
+
+			for err := range allErrors {
+				if err == nil {
+					continue
+				}
+				errCounts[err.Error()]++
 			}
 
-			bq.lock.Lock()
-			if tooManyWaiters {
-				assert.ErrorContains(t, errs, ErrTooManyWaiters.Error())
-			} else {
-				assert.NoError(t, errs)
-			}
-			bq.lock.Unlock()
+			require.Equal(t, test.expectErrs, errCounts)
 
-			// confirm all bytes were released by acquiring maxLimitBytes.
-			assert.True(t, bq.TryAcquire(tt.maxLimitBytes))
+			// Make sure we can allocate the whole limit at end-of-test.
+			release, err := bq.Acquire(ctx, int64(test.maxLimitAdmit))
+			assert.NoError(t, err)
+			release()
+
+			// and the final state is all 0.
+			bq.waitForPending(t, 0, 0)
 		})
 	}
 }
 
-func TestAcquireContextCanceled(t *testing.T) {
-	maxLimitBytes := 1000
-	maxLimitWaiters := 100
-	numRequests := 100
-	requestSize := 21
-	numReqsUntilBlocked := maxLimitBytes / requestSize
-	requestsAboveLimit := abs(int64(numRequests) - int64(numReqsUntilBlocked))
+func TestBoundedQueueLIFO(t *testing.T) {
+	const maxAdmit = 10
 
-	blockedRequests := min(int64(maxLimitWaiters), requestsAboveLimit)
+	for _, firstAcquire := range mkRange(2, 8) {
+		for _, firstWait := range mkRange(2, 8) {
+			t.Run(fmt.Sprint(firstAcquire, ",", firstWait), func(t *testing.T) {
+				t.Parallel()
 
-	exp := tracetest.NewInMemoryExporter()
-	tp := trace.NewTracerProvider(trace.WithSyncer(exp))
+				bq := newBQTest(maxAdmit, maxAdmit)
+				ctx := context.Background()
 
-	bq := NewBoundedQueue(tp, int64(maxLimitBytes), int64(maxLimitWaiters))
+				// Fill the queue
+				relFirst, err := bq.Acquire(ctx, firstAcquire)
+				require.NoError(t, err)
+				bq.waitForPending(t, firstAcquire, 0)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	var errs error
-	var wg sync.WaitGroup
-	for i := 0; i < numRequests; i++ {
-		wg.Add(1)
-		go func() {
-			err := bq.Acquire(ctx, int64(requestSize))
-			bq.lock.Lock()
-			defer bq.lock.Unlock()
-			errs = multierr.Append(errs, err)
-			wg.Done()
-		}()
+				relSecond, err := bq.Acquire(ctx, maxAdmit-firstAcquire-1)
+				require.NoError(t, err)
+				bq.waitForPending(t, maxAdmit-1, 0)
+
+				relOne, err := bq.Acquire(ctx, 1)
+				require.NoError(t, err)
+				bq.waitForPending(t, maxAdmit, 0)
+
+				// Create two half-size waiters
+				var relW0 ReleaseFunc
+				notW0 := bq.startWaiter(t, ctx, firstWait, &relW0)
+				bq.waitForPending(t, maxAdmit, firstWait)
+
+				var relW1 ReleaseFunc
+				secondWait := maxAdmit - firstWait
+				notW1 := bq.startWaiter(t, ctx, secondWait, &relW1)
+				bq.waitForPending(t, maxAdmit, maxAdmit)
+
+				relFirst()
+
+				// early is true when releasing the first acquired
+				// will not make enough room for the first waiter
+				early := firstAcquire < secondWait
+				if early {
+					relSecond()
+				}
+
+				// Expect notifications in LIFO order, i.e., W1 before W0.
+				select {
+				case <-notW0.Chan():
+					t.Fatalf("FIFO order -- incorrect")
+				case <-notW1.Chan():
+					if !early {
+						relSecond()
+					}
+				}
+				relOne()
+
+				select {
+				case <-notW0.Chan():
+				}
+
+				relW0()
+				relW1()
+
+				bq.waitForPending(t, 0, 0)
+			})
+		}
 	}
+}
 
-	// Wait until all calls to Acquire() happen and we have the expected number of waiters.
-	require.Eventually(t, func() bool {
-		bq.lock.Lock()
-		defer bq.lock.Unlock()
-		return bq.waiters.Len() == int(blockedRequests)
-	}, 3*time.Second, 10*time.Millisecond)
+func TestBoundedQueueCancelation(t *testing.T) {
+	// this test attempts to exercise the race condition between
+	// the Acquire slow path and context cancelation.
+	const (
+		repetition = 100
+		maxAdmit   = 10
+	)
+	bq := newBQTest(maxAdmit, maxAdmit)
 
-	cancel()
-	wg.Wait()
-	assert.ErrorContains(t, errs, "context canceled")
+	for number := range repetition {
+		ctx, cancel := context.WithCancel(context.Background())
 
-	// Expect spans named admission_blocked w/ context canceled.
-	spans := exp.GetSpans()
-	exp.Reset()
-	assert.NotEmpty(t, spans)
-	for _, span := range spans {
-		assert.Equal(t, "admission_blocked", span.Name)
-		assert.Equal(t, codes.Error, span.Status.Code)
-		assert.Equal(t, "context canceled", span.Status.Description)
+		tester := func() {
+			// This acquire either succeeds or is canceled.
+			testrel, err := bq.Acquire(ctx, maxAdmit)
+			defer testrel()
+			if err == nil {
+				return
+			}
+			serr, ok := status.FromError(err)
+			require.True(t, ok, "has gRPC status")
+			require.Equal(t, codes.Canceled, serr.Code())
+		}
+
+		release, err := bq.Acquire(ctx, maxAdmit)
+		require.NoError(t, err)
+
+		go tester()
+
+		if number%2 == 0 {
+			go cancel()
+			go release()
+		} else {
+			go release()
+			go cancel()
+		}
+
+		bq.waitForPending(t, 0, 0)
 	}
+}
 
-	// Now all waiters should have returned and been removed.
-	assert.Equal(t, 0, bq.waiters.Len())
-
-	for i := 0; i < numReqsUntilBlocked; i++ {
-		assert.NoError(t, bq.Release(int64(requestSize)))
-		assert.Equal(t, int64(0), bq.currentWaiters)
+func TestBoundedQueueNoop(t *testing.T) {
+	nq := NewUnboundedQueue()
+	for _, i := range mkRange(1, 100) {
+		rel, err := nq.Acquire(context.Background(), i<<20)
+		require.NoError(t, err)
+		defer rel()
 	}
-	assert.True(t, bq.TryAcquire(int64(maxLimitBytes)))
-
-	// Expect no more spans, because admission was not blocked.
-	spans = exp.GetSpans()
-	require.Empty(t, spans)
 }
