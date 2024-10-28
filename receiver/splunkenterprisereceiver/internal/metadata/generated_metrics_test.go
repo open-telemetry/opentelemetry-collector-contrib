@@ -170,6 +170,24 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts, 1, "splunk.queue.name-val")
 
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsAdhocDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsCompletedDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts, 1, "splunk.host-val")
+
+			allMetricsCount++
+			mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts, 1, "splunk.host-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkTypingQueueRatioDataPoint(ts, 1, "splunk.host-val")
@@ -679,6 +697,96 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.queue.name-val", attrVal.Str())
+				case "splunk.server.searchartifacts.adhoc":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc")
+					validatedMetrics["splunk.server.searchartifacts.adhoc"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searchartifacts.completed":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
+					validatedMetrics["splunk.server.searchartifacts.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searchartifacts.incomplete":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
+					validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searchartifacts.invalid":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.invalid"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.invalid")
+					validatedMetrics["splunk.server.searchartifacts.invalid"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searchartifacts.savedsearches":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.savedsearches"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.savedsearches")
+					validatedMetrics["splunk.server.searchartifacts.savedsearches"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.searchartifacts.scheduled":
+					assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled")
+					validatedMetrics["splunk.server.searchartifacts.scheduled"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.", ms.At(i).Description())
+					assert.Equal(t, "{search_artifacts}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
 				case "splunk.typing.queue.ratio":
 					assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
 					validatedMetrics["splunk.typing.queue.ratio"] = true

@@ -231,8 +231,8 @@ metrics:
     unit: '{buckets}'
     gauge:
       value_type: int
-    attributes: [splunk.index.name, splunk.bucket.dir]  
-  #'services/server/introspection/queues' 
+    attributes: [splunk.index.name, splunk.bucket.dir]
+  #'services/server/introspection/queues'
   splunk.server.introspection.queues.current:
     enabled: false
     description: Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
@@ -268,7 +268,62 @@ metrics:
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.status.value]
+    attributes: [splunk.kvstore.status.value] 
+  #'services/server/status/dispatch-artifacts'
+  splunk.server.searchartifacts.adhoc:
+    enabled: false
+    description: Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searchartifacts.scheduled:
+    enabled: false
+    description: Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searchartifacts.completed:
+    enabled: false
+    description: Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searchartifacts.incomplete:
+    enabled: false
+    description: Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searchartifacts.invalid:
+    enabled: false
+    description: Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
+  splunk.server.searchartifacts.savedsearches:
+    enabled: false
+    description: Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.
+    unit: "{search_artifacts}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host]
 
 tests:
   config:

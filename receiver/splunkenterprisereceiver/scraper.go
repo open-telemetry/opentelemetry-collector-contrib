@@ -102,6 +102,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeSchedulerRunTimeByHost,
 		s.scrapeIndexerAvgRate,
 		s.scrapeKVStoreStatus,
+		s.scrapeSearchArtifacts,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1624,6 +1625,93 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 0, brs)
 		} else {
 			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
+		}
+	}
+}
+
+// Scrape dispatch artifacts
+func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.splunkClient.isConfigured(typeSh) {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeSh)
+	var da DispatchArtifacts
+
+	ept := apiDict[`SplunkDispatchArtifacts`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs <- err
+		return
+	}
+	err = json.Unmarshal(body, &da)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	for _, f := range da.Entries {
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
+			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsAdhocDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled {
+			scheduledCount, err := strconv.ParseInt(f.Content.ScheduledCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsScheduledDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsCompleted.Enabled {
+			completedCount, err := strconv.ParseInt(f.Content.CompletedCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsCompletedDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsIncomplete.Enabled {
+			incompleCount, err := strconv.ParseInt(f.Content.IncompleCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsInvalid.Enabled {
+			invalidCount, err := strconv.ParseInt(f.Content.InvalidCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsInvalidDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled {
+			savedSearchesCount, err := strconv.ParseInt(f.Content.SsCount, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(now, savedSearchesCount, s.conf.SHEndpoint.Endpoint)
 		}
 	}
 }
