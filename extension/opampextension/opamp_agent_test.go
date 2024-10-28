@@ -330,7 +330,11 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
-	sa := &mockStatusAggregator{}
+	mtx := &sync.RWMutex{}
+
+	sa := &mockStatusAggregator{
+		mtx: mtx,
+	}
 	o.statusAggregator = sa
 
 	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
@@ -349,6 +353,8 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	// verify we have received the StatusStarting events
 	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
 		return len(sa.receivedEvents) == len(traces.InstanceIDs())
 	}, 5*time.Second, 100*time.Millisecond)
 
@@ -364,6 +370,8 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 	// verify we have received the StatusOK events that have been queued while the agent has not been ready
 	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
 		return len(sa.receivedEvents) == len(traces.InstanceIDs())
 	}, 5*time.Second, 100*time.Millisecond)
 
@@ -380,6 +388,8 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 	}
 
 	require.Eventually(t, func() bool {
+		mtx.RLock()
+		defer mtx.RUnlock()
 		return len(sa.receivedEvents) == len(traces.InstanceIDs())
 	}, 5*time.Second, 100*time.Millisecond)
 
@@ -562,6 +572,7 @@ type mockStatusAggregator struct {
 	statusChan     chan *status.AggregateStatus
 	receivedEvents []eventSourcePair
 	unsubscribed   bool
+	mtx            *sync.RWMutex
 }
 
 func (m *mockStatusAggregator) Subscribe(_ status.Scope, _ status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc) {
@@ -571,6 +582,8 @@ func (m *mockStatusAggregator) Subscribe(_ status.Scope, _ status.Verbosity) (<-
 }
 
 func (m *mockStatusAggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
 	m.receivedEvents = append(m.receivedEvents, eventSourcePair{
 		source: source,
 		event:  event,
