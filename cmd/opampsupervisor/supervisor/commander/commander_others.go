@@ -3,7 +3,7 @@
 
 //go:build !windows
 
-package commander
+package commander // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 
 import (
 	"os"

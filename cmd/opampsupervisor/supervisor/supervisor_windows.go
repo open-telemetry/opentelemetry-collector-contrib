@@ -3,7 +3,7 @@
 
 //go:build windows
 
-package supervisor
+package supervisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 
 import (
 	"flag"
