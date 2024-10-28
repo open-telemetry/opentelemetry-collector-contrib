@@ -16,7 +16,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.112.0
@@ -215,6 +214,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.112.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.112.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.112.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.112.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.112.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.112.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.112.0 // indirect
