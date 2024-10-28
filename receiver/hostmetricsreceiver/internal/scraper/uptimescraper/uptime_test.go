@@ -42,9 +42,9 @@ func TestScrape(t *testing.T) {
 	assert.Equal(t, 1, metrics.DataPointCount())
 
 	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+	assert.Equalf(t, pmetric.MetricTypeGauge, metric.Type(), "invalid metric type: %v", metric.Type())
 
-	dataPoint := metric.Sum().DataPoints().At(0)
+	dataPoint := metric.Gauge().DataPoints().At(0)
 	assert.Equal(t, float64(123456), dataPoint.DoubleValue())
 	assert.Equal(t, fakeDate, dataPoint.StartTimestamp().AsTime())
 }

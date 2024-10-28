@@ -9,8 +9,6 @@ metrics:
     enabled: true
     description: The time the system has been running
     unit: s
-    sum:
+    gauge:
       value_type: double
-      aggregation_temporality: cumulative
-      monotonic: false
     attributes: []
