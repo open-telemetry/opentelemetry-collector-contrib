@@ -79,7 +79,7 @@ type opampAgent struct {
 	componentHealthWg    *sync.WaitGroup
 	startTimeUnixNano    uint64
 	componentStatusCh    chan *eventSourcePair
-	readyCh              chan interface{}
+	readyCh              chan struct{}
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
@@ -291,7 +291,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		opampClient:              opampClient,
 		statusSubscriptionWg:     &sync.WaitGroup{},
 		componentHealthWg:        &sync.WaitGroup{},
-		readyCh:                  make(chan interface{}),
+		readyCh:                  make(chan struct{}),
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
 	}
 

@@ -6,7 +6,6 @@ package opampextension
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -25,9 +24,10 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
-	"go.uber.org/zap"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 )
 
 func TestNewOpampAgent(t *testing.T) {
