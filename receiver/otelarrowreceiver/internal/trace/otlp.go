@@ -22,13 +22,13 @@ type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Traces
 	obsrecv      *receiverhelper.ObsReport
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission.Queue
 	sizer        *ptrace.ProtoMarshaler
 	logger       *zap.Logger
 }
 
 // New creates a new Receiver reference.
-func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelper.ObsReport, bq *admission.BoundedQueue) *Receiver {
+func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelper.ObsReport, bq admission.Queue) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
@@ -48,18 +48,15 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	}
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
+	var err error
 	sizeBytes := int64(r.sizer.TracesSize(req.Traces()))
-	err := r.boundedQueue.Acquire(ctx, sizeBytes)
-	if err != nil {
-		return ptraceotlp.NewExportResponse(), err
+	if release, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
+		err = r.nextConsumer.ConsumeTraces(ctx, td)
+		release() // immediate release
+	} else {
+		err = acqErr
 	}
-	defer func() {
-		if releaseErr := r.boundedQueue.Release(sizeBytes); releaseErr != nil {
-			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
-		}
-	}()
 
-	err = r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return ptraceotlp.NewExportResponse(), err
