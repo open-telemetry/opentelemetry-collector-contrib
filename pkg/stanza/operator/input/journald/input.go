@@ -13,7 +13,6 @@ import (
 	"io"
 	"os/exec"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -35,6 +34,7 @@ type Input struct {
 	json      jsoniter.API
 	cancel    context.CancelFunc
 	wg        sync.WaitGroup
+	errChan   chan error
 }
 
 type cmd interface {
@@ -44,9 +44,10 @@ type cmd interface {
 	Wait() error
 }
 
-type failedCommand struct {
-	err    string
-	output string
+type journalctl struct {
+	cmd    cmd
+	stdout io.ReadCloser
+	stderr io.ReadCloser
 }
 
 var lastReadCursorKey = "lastReadCursor"
@@ -56,65 +57,100 @@ func (operator *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	operator.cancel = cancel
 
-	// Start from a cursor if there is a saved offset
-	cursor, err := persister.Get(ctx, lastReadCursorKey)
-	if err != nil {
-		return fmt.Errorf("failed to get journalctl state: %w", err)
-	}
-
 	operator.persister = persister
+	operator.errChan = make(chan error)
 
-	// Start journalctl
-	journal := operator.newCmd(ctx, cursor)
-	stdout, err := journal.StdoutPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get journalctl stdout: %w", err)
+	go operator.run(ctx)
+
+	select {
+	case err := <-operator.errChan:
+		return fmt.Errorf("journalctl command failed: %w", err)
+	case <-time.After(waitDuration):
+		return nil
 	}
-	stderr, err := journal.StderrPipe()
-	if err != nil {
-		return fmt.Errorf("failed to get journalctl stderr: %w", err)
-	}
-	err = journal.Start()
-	if err != nil {
-		return fmt.Errorf("start journalctl: %w", err)
-	}
+}
 
-	stderrChan := make(chan string)
-	failedChan := make(chan failedCommand)
+// run starts the journalctl process and monitor it.
+// If there is an error in operator.newJournalctl, the error will be sent to operator.errChan.
+// If the journalctl process started successfully, but there is an error in operator.runJournalctl,
+// The error will be logged and the journalctl process will be restarted.
+func (operator *Input) run(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			jctl, err := operator.newJournalctl(ctx)
+			// If we can't start journalctl, there is nothing we can do but logging the error and return.
+			if err != nil {
+				select {
+				case operator.errChan <- err:
+				case <-time.After(waitDuration):
+					operator.Logger().Error("Failed to init and start journalctl", zap.Error(err))
+				}
+				return
+			}
 
-	// Start the wait goroutine
-	operator.wg.Add(1)
-	go func() {
-		defer operator.wg.Done()
-		err := journal.Wait()
-		message := <-stderrChan
-
-		f := failedCommand{
-			output: message,
-		}
-
-		if err != nil {
-			ee := (&exec.ExitError{})
-			if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
-				f.err = ee.Error()
+			operator.Logger().Debug("Starting the journalctl command")
+			if err := operator.runJournalctl(ctx, jctl); err != nil {
+				ee := &exec.ExitError{}
+				if ok := errors.As(err, &ee); ok && ee.ExitCode() != 0 {
+					operator.Logger().Error("journalctl command exited", zap.Error(ee))
+				} else {
+					operator.Logger().Info("journalctl command exited")
+				}
+			}
+			// Backoff before restart.
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(2 * time.Second):
 			}
 		}
+	}
+}
 
-		select {
-		case failedChan <- f:
-		// log an error in case channel is closed
-		case <-time.After(waitDuration):
-			operator.Logger().Error("journalctl command exited", zap.String("error", f.err), zap.String("output", f.output))
-		}
-	}()
+// newJournalctl creates a new journalctl command.
+func (operator *Input) newJournalctl(ctx context.Context) (*journalctl, error) {
+	// Start from a cursor if there is a saved offset
+	cursor, err := operator.persister.Get(ctx, lastReadCursorKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get journalctl state: %w", err)
+	}
 
-	// Start the stderr reader goroutine
+	journal := operator.newCmd(ctx, cursor)
+	jctl := &journalctl{
+		cmd: journal,
+	}
+
+	jctl.stdout, err = journal.StdoutPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get journalctl stdout: %w", err)
+	}
+	jctl.stderr, err = journal.StderrPipe()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get journalctl stderr: %w", err)
+	}
+
+	if err = journal.Start(); err != nil {
+		return nil, fmt.Errorf("start journalctl: %w", err)
+	}
+
+	return jctl, nil
+}
+
+// runJournalctl runs the journalctl command. This is a blocking call that returns
+// when the command exits.
+func (operator *Input) runJournalctl(ctx context.Context, jctl *journalctl) error {
+	// Start the stderr reader goroutine.
+	// This goroutine reads the stderr from the journalctl process. If the
+	// process exits for any reason, then the stderr will be closed, this
+	// goroutine will get an EOF error and exit.
 	operator.wg.Add(1)
 	go func() {
 		defer operator.wg.Done()
 
-		stderrBuf := bufio.NewReader(stderr)
-		messages := []string{}
+		stderrBuf := bufio.NewReader(jctl.stderr)
 
 		for {
 			line, err := stderrBuf.ReadBytes('\n')
@@ -122,19 +158,22 @@ func (operator *Input) Start(persister operator.Persister) error {
 				if !errors.Is(err, io.EOF) {
 					operator.Logger().Error("Received error reading from journalctl stderr", zap.Error(err))
 				}
-				stderrChan <- strings.Join(messages, "\n")
 				return
 			}
-			messages = append(messages, string(line))
+			operator.Logger().Error("Received from journalctl stderr", zap.ByteString("stderr", line))
 		}
 	}()
 
-	// Start the reader goroutine
+	// Start the reader goroutine.
+	// This goroutine reads the stdout from the journalctl process, parses
+	// the data, and writes to output. If the journalctl process exits for
+	// any reason, then the stdout will be closed, this goroutine will get
+	// an EOF error and exits.
 	operator.wg.Add(1)
 	go func() {
 		defer operator.wg.Done()
 
-		stdoutBuf := bufio.NewReader(stdout)
+		stdoutBuf := bufio.NewReader(jctl.stdout)
 
 		for {
 			line, err := stdoutBuf.ReadBytes('\n')
@@ -159,16 +198,11 @@ func (operator *Input) Start(persister operator.Persister) error {
 		}
 	}()
 
-	// Wait waitDuration for eventual error
-	select {
-	case err := <-failedChan:
-		if err.err == "" {
-			return fmt.Errorf("journalctl command exited")
-		}
-		return fmt.Errorf("journalctl command failed (%v): %v", err.err, err.output)
-	case <-time.After(waitDuration):
-		return nil
-	}
+	// we wait for the reader goroutines to exit before calling Cmd.Wait().
+	// As per documentation states, "It is thus incorrect to call Wait before all reads from the pipe have completed".
+	operator.wg.Wait()
+
+	return jctl.cmd.Wait()
 }
 
 func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
@@ -219,6 +253,5 @@ func (operator *Input) Stop() error {
 	if operator.cancel != nil {
 		operator.cancel()
 	}
-	operator.wg.Wait()
 	return nil
 }
