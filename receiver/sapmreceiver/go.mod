@@ -8,7 +8,6 @@ require (
 	github.com/klauspost/compress v1.17.11
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.112.0
 	github.com/signalfx/sapm-proto v0.16.0
 	github.com/stretchr/testify v1.9.0
@@ -29,7 +28,6 @@ require (
 
 require (
 	github.com/apache/thrift v0.21.0 // indirect
-	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -56,14 +54,11 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.112.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.18.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.18.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.18.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.112.0 // indirect
-	go.opentelemetry.io/collector/extension/experimental/storage v0.112.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.18.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0 // indirect
@@ -83,8 +78,6 @@ require (
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
