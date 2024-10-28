@@ -142,6 +142,25 @@ func TestParserInvalidParseDrop(t *testing.T) {
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
 
+func TestParserInvalidParseDropQuiet(t *testing.T) {
+	writer, fakeOut := writerWithFakeOut(t)
+	parser := ParserOperator{
+		TransformerOperator: TransformerOperator{
+			WriterOperator: *writer,
+			OnError:        DropOnErrorQuiet,
+		},
+		ParseFrom: entry.NewBodyField(),
+	}
+	parse := func(i any) (any, error) {
+		return i, fmt.Errorf("parse failure")
+	}
+	ctx := context.Background()
+	testEntry := entry.New()
+	err := parser.ProcessWith(ctx, testEntry, parse)
+	require.NoError(t, err, "error should be silent")
+	fakeOut.ExpectNoEntry(t, 100*time.Millisecond) // Entry should be dropped
+}
+
 func TestParserInvalidParseSend(t *testing.T) {
 	writer, fakeOut := writerWithFakeOut(t)
 	parser := ParserOperator{
@@ -158,6 +177,26 @@ func TestParserInvalidParseSend(t *testing.T) {
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.ErrorContains(t, err, "parse failure")
+	fakeOut.ExpectEntry(t, testEntry)
+	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
+}
+
+func TestParserInvalidParseSendQuiet(t *testing.T) {
+	writer, fakeOut := writerWithFakeOut(t)
+	parser := ParserOperator{
+		TransformerOperator: TransformerOperator{
+			WriterOperator: *writer,
+			OnError:        SendOnErrorQuiet,
+		},
+		ParseFrom: entry.NewBodyField(),
+	}
+	parse := func(i any) (any, error) {
+		return i, fmt.Errorf("parse failure")
+	}
+	ctx := context.Background()
+	testEntry := entry.New()
+	err := parser.ProcessWith(ctx, testEntry, parse)
+	require.NoError(t, err, "error should be silent")
 	fakeOut.ExpectEntry(t, testEntry)
 	fakeOut.ExpectNoEntry(t, 100*time.Millisecond)
 }
