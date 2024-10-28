@@ -17,7 +17,7 @@ This exporter supports sending metrics to [Sematext Cloud](https://sematext.com/
 
 The following configuration options are supported:
 
-* `endpoint` (required) HTTP/S destination for metric receivers. It is dependent on the region:
+* `endpoint`(not required) HTTP/S destination for metric receivers. It is automatically selected based on the region:
     - US: `spm-receiver.sematext.com`
     - EU: `spm-receiver.eu.sematext.com`
 * `timeout` (default = 5s) Timeout for requests
