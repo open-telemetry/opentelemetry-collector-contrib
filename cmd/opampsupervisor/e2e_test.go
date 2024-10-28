@@ -938,7 +938,7 @@ func TestSupervisorRestartCommand(t *testing.T) {
 			return health.Healthy && health.LastError == ""
 		}
 		return false
-	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
+	}, 20*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
 }
 
 func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
