@@ -68,7 +68,7 @@ func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	err := p.router.registerExporters(ge.GetExportersWithSignal()[pipeline.SignalTraces])
+	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalTraces])
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (p *tracesProcessor) recordNonRoutedResourceSpans(ctx context.Context, rout
 func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) error {
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
-	if value == "" { // "" is a  key for default exporters
+	if value == "" { // "" is a key for default exporters
 		p.telemetry.RoutingProcessorNonRoutedSpans.Add(
 			ctx,
 			int64(t.SpanCount()),

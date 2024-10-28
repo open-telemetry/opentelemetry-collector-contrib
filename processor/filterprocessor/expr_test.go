@@ -126,7 +126,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	cfg := exprConfig(factory, include, exclude)
 	ctx := context.Background()
 	next := &consumertest.MetricsSink{}
-	proc, err := factory.CreateMetricsProcessor(
+	proc, err := factory.CreateMetrics(
 		ctx,
 		processortest.NewNopSettings(),
 		cfg,

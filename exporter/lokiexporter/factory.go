@@ -53,7 +53,7 @@ func createLogsExporter(ctx context.Context, set exporter.Settings, config compo
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		config,

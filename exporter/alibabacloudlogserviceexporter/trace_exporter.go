@@ -25,7 +25,7 @@ func newTracesExporter(set exporter.Settings, cfg component.Config) (exporter.Tr
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		cfg,

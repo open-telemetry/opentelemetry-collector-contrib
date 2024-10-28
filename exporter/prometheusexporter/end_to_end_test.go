@@ -66,7 +66,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 	exporterFactory := NewFactory()
 	set := exportertest.NewNopSettings()
-	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
+	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		PrometheusConfig: receiverConfig,
 	}
 	// 3.5 Create the Prometheus receiver and pass in the previously created Prometheus exporter.
-	prometheusReceiver, err := receiverFactory.CreateMetricsReceiver(ctx, receiverCreateSet, rcvCfg, exporter)
+	prometheusReceiver, err := receiverFactory.CreateMetrics(ctx, receiverCreateSet, rcvCfg, exporter)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -348,6 +348,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ConvertAttributesToElementsXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `<Log><Message>This is a log message!</Message><id>1</id></Log>`)
+			},
+		},
+		{
+			statement: `set(body, ConvertTextToElementsXML("<a><b/>foo</a>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("<a><b></b><value>foo</value></a>")
+			},
+		},
+		{
+			statement: `set(body, ConvertTextToElementsXML("<a><b/>foo</a><c><b/>bar</c>", "/a", "custom"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("<a><b></b><custom>foo</custom></a><c><b></b>bar</c>")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Double(1.0))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutDouble("test", 1.0)
@@ -619,6 +637,39 @@ func Test_e2e_converters(t *testing.T) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutStr("k1", "v1")
 				m.PutStr("k2", "v2__!__v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2"), "=", " ", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "k1=v1 k2=v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1:v1,k2:v2", ":" , ","), ":", ",", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "k1:v1,k2:v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2"), "!", "+", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "k1!v1+k2!v2")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2=v3"), "=", " ", true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "k1=v1 k2=\"v2=v3\"")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseSimplifiedXML("<Log><id>1</id><Message>This is a log message!</Message></Log>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				attr := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				log := attr.PutEmptyMap("Log")
+				log.PutStr("id", "1")
+				log.PutStr("Message", "This is a log message!")
 			},
 		},
 		{
@@ -968,6 +1019,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutBool("isMap", true)
 			},
 		},
+		{
+			name:      "extract value from Split function result slice of type []string",
+			statement: `set(attributes["my.environment.2"], Split(resource.attributes["host.name"],"h")[1])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("my.environment.2", "ost")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1093,4 +1151,38 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetName("operationB")
 	span.SetSpanID(spanID)
 	span.SetTraceID(traceID)
+}
+
+func Benchmark_XML_Functions(b *testing.B) {
+	testXML := `<Data><From><Test>1</Test><Test>2</Test></From><To></To></Data>`
+	tCtxWithTestBody := func() ottllog.TransformContext {
+		resource := pcommon.NewResource()
+		scope := pcommon.NewInstrumentationScope()
+		logRecord := plog.NewLogRecord()
+		logRecord.Body().SetStr(testXML)
+		return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+	}
+
+	settings := componenttest.NewNopTelemetrySettings()
+	logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
+	assert.NoError(b, err)
+
+	// Use a round trip composition to ensure each iteration of the benchmark is the same.
+	// GetXML(body, "/Data/From/Test") returns "<Test>1</Test><Test>2</Test>"
+	// InsertXML(body, "/Data/To", GetXML(...)) adds the two Test elements to the To element
+	// RemoveXML(InsertXML(...) "/Data/To/Test") removes the Test elements which were just added
+	// set overwrites the body, but the result should be the same as the original body
+	roundTrip := `set(body, RemoveXML(InsertXML(body, "/Data/To", GetXML(body, "/Data/From/Test")), "/Data/To/Test"))`
+	logStatements, err := logParser.ParseStatement(roundTrip)
+	assert.NoError(b, err)
+
+	actualCtx := tCtxWithTestBody()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, _ = logStatements.Execute(context.Background(), actualCtx)
+	}
+
+	// Ensure correctness
+	assert.NoError(b, plogtest.CompareResourceLogs(newResourceLogs(tCtxWithTestBody()), newResourceLogs(actualCtx)))
 }

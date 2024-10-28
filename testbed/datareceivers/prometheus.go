@@ -53,7 +53,7 @@ func (dr *prometheusDataReceiver) Start(_ consumer.Traces, mc consumer.Metrics, 
 	}
 	var err error
 	set := receivertest.NewNopSettings()
-	dr.receiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc)
+	dr.receiver, err = factory.CreateMetrics(context.Background(), set, cfg, mc)
 	if err != nil {
 		return err
 	}
