@@ -24,6 +24,7 @@ var apiDict = map[string]string{
 	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
 	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
 	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
+	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
 }
 
 type searchResponse struct {
@@ -133,4 +134,22 @@ type KVStoreCurrent struct {
 	BackupRestoreStatus string `json:"backupRestoreStatus"`
 	ReplicationStatus   string `json:"replicationStatus"`
 	StorageEngine       string `json:"storageEngine"`
+}
+
+// '/services/server/status/dispatch-artifacts'
+type DispatchArtifacts struct {
+	Entries []DispatchArtifactEntry `json:"entry"`
+}
+
+type DispatchArtifactEntry struct {
+	Content DispatchArtifactContent `json:"content"`
+}
+
+type DispatchArtifactContent struct {
+	AdhocCount     string `json:"adhoc_count"`
+	ScheduledCount string `json:"scheduled_count"`
+	SsCount        string `json:"ss_count"`
+	CompletedCount string `json:"completed_count"`
+	IncompleCount  string `json:"incomple_count"`
+	InvalidCount   string `json:"invalid_count"`
 }
