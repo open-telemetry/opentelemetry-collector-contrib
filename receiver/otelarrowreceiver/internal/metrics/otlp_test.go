@@ -66,10 +66,10 @@ func TestExport_Success(t *testing.T) {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	metricsSink := newTestSink()
-	traceClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
 
 	go metricsSink.unblock()
-	resp, err := traceClient.Export(context.Background(), req)
+	resp, err := metricsClient.Export(context.Background(), req)
 	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
@@ -83,11 +83,11 @@ func TestExport_Success(t *testing.T) {
 
 func TestExport_EmptyRequest(t *testing.T) {
 	metricsSink := newTestSink()
-	traceClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
 	empty := pmetricotlp.NewExportRequest()
 
 	go metricsSink.unblock()
-	resp, err := traceClient.Export(context.Background(), empty)
+	resp, err := metricsClient.Export(context.Background(), empty)
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 
@@ -102,8 +102,8 @@ func TestExport_ErrorConsumer(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
-	traceClient, selfExp, selfProv := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
-	resp, err := traceClient.Export(context.Background(), req)
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
+	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 
@@ -116,10 +116,10 @@ func TestExport_AdmissionRequestTooLarge(t *testing.T) {
 	md := testdata.GenerateMetrics(10)
 	metricsSink := newTestSink()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
-	traceClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
 
 	go metricsSink.unblock()
-	resp, err := traceClient.Export(context.Background(), req)
+	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 
@@ -133,7 +133,7 @@ func TestExport_AdmissionLimitExceeded(t *testing.T) {
 	metricsSink := newTestSink()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
-	traceClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
 
 	var wait sync.WaitGroup
 	wait.Add(10)
@@ -143,7 +143,7 @@ func TestExport_AdmissionLimitExceeded(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func() {
 			defer wait.Done()
-			_, err := traceClient.Export(context.Background(), req)
+			_, err := metricsClient.Export(context.Background(), req)
 			if err == nil {
 				// some succeed!
 				expectSuccess.Add(1)
@@ -199,7 +199,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, *tra
 	set := receivertest.NewNopSettings()
 	set.TelemetrySettings = telset
 
-	set.ID = component.NewIDWithName(component.MustNewType("otlp"), "trace")
+	set.ID = component.NewIDWithName(component.MustNewType("otlp"), "metrics")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              "grpc",
