@@ -49,7 +49,7 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
 	var err error
-	sizeBytes := int64(r.sizer.TracesSize(req.Traces()))
+	sizeBytes := uint64(r.sizer.TracesSize(req.Traces()))
 	if release, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeTraces(ctx, td)
 		release() // immediate release

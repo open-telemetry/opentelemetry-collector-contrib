@@ -24,13 +24,13 @@ type bqTest struct {
 
 var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
-func newBQTest(maxAdmit, maxWait int64) bqTest {
+func newBQTest(maxAdmit, maxWait uint64) bqTest {
 	return bqTest{
 		BoundedQueue: NewBoundedQueue(noopTelemetry, maxAdmit, maxWait).(*BoundedQueue),
 	}
 }
 
-func (bq *bqTest) startWaiter(t *testing.T, ctx context.Context, size int64, relp *ReleaseFunc) N {
+func (bq *bqTest) startWaiter(t *testing.T, ctx context.Context, size uint64, relp *ReleaseFunc) N {
 	n := newNotification()
 	go func() {
 		var err error
@@ -41,7 +41,7 @@ func (bq *bqTest) startWaiter(t *testing.T, ctx context.Context, size int64, rel
 	return n
 }
 
-func (bq *bqTest) waitForPending(t *testing.T, admitted, waiting int64) {
+func (bq *bqTest) waitForPending(t *testing.T, admitted, waiting uint64) {
 	require.Eventually(t, func() bool {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
@@ -56,26 +56,26 @@ func abs(x int64) int64 {
 	return x
 }
 
-func mkRepeat(x int64, n int) []int64 {
+func mkRepeat(x uint64, n int) []uint64 {
 	if n == 0 {
 		return nil
 	}
 	return append(mkRepeat(x, n-1), x)
 }
 
-func mkRange(from, to int64) []int64 {
+func mkRange(from, to uint64) []uint64 {
 	if from > to {
 		return nil
 	}
-	return append([]int64{from}, mkRange(from+1, to)...)
+	return append([]uint64{from}, mkRange(from+1, to)...)
 }
 
 func TestBoundedQueueLimits(t *testing.T) {
 	for _, test := range []struct {
 		name          string
-		maxLimitAdmit int64
-		maxLimitWait  int64
-		requestSizes  []int64
+		maxLimitAdmit uint64
+		maxLimitWait  uint64
+		requestSizes  []uint64
 		timeout       time.Duration
 		expectErrs    map[string]int
 	}{
@@ -133,7 +133,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 			name:          "with_size_exceeded",
 			maxLimitAdmit: 1000,
 			maxLimitWait:  2000,
-			requestSizes:  []int64{1001},
+			requestSizes:  []uint64{1001},
 			timeout:       0,
 			expectErrs: map[string]int{
 				ErrRequestTooLarge.Error(): 1,
@@ -213,7 +213,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 			require.Equal(t, test.expectErrs, errCounts)
 
 			// Make sure we can allocate the whole limit at end-of-test.
-			release, err := bq.Acquire(ctx, int64(test.maxLimitAdmit))
+			release, err := bq.Acquire(ctx, test.maxLimitAdmit)
 			assert.NoError(t, err)
 			release()
 

@@ -20,15 +20,15 @@ var ErrRequestTooLarge = status.Errorf(grpccodes.InvalidArgument, "rejecting req
 
 // BoundedQueue is a LIFO-oriented admission-controlled Queue.
 type BoundedQueue struct {
-	maxLimitAdmit int64
-	maxLimitWait  int64
+	maxLimitAdmit uint64
+	maxLimitWait  uint64
 	tracer        trace.Tracer
 
 	// lock protects currentAdmitted, currentWaiting, and waiters
 
 	lock            sync.Mutex
-	currentAdmitted int64
-	currentWaiting  int64
+	currentAdmitted uint64
+	currentWaiting  uint64
 	waiters         *list.List // of *waiter
 }
 
@@ -37,13 +37,13 @@ var _ Queue = &BoundedQueue{}
 // waiter is an item in the BoundedQueue waiters list.
 type waiter struct {
 	notify  N
-	pending int64
+	pending uint64
 }
 
 // NewBoundedQueue returns a LIFO-oriented Queue implementation which
 // admits `maxLimitAdmit` bytes concurrently and allows up to
 // `maxLimitWait` bytes to wait for admission.
-func NewBoundedQueue(ts component.TelemetrySettings, maxLimitAdmit, maxLimitWait int64) Queue {
+func NewBoundedQueue(ts component.TelemetrySettings, maxLimitAdmit, maxLimitWait uint64) Queue {
 	return &BoundedQueue{
 		maxLimitAdmit: maxLimitAdmit,
 		maxLimitWait:  maxLimitWait,
@@ -58,7 +58,7 @@ func NewBoundedQueue(ts component.TelemetrySettings, maxLimitAdmit, maxLimitWait
 // - element=nil, error=nil: the fast success path
 // - element=nil, error=non-nil: the fast failure path
 // - element=non-nil, error=non-nil: the slow success path
-func (bq *BoundedQueue) acquireOrGetWaiter(pending int64) (*list.Element, error) {
+func (bq *BoundedQueue) acquireOrGetWaiter(pending uint64) (*list.Element, error) {
 	bq.lock.Lock()
 	defer bq.lock.Unlock()
 
@@ -84,10 +84,10 @@ func (bq *BoundedQueue) acquireOrGetWaiter(pending int64) (*list.Element, error)
 }
 
 // Acquire implements Queue.
-func (bq *BoundedQueue) Acquire(ctx context.Context, pending int64) (ReleaseFunc, error) {
+func (bq *BoundedQueue) Acquire(ctx context.Context, pending uint64) (ReleaseFunc, error) {
 	element, err := bq.acquireOrGetWaiter(pending)
 	parentSpan := trace.SpanFromContext(ctx)
-	pendingAttr := trace.WithAttributes(attribute.Int64("pending", pending))
+	pendingAttr := trace.WithAttributes(attribute.Int64("pending", int64(pending)))
 
 	if err != nil {
 		parentSpan.AddEvent("admission rejected (fast path)", pendingAttr)
@@ -149,7 +149,7 @@ func (bq *BoundedQueue) admitWaitersLocked() {
 	}
 }
 
-func (bq *BoundedQueue) addWaiterLocked(pending int64) *list.Element {
+func (bq *BoundedQueue) addWaiterLocked(pending uint64) *list.Element {
 	bq.currentWaiting += pending
 	return bq.waiters.PushBack(&waiter{
 		pending: pending,
@@ -157,17 +157,17 @@ func (bq *BoundedQueue) addWaiterLocked(pending int64) *list.Element {
 	})
 }
 
-func (bq *BoundedQueue) removeWaiterLocked(pending int64, element *list.Element) {
+func (bq *BoundedQueue) removeWaiterLocked(pending uint64, element *list.Element) {
 	bq.currentWaiting -= pending
 	bq.waiters.Remove(element)
 }
 
-func (bq *BoundedQueue) releaseLocked(pending int64) {
+func (bq *BoundedQueue) releaseLocked(pending uint64) {
 	bq.currentAdmitted -= pending
 	bq.admitWaitersLocked()
 }
 
-func (bq *BoundedQueue) releaseFunc(pending int64) ReleaseFunc {
+func (bq *BoundedQueue) releaseFunc(pending uint64) ReleaseFunc {
 	return func() {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()

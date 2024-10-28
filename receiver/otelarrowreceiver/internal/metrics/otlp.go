@@ -49,7 +49,7 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 
 	var err error
-	sizeBytes := int64(r.sizer.MetricsSize(req.Metrics()))
+	sizeBytes := uint64(r.sizer.MetricsSize(req.Metrics()))
 	if release, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeMetrics(ctx, md)
 		release() // immediate release

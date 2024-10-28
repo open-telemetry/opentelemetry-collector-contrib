@@ -46,8 +46,8 @@ import (
 )
 
 type testParams struct {
-	threadCount  int
-	requestUntil func(*testConsumer) bool
+	threadCount      int
+	requestWhileTrue func(*testConsumer) bool
 
 	// missingDeadline is configured so the zero value implies a deadline,
 	// which is the default.
@@ -107,7 +107,7 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
 	tset := componenttest.NewNopTelemetrySettings()
 
-	core, obslogs := observer.New(zapcore.InfoLevel)
+	core, obslogs := observer.New(zapcore.DebugLevel)
 
 	exp := tracetest.NewInMemoryExporter()
 
@@ -228,7 +228,7 @@ func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfg
 		go func(num int) {
 			defer clientDoneWG.Done()
 			generator := mkgen()
-			for i := 0; tp.requestUntil(testCon); i++ {
+			for i := 0; tp.requestWhileTrue(testCon); i++ {
 				td := generator(i)
 
 				errf(t, exporter.ConsumeTraces(ctx, td))
@@ -395,14 +395,39 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	eSigs, eMsgs := logSigs(testCon.expLogs)
 	rSigs, rMsgs := logSigs(testCon.recvLogs)
 
-	// Test for arrow receiver stream errors on both sides.
+	// Test for arrow stream errors on both sides.
 	require.Positive(t, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eMsgs)
 	require.Positive(t, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
 
-	// Ensure both side's error logs include memory limit errors
-	// one way or another.
+	// Ensure both side's error logs include admission control errors.
 	require.Positive(t, countMemoryLimitErrors(rMsgs), "should have memory limit errors: %v", rMsgs)
 	require.Positive(t, countMemoryLimitErrors(eMsgs), "should have memory limit errors: %v", eMsgs)
+
+	return nil, nil
+}
+
+var admissionRegexp = regexp.MustCompile(`too much pending data`)
+
+func countAdmissionLimitErrors(msgs []string) (cnt int) {
+	for _, msg := range msgs {
+		if admissionRegexp.MatchString(msg) {
+			cnt++
+		}
+	}
+	return
+}
+
+func failureAdmissionLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
+	eSigs, eMsgs := logSigs(testCon.expLogs)
+	rSigs, rMsgs := logSigs(testCon.recvLogs)
+
+	// Test for arrow stream errors on both sides.
+	require.Positive(t, eSigs["arrow stream error|||code///message///where"], "should have exporter arrow stream errors: %v", eMsgs)
+	require.Positive(t, rSigs["arrow stream error|||code///message///where"], "should have receiver arrow stream errors: %v", rSigs)
+
+	// Ensure both side's error logs include admission limit errors.
+	require.Positive(t, countAdmissionLimitErrors(rMsgs), "should have admission limit errors: %v", rMsgs)
+	require.Positive(t, countAdmissionLimitErrors(eMsgs), "should have admission limit errors: %v", eMsgs)
 
 	return nil, nil
 }
@@ -441,7 +466,7 @@ func TestIntegrationTracesSimple(t *testing.T) {
 			// until 10 threads can write 1000 spans
 			var params = testParams{
 				threadCount: 10,
-				requestUntil: func(test *testConsumer) bool {
+				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1000
 				},
 			}
@@ -462,7 +487,7 @@ func TestIntegrationDeadlinePropagation(t *testing.T) {
 			// Until at least one span is written.
 			var params = testParams{
 				threadCount: 1,
-				requestUntil: func(test *testConsumer) bool {
+				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1
 				},
 				missingDeadline: !hasDeadline,
@@ -487,7 +512,7 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 	// until exporter and receiver finish at least one ArrowTraces span.
 	params := testParams{
 		threadCount: 10,
-		requestUntil: func(test *testConsumer) bool {
+		requestWhileTrue: func(test *testConsumer) bool {
 			cf := func(spans tracetest.SpanStubs) (cnt int) {
 				for _, span := range spans {
 					if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
@@ -575,7 +600,7 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	// until 2 Arrow stream spans are received from self instrumentation
 	var params = testParams{
 		threadCount: 10,
-		requestUntil: func(test *testConsumer) bool {
+		requestWhileTrue: func(test *testConsumer) bool {
 
 			cnt := 0
 			for _, span := range test.expSpans.GetSpans() {
@@ -595,4 +620,81 @@ func TestIntegrationSelfTracing(t *testing.T) {
 			},
 		}
 	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
+}
+
+func nearLimitGenFunc() MkGen {
+	var sizer ptrace.ProtoMarshaler
+	const nearLimit = 900 << 10 // close to 1 MiB
+	const hardLimit = 1 << 20   // 1 MiB
+
+	return func() GenFunc {
+		entropy := datagen.NewTestEntropy(int64(rand.Uint64())) //nolint:gosec // only used for testing
+
+		tracesGen := datagen.NewTracesGenerator(
+			entropy,
+			entropy.NewStandardResourceAttributes(),
+			entropy.NewStandardInstrumentationScopes(),
+		)
+
+		return func(x int) ptrace.Traces {
+			size := 100
+			for {
+				td := tracesGen.Generate(size, time.Minute)
+				uncomp := sizer.TracesSize(td)
+				if uncomp > nearLimit && uncomp < hardLimit {
+					return td
+				}
+				if uncomp > hardLimit {
+					size -= 10
+				} else if uncomp < nearLimit/2 {
+					size *= 2
+				} else {
+					size += 10
+				}
+			}
+
+		}
+	}
+}
+
+func TestIntegrationAdmissionLimited(t *testing.T) {
+	for _, allowWait := range []bool{false, true} {
+		t.Run(fmt.Sprint("allow_wait=", allowWait), func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			// until exporter and receiver finish at least one ArrowTraces span.
+			params := testParams{
+				threadCount: 10,
+				requestWhileTrue: func(test *testConsumer) bool {
+					return test.sink.SpanCount() < 10000
+				},
+			}
+
+			var ending func(*testing.T, testParams, *testConsumer, [][]ptrace.Traces) (_, _ map[string]int)
+			var waitingLimit uint64
+			if allowWait {
+				ending = standardEnding
+				waitingLimit = uint64(params.threadCount)
+			} else {
+				ending = failureAdmissionLimitEnding
+				waitingLimit = 0
+			}
+
+			testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
+				rcfg.Admission.RequestLimitMiB = 1
+				// either allow, or don't allow, all threads to wait
+				rcfg.Admission.WaitingLimitMiB = waitingLimit
+				ecfg.Arrow.NumStreams = 10
+
+				// Shorten timeouts for this test, because we intend
+				// for it to fail and don't want to wait for retries.
+				ecfg.TimeoutSettings.Timeout = 5 * time.Second
+				ecfg.RetryConfig.InitialInterval = 1 * time.Second
+				ecfg.RetryConfig.MaxInterval = 2 * time.Second
+				ecfg.RetryConfig.MaxElapsedTime = 10 * time.Second
+				ecfg.Arrow.MaxStreamLifetime = 5 * time.Second
+			}, nearLimitGenFunc(), consumerFailure, ending)
+		})
+	}
 }

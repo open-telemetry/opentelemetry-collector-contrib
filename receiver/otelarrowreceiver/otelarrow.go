@@ -45,7 +45,7 @@ type otelArrowReceiver struct {
 
 	obsrepGRPC   *receiverhelper.ObsReport
 	netReporter  *netstats.NetworkReporter
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission.Queue
 
 	settings receiver.Settings
 }
@@ -59,14 +59,19 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	}
 
 	if cfg.Arrow.DeprecatedWaiterLimit != 0 {
-		set.Logger.Warn("arrow.waiter_limit is deprecated, using admission.waiter_limit instead.")
+		set.Logger.Warn("arrow.waiter_limit is deprecated, using admission.waiting_limit_mib instead.")
 	}
 
 	netReporter, err := netstats.NewReceiverNetworkReporter(set)
 	if err != nil {
 		return nil, err
 	}
-	bq := admission.NewBoundedQueue(set.TracerProvider, int64(cfg.Admission.RequestLimitMiB<<20), cfg.Admission.WaiterLimit)
+	var bq admission.Queue
+	if cfg.Admission.RequestLimitMiB > 0 {
+		bq = admission.NewBoundedQueue(set.TelemetrySettings, cfg.Admission.RequestLimitMiB<<20, cfg.Admission.WaitingLimitMiB<<20)
+	} else {
+		bq = admission.NewUnboundedQueue()
+	}
 	r := &otelArrowReceiver{
 		cfg:          cfg,
 		settings:     set,

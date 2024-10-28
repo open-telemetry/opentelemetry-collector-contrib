@@ -30,7 +30,7 @@ type Queue interface {
 	//
 	// In case (3), the return value will be a ResourceExhausted
 	// error.
-	Acquire(ctx context.Context, weight int64) (ReleaseFunc, error)
+	Acquire(ctx context.Context, weight uint64) (ReleaseFunc, error)
 }
 
 // ReleaseFunc is returned by Acquire when the Acquire() was admitted.
@@ -48,6 +48,6 @@ func NewUnboundedQueue() Queue {
 func noopRelease() {}
 
 // Acquire implements Queue.
-func (noopController) Acquire(ctx context.Context, weight int64) (ReleaseFunc, error) {
+func (noopController) Acquire(ctx context.Context, weight uint64) (ReleaseFunc, error) {
 	return noopRelease, nil
 }

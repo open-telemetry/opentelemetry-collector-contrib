@@ -49,7 +49,7 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	ctx = r.obsrecv.StartLogsOp(ctx)
 
 	var err error
-	sizeBytes := int64(r.sizer.LogsSize(req.Logs()))
+	sizeBytes := uint64(r.sizer.LogsSize(req.Logs()))
 	if release, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeLogs(ctx, ld)
 		release() // immediate release
