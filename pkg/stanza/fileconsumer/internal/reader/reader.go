@@ -111,12 +111,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
-	if _, err := r.file.Seek(r.Offset, 0); err != nil {
-		r.set.Logger.Error("failed to seek post-header", zap.Error(err))
-		return
-	}
-
 	r.readContents(ctx)
 }
 
@@ -180,6 +174,12 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	// Switch to the normal split and process functions.
 	r.splitFunc = r.lineSplitFunc
 	r.processFunc = r.emitFunc
+
+	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
+	if _, err := r.file.Seek(r.Offset, 0); err != nil {
+		r.set.Logger.Error("failed to seek post-header", zap.Error(err))
+		return true
+	}
 
 	return false
 }
