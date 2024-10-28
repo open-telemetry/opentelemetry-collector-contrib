@@ -51,7 +51,7 @@ func TestE2E(t *testing.T) {
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 	logsConsumer := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, logsConsumer)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, logsConsumer)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, err, "failed creating logs receiver")
 	defer func() {

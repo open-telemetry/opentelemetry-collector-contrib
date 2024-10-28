@@ -4,7 +4,6 @@
 package metrics
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -750,7 +749,7 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// even though the distribution is random, we know that for this
 				// particular test case, the min value is 40, therefore the 1st 3 bucket
-				// counts should be 0, as they represent values  10 - 30
+				// counts should be 0, as they represent values 10 - 30
 				for i := 0; i < 3; i++ {
 					assert.Equal(t, uint64(0), dp.BucketCounts().At(i), "bucket %d", i)
 				}
@@ -782,7 +781,7 @@ func Test_convertExponentialHistToExplicitHist_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := convertExponentialHistToExplicitHist("random", tt.sliceExplicitBoundsArgs)
 			assert.Error(t, err)
-			assert.True(t, strings.Contains(err.Error(), "explicit bounds cannot be empty"))
+			assert.Contains(t, err.Error(), "explicit bounds cannot be empty")
 		})
 	}
 }

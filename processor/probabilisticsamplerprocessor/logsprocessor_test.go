@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
-func TestNewLogsProcessor(t *testing.T) {
+func TestNewLogs(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Logs

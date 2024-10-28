@@ -52,7 +52,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	if err != nil {
 		return err
 	}
-	extension.conn, err = extension.config.ClientConfig.ToClientConnWithOptions(ctx, host, extension.telemetrySettings, configgrpc.WithGrpcDialOption(grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool}))))
+	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, configgrpc.WithGrpcDialOption(grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool}))))
 	if err != nil {
 		return err
 	}
