@@ -101,8 +101,6 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	o.lifetimeCtx, o.lifetimeCtxCancel = context.WithCancel(context.Background())
-
 	if o.cfg.PPID != 0 {
 		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
@@ -295,8 +293,16 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
 	}
 
+	agent.lifetimeCtx, agent.lifetimeCtxCancel = context.WithCancel(context.Background())
+
 	if agent.capabilities.ReportsHealth {
 		agent.statusAggregator = status.NewAggregator(status.PriorityPermanent)
+
+		// Start processing events in the background so that our status watcher doesn't
+		// block others before the extension starts.
+		agent.componentStatusCh = make(chan *eventSourcePair)
+		agent.componentHealthWg.Add(1)
+		go agent.componentHealthEventLoop()
 	}
 
 	return agent, nil
@@ -451,10 +457,6 @@ func (o *opampAgent) initHealthReporting() {
 		return
 	}
 	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
-
-	o.componentStatusCh = make(chan *eventSourcePair)
-	o.componentHealthWg.Add(1)
-	go o.componentHealthEventLoop()
 
 	statusChan, unsubscribeFunc := o.statusAggregator.Subscribe(status.ScopeAll, status.Verbose)
 	o.statusSubscriptionWg.Add(1)
