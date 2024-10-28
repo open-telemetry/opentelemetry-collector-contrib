@@ -116,7 +116,7 @@ func createLogsExporter(
 
 	exporter := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -135,7 +135,7 @@ func createMetricsExporter(
 
 	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -153,7 +153,7 @@ func createTracesExporter(ctx context.Context,
 
 	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
