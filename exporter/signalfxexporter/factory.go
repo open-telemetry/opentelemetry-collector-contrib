@@ -50,18 +50,18 @@ func createDefaultConfig() component.Config {
 	maxConnCount := defaultMaxConns
 	idleConnTimeout := 30 * time.Second
 	timeout := 10 * time.Second
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultHTTPTimeout
+	clientConfig.MaxIdleConns = &maxConnCount
+	clientConfig.MaxIdleConnsPerHost = &maxConnCount
+	clientConfig.IdleConnTimeout = &idleConnTimeout
+	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
+	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
 
 	return &Config{
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:              defaultHTTPTimeout,
-			MaxIdleConns:         &maxConnCount,
-			MaxIdleConnsPerHost:  &maxConnCount,
-			IdleConnTimeout:      &idleConnTimeout,
-			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
-			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
-		},
+		ClientConfig:  clientConfig,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
@@ -101,7 +101,7 @@ func createTracesExporter(
 	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.ClientConfig.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -122,7 +122,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	me, err := exporterhelper.NewMetricsExporter(
+	me, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -165,7 +165,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	le, err := exporterhelper.NewLogsExporter(
+	le, err := exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

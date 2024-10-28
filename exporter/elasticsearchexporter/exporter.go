@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
@@ -130,6 +131,11 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 						return cerr
 					}
 
+					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
+						e.Logger.Warn("dropping log record", zap.Error(err))
+						continue
+					}
+
 					errs = append(errs, err)
 				}
 			}
@@ -187,7 +193,10 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	defer session.End()
 
-	var errs []error
+	var (
+		validationErrs []error // log instead of returning these so that upstream does not retry
+		errs           []error
+	)
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
@@ -223,8 +232,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
-							errs = append(errs, err)
+						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
+							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
@@ -232,34 +241,34 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(numberDataPoint{dp}); err != nil {
-							errs = append(errs, err)
+						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
+							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					if metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-						errs = append(errs, fmt.Errorf("dropping cumulative temporality exponential histogram %q", metric.Name()))
+						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality exponential histogram %q", metric.Name()))
 						continue
 					}
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(exponentialHistogramDataPoint{dp}); err != nil {
-							errs = append(errs, err)
+						if err := upsertDataPoint(newExponentialHistogramDataPoint(dp)); err != nil {
+							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
 				case pmetric.MetricTypeHistogram:
 					if metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityCumulative {
-						errs = append(errs, fmt.Errorf("dropping cumulative temporality histogram %q", metric.Name()))
+						validationErrs = append(validationErrs, fmt.Errorf("dropping cumulative temporality histogram %q", metric.Name()))
 						continue
 					}
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(histogramDataPoint{dp}); err != nil {
-							errs = append(errs, err)
+						if err := upsertDataPoint(newHistogramDataPoint(dp)); err != nil {
+							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
@@ -267,13 +276,17 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(summaryDataPoint{dp}); err != nil {
-							errs = append(errs, err)
+						if err := upsertDataPoint(newSummaryDataPoint(dp)); err != nil {
+							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
 				}
 			}
+		}
+
+		if len(validationErrs) > 0 {
+			e.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
 		}
 
 		for fIndex, docs := range resourceDocs {

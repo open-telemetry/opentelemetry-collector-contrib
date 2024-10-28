@@ -43,7 +43,7 @@ func TestFactory(t *testing.T) {
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}, rCfg)
 
-	r, err := f.CreateTracesReceiver(
+	r, err := f.CreateTraces(
 		context.Background(), receivertest.NewNopSettings(),
 		cfg, consumertest.NewNop(),
 	)
@@ -108,7 +108,7 @@ func newNopHostWithExporters() component.Host {
 	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+func (n *nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return map[pipeline.Signal]map[component.ID]component.Component{
 		pipeline.SignalMetrics: {
 			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},

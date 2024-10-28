@@ -169,13 +169,13 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 		expectDeadline: !tp.missingDeadline,
 	}
 
-	receiver, err := rfact.CreateTracesReceiver(ctx, receiver.Settings{
+	receiver, err := rfact.CreateTraces(ctx, receiver.Settings{
 		ID:                component.MustNewID("otelarrowreceiver"),
 		TelemetrySettings: recvTset,
 	}, receiverCfg, testCon)
 	require.NoError(t, err)
 
-	exporter, err := efact.CreateTracesExporter(ctx, exporter.Settings{
+	exporter, err := efact.CreateTraces(ctx, exporter.Settings{
 		ID:                component.MustNewID("otelarrowexporter"),
 		TelemetrySettings: expTset,
 	}, exporterCfg)

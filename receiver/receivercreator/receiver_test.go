@@ -78,7 +78,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	params := receivertest.NewNopSettings()
 	mockConsumer := new(consumertest.MetricsSink)
 
-	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mockConsumer)
+	rcvr, err := factory.CreateMetrics(context.Background(), params, cfg, mockConsumer)
 	require.NoError(t, err)
 	sc := rcvr.(*sharedcomponent.SharedComponent)
 	dyn := sc.Component.(*receiverCreator)

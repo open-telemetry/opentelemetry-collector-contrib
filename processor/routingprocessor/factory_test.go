@@ -41,21 +41,21 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	t.Run("traces", func(t *testing.T) {
-		exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("metrics", func(t *testing.T) {
-		exp, err := factory.CreateMetricsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 	})
 
 	t.Run("logs", func(t *testing.T) {
-		exp, err := factory.CreateLogsProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+		exp, err := factory.CreateLogs(context.Background(), creationParams, cfg, consumertest.NewNop())
 		// verify
 		assert.NoError(t, err)
 		assert.NotNil(t, exp)
@@ -119,11 +119,11 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	}
 	mp := &mockProcessor{}
 
-	next, err := processorhelper.NewTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
+	next, err := processorhelper.NewTraces(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop(), mp.processTraces)
 	require.NoError(t, err)
 
 	// test
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, next)
+	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -138,10 +138,10 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 		},
 	}
 
-	otlpTracesExporter, err := otlpExporterFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpTracesExporter, err := otlpExporterFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	otlpMetricsExporter, err := otlpExporterFactory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpMetricsExporter, err := otlpExporterFactory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
@@ -191,7 +191,7 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewNop())
+	exp, err := factory.CreateTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -220,7 +220,7 @@ func newMockHost(exps map[pipeline.Signal]map[component.ID]component.Component) 
 	}
 }
 
-func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+func (m *mockHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return m.exps
 }
 

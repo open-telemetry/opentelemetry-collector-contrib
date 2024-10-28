@@ -191,7 +191,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		defer er.gzipPool.Put(reader)
 	}
 
-	// finish reading the body into a log
+	// send body into a scanner and then convert the request body into a log
 	sc := bufio.NewScanner(bodyReader)
 	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg, er.settings)
 	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)

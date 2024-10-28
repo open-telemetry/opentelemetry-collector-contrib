@@ -190,10 +190,9 @@ func NewFactory() exporter.Factory {
 }
 
 func defaultClientConfig() confighttp.ClientConfig {
-	// do not use NewDefaultClientConfig for backwards-compatibility
-	return confighttp.ClientConfig{
-		Timeout: 15 * time.Second,
-	}
+	client := confighttp.NewDefaultClientConfig()
+	client.Timeout = 15 * time.Second
+	return client
 }
 
 // createDefaultConfig creates the default exporter configuration
@@ -319,7 +318,7 @@ func (f *factory) createMetricsExporter(
 		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -433,7 +432,7 @@ func (f *factory) createTracesExporter(
 		}
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -520,7 +519,7 @@ func (f *factory) createLogsExporter(
 		}
 		pusher = exp.consumeLogs
 	}
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
