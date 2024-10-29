@@ -327,8 +327,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder, metricAttr)
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.err.Error())
+				assert.ErrorContains(t, err, tt.err.Error())
 			} else {
 				assert.NoError(t, err)
 			}

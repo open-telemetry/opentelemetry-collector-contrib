@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
@@ -65,17 +65,6 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 		return err
 	}
 
-	if sr.config.AccessTokenPassthrough {
-		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			rSpans := td.ResourceSpans()
-			for i := 0; i < rSpans.Len(); i++ {
-				rSpan := rSpans.At(i)
-				attrs := rSpan.Resource().Attributes()
-				attrs.PutStr(splunk.SFxAccessTokenLabel, accessToken)
-			}
-		}
-	}
-
 	// pass the trace data to the next consumer
 	err = sr.nextConsumer.ConsumeTraces(ctx, td)
 	if err != nil {
@@ -91,8 +80,7 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// handle the request payload
 	err := sr.handleRequest(req)
 	if err != nil {
-		// TODO account for this error (throttled logging or metrics)
-		rw.WriteHeader(http.StatusBadRequest)
+		errorutil.HTTPError(rw, err)
 		return
 	}
 
@@ -104,7 +92,7 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// more than an empty struct, then the sapm.PostSpansResponse{} struct will need to be marshaled
 	// and on error a http.StatusInternalServerError should be written to the http.ResponseWriter and
 	// this function should immediately return.
-	var respBytes = sr.defaultResponse
+	respBytes := sr.defaultResponse
 	rw.Header().Set(sapmprotocol.ContentTypeHeaderName, sapmprotocol.ContentTypeHeaderValue)
 
 	// write the response if client does not accept gzip encoding
@@ -208,6 +196,7 @@ func newReceiver(
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %v receiver: %w", params.ID, err)
 	}
+
 	transport := "http"
 	if config.TLSSetting != nil {
 		transport = "https"

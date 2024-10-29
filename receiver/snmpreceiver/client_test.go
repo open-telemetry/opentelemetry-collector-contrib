@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/gosnmp/gosnmp"
@@ -67,7 +66,7 @@ func TestNewClient(t *testing.T) {
 			ac, err := newClient(tc.cfg, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -83,9 +82,9 @@ func TestNewClient(t *testing.T) {
 func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
 	t.Helper()
 
-	require.True(t, strings.Contains(cfg.Endpoint, client.client.GetTarget()))
-	require.True(t, strings.Contains(cfg.Endpoint, strconv.FormatInt(int64(client.client.GetPort()), 10)))
-	require.True(t, strings.Contains(cfg.Endpoint, client.client.GetTransport()))
+	require.Contains(t, cfg.Endpoint, client.client.GetTarget())
+	require.Contains(t, cfg.Endpoint, strconv.FormatInt(int64(client.client.GetPort()), 10))
+	require.Contains(t, cfg.Endpoint, client.client.GetTransport())
 	switch cfg.Version {
 	case "v1":
 		require.Equal(t, gosnmp.Version1, client.client.GetVersion())

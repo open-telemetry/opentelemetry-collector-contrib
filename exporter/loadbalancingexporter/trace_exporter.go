@@ -45,7 +45,7 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateTracesExporter(ctx, params, &oCfg)
+		return exporterFactory.CreateTraces(ctx, params, &oCfg)
 	}
 
 	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)

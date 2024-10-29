@@ -17,6 +17,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - confmap/provider/aesprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
@@ -54,7 +55,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
-      - exporter/instana
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing
@@ -147,6 +147,7 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/status
       - pkg/translator/azure
       - pkg/translator/azurelogs
       - pkg/translator/jaeger
@@ -230,7 +231,6 @@ body:
       - receiver/github
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
-      - receiver/googlecloudspanner
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
@@ -253,6 +253,7 @@ body:
       - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
+      - receiver/ntp
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
@@ -261,6 +262,7 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
+      - receiver/prometheusremotewrite
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
@@ -283,7 +285,9 @@ body:
       - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
+      - receiver/systemd
       - receiver/tcplog
+      - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront
