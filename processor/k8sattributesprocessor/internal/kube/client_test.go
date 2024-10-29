@@ -18,6 +18,8 @@ import (
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -1919,4 +1921,57 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
 	return newTestClientWithRulesAndFilters(t, Filters{})
+}
+
+type neverSyncedFakeClient struct {
+	cache.SharedInformer
+}
+
+type neverSyncedResourceEventHandlerRegistration struct {
+	cache.ResourceEventHandlerRegistration
+}
+
+func (n *neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
+	return false
+}
+
+func (n *neverSyncedFakeClient) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	delegate, err := n.SharedInformer.AddEventHandler(handler)
+	if err != nil {
+		return nil, err
+	}
+	return &neverSyncedResourceEventHandlerRegistration{ResourceEventHandlerRegistration: delegate}, nil
+}
+
+func TestWaitForMetadata(t *testing.T) {
+	testCases := []struct {
+		name             string
+		informerProvider InformerProvider
+		err              bool
+	}{{
+		name:             "no wait",
+		informerProvider: NewFakeInformer,
+		err:              false,
+	}, {
+		name: "wait but never synced",
+		informerProvider: func(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
+			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector)}
+		},
+		err: true,
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, tc.informerProvider, nil, nil, true, 1*time.Second)
+			require.NoError(t, err)
+
+			err = c.Start()
+			if tc.err {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+
 }
