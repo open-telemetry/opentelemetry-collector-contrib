@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/stora
 go 1.22.0
 
 require (
-	github.com/redis/go-redis/v9 v9.6.2
+	github.com/redis/go-redis/v9 v9.7.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.112.0
 	go.opentelemetry.io/collector/config/configopaque v1.18.0
