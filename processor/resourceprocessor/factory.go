@@ -8,8 +8,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata"
@@ -87,4 +89,18 @@ func createLogsProcessor(
 		nextConsumer,
 		proc.processLogs,
 		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createProfilesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+	_, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
+	if err != nil {
+		return nil, err
+	}
+	//proc := resourceProcessor{logger: set.Logger, attrProc: attrProc}
+	//return processorprofiles.New
+	return nil, nil
 }
