@@ -136,6 +136,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.112.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.112.0
@@ -496,3 +497,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil => ../../internal/grpcutil
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver => ../../receiver/googlecloudmonitoringreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status => ../../pkg/status
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver => ../../receiver/awss3receiver
