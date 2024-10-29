@@ -5,34 +5,41 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
-	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where attributes["X-Tenant"] == "acme"`,
-				Pipelines: []component.ID{logs0},
+				Pipelines: []pipeline.ID{logs0},
 			},
 			{
-				Statement: `route() where attributes["X-Tenant"] == "*"`,
-				Pipelines: []component.ID{logs0, logs1},
+				Condition: `attributes["X-Tenant"] == "*"`,
+				Pipelines: []pipeline.ID{logs0, logs1},
 			},
 		},
 	}
@@ -41,7 +48,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &defaultSink,
 		logs0:       &sink0,
 		logs1:       &sink1,
@@ -76,31 +83,31 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 }
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
-	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where IsMatch(attributes["X-Tenant"], ".*acme") == true`,
-				Pipelines: []component.ID{logs0},
+				Condition: `IsMatch(attributes["X-Tenant"], ".*acme") == true`,
+				Pipelines: []pipeline.ID{logs0},
 			},
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], "_acme") == true`,
-				Pipelines: []component.ID{logs1},
+				Pipelines: []pipeline.ID{logs1},
 			},
 			{
 				Statement: `route() where attributes["X-Tenant"] == "ecorp"`,
-				Pipelines: []component.ID{logsDefault, logs0},
+				Pipelines: []pipeline.ID{logsDefault, logs0},
 			},
 		},
 	}
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &defaultSink,
 		logs0:       &sink0,
 		logs1:       &sink1,
@@ -231,24 +238,24 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 }
 
 func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logs0 := component.NewIDWithName(component.DataTypeLogs, "0")
-	logs1 := component.NewIDWithName(component.DataTypeLogs, "1")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logs0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	logs1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], ".*acme") == true`,
-				Pipelines: []component.ID{logs0},
+				Pipelines: []pipeline.ID{logs0},
 			},
 			{
 				Statement: `route() where IsMatch(attributes["X-Tenant"], "_acme") == true`,
-				Pipelines: []component.ID{logs1},
+				Pipelines: []pipeline.ID{logs1},
 			},
 			{
-				Statement: `route() where attributes["X-Tenant"] == "ecorp"`,
-				Pipelines: []component.ID{logsDefault, logs0},
+				Condition: `attributes["X-Tenant"] == "ecorp"`,
+				Pipelines: []pipeline.ID{logsDefault, logs0},
 			},
 		},
 		MatchOnce: true,
@@ -256,7 +263,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &defaultSink,
 		logs0:       &sink0,
 		logs1:       &sink1,
@@ -383,22 +390,22 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 }
 
 func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logsOther := component.NewIDWithName(component.DataTypeLogs, "other")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logsOther := pipeline.NewIDWithName(pipeline.SignalLogs, "other")
 
 	cfg := &Config{
-		DefaultPipelines: []component.ID{logsDefault},
+		DefaultPipelines: []pipeline.ID{logsDefault},
 		Table: []RoutingTableItem{
 			{
 				Statement: `delete_key(attributes, "X-Tenant") where attributes["X-Tenant"] == "acme"`,
-				Pipelines: []component.ID{logsOther},
+				Pipelines: []pipeline.ID{logsOther},
 			},
 		},
 	}
 
 	var sink0, sink1 consumertest.LogsSink
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: &sink0,
 		logsOther:   &sink1,
 	})
@@ -439,17 +446,17 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 }
 
 func TestLogsConnectorCapabilities(t *testing.T) {
-	logsDefault := component.NewIDWithName(component.DataTypeLogs, "default")
-	logsOther := component.NewIDWithName(component.DataTypeLogs, "other")
+	logsDefault := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+	logsOther := pipeline.NewIDWithName(pipeline.SignalLogs, "other")
 
 	cfg := &Config{
 		Table: []RoutingTableItem{{
 			Statement: `route() where attributes["X-Tenant"] == "acme"`,
-			Pipelines: []component.ID{logsOther},
+			Pipelines: []pipeline.ID{logsOther},
 		}},
 	}
 
-	router := connector.NewLogsRouter(map[component.ID]consumer.Logs{
+	router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
 		logsDefault: consumertest.NewNop(),
 		logsOther:   consumertest.NewNop(),
 	})
@@ -464,4 +471,99 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, conn.Capabilities().MutatesData)
+}
+
+func TestLogsConnectorDetailed(t *testing.T) {
+	testCases := []string{
+		filepath.Join("testdata", "logs", "resource_context", "all_match_first_only"),
+		filepath.Join("testdata", "logs", "resource_context", "all_match_last_only"),
+		filepath.Join("testdata", "logs", "resource_context", "all_match_once"),
+		filepath.Join("testdata", "logs", "resource_context", "each_matches_one"),
+		filepath.Join("testdata", "logs", "resource_context", "match_none_with_default"),
+		filepath.Join("testdata", "logs", "resource_context", "match_none_without_default"),
+		filepath.Join("testdata", "logs", "log_context", "all_match_first_only"),
+		filepath.Join("testdata", "logs", "log_context", "all_match_last_only"),
+		filepath.Join("testdata", "logs", "log_context", "match_none_with_default"),
+		filepath.Join("testdata", "logs", "log_context", "match_none_without_default"),
+		filepath.Join("testdata", "logs", "log_context", "some_match_each_route"),
+		filepath.Join("testdata", "logs", "log_context", "with_resource_condition"),
+		filepath.Join("testdata", "logs", "log_context", "with_scope_condition"),
+		filepath.Join("testdata", "logs", "log_context", "with_resource_and_scope_conditions"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_logs"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_resource"),
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt, func(t *testing.T) {
+
+			cm, err := confmaptest.LoadConf(filepath.Join(tt, "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub("routing")
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			require.NoError(t, component.ValidateConfig(cfg))
+
+			var sinkDefault, sink0, sink1 consumertest.LogsSink
+			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "default"): &sinkDefault,
+				pipeline.NewIDWithName(pipeline.SignalLogs, "0"):       &sink0,
+				pipeline.NewIDWithName(pipeline.SignalLogs, "1"):       &sink1,
+			})
+
+			conn, err := factory.CreateLogsToLogs(
+				context.Background(),
+				connectortest.NewNopSettings(),
+				cfg,
+				router.(consumer.Logs),
+			)
+			require.NoError(t, err)
+
+			var expected0, expected1, expectedDefault *plog.Logs
+			if expected, readErr := golden.ReadLogs(filepath.Join(tt, "sink_0.yaml")); readErr == nil {
+				expected0 = &expected
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading sink_0.yaml: %v", readErr)
+			}
+
+			if expected, readErr := golden.ReadLogs(filepath.Join(tt, "sink_1.yaml")); readErr == nil {
+				expected1 = &expected
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading sink_1.yaml: %v", readErr)
+			}
+
+			if expected, readErr := golden.ReadLogs(filepath.Join(tt, "sink_default.yaml")); readErr == nil {
+				expectedDefault = &expected
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading sink_default.yaml: %v", readErr)
+			}
+
+			input, readErr := golden.ReadLogs(filepath.Join(tt, "input.yaml"))
+			require.NoError(t, readErr)
+
+			require.NoError(t, conn.ConsumeLogs(context.Background(), input))
+
+			if expected0 == nil {
+				assert.Empty(t, sink0.AllLogs(), "sink0 should be empty")
+			} else {
+				require.Len(t, sink0.AllLogs(), 1, "sink0 should have one plog.Logs")
+				assert.NoError(t, plogtest.CompareLogs(*expected0, sink0.AllLogs()[0]), "sink0 has unexpected result")
+			}
+
+			if expected1 == nil {
+				assert.Empty(t, sink1.AllLogs(), "sink1 should be empty")
+			} else {
+				require.Len(t, sink1.AllLogs(), 1, "sink1 should have one plog.Logs")
+				assert.NoError(t, plogtest.CompareLogs(*expected1, sink1.AllLogs()[0]), "sink1 has unexpected result")
+			}
+
+			if expectedDefault == nil {
+				assert.Empty(t, sinkDefault.AllLogs(), "sinkDefault should be empty")
+			} else {
+				require.Len(t, sinkDefault.AllLogs(), 1, "sinkDefault should have one plog.Logs")
+				assert.NoError(t, plogtest.CompareLogs(*expectedDefault, sinkDefault.AllLogs()[0]), "sinkDefault has unexpected result")
+			}
+		})
+	}
 }

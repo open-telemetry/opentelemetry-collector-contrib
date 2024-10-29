@@ -39,8 +39,7 @@ func TestConfigBuildFailure(t *testing.T) {
 	config.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `on_error` field")
+	require.ErrorContains(t, err, "invalid `on_error` field")
 }
 
 func TestConfigBuildFormatError(t *testing.T) {
@@ -48,29 +47,25 @@ func TestConfigBuildFormatError(t *testing.T) {
 	config.Format = "invalid_runtime"
 	set := componenttest.NewNopTelemetrySettings()
 	_, err := config.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid `format` field")
+	require.ErrorContains(t, err, "invalid `format` field")
 }
 
 func TestDockerParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parseDocker([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as docker container logs")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as docker container logs")
 }
 
 func TestCrioParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parseCRIO([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as cri-o container logs")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as cri-o container logs")
 }
 
 func TestContainerdParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parseContainerd([]int{})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as containerd logs")
+	require.ErrorContains(t, err, "type '[]int' cannot be parsed as containerd logs")
 }
 
 func TestFormatDetectionFailure(t *testing.T) {
@@ -79,8 +74,7 @@ func TestFormatDetectionFailure(t *testing.T) {
 		Body: `invalid container format`,
 	}
 	_, err := parser.detectFormat(e)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "entry cannot be parsed as container logs")
+	require.ErrorContains(t, err, "entry cannot be parsed as container logs")
 }
 
 func TestInternalRecombineCfg(t *testing.T) {
@@ -332,6 +326,47 @@ func TestRecombineProcess(t *testing.T) {
 						"log.iostream":  "stdout",
 						"logtag":        "P",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Body: "standalone containerd line which is awesome!",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			"containerd_multiple_with_auto_detection_and_metadata_from_file_path_windows",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout P standalone containerd line which i`,
+					Attributes: map[string]any{
+						"log.file.path": "C:\\var\\log\\pods\\some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3\\kube-scheduler44\\1.log",
+					},
+				},
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout F s awesome!`,
+					Attributes: map[string]any{
+						"log.file.path": "C:\\var\\log\\pods\\some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3\\kube-scheduler44\\1.log",
+					},
+				},
+			},
+			[]*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":  "stdout",
+						"logtag":        "P",
+						"log.file.path": "C:\\var\\log\\pods\\some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3\\kube-scheduler44\\1.log",
 					},
 					Body: "standalone containerd line which is awesome!",
 					Resource: map[string]any{

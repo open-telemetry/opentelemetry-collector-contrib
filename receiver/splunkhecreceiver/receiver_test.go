@@ -41,14 +41,14 @@ import (
 func assertHecSuccessResponse(t *testing.T, resp *http.Response, body any) {
 	status := resp.StatusCode
 	assert.Equal(t, http.StatusOK, status)
-	assert.Equal(t, httpJSONTypeHeader, resp.Header.Get(httpContentTypeHeader))
+	assert.Equal(t, "application/json", resp.Header.Get(httpContentTypeHeader))
 	assert.Equal(t, map[string]any{"code": float64(0), "text": "Success"}, body)
 }
 
 func assertHecSuccessResponseWithAckID(t *testing.T, resp *http.Response, body any, ackID uint64) {
 	status := resp.StatusCode
 	assert.Equal(t, http.StatusOK, status)
-	assert.Equal(t, httpJSONTypeHeader, resp.Header.Get(httpContentTypeHeader))
+	assert.Equal(t, "application/json", resp.Header.Get(httpContentTypeHeader))
 	assert.Equal(t, map[string]any{"code": float64(0), "text": "Success", "ackId": float64(ackID)}, body)
 }
 
@@ -362,9 +362,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			metricsSink := new(consumertest.MetricsSink)
 			f := NewFactory()
 
-			_, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), config, sink)
+			_, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), config, sink)
 			assert.NoError(t, err)
-			rcv, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
+			rcv, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
 			assert.NoError(t, err)
 
 			r := rcv.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver)
@@ -641,7 +641,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}()
 
 			if tt.metric {
-				exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+				exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
@@ -657,7 +657,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
-				exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+				exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
@@ -726,7 +726,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
-			exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			defer func() {
@@ -827,7 +827,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 
-			exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
+			exporter, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			defer func() {
 				require.NoError(t, exporter.Shutdown(context.Background()))
@@ -1768,7 +1768,7 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-	assert.Equal(t, responseHecHealthy, string(respBytes))
+	assert.JSONEq(t, responseHecHealthy, string(respBytes))
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
@@ -1837,7 +1837,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 				assert.Equal(t, 1, sink.LogRecordCount())
 			} else {
 				assert.Equal(t, http.StatusBadRequest, w.Code)
-				assert.Equal(t, fmt.Sprintf(responseErrHandlingIndexedFields, 0), w.Body.String())
+				assert.JSONEq(t, fmt.Sprintf(responseErrHandlingIndexedFields, 0), w.Body.String())
 			}
 
 		})
@@ -1861,7 +1861,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 
 	assertResponse := func(t *testing.T, status int, body string) {
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, responseOK, body)
+		assert.JSONEq(t, responseOK, body)
 	}
 
 	tests := []struct {
@@ -2012,7 +2012,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseHecHealthy, body)
+				assert.JSONEq(t, responseHecHealthy, body)
 			},
 		},
 		{
@@ -2023,7 +2023,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, responseHecHealthy, body)
+				assert.JSONEq(t, responseHecHealthy, body)
 			},
 		},
 		{
@@ -2034,7 +2034,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseNoData, body)
+				assert.JSONEq(t, responseNoData, body)
 			},
 		},
 	}
@@ -2108,15 +2108,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }
 

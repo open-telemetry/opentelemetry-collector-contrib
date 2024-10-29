@@ -69,13 +69,13 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 	}
 	var err error
 	set := receivertest.NewNopSettings()
-	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
+	if bor.traceReceiver, err = factory.CreateTraces(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
-	if bor.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc); err != nil {
+	if bor.metricsReceiver, err = factory.CreateMetrics(context.Background(), set, cfg, mc); err != nil {
 		return err
 	}
-	if bor.logReceiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc); err != nil {
+	if bor.logReceiver, err = factory.CreateLogs(context.Background(), set, cfg, lc); err != nil {
 		return err
 	}
 

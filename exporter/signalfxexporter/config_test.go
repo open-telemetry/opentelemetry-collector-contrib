@@ -4,6 +4,7 @@
 package signalfxexporter
 
 import (
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"testing"
@@ -38,6 +39,10 @@ func TestLoadConfig(t *testing.T) {
 	seventy := 70
 	hundred := 100
 	idleConnTimeout := 30 * time.Second
+	defaultMaxIdleConns := http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost := http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost := http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout := http.DefaultTransport.(*http.Transport).IdleConnTimeout
 
 	tests := []struct {
 		id       component.ID
@@ -50,9 +55,10 @@ func TestLoadConfig(t *testing.T) {
 				Realm:       "ap0",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:              10 * time.Second,
-					Headers:              nil,
+					Headers:              map[string]configopaque.String{},
 					MaxIdleConns:         &hundred,
 					MaxIdleConnsPerHost:  &hundred,
+					MaxConnsPerHost:      &defaultMaxConnsPerHost,
 					IdleConnTimeout:      &idleConnTimeout,
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
@@ -86,8 +92,13 @@ func TestLoadConfig(t *testing.T) {
 				ExcludeProperties:   nil,
 				Correlation: &correlation.Config{
 					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "",
-						Timeout:  5 * time.Second,
+						Endpoint:            "",
+						Timeout:             5 * time.Second,
+						Headers:             map[string]configopaque.String{},
+						MaxIdleConns:        &defaultMaxIdleConns,
+						MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+						MaxConnsPerHost:     &defaultMaxConnsPerHost,
+						IdleConnTimeout:     &defaultIdleConnTimeout,
 					},
 					StaleServiceTimeout: 5 * time.Minute,
 					SyncAttributes: map[string]string{
@@ -120,6 +131,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 					MaxIdleConns:         &seventy,
 					MaxIdleConnsPerHost:  &seventy,
+					MaxConnsPerHost:      &defaultMaxConnsPerHost,
 					IdleConnTimeout:      &idleConnTimeout,
 					HTTP2ReadIdleTimeout: 10 * time.Second,
 					HTTP2PingTimeout:     10 * time.Second,
@@ -246,8 +258,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Correlation: &correlation.Config{
 					ClientConfig: confighttp.ClientConfig{
-						Endpoint: "",
-						Timeout:  5 * time.Second,
+						Endpoint:            "",
+						Timeout:             5 * time.Second,
+						Headers:             map[string]configopaque.String{},
+						MaxIdleConns:        &defaultMaxIdleConns,
+						MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+						MaxConnsPerHost:     &defaultMaxConnsPerHost,
+						IdleConnTimeout:     &defaultIdleConnTimeout,
 					},
 					StaleServiceTimeout: 5 * time.Minute,
 					SyncAttributes: map[string]string{
