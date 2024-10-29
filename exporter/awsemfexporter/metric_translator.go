@@ -75,6 +75,7 @@ type groupedMetricMetadata struct {
 	logGroup                   string
 	logStream                  string
 	metricDataType             pmetric.MetricType
+	batchIndex                 int
 	retainInitialValueForDelta bool
 }
 
@@ -140,6 +141,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 					logGroup:                   logGroup,
 					logStream:                  logStream,
 					metricDataType:             metric.Type(),
+					batchIndex:                 0,
 					retainInitialValueForDelta: deltaInitialValue,
 				},
 				instrumentationScopeName: instrumentationScopeName,
