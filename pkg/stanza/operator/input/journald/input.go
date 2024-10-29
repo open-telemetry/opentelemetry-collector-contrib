@@ -30,12 +30,12 @@ type Input struct {
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
 
-	persister             operator.Persister
-	json                  jsoniter.API
-	convert_message_bytes bool
-	cancel                context.CancelFunc
-	wg                    sync.WaitGroup
-	errChan               chan error
+	persister           operator.Persister
+	json                jsoniter.API
+	convertMessageBytes bool
+	cancel              context.CancelFunc
+	wg                  sync.WaitGroup
+	errChan             chan error
 }
 
 type cmd interface {
@@ -228,18 +228,18 @@ func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, err
 		return nil, "", fmt.Errorf("parse timestamp: %w", err)
 	}
 
-	if operator.convert_message_bytes {
+	if operator.convertMessageBytes {
 		// Convert the message bytes to string if given as a byte array
-		msg_arr, ok := body["MESSAGE"].([]interface{})
-		if ok {
+		msgArr, msgArrayOk := body["MESSAGE"].([]any)
+		if msgArrayOk {
 			var bytes []byte
-			for _, val := range msg_arr {
-				float_val, ok := val.(float64)
-				if ok {
-					bytes = append(bytes, byte(int(float_val)))
+			for _, val := range msgArr {
+				floatVal, floatCheckOk := val.(float64)
+				if floatCheckOk {
+					bytes = append(bytes, byte(int(floatVal)))
 				}
 			}
-			body["MESSAGE"] = string(bytes[:])
+			body["MESSAGE"] = string(bytes)
 		}
 	}
 
