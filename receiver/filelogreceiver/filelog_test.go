@@ -194,8 +194,8 @@ func (rt *rotationTest) Run(t *testing.T) {
 				require.Eventually(t, func() bool {
 					// On Windows you can't remove a file if it still has some handle opened to it. So remove the file
 					// in a loop until any async operation on it is done.
-					err := os.Remove(backupFileName)
-					return errors.Is(err, os.ErrNotExist)
+					removeErr := os.Remove(backupFileName)
+					return errors.Is(removeErr, os.ErrNotExist)
 				}, 5*time.Second, 100*time.Millisecond)
 
 				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0600)
