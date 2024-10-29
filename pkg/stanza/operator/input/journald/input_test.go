@@ -201,6 +201,13 @@ func TestBuildConfig(t *testing.T) {
 			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--grep", "test_grep"},
 		},
 		{
+			Name: "namespace",
+			Config: func(cfg *Config) {
+				cfg.Namespace = "foo"
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--namespace", "foo"},
+		},
+		{
 			Name: "dmesg",
 			Config: func(cfg *Config) {
 				cfg.Dmesg = true
