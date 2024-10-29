@@ -4,12 +4,12 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.112.0
+	go.opentelemetry.io/collector/component v0.112.1-0.20241029112935-002a74860455
 	go.opentelemetry.io/collector/confmap v1.18.1-0.20241029112935-002a74860455
-	go.opentelemetry.io/collector/consumer v0.112.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
+	go.opentelemetry.io/collector/consumer v0.112.1-0.20241029112935-002a74860455
+	go.opentelemetry.io/collector/consumer/consumertest v0.112.1-0.20241029112935-002a74860455
 	go.opentelemetry.io/collector/pdata v1.18.1-0.20241029112935-002a74860455
-	go.opentelemetry.io/collector/receiver v0.112.0
+	go.opentelemetry.io/collector/receiver v0.112.1-0.20241029112935-002a74860455
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.23.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241007155032-5fefd90f89a9
@@ -26,7 +26,7 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.112.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.112.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.112.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
@@ -51,10 +51,10 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.112.1-0.20241029112935-002a74860455 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.1-0.20241029112935-002a74860455 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.112.1-0.20241029112935-002a74860455 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0 // indirect

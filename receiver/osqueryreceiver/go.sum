@@ -50,6 +50,7 @@ go.opentelemetry.io/collector/consumer/consumertest v0.112.0 h1:pGvNH+H4rMygUOql
 go.opentelemetry.io/collector/consumer/consumertest v0.112.0/go.mod h1:rfVo0tYt/BaLWw3IaQKVQafjUlMsA5qTkvsSOfFrr9c=
 go.opentelemetry.io/collector/pdata v1.18.0 h1:/yg2rO2dxqDM2p6GutsMCxXN6sKlXwyIz/ZYyUPONBg=
 go.opentelemetry.io/collector/pdata v1.18.0/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
+go.opentelemetry.io/collector/pdata v1.18.1-0.20241029112935-002a74860455/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
 go.opentelemetry.io/collector/pdata/pprofile v0.112.0 h1:t+LYorcMqZ3sDz5/jp3xU2l5lIhIXuIOOGO4Ef9CG2c=
 go.opentelemetry.io/collector/pdata/pprofile v0.112.0/go.mod h1:F2aTCoDzIaxEUK1g92LZvMwradySFMo3ZsAnBIpOdUg=
 go.opentelemetry.io/collector/pipeline v0.112.0 h1:jqKDdb8k53OLPibvxzX6fmMec0ZHAtqe4p2+cuHclEI=

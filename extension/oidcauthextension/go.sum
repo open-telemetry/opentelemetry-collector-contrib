@@ -49,12 +49,14 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/collector/client v1.18.0 h1:wk+R3wpeleTIrk+xX85ICKBJ6GeZQ50Hk5DthRpOpUQ=
 go.opentelemetry.io/collector/client v1.18.0/go.mod h1:33ntN6gwIfa1JCnQfQDSImIBY8Gfe66kv+MjQ/C37Fk=
+go.opentelemetry.io/collector/client v1.18.1-0.20241029112935-002a74860455/go.mod h1:33ntN6gwIfa1JCnQfQDSImIBY8Gfe66kv+MjQ/C37Fk=
 go.opentelemetry.io/collector/component v0.112.0 h1:Hw125Tdb427yKkzFx3U/OsfPATYXsbURkc27dn19he8=
 go.opentelemetry.io/collector/component v0.112.0/go.mod h1:hV9PEgkNlVAySX+Oo/g7+NcLe234L04kRXw6uGj3VEw=
 go.opentelemetry.io/collector/config/configtelemetry v0.112.0 h1:MVBrWJUoqfKrORI38dY8OV0i5d1RRHR/ACIBu9TOcZ8=
 go.opentelemetry.io/collector/config/configtelemetry v0.112.0/go.mod h1:R0MBUxjSMVMIhljuDHWIygzzJWQyZHXXWIgQNxcFwhc=
 go.opentelemetry.io/collector/confmap v1.18.0 h1:UEOeJY8RW8lZ1O4lzHSGqolS7uzkpXQi5fa8SidKqQg=
 go.opentelemetry.io/collector/confmap v1.18.0/go.mod h1:GgNu1ElPGmLn9govqIfjaopvdspw4PJ9KeDtWC4E2Q4=
+go.opentelemetry.io/collector/confmap v1.18.1-0.20241029112935-002a74860455/go.mod h1:GgNu1ElPGmLn9govqIfjaopvdspw4PJ9KeDtWC4E2Q4=
 go.opentelemetry.io/collector/consumer v0.112.0 h1:tfO4FpuQ8MsD7AxgslC3tRNVYjd9Xkus34BOExsG4fM=
 go.opentelemetry.io/collector/consumer v0.112.0/go.mod h1:ZKSeGvXvaofIlvPrWlARKQpONOmuw6R/yifgYCWHKRw=
 go.opentelemetry.io/collector/extension v0.112.0 h1:NsCDMMbuZp8dSBLoAqHn/AtbcspbAqcubc4qogXo+zc=
@@ -63,6 +65,7 @@ go.opentelemetry.io/collector/extension/auth v0.112.0 h1:GmcmreIkhUUFSNNvgekK12R
 go.opentelemetry.io/collector/extension/auth v0.112.0/go.mod h1:3xShgnNn/iQ5vHf3MVExvqpEIUNEl6osYRlq1Comat4=
 go.opentelemetry.io/collector/pdata v1.18.0 h1:/yg2rO2dxqDM2p6GutsMCxXN6sKlXwyIz/ZYyUPONBg=
 go.opentelemetry.io/collector/pdata v1.18.0/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
+go.opentelemetry.io/collector/pdata v1.18.1-0.20241029112935-002a74860455/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
 go.opentelemetry.io/otel v1.31.0 h1:NsJcKPIW0D0H3NgzPDHmo0WW6SptzPdqg/L1zsIm2hY=
 go.opentelemetry.io/otel v1.31.0/go.mod h1:O0C14Yl9FgkjqcCZAsE053C13OaddMYr/hz6clDkEJE=
 go.opentelemetry.io/otel/metric v1.31.0 h1:FSErL0ATQAmYHUIzSezZibnyVlft1ybhy4ozRPcF2fE=

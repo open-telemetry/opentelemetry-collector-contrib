@@ -95,6 +95,7 @@ go.opentelemetry.io/collector/config/configtelemetry v0.112.0 h1:MVBrWJUoqfKrORI
 go.opentelemetry.io/collector/config/configtelemetry v0.112.0/go.mod h1:R0MBUxjSMVMIhljuDHWIygzzJWQyZHXXWIgQNxcFwhc=
 go.opentelemetry.io/collector/confmap v1.18.0 h1:UEOeJY8RW8lZ1O4lzHSGqolS7uzkpXQi5fa8SidKqQg=
 go.opentelemetry.io/collector/confmap v1.18.0/go.mod h1:GgNu1ElPGmLn9govqIfjaopvdspw4PJ9KeDtWC4E2Q4=
+go.opentelemetry.io/collector/confmap v1.18.1-0.20241029112935-002a74860455/go.mod h1:GgNu1ElPGmLn9govqIfjaopvdspw4PJ9KeDtWC4E2Q4=
 go.opentelemetry.io/collector/consumer v0.112.0 h1:tfO4FpuQ8MsD7AxgslC3tRNVYjd9Xkus34BOExsG4fM=
 go.opentelemetry.io/collector/consumer v0.112.0/go.mod h1:ZKSeGvXvaofIlvPrWlARKQpONOmuw6R/yifgYCWHKRw=
 go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 h1:ym+QxemlbWwfMSUto1hRTfcZeYbj2q8FpMzjk8O+X60=
@@ -103,8 +104,10 @@ go.opentelemetry.io/collector/consumer/consumertest v0.112.0 h1:pGvNH+H4rMygUOql
 go.opentelemetry.io/collector/consumer/consumertest v0.112.0/go.mod h1:rfVo0tYt/BaLWw3IaQKVQafjUlMsA5qTkvsSOfFrr9c=
 go.opentelemetry.io/collector/featuregate v1.18.0 h1:1CvP1K3XmVs7WZCs/A1j8rsC7JQWu+y+vF8vxKjLaOU=
 go.opentelemetry.io/collector/featuregate v1.18.0/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
+go.opentelemetry.io/collector/featuregate v1.18.1-0.20241029112935-002a74860455/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
 go.opentelemetry.io/collector/pdata v1.18.0 h1:/yg2rO2dxqDM2p6GutsMCxXN6sKlXwyIz/ZYyUPONBg=
 go.opentelemetry.io/collector/pdata v1.18.0/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
+go.opentelemetry.io/collector/pdata v1.18.1-0.20241029112935-002a74860455/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
 go.opentelemetry.io/collector/pdata/pprofile v0.112.0 h1:t+LYorcMqZ3sDz5/jp3xU2l5lIhIXuIOOGO4Ef9CG2c=
 go.opentelemetry.io/collector/pdata/pprofile v0.112.0/go.mod h1:F2aTCoDzIaxEUK1g92LZvMwradySFMo3ZsAnBIpOdUg=
 go.opentelemetry.io/collector/pdata/testdata v0.112.0 h1:7jJzNvRE+CpYrwHbAYwPiN9a/hqmVRlRADJNeDJTvYI=
