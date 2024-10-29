@@ -388,14 +388,15 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
+			metric.WithAttributeSet(attribute.NewSet())
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-				Add(tsp.ctx, int64(len(spans)), metric.WithAttributes(attribute.String("decision", "sample")))
+				Add(tsp.ctx, int64(len(spans)), attrSampledTrue)
 			continue
 		}
 		// If the trace ID is in the non-sampled cache, short circuit the decision
 		if _, ok := tsp.nonSampledIDCache.Get(id); ok {
 			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
-				Add(tsp.ctx, int64(len(spans)), metric.WithAttributes(attribute.String("decision", "drop")))
+				Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
 			continue
 		}
 
@@ -453,6 +454,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				appendToTraces(traceTd, resourceSpans, spans)
 				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
 			case sampling.NotSampled:
+				tsp.nonSampledIDCache.Put(id, true)
 				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",
@@ -488,9 +490,6 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		tsp.idToTrace.Delete(traceID)
 		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
 		tsp.numTracesOnMap.Add(^uint64(0))
-		if trace.FinalDecision != sampling.Sampled {
-			tsp.nonSampledIDCache.Put(traceID, true)
-		}
 	}
 	if trace == nil {
 		tsp.logger.Debug("Attempt to delete traceID not on table")

@@ -408,7 +408,7 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
-	ct := s.NewSettings().TelemetrySettings
+	ct := s.NewSettings()
 	idb := newSyncIDBatcher()
 
 	mpe := &mockPolicyEvaluator{}
