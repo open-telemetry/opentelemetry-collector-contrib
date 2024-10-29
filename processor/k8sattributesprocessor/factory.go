@@ -9,9 +9,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerprofiles"
-	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles"
 	"go.opentelemetry.io/collector/processor/processorprofiles"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -141,14 +141,8 @@ func createLogsProcessorWithOptions(
 		processorhelper.WithShutdown(kp.Shutdown))
 }
 
-type profiles struct {
-	component.StartFunc
-	component.ShutdownFunc
-	consumerprofiles.Profiles
-}
-
 func createProfilesProcessorWithOptions(
-	_ context.Context,
+	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
 	nextProfilesConsumer consumerprofiles.Profiles,
@@ -156,19 +150,16 @@ func createProfilesProcessorWithOptions(
 ) (processorprofiles.Profiles, error) {
 	kp := createKubernetesProcessor(set, cfg, options...)
 
-	profilesConsumer, err := consumerprofiles.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) (err error) {
-		pd = kp.processProfiles(ctx, pd)
-		return nextProfilesConsumer.ConsumeProfiles(ctx, pd)
-	}, consumer.WithCapabilities(consumerCapabilities))
-	if err != nil {
-		return nil, err
-	}
-
-	return &profiles{
-		StartFunc:    kp.Start,
-		ShutdownFunc: kp.Shutdown,
-		Profiles:     profilesConsumer,
-	}, nil
+	return processorhelperprofiles.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		nextProfilesConsumer,
+		kp.processProfiles,
+		processorhelperprofiles.WithCapabilities(consumerCapabilities),
+		processorhelperprofiles.WithStart(kp.Start),
+		processorhelperprofiles.WithShutdown(kp.Shutdown),
+	)
 }
 
 func createKubernetesProcessor(

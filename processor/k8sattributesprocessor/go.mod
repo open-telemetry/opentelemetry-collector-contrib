@@ -23,6 +23,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0
 	go.opentelemetry.io/collector/pipeline v0.113.0
 	go.opentelemetry.io/collector/processor v0.113.0
+	go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles v0.113.0
 	go.opentelemetry.io/collector/processor/processorprofiles v0.113.0
 	go.opentelemetry.io/collector/processor/processortest v0.113.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.113.0
