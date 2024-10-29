@@ -90,6 +90,10 @@ func (c Config) buildArgs() ([]string, error) {
 		args = append(args, "--dmesg")
 	}
 
+	if len(c.Namespace) > 0 {
+		args = append(args, "--namespace", c.Namespace)
+	}
+
 	switch {
 	case c.Directory != nil:
 		args = append(args, "--directory", *c.Directory)
