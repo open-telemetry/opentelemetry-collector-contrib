@@ -312,7 +312,6 @@ func TestLogLargeFiles(t *testing.T) {
 				performanceResultsSummary,
 				test.sleepSeconds,
 				processors,
-				test.resourceSpec,
 			)
 		})
 	}
