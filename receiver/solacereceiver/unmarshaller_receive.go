@@ -258,7 +258,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *receive
 		clientEvent.Attributes().PutInt(partitionNumberKey, int64(*enqueueEvent.PartitionNumber))
 	}
 	if enqueueEvent.Ttl != nil {
-		clientEvent.Attributes().PutInt(ttlOverrideKey, int64(*enqueueEvent.Ttl))
+		clientEvent.Attributes().PutInt(ttlOverrideKey, *enqueueEvent.Ttl)
 	}
 }
 
