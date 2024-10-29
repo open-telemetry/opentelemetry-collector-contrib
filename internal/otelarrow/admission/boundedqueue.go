@@ -33,7 +33,7 @@ type waiter struct {
 	ID           uuid.UUID
 }
 
-func NewBoundedQueue(tp trace.TracerProvider, maxLimitBytes, maxLimitWaiters int64) *BoundedQueue {
+func NewBoundedQueue(tp trace.TracerProvider, maxLimitBytes, maxLimitWaiters int64) Queue {
 	return &BoundedQueue{
 		maxLimitBytes:   maxLimitBytes,
 		maxLimitWaiters: maxLimitWaiters,

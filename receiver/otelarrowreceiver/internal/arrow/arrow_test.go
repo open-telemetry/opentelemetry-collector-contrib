@@ -52,7 +52,7 @@ import (
 
 var noopTraces = noop.NewTracerProvider()
 
-func defaultBQ() *admission.BoundedQueue {
+func defaultBQ() admission.Queue {
 	return admission.NewBoundedQueue(noopTraces, int64(100000), int64(10))
 }
 
@@ -360,7 +360,7 @@ func (ctc *commonTestCase) newOOMConsumer() arrowRecord.ConsumerAPI {
 	return mock
 }
 
-func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq *admission.BoundedQueue, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
+func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission.Queue, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
 	var authServer auth.Server
 	var gsettings configgrpc.ServerConfig
 	for _, gf := range opts {
@@ -487,7 +487,7 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 				copy(batch.Headers, hpb.Bytes())
 			}
 
-			var bq *admission.BoundedQueue
+			var bq admission.Queue
 			if tt.rejected {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
 				bq = admission.NewBoundedQueue(noopTraces, int64(sizer.TracesSize(td)-100), 10)
