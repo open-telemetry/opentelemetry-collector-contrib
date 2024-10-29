@@ -301,18 +301,18 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpanAdminActionInfo(adminActi
 		adminCliTerminalNameKey  = "messaging.solace.admin.cli.terminal.name"
 		adminCliSessionNumberKey = "messaging.solace.admin.cli.session_number"
 		adminSempVersionKey      = "messaging.solace.admin.semp.version"
-		endUserIdKey             = "enduser.id"
+		endUserIDKey             = "enduser.id"
 		clientAddressKey         = "client.address"
 	)
 	// Supported Admin Interface names
 	const (
 		semp        = "semp"
-		cliSsh      = "cli_ssh"
+		cliSSH      = "cli_ssh"
 		cliTerminal = "cli_terminal"
 	)
 
 	// the authenticated userId that performed the delete action
-	attrMap.PutStr(endUserIdKey, adminActionInfo.Username)
+	attrMap.PutStr(endUserIDKey, adminActionInfo.Username)
 
 	// Do not fatal out when there isn't a valid delete admin action session type, instead just log and increment stats
 	switch casted := adminActionInfo.SessionInfo.(type) {
@@ -331,7 +331,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpanAdminActionInfo(adminActi
 		remoteCliSession := casted.CliSessionInfo.GetRemoteSession()
 		if remoteCliSession != nil {
 			// set the admin interface name as "cli_ssl"
-			attrMap.PutStr(adminInterfaceKey, cliSsh)
+			attrMap.PutStr(adminInterfaceKey, cliSSH)
 			// the peer IP address
 			cliPeerIPLen := len(remoteCliSession.PeerIp)
 			if cliPeerIPLen == 4 || cliPeerIPLen == 16 {
