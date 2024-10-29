@@ -1362,11 +1362,13 @@ Examples:
 
 `SliceToMap(target, keyPath, Optional[valuePath])`
 
-The `SliceToMap` converter converts a slice of objects to a map. The name of the keys for the map entries
-is determined by `keyPath`, which points to the value of an attribute within each slice item. Note that
+The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
+
+- `target`: A list of maps containing the entries to be converted.
+- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
 the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
 to a map entry.
-The optional `valuePath` determines which attribute should be used as the value for the map entry. If no
+- `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
 `valuePath` is defined, the value of the map entry will be the same as the original slice item.
 
 Examples:

@@ -56,16 +56,16 @@ func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (a
 	for _, elem := range v {
 		e, ok := elem.(map[string]any)
 		if !ok {
-			continue
+			return nil, fmt.Errorf("could not cast element '%v' to map[string]any", elem)
 		}
 		extractedKey, err := extractValue(e, keyPath)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("could not extract key from element: %w", err)
 		}
 
 		key, ok := extractedKey.(string)
 		if !ok {
-			continue
+			return nil, fmt.Errorf("extracted key attribute is not of type string")
 		}
 
 		if valuePath.IsEmpty() {
@@ -74,7 +74,7 @@ func sliceToMap(v []any, keyPath []string, valuePath ottl.Optional[[]string]) (a
 		}
 		extractedValue, err := extractValue(e, valuePath.Get())
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("could not extract value from element: %w", err)
 		}
 		result[key] = extractedValue
 	}

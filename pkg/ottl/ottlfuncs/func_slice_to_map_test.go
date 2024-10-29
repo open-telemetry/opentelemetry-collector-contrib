@@ -67,7 +67,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: pcommon.NewMap,
+			wantExecutionErr: "could not extract key from element: provided object does not contain the path [notfound]",
 		},
 		{
 			name:      "flat object with key path and value path",
@@ -162,7 +162,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: pcommon.NewMap,
+			wantExecutionErr: "extracted key attribute is not of type string",
 		},
 		{
 			name:      "nested object with value path not resolving to a value",
@@ -181,7 +181,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: pcommon.NewMap,
+			wantExecutionErr: "could not extract value from element: provided object does not contain the path [notfound]",
 		},
 		{
 			name:      "nested object with value path segment resolving to non-map value",
@@ -200,7 +200,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: pcommon.NewMap,
+			wantExecutionErr: "could not extract value from element: provided object does not contain the path [name nothing]",
 		},
 		{
 			name:    "unsupported type",
@@ -219,7 +219,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: pcommon.NewMap,
+			wantExecutionErr: "could not cast element 'unsupported' to map[string]any",
 		},
 		{
 			name:    "empty key path",
@@ -247,13 +247,7 @@ func Test_SliceToMap(t *testing.T) {
 
 				return sl
 			},
-			want: func() pcommon.Map {
-				m := pcommon.NewMap()
-				m.PutInt("foo", 2)
-				m.PutInt("bar", 5)
-
-				return m
-			},
+			wantExecutionErr: "could not cast element 'nothingToSeeHere' to map[string]any",
 		},
 		{
 			name:      "nested with different value data types",
