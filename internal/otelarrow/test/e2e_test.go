@@ -629,7 +629,7 @@ func nearLimitGenFunc() MkGen {
 			entropy.NewStandardInstrumentationScopes(),
 		)
 
-		return func(x int) ptrace.Traces {
+		return func(int) ptrace.Traces {
 			size := 100
 			for {
 				td := tracesGen.Generate(size, time.Minute)
@@ -637,15 +637,15 @@ func nearLimitGenFunc() MkGen {
 				if uncomp > nearLimit && uncomp < hardLimit {
 					return td
 				}
-				if uncomp > hardLimit {
+				switch {
+				case uncomp > hardLimit:
 					size -= 10
-				} else if uncomp < nearLimit/2 {
+				case uncomp < nearLimit/2:
 					size *= 2
-				} else {
+				default:
 					size += 10
 				}
 			}
-
 		}
 	}
 }

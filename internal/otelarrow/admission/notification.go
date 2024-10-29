@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package admission
 
 // notification.N is a minimal Go version of absl::Notification:

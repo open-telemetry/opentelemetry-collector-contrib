@@ -91,11 +91,11 @@ func TestExport_EmptyRequest(t *testing.T) {
 	assert.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 
-	require.Len(t, logSink.AllLogs(), 0)
+	require.Empty(t, logSink.AllLogs())
 
 	// No self-tracing spans are issued.
 	require.NoError(t, selfProv.ForceFlush(context.Background()))
-	require.Len(t, selfExp.GetSpans(), 0)
+	require.Empty(t, selfExp.GetSpans())
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {

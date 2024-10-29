@@ -19,41 +19,36 @@ import (
 )
 
 type bqTest struct {
+	t *testing.T
 	*BoundedQueue
 }
 
 var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
-func newBQTest(maxAdmit, maxWait uint64) bqTest {
+func newBQTest(t *testing.T, maxAdmit, maxWait uint64) bqTest {
 	return bqTest{
+		t:            t,
 		BoundedQueue: NewBoundedQueue(noopTelemetry, maxAdmit, maxWait).(*BoundedQueue),
 	}
 }
 
-func (bq *bqTest) startWaiter(t *testing.T, ctx context.Context, size uint64, relp *ReleaseFunc) N {
+func (bq *bqTest) startWaiter(ctx context.Context, size uint64, relp *ReleaseFunc) N {
 	n := newNotification()
 	go func() {
 		var err error
 		*relp, err = bq.Acquire(ctx, size)
-		require.NoError(t, err)
+		require.NoError(bq.t, err)
 		n.Notify()
 	}()
 	return n
 }
 
-func (bq *bqTest) waitForPending(t *testing.T, admitted, waiting uint64) {
-	require.Eventually(t, func() bool {
+func (bq *bqTest) waitForPending(admitted, waiting uint64) {
+	require.Eventually(bq.t, func() bool {
 		bq.lock.Lock()
 		defer bq.lock.Unlock()
 		return bq.currentAdmitted == admitted && bq.currentWaiting == waiting
 	}, time.Second, 20*time.Millisecond)
-}
-
-func abs(x int64) int64 {
-	if x < 0 {
-		return -x
-	}
-	return x
 }
 
 func mkRepeat(x uint64, n int) []uint64 {
@@ -159,7 +154,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			bq := newBQTest(test.maxLimitAdmit, test.maxLimitWait)
+			bq := newBQTest(t, test.maxLimitAdmit, test.maxLimitWait)
 			ctx := context.Background()
 
 			if test.timeout != 0 {
@@ -218,7 +213,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 			release()
 
 			// and the final state is all 0.
-			bq.waitForPending(t, 0, 0)
+			bq.waitForPending(0, 0)
 		})
 	}
 }
@@ -231,31 +226,31 @@ func TestBoundedQueueLIFO(t *testing.T) {
 			t.Run(fmt.Sprint(firstAcquire, ",", firstWait), func(t *testing.T) {
 				t.Parallel()
 
-				bq := newBQTest(maxAdmit, maxAdmit)
+				bq := newBQTest(t, maxAdmit, maxAdmit)
 				ctx := context.Background()
 
 				// Fill the queue
 				relFirst, err := bq.Acquire(ctx, firstAcquire)
 				require.NoError(t, err)
-				bq.waitForPending(t, firstAcquire, 0)
+				bq.waitForPending(firstAcquire, 0)
 
 				relSecond, err := bq.Acquire(ctx, maxAdmit-firstAcquire-1)
 				require.NoError(t, err)
-				bq.waitForPending(t, maxAdmit-1, 0)
+				bq.waitForPending(maxAdmit-1, 0)
 
 				relOne, err := bq.Acquire(ctx, 1)
 				require.NoError(t, err)
-				bq.waitForPending(t, maxAdmit, 0)
+				bq.waitForPending(maxAdmit, 0)
 
 				// Create two half-size waiters
 				var relW0 ReleaseFunc
-				notW0 := bq.startWaiter(t, ctx, firstWait, &relW0)
-				bq.waitForPending(t, maxAdmit, firstWait)
+				notW0 := bq.startWaiter(ctx, firstWait, &relW0)
+				bq.waitForPending(maxAdmit, firstWait)
 
 				var relW1 ReleaseFunc
 				secondWait := maxAdmit - firstWait
-				notW1 := bq.startWaiter(t, ctx, secondWait, &relW1)
-				bq.waitForPending(t, maxAdmit, maxAdmit)
+				notW1 := bq.startWaiter(ctx, secondWait, &relW1)
+				bq.waitForPending(maxAdmit, maxAdmit)
 
 				relFirst()
 
@@ -277,14 +272,12 @@ func TestBoundedQueueLIFO(t *testing.T) {
 				}
 				relOne()
 
-				select {
-				case <-notW0.Chan():
-				}
+				<-notW0.Chan()
 
 				relW0()
 				relW1()
 
-				bq.waitForPending(t, 0, 0)
+				bq.waitForPending(0, 0)
 			})
 		}
 	}
@@ -297,7 +290,7 @@ func TestBoundedQueueCancelation(t *testing.T) {
 		repetition = 100
 		maxAdmit   = 10
 	)
-	bq := newBQTest(maxAdmit, maxAdmit)
+	bq := newBQTest(t, maxAdmit, maxAdmit)
 
 	for number := range repetition {
 		ctx, cancel := context.WithCancel(context.Background())
@@ -327,7 +320,7 @@ func TestBoundedQueueCancelation(t *testing.T) {
 			go cancel()
 		}
 
-		bq.waitForPending(t, 0, 0)
+		bq.waitForPending(0, 0)
 	}
 }
 

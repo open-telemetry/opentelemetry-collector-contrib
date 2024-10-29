@@ -633,11 +633,11 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// immediately if there are too many waiters, or will
 	// otherwise block until timeout or enough memory becomes
 	// available.
-	if releaser, acquireErr := r.boundedQueue.Acquire(inflightCtx, uncompSize); acquireErr != nil {
+	if releaser, acquireErr := r.boundedQueue.Acquire(inflightCtx, uncompSize); acquireErr == nil {
+		flight.releaser = releaser
+	} else {
 		// Note that the queue returns a gRPC ResourceExhausted or InvalidArgument status code.
 		return acquireErr
-	} else {
-		flight.releaser = releaser
 	}
 
 	flight.uncompSize = uncompSize

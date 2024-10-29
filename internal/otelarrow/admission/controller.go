@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package admission
 
 import (
@@ -48,6 +51,6 @@ func NewUnboundedQueue() Queue {
 func noopRelease() {}
 
 // Acquire implements Queue.
-func (noopController) Acquire(ctx context.Context, weight uint64) (ReleaseFunc, error) {
+func (noopController) Acquire(_ context.Context, _ uint64) (ReleaseFunc, error) {
 	return noopRelease, nil
 }
