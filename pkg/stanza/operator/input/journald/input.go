@@ -119,9 +119,6 @@ func (operator *Input) newJournalctl(ctx context.Context) (*journalctl, error) {
 		return nil, fmt.Errorf("failed to get journalctl state: %w", err)
 	}
 
-	operator.persister = persister
-
-	// Start journalctl
 	journal := operator.newCmd(ctx, cursor)
 	jctl := &journalctl{
 		cmd: journal,
