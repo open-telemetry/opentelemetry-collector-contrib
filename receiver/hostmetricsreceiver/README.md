@@ -49,6 +49,7 @@ The available scrapers are:
 | [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
 | [processes]  | Linux, Mac                   | Process count metrics                                  |
 | [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
+| [uptime]     | Linux, Windows, Mac          | Uptime metric                                          |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
 [disk]: ./internal/scraper/diskscraper/documentation.md
@@ -59,6 +60,7 @@ The available scrapers are:
 [paging]: ./internal/scraper/pagingscraper/documentation.md
 [processes]: ./internal/scraper/processesscraper/documentation.md
 [process]: ./internal/scraper/processscraper/documentation.md
+[uptime]: ./internal/scraper/uptimescraper/documentation.md
 
 ### Notes
 
