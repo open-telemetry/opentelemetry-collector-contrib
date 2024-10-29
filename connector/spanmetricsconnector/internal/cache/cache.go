@@ -4,7 +4,7 @@
 package cache // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 
 import (
-	"github.com/hashicorp/golang-lru/simplelru"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 )
 
 // Cache consists of an LRU cache and the evicted items from the LRU cache.
@@ -15,15 +15,15 @@ import (
 //
 // Important: This implementation is non-thread safe.
 type Cache[K comparable, V any] struct {
-	lru          simplelru.LRUCache
+	lru          *simplelru.LRU[K, V]
 	evictedItems map[K]V
 }
 
 // NewCache creates a Cache.
 func NewCache[K comparable, V any](size int) (*Cache[K, V], error) {
 	evictedItems := make(map[K]V)
-	lruCache, err := simplelru.NewLRU(size, func(key any, value any) {
-		evictedItems[key.(K)] = value.(V)
+	lruCache, err := simplelru.NewLRU(size, func(key K, value V) {
+		evictedItems[key] = value
 	})
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *Cache[K, V]) Add(key K, value V) bool {
 // Get an item from the LRU cache or evicted items.
 func (c *Cache[K, V]) Get(key K) (V, bool) {
 	if val, ok := c.lru.Get(key); ok {
-		return val.(V), ok
+		return val, ok
 	}
 	val, ok := c.evictedItems[key]
 
@@ -85,7 +85,7 @@ func (c *Cache[K, V]) ForEach(fn func(k K, v V)) {
 	for _, k := range c.lru.Keys() {
 		v, ok := c.lru.Get(k)
 		if ok {
-			fn(k.(K), v.(V))
+			fn(k, v)
 		}
 	}
 

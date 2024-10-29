@@ -1,0 +1,13 @@
+routing:
+  match_once: true
+  default_pipelines:
+    - logs/default
+  table:
+    - context: log
+      condition: attributes["logName"] == "logA" and resource.attributes["resourceName"] == "resourceA"
+      pipelines:
+        - logs/0
+    - context: log
+      condition: attributes["logName"] == "logB" and resource.attributes["resourceName"] == "resourceB"
+      pipelines:
+        - logs/1
