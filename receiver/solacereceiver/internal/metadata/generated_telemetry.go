@@ -3,7 +3,7 @@
 package metadata
 
 import (
-    "errors"
+	"errors"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -25,7 +25,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver")
 }
 
-// TelemetryBuilder provides an interface for components to report telemetry 
+// TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                                                      metric.Meter

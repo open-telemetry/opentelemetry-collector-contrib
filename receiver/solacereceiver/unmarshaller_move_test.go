@@ -383,7 +383,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 						IsMonotonic: true,
 						DataPoints: []metricdata.DataPoint[int64]{
 							{
-								Value: tt.expectedUnmarshallingErrors,
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
 							},
 						},
 					},
@@ -398,6 +399,6 @@ func newTestMoveV1Unmarshaller(t *testing.T) (*brokerTraceMoveUnmarshallerV1, co
 	tt := setupTestTelemetry()
 	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
 	require.NoError(t, err)
-	metricAttr := attribute.NewSet(attribute.String("broker_component_name", tt.NewSettings().ID.Name()))
+	metricAttr := attribute.NewSet(attribute.String("receiver_name", tt.NewSettings().ID.Name()))
 	return &brokerTraceMoveUnmarshallerV1{zap.NewNop(), builder, metricAttr}, tt
 }

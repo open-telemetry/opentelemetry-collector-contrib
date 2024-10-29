@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	// "go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -48,11 +48,7 @@ func (tt *componentTestTelemetry) assertMetrics(t *testing.T, expected []metricd
 	// ensure all required metrics are present
 	for _, want := range expected {
 		got := tt.getMetric(want.Name, md)
-		require.Equal(t, want.Name, got.Name)
-		require.Equal(t, want.Unit, got.Unit)
-		require.Equal(t, want.Description, got.Description)
-		// Commented out this assertion because we added other attibutes to the generated metric
-		// metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 
 	// ensure no additional metrics are emitted

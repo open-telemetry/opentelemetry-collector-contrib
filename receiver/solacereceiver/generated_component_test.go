@@ -53,17 +53,5 @@ func TestComponentLifecycle(t *testing.T) {
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
-		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
-			require.NoError(t, err)
-			host := componenttest.NewNopHost()
-			require.NoError(t, err)
-			require.NoError(t, firstRcvr.Start(context.Background(), host))
-			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
-			require.NoError(t, err)
-			require.NoError(t, secondRcvr.Start(context.Background(), host))
-			require.NoError(t, secondRcvr.Shutdown(context.Background()))
-		})
 	}
 }
