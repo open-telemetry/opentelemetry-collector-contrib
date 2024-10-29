@@ -4,21 +4,23 @@ go 1.22.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.134
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.58.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.58.0
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.1
+	github.com/DataDog/datadog-agent/pkg/proto v0.58.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.58.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.31.0
 	github.com/DataDog/sketches-go v1.4.6
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.112.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tinylib/msgp v1.2.2
+	github.com/tinylib/msgp v1.2.3
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/component v0.112.0
 	go.opentelemetry.io/collector/component/componentstatus v0.112.0
 	go.opentelemetry.io/collector/config/confighttp v0.112.0
 	go.opentelemetry.io/collector/confmap v1.18.0
 	go.opentelemetry.io/collector/consumer v0.112.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.112.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
 	go.opentelemetry.io/collector/pdata v1.18.0
 	go.opentelemetry.io/collector/receiver v0.112.0
@@ -29,9 +31,9 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.58.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.58.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.58.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.58.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.1 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.14 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
@@ -72,7 +74,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -86,7 +88,6 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.18.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.112.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.112.0 // indirect
@@ -128,3 +129,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
