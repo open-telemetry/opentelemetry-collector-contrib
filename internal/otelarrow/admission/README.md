@@ -18,11 +18,15 @@ explaining why it is preferred to FIFO semantics.
 
 ## Usage 
 
-Create a new BoundedQueue by calling `bq := admission.NewBoundedQueue(maxLimitBytes, maxLimitWaiters)`
+Create a new BoundedQueue by calling `bq := admission.NewBoundedQueue(maxLimitBytes, maxLimitWaiting)`
 
-Within the component call `bq.Acquire(ctx, requestSize)` which will either
-1. succeed immediately if there is enough available memory
-2. fail immediately if there are too many waiters
-3. block until context cancelation or enough bytes becomes available
+Within the component call `bq.Acquire(ctx, requestSize)` which will:
 
-Once a request has finished processing and is sent downstream call `bq.Release(requestSize)` to allow waiters to be admitted for processing. Release should only fail if releasing more bytes than previously acquired.
+1. succeed immediately if there is enough available memory,
+2. fail immediately if there are too many waiters, or
+3. block until context cancelation or enough bytes becomes available.
+
+When the resources have been acquired successfully, a closure is
+returned that, when called, will release the semaphore.  When the
+semaphore is released, pending waiters that can be satisfied will
+acquire the resource and become unblocked.
