@@ -113,7 +113,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 		maxNumTraces:      cfg.NumTraces,
 		sampledIDCache:    sampledDecisions,
 		nonSampledIDCache: nonSampledDecisions,
-		logger:            settings.Logger,
+		logger:            telemetrySettings.Logger,
 		numTracesOnMap:    &atomic.Uint64{},
 		deleteChan:        make(chan pcommon.TraceID, cfg.NumTraces),
 	}
