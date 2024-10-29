@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.22.0
 
 require (
-	github.com/docker/docker v26.1.5+incompatible
+	github.com/docker/docker v27.3.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.112.0
@@ -49,6 +49,7 @@ require (
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
+	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
