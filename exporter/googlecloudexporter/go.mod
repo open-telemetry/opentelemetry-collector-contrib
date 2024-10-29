@@ -6,12 +6,12 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.48.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.112.0
-	go.opentelemetry.io/collector/confmap v1.18.0
+	go.opentelemetry.io/collector/confmap v1.18.1-0.20241029112935-002a74860455
 	go.opentelemetry.io/collector/consumer v0.112.0
 	go.opentelemetry.io/collector/exporter v0.112.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.112.0
-	go.opentelemetry.io/collector/featuregate v1.18.0
-	go.opentelemetry.io/collector/pdata v1.18.0
+	go.opentelemetry.io/collector/featuregate v1.18.1-0.20241029112935-002a74860455
+	go.opentelemetry.io/collector/pdata v1.18.1-0.20241029112935-002a74860455
 	go.uber.org/goleak v1.3.0
 )
 
@@ -57,7 +57,7 @@ require (
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.18.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.18.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect

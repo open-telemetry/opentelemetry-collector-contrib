@@ -19,15 +19,15 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.112.0
 	go.opentelemetry.io/collector/config/confighttp v0.112.0
-	go.opentelemetry.io/collector/config/configopaque v1.18.0
-	go.opentelemetry.io/collector/config/configretry v1.18.0
-	go.opentelemetry.io/collector/config/configtls v1.18.0
-	go.opentelemetry.io/collector/confmap v1.18.0
+	go.opentelemetry.io/collector/config/configopaque v1.18.1-0.20241029112935-002a74860455
+	go.opentelemetry.io/collector/config/configretry v1.18.1-0.20241029112935-002a74860455
+	go.opentelemetry.io/collector/config/configtls v1.18.1-0.20241029112935-002a74860455
+	go.opentelemetry.io/collector/confmap v1.18.1-0.20241029112935-002a74860455
 	go.opentelemetry.io/collector/consumer v0.112.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.112.0
 	go.opentelemetry.io/collector/exporter v0.112.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.112.0
-	go.opentelemetry.io/collector/pdata v1.18.0
+	go.opentelemetry.io/collector/pdata v1.18.1-0.20241029112935-002a74860455
 	go.opentelemetry.io/collector/semconv v0.112.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -69,9 +69,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/client v1.18.0 // indirect
+	go.opentelemetry.io/collector/client v1.18.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.112.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.18.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.18.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect

@@ -6,8 +6,8 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.112.0
-	go.opentelemetry.io/collector/config/configopaque v1.18.0
-	go.opentelemetry.io/collector/confmap v1.18.0
+	go.opentelemetry.io/collector/config/configopaque v1.18.1-0.20241029112935-002a74860455
+	go.opentelemetry.io/collector/confmap v1.18.1-0.20241029112935-002a74860455
 	go.opentelemetry.io/collector/extension v0.112.0
 	go.opentelemetry.io/collector/extension/auth v0.112.0
 	go.uber.org/goleak v1.3.0
@@ -29,7 +29,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.18.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.18.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
