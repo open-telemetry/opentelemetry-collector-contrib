@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package admission
+package admission // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 
 // notification.N is a minimal Go version of absl::Notification:
 //
