@@ -52,7 +52,8 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	sizeBytes := int64(r.sizer.LogsSize(req.Logs()))
 	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeLogs(ctx, ld)
-		r.boundedQueue.Release(sizeBytes) // immediate release
+		// Release() is not checked, see #36074.
+		_ = r.boundedQueue.Release(sizeBytes) // immediate release
 	} else {
 		err = acqErr
 	}

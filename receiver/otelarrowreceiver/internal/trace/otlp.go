@@ -52,7 +52,8 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	sizeBytes := int64(r.sizer.TracesSize(req.Traces()))
 	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeTraces(ctx, td)
-		r.boundedQueue.Release(sizeBytes) // immediate release
+		// Release() is not checked, see #36074.
+		_ = r.boundedQueue.Release(sizeBytes) // immediate release
 	} else {
 		err = acqErr
 	}

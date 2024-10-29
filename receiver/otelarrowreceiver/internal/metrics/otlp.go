@@ -52,7 +52,8 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	sizeBytes := int64(r.sizer.MetricsSize(req.Metrics()))
 	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeMetrics(ctx, md)
-		r.boundedQueue.Release(sizeBytes) // immediate release
+		// Release() is not checked, see #36074.
+		_ = r.boundedQueue.Release(sizeBytes) // immediate release
 	} else {
 		err = acqErr
 	}
