@@ -475,6 +475,13 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 
 func TestLogsConnectorDetailed(t *testing.T) {
 	testCases := []string{
+		filepath.Join("testdata", "logs", "request_context", "match_any_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_grpc_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_http_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_http_value2"),
+		filepath.Join("testdata", "logs", "request_context", "match_no_grpc_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_no_http_value"),
+		filepath.Join("testdata", "logs", "request_context", "no_request_values"),
 		filepath.Join("testdata", "logs", "resource_context", "all_match_first_only"),
 		filepath.Join("testdata", "logs", "resource_context", "all_match_last_only"),
 		filepath.Join("testdata", "logs", "resource_context", "all_match_once"),
@@ -489,8 +496,12 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		filepath.Join("testdata", "logs", "log_context", "with_resource_condition"),
 		filepath.Join("testdata", "logs", "log_context", "with_scope_condition"),
 		filepath.Join("testdata", "logs", "log_context", "with_resource_and_scope_conditions"),
-		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_logs"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_grpc_request"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_http_request"),
 		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_resource"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_grpc_request"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_http_request"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_logs"),
 	}
 
 	for _, tt := range testCases {
@@ -539,10 +550,17 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				t.Fatalf("Error reading sink_default.yaml: %v", readErr)
 			}
 
+			ctx := context.Background()
+			if ctxFromFile, readErr := createContextFromFile(t, filepath.Join(tt, "request.yaml")); readErr == nil {
+				ctx = ctxFromFile
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading request.yaml: %v", readErr)
+			}
+
 			input, readErr := golden.ReadLogs(filepath.Join(tt, "input.yaml"))
 			require.NoError(t, readErr)
 
-			require.NoError(t, conn.ConsumeLogs(context.Background(), input))
+			require.NoError(t, conn.ConsumeLogs(ctx, input))
 
 			if expected0 == nil {
 				assert.Empty(t, sink0.AllLogs(), "sink0 should be empty")

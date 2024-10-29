@@ -33,15 +33,35 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `table (required)`: the routing table for this connector.
-- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource` and `log` are supported.
-- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided.
-- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided.
+- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `log`, and `request` are supported.
+- `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
+- `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
 - `match_once (optional, default: false)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the first pipeline in the `table` whose routing condition is met. May only be `false` when used with `resource` context.
 
-### Examples
+### Limitations
+
+- The `match_once` setting is only supported when using the `resource` context. If any routes use `log` or `request` context, `match_once` must be set to `true`.
+- The `request` context is only supported for logs at this time.
+- The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
+
+### Supported [OTTL] functions
+
+- [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
+- [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)
+- [delete_matching_keys](../../pkg/ottl/ottlfuncs/README.md#delete_matching_keys)
+
+## Additional Settings
+
+The full list of settings exposed for this connector are documented [here](./config.go) with detailed sample configuration files:
+
+- [logs](./testdata/config/logs.yaml)
+- [metrics](./testdata/config/metrics.yaml)
+- [traces](./testdata/config/traces.yaml)
+
+## Examples
 
 Route traces based on an attribute:
 
@@ -92,6 +112,48 @@ service:
     traces/jaeger-ecorp:
       receivers: [routing]
       exporters: [jaeger/ecorp]
+```
+
+Route logs based on tenant:
+
+```yaml
+receivers:
+    otlp:
+
+exporters:
+  file/other:
+    path: ./other.log
+  file/acme:
+    path: ./acme.log
+  file/ecorp:
+    path: ./ecorp.log
+
+connectors:
+  routing:
+    match_once: true
+    default_pipelines: [logs/other]
+    table:
+      - context: request
+        condition: reqeust["X-Tenant"] == "acme"
+        pipelines: [logs/acme]
+      - context: request
+        condition: reqeust["X-Tenant"] == "ecorp"
+        pipelines: [logs/ecorp]
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [otlp]
+      exporters: [routing]
+    logs/acme:
+      receivers: [routing]
+      exporters: [file/acme]
+    logs/ecorp:
+      receivers: [routing]
+      exporters: [file/ecorp]
+    logs/other:
+      receivers: [routing]
+      exporters: [file/other]
 ```
 
 Route logs based on region:
@@ -180,27 +242,54 @@ service:
       exporters: [file/service2]
 ```
 
-A signal may get matched by routing conditions of more than one routing table entry. In this case, the signal will be routed to all pipelines of matching routes.
-Respectively, if none of the routing conditions met, then a signal is routed to default pipelines.
+Route all low level logs to cheap storage. Route the remainder based on tenant:
+
+```yaml
+receivers:
+    otlp:
+
+exporters:
+  file/cheap:
+    path: ./cheap.log
+  file/acme:
+    path: ./acme.log
+  file/ecorp:
+    path: ./ecorp.log
+
+connectors:
+  routing:
+    match_once: true
+    table:
+      - context: log
+        condition: severity_number < SEVERITY_NUMBER_ERROR
+        pipelines: [logs/cheap]
+      - context: request
+        condition: reqeust["X-Tenant"] == "acme"
+        pipelines: [logs/acme]
+      - context: request
+        condition: reqeust["X-Tenant"] == "ecorp"
+        pipelines: [logs/ecorp]
+
+service:
+  pipelines:
+    logs/in:
+      receivers: [otlp]
+      exporters: [routing]
+    logs/cheap:
+      receivers: [routing]
+      exporters: [file/cheap]
+    logs/acme:
+      receivers: [routing]
+      exporters: [file/acme]
+    logs/ecorp:
+      receivers: [routing]
+      exporters: [file/ecorp]
+```
 
 ## Differences between the Routing Connector and Routing Processor
 
-- The connector will only route using [OTTL] statements which can only be applied to resource attributes. It does not support matching on context values at this time.
+- Routing on context values is only supported for logs at this time.
 - The connector routes to pipelines, not exporters as the processor does.
-
-### Supported [OTTL] functions
-
-- [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
-- [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)
-- [delete_matching_keys](../../pkg/ottl/ottlfuncs/README.md#delete_matching_keys)
-
-## Additional Settings
-
-The full list of settings exposed for this connector are documented [here](./config.go) with detailed sample configuration files:
-
-- [logs](./testdata/config/logs.yaml)
-- [metrics](./testdata/config/metrics.yaml)
-- [traces](./testdata/config/traces.yaml)
 
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 
