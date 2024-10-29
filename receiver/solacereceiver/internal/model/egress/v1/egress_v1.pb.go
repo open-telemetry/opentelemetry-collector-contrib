@@ -925,7 +925,7 @@ func (*SpanData_RejectedOutcomeInfo) Descriptor() ([]byte, []int) {
 // brokers. This could be caused by certain bridge configurations. In some
 // documentation an interfaces, this may be referred to as SMF TTL or bridge
 // TTL. Here the term TTL is being avoided to avoid confusion with the
-// Guranteed Messaging TTL, which is specified as a time duration.
+// Guaranteed Messaging TTL, which is specified as a time duration.
 type SpanData_HopCountExceededInfo struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
