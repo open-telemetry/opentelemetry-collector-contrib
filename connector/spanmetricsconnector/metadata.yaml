@@ -1,5 +1,4 @@
 type: spanmetrics
-scope_name: otelcol/spanmetrics
 
 status:
   class: connector

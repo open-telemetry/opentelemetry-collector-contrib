@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -770,8 +770,12 @@ func fixAnnotationKey(key string) string {
 }
 
 func trimAwsSdkPrefix(name string, span ptrace.Span) string {
-	if isAwsSdkSpan(span) && strings.HasPrefix(name, "AWS.SDK.") {
-		return strings.TrimPrefix(name, "AWS.SDK.")
+	if isAwsSdkSpan(span) {
+		if strings.HasPrefix(name, "AWS.SDK.") {
+			return strings.TrimPrefix(name, "AWS.SDK.")
+		} else if strings.HasPrefix(name, "AWS::") {
+			return strings.TrimPrefix(name, "AWS::")
+		}
 	}
 	return name
 }

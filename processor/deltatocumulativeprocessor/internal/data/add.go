@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/putil/pslice"
 )
 
 func (dp Number) Add(in Number) Number {
@@ -24,9 +25,44 @@ func (dp Number) Add(in Number) Number {
 	return dp
 }
 
-// nolint
 func (dp Histogram) Add(in Histogram) Histogram {
-	panic("todo")
+	// bounds different: no way to merge, so reset observation to new boundaries
+	if !pslice.Equal(dp.ExplicitBounds(), in.ExplicitBounds()) {
+		in.MoveTo(dp.HistogramDataPoint)
+		return dp
+	}
+
+	// spec requires len(BucketCounts) == len(ExplicitBounds)+1.
+	// given we have limited error handling at this stage (and already verified boundaries are correct),
+	// doing a best-effort add of whatever we have appears reasonable.
+	n := min(dp.BucketCounts().Len(), in.BucketCounts().Len())
+	for i := 0; i < n; i++ {
+		sum := dp.BucketCounts().At(i) + in.BucketCounts().At(i)
+		dp.BucketCounts().SetAt(i, sum)
+	}
+
+	dp.SetTimestamp(in.Timestamp())
+	dp.SetCount(dp.Count() + in.Count())
+
+	if dp.HasSum() && in.HasSum() {
+		dp.SetSum(dp.Sum() + in.Sum())
+	} else {
+		dp.RemoveSum()
+	}
+
+	if dp.HasMin() && in.HasMin() {
+		dp.SetMin(math.Min(dp.Min(), in.Min()))
+	} else {
+		dp.RemoveMin()
+	}
+
+	if dp.HasMax() && in.HasMax() {
+		dp.SetMax(math.Max(dp.Max(), in.Max()))
+	} else {
+		dp.RemoveMax()
+	}
+
+	return dp
 }
 
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
@@ -71,4 +107,8 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	}
 
 	return dp
+}
+
+func (dp Summary) Add(Summary) Summary {
+	panic("todo")
 }

@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("datadog")
+	Type      = component.MustNewType("datadog")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 )
 
 const (
-	LogsStability    = component.StabilityLevelAlpha
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

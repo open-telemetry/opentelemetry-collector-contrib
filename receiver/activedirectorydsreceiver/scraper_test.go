@@ -45,7 +45,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
@@ -73,14 +73,14 @@ func TestScrape(t *testing.T) {
 		scrapeData, err := scraper.scrape(context.Background())
 		require.Error(t, err)
 		require.True(t, scrapererror.IsPartialScrapeError(err))
-		require.Contains(t, err.Error(), fullSyncObjectsRemainingErr.Error())
-		require.Contains(t, err.Error(), draInboundValuesDNErr.Error())
+		require.ErrorContains(t, err, fullSyncObjectsRemainingErr.Error())
+		require.ErrorContains(t, err, draInboundValuesDNErr.Error())
 
 		expectedMetrics, err := golden.ReadMetrics(partialScrapePath)
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, scrapeData, pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder()))
 
 		err = scraper.shutdown(context.Background())
 		require.NoError(t, err)
@@ -106,9 +106,8 @@ func TestScrape(t *testing.T) {
 		}
 
 		err = scraper.shutdown(context.Background())
-		require.Error(t, err)
-		require.Contains(t, err.Error(), fullSyncObjectsRemainingErr.Error())
-		require.Contains(t, err.Error(), draInboundValuesDNErr.Error())
+		require.ErrorContains(t, err, fullSyncObjectsRemainingErr.Error())
+		require.ErrorContains(t, err, draInboundValuesDNErr.Error())
 	})
 
 	t.Run("Double shutdown does not error", func(t *testing.T) {

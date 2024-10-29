@@ -192,7 +192,7 @@ func TestStatsReaders_Read(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, testCase.expectedMetricsAmount, len(metrics))
+				assert.Len(t, metrics, testCase.expectedMetricsAmount)
 			}
 		})
 	}

@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -85,7 +85,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.NoError(t, jr.startAgent(), "Start failed")
+	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	l, err := net.Listen("udp", addr)
@@ -119,7 +119,7 @@ func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server
 	beforeServe(server)
 	go func() {
 		err := server.Serve(lis)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}()
 	return server, lis.Addr()
 }
@@ -190,8 +190,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 
 	// 3. Now finally send some spans
 	td := generateTraceData()
-	batches, err := jaeger.ProtoFromTraces(td)
-	require.NoError(t, err)
+	batches := jaeger.ProtoFromTraces(td)
 	for _, batch := range batches {
 		require.NoError(t, jexp.EmitBatch(context.Background(), modelToThrift(batch)))
 	}
@@ -201,7 +200,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 	}, 10*time.Second, 5*time.Millisecond)
 
 	gotTraces := sink.AllTraces()
-	require.Equal(t, 1, len(gotTraces))
+	require.Len(t, gotTraces, 1)
 	assert.EqualValues(t, td, gotTraces[0])
 }
 

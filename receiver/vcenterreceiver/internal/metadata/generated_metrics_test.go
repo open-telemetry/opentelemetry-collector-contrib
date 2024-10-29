@@ -52,64 +52,16 @@ func TestMetricsBuilder(t *testing.T) {
 			expectEmpty: true,
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.congestions`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.operations`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.cache.hit_rate`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.congestions`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.operations`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.operations`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -144,15 +96,19 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterClusterVMTemplateCountDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanCongestionsDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 
@@ -248,18 +204,23 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1, "object_name-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCacheHitRateDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanCongestionsDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 
@@ -359,12 +320,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1, "object_name-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanLatencyAvgDataPoint(ts, 1, AttributeVsanLatencyTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanOperationsDataPoint(ts, 1, AttributeVsanOperationTypeRead)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMVsanThroughputDataPoint(ts, 1, AttributeVsanThroughputDirectionRead)
 
@@ -384,7 +348,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
-			if test.expectEmpty {
+			if tt.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -394,10 +358,10 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.metricsSet == testDataSetDefault {
+			if tt.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.metricsSet == testDataSetAll {
+			if tt.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -409,8 +373,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -423,8 +387,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of CPU available to the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -438,7 +402,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of hosts in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{hosts}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -447,7 +411,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("effective")
 					assert.True(t, ok)
-					assert.EqualValues(t, true, attrVal.Bool())
+					assert.True(t, attrVal.Bool())
 				case "vcenter.cluster.memory.effective":
 					assert.False(t, validatedMetrics["vcenter.cluster.memory.effective"], "Found a duplicate in the metrics slice: vcenter.cluster.memory.effective")
 					validatedMetrics["vcenter.cluster.memory.effective"] = true
@@ -455,7 +419,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The effective available memory of the cluster.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -469,7 +433,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The available memory of the cluster.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -483,7 +447,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of virtual machines in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -500,7 +464,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of virtual machine templates in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{virtual_machine_templates}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -513,12 +477,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{congestions/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{congestions/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.cluster.vsan.latency.avg":
 					assert.False(t, validatedMetrics["vcenter.cluster.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.cluster.vsan.latency.avg")
 					validatedMetrics["vcenter.cluster.vsan.latency.avg"] = true
@@ -540,7 +504,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The vSAN IOPs of a cluster.", ms.At(i).Description())
-					assert.Equal(t, "{operations/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -560,7 +524,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "read", attrVal.Str())
@@ -571,7 +535,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of clusters in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{clusters}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -587,8 +551,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The total amount of CPU available to the datacenter.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -602,7 +566,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of datastores in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{datastores}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -616,7 +580,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of available and used disk space in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -633,7 +597,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of hosts in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{hosts}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -653,7 +617,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The total amount of memory available to the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -667,7 +631,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of VM's in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -687,7 +651,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of space in the datastore.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -708,7 +672,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.host.cpu.capacity":
 					assert.False(t, validatedMetrics["vcenter.host.cpu.capacity"], "Found a duplicate in the metrics slice: vcenter.host.cpu.capacity")
 					validatedMetrics["vcenter.host.cpu.capacity"] = true
@@ -716,7 +680,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Total CPU capacity of the host system.", ms.At(i).Description())
 					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -730,7 +694,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The CPU of the host reserved for use by virtual machines.", ms.At(i).Description())
 					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -747,7 +711,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of CPU used by the host.", ms.At(i).Description())
 					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -765,7 +729,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.host.disk.latency.avg":
 					assert.False(t, validatedMetrics["vcenter.host.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.avg")
 					validatedMetrics["vcenter.host.disk.latency.avg"] = true
@@ -806,7 +770,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Average number of kilobytes read from or written to the disk each second.", ms.At(i).Description())
 					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -826,7 +790,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory the host system is using.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -844,19 +808,19 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.host.network.packet.drop.rate":
 					assert.False(t, validatedMetrics["vcenter.host.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.drop.rate")
 					validatedMetrics["vcenter.host.network.packet.drop.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packets dropped across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "transmitted", attrVal.Str())
@@ -869,12 +833,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packet errors transmitted or received on the host network.", ms.At(i).Description())
-					assert.Equal(t, "{errors/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{errors/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "transmitted", attrVal.Str())
@@ -887,12 +851,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "transmitted", attrVal.Str())
@@ -906,7 +870,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of data that was transmitted or received over the network by the host.", ms.At(i).Description())
 					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -926,7 +890,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The sum of the data transmitted and received for all the NIC instances of the host.", ms.At(i).Description())
 					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -954,12 +918,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The congestions of IOs generated by all vSAN clients in the host.", ms.At(i).Description())
-					assert.Equal(t, "{congestions/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{congestions/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.host.vsan.latency.avg":
 					assert.False(t, validatedMetrics["vcenter.host.vsan.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.vsan.latency.avg")
 					validatedMetrics["vcenter.host.vsan.latency.avg"] = true
@@ -981,7 +945,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The vSAN IOPs of a host.", ms.At(i).Description())
-					assert.Equal(t, "{operations/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1001,7 +965,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "read", attrVal.Str())
@@ -1012,7 +976,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of shares of CPU in the resource pool.", ms.At(i).Description())
 					assert.Equal(t, "{shares}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1025,8 +989,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The usage of the CPU used by the resource pool.", ms.At(i).Description())
-					assert.Equal(t, "{MHz}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1040,7 +1004,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory in a resource pool that is ballooned due to virtualization.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1054,7 +1018,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1071,7 +1035,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of shares of memory in the resource pool.", ms.At(i).Description())
 					assert.Equal(t, "{shares}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1085,7 +1049,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from the host's swap space.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1099,7 +1063,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The usage of the memory by the resource pool.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1128,7 +1092,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of CPU used by the VM.", ms.At(i).Description())
 					assert.Equal(t, "MHz", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1146,7 +1110,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.vm.disk.latency.avg":
 					assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")
 					validatedMetrics["vcenter.vm.disk.latency.avg"] = true
@@ -1208,7 +1172,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of storage space used by the virtual machine.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1229,7 +1193,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.vm.memory.ballooned":
 					assert.False(t, validatedMetrics["vcenter.vm.memory.ballooned"], "Found a duplicate in the metrics slice: vcenter.vm.memory.ballooned")
 					validatedMetrics["vcenter.vm.memory.ballooned"] = true
@@ -1237,7 +1201,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory that is ballooned due to virtualization.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1251,7 +1215,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The portion of memory that is granted to this VM from the host's swap space.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1265,7 +1229,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory swapped to fast disk device such as SSD.", ms.At(i).Description())
 					assert.Equal(t, "KiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1279,7 +1243,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of memory that is used by the virtual machine.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1297,19 +1261,19 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "vcenter.vm.network.packet.drop.rate":
 					assert.False(t, validatedMetrics["vcenter.vm.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.drop.rate")
 					validatedMetrics["vcenter.vm.network.packet.drop.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "transmitted", attrVal.Str())
@@ -1322,12 +1286,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{packets/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "transmitted", attrVal.Str())
@@ -1340,8 +1304,8 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "By/sec", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1361,7 +1325,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The network utilization combined transmit and receive rates during an interval.", ms.At(i).Description())
 					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1392,7 +1356,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The vSAN IOPs of a virtual machine.", ms.At(i).Description())
-					assert.Equal(t, "{operations/sec}", ms.At(i).Unit())
+					assert.Equal(t, "{operations/s}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -1412,7 +1376,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "read", attrVal.Str())

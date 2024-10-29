@@ -1,5 +1,4 @@
 type: asapclient
-scope_name: otelcol/asapauth
 
 status:
   class: extension

@@ -1,0 +1,17 @@
+server:
+  endpoint: ws://localhost:3001/v1/opamp
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+agent:
+  executable: ../../../bin/collector_binary
+  health_check_port: 12345
+
+storage:
+  directory: "./testdata/storage"

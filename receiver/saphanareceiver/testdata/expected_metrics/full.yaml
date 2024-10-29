@@ -174,7 +174,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             unit: us
         scope:
-          name: otelcol/saphanareceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
           version: latest
   - resource:
       attributes:
@@ -1058,7 +1058,7 @@ resourceMetrics:
               isMonotonic: true
             unit: ms
         scope:
-          name: otelcol/saphanareceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
           version: latest
   - resource:
       attributes:
@@ -1893,5 +1893,5 @@ resourceMetrics:
               isMonotonic: true
             unit: ms
         scope:
-          name: otelcol/saphanareceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver
           version: latest

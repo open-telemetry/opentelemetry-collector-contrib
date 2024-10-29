@@ -1,5 +1,4 @@
 type: osquery
-scope_name: otelcol/osqueryreceiver
 
 status:
   class: receiver

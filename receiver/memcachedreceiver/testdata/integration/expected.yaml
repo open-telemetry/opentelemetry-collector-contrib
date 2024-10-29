@@ -205,5 +205,5 @@ resourceMetrics:
                   timeUnixNano: "1639770622333015000"
             unit: '{threads}'
         scope:
-          name: otelcol/memcachedreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
           version: latest

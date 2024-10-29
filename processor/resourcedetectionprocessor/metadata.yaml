@@ -1,5 +1,4 @@
 type: resourcedetection
-scope_name: otelcol/resourcedetection
 
 status:
   class: processor

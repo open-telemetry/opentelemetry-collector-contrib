@@ -15,14 +15,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 )
 
 func TestComponentStatus(t *testing.T) {
@@ -35,7 +35,7 @@ func TestComponentStatus(t *testing.T) {
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 	require.True(t, ok)
-	assert.Equal(t, st.Status(), component.StatusNone)
+	assert.Equal(t, componentstatus.StatusNone, st.Status())
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -43,12 +43,12 @@ func TestComponentStatus(t *testing.T) {
 
 	// StatusStarting will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, component.NewStatusEvent(component.StatusStarting))
+		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStarting))
 	}
 
 	// StatusOK will be queued until the PipelineWatcher Ready method is called.
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, component.NewStatusEvent(component.StatusOK))
+		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusOK))
 	}
 
 	// Note the use of assert.Eventually here and throughout this test is because
@@ -56,7 +56,7 @@ func TestComponentStatus(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		return st.Status() == component.StatusStarting
+		return st.Status() == componentstatus.StatusStarting
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.Ready())
@@ -64,18 +64,18 @@ func TestComponentStatus(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		return st.Status() == component.StatusOK
+		return st.Status() == componentstatus.StatusOK
 	}, time.Second, 10*time.Millisecond)
 
 	// StatusStopping will be sent immediately.
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, component.NewStatusEvent(component.StatusStopping))
+		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopping))
 	}
 
 	assert.Eventually(t, func() bool {
 		st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 		require.True(t, ok)
-		return st.Status() == component.StatusStopping
+		return st.Status() == componentstatus.StatusStopping
 	}, time.Second, 10*time.Millisecond)
 
 	require.NoError(t, ext.NotReady())
@@ -83,12 +83,12 @@ func TestComponentStatus(t *testing.T) {
 
 	// Events sent after shutdown will be discarded
 	for _, id := range traces.InstanceIDs() {
-		ext.ComponentStatusChanged(id, component.NewStatusEvent(component.StatusStopped))
+		ext.ComponentStatusChanged(id, componentstatus.NewEvent(componentstatus.StatusStopped))
 	}
 
 	st, ok = ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 	require.True(t, ok)
-	assert.Equal(t, component.StatusStopping, st.Status())
+	assert.Equal(t, componentstatus.StatusStopping, st.Status())
 }
 
 func TestNotifyConfig(t *testing.T) {
@@ -131,5 +131,5 @@ func TestNotifyConfig(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	assert.Equal(t, confJSON, body)
+	assert.JSONEq(t, string(confJSON), string(body))
 }

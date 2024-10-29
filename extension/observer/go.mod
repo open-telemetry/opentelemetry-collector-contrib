@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0

@@ -449,7 +449,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
-	cfg.QueueSettings.Enabled = false
+	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
 		TLSSetting: configtls.ClientConfig{

@@ -43,6 +43,7 @@ func TestScraper(t *testing.T) {
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
@@ -100,6 +101,7 @@ func TestScraperNoIOStats(t *testing.T) {
 
 	config.Metrics.ElasticsearchIndexOperationsMergeSize.Enabled = true
 	config.Metrics.ElasticsearchIndexOperationsMergeDocsCount.Enabled = true
+	config.Metrics.ElasticsearchIndexOperationsMergeCurrent.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsCount.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsSize.Enabled = true
 	config.Metrics.ElasticsearchIndexSegmentsMemory.Enabled = true
@@ -255,7 +257,7 @@ func TestScrapingError(t *testing.T) {
 
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
-				require.Equal(t, err.Error(), err404.Error())
+				require.EqualError(t, err, err404.Error())
 
 			},
 		},
@@ -282,7 +284,7 @@ func TestScrapingError(t *testing.T) {
 
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
-				require.Equal(t, err.Error(), err404.Error())
+				require.EqualError(t, err, err404.Error())
 
 			},
 		},
@@ -309,10 +311,10 @@ func TestScrapingError(t *testing.T) {
 				sc.client = &mockClient
 
 				m, err := sc.scrape(context.Background())
-				require.Contains(t, err.Error(), err404.Error())
-				require.Contains(t, err.Error(), err500.Error())
+				require.ErrorContains(t, err, err404.Error())
+				require.ErrorContains(t, err, err500.Error())
 
-				require.Equal(t, m.DataPointCount(), 0)
+				require.Equal(t, 0, m.DataPointCount())
 			},
 		},
 		{
@@ -338,7 +340,7 @@ func TestScrapingError(t *testing.T) {
 
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
-				require.Contains(t, err.Error(), err404.Error())
+				require.ErrorContains(t, err, err404.Error())
 			},
 		},
 		{
@@ -364,10 +366,10 @@ func TestScrapingError(t *testing.T) {
 				sc.client = &mockClient
 
 				m, err := sc.scrape(context.Background())
-				require.Contains(t, err.Error(), err404.Error())
-				require.Contains(t, err.Error(), err500.Error())
+				require.ErrorContains(t, err, err404.Error())
+				require.ErrorContains(t, err, err500.Error())
 
-				require.Equal(t, m.DataPointCount(), 0)
+				require.Equal(t, 0, m.DataPointCount())
 			},
 		},
 		{
@@ -394,7 +396,7 @@ func TestScrapingError(t *testing.T) {
 
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
-				require.Contains(t, err.Error(), errUnknownClusterStatus.Error())
+				require.ErrorContains(t, err, errUnknownClusterStatus.Error())
 			},
 		},
 	}

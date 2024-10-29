@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_aggregateOnAttributes(t *testing.T) {
@@ -315,18 +316,27 @@ func Test_aggregateOnAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluate, err := AggregateOnAttributes(tt.t, tt.attributes)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
 			assert.Equal(t, tt.wantErr, err)
 
-			actualMetrics := pmetric.NewMetricSlice()
-			tt.input.CopyTo(actualMetrics.AppendEmpty())
+			actualMetric := pmetric.NewMetricSlice()
+			tt.input.CopyTo(actualMetric.AppendEmpty())
 
 			if tt.want != nil {
 				expected := pmetric.NewMetricSlice()
 				tt.want(expected)
-				assert.Equal(t, expected, actualMetrics)
+
+				expectedMetrics := pmetric.NewMetrics()
+				sl := expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				expected.CopyTo(sl)
+
+				actualMetrics := pmetric.NewMetrics()
+				sl2 := actualMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				actualMetric.CopyTo(sl2)
+
+				require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricDataPointsOrder()))
 			}
 		})
 	}

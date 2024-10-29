@@ -19,7 +19,7 @@ func TestGetShutdown(t *testing.T) {
 		InitSyncPollInterval(10*time.Nanosecond),
 		InitSyncPollTimeout(20*time.Nanosecond),
 	)
-	assert.Equal(t, 1, len(optionsToK8sClient))
+	assert.Len(t, optionsToK8sClient, 1)
 	assert.NotNil(t, k8sClient.GetClientSet())
 	assert.NotNil(t, k8sClient.GetEpClient())
 	assert.NotNil(t, k8sClient.GetJobClient())
@@ -32,6 +32,6 @@ func TestGetShutdown(t *testing.T) {
 	assert.Nil(t, k8sClient.node)
 	assert.Nil(t, k8sClient.pod)
 	assert.Nil(t, k8sClient.replicaSet)
-	assert.Equal(t, 0, len(optionsToK8sClient))
+	assert.Empty(t, optionsToK8sClient)
 	removeTempKubeConfig()
 }

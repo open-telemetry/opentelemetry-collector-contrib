@@ -14,6 +14,10 @@
 
 This exporter can be used to send metrics (including trace exemplars) to [Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus). It is one of [several supported approaches for sending metrics to Google Cloud Managed Service for Prometheus](https://cloud.google.com/stackdriver/docs/managed-prometheus#gmp-data-collection).
 
+To learn more about instrumentation and observability, including opinionated recommendations
+for Google Cloud Observability, visit [Instrumentation and
+observability](https://cloud.google.com/stackdriver/docs/instrumentation/overview).
+
 ## Configuration Reference
 
 The following configuration options are supported:
@@ -280,13 +284,21 @@ logic from OpenTelemetry resource to Google Cloud's `prometheus_target`
 monitored resouce didn't preserve a resource attribute that was needed to
 distinguish timeseries. This can be mitigated by adding resource
 attributes as metric labels using `resource_filters` configuration in the
-exporter:
+exporter. The following example adds common identifying resource attributes.
+You may need to expand this list with other resource attributes to fix
+duplicate timeseries errors:
 
 ```yaml
   googlemanagedprometheus:
     metric:
       resource_filters:
-        regex: ".*"
+      - prefix: "cloud"
+      - prefix: "k8s"
+      - prefix: "faas"
+      - regex: "container.id"
+      - regex: "process.pid"
+      - regex: "host.name"
+      - regex: "host.id"
 ```
 
 If you need to troubleshoot errors further, start by filtering down to a single

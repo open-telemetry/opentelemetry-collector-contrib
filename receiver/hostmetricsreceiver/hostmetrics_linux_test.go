@@ -22,9 +22,9 @@ import (
 
 func TestConsistentRootPaths(t *testing.T) {
 	// use testdata because it's a directory that exists - don't actually use any files in it
-	assert.Nil(t, testValidate("testdata"))
-	assert.Nil(t, testValidate(""))
-	assert.Nil(t, testValidate("/"))
+	assert.NoError(t, testValidate("testdata"))
+	assert.NoError(t, testValidate(""))
+	assert.NoError(t, testValidate("/"))
 }
 
 func TestInconsistentRootPaths(t *testing.T) {
@@ -50,11 +50,12 @@ func TestLoadConfigRootPath(t *testing.T) {
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
 	cpuScraperCfg.SetRootPath("testdata")
 	cpuScraperCfg.SetEnvMap(common.EnvMap{
-		common.HostDevEnvKey: "testdata/dev",
-		common.HostEtcEnvKey: "testdata/etc",
-		common.HostRunEnvKey: "testdata/run",
-		common.HostSysEnvKey: "testdata/sys",
-		common.HostVarEnvKey: "testdata/var",
+		common.HostDevEnvKey:     "testdata/dev",
+		common.HostEtcEnvKey:     "testdata/etc",
+		common.HostProcMountinfo: "testdata",
+		common.HostRunEnvKey:     "testdata/run",
+		common.HostSysEnvKey:     "testdata/sys",
+		common.HostVarEnvKey:     "testdata/var",
 	})
 	expectedConfig.Scrapers = map[string]internal.Config{cpuscraper.TypeStr: cpuScraperCfg}
 

@@ -1,5 +1,4 @@
 type: azuredataexplorer
-scope_name: otelcol/azuredataexplorer
 
 status:
   class: exporter
@@ -17,8 +16,3 @@ tests:
     application_key: "xx-xx-xx-xx"
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
   skip_lifecycle: true
-  goleak:
-    ignore:
-      top:
-        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
-        - "go.opencensus.io/stats/view.(*worker).start"

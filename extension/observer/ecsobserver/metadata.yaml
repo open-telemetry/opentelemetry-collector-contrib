@@ -1,5 +1,4 @@
 type: ecs_observer
-scope_name: otelcol/ecsobserver
 
 status:
   class: extension
@@ -7,7 +6,8 @@ status:
     beta: [extension]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, rmfitzpatrick]
+    active: [dmitryax]
+    emeritus: [rmfitzpatrick]
 
 # TODO: Update the extension to make the tests pass
 tests:

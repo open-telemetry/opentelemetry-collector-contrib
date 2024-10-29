@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -54,7 +55,7 @@ func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
 		}
 		err := op.Process(ctx, e.Copy())
 		if err != nil {
-			return err
+			w.Logger().Error("Failed to process entry", zap.Error(err))
 		}
 	}
 	return nil

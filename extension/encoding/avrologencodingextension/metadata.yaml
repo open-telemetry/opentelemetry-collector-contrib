@@ -1,5 +1,4 @@
 type: avro_log_encoding
-scope_name: otelcol/avrologencoding
 
 status:
   class: extension

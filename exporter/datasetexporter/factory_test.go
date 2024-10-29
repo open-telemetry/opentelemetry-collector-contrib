@@ -30,11 +30,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 		LogsSettings:       newDefaultLogsSettings(),
 		ServerHostSettings: newDefaultServerHostSettings(),
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 	}, cfg, "failed to create default config")
 
-	assert.Nil(t, componenttest.CheckConfigStruct(cfg))
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -55,8 +55,8 @@ func TestLoadConfig(t *testing.T) {
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
 				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+				QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
+				TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 			},
 		},
 		{
@@ -78,8 +78,8 @@ func TestLoadConfig(t *testing.T) {
 				LogsSettings:       newDefaultLogsSettings(),
 				ServerHostSettings: newDefaultServerHostSettings(),
 				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
-				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
-				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+				QueueSettings:      exporterhelper.NewDefaultQueueConfig(),
+				TimeoutSettings:    exporterhelper.NewDefaultTimeoutConfig(),
 			},
 		},
 		{
@@ -128,12 +128,12 @@ func TestLoadConfig(t *testing.T) {
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
 				},
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 14,
 					QueueSize:    15,
 				},
-				TimeoutSettings: exporterhelper.TimeoutSettings{
+				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 16 * time.Nanosecond,
 				},
 			},
@@ -147,8 +147,8 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.Nil(t, sub.Unmarshal(cfg))
-			if assert.Nil(t, component.ValidateConfig(cfg)) {
+			require.NoError(t, sub.Unmarshal(cfg))
+			if assert.NoError(t, component.ValidateConfig(cfg)) {
 				assert.Equal(t, tt.expected, cfg)
 			}
 		})
@@ -214,8 +214,8 @@ func createExporterTests() []CreateTest {
 					UseHostName: true,
 				},
 				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 			},
 			expectedError: nil,
 		},

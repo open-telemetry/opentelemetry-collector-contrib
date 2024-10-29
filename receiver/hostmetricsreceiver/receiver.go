@@ -66,6 +66,10 @@ func (hmr *hostEntitiesReceiver) sendEntityEvent(ctx context.Context) {
 	state := entityEvent.SetEntityState()
 	state.SetEntityType(entityType)
 
+	if hmr.cfg.MetadataCollectionInterval != 0 {
+		state.SetInterval(hmr.cfg.MetadataCollectionInterval)
+	}
+
 	logs := out.ConvertAndMoveToLogs()
 
 	err := hmr.nextLogs.ConsumeLogs(ctx, logs)

@@ -1,5 +1,4 @@
 type: alibabacloud_logservice
-scope_name: otelcol/alibabacloudlogservice
 
 status:
   class: exporter

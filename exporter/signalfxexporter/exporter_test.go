@@ -218,7 +218,7 @@ func TestConsumeMetrics(t *testing.T) {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
 				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.Contains(t, err.Error(), "response content")
+				assert.ErrorContains(t, err, "response content")
 				return
 			}
 
@@ -545,7 +545,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -793,7 +793,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -807,7 +807,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 				defer receivedTokens.Unlock()
 				return len(receivedTokens.tokens) == 1
 			}, 1*time.Second, 10*time.Millisecond)
-			assert.Equal(t, receivedTokens.tokens[0], tt.expectedToken)
+			assert.Equal(t, tt.expectedToken, receivedTokens.tokens[0])
 		})
 	}
 }
@@ -1169,7 +1169,6 @@ func TestConsumeMetadata(t *testing.T) {
 			logger := zap.NewNop()
 
 			dimClient := dimensions.NewDimensionClient(
-				context.Background(),
 				dimensions.DimensionClientOptions{
 					Token:             "foo",
 					APIURL:            serverURL,
@@ -1203,6 +1202,10 @@ func TestConsumeMetadata(t *testing.T) {
 			case <-c:
 			// wait 500ms longer than send delay
 			case <-time.After(tt.sendDelay + 500*time.Millisecond):
+				// If no updates are supposed to be sent, the server doesn't update dimensions, and
+				// doesn't call Done. This is correct behavior, so the test needs to account for it here,
+				// or a goroutine will be leaked.
+				defer wg.Done()
 				require.True(t, tt.shouldNotSendUpdate, "timeout waiting for response")
 			}
 
@@ -1257,7 +1260,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), rCfg)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)
@@ -1331,6 +1334,7 @@ func TestTLSExporterInit(t *testing.T) {
 			sfx, err := newSignalFxExporter(tt.config, exportertest.NewNopSettings())
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
+			defer func() { require.NoError(t, sfx.shutdown(context.Background())) }()
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.wantErrMessage != "" {
@@ -1402,6 +1406,7 @@ func TestTLSIngestConnection(t *testing.T) {
 			assert.NoError(t, err)
 			err = sfx.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err)
+			defer func() { assert.NoError(t, sfx.shutdown(context.Background())) }()
 
 			_, err = sfx.pushMetricsData(context.Background(), metricsPayload)
 			if tt.wantErr {
@@ -1441,7 +1446,7 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	for _, dp := range dps {
 		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" {
 			intVal := dp.Value.IntValue
-			require.NotNil(t, intVal, fmt.Sprintf("unexpected nil IntValue for %q", dp.Metric))
+			require.NotNilf(t, intVal, "unexpected nil IntValue for %q", dp.Metric)
 			found[dp.Metric] = *intVal
 		} else {
 			// account for unexpected w/ test-failing placeholder
@@ -1526,10 +1531,7 @@ func TestTLSAPIConnection(t *testing.T) {
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
-			cancellable, cancelFn := context.WithCancel(context.Background())
-			defer cancelFn()
 			dimClient := dimensions.NewDimensionClient(
-				cancellable,
 				dimensions.DimensionClientOptions{
 					Token:            "",
 					APIURL:           serverURL,
@@ -1541,6 +1543,7 @@ func TestTLSAPIConnection(t *testing.T) {
 					APITLSConfig:     apiTLSCfg,
 				})
 			dimClient.Start()
+			defer func() { dimClient.Shutdown() }()
 
 			se := &signalfxExporter{
 				dimClient: dimClient,
@@ -1840,7 +1843,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
 				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.Contains(t, err.Error(), "response content")
+				assert.ErrorContains(t, err, "response content")
 				return
 			}
 

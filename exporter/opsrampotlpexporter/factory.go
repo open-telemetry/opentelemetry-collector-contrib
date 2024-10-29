@@ -40,9 +40,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueConfig:   exporterhelper.NewDefaultQueueConfig(),
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to gzip compression
@@ -69,9 +69,9 @@ func createTracesExporter(
 		cfg,
 		oce.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown))
 }
@@ -92,9 +92,9 @@ func createMetricsExporter(
 		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -116,9 +116,9 @@ func createLogsExporter(
 		cfg,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithQueue(oCfg.QueueConfig),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)

@@ -1,6 +1,6 @@
 # Copyright The OpenTelemetry Authors
 # SPDX-License-Identifier: Apache-2.0
-FROM golang:1.22 as build
+FROM golang:1.23 as build
 WORKDIR /app/
 COPY . .
 RUN go env -w GOPROXY=direct

@@ -17,6 +17,17 @@ clickhouse/full:
   sending_queue:
     queue_size: 100
     storage: file_storage/clickhouse
+  metrics_tables:
+    gauge: 
+      name: "otel_metrics_custom_gauge"
+    sum: 
+      name: "otel_metrics_custom_sum"
+    summary: 
+      name: "otel_metrics_custom_summary"
+    histogram: 
+      name: "otel_metrics_custom_histogram"
+    exponential_histogram: 
+      name: "otel_metrics_custom_exp_histogram"
 clickhouse/invalid-endpoint:
   endpoint: 127.0.0.1:9000
 

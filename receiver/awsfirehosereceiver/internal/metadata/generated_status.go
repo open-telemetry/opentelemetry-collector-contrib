@@ -7,9 +7,11 @@ import (
 )
 
 var (
-	Type = component.MustNewType("awsfirehose")
+	Type      = component.MustNewType("awsfirehose")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 )
 
 const (
 	MetricsStability = component.StabilityLevelAlpha
+	LogsStability    = component.StabilityLevelAlpha
 )

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
@@ -193,9 +194,6 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
 			cs := receivertest.NewNopSettings()
 			cs.TracerProvider = rt
-			cs.ReportStatus = func(event *component.StatusEvent) {
-				assert.NoError(t, event.Err())
-			}
 			rcv, err := newMetricsReceiver(cs, *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
@@ -204,7 +202,13 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			require.NoError(t, err)
 			r.reporter = mr
 
-			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+			host := &nopHost{
+				reportFunc: func(event *componentstatus.Event) {
+					assert.NoError(t, event.Err())
+				},
+			}
+
+			require.NoError(t, r.Start(context.Background(), host))
 			runtime.Gosched()
 			defer func() {
 				require.NoError(t, r.Shutdown(context.Background()))
@@ -235,4 +239,18 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			require.Equal(t, len(recorder.Ended()), len(recorder.Started()))
 		})
 	}
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

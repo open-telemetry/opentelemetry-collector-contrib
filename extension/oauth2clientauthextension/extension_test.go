@@ -82,8 +82,7 @@ func TestOAuthClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
 			if test.shouldError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectedError)
+				assert.ErrorContains(t, err, test.expectedError)
 				return
 			}
 			assert.NoError(t, err)
@@ -116,7 +115,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 		settings             *Config
 		expectedClientConfig *clientcredentials.Config
 		shouldError          bool
-		expectedError        *error
+		expectedError        error
 	}{
 		{
 			name: "client_id_file",
@@ -151,7 +150,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				ClientSecret: "testsecret",
 			},
 			shouldError:   true,
-			expectedError: &errNoClientIDProvided,
+			expectedError: errNoClientIDProvided,
 		},
 		{
 			name: "missing_client_creds_file",
@@ -160,7 +159,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				ClientSecretFile: testCredsMissingFile,
 			},
 			shouldError:   true,
-			expectedError: &errNoClientSecretProvided,
+			expectedError: errNoClientSecretProvided,
 		},
 	}
 
@@ -170,7 +169,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			cfg, err := rc.clientCredentials.createConfig()
 			if test.shouldError {
 				assert.Error(t, err)
-				assert.ErrorAs(t, err, test.expectedError)
+				assert.ErrorIs(t, err, test.expectedError)
 				return
 			}
 			assert.NoError(t, err)
@@ -296,7 +295,7 @@ func TestFailContactingOAuth(t *testing.T) {
 
 	_, err = credential.GetRequestMetadata(context.Background())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), serverURL.String())
+	assert.ErrorContains(t, err, serverURL.String())
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	baseRoundTripper := (http.RoundTripper)(transport)
@@ -311,5 +310,5 @@ func TestFailContactingOAuth(t *testing.T) {
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), serverURL.String())
+	assert.ErrorContains(t, err, serverURL.String())
 }

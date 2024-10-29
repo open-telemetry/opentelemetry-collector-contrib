@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,6 +28,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
+
+type nopHost struct {
+	component.Host
+}
+
+func (nh *nopHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	return nil
+}
+
+func newNopHost() component.Host {
+	return &nopHost{
+		Host: componenttest.NewNopHost(),
+	}
+}
 
 func TestReceiver(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
@@ -51,7 +66,7 @@ func TestReceiver(t *testing.T) {
 	createClusterQuota(t, osQuotaClient, 2)
 
 	ctx := context.Background()
-	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, r.Start(ctx, newNopHost()))
 
 	// Expects metric data from nodes and pods where each metric data
 	// struct corresponds to one resource.
@@ -92,7 +107,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	createPods(t, client, 1)
 
 	ctx := context.Background()
-	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, r.Start(ctx, newNopHost()))
 	require.Eventually(t, func() bool {
 		return r.resourceWatcher.initialSyncTimedOut.Load()
 	}, 10*time.Second, 100*time.Millisecond)
@@ -119,7 +134,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	createClusterQuota(t, osQuotaClient, 2)
 
 	ctx := context.Background()
-	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, r.Start(ctx, newNopHost()))
 
 	require.Eventually(t, func() bool {
 		// 4 points from the cluster quota.

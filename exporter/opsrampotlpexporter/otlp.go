@@ -31,6 +31,7 @@ import (
 
 	_ "github.com/opsramp/go-proxy-dialer/connect" // implemetation for http connect proxy
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -166,7 +167,8 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 		ctx,
 		host,
 		e.settings,
-		grpc.WithUserAgent(e.userAgent),
+		configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent)),
+		configgrpc.WithGrpcDialOption(
 		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
 			if httpproxy.FromEnvironment().HTTPProxy == "" {
 				return (&net.Dialer{}).Dial("tcp", addr)
@@ -182,7 +184,7 @@ func (e *opsrampOTLPExporter) start(ctx context.Context, host component.Host) (e
 				return nil, er
 			}
 			return dialer.Dial("tcp", addr)
-		}),
+		})),
 	)
 	if err != nil {
 		return err

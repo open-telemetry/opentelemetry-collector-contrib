@@ -5,8 +5,6 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"runtime"
-	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	"go.opentelemetry.io/collector/component"
@@ -16,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/grpc"
 
@@ -37,10 +36,14 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg.Enabled = false
+
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:     configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		BatcherConfig:   batcherCfg,
 		ClientConfig: configgrpc.ClientConfig{
 			Headers: map[string]configopaque.String{},
 			// Default to zstd compression
@@ -54,27 +57,28 @@ func createDefaultConfig() component.Config {
 			BalancerName: "round_robin",
 		},
 		Arrow: ArrowConfig{
-			NumStreams:        runtime.NumCPU(),
-			MaxStreamLifetime: time.Hour,
+			NumStreams:        arrow.DefaultNumStreams,
+			MaxStreamLifetime: arrow.DefaultMaxStreamLifetime,
 
 			Zstd:        zstd.DefaultEncoderConfig(),
 			Prioritizer: arrow.DefaultPrioritizer,
 
-			// PayloadCompression is off by default because gRPC
-			// compression is on by default, above.
-			PayloadCompression: "",
+			// Note the default payload compression is
+			PayloadCompression: arrow.DefaultPayloadCompression,
 		},
 	}
 }
 
-func (exp *baseExporter) helperOptions() []exporterhelper.Option {
+func helperOptions(e exp) []exporterhelper.Option {
+	cfg := e.getConfig().(*Config)
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(exp.config.TimeoutSettings),
-		exporterhelper.WithRetry(exp.config.RetryConfig),
-		exporterhelper.WithQueue(exp.config.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.RetryConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(e.start),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithShutdown(e.shutdown),
 	}
 }
 
@@ -97,13 +101,13 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	exp, err := newExporter(cfg, set, createArrowTracesStream)
+	e, err := newMetadataExporter(cfg, set, createArrowTracesStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(ctx, exp.settings, exp.config,
-		exp.pushTraces,
-		exp.helperOptions()...,
+	return exporterhelper.NewTraces(ctx, e.getSettings(), e.getConfig(),
+		e.pushTraces,
+		helperOptions(e)...,
 	)
 }
 
@@ -116,13 +120,13 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	exp, err := newExporter(cfg, set, createArrowMetricsStream)
+	e, err := newMetadataExporter(cfg, set, createArrowMetricsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(ctx, exp.settings, exp.config,
-		exp.pushMetrics,
-		exp.helperOptions()...,
+	return exporterhelper.NewMetrics(ctx, e.getSettings(), e.getConfig(),
+		e.pushMetrics,
+		helperOptions(e)...,
 	)
 }
 
@@ -135,12 +139,12 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exp, err := newExporter(cfg, set, createArrowLogsStream)
+	e, err := newMetadataExporter(cfg, set, createArrowLogsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(ctx, exp.settings, exp.config,
-		exp.pushLogs,
-		exp.helperOptions()...,
+	return exporterhelper.NewLogs(ctx, e.getSettings(), e.getConfig(),
+		e.pushLogs,
+		helperOptions(e)...,
 	)
 }

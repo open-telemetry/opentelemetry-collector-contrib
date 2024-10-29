@@ -81,8 +81,8 @@ func TestScrape(t *testing.T) {
 		assert.Equal(t, 0, metrics.DataPointCount(), "Expected 0 datapoints to be collected")
 
 		var partialScrapeErr scrapererror.PartialScrapeError
-		require.True(t, errors.As(err, &partialScrapeErr), "returned error was not PartialScrapeError")
-		require.True(t, partialScrapeErr.Failed > 0, "Expected scrape failures, but none were recorded!")
+		require.ErrorAs(t, err, &partialScrapeErr, "returned error was not PartialScrapeError")
+		require.Positive(t, partialScrapeErr.Failed, "Expected scrape failures, but none were recorded!")
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
@@ -158,7 +158,7 @@ func TestMetricSettings(t *testing.T) {
 		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
 	}
 	cfg := &Config{
-		ClientConfig:         confighttp.ClientConfig{},
+		ClientConfig:         confighttp.NewDefaultClientConfig(),
 		MetricsBuilderConfig: mbc,
 	}
 	scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)
@@ -172,7 +172,7 @@ func TestMetricSettings(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metrics, pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-	require.Equal(t, metrics.MetricCount(), 1)
+	require.Equal(t, 1, metrics.MetricCount())
 }
 
 func getStats(filename string) (map[string]any, error) {

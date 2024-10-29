@@ -23,6 +23,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - confmap/provider/aesprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
@@ -52,6 +53,7 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
+      - exporter/doris
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -59,7 +61,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
-      - exporter/instana
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing
@@ -126,6 +127,7 @@ body:
       - internal/docker
       - internal/exp/metrics
       - internal/filter
+      - internal/grpcutil
       - internal/k8sconfig
       - internal/k8stest
       - internal/kafka
@@ -133,14 +135,17 @@ body:
       - internal/metadataproviders
       - internal/otelarrow
       - internal/pdatautil
+      - internal/rabbitmq
       - internal/sharedcomponent
       - internal/splunk
       - internal/sqlquery
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
@@ -148,7 +153,9 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/status
       - pkg/translator/azure
+      - pkg/translator/azurelogs
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
@@ -159,6 +166,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
@@ -168,6 +176,7 @@ body:
       - processor/groupbytrace
       - processor/interval
       - processor/k8sattributes
+      - processor/logdedup
       - processor/logstransform
       - processor/metricsgeneration
       - processor/metricstransform
@@ -225,7 +234,8 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
-      - receiver/gitprovider
+      - receiver/github
+      - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
@@ -250,6 +260,7 @@ body:
       - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
+      - receiver/ntp
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
@@ -258,6 +269,7 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
+      - receiver/prometheusremotewrite
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
@@ -280,7 +292,9 @@ body:
       - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
+      - receiver/systemd
       - receiver/tcplog
+      - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront

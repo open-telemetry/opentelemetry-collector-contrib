@@ -19,16 +19,23 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
+
+var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
 
 type opampAgent struct {
 	cfg    *Config
@@ -46,7 +53,7 @@ type opampAgent struct {
 	lifetimeCtx       context.Context
 	lifetimeCtxCancel context.CancelFunc
 
-	reportFunc func(*component.StatusEvent)
+	reportFunc func(*componentstatus.Event)
 
 	capabilities Capabilities
 
@@ -58,8 +65,14 @@ type opampAgent struct {
 }
 
 var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+var _ extensioncapabilities.Dependent = (*opampAgent)(nil)
+var _ extensioncapabilities.ConfigWatcher = (*opampAgent)(nil)
 
-func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
+func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
+	o.reportFunc = func(event *componentstatus.Event) {
+		componentstatus.ReportStatus(host, event)
+	}
+
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
 		header.Set(k, string(v))
@@ -76,8 +89,14 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
 
+	headerFunc, err := makeHeadersFunc(o.logger, o.cfg.Server, host)
+	if err != nil {
+		return err
+	}
+
 	settings := types.StartSettings{
 		Header:         header,
+		HeaderFunc:     headerFunc,
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
 		InstanceUid:    types.InstanceUid(o.instanceID),
@@ -107,6 +126,8 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+
 	o.logger.Debug("Starting OpAMP client...")
 
 	if err := o.opampClient.Start(context.Background(), settings); err != nil {
@@ -127,6 +148,7 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	if o.opampClient == nil {
 		return nil
 	}
+
 	o.logger.Debug("Stopping OpAMP client...")
 	err := o.opampClient.Stop(ctx)
 	// Opamp-go considers this an error, but the collector does not.
@@ -135,6 +157,21 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 		return nil
 	}
 	return err
+}
+
+// Dependencies implements extensioncapabilities.Dependent
+func (o *opampAgent) Dependencies() []component.ID {
+	if o.cfg.Server == nil {
+		return nil
+	}
+
+	var emptyComponentID component.ID
+	authID := o.cfg.Server.GetAuthExtensionID()
+	if authID == emptyComponentID {
+		return nil
+	}
+
+	return []component.ID{authID}
 }
 
 func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error {
@@ -147,6 +184,16 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 
 func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
 	return o.customCapabilityRegistry.Register(capability, opts...)
+}
+
+func (o *opampAgent) Ready() error {
+	o.setHealth(&protobufs.ComponentHealth{Healthy: true})
+	return nil
+}
+
+func (o *opampAgent) NotReady() error {
+	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
+	return nil
 }
 
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
@@ -201,7 +248,6 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
-		reportFunc:               set.ReportStatus,
 	}
 
 	return agent, nil
@@ -235,6 +281,7 @@ func (o *opampAgent) createAgentDescription() error {
 	if err != nil {
 		return err
 	}
+	description := getOSDescription(o.logger)
 
 	ident := []*protobufs.KeyValue{
 		stringKeyValue(semconv.AttributeServiceInstanceID, o.instanceID.String()),
@@ -248,6 +295,7 @@ func (o *opampAgent) createAgentDescription() error {
 	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
 	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
 	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
+	nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v
@@ -314,5 +362,31 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 
 	if msg.CustomMessage != nil {
 		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
+	}
+}
+
+func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
+	if o.capabilities.ReportsHealth && o.opampClient != nil {
+		if err := o.opampClient.SetHealth(ch); err != nil {
+			o.logger.Error("Could not report health to OpAMP server", zap.Error(err))
+		}
+	}
+}
+
+func getOSDescription(logger *zap.Logger) string {
+	info, err := host.Info()
+	if err != nil {
+		logger.Error("failed getting host info", zap.Error(err))
+		return runtime.GOOS
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		return "macOS " + info.PlatformVersion
+	case "linux":
+		return cases.Title(language.English).String(info.Platform) + " " + info.PlatformVersion
+	case "windows":
+		return info.Platform + " " + info.PlatformVersion
+	default:
+		return runtime.GOOS
 	}
 }

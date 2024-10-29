@@ -163,5 +163,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{znodes}'
         scope:
-          name: otelcol/zookeeperreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
           version: latest

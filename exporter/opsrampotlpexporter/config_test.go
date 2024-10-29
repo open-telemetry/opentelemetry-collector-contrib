@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 	// e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
 	assert.Equal(t, e,
 		&Config{
-			TimeoutSettings: exporterhelper.TimeoutSettings{
+			TimeoutConfig: exporterhelper.TimeoutConfig{
 				Timeout: 10 * time.Second,
 			},
 			BackOffConfig: configretry.BackOffConfig{
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				MaxInterval:     1 * time.Minute,
 				MaxElapsedTime:  10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueSettings{
+			QueueConfig: exporterhelper.QueueConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,

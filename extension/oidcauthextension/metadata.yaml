@@ -1,5 +1,4 @@
 type: oidc
-scope_name: otelcol/oidcauth
 
 status:
   class: extension
@@ -12,5 +11,3 @@ status:
 tests:
   config:
   skip_lifecycle: true
-  goleak:
-    skip: true

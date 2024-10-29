@@ -30,7 +30,7 @@ func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
 func TestTraceDataToLogService(t *testing.T) {
 	gotLogs := traceDataToLogServiceData(constructSpanData())
-	assert.Equal(t, len(gotLogs), 2)
+	assert.Len(t, gotLogs, 2)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
@@ -176,16 +176,16 @@ func newSegmentID() pcommon.SpanID {
 }
 
 func TestSpanKindToShortString(t *testing.T) {
-	assert.Equal(t, spanKindToShortString(ptrace.SpanKindConsumer), "consumer")
-	assert.Equal(t, spanKindToShortString(ptrace.SpanKindProducer), "producer")
-	assert.Equal(t, spanKindToShortString(ptrace.SpanKindClient), "client")
-	assert.Equal(t, spanKindToShortString(ptrace.SpanKindServer), "server")
-	assert.Equal(t, spanKindToShortString(ptrace.SpanKindInternal), "internal")
-	assert.Equal(t, spanKindToShortString(ptrace.SpanKindUnspecified), "")
+	assert.Equal(t, "consumer", spanKindToShortString(ptrace.SpanKindConsumer))
+	assert.Equal(t, "producer", spanKindToShortString(ptrace.SpanKindProducer))
+	assert.Equal(t, "client", spanKindToShortString(ptrace.SpanKindClient))
+	assert.Equal(t, "server", spanKindToShortString(ptrace.SpanKindServer))
+	assert.Equal(t, "internal", spanKindToShortString(ptrace.SpanKindInternal))
+	assert.Equal(t, "", spanKindToShortString(ptrace.SpanKindUnspecified))
 }
 
 func TestStatusCodeToShortString(t *testing.T) {
-	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeOk), "OK")
-	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeError), "ERROR")
-	assert.Equal(t, statusCodeToShortString(ptrace.StatusCodeUnset), "UNSET")
+	assert.Equal(t, "OK", statusCodeToShortString(ptrace.StatusCodeOk))
+	assert.Equal(t, "ERROR", statusCodeToShortString(ptrace.StatusCodeError))
+	assert.Equal(t, "UNSET", statusCodeToShortString(ptrace.StatusCodeUnset))
 }

@@ -17,15 +17,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
+	internalhelpers "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 )
 
 // These are used for the legacy test assertions
@@ -37,20 +38,20 @@ const (
 var (
 	componentStatusOK = &componentStatusExpectation{
 		healthy: true,
-		status:  component.StatusOK,
+		status:  componentstatus.StatusOK,
 	}
 	componentStatusPipelineMetricsStarting = map[string]*componentStatusExpectation{
 		"receiver:metrics/in": {
 			healthy: true,
-			status:  component.StatusStarting,
+			status:  componentstatus.StatusStarting,
 		},
 		"processor:batch": {
 			healthy: true,
-			status:  component.StatusStarting,
+			status:  componentstatus.StatusStarting,
 		},
 		"exporter:metrics/out": {
 			healthy: true,
-			status:  component.StatusStarting,
+			status:  componentstatus.StatusStarting,
 		},
 	}
 	componentStatusPipelineMetricsOK = map[string]*componentStatusExpectation{
@@ -61,43 +62,43 @@ var (
 	componentStatusPipelineMetricsStopping = map[string]*componentStatusExpectation{
 		"receiver:metrics/in": {
 			healthy: true,
-			status:  component.StatusStopping,
+			status:  componentstatus.StatusStopping,
 		},
 		"processor:batch": {
 			healthy: true,
-			status:  component.StatusStopping,
+			status:  componentstatus.StatusStopping,
 		},
 		"exporter:metrics/out": {
 			healthy: true,
-			status:  component.StatusStopping,
+			status:  componentstatus.StatusStopping,
 		},
 	}
 	componentStatusPipelineMetricsStopped = map[string]*componentStatusExpectation{
 		"receiver:metrics/in": {
 			healthy: true,
-			status:  component.StatusStopped,
+			status:  componentstatus.StatusStopped,
 		},
 		"processor:batch": {
 			healthy: true,
-			status:  component.StatusStopped,
+			status:  componentstatus.StatusStopped,
 		},
 		"exporter:metrics/out": {
 			healthy: true,
-			status:  component.StatusStopped,
+			status:  componentstatus.StatusStopped,
 		},
 	}
 	componentStatusPipelineTracesStarting = map[string]*componentStatusExpectation{
 		"receiver:traces/in": {
 			healthy: true,
-			status:  component.StatusStarting,
+			status:  componentstatus.StatusStarting,
 		},
 		"processor:batch": {
 			healthy: true,
-			status:  component.StatusStarting,
+			status:  componentstatus.StatusStarting,
 		},
 		"exporter:traces/out": {
 			healthy: true,
-			status:  component.StatusStarting,
+			status:  componentstatus.StatusStarting,
 		},
 	}
 	componentStatusPipelineTracesOK = map[string]*componentStatusExpectation{
@@ -108,36 +109,36 @@ var (
 	componentStatusPipelineTracesStopping = map[string]*componentStatusExpectation{
 		"receiver:traces/in": {
 			healthy: true,
-			status:  component.StatusStopping,
+			status:  componentstatus.StatusStopping,
 		},
 		"processor:batch": {
 			healthy: true,
-			status:  component.StatusStopping,
+			status:  componentstatus.StatusStopping,
 		},
 		"exporter:traces/out": {
 			healthy: true,
-			status:  component.StatusStopping,
+			status:  componentstatus.StatusStopping,
 		},
 	}
 	componentStatusPipelineTracesStopped = map[string]*componentStatusExpectation{
 		"receiver:traces/in": {
 			healthy: true,
-			status:  component.StatusStopped,
+			status:  componentstatus.StatusStopped,
 		},
 		"processor:batch": {
 			healthy: true,
-			status:  component.StatusStopped,
+			status:  componentstatus.StatusStopped,
 		},
 		"exporter:traces/out": {
 			healthy: true,
-			status:  component.StatusStopped,
+			status:  componentstatus.StatusStopped,
 		},
 	}
 )
 
 type componentStatusExpectation struct {
 	healthy      bool
-	status       component.Status
+	status       componentstatus.Status
 	err          error
 	nestedStatus map[string]*componentStatusExpectation
 }
@@ -182,17 +183,17 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -200,13 +201,13 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -219,7 +220,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -227,7 +228,7 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -242,13 +243,13 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -257,7 +258,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -270,7 +271,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -285,13 +286,13 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -300,7 +301,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -314,18 +315,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -333,7 +334,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -341,7 +342,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -349,18 +350,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -368,7 +369,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -376,7 +377,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 			},
@@ -399,27 +400,27 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
@@ -430,23 +431,23 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
@@ -457,7 +458,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
@@ -466,19 +467,19 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusStarting,
+								status:  componentstatus.StatusStarting,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusStarting,
+								status:  componentstatus.StatusStarting,
 							},
 							"exporter:metrics/out": {
 								healthy: true,
-								status:  component.StatusStarting,
+								status:  componentstatus.StatusStarting,
 							},
 						},
 					},
@@ -488,23 +489,23 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -515,7 +516,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -523,36 +524,36 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: true,
-										status:  component.StatusRecoverableError,
+										status:  componentstatus.StatusRecoverableError,
 										err:     assert.AnError,
 									},
 								},
@@ -565,20 +566,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: true,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								err:     assert.AnError,
 							},
 						},
@@ -589,7 +590,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
@@ -597,23 +598,23 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -624,7 +625,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -632,36 +633,36 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: true,
-										status:  component.StatusPermanentError,
+										status:  componentstatus.StatusPermanentError,
 										err:     assert.AnError,
 									},
 								},
@@ -674,20 +675,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: true,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 							},
 						},
 					},
@@ -697,7 +698,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
@@ -706,28 +707,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineTracesStopping,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineMetricsStopping,
 							},
 						},
@@ -738,7 +739,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineTracesStopping,
 					},
 				},
@@ -747,7 +748,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineMetricsStopping,
 					},
 				},
@@ -756,28 +757,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineTracesStopped,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineMetricsStopped,
 							},
 						},
@@ -788,7 +789,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineTracesStopped,
 					},
 				},
@@ -797,7 +798,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineMetricsStopped,
 					},
 				},
@@ -827,18 +828,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -846,7 +847,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -854,7 +855,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -862,12 +863,12 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -887,14 +888,14 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					eventually:         true,
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -903,7 +904,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -916,7 +917,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -931,13 +932,13 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -946,7 +947,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -960,18 +961,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -979,7 +980,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -987,7 +988,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -995,18 +996,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -1014,7 +1015,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -1022,7 +1023,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 			},
@@ -1050,27 +1051,27 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
@@ -1081,28 +1082,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -1113,7 +1114,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -1121,7 +1122,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					eventually:         true,
@@ -1129,29 +1130,29 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: false,
-										status:  component.StatusRecoverableError,
+										status:  componentstatus.StatusRecoverableError,
 										err:     assert.AnError,
 									},
 								},
@@ -1164,20 +1165,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: false,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								err:     assert.AnError,
 							},
 						},
@@ -1188,7 +1189,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
@@ -1196,23 +1197,23 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -1223,7 +1224,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -1231,36 +1232,36 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: true,
-										status:  component.StatusPermanentError,
+										status:  componentstatus.StatusPermanentError,
 										err:     assert.AnError,
 									},
 								},
@@ -1273,20 +1274,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: true,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 							},
 						},
 					},
@@ -1296,28 +1297,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineTracesStopping,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineMetricsStopping,
 							},
 						},
@@ -1328,7 +1329,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineTracesStopping,
 					},
 				},
@@ -1337,7 +1338,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineMetricsStopping,
 					},
 				},
@@ -1346,28 +1347,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineTracesStopped,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineMetricsStopped,
 							},
 						},
@@ -1378,7 +1379,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineTracesStopped,
 					},
 				},
@@ -1387,7 +1388,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineMetricsStopped,
 					},
 				},
@@ -1415,18 +1416,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -1434,7 +1435,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -1442,7 +1443,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -1450,12 +1451,12 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -1475,13 +1476,13 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -1490,7 +1491,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -1503,7 +1504,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -1518,13 +1519,13 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -1533,7 +1534,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -1547,18 +1548,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -1566,7 +1567,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -1574,7 +1575,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -1582,18 +1583,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -1601,7 +1602,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -1609,7 +1610,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 			},
@@ -1635,27 +1636,27 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
@@ -1666,28 +1667,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -1698,7 +1699,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -1706,7 +1707,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					eventually:         true,
@@ -1714,29 +1715,29 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: true,
-										status:  component.StatusRecoverableError,
+										status:  componentstatus.StatusRecoverableError,
 										err:     assert.AnError,
 									},
 								},
@@ -1749,20 +1750,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: true,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								err:     assert.AnError,
 							},
 						},
@@ -1773,7 +1774,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
@@ -1781,23 +1782,23 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -1808,7 +1809,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -1816,36 +1817,36 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: false,
-										status:  component.StatusPermanentError,
+										status:  componentstatus.StatusPermanentError,
 										err:     assert.AnError,
 									},
 								},
@@ -1858,20 +1859,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: false,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 							},
 						},
 					},
@@ -1881,28 +1882,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineTracesStopping,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineMetricsStopping,
 							},
 						},
@@ -1913,7 +1914,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineTracesStopping,
 					},
 				},
@@ -1922,7 +1923,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineMetricsStopping,
 					},
 				},
@@ -1931,28 +1932,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineTracesStopped,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineMetricsStopped,
 							},
 						},
@@ -1963,7 +1964,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineTracesStopped,
 					},
 				},
@@ -1972,7 +1973,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineMetricsStopped,
 					},
 				},
@@ -2002,18 +2003,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -2021,7 +2022,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -2029,7 +2030,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 					},
 				},
 				{
@@ -2037,12 +2038,12 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -2062,14 +2063,14 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					eventually:         true,
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -2078,7 +2079,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 					},
 				},
@@ -2091,7 +2092,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					expectedStatusCode:      http.StatusOK,
@@ -2106,13 +2107,13 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -2121,7 +2122,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 					},
 				},
@@ -2135,18 +2136,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -2154,7 +2155,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -2162,7 +2163,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 					},
 				},
 				{
@@ -2170,18 +2171,18 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -2189,7 +2190,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 				{
@@ -2197,7 +2198,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 					},
 				},
 			},
@@ -2225,27 +2226,27 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStarting,
+						status:  componentstatus.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStarting,
+								status:       componentstatus.StatusStarting,
 								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
@@ -2256,28 +2257,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -2288,7 +2289,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -2296,7 +2297,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					eventually:         true,
@@ -2304,29 +2305,29 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: false,
-										status:  component.StatusRecoverableError,
+										status:  componentstatus.StatusRecoverableError,
 										err:     assert.AnError,
 									},
 								},
@@ -2339,20 +2340,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusRecoverableError,
+						status:  componentstatus.StatusRecoverableError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: false,
-								status:  component.StatusRecoverableError,
+								status:  componentstatus.StatusRecoverableError,
 								err:     assert.AnError,
 							},
 						},
@@ -2363,7 +2364,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
@@ -2371,23 +2372,23 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -2398,7 +2399,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusOK,
+						status:       componentstatus.StatusOK,
 						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
@@ -2406,36 +2407,36 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 								nestedStatus: map[string]*componentStatusExpectation{
 									"receiver:metrics/in": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"processor:batch": {
 										healthy: true,
-										status:  component.StatusOK,
+										status:  componentstatus.StatusOK,
 									},
 									"exporter:metrics/out": {
 										healthy: false,
-										status:  component.StatusPermanentError,
+										status:  componentstatus.StatusPermanentError,
 										err:     assert.AnError,
 									},
 								},
@@ -2448,20 +2449,20 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusInternalServerError,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: false,
-						status:  component.StatusPermanentError,
+						status:  componentstatus.StatusPermanentError,
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"receiver:metrics/in": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"processor:batch": {
 								healthy: true,
-								status:  component.StatusOK,
+								status:  componentstatus.StatusOK,
 							},
 							"exporter:metrics/out": {
 								healthy: false,
-								status:  component.StatusPermanentError,
+								status:  componentstatus.StatusPermanentError,
 							},
 						},
 					},
@@ -2471,28 +2472,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopping,
+						status:  componentstatus.StatusStopping,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineTracesStopping,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopping,
+								status:       componentstatus.StatusStopping,
 								nestedStatus: componentStatusPipelineMetricsStopping,
 							},
 						},
@@ -2503,7 +2504,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineTracesStopping,
 					},
 				},
@@ -2512,7 +2513,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopping,
+						status:       componentstatus.StatusStopping,
 						nestedStatus: componentStatusPipelineMetricsStopping,
 					},
 				},
@@ -2521,28 +2522,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					queryParams:        "verbose",
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusStopped,
+						status:  componentstatus.StatusStopped,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineTracesStopped,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusStopped,
+								status:       componentstatus.StatusStopped,
 								nestedStatus: componentStatusPipelineMetricsStopped,
 							},
 						},
@@ -2553,7 +2554,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineTracesStopped,
 					},
 				},
@@ -2562,7 +2563,7 @@ func TestStatus(t *testing.T) {
 					expectedStatusCode: http.StatusServiceUnavailable,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy:      true,
-						status:       component.StatusStopped,
+						status:       componentstatus.StatusStopped,
 						nestedStatus: componentStatusPipelineMetricsStopped,
 					},
 				},
@@ -2588,7 +2589,7 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "pipeline=nonexistent",
@@ -2614,18 +2615,18 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "verbose=false",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 					},
 				},
 			},
@@ -2648,27 +2649,27 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					queryParams:        "verbose=true",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
 						healthy: true,
-						status:  component.StatusOK,
+						status:  componentstatus.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy:      true,
-								status:       component.StatusOK,
+								status:       componentstatus.StatusOK,
 								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
@@ -2707,11 +2708,11 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2722,7 +2723,7 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2733,7 +2734,7 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2743,7 +2744,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2753,7 +2754,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2763,7 +2764,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2773,23 +2774,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewFatalErrorEvent(assert.AnError),
-						)
-					},
-					expectedStatusCode: http.StatusServiceUnavailable,
-					expectedBody:       expectedBodyNotReady,
-				},
-				{
-					step: func() {
-						testhelpers.SeedAggregator(
-							server.aggregator,
-							traces.InstanceIDs(),
-							component.StatusStopping,
-						)
-						testhelpers.SeedAggregator(
-							server.aggregator,
-							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.NewFatalErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2800,12 +2785,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       expectedBodyNotReady,
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							componentstatus.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							componentstatus.StatusStopped,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2827,11 +2828,11 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						testhelpers.SeedAggregator(server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2842,7 +2843,7 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2853,7 +2854,7 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2863,7 +2864,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2873,7 +2874,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2883,7 +2884,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusOK,
@@ -2893,23 +2894,7 @@ func TestStatus(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewFatalErrorEvent(assert.AnError),
-						)
-					},
-					expectedStatusCode: http.StatusServiceUnavailable,
-					expectedBody:       "NOT OK",
-				},
-				{
-					step: func() {
-						testhelpers.SeedAggregator(
-							server.aggregator,
-							traces.InstanceIDs(),
-							component.StatusStopping,
-						)
-						testhelpers.SeedAggregator(
-							server.aggregator,
-							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.NewFatalErrorEvent(assert.AnError),
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2920,12 +2905,28 @@ func TestStatus(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopping,
+						)
+					},
+					expectedStatusCode: http.StatusServiceUnavailable,
+					expectedBody:       "NOT OK",
+				},
+				{
+					step: func() {
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							traces.InstanceIDs(),
+							componentstatus.StatusStopped,
+						)
+						testhelpers.SeedAggregator(
+							server.aggregator,
+							metrics.InstanceIDs(),
+							componentstatus.StatusStopped,
 						)
 					},
 					expectedStatusCode: http.StatusServiceUnavailable,
@@ -2942,7 +2943,7 @@ func TestStatus(t *testing.T) {
 				tc.legacyConfig,
 				tc.componentHealthConfig,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthConfig)),
+				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthConfig)),
 			)
 
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
@@ -2985,7 +2986,7 @@ func TestStatus(t *testing.T) {
 				body, err := io.ReadAll(resp.Body)
 				require.NoError(t, err)
 
-				assert.True(t, strings.Contains(string(body), ts.expectedBody))
+				assert.Contains(t, string(body), ts.expectedBody)
 
 				if ts.expectedComponentStatus != nil {
 					st := &serializableStatus{}

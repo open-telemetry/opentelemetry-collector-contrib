@@ -32,18 +32,18 @@ var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attribut
 var expectedLogBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 
 var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0.0}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0.0}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
@@ -54,7 +54,7 @@ var expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
 	td := mockResourceSpans()
-	spanByte, err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+	spanByte, err := model.encodeSpan(td.ResourceSpans().At(0).Resource(), "", td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0), td.ResourceSpans().At(0).ScopeSpans().At(0).Scope(), "")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedSpanBody, string(spanByte))
 }
@@ -101,14 +101,15 @@ func TestEncodeMetric(t *testing.T) {
 
 	var docsBytes [][]byte
 	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
-		val, err := numberToValue(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i))
-		require.NoError(t, err)
-		err = model.upsertMetricDataPointValue(docs,
+		err := model.upsertMetricDataPointValue(
+			docs,
 			metrics.ResourceMetrics().At(0).Resource(),
+			"",
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
+			"",
 			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
-			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i),
-			val)
+			newNumberDataPoint(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i)),
+		)
 		require.NoError(t, err)
 	}
 
@@ -890,11 +891,10 @@ type OTelRecord struct {
 	SpanID                 OTelSpanID           `json:"span_id"`
 	Timestamp              time.Time            `json:"@timestamp"`
 	ObservedTimestamp      time.Time            `json:"observed_timestamp"`
-	TraceFlags             uint32               `json:"trace_flags"`
 	SeverityNumber         int32                `json:"severity_number"`
 	SeverityText           string               `json:"severity_text"`
 	Attributes             map[string]any       `json:"attributes"`
-	DroppedAttributesCount uint32               `json:"dropped_attrbutes_count"`
+	DroppedAttributesCount uint32               `json:"dropped_attributes_count"`
 	Scope                  OTelScope            `json:"scope"`
 	Resource               OTelResource         `json:"resource"`
 	Datastream             OTelRecordDatastream `json:"data_stream"`
@@ -910,14 +910,14 @@ type OTelScope struct {
 	Name                   string         `json:"name"`
 	Version                string         `json:"version"`
 	Attributes             map[string]any `json:"attributes"`
-	DroppedAttributesCount uint32         `json:"dropped_attrbutes_count"`
-	Schema                 string         `json:"schema"`
+	DroppedAttributesCount uint32         `json:"dropped_attributes_count"`
+	SchemaURL              string         `json:"schema_url"`
 }
 
 type OTelResource struct {
 	Attributes             map[string]any `json:"attributes"`
-	DroppedAttributesCount uint32         `json:"dropped_attrbutes_count"`
-	Schema                 string         `json:"schema"`
+	DroppedAttributesCount uint32         `json:"dropped_attributes_count"`
+	SchemaURL              string         `json:"schema_url"`
 }
 
 type OTelSpanID pcommon.SpanID
@@ -960,6 +960,9 @@ func decodeOTelID(data []byte) ([]byte, error) {
 }
 
 func TestEncodeLogOtelMode(t *testing.T) {
+	randomString := strings.Repeat("abcdefghijklmnopqrstuvwxyz0123456789", 10)
+	maxLenNamespace := maxDataStreamBytes - len(disallowedNamespaceRunes)
+	maxLenDataset := maxDataStreamBytes - len(disallowedDatasetRunes) - len(".otel")
 
 	tests := []struct {
 		name   string
@@ -1044,6 +1047,20 @@ func TestEncodeLogOtelMode(t *testing.T) {
 				return assignDatastreamData(or, "", "third.otel")
 			},
 		},
+		{
+			name: "sanitize dataset/namespace",
+			rec: buildOTelRecordTestData(t, func(or OTelRecord) OTelRecord {
+				or.Attributes["data_stream.dataset"] = disallowedDatasetRunes + randomString
+				or.Attributes["data_stream.namespace"] = disallowedNamespaceRunes + randomString
+				return or
+			}),
+			wantFn: func(or OTelRecord) OTelRecord {
+				deleteDatasetAttributes(or)
+				ds := strings.Repeat("_", len(disallowedDatasetRunes)) + randomString[:maxLenDataset] + ".otel"
+				ns := strings.Repeat("_", len(disallowedNamespaceRunes)) + randomString[:maxLenNamespace]
+				return assignDatastreamData(or, "", ds, ns)
+			},
+		},
 	}
 
 	m := encodeModel{
@@ -1055,9 +1072,9 @@ func TestEncodeLogOtelMode(t *testing.T) {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
 
 		// This sets the data_stream values default or derived from the record/scope/resources
-		routeLogRecord(record, scope, resource, "", true)
+		routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), "", true, scope.Name())
 
-		b, err := m.encodeLog(resource, tc.rec.Resource.Schema, record, scope, tc.rec.Scope.Schema)
+		b, err := m.encodeLog(resource, tc.rec.Resource.SchemaURL, record, scope, tc.rec.Scope.SchemaURL)
 		require.NoError(t, err)
 
 		want := tc.rec
@@ -1082,7 +1099,6 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
-	record.SetFlags(plog.LogRecordFlags(rec.TraceFlags))
 	record.SetSeverityNumber(plog.SeverityNumber(rec.SeverityNumber))
 	record.SetSeverityText(rec.SeverityText)
 	record.SetDroppedAttributesCount(rec.DroppedAttributesCount)
@@ -1136,7 +1152,6 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
     "severity_number": 17,
     "severity_text": "ERROR",
     "span_id": "0102030405060708",
-    "trace_flags": 1234,
     "trace_id": "01020304050607080900010203040506"
 }`
 
@@ -1209,4 +1224,44 @@ func TestEncodeLogScalarObjectConflict(t *testing.T) {
 	assert.False(t, gjson.GetBytes(encoded, "Attributes\\.foo").Exists())
 	fooValue = gjson.GetBytes(encoded, "Attributes\\.foo\\.value")
 	assert.Equal(t, "foovalue", fooValue.Str)
+}
+
+func TestEncodeLogBodyMapMode(t *testing.T) {
+	// craft a log record with a body map
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	logRecords := scopeLogs.LogRecords()
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+
+	logRecord := logRecords.AppendEmpty()
+	logRecord.SetObservedTimestamp(observedTimestamp)
+
+	bodyMap := pcommon.NewMap()
+	bodyMap.PutStr("@timestamp", "2024-03-12T20:00:41.123456789Z")
+	bodyMap.PutInt("id", 1)
+	bodyMap.PutStr("key", "value")
+	bodyMap.PutStr("key.a", "a")
+	bodyMap.PutStr("key.a.b", "b")
+	bodyMap.PutDouble("pi", 3.14)
+	bodyMap.CopyTo(logRecord.Body().SetEmptyMap())
+
+	m := encodeModel{}
+	got, err := m.encodeLogBodyMapMode(logRecord)
+	require.NoError(t, err)
+
+	require.JSONEq(t, `{
+		"@timestamp":                 "2024-03-12T20:00:41.123456789Z",
+		"id":                         1,
+		"key":                        "value",
+		"key.a":                      "a",
+		"key.a.b":                    "b",
+		"pi":                         3.14
+	}`, string(got))
+
+	// invalid body map
+	logRecord.Body().SetEmptySlice()
+	_, err = m.encodeLogBodyMapMode(logRecord)
+	require.Error(t, err)
+	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
 }

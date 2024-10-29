@@ -17,7 +17,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/http"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
@@ -26,13 +25,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		LegacyConfig: http.LegacyConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 			},
 			Path: "/",
 		},
 		HTTPConfig: &http.Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 			},
 			Status: http.PathConfig{
 				Enabled: true,
@@ -46,7 +45,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		GRPCConfig: &grpc.Config{
 			ServerConfig: configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+					Endpoint:  testutil.EndpointForPort(defaultGRPCPort),
 					Transport: "tcp",
 				},
 			},
@@ -61,7 +60,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 	ctx, cancel := context.WithCancel(context.Background())

@@ -16,5 +16,5 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{databases}'
         scope:
-          name: otelcol/mongodbreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver
           version: latest

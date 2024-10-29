@@ -1,5 +1,4 @@
 type: k8sattributes
-scope_name: otelcol/k8sattributes
 
 status:
   class: processor
@@ -7,7 +6,8 @@ status:
     beta: [logs, metrics, traces]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, rmfitzpatrick, fatsheep9146, TylerHelmuth]
+    active: [dmitryax, fatsheep9146, TylerHelmuth]
+    emeritus: [rmfitzpatrick]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
   k8s.cluster.uid:
@@ -102,6 +102,10 @@ resource_attributes:
     description: Name of the image the container was built on. Requires container.id or k8s.container.name.
     type: string
     enabled: true
+  container.image.repo_digests:
+    description: Repo digests of the container image as provided by the container runtime.
+    type: slice
+    enabled: false
   container.image.tag:
     description: Container image tag. Requires container.id or k8s.container.name.
     type: string

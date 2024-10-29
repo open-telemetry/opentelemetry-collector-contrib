@@ -1,5 +1,4 @@
 type: count
-scope_name: otelcol/countconnector
 
 status:
   class: connector

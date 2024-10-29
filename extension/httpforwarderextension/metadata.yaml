@@ -1,5 +1,4 @@
 type: http_forwarder
-scope_name: otelcol/httpforwarder
 
 status:
   class: extension
@@ -7,7 +6,8 @@ status:
     beta: [extension]
   distributions: []
   codeowners:
-    active: [atoulme, rmfitzpatrick]
+    active: [atoulme]
+    emeritus: [rmfitzpatrick]
 
 tests:
   config:

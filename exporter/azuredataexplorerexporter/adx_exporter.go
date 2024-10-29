@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	kustoerrors "github.com/Azure/azure-kusto-go/kusto/data/errors"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
+	"github.com/Azure/azure-kusto-go/kusto/ingest/ingestoptions"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -160,6 +161,7 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 
 	var ingestOptions []ingest.FileOption
 	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
+	ingestOptions = append(ingestOptions, ingest.CompressionType(ingestoptions.GZIP))
 	// Expect that this mapping is already existent
 	if refOption := getMappingRef(config, telemetryDataType); refOption != nil {
 		ingestOptions = append(ingestOptions, refOption)

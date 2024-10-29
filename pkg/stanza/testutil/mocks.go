@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -27,8 +28,9 @@ func NewMockOperator(id string) *Operator {
 
 // FakeOutput is an empty output used primarily for testing
 type FakeOutput struct {
-	Received chan *entry.Entry
-	logger   *zap.Logger
+	Received         chan *entry.Entry
+	logger           *zap.Logger
+	processWithError bool
 }
 
 // NewFakeOutput creates a new fake output with default settings
@@ -36,6 +38,15 @@ func NewFakeOutput(t testing.TB) *FakeOutput {
 	return &FakeOutput{
 		Received: make(chan *entry.Entry, 100),
 		logger:   zaptest.NewLogger(t),
+	}
+}
+
+// NewFakeOutputWithProcessError creates a new fake output with default settings, which returns error on Process
+func NewFakeOutputWithProcessError(t testing.TB) *FakeOutput {
+	return &FakeOutput{
+		Received:         make(chan *entry.Entry, 100),
+		logger:           zaptest.NewLogger(t),
+		processWithError: true,
 	}
 }
 
@@ -75,6 +86,9 @@ func (f *FakeOutput) Type() string { return "fake_output" }
 // Process will place all incoming entries on the Received channel of a fake output
 func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {
 	f.Received <- entry
+	if f.processWithError {
+		return errors.NewError("Operator can not process logs.", "")
+	}
 	return nil
 }
 

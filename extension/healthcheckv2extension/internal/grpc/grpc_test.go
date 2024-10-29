@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -22,9 +22,10 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
+	internalhelpers "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 )
 
 func TestCheck(t *testing.T) {
@@ -76,12 +77,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        "",
@@ -100,12 +101,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        "",
@@ -124,7 +125,7 @@ func TestCheck(t *testing.T) {
 						// errors will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        "",
@@ -142,7 +143,7 @@ func TestCheck(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					service:        "",
@@ -157,12 +158,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        "",
@@ -181,12 +182,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					service:        "",
@@ -228,12 +229,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        "",
@@ -252,12 +253,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        "",
@@ -276,7 +277,7 @@ func TestCheck(t *testing.T) {
 						// metrics and overall status will be NOT_SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        "",
@@ -296,7 +297,7 @@ func TestCheck(t *testing.T) {
 						// metrics and overall status will recover and resume SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					service:        "",
@@ -312,7 +313,7 @@ func TestCheck(t *testing.T) {
 						// permament error will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					service:        "",
@@ -331,12 +332,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        "",
@@ -356,12 +357,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					service:        "",
@@ -402,12 +403,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        "",
@@ -426,12 +427,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        "",
@@ -450,7 +451,7 @@ func TestCheck(t *testing.T) {
 						// recoverable will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        "",
@@ -469,7 +470,7 @@ func TestCheck(t *testing.T) {
 						// permament error included
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					service:        "",
@@ -488,12 +489,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        "",
@@ -512,12 +513,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					service:        "",
@@ -559,12 +560,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        "",
@@ -583,12 +584,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        "",
@@ -607,7 +608,7 @@ func TestCheck(t *testing.T) {
 						// metrics and overall status will be NOT_SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        "",
@@ -627,7 +628,7 @@ func TestCheck(t *testing.T) {
 						// metrics and overall status will recover and resume SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					service:        "",
@@ -643,12 +644,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        "",
@@ -667,12 +668,12 @@ func TestCheck(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopped,
+							componentstatus.StatusStopped,
 						)
 					},
 					service:        "",
@@ -695,7 +696,7 @@ func TestCheck(t *testing.T) {
 				config,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
+				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
@@ -795,7 +796,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -806,7 +807,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -817,7 +818,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -828,7 +829,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -843,7 +844,7 @@ func TestWatch(t *testing.T) {
 						// errors will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -853,7 +854,7 @@ func TestWatch(t *testing.T) {
 					step: func() {
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -866,7 +867,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -883,7 +884,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -917,7 +918,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -928,7 +929,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -939,7 +940,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -950,7 +951,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -965,7 +966,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will be NOT_SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -980,7 +981,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will recover and resume SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -995,7 +996,7 @@ func TestWatch(t *testing.T) {
 						// permanent error will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1029,7 +1030,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1040,7 +1041,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1051,7 +1052,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1062,7 +1063,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1077,7 +1078,7 @@ func TestWatch(t *testing.T) {
 						// permanent error will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1111,7 +1112,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1122,7 +1123,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1133,7 +1134,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1144,7 +1145,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1159,7 +1160,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will be NOT_SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1174,7 +1175,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will recover and resume SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1191,7 +1192,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1208,7 +1209,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1242,7 +1243,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1253,7 +1254,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1264,7 +1265,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1275,7 +1276,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1290,7 +1291,7 @@ func TestWatch(t *testing.T) {
 						// recoverable will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1301,7 +1302,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will recover and resume SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1318,7 +1319,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStopping,
+							componentstatus.StatusStopping,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1352,7 +1353,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1363,7 +1364,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1374,7 +1375,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1385,7 +1386,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1400,7 +1401,7 @@ func TestWatch(t *testing.T) {
 						// recoverable will be ignored
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1434,7 +1435,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1445,7 +1446,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusStarting,
+							componentstatus.StatusStarting,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1456,7 +1457,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							traces.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        traces.PipelineID.String(),
@@ -1467,7 +1468,7 @@ func TestWatch(t *testing.T) {
 						testhelpers.SeedAggregator(
 							server.aggregator,
 							metrics.InstanceIDs(),
-							component.StatusOK,
+							componentstatus.StatusOK,
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1482,7 +1483,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will be NOT_SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewRecoverableErrorEvent(assert.AnError),
+							componentstatus.NewRecoverableErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1497,7 +1498,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will recover and resume SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewStatusEvent(component.StatusOK),
+							componentstatus.NewEvent(componentstatus.StatusOK),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1512,7 +1513,7 @@ func TestWatch(t *testing.T) {
 						// metrics and overall status will be NOT_SERVING
 						server.aggregator.RecordStatus(
 							metrics.ExporterID,
-							component.NewPermanentErrorEvent(assert.AnError),
+							componentstatus.NewPermanentErrorEvent(assert.AnError),
 						)
 					},
 					service:        metrics.PipelineID.String(),
@@ -1532,7 +1533,7 @@ func TestWatch(t *testing.T) {
 				config,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
+				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })

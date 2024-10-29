@@ -1,5 +1,4 @@
 type: hostmetricsreceiver/cpu
-scope_name: otelcol/hostmetricsreceiver/cpu
 
 parent: hostmetrics
 

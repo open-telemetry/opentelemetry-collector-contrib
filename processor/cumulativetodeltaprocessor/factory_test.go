@@ -27,7 +27,7 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{})
+	assert.Equal(t, &Config{}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -47,7 +47,7 @@ func TestCreateProcessors(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			tp, tErr := factory.CreateTracesProcessor(
+			tp, tErr := factory.CreateTraces(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -56,7 +56,7 @@ func TestCreateProcessors(t *testing.T) {
 			assert.Error(t, tErr)
 			assert.Nil(t, tp)
 
-			mp, mErr := factory.CreateMetricsProcessor(
+			mp, mErr := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,

@@ -11,17 +11,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 type logsConnector struct {
 	config Config
 
 	// Additional dimensions to add to logs.
-	dimensions []dimension
+	dimensions []pdatautil.Dimension
 
 	logsConsumer consumer.Logs
 	component.StartFunc
@@ -68,7 +69,7 @@ func (c *logsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces)
 				for l := 0; l < span.Events().Len(); l++ {
 					event := span.Events().At(l)
 					if event.Name() == eventNameExc {
-						c.attrToLogRecord(sl, serviceName, span, event)
+						c.attrToLogRecord(sl, serviceName, span, event, resourceAttr)
 					}
 				}
 			}
@@ -91,7 +92,7 @@ func (c *logsConnector) newScopeLogs(ld plog.Logs) plog.ScopeLogs {
 	return sl
 }
 
-func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, span ptrace.Span, event ptrace.SpanEvent) plog.LogRecord {
+func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, span ptrace.Span, event ptrace.SpanEvent, resourceAttrs pcommon.Map) plog.LogRecord {
 	logRecord := sl.LogRecords().AppendEmpty()
 
 	logRecord.SetTimestamp(event.Timestamp())
@@ -113,20 +114,13 @@ func (c *logsConnector) attrToLogRecord(sl plog.ScopeLogs, serviceName string, s
 
 	// Add configured dimension attributes to the log record.
 	for _, d := range c.dimensions {
-		if v, ok := getDimensionValue(d, spanAttrs, eventAttrs); ok {
-			logRecord.Attributes().PutStr(d.name, v.Str())
+		if v, ok := pdatautil.GetDimensionValue(d, spanAttrs, eventAttrs, resourceAttrs); ok {
+			logRecord.Attributes().PutStr(d.Name, v.Str())
 		}
 	}
 
 	// Add stacktrace to the log record.
-	logRecord.Attributes().PutStr(exceptionStacktraceKey, getValue(eventAttrs, exceptionStacktraceKey))
+	attrVal, _ := pdatautil.GetAttributeValue(exceptionStacktraceKey, eventAttrs)
+	logRecord.Attributes().PutStr(exceptionStacktraceKey, attrVal)
 	return logRecord
-}
-
-// getValue returns the value of the attribute with the given key.
-func getValue(attr pcommon.Map, key string) string {
-	if attrVal, ok := attr.Get(key); ok {
-		return attrVal.Str()
-	}
-	return ""
 }

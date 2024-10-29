@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -87,6 +86,8 @@ type Config struct {
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
 	Compression             string          `mapstructure:"compression,omitempty"`
+	PollsToArchive          int             `mapstructure:"-"` // TODO: activate this config once archiving is set up
+	AcquireFSLock           bool            `mapstructure:"acquire_fs_lock,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -170,13 +171,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		DeleteAtEOF:             c.DeleteAfterRead,
 		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
 		Compression:             c.Compression,
-	}
-
-	var t tracker.Tracker
-	if o.noTracking {
-		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
-	} else {
-		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
+		AcquireFSLock:           c.AcquireFSLock,
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
@@ -190,8 +185,8 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		pollInterval:     c.PollInterval,
 		maxBatchFiles:    c.MaxConcurrentFiles / 2,
 		maxBatches:       c.MaxBatches,
-		tracker:          t,
 		telemetryBuilder: telemetryBuilder,
+		noTracking:       o.noTracking,
 	}, nil
 }
 
@@ -208,7 +203,7 @@ func (c Config) validate() error {
 		return fmt.Errorf("'max_log_size' must be positive")
 	}
 
-	if c.MaxConcurrentFiles <= 1 {
+	if c.MaxConcurrentFiles < 1 {
 		return fmt.Errorf("'max_concurrent_files' must be positive")
 	}
 

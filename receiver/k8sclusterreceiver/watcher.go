@@ -366,7 +366,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 
 	if rw.entityLogConsumer != nil {
 		// Represent metadata update as entity events.
-		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp)
+		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp, rw.config.MetadataCollectionInterval)
 
 		// Convert entity events to log representation.
 		logs := entityEvents.ConvertAndMoveToLogs()

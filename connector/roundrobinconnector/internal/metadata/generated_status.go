@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("roundrobin")
+	Type      = component.MustNewType("roundrobin")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector"
 )
 
 const (
