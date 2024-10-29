@@ -7,23 +7,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/auth/basic"
-	"github.com/huaweicloud/huaweicloud-sdk-go-v3/core/config"
 	ces "github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/region"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/huawei"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal"
 )
 
@@ -114,7 +110,7 @@ func (rcvr *cesReceiver) createClient() (*ces.CesClient, error) {
 		return nil, err
 	}
 
-	httpConfig, err := createHTTPConfig(rcvr.config.HuaweiSessionConfig)
+	httpConfig, err := huawei.CreateHTTPConfig(rcvr.config.HuaweiSessionConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +151,7 @@ func (rcvr *cesReceiver) pollMetricsAndConsume(ctx context.Context) error {
 }
 
 func (rcvr *cesReceiver) listMetricDefinitions(ctx context.Context) ([]model.MetricInfoList, error) {
-	response, err := internal.MakeAPICallWithRetry(
+	response, err := huawei.MakeAPICallWithRetry(
 		ctx,
 		rcvr.shutdownChan,
 		rcvr.logger,
@@ -163,7 +159,7 @@ func (rcvr *cesReceiver) listMetricDefinitions(ctx context.Context) ([]model.Met
 			return rcvr.client.ListMetrics(&model.ListMetricsRequest{})
 		},
 		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
-		newExponentialBackOff(&rcvr.config.BackOffConfig),
+		huawei.NewExponentialBackOff(&rcvr.config.BackOffConfig),
 	)
 	if err != nil {
 		return []model.MetricInfoList{}, err
@@ -235,7 +231,7 @@ func (rcvr *cesReceiver) listDataPoints(ctx context.Context, metricDefinitions [
 }
 
 func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to time.Time, infoList model.MetricInfoList) (*model.ShowMetricDataResponse, error) {
-	return internal.MakeAPICallWithRetry(
+	return huawei.MakeAPICallWithRetry(
 		ctx,
 		rcvr.shutdownChan,
 		rcvr.logger,
@@ -254,53 +250,8 @@ func (rcvr *cesReceiver) listDataPointsForMetric(ctx context.Context, from, to t
 			})
 		},
 		func(err error) bool { return strings.Contains(err.Error(), requestThrottledErrMsg) },
-		newExponentialBackOff(&rcvr.config.BackOffConfig),
+		huawei.NewExponentialBackOff(&rcvr.config.BackOffConfig),
 	)
-}
-
-func newExponentialBackOff(backOffConfig *configretry.BackOffConfig) *backoff.ExponentialBackOff {
-	return &backoff.ExponentialBackOff{
-		InitialInterval:     backOffConfig.InitialInterval,
-		RandomizationFactor: backOffConfig.RandomizationFactor,
-		Multiplier:          backOffConfig.Multiplier,
-		MaxInterval:         backOffConfig.MaxInterval,
-		MaxElapsedTime:      backOffConfig.MaxElapsedTime,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
-	}
-}
-
-func createHTTPConfig(cfg HuaweiSessionConfig) (*config.HttpConfig, error) {
-	if cfg.ProxyAddress == "" {
-		return config.DefaultHttpConfig().WithIgnoreSSLVerification(cfg.NoVerifySSL), nil
-	}
-	proxy, err := configureHTTPProxy(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return config.DefaultHttpConfig().WithProxy(proxy), nil
-}
-
-func configureHTTPProxy(cfg HuaweiSessionConfig) (*config.Proxy, error) {
-	proxyURL, err := url.Parse(cfg.ProxyAddress)
-	if err != nil {
-		return nil, err
-	}
-
-	proxy := config.NewProxy().
-		WithSchema(proxyURL.Scheme).
-		WithHost(proxyURL.Hostname())
-	if len(proxyURL.Port()) > 0 {
-		if i, err := strconv.Atoi(proxyURL.Port()); err == nil {
-			proxy = proxy.WithPort(i)
-		}
-	}
-
-	// Configure the username and password if the proxy requires authentication
-	if len(cfg.ProxyUser) > 0 {
-		proxy = proxy.WithUsername(cfg.ProxyUser).WithPassword(cfg.ProxyPassword)
-	}
-	return proxy, nil
 }
 
 func (rcvr *cesReceiver) Shutdown(_ context.Context) error {

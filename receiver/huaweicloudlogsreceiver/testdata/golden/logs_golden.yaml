@@ -1,0 +1,60 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: huawei_cloud
+        - key: project.id
+          value:
+            stringValue: my-project
+        - key: region.id
+          value:
+            stringValue: us-east-2
+        - key: group.id
+          value:
+            stringValue: group-1
+        - key: stream.id
+          value:
+            stringValue: stream-1
+    scopeLogs:
+      - logRecords:
+        - attributes:
+          - key: hostName
+            value:
+              stringValue: "ecs-test1"
+          - key: hostIP
+            value:
+              stringValue: "192.168.0.106"
+          - key: containerName
+            value:
+              stringValue: "CONFIG_FILE"
+          - key: category
+            value:
+              stringValue: "LTS"
+          - key: lineNum
+            value:
+              stringValue: "123"
+          body:
+            stringValue: '2020-07-25/14:40:00 this log is Error NO 2'
+        - attributes:
+          - key: hostName
+            value:
+              stringValue: "ecs-test2"
+          - key: hostIP
+            value:
+              stringValue: "192.168.0.206"
+          - key: containerName
+            value:
+              stringValue: "CONFIG_FILE"
+          - key: category
+            value:
+              stringValue: "LTS"
+          - key: lineNum
+            value:
+              stringValue: "456"              
+          body:
+            stringValue: '2020-07-25/14:50:00 this log is Error NO 3'
+        scope:
+          name: huawei_cloud_lts
+          version: v2
+

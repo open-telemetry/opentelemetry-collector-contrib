@@ -1,15 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package huaweicloudcesreceiver
+package huaweicloudlogsreceiver
 
 import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/huawei"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/huawei"
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -26,33 +27,10 @@ func TestConfigValidate(t *testing.T) {
 				},
 				RegionID:  "cn-north-1",
 				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				GroupID:   "group-1",
+				StreamID:  "stream-1",
 			},
 			expectedError: "",
-		},
-		{
-			name: "Invalid Period",
-			config: Config{
-				ControllerConfig: scraperhelper.ControllerConfig{
-					CollectionInterval: time.Hour,
-				},
-				RegionID:  "cn-north-1",
-				ProjectID: "my_project",
-				Period:    100,
-				Filter:    "min",
-			},
-			expectedError: "invalid period",
-		},
-		{
-			name: "Invalid Filter",
-			config: Config{
-				RegionID:  "cn-north-1",
-				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "invalid",
-			},
-			expectedError: "invalid filter",
 		},
 		{
 			name: "Missing region name",
@@ -61,8 +39,6 @@ func TestConfigValidate(t *testing.T) {
 					CollectionInterval: time.Hour,
 				},
 				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
 			},
 			expectedError: huawei.ErrMissingRegionID.Error(),
 		},
@@ -73,8 +49,6 @@ func TestConfigValidate(t *testing.T) {
 					CollectionInterval: time.Hour,
 				},
 				RegionID: "cn-north-1",
-				Period:   300,
-				Filter:   "min",
 			},
 			expectedError: huawei.ErrMissingProjectID.Error(),
 		},
@@ -89,10 +63,10 @@ func TestConfigValidate(t *testing.T) {
 				},
 				RegionID:  "cn-north-1",
 				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				GroupID:   "group-1",
+				StreamID:  "stream-1",
 			},
-			expectedError: errInvalidProxy.Error(),
+			expectedError: huawei.ErrInvalidProxy.Error(),
 		},
 		{
 			name: "Proxy password without proxy address",
@@ -105,10 +79,10 @@ func TestConfigValidate(t *testing.T) {
 				},
 				RegionID:  "cn-north-1",
 				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				GroupID:   "group-1",
+				StreamID:  "stream-1",
 			},
-			expectedError: errInvalidProxy.Error(),
+			expectedError: huawei.ErrInvalidProxy.Error(),
 		},
 		{
 			name: "Proxy address with proxy user and password",
@@ -123,8 +97,8 @@ func TestConfigValidate(t *testing.T) {
 				},
 				RegionID:  "cn-north-1",
 				ProjectID: "my_project",
-				Period:    300,
-				Filter:    "min",
+				GroupID:   "group-1",
+				StreamID:  "stream-1",
 			},
 			expectedError: "",
 		},

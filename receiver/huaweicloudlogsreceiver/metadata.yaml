@@ -1,0 +1,9 @@
+type: huaweicloudlogsreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: []
+  codeowners:
+    active: [heitorganzeli, narcis96]

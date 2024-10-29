@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal"
+package huawei // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/huawei"
 
 import (
 	"context"
@@ -9,8 +9,21 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.uber.org/zap"
 )
+
+func NewExponentialBackOff(backOffConfig *configretry.BackOffConfig) *backoff.ExponentialBackOff {
+	return &backoff.ExponentialBackOff{
+		InitialInterval:     backOffConfig.InitialInterval,
+		RandomizationFactor: backOffConfig.RandomizationFactor,
+		Multiplier:          backOffConfig.Multiplier,
+		MaxInterval:         backOffConfig.MaxInterval,
+		MaxElapsedTime:      backOffConfig.MaxElapsedTime,
+		Stop:                backoff.Stop,
+		Clock:               backoff.SystemClock,
+	}
+}
 
 // Generic function to make an API call with exponential backoff and context cancellation handling.
 func MakeAPICallWithRetry[T any](

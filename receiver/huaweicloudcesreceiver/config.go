@@ -9,9 +9,9 @@ import (
 	"slices"
 
 	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/huawei"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -19,8 +19,6 @@ import (
 
 var (
 	// Predefined error responses for configuration validation failures
-	errMissingRegionID           = errors.New(`"region_id" is not specified in config`)
-	errMissingProjectID          = errors.New(`"project_id" is not specified in config`)
 	errInvalidCollectionInterval = errors.New(`invalid period; must be less than "collection_interval"`)
 	errInvalidProxy              = errors.New(`"proxy_address" must be specified if "proxy_user" or "proxy_password" is set"`)
 )
@@ -41,7 +39,7 @@ type Config struct {
 	// If Indices is empty, no indices will be scraped.
 	Indices []string `mapstructure:"indices"`
 	// Set of attributes used to configure huawei's CES SDK connection
-	HuaweiSessionConfig `mapstructure:",squash"`
+	huawei.HuaweiSessionConfig `mapstructure:",squash"`
 
 	// ProjectID is a string to reference project where metrics should be associated with.
 	// If ProjectID is not filled in, the SDK will automatically call the IAM service to query the project id corresponding to the region.
@@ -67,18 +65,6 @@ type Config struct {
 	BackOffConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
-type HuaweiSessionConfig struct {
-	AccessKey configopaque.String `mapstructure:"access_key"`
-
-	SecretKey configopaque.String `mapstructure:"secret_key"`
-	// Number of seconds before timing out a request.
-	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
-	// Upload segments to AWS X-Ray through a proxy.
-	ProxyAddress  string `mapstructure:"proxy_address"`
-	ProxyUser     string `mapstructure:"proxy_user"`
-	ProxyPassword string `mapstructure:"proxy_password"`
-}
-
 var _ component.Config = (*Config)(nil)
 
 // These valid periods are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
@@ -97,11 +83,11 @@ var validFilters = map[string]model.ShowMetricDataRequestFilter{
 func (config *Config) Validate() error {
 	var err error
 	if config.RegionID == "" {
-		err = multierr.Append(err, errMissingRegionID)
+		err = multierr.Append(err, huawei.ErrMissingRegionID)
 	}
 
 	if config.ProjectID == "" {
-		err = multierr.Append(err, errMissingProjectID)
+		err = multierr.Append(err, huawei.ErrMissingProjectID)
 	}
 	if index := slices.Index(validPeriods, config.Period); index == -1 {
 		err = multierr.Append(err, fmt.Errorf("invalid period: got %d; must be one of %v", config.Period, validPeriods))

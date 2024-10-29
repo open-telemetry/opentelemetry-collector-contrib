@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudlogsreceiver
 
 go 1.22.3
 

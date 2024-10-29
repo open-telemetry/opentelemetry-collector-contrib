@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver"
+package huaweicloudlogsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudlogsreceiver"
 
 import (
 	"context"
@@ -14,14 +14,14 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/huawei"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudlogsreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -40,16 +40,11 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(
+func createLogsReceiver(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
-	next consumer.Metrics) (receiver.Metrics, error) {
-
-	cesCfg := cfg.(*Config)
-
-	cesReceiver := newHuaweiCloudCesReceiver(params, cesCfg, next)
-
-	return cesReceiver, nil
+	next consumer.Logs) (receiver.Logs, error) {
+	return newHuaweiCloudLogsReceiver(params, cfg.(*Config), next), nil
 
 }
