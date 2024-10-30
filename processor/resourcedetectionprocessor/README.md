@@ -39,21 +39,8 @@ processors:
 
 Note: use the Docker detector (see below) if running the Collector as a Docker container.
 
-Queries the host machine to retrieve the following resource attributes:
-
-    * host.arch
-    * host.name
-    * host.id
-    * host.ip
-    * host.mac
-    * host.cpu.vendor.id
-    * host.cpu.family
-    * host.cpu.model.id
-    * host.cpu.model.name
-    * host.cpu.stepping
-    * host.cpu.cache.l2.size
-    * os.description
-    * os.type
+Queries the host machine to retrieve the system related resource attributes. The list of the
+populated resource attributes can be found at [System Detector Resource Attributes](./internal/system/documentation.md).
 
 By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
 This logic can be changed with `hostname_sources` configuration which is set to `["dns", "os"]` by default.
@@ -98,10 +85,9 @@ The "lookup" hostname source does a reverse DNS lookup of the current host's IP 
 
 ### Docker metadata
 
-Queries the Docker daemon to retrieve the following resource attributes from the host machine:
-
-    * host.name
-    * os.type
+Queries the Docker daemon to retrieve resource attributes from the host machine.
+The list of the populated resource attributes can
+be found at [Docker Detector Resource Attributes](./internal/docker/documentation.md).
 
 You need to mount the Docker socket (`/var/run/docker.sock` on Linux) to contact the Docker daemon.
 Docker detection does not work on macOS.
@@ -133,6 +119,8 @@ We map these environment variables to resource attributes as follows:
 
 For more information, see the [Heroku cloud provider documentation](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud-provider/heroku.md) under the [OpenTelemetry specification semantic conventions](https://github.com/open-telemetry/semantic-conventions).
 
+The list of the populated resource attributes can be found at [Heroku Detector Resource Attributes](./internal/heroku/documentation.md).
+
 ```yaml
 processors:
   resourcedetection/heroku:
@@ -157,6 +145,8 @@ processors:
     timeout: 2s
     override: false
 ```
+
+The list of the populated resource attributes can be found at [GCP Detector Resource Attributes](./internal/gcp/documentation.md).
 
 #### GCE Metadata
 
@@ -231,17 +221,10 @@ able to determine `host.name`. In that case, users are encouraged to set `host.n
 
 ### AWS EC2
 
-Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve the following resource attributes:
+Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information
+from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve related resource attributes:
 
-    * cloud.provider ("aws")
-    * cloud.platform ("aws_ec2")
-    * cloud.account.id
-    * cloud.region
-    * cloud.availability_zone
-    * host.id
-    * host.image.id
-    * host.name
-    * host.type
+The list of the populated resource attributes can be found at [EC2 Detector Resource Attributes](./internal/aws/ec2/documentation.md).
 
 It also can optionally gather tags for the EC2 instance that the collector is running on.
 Note that in order to fetch EC2 tags, the IAM role assigned to the EC2 instance must have a policy that includes the `ec2:DescribeTags` permission.
@@ -267,21 +250,7 @@ If the instance is part of AWS ParallelCluster and the detector is failing to co
 
 Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
 
-    * cloud.provider ("aws")
-    * cloud.platform ("aws_ecs")
-    * cloud.account.id
-    * cloud.region
-    * cloud.availability_zone
-    * aws.ecs.cluster.arn
-    * aws.ecs.task.arn
-    * aws.ecs.task.family
-    * aws.ecs.task.id
-    * aws.ecs.task.revision
-    * aws.ecs.launchtype (V4 only)
-    * aws.log.group.names (V4 only)
-    * aws.log.group.arns (V4 only)
-    * aws.log.stream.names (V4 only)
-    * aws.log.stream.arns (V4 only)
+The list of the populated resource attributes can be found at [ECS Detector Resource Attributes](./internal/aws/ecs/documentation.md).
 
 Example:
 
@@ -297,11 +266,7 @@ processors:
 
 Reads the AWS X-Ray configuration file available on all Beanstalk instances with [X-Ray Enabled](https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/environment-configuration-debugging.html).
 
-    * cloud.provider ("aws")
-    * cloud.platform ("aws_elastic_beanstalk")
-    * deployment.environment
-    * service.instance.id
-    * service.version
+The list of the populated resource attributes can be found at [Elastic Beanstalk Detector Resource Attributes](./internal/aws/elasticbeanstalk/documentation.md).
 
 Example:
 
@@ -315,9 +280,7 @@ processors:
 
 ### Amazon EKS
 
-    * cloud.provider ("aws")
-    * cloud.platform ("aws_eks")
-    * k8s.cluster.name
+The list of the populated resource attributes can be found at [EKS Detector Resource Attributes](./internal/aws/eks/documentation.md).
 
 Example:
 
@@ -352,26 +315,9 @@ If you see an error with the message `context deadline exceeded`, please increas
 ### AWS Lambda
 
 Uses the AWS Lambda [runtime environment variables](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime)
-to retrieve the following resource attributes:
+to retrieve related resource attributes.
 
-[Cloud semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud.md)
-
-* `cloud.provider` (`"aws"`)
-* `cloud.platform` (`"aws_lambda"`)
-* `cloud.region` (`$AWS_REGION`)
-
-[Function as a Service semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/faas.md)
-and [AWS Lambda semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/faas/aws-lambda.md)
-
-* `faas.name` (`$AWS_LAMBDA_FUNCTION_NAME`)
-* `faas.version` (`$AWS_LAMBDA_FUNCTION_VERSION`)
-* `faas.instance` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
-* `faas.max_memory` (`$AWS_LAMBDA_FUNCTION_MEMORY_SIZE`)
-
-[AWS Logs semantic conventions](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/cloud-provider/aws/logs.md)
-
-* `aws.log.group.names` (`$AWS_LAMBDA_LOG_GROUP_NAME`)
-* `aws.log.stream.names` (`$AWS_LAMBDA_LOG_STREAM_NAME`)
+The list of the populated resource attributes can be found at [Lambda Detector Resource Attributes](./internal/aws/lambda/documentation.md).
 
 Example:
 
@@ -385,18 +331,9 @@ processors:
 
 ### Azure
 
-Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve the following resource attributes:
+Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retrieve related attributes.
 
-    * cloud.provider ("azure")
-    * cloud.platform ("azure_vm")
-    * cloud.region
-    * cloud.account.id (subscription ID)
-    * host.id (virtual machine ID)
-    * host.name
-    * azure.vm.name (same as host.name)
-    * azure.vm.size (virtual machine size)
-    * azure.vm.scaleset.name (name of the scale set if any)
-    * azure.resourcegroup.name (resource group name)
+The list of the populated resource attributes can be found at [Azure Detector Resource Attributes](./internal/azure/documentation.md).
 
 Example:
 
@@ -430,9 +367,7 @@ Matched tags are added as:
 
 ### Azure AKS
 
-  * cloud.provider ("azure")
-  * cloud.platform ("azure_aks")
-  * k8s.cluster.name
+The list of the populated resource attributes can be found at [AKS Detector Resource Attributes](./internal/azure/aks/documentation.md).
 
 ```yaml
 processors:
@@ -473,11 +408,12 @@ If accurate parsing cannot be performed, the infrastructure resource group value
 
 ### Consul
 
-Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve the following resource attributes:
+Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
 
-  * cloud.region (consul datacenter)
-  * host.id (consul node id)
-  * host.name (consul node name)
+The list of the populated resource attributes can be found at [Consul Detector Resource Attributes](./internal/consul/documentation.md).
+
+In addition to:
+
   * *exploded consul metadata* - reads all key:value pairs in [consul metadata](https://www.consul.io/docs/agent/options#_node_meta) into label:labelvalue pairs.
 
 ```yaml
@@ -488,32 +424,11 @@ processors:
     override: false
 ```
 
-### Heroku
-
-** You must first enable the [Heroku metadata feature](https://devcenter.heroku.com/articles/dyno-metadata) on the application **
-
-Queries [Heroku metadata](https://devcenter.heroku.com/articles/dyno-metadata) to retrieve the following resource attributes:
-
-* heroku.release.version (identifier for the current release)
-* heroku.release.creation_timestamp (time and date the release was created)
-* heroku.release.commit (commit hash for the current release)
-* heroku.app.name (application name)
-* heroku.app.id (unique identifier for the application)
-* heroku.dyno.id (dyno identifier. Used as host name)
-
-```yaml
-processors:
-  resourcedetection/heroku:
-    detectors: [env, heroku]
-    timeout: 2s
-    override: false
-```
-
 ### K8S Node Metadata
 
-Queries the K8S api server to retrieve the following node resource attributes:
+Queries the K8S api server to retrieve node resource attributes.
 
-    * k8s.node.uid
+The list of the populated resource attributes can be found at [k8snode Detector Resource Attributes](./internal/k8snode/documentation.md).
 
 The following permissions are required:
 ```yaml
@@ -566,12 +481,9 @@ and add this to your workload:
 
 ### Openshift
 
-Queries the OpenShift and Kubernetes API to retrieve the following resource attributes:
+Queries the OpenShift and Kubernetes API to retrieve related resource attributes.
 
-    * cloud.provider
-    * cloud.platform
-    * cloud.region
-    * k8s.cluster.name
+The list of the populated resource attributes can be found at [Openshift Detector Resource Attributes](./internal/openshift/documentation.md).
 
 The following permissions are required:
 ```yaml
