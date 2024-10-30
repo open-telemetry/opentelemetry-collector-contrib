@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 type Server struct {

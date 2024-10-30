@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/uptimescraper"
 )
 
 const (
@@ -45,6 +46,7 @@ var (
 		pagingscraper.TypeStr:     &pagingscraper.Factory{},
 		processesscraper.TypeStr:  &processesscraper.Factory{},
 		processscraper.TypeStr:    &processscraper.Factory{},
+		uptimescraper.TypeStr:     &uptimescraper.Factory{},
 	}
 )
 

@@ -1,0 +1,12 @@
+routing:
+  match_once: true
+  # no default pipelines
+  table:
+    - context: log
+      condition: attributes["logName"] == "logX"
+      pipelines:
+        - logs/0
+    - context: log
+      condition: attributes["logName"] == "logY"
+      pipelines:
+        - logs/1

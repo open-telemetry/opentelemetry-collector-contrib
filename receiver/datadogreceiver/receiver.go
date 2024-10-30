@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
 )
@@ -237,7 +238,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		spanCount = otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
-			http.Error(w, "Trace consumer errored out", http.StatusInternalServerError)
+			errorutil.HTTPError(w, err)
 			ddr.params.Logger.Error("Trace consumer errored out", zap.Error(err))
 			return
 		}
@@ -277,13 +278,17 @@ func (ddr *datadogReceiver) handleV1Series(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_, _ = w.Write([]byte("OK"))
+	response := map[string]string{
+		"status": "ok",
+	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // handleV2Series handles the v2 series endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
@@ -307,13 +312,17 @@ func (ddr *datadogReceiver) handleV2Series(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_, _ = w.Write([]byte("OK"))
+	response := map[string]any{
+		"errors": []string{},
+	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // handleCheckRun handles the service checks endpoint https://docs.datadoghq.com/api/latest/service-checks/
@@ -347,13 +356,17 @@ func (ddr *datadogReceiver) handleCheckRun(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_, _ = w.Write([]byte("OK"))
+	response := map[string]string{
+		"status": "ok",
+	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // handleSketches handles sketches, the underlying data structure of distributions https://docs.datadoghq.com/metrics/distributions/
@@ -378,7 +391,7 @@ func (ddr *datadogReceiver) handleSketches(w http.ResponseWriter, req *http.Requ
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
 		return
 	}
@@ -447,7 +460,7 @@ func (ddr *datadogReceiver) handleStats(w http.ResponseWriter, req *http.Request
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
 	if err != nil {
 		ddr.params.Logger.Error("Metrics consumer errored out", zap.Error(err))
-		http.Error(w, "Metrics consumer errored out", http.StatusInternalServerError)
+		errorutil.HTTPError(w, err)
 		return
 	}
 

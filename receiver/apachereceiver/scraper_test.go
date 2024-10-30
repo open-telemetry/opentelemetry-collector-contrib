@@ -58,15 +58,15 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(receivertest.NewNopSettings(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "localhost:8080",
-			TLSSetting: configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/non/existent",
-				},
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "localhost:8080"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
 		},
+	}
+	sc := newApacheScraper(receivertest.NewNopSettings(), &Config{
+		ClientConfig: clientConfig,
 	},
 		"localhost",
 		"8080")
@@ -172,7 +172,7 @@ func TestScraperError(t *testing.T) {
 func newMockServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.String() == "/server-status?auto" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write([]byte(`ServerUptimeSeconds: 410
 Total Accesses: 14169
 Total kBytes: 20910
@@ -193,6 +193,6 @@ Scoreboard: S_DD_L_GGG_____W__IIII_C________________W___________________________
 			assert.NoError(t, err)
 			return
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 }
