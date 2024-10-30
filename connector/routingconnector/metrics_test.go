@@ -5,17 +5,23 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
@@ -494,4 +500,65 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, conn.Capabilities().MutatesData)
+}
+
+func TestMetricsConnectorDetailed(t *testing.T) {
+	testCases := []string{
+		filepath.Join("testdata", "metrics", "resource_context", "all_match_first_only"),
+		filepath.Join("testdata", "metrics", "resource_context", "all_match_last_only"),
+		filepath.Join("testdata", "metrics", "resource_context", "all_match_once"),
+		filepath.Join("testdata", "metrics", "resource_context", "each_matches_one"),
+		filepath.Join("testdata", "metrics", "resource_context", "match_none_with_default"),
+		filepath.Join("testdata", "metrics", "resource_context", "match_none_without_default"),
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt, func(t *testing.T) {
+
+			cm, err := confmaptest.LoadConf(filepath.Join(tt, "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub("routing")
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			require.NoError(t, component.ValidateConfig(cfg))
+
+			var sinkDefault, sink0, sink1 consumertest.MetricsSink
+			router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "default"): &sinkDefault,
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "0"):       &sink0,
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "1"):       &sink1,
+			})
+
+			conn, err := factory.CreateMetricsToMetrics(
+				context.Background(),
+				connectortest.NewNopSettings(),
+				cfg,
+				router.(consumer.Metrics),
+			)
+			require.NoError(t, err)
+
+			input, readErr := golden.ReadMetrics(filepath.Join("testdata", "metrics", "input.yaml"))
+			require.NoError(t, readErr)
+
+			require.NoError(t, conn.ConsumeMetrics(context.Background(), input))
+
+			assertExpected := func(actual []pmetric.Metrics, filePath string) {
+				expected, err := golden.ReadMetrics(filePath)
+				switch {
+				case err == nil:
+					require.Len(t, actual, 1)
+					assert.Equal(t, expected, actual[0])
+				case os.IsNotExist(err):
+					assert.Empty(t, actual)
+				default:
+					t.Fatalf("Error reading %s: %v", filePath, err)
+				}
+			}
+			assertExpected(sink0.AllMetrics(), filepath.Join(tt, "sink_0.yaml"))
+			assertExpected(sink1.AllMetrics(), filepath.Join(tt, "sink_1.yaml"))
+			assertExpected(sinkDefault.AllMetrics(), filepath.Join(tt, "sink_default.yaml"))
+		})
+	}
 }
