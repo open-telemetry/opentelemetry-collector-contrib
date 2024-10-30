@@ -54,6 +54,24 @@ attributes:
   lock_type:
     description: Type of the lockable object.
     type: string
+  transactionid:
+    description: The transaction ID of the lock owner.
+    type: string
+  pid:
+    description: The process ID of the lock owner.
+    type: string
+  client_addr:
+    description: The IP address of the client connected to this backend.
+    type: string
+  duration:
+    description: The duration of the lock.
+    type: string
+  query:
+    description: The query that is holding the lock.
+    type: string
+  query_state:
+    description: The state of the query that is holding the lock.
+    type: string
   mode:
     description: Name of the lock mode held or desired by the process.
     type: string
@@ -73,9 +91,6 @@ attributes:
     description: The database operation.
     type: string
     enum: [ins, upd, del, hot_upd]
-  relation:
-    description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
-    type: string
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string
@@ -167,7 +182,15 @@ metrics:
     unit: "{lock}"
     gauge:
       value_type: int
-    attributes: [relation, mode, lock_type]
+    attributes: 
+      - mode 
+      - lock_type 
+      - transactionid
+      - pid 
+      - client_addr 
+      - duration 
+      - query_state 
+      - query 
   postgresql.db_size:
     enabled: true
     description: The database disk usage.

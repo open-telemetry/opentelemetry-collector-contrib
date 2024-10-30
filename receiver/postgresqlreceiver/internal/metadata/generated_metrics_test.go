@@ -109,7 +109,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "relation-val", "mode-val", "lock_type-val")
+			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "mode-val", "lock_type-val", "transactionid-val", "pid-val", "client_addr-val", "duration-val", "query_state-val", "query-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -360,15 +360,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("relation")
-					assert.True(t, ok)
-					assert.EqualValues(t, "relation-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("mode")
+					attrVal, ok := dp.Attributes().Get("mode")
 					assert.True(t, ok)
 					assert.EqualValues(t, "mode-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "lock_type-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("transactionid")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transactionid-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("pid")
+					assert.True(t, ok)
+					assert.EqualValues(t, "pid-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("client_addr")
+					assert.True(t, ok)
+					assert.EqualValues(t, "client_addr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("duration")
+					assert.True(t, ok)
+					assert.EqualValues(t, "duration-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("query_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "query_state-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("query")
+					assert.True(t, ok)
+					assert.EqualValues(t, "query-val", attrVal.Str())
 				case "postgresql.db_size":
 					assert.False(t, validatedMetrics["postgresql.db_size"], "Found a duplicate in the metrics slice: postgresql.db_size")
 					validatedMetrics["postgresql.db_size"] = true

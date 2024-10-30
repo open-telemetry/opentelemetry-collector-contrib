@@ -265,9 +265,14 @@ The number of database locks.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str |
 | mode | Name of the lock mode held or desired by the process. | Any Str |
 | lock_type | Type of the lockable object. | Any Str |
+| transactionid | The transaction ID of the lock owner. | Any Str |
+| pid | The process ID of the lock owner. | Any Str |
+| client_addr | The IP address of the client connected to this backend. | Any Str |
+| duration | The duration of the lock. | Any Str |
+| query_state | The state of the query that is holding the lock. | Any Str |
+| query | The query that is holding the lock. | Any Str |
 
 ### postgresql.deadlocks
 

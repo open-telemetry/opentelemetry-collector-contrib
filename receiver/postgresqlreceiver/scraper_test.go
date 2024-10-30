@@ -428,30 +428,22 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
 		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
 			{
-				relation: "pg_locks",
 				mode:     "AccessShareLock",
 				lockType: "relation",
-				locks:    3600,
 			},
 			{
-				relation: "pg_class",
 				mode:     "AccessShareLock",
 				lockType: "relation",
-				locks:    5600,
 			},
 		}, nil)
 		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
 			{
-				relation: "abd_table",
 				mode:     "ExplicitLock",
 				lockType: "relation",
-				locks:    1600,
 			},
 			{
-				relation: "pg_class",
 				mode:     "AccessShareLock",
 				lockType: "relation",
-				locks:    5600,
 			},
 		}, fmt.Errorf("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{

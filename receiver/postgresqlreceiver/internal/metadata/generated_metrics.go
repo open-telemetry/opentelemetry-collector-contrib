@@ -769,7 +769,7 @@ func (m *metricPostgresqlDatabaseLocks) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
+func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, modeAttributeValue string, lockTypeAttributeValue string, transactionidAttributeValue string, pidAttributeValue string, clientAddrAttributeValue string, durationAttributeValue string, queryStateAttributeValue string, queryAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -777,9 +777,14 @@ func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("relation", relationAttributeValue)
 	dp.Attributes().PutStr("mode", modeAttributeValue)
 	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("transactionid", transactionidAttributeValue)
+	dp.Attributes().PutStr("pid", pidAttributeValue)
+	dp.Attributes().PutStr("client_addr", clientAddrAttributeValue)
+	dp.Attributes().PutStr("duration", durationAttributeValue)
+	dp.Attributes().PutStr("query_state", queryStateAttributeValue)
+	dp.Attributes().PutStr("query", queryAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1904,8 +1909,8 @@ func (mb *MetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Time
 }
 
 // RecordPostgresqlDatabaseLocksDataPoint adds a data point to postgresql.database.locks metric.
-func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
-	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, modeAttributeValue string, lockTypeAttributeValue string, transactionidAttributeValue string, pidAttributeValue string, clientAddrAttributeValue string, durationAttributeValue string, queryStateAttributeValue string, queryAttributeValue string) {
+	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, modeAttributeValue, lockTypeAttributeValue, transactionidAttributeValue, pidAttributeValue, clientAddrAttributeValue, durationAttributeValue, queryStateAttributeValue, queryAttributeValue)
 }
 
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.

@@ -325,7 +325,7 @@ func (p *postgreSQLScraper) collectDatabaseLocks(
 		return
 	}
 	for _, dbLock := range dbLocks {
-		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType)
+		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, int64(len(dbLocks)), dbLock.mode, dbLock.lockType, dbLock.transactionID, dbLock.pid, dbLock.clientAddr, dbLock.duration, dbLock.queryState, dbLock.query)
 	}
 }
 

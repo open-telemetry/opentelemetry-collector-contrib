@@ -165,38 +165,53 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 }
 
 type databaseLocks struct {
-	relation string
-	mode     string
-	lockType string
-	locks    int64
+	lockType      string
+	transactionID string
+	pid           string
+	mode          string
+	clientAddr    string
+	duration      string
+	queryState    string
+	query         string
 }
 
 func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
-	query := `SELECT relname AS relation, mode, locktype,COUNT(pid)
-	AS locks FROM pg_locks
-	JOIN pg_class ON pg_locks.relation = pg_class.oid
-	GROUP BY relname, mode, locktype;`
+	query := `SELECT DISTINCT pg_locks.locktype, 
+		pg_locks.transactionid, 
+		pg_locks.pid, 
+		pg_locks.mode, 
+		pg_stat_activity.client_addr, 
+		NOW() - pg_stat_activity.query_start as duration, 
+		pg_stat_activity.state, 
+		pg_stat_activity.query 
+	FROM pg_locks 
+	JOIN pg_stat_activity ON pg_locks.pid = pg_stat_activity.pid 
+	WHERE (NOW() - pg_stat_activity.query_start) > interval '3 minutes';
+	`
 
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
+		return nil, fmt.Errorf("unable to query pg_locks and pg_stat_activity: %w", err)
 	}
 	defer rows.Close()
 	var dl []databaseLocks
 	var errs []error
 	for rows.Next() {
-		var relation, mode, lockType string
-		var locks int64
-		err = rows.Scan(&relation, &mode, &lockType, &locks)
+		var lockType, transactionID, pid, mode, clientAddr, duration, queryState, query string
+		err = rows.Scan(&lockType, &transactionID, &pid, &mode, &clientAddr, &duration, &queryState, &query)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 		dl = append(dl, databaseLocks{
-			relation: relation,
-			mode:     mode,
-			lockType: lockType,
-			locks:    locks,
+			lockType:      lockType,
+			transactionID: transactionID,
+			pid:           pid,
+			mode:          mode,
+			clientAddr:    clientAddr,
+			duration:      duration,
+			queryState:    queryState,
+			query:         query,
 		})
 	}
 	return dl, multierr.Combine(errs...)
