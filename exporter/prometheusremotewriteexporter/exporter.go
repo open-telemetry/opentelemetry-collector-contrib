@@ -214,27 +214,26 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-		if prwe.enableSendingRW2 {
-			switch prwe.RemoteWriteProtoMsg {
-			case RemoteWriteProtoMsgV1:
-				return prwe.pushMetricsV1(ctx, md)
-			case RemoteWriteProtoMsgV2:
-				// RW2 case
-				tsMap, symbolsTable, err := prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
-
-				prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
-
-				if err != nil {
-					prwe.telemetry.recordTranslationFailure(ctx)
-				}
-				prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
-				// Call export even if a conversion error, since there may be points that were successfully converted.
-				return prwe.handleExportV2(ctx, symbolsTable, tsMap)
-			default:
-				return errors.New("unexpected rw protobuf message")
-			}
-		} else {
+		if !prwe.enableSendingRW2 {
 			return prwe.pushMetricsV1(ctx, md)
+		}
+		switch prwe.RemoteWriteProtoMsg {
+		case RemoteWriteProtoMsgV1:
+			return prwe.pushMetricsV1(ctx, md)
+		case RemoteWriteProtoMsgV2:
+			// RW2 case
+			tsMap, symbolsTable, err := prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
+
+			prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+
+			if err != nil {
+				prwe.telemetry.recordTranslationFailure(ctx)
+			}
+			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+			// Call export even if a conversion error, since there may be points that were successfully converted.
+			return prwe.handleExportV2(ctx, symbolsTable, tsMap)
+		default:
+			return errors.New("unexpected rw protobuf message")
 		}
 	}
 }
