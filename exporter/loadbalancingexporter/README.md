@@ -55,7 +55,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 
 ## Configuration
 
-Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
+Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the exporter.
 
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
 * The `resolver` accepts a `static` node, a `dns`, a `k8s` service or `aws_cloud_map`. If all four are specified, an `errMultipleResolversProvided` error will be thrown.
@@ -90,6 +90,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
+* loadbalancing exporter supports set of standard [queuing, batching, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
 Simple example
 
@@ -117,11 +118,80 @@ exporters:
         - backend-2:4317
         - backend-3:4317
         - backend-4:4317
-      # Notice to config a headless service DNS in Kubernetes  
+      # Notice to config a headless service DNS in Kubernetes
       # dns:
-      #  hostname: otelcol-headless.observability.svc.cluster.local        
+      #  hostname: otelcol-headless.observability.svc.cluster.local
 
 service:
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - loadbalancing
+    logs:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - loadbalancing
+```
+
+Persistent queue, retry and timeout usage example:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+
+processors:
+
+exporters:
+  loadbalancing:
+    timeout: 10s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      # please take a note that otlp.sending_queue will be
+      # disabled automatically in this case to avoid data loss
+      enabled: true
+      num_consumers: 2
+      queue_size: 1000
+      storage: file_storage/otc
+    routing_key: "service"
+    protocol:
+      otlp:
+        # all options from the OTLP exporter are supported
+        # except the endpoint
+        timeout: 1s
+        # doesn't take any effect because loadbalancing.sending_queue
+        # is enabled
+        sending_queue:
+          enabled: true
+    resolver:
+      static:
+        hostnames:
+        - backend-1:4317
+        - backend-2:4317
+        - backend-3:4317
+        - backend-4:4317
+      # Notice to config a headless service DNS in Kubernetes
+      # dns:
+      #  hostname: otelcol-headless.observability.svc.cluster.local
+
+extensions:
+  file_storage/otc:
+    directory: /var/lib/storage/otc
+    timeout: 10s
+
+service:
+  extensions: [file_storage]
   pipelines:
     traces:
       receivers:
@@ -334,7 +404,7 @@ service:
 
 ## Metrics
 
-The following metrics are recorded by this processor:
+The following metrics are recorded by this exporter:
 
 * `otelcol_loadbalancer_num_resolutions` represents the total number of resolutions performed by the resolver specified in the tag `resolver`, split by their outcome (`success=true|false`). For the static resolver, this should always be `1` with the tag `success=true`.
 * `otelcol_loadbalancer_num_backends` informs how many backends are currently in use. It should always match the number of items specified in the configuration file in case the `static` resolver is used, and should eventually (seconds) catch up with the DNS changes. Note that DNS caches that might exist between the load balancer and the record authority will influence how long it takes for the load balancer to see the change.
