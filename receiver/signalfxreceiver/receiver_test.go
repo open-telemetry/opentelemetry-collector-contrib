@@ -149,7 +149,7 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 		APIURL:      "http://localhost",
 		AccessToken: "access_token",
 	}
-	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
+	exp, err := signalfxexporter.NewFactory().CreateMetrics(
 		context.Background(),
 		exportertest.NewNopSettings(),
 		expCfg)
@@ -663,7 +663,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	sfxMsg := buildSFxDatapointMsg(msec, 13, 3)
 	body, err := sfxMsg.Marshal()
-	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
+	require.NoErrorf(t, err, "failed to marshal SFx message: %v", err)
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
 
@@ -1066,15 +1066,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }
 

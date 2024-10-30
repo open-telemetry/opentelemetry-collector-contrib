@@ -55,7 +55,7 @@ func TestAlertsReceiver(t *testing.T) {
 			_, testPort, err := net.SplitHostPort(testAddr)
 			require.NoError(t, err)
 
-			recv, err := fact.CreateLogsReceiver(
+			recv, err := fact.CreateLogs(
 				context.Background(),
 				receivertest.NewNopSettings(),
 				&Config{
@@ -120,7 +120,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			_, testPort, err := net.SplitHostPort(testAddr)
 			require.NoError(t, err)
 
-			recv, err := fact.CreateLogsReceiver(
+			recv, err := fact.CreateLogs(
 				context.Background(),
 				receivertest.NewNopSettings(),
 				&Config{
@@ -208,7 +208,7 @@ func TestAtlasPoll(t *testing.T) {
 	sink := &consumertest.LogsSink{}
 	fact := NewFactory()
 
-	recv, err := fact.CreateLogsReceiver(
+	recv, err := fact.CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&Config{

@@ -44,7 +44,11 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 	}
 	if connectionString == "" {
 		connectionVars.InstrumentationKey = instrumentationKey
-		connectionVars.IngestionURL = getIngestionURL(DefaultIngestionEndpoint)
+		if exporterConfig.Endpoint == "" {
+			connectionVars.IngestionURL = getIngestionURL(DefaultIngestionEndpoint)
+		} else {
+			connectionVars.IngestionURL = getIngestionURL(exporterConfig.Endpoint)
+		}
 		return connectionVars, nil
 	}
 

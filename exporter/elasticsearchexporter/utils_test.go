@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -48,7 +49,13 @@ func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder 
 		copy(actualItems, actual)
 		slices.SortFunc(actualItems, itemRequestsSortFunc)
 	}
-	assert.Equal(t, expectedItems, actualItems)
+
+	assert.Equal(t, len(expectedItems), len(actualItems), "want %d items, got %d", len(expectedItems), len(actualItems))
+	for i, want := range expectedItems {
+		got := actualItems[i]
+		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)
+		assert.JSONEq(t, string(want.Document), string(got.Document), "item %d document", i)
+	}
 }
 
 type itemResponse struct {
@@ -154,7 +161,11 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		tsStart := time.Now()
 		var items []itemRequest
 
-		dec := json.NewDecoder(req.Body)
+		body := req.Body
+		if req.Header.Get("Content-Encoding") == "gzip" {
+			body, _ = gzip.NewReader(req.Body)
+		}
+		dec := json.NewDecoder(body)
 		for dec.More() {
 			var action, doc json.RawMessage
 			if err := dec.Decode(&action); err != nil {
@@ -288,6 +299,8 @@ func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
 	attrs.EnsureCapacity(len(m))
 	for k, v := range m {
 		switch vv := v.(type) {
+		case bool:
+			attrs.PutBool(k, vv)
 		case string:
 			attrs.PutStr(k, vv)
 		case []string:

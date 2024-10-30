@@ -90,11 +90,27 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	usages := make([]*deviceUsage, 0, len(partitions))
+
+	type mountKey struct {
+		mountpoint string
+		device     string
+	}
+	seen := map[mountKey]struct{}{}
+
 	for _, partition := range partitions {
+		key := mountKey{
+			mountpoint: partition.Mountpoint,
+			device:     partition.Device,
+		}
+		if _, ok := seen[key]; partition.Mountpoint != "" && ok {
+			continue
+		}
+		seen[key] = struct{}{}
+
 		if !s.fsFilter.includePartition(partition) {
 			continue
 		}
-		translatedMountpoint := translateMountpoint(s.config.RootPath, partition.Mountpoint)
+		translatedMountpoint := translateMountpoint(ctx, s.config.RootPath, partition.Mountpoint)
 		usage, usageErr := s.usage(ctx, translatedMountpoint)
 		if usageErr != nil {
 			errors.AddPartial(0, fmt.Errorf("failed to read usage at %s: %w", translatedMountpoint, usageErr))
@@ -161,6 +177,12 @@ func (f *fsFilter) includeMountPoint(mountPoint string) bool {
 }
 
 // translateMountsRootPath translates a mountpoint from the host perspective to the chrooted perspective.
-func translateMountpoint(rootPath, mountpoint string) string {
+func translateMountpoint(ctx context.Context, rootPath string, mountpoint string) string {
+	if env, ok := ctx.Value(common.EnvKey).(common.EnvMap); ok {
+		mountInfo := env[common.EnvKeyType("HOST_PROC_MOUNTINFO")]
+		if mountInfo != "" {
+			return mountpoint
+		}
+	}
 	return filepath.Join(rootPath, mountpoint)
 }

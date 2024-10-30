@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
-// This file implements factory for the GitHub Scraper as part of the  GitHub Receiver
+// This file implements factory for the GitHub Scraper as part of the GitHub Receiver
 
 const (
 	defaultHTTPTimeout = 15 * time.Second
@@ -24,11 +24,11 @@ const (
 type Factory struct{}
 
 func (f *Factory) CreateDefaultConfig() internal.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultHTTPTimeout
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			Timeout: defaultHTTPTimeout,
-		},
+		ClientConfig:         clientConfig,
 	}
 }
 
@@ -40,7 +40,7 @@ func (f *Factory) CreateMetricsScraper(
 	conf := cfg.(*Config)
 	s := newGitHubScraper(ctx, params, conf)
 
-	return scraperhelper.NewScraperWithComponentType(
+	return scraperhelper.NewScraper(
 		metadata.Type,
 		s.scrape,
 		scraperhelper.WithStart(s.start),

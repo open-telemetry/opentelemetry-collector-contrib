@@ -143,13 +143,11 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 
 			switch {
 			case tc.expectedErrRootable != "":
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 				require.Error(t, errRootable)
 				require.Contains(t, errRootable.Error(), tc.expectedErrRootable)
 			case tc.expectedErr != "":
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 				require.NoError(t, errRootable)
 				require.Equal(t, tc.expected, rootableField.Field)
 			default:
@@ -233,8 +231,7 @@ func TestFieldUnmarshalYAMLFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var f Field
 			err := yaml.UnmarshalStrict(tc.input, &f)
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.expected)
+			require.ErrorContains(t, err, tc.expected)
 		})
 	}
 }
@@ -284,8 +281,7 @@ func TestFromJSONDot(t *testing.T) {
 
 func TestFieldFromStringInvalidSplit(t *testing.T) {
 	_, err := NewField("resource[test]")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "splitting field")
+	require.ErrorContains(t, err, "splitting field")
 }
 
 func TestFieldFromStringWithResource(t *testing.T) {
