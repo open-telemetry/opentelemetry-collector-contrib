@@ -46,6 +46,7 @@ go.opentelemetry.io/collector/config/configtls v1.18.0/go.mod h1:lD2dlDqeTKq7Oec
 go.opentelemetry.io/collector/config/configtls v1.18.1-0.20241029112935-002a74860455/go.mod h1:lD2dlDqeTKq7OecFwIZMufDaa8erSlEoHMJrFPHrZNw=
 go.opentelemetry.io/collector/semconv v0.112.0 h1:JPQyvZhlNLVSuVI+FScONaiFygB7h7NTZceUEKIQUEc=
 go.opentelemetry.io/collector/semconv v0.112.0/go.mod h1:zCJ5njhWpejR+A40kiEoeFm1xq1uzyZwMnRNX6/D82A=
+go.opentelemetry.io/collector/semconv v0.112.1-0.20241029112935-002a74860455/go.mod h1:zCJ5njhWpejR+A40kiEoeFm1xq1uzyZwMnRNX6/D82A=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=

@@ -5,6 +5,7 @@ package resourceprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,6 +38,14 @@ func TestCreateProcessor(t *testing.T) {
 	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
+
+	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, lp)
+
+	pp, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, pp)
 }
 
 func TestInvalidAttributeActions(t *testing.T) {
@@ -51,5 +60,11 @@ func TestInvalidAttributeActions(t *testing.T) {
 	assert.Error(t, err)
 
 	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	assert.Error(t, err)
+
+	_, err = factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	assert.Error(t, err)
+
+	_, err = factory.(processorprofiles.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, nil)
 	assert.Error(t, err)
 }

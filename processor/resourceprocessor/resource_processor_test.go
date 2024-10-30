@@ -5,6 +5,8 @@ package resourceprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -131,6 +133,20 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
 			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
+
+			// Test profiles consumer
+			tpn := new(consumertest.ProfilesSink)
+			rpp, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), tt.config, tpn)
+			require.NoError(t, err)
+			assert.True(t, tpn.Capabilities().MutatesData)
+
+			sourceProfileData := generateProfileData(tt.sourceAttributes)
+			//wantProfileData := generateProfileData(tt.wantAttributes)
+			err = rpp.ConsumeProfiles(context.Background(), sourceProfileData)
+			require.NoError(t, err)
+			profiles := tpn.AllProfiles()
+			require.Len(t, profiles, 1)
+			//assert.NoError(t, pprofiletest.C)
 		})
 	}
 }
@@ -169,4 +185,14 @@ func generateLogData(attributes map[string]string) plog.Logs {
 		resource.Attributes().PutStr(k, v)
 	}
 	return ld
+}
+
+func generateProfileData(attributes map[string]string) pprofile.Profiles {
+	p := pprofile.NewProfiles()
+	rp := p.ResourceProfiles().AppendEmpty()
+
+	for k, v := range attributes {
+		rp.Resource().Attributes().PutStr(k, v)
+	}
+	return p
 }
