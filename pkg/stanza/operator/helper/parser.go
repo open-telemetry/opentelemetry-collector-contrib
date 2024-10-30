@@ -136,6 +136,9 @@ func (p *ParserOperator) ParseWithCallback(ctx context.Context, entry *entry.Ent
 	}
 
 	if err = p.ParseWith(ctx, entry, parse); err != nil {
+		if p.OnError == DropOnErrorQuiet || p.OnError == SendOnErrorQuiet {
+			return nil
+		}
 		return err
 	}
 	if cb != nil {
