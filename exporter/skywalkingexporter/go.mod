@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.102.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.102.0
 	go.opentelemetry.io/collector/config/configgrpc v0.102.0

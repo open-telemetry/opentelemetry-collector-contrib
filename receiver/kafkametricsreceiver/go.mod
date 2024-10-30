@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/IBM/sarama v1.43.2
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.102.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.102.0
 	go.opentelemetry.io/collector/config/configtls v0.102.0

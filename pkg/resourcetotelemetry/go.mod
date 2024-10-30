@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetot
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.102.1
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/consumer v0.102.0
 	go.opentelemetry.io/collector/exporter v0.102.0
