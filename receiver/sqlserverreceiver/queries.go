@@ -211,6 +211,7 @@ INSERT INTO @PCounters SELECT * FROM PerfCounters;
 SELECT
 	 'sqlserver_performance' AS [measurement]
 	,REPLACE(@@SERVERNAME,'\',':') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
 	,pc.[object_name] AS [object]
 	,pc.[counter_name] AS [counter]
 	,CASE pc.[instance_name] WHEN '_Total' THEN 'Total' ELSE ISNULL(pc.[instance_name],'') END AS [instance]
@@ -288,6 +289,7 @@ EXEC [xp_instance_regread]
 SELECT
 	 ''sqlserver_server_properties'' AS [measurement]
 	,REPLACE(@@SERVERNAME,''\'','':'') AS [sql_instance]
+	,HOST_NAME() AS [computer_name]
 	,@@SERVICENAME AS [service_name]
 	,si.[cpu_count]
 	,(SELECT [total_physical_memory_kb] FROM sys.[dm_os_sys_memory]) AS [server_memory]

@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
@@ -179,6 +180,9 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if libraryMetrics.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartMetricsOp(ctx)
 			err := cfr.nextMetrics.ConsumeMetrics(ctx, metrics)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume metrics", zap.Error(err))
+			}
 			cfr.obsrecv.EndMetricsOp(obsCtx, dataFormat, metrics.DataPointCount(), err)
 		}
 	}
@@ -213,6 +217,9 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 		if libraryLogs.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
 			err := cfr.nextLogs.ConsumeLogs(ctx, logs)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume logs", zap.Error(err))
+			}
 			cfr.obsrecv.EndLogsOp(obsCtx, dataFormat, logs.LogRecordCount(), err)
 		}
 	}

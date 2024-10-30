@@ -62,8 +62,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	shouldHaveTaken := time.Now().Add(100 * time.Millisecond).UnixNano()
 
 	err = cli.LoadContainerList(context.Background())
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expectedError)
+	assert.ErrorContains(t, err, expectedError)
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
@@ -120,9 +119,8 @@ func TestFetchingTimeouts(t *testing.T) {
 	)
 
 	assert.Nil(t, statsJSON)
-	require.Error(t, err)
 
-	assert.Contains(t, err.Error(), expectedError)
+	assert.ErrorContains(t, err, expectedError)
 
 	assert.Len(t, logs.All(), 1)
 	for _, l := range logs.All() {
@@ -184,7 +182,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 			wg.Done()
 		}
 		_, err := w.Write([]byte{})
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	defer srv.Close()
 

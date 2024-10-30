@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     beta: [traces]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
     active: [jpkrohling]
@@ -57,6 +57,7 @@ telemetry:
     processor_groupbytrace_incomplete_releases:
       enabled: true
       description: Releases that are suspected to have been incomplete
+      unit: "{releases}"
       sum:
         value_type: int
         monotonic: true

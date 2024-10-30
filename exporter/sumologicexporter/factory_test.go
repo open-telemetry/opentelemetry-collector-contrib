@@ -26,22 +26,21 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	qs := exporterhelper.NewDefaultQueueSettings()
+	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.Enabled = false
-
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = 30 * time.Second
+	clientConfig.Compression = "gzip"
+	clientConfig.Auth = &configauth.Authentication{
+		AuthenticatorID: component.NewID(metadata.Type),
+	}
 	assert.Equal(t, &Config{
 		MaxRequestBodySize: 1_048_576,
 		LogFormat:          "otlp",
 		MetricFormat:       "otlp",
 		Client:             "otelcol",
 
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:     30 * time.Second,
-			Compression: "gzip",
-			Auth: &configauth.Authentication{
-				AuthenticatorID: component.NewID(metadata.Type),
-			},
-		},
+		ClientConfig:  clientConfig,
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: qs,
 	}, cfg)

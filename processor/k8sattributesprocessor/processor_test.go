@@ -353,7 +353,7 @@ func TestIPDetectionFromContext(t *testing.T) {
 		m.assertBatchesLen(1)
 		m.assertResourceObjectLen(0)
 		m.assertResource(0, func(r pcommon.Resource) {
-			require.Greater(t, r.Attributes().Len(), 0)
+			require.Positive(t, r.Attributes().Len())
 			assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
 		})
 	}
@@ -537,7 +537,7 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 			m.testConsume(ctx, traces, metrics, logs, nil)
 			m.assertBatchesLen(i + 1)
 			m.assertResource(i, func(res pcommon.Resource) {
-				require.Greater(t, res.Attributes().Len(), 0)
+				require.Positive(t, res.Attributes().Len())
 				assertResourceHasStringAttribute(t, res, "k8s.pod.ip", tc.out)
 			})
 		})
@@ -623,7 +623,7 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 			m.testConsume(ctx, traces, metrics, logs, nil)
 			m.assertBatchesLen(i + 1)
 			m.assertResource(i, func(res pcommon.Resource) {
-				require.Greater(t, res.Attributes().Len(), 0)
+				require.Positive(t, res.Attributes().Len())
 				assertResourceHasStringAttribute(t, res, tc.outLabel, tc.outValue)
 			})
 		})
@@ -666,7 +666,7 @@ func TestPodUID(t *testing.T) {
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
 	m.assertResource(0, func(r pcommon.Resource) {
-		require.Greater(t, r.Attributes().Len(), 0)
+		require.Positive(t, r.Attributes().Len())
 		assertResourceHasStringAttribute(t, r, "k8s.pod.uid", "ef10d10b-2da5-4030-812e-5f45c1531227")
 	})
 }
@@ -728,7 +728,7 @@ func TestAddPodLabels(t *testing.T) {
 		m.assertBatchesLen(i + 1)
 		m.assertResourceObjectLen(i)
 		m.assertResource(i, func(res pcommon.Resource) {
-			require.Greater(t, res.Attributes().Len(), 0)
+			require.Positive(t, res.Attributes().Len())
 			assertResourceHasStringAttribute(t, res, "k8s.pod.ip", ip)
 			for k, v := range attrs {
 				assertResourceHasStringAttribute(t, res, k, v)
@@ -1502,14 +1502,14 @@ func TestStartStop(t *testing.T) {
 
 func assertResourceHasStringAttribute(t *testing.T, r pcommon.Resource, k, v string) {
 	got, ok := r.Attributes().Get(k)
-	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	require.Truef(t, ok, "resource does not contain attribute %s", k)
 	assert.EqualValues(t, pcommon.ValueTypeStr, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.Str(), "attribute %s is not equal to %s", k, v)
 }
 
 func assertResourceHasStringSlice(t *testing.T, r pcommon.Resource, k string, v []string) {
 	got, ok := r.Attributes().Get(k)
-	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	require.Truef(t, ok, "resource does not contain attribute %s", k)
 	assert.EqualValues(t, pcommon.ValueTypeSlice, got.Type(), "attribute %s is not of type slice", k)
 	slice := got.Slice()
 	for i := 0; i < slice.Len(); i++ {
@@ -1569,15 +1569,7 @@ type nopHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *nopHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *nopHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }
 

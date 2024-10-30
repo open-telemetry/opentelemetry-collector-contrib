@@ -8,12 +8,12 @@ import (
 	"errors"
 	"runtime"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -22,6 +22,11 @@ import (
 const (
 	// TypeStr the value of "type" key in configuration.
 	TypeStr = "process"
+)
+
+var (
+	// scraperType is the component type used for the built scraper.
+	scraperType component.Type = component.MustNewType(TypeStr)
 )
 
 var (
@@ -61,8 +66,8 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperWithComponentType(
-		hostmeta.Type,
+	return scraperhelper.NewScraper(
+		scraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
