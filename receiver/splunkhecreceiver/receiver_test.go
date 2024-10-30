@@ -121,7 +121,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost/foo", nil),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
@@ -133,7 +133,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
@@ -149,7 +149,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", nil)
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
@@ -162,7 +162,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "bad_data_in_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader([]byte{1, 2, 3, 4}))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader([]byte{1, 2, 3, 4}))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -174,7 +174,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "empty_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(nil))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(nil))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -188,7 +188,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(`{"foo":"bar"}`)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -204,7 +204,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				nilEventMsg.Event = nil
 				msgBytes, err := json.Marshal(nilEventMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -220,7 +220,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				blankEventMsg.Event = ""
 				msgBytes, err := json.Marshal(blankEventMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -234,7 +234,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -252,7 +252,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(buildSplunkHecMetricsMsg(3, 4, 3))
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -277,7 +277,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, gzipWriter.Close())
 
-				req := httptest.NewRequest("POST", "http://localhost/foo", &buf)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", &buf)
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -291,7 +291,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -350,7 +350,7 @@ func Test_consumer_err(t *testing.T) {
 	w := httptest.NewRecorder()
 	msgBytes, err := json.Marshal(splunkMsg)
 	require.NoError(t, err)
-	req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
 	rcv.handleReq(w, req)
 
 	resp := w.Result()
@@ -378,7 +378,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	w := httptest.NewRecorder()
 	msgBytes, err := json.Marshal(splunkMsg)
 	require.NoError(t, err)
-	req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+	req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
 	rcv.handleReq(w, req)
 
 	resp := w.Result()
@@ -452,7 +452,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	url := fmt.Sprintf("https://%s", addr)
 
-	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 
 	tlscs := configtls.ClientConfig{
@@ -574,7 +574,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				splunkhecMsg = buildSplunkHecMsg(currentTime, 3)
 			}
 			msgBytes, _ := json.Marshal(splunkhecMsg)
-			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
 			if tt.passthrough {
 				if tt.tokenProvided != "" {
 					req.Header.Set("Authorization", "Splunk "+tt.tokenProvided)
@@ -689,7 +689,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			splunkhecMsg.Index = tt.index
 			splunkhecMsg.SourceType = tt.sourcetype
 			msgBytes, _ := json.Marshal(splunkhecMsg)
-			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
 
 			done := make(chan bool)
 			go func() {
@@ -790,7 +790,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			splunkhecMsg.Index = tt.index
 			splunkhecMsg.SourceType = tt.sourcetype
 			msgBytes, _ := json.Marshal(splunkhecMsg)
-			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req := httptest.NewRequest(http.MethodPost, "http://localhost", bytes.NewReader(msgBytes))
 
 			done := make(chan bool)
 			go func() {
@@ -898,7 +898,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest("PUT", "http://localhost/foo", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost/foo", nil),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
 				status := resp.StatusCode
 				assert.Equal(t, http.StatusBadRequest, status)
@@ -908,7 +908,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 		{
 			name: "incorrect_content_type",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", strings.NewReader("foo\nbar"))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", strings.NewReader("foo\nbar"))
 				req.Header.Set("Content-Type", "application/not-json")
 				return req
 			}(),
@@ -920,7 +920,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 		{
 			name: "incorrect_content_encoding",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", nil)
 				req.Header.Set("Content-Encoding", "superzipper")
 				return req
 			}(),
@@ -933,7 +933,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 		{
 			name: "empty_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(nil))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(nil))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -946,7 +946,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 		{
 			name: "two_logs",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/foo", strings.NewReader("foo\nbar"))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", strings.NewReader("foo\nbar"))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, _ any) {
@@ -959,7 +959,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
@@ -978,7 +978,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, gzipWriter.Close())
 
-				req := httptest.NewRequest("POST", "http://localhost/foo", &buf)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", &buf)
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -992,7 +992,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -1008,7 +1008,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
 
 				q := req.URL.Query()
 				q.Add(queryTime, "-5")
@@ -1028,7 +1028,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
 
-				req := httptest.NewRequest("POST", "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
 
 				q := req.URL.Query()
 				q.Add(queryTime, "notANumber")
@@ -1128,7 +1128,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	}{
 		{
 			name: "incorrect_method",
-			req:  httptest.NewRequest("PUT", "http://localhost/ack", nil),
+			req:  httptest.NewRequest(http.MethodPut, "http://localhost/ack", nil),
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{}
 			},
@@ -1141,7 +1141,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 		{
 			name: "no_channel_header",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/ack", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", nil)
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
@@ -1156,7 +1156,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 		{
 			name: "invalid_channel_header",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/ack", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", nil)
 				req.Header.Set("X-Splunk-Request-Channel", "invalid-id")
 				return req
 			}(),
@@ -1172,7 +1172,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 		{
 			name: "empty_request_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/ack", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", nil)
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1190,7 +1190,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{}))
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1206,7 +1206,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 		{
 			name: "invalid_request_body",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader([]byte(`hi there`)))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", bytes.NewReader([]byte(`hi there`)))
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1224,7 +1224,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{1, 2, 3}))
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1254,7 +1254,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{1, 2, 3}))
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack", bytes.NewReader(msgBytes))
 				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1284,7 +1284,7 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{1, 2, 3}))
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/ack?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/ack?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
@@ -1364,7 +1364,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
@@ -1379,7 +1379,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "")
 				return req
 			}(),
@@ -1397,7 +1397,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "invalid-id")
 				return req
 			}(),
@@ -1415,7 +1415,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1437,7 +1437,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1459,7 +1459,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo?Channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo?Channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
@@ -1530,7 +1530,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
@@ -1548,7 +1548,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "")
 				return req
 			}(),
@@ -1569,7 +1569,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "invalid-id")
 				return req
 			}(),
@@ -1590,7 +1590,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1615,7 +1615,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
 				return req
 			}(),
@@ -1640,7 +1640,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST", "http://localhost/foo?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90&isCheesy=true", bytes.NewReader(msgBytes))
+				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90&isCheesy=true", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
@@ -1709,7 +1709,7 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 		assert.NoError(t, rcv.Shutdown(context.Background()))
 	}()
 	w := httptest.NewRecorder()
-	rcv.handleHealthReq(w, httptest.NewRequest("GET", "http://localhost/services/collector/health", nil))
+	rcv.handleHealthReq(w, httptest.NewRequest(http.MethodGet, "http://localhost/services/collector/health", nil))
 
 	resp := w.Result()
 	respBytes, err := io.ReadAll(resp.Body)
@@ -1774,7 +1774,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 			event.Fields["nested_map"] = tt.field
 			msgBytes, err := jsoniter.Marshal(event)
 			require.NoError(t, err)
-			req := httptest.NewRequest("POST", "http://localhost/services/collector", bytes.NewReader(msgBytes))
+			req := httptest.NewRequest(http.MethodPost, "http://localhost/services/collector", bytes.NewReader(msgBytes))
 
 			w := httptest.NewRecorder()
 			rcv.handleReq(w, req)
@@ -1821,7 +1821,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST",
+				req := httptest.NewRequest(http.MethodPost,
 					"http://localhost/foo?index=bar&source=bar&sourcetype=bar&host=bar",
 					bytes.NewReader(msgBytes))
 				return req
@@ -1846,7 +1846,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST",
+				req := httptest.NewRequest(http.MethodPost,
 					"http://localhost/foo?index=bar&source=bar",
 					bytes.NewReader(msgBytes))
 				return req
@@ -1871,7 +1871,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 			req: func() *http.Request {
 				msgBytes, err := json.Marshal(splunkMsg)
 				require.NoError(t, err)
-				req := httptest.NewRequest("POST",
+				req := httptest.NewRequest(http.MethodPost,
 					"http://localhost/foo?foo=bar",
 					bytes.NewReader(msgBytes))
 				return req
@@ -1931,7 +1931,7 @@ func BenchmarkHandleReq(b *testing.B) {
 	}
 
 	for n := 0; n < b.N; n++ {
-		req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(totalMessage))
+		req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(totalMessage))
 		rcv.handleReq(w, req)
 
 		resp := w.Result()
@@ -1954,7 +1954,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 		{
 			name: "correct_healthcheck",
 			req: func() *http.Request {
-				req := httptest.NewRequest("GET", "http://localhost:0/services/collector/health", nil)
+				req := httptest.NewRequest(http.MethodGet, "http://localhost:0/services/collector/health", nil)
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -1965,7 +1965,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 		{
 			name: "correct_healthcheck_v1",
 			req: func() *http.Request {
-				req := httptest.NewRequest("GET", "http://localhost:0/services/collector/health/1.0", nil)
+				req := httptest.NewRequest(http.MethodGet, "http://localhost:0/services/collector/health/1.0", nil)
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -1976,7 +1976,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 		{
 			name: "incorrect_healthcheck_methods_v1",
 			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost:0/services/collector/health/1.0", nil)
+				req := httptest.NewRequest(http.MethodPost, "http://localhost:0/services/collector/health/1.0", nil)
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
