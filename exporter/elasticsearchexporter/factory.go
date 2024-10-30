@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -44,6 +45,7 @@ func createDefaultConfig() component.Config {
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
+	httpClientConfig.Compression = configcompression.TypeGzip
 
 	return &Config{
 		QueueSettings: qs,
@@ -114,7 +116,7 @@ func createLogsExporter(
 
 	exporter := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -133,7 +135,7 @@ func createMetricsExporter(
 
 	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -151,7 +153,7 @@ func createTracesExporter(ctx context.Context,
 
 	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,

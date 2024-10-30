@@ -40,13 +40,16 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	return &Input{
 		InputOperator: inputOperator,
 		newCmd: func(ctx context.Context, cursor []byte) cmd {
+			// Copy args and if needed, add the cursor flag
+			journalArgs := append([]string{}, args...)
 			if cursor != nil {
-				args = append(args, "--after-cursor", string(cursor))
+				journalArgs = append(journalArgs, "--after-cursor", string(cursor))
 			}
-			return exec.CommandContext(ctx, "journalctl", args...) // #nosec - ...
+			return exec.CommandContext(ctx, "journalctl", journalArgs...) // #nosec - ...
 			// journalctl is an executable that is required for this operator to function
 		},
-		json: jsoniter.ConfigFastest,
+		convertMessageBytes: c.ConvertMessageBytes,
+		json:                jsoniter.ConfigFastest,
 	}, nil
 }
 
@@ -86,6 +89,10 @@ func (c Config) buildArgs() ([]string, error) {
 
 	if c.Dmesg {
 		args = append(args, "--dmesg")
+	}
+
+	if len(c.Namespace) > 0 {
+		args = append(args, "--namespace", c.Namespace)
 	}
 
 	switch {

@@ -57,10 +57,11 @@ func TestPushTraceData(t *testing.T) {
 	}()
 
 	err0 := fmt.Errorf("Not Started")
-	for err0 != nil { // until server started
+	for i := 0; err0 != nil && i < 10; i++ { // until server started
 		err0 = exporter.pushTraceData(ctx, simpleTraces(10))
 		time.Sleep(100 * time.Millisecond)
 	}
+	require.NoError(t, err0)
 
 	_ = server.Shutdown(ctx)
 }
