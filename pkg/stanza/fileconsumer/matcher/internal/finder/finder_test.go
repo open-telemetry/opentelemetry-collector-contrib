@@ -282,7 +282,7 @@ func BenchmarkFind10kFiles(b *testing.B) {
 	var r []string
 	b.ResetTimer()
 	for range b.N {
-		r, _ = FindFiles(includeGlobs, excludeGlobs)
+		r, _ = FindFiles(includeGlobs, excludeGlobs, 0)
 	}
 
 	benchResult = r
