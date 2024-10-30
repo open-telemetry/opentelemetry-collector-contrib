@@ -41,26 +41,24 @@ func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper
 // Export implements the service Export logs func.
 func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	ld := req.Logs()
-	numSpans := ld.LogRecordCount()
-	if numSpans == 0 {
+	numRecords := ld.LogRecordCount()
+	if numRecords == 0 {
 		return plogotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartLogsOp(ctx)
 
+	var err error
 	sizeBytes := int64(r.sizer.LogsSize(req.Logs()))
-	err := r.boundedQueue.Acquire(ctx, sizeBytes)
-	if err != nil {
-		return plogotlp.NewExportResponse(), err
+	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
+		err = r.nextConsumer.ConsumeLogs(ctx, ld)
+		// Release() is not checked, see #36074.
+		_ = r.boundedQueue.Release(sizeBytes) // immediate release
+	} else {
+		err = acqErr
 	}
-	defer func() {
-		if releaseErr := r.boundedQueue.Release(sizeBytes); releaseErr != nil {
-			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
-		}
-	}()
 
-	err = r.nextConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numRecords, err)
 
 	return plogotlp.NewExportResponse(), err
 }

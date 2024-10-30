@@ -10,12 +10,16 @@ import (
 
 	"github.com/google/uuid"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	grpccodes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-var ErrTooManyWaiters = fmt.Errorf("rejecting request, too many waiters")
+var ErrTooManyWaiters = status.Error(grpccodes.ResourceExhausted, "rejecting request, too much pending data")
+var ErrRequestTooLarge = status.Error(grpccodes.InvalidArgument, "rejecting request, request is too large")
 
 type BoundedQueue struct {
 	maxLimitBytes   int64
@@ -33,12 +37,12 @@ type waiter struct {
 	ID           uuid.UUID
 }
 
-func NewBoundedQueue(tp trace.TracerProvider, maxLimitBytes, maxLimitWaiters int64) *BoundedQueue {
+func NewBoundedQueue(ts component.TelemetrySettings, maxLimitBytes, maxLimitWaiters int64) *BoundedQueue {
 	return &BoundedQueue{
 		maxLimitBytes:   maxLimitBytes,
 		maxLimitWaiters: maxLimitWaiters,
 		waiters:         orderedmap.New[uuid.UUID, waiter](),
-		tracer:          tp.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
+		tracer:          ts.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
 	}
 }
 
@@ -47,7 +51,7 @@ func (bq *BoundedQueue) admit(pendingBytes int64) (bool, error) {
 	defer bq.lock.Unlock()
 
 	if pendingBytes > bq.maxLimitBytes { // will never succeed
-		return false, fmt.Errorf("rejecting request, request size larger than configured limit")
+		return false, ErrRequestTooLarge
 	}
 
 	if bq.currentBytes+pendingBytes <= bq.maxLimitBytes { // no need to wait to admit
