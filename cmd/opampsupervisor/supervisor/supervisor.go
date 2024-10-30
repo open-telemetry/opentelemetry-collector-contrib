@@ -766,7 +766,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
-		if err == nil {
+		switch {
+		case err == nil:
 			config := &protobufs.AgentRemoteConfig{}
 			err = proto.Unmarshal(lastRecvRemoteConfig, config)
 			if err != nil {
@@ -774,9 +775,9 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 			} else {
 				s.remoteConfig = config
 			}
-		} else if errors.Is(err, os.ErrNotExist) {
+		case errors.Is(err, os.ErrNotExist):
 			s.logger.Info("No last received remote config found")
-		} else {
+		default:
 			s.logger.Error("error while reading last received config", zap.Error(err))
 		}
 	} else {
