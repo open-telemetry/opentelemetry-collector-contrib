@@ -300,8 +300,8 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 						split.cWMetricHistogram.Min = bucketEnd
 					}
 				}
-				currentBucketIndex++
 			}
+			currentBucketIndex++
 			currentPositiveIndex--
 		}
 
@@ -362,8 +362,8 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 						split.cWMetricHistogram.Min = bucketEnd
 					}
 				}
-				currentBucketIndex++
 			}
+			currentBucketIndex++
 			currentNegativeIndex++
 		}
 
