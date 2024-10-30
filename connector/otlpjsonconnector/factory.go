@@ -14,9 +14,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector/internal/metadata"
 )
 
-var logRegex = regexp.MustCompile(`resourceLogs"\s*:\s*\[`)
-var metricRegex = regexp.MustCompile(`resourceMetrics"\s*:\s*\[`)
-var traceRegex = regexp.MustCompile(`resourceSpans"\s*:\s*\[`)
+var logRegex = regexp.MustCompile(`^\{\s*"resourceLogs"\s*:\s*\[`)
+var metricRegex = regexp.MustCompile(`^\{\s*"resourceMetrics"\s*:\s*\[`)
+var traceRegex = regexp.MustCompile(`^\{\s*"resourceSpans"\s*:\s*\[`)
 
 // NewFactory returns a ConnectorFactory.
 func NewFactory() connector.Factory {
