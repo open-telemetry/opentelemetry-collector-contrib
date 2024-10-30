@@ -12,12 +12,17 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0
 	go.opentelemetry.io/collector/receiver v0.112.0
 	go.opentelemetry.io/collector/semconv v0.112.0 // indirect
-	go.opentelemetry.io/otel/metric v1.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.31.0 // indirect
+	go.opentelemetry.io/otel/metric v1.31.0
+	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/goleak v1.3.0
 )
 
-require go.opentelemetry.io/collector/consumer/consumertest v0.112.0
+require (
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.112.0
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0
+)
 
 require (
 	github.com/bmatcuk/doublestar/v4 v4.7.1 // indirect
@@ -50,13 +55,10 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.112.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension v0.112.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.112.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.18.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.112.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.0 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.31.0 // indirect
