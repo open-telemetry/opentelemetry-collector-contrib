@@ -84,9 +84,9 @@ In the `admission` configuration block the following settings are available:
 
 - `request_limit_mib` (default: 128): limits the number of requests that are received by the stream in terms of *uncompressed request size*. This should not be confused with `arrow.memory_limit_mib` which limits allocations made by the consumer when translating arrow records into pdata objects. i.e. request size is used to control how much traffic we admit, but does not control how much memory is used during request processing.
 
-- `waiter_limit` (default: 1000): limits the number of requests waiting on admission once `admission_limit_mib` is reached. This is another dimension of memory limiting that ensures waiters are not holding onto a significant amount of memory while waiting to be processed.
+- `waiter_limit` (default: 1000): `waiter_limit` is [DEPRECATED and will be replaced by `waiting_limit_mib`](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36074). This configuration limits the number of requests waiting on admission once `admission_limit_mib` is reached.
 
-`request_limit_mib` and `waiter_limit` are arguments supplied to [admission.BoundedQueue](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/otelarrow/admission). This custom semaphore is meant to be used within receivers to help limit memory within the collector pipeline.
+`request_limit_mib` is supplied to [admission.BoundedQueue](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/otelarrow/admission). This custom semaphore is meant to be used within receivers to help limit memory within the collector pipeline.
 
 ### Arrow-specific Configuration
 

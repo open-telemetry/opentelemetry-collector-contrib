@@ -25,10 +25,16 @@ type AdmissionConfig struct {
 	// for processing.
 	RequestLimitMiB uint64 `mapstructure:"request_limit_mib"`
 
-	// WaiterLimit is the limit on the number of waiters waiting to be processed and consumed.
-	// This is a dimension of memory limiting to ensure waiters are not consuming an
-	// unexpectedly large amount of memory in the arrow receiver.
-	WaiterLimit int64 `mapstructure:"waiter_limit"`
+	// DeprecatedWaiterLimit is deprecated.  This field configures
+	// a limit defined in terms of the number of requests waiting
+	// when the request_limit_mib limit has been reached.  This field
+	// will be replaced by a limit implemented in terms of waiting
+	// request size instead of waiting request count.
+	//
+	// This field will continue to function until a new field
+	// named `waiting_limit_mib` is introduced, at which time this
+	// field will have no effect.
+	DeprecatedWaiterLimit int64 `mapstructure:"waiter_limit"`
 }
 
 // ArrowConfig support configuring the Arrow receiver.
@@ -84,8 +90,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	if cfg.Admission.RequestLimitMiB == 0 && cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
 		cfg.Admission.RequestLimitMiB = cfg.Arrow.DeprecatedAdmissionLimitMiB
 	}
-	if cfg.Admission.WaiterLimit == 0 && cfg.Arrow.DeprecatedWaiterLimit != 0 {
-		cfg.Admission.WaiterLimit = cfg.Arrow.DeprecatedWaiterLimit
+	if cfg.Admission.DeprecatedWaiterLimit == 0 && cfg.Arrow.DeprecatedWaiterLimit != 0 {
+		cfg.Admission.DeprecatedWaiterLimit = cfg.Arrow.DeprecatedWaiterLimit
 	}
 	return nil
 }

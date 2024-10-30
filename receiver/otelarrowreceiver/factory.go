@@ -51,8 +51,8 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Admission: AdmissionConfig{
-			RequestLimitMiB: defaultRequestLimitMiB,
-			WaiterLimit:     defaultWaiterLimit,
+			RequestLimitMiB:       defaultRequestLimitMiB,
+			DeprecatedWaiterLimit: defaultWaiterLimit,
 		},
 	}
 }
