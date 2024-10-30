@@ -175,6 +175,17 @@ behaviours, which may be configured through the following settings:
     for ECS mode, and never for other modes): When enabled attributes with `.`
     will be split into proper json objects.
 
+It is also possible to configure the mapping mode dynamically by setting the metadata `X-Elastic-Mapping-Mode` using the [open-telemetry client](https://pkg.go.dev/go.opentelemetry.io/collector/client):
+
+```go
+cl := client.FromContext(ctx)
+cl.Metadata = client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}})
+// Propagate the context down the pipeline
+next.ConsumeLogs(ctx, td)
+```
+
+A mapping mode set in the metadata will take precedence over the configuration and will only apply to the current request. If the metadata is not set, the values from the configuration will be used instead.
+
 #### ECS mapping mode
 
 > [!WARNING]

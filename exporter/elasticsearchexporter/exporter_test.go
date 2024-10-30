@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -295,6 +296,79 @@ func TestExporterLogs(t *testing.T) {
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
+	})
+
+	t.Run("publish with configured mapping mode header", func(t *testing.T) {
+		expectedECS := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","message":"hello world","service":{"name":"myservice"}}`
+		expectedOtlp := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"application":"myapp","service":{"name":"myservice"}},"Body":"hello world","Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+		tests := []struct {
+			name     string
+			cfgMode  string
+			header   string
+			expected string
+		}{
+			{
+				name:     "mapping mode in header",
+				cfgMode:  "otlp",
+				header:   "ecs",
+				expected: expectedECS,
+			},
+			{
+				name:     "invalid mapping mode in header",
+				cfgMode:  "otlp",
+				header:   "invalid",
+				expected: expectedOtlp,
+			},
+			{
+				name:     "absent mapping mode in header",
+				cfgMode:  "otlp",
+				header:   "",
+				expected: expectedOtlp,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+
+					actual := string(docs[0].Document)
+					assert.Equal(t, tt.expected, actual)
+
+					// Second document should fallback to the config mapping
+					actual = string(docs[1].Document)
+					assert.Equal(t, expectedOtlp, actual)
+
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = tt.cfgMode // this should be overridden by the header
+				})
+
+				logs := newLogsWithAttributes(
+					map[string]any{
+						"application":  "myapp",
+						"service.name": "myservice",
+					},
+					nil,
+					nil,
+				)
+				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+
+				// Set the mapping mode via the header
+				cl := client.FromContext(context.Background())
+				cl.Metadata = client.NewMetadata(map[string][]string{HeaderXElasticMappingMode: {tt.header}})
+				ctx := client.NewContext(context.Background(), cl)
+
+				mustSendLogsCtx(t, ctx, exporter, logs)
+
+				// Send logs again without the header this time.
+				mustSendLogs(t, exporter, logs)
+				rec.WaitItems(1)
+			})
+		}
 	})
 
 	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
@@ -1844,6 +1918,11 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	err := exporter.ConsumeLogs(context.Background(), logs)
+	require.NoError(t, err)
+}
+
+func mustSendLogsCtx(t *testing.T, ctx context.Context, exporter exporter.Logs, logs plog.Logs) {
+	err := exporter.ConsumeLogs(ctx, logs)
 	require.NoError(t, err)
 }
 

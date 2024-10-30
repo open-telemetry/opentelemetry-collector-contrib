@@ -20,6 +20,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// HeaderXElasticMappingMode is the HTTP header key used to specify a
+// mapping mode for a specific request.
+const HeaderXElasticMappingMode = "X-Elastic-Mapping-Mode"
+
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`

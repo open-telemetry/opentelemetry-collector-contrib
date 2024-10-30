@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -151,6 +152,28 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	return errors.Join(errs...)
 }
 
+// modelFromContext returns the model to use for encoding.
+// The mapping mode from the client metadata takes precedence over the exporter configuration.
+func (e *elasticsearchExporter) modelFromContext(ctx context.Context) mappingModel {
+	c := client.FromContext(ctx)
+	model := e.model
+	values := c.Metadata.Get(HeaderXElasticMappingMode)
+	if len(values) > 0 && values[0] != "" {
+		mode, ok := mappingModes[values[0]]
+		if !ok {
+			e.Logger.Warn("invalid mapping mode", zap.String("mode", values[0]))
+			return model
+		}
+
+		model = &encodeModel{
+			dedot: e.config.Mapping.Dedot,
+			mode:  mode,
+		}
+	}
+
+	return model
+}
+
 func (e *elasticsearchExporter) pushLogRecord(
 	ctx context.Context,
 	resource pcommon.Resource,
@@ -173,7 +196,9 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	model := e.modelFromContext(ctx)
+
+	document, err := model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
@@ -289,13 +314,15 @@ func (e *elasticsearchExporter) pushMetricsData(
 			e.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
 		}
 
+		model := e.modelFromContext(ctx)
+
 		for fIndex, docs := range resourceDocs {
 			for _, doc := range docs {
 				var (
 					docBytes []byte
 					err      error
 				)
-				docBytes, err = e.model.encodeDocument(doc)
+				docBytes, err = model.encodeDocument(doc)
 				if err != nil {
 					errs = append(errs, err)
 					continue
@@ -411,7 +438,8 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+	model := e.modelFromContext(ctx)
+	document, err := model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
@@ -441,11 +469,12 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		fIndex = formattedIndex
 	}
 
-	document := e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)
+	model := e.modelFromContext(ctx)
+	document := model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)
 	if document == nil {
 		return nil
 	}
-	docBytes, err := e.model.encodeDocument(*document)
+	docBytes, err := model.encodeDocument(*document)
 	if err != nil {
 		return err
 	}
