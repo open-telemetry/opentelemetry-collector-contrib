@@ -232,7 +232,37 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			error: "log context is not supported with match_once: false",
+			error: `"log" context is not supported with "match_once: false"`,
+		},
+		{
+			name: "request context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "request",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"request" context requires a 'condition'`,
+		},
+		{
+			name: "request context with invalid condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "request",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `condition must have format 'request["<name>"] <comparator> <value>'`,
 		},
 	}
 
