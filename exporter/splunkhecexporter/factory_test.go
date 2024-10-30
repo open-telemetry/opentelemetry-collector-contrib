@@ -77,11 +77,11 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestFactory_CreateMetrics(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "https://example.com:8000"
 	config := &Config{
-		Token: "testToken",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "https://example.com:8000",
-		},
+		Token:        "testToken",
+		ClientConfig: clientConfig,
 	}
 
 	params := exportertest.NewNopSettings()
@@ -91,11 +91,12 @@ func TestFactory_CreateMetrics(t *testing.T) {
 }
 
 func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "https://example.com:8000"
+
 	config := &Config{
-		Token: "testToken",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "https://example.com:8000",
-		},
+		Token:        "testToken",
+		ClientConfig: clientConfig,
 	}
 
 	me, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
