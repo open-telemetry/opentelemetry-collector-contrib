@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,8 +53,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
-	t.Parallel()
-
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() windows.Config {
@@ -63,7 +62,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 		}(),
 	}
 
-	_, err := newFactoryAdapter().CreateLogsReceiver(
+	_, err := newFactoryAdapter().CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -107,7 +106,7 @@ func BenchmarkReadWindowsEventLogger(b *testing.B) {
 				cfg.InputConfig.MaxReads = tt.count
 				sink := new(consumertest.LogsSink)
 
-				receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+				receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 				require.NoError(b, err)
 
 				_ = receiver.Start(ctx, componenttest.NewNopHost())
@@ -135,7 +134,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
 
-	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 	require.NoError(t, err)
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -153,7 +152,8 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
-	records := requireExpectedLogRecords(t, sink, src, 1)
+	records := assertExpectedLogRecords(t, sink, src, 1)
+	require.Len(t, records, 1)
 	record := records[0]
 	body := record.Body().Map().AsRaw()
 
@@ -188,7 +188,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	cfg.InputConfig.Raw = true
 	sink := new(consumertest.LogsSink)
 
-	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 	require.NoError(t, err)
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -206,7 +206,8 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
-	records := requireExpectedLogRecords(t, sink, src, 1)
+	records := assertExpectedLogRecords(t, sink, src, 1)
+	require.Len(t, records, 1)
 	record := records[0]
 	body := record.Body().AsString()
 	bodyStruct := struct {
@@ -253,7 +254,7 @@ func TestExcludeProvider(t *testing.T) {
 			cfg.InputConfig.ExcludeProviders = []string{excludedSrc}
 			sink := new(consumertest.LogsSink)
 
-			receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+			receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 			require.NoError(t, err)
 
 			err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -273,8 +274,8 @@ func TestExcludeProvider(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			records := requireExpectedLogRecords(t, sink, notExcludedSrc, 1)
-			assert.NotEmpty(t, records)
+			records := assertExpectedLogRecords(t, sink, notExcludedSrc, 1)
+			assert.Len(t, records, 1)
 
 			records = filterAllLogRecordsBySource(t, sink, excludedSrc)
 			assert.Empty(t, records)
@@ -301,6 +302,10 @@ func createTestConfig() *WindowsLogConfig {
 // It returns a function that can be used to uninstall the event source, that function is never nil
 func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSource func(), err error) {
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+	if err != nil && strings.HasSuffix(err.Error(), " registry key already exists") {
+		// If the event source already exists ignore the error
+		err = nil
+	}
 	uninstallEventSource = func() {
 		assert.NoError(t, eventlog.Remove(src))
 	}
@@ -316,11 +321,11 @@ func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSour
 	return
 }
 
-func requireExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
+func assertExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
 	var actualLogRecords []plog.LogRecord
 
 	// logs sometimes take a while to be written, so a substantial wait buffer is needed
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
 		assert.Len(c, actualLogRecords, expectedEventCount)
 	}, 10*time.Second, 250*time.Millisecond)

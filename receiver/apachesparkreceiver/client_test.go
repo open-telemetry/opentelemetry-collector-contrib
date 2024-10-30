@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,6 +28,8 @@ const (
 )
 
 func TestNewApacheSparkClient(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
 	testCases := []struct {
 		desc        string
 		cfg         *Config
@@ -38,9 +41,7 @@ func TestNewApacheSparkClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-				},
+				ClientConfig: clientConfig,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -54,7 +55,7 @@ func TestNewApacheSparkClient(t *testing.T) {
 			ac, err := newApacheSparkClient(context.Background(), tc.cfg, tc.host, tc.settings)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -82,7 +83,7 @@ func TestClusterStats(t *testing.T) {
 						w.WriteHeader(http.StatusUnauthorized)
 					} else {
 						_, err := w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}))
 				defer ts.Close()
@@ -102,11 +103,11 @@ func TestClusterStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "/metrics/json") {
 						_, err = w.Write([]byte("[{}]"))
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -125,9 +126,9 @@ func TestClusterStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "/metrics/json") {
 						_, err = w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -165,7 +166,7 @@ func TestApplications(t *testing.T) {
 						w.WriteHeader(http.StatusUnauthorized)
 					} else {
 						_, err := w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}))
 				defer ts.Close()
@@ -185,11 +186,11 @@ func TestApplications(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "applications") {
 						_, err = w.Write([]byte(""))
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -208,9 +209,9 @@ func TestApplications(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "applications") {
 						_, err = w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -248,7 +249,7 @@ func TestStageStats(t *testing.T) {
 						w.WriteHeader(http.StatusUnauthorized)
 					} else {
 						_, err := w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}))
 				defer ts.Close()
@@ -268,11 +269,11 @@ func TestStageStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "stages") {
 						_, err = w.Write([]byte(""))
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -291,9 +292,9 @@ func TestStageStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "stages") {
 						_, err = w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -331,7 +332,7 @@ func TestExecutorStats(t *testing.T) {
 						w.WriteHeader(http.StatusUnauthorized)
 					} else {
 						_, err := w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}))
 				defer ts.Close()
@@ -351,11 +352,11 @@ func TestExecutorStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "executors") {
 						_, err = w.Write([]byte(""))
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -374,9 +375,9 @@ func TestExecutorStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "executors") {
 						_, err = w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -414,7 +415,7 @@ func TestJobStats(t *testing.T) {
 						w.WriteHeader(http.StatusUnauthorized)
 					} else {
 						_, err := w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
 				}))
 				defer ts.Close()
@@ -434,11 +435,11 @@ func TestJobStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "jobs") {
 						_, err = w.Write([]byte(""))
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					} else {
 						_, err = w.Write(data)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -457,9 +458,9 @@ func TestJobStats(t *testing.T) {
 					var err error
 					if strings.HasSuffix(r.RequestURI, "jobs") {
 						_, err = w.Write(data)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 					}
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}))
 				defer ts.Close()
 

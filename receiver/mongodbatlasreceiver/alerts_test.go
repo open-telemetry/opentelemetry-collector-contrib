@@ -163,9 +163,8 @@ func TestPayloadToLogRecord(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			logs, err := payloadToLogs(now, []byte(tc.payload))
 			if tc.expectedErr != "" {
-				require.Error(t, err)
 				require.Nil(t, logs)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
@@ -240,8 +239,7 @@ func TestVerifyHMACSignature(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := verifyHMACSignature(tc.secret, tc.payload, tc.signatureHeader)
 			if tc.expectedErr != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 			}

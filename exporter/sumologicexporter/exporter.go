@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
@@ -96,14 +97,14 @@ func newLogsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		cfg,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -121,14 +122,14 @@ func newMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		params,
 		cfg,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -146,14 +147,14 @@ func newTracesExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		params,
 		cfg,
 		se.pushTracesData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -218,15 +219,15 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 		se.setDataURLs(logsURL.String(), metricsURL.String(), tracesURL.String())
 
 	case httpSettings.Endpoint != "":
-		logsURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeLogs)
+		logsURL, err := getSignalURL(se.config, httpSettings.Endpoint, pipeline.SignalLogs)
 		if err != nil {
 			return err
 		}
-		metricsURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeMetrics)
+		metricsURL, err := getSignalURL(se.config, httpSettings.Endpoint, pipeline.SignalMetrics)
 		if err != nil {
 			return err
 		}
-		tracesURL, err := getSignalURL(se.config, httpSettings.Endpoint, component.DataTypeTraces)
+		tracesURL, err := getSignalURL(se.config, httpSettings.Endpoint, pipeline.SignalTraces)
 		if err != nil {
 			return err
 		}
@@ -428,22 +429,22 @@ func (se *sumologicexporter) SetStickySessionCookie(stickySessionCookie string) 
 
 // get the destination url for a given signal type
 // this mostly adds signal-specific suffixes if the format is otlp
-func getSignalURL(oCfg *Config, endpointURL string, signal component.DataType) (string, error) {
+func getSignalURL(oCfg *Config, endpointURL string, signal pipeline.Signal) (string, error) {
 	url, err := url.Parse(endpointURL)
 	if err != nil {
 		return "", err
 	}
 
 	switch signal {
-	case component.DataTypeLogs:
+	case pipeline.SignalLogs:
 		if oCfg.LogFormat != "otlp" {
 			return url.String(), nil
 		}
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		if oCfg.MetricFormat != "otlp" {
 			return url.String(), nil
 		}
-	case component.DataTypeTraces:
+	case pipeline.SignalTraces:
 	default:
 		return "", fmt.Errorf("unknown signal type: %s", signal)
 	}

@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -57,15 +58,15 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(receivertest.NewNopSettings(), &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "localhost:8080",
-			TLSSetting: configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/non/existent",
-				},
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "localhost:8080"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
 		},
+	}
+	sc := newApacheScraper(receivertest.NewNopSettings(), &Config{
+		ClientConfig: clientConfig,
 	},
 		"localhost",
 		"8080")
@@ -189,7 +190,7 @@ Load15: 0.3
 Total Duration: 1501
 Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
 `))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		rw.WriteHeader(404)

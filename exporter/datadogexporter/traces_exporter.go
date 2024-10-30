@@ -226,7 +226,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
 	}
-	if v := cfg.Traces.flushInterval; v > 0 {
+	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}
 	if v := cfg.Traces.TraceBuffer; v > 0 {
@@ -238,6 +238,6 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	if cfg.Traces.ComputeTopLevelBySpanKind {
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
-	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
+	tracelog.SetLogger(&zaplogger{params.Logger}) // TODO: This shouldn't be a singleton
 	return acfg, nil
 }

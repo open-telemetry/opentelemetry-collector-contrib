@@ -38,7 +38,7 @@ func newMetricsReceiver(
 	cfg := rCfg.(*Config)
 
 	expVar := newExpVarScraper(cfg, set)
-	scraper, err := scraperhelper.NewScraperWithComponentType(
+	scraper, err := scraperhelper.NewScraper(
 		metadata.Type,
 		expVar.scrape,
 		scraperhelper.WithStart(expVar.start),
@@ -56,12 +56,12 @@ func newMetricsReceiver(
 }
 
 func newDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = defaultTimeout
 	return &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: defaultEndpoint,
-			Timeout:  defaultTimeout,
-		},
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
