@@ -17,4 +17,3 @@ storage:
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
   config_apply_timeout: {{.config_apply_timeout}}
-  health_check_interval: {{.health_check_interval}}
