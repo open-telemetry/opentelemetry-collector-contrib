@@ -380,7 +380,7 @@ func (prwe *prwExporter) execute(ctx context.Context, data []byte) error {
 
 		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
 		// Reference: https://github.com/prometheus/prometheus/pull/12677
-		if prwe.retryOnHTTP429 && resp.StatusCode == 429 {
+		if prwe.retryOnHTTP429 && resp.StatusCode == http.StatusTooManyRequests {
 			return rerr
 		}
 
