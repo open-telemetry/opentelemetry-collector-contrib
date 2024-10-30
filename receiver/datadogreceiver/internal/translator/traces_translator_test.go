@@ -195,7 +195,7 @@ func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 
 func TestUpsertHeadersAttributes(t *testing.T) {
 	// Test case 1: Datadog-Meta-Tracer-Version is present in headers
-	req1, _ := http.NewRequest("GET", "http://example.com", nil)
+	req1, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
@@ -204,7 +204,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
 	// Test case 2: Datadog-Meta-Lang is present in headers with ".NET"
-	req2, _ := http.NewRequest("GET", "http://example.com", nil)
+	req2, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)
