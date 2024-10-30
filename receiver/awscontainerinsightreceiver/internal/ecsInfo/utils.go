@@ -98,7 +98,7 @@ func request(ctx context.Context, endpoint string, client doer) ([]byte, error) 
 }
 
 func clientGet(ctx context.Context, url string, client doer) (resp *http.Response, err error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

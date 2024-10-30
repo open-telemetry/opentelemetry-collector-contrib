@@ -39,7 +39,7 @@ func newLibpodClient(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
 }
 
 func (c *libpodClient) request(ctx context.Context, path string, params url.Values) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", c.endpoint+path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+path, nil)
 	if err != nil {
 		return nil, err
 	}
