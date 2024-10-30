@@ -5,8 +5,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
-	"go.opentelemetry.io/collector/featuregate"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +17,7 @@ import (
 	"github.com/golang/snappy"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -31,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
