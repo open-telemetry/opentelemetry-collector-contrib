@@ -132,7 +132,7 @@ func (s *alertmanagerExporter) postAlert(ctx context.Context, payload []model.Al
 		return fmt.Errorf("error marshaling alert to JSON: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", s.endpoint, bytes.NewBuffer(msg))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, bytes.NewBuffer(msg))
 	if err != nil {
 		return fmt.Errorf("error creating HTTP request: %w", err)
 	}

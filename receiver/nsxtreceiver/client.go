@@ -170,7 +170,7 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 
 	body, _ := io.ReadAll(resp.Body)
 	switch resp.StatusCode {
-	case 403:
+	case http.StatusForbidden:
 		return nil, errUnauthorized
 	default:
 		c.logger.Info(fmt.Sprintf("%v", req))

@@ -95,7 +95,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx = cdr.obsrecv.StartMetricsOp(ctx)
 
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, errors.New("invalid http verb"))
 		w.WriteHeader(http.StatusBadRequest)
 		return

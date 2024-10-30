@@ -175,7 +175,7 @@ func (r *mockZipkinReporter) Flush() error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", r.url, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, r.url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

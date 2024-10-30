@@ -64,7 +64,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodGet:
 			match := getPathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 3 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			corCh <- &request{
@@ -79,7 +79,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodPut:
 			match := putPathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 4 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 
@@ -101,7 +101,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodDelete:
 			match := deletePathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 5 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			cor = &request{
@@ -114,13 +114,13 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 				},
 			}
 		default:
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		corCh <- cor
 
-		rw.WriteHeader(200)
+		rw.WriteHeader(http.StatusOK)
 	})
 }
 

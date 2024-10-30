@@ -188,7 +188,7 @@ func TestFirehoseRequest(t *testing.T) {
 
 			requestBody := bytes.NewBuffer(body)
 
-			request := httptest.NewRequest("POST", "/", requestBody)
+			request := httptest.NewRequest(http.MethodPost, "/", requestBody)
 			request.Header.Set(headerContentType, "application/json")
 			request.Header.Set(headerContentLength, fmt.Sprintf("%d", requestBody.Len()))
 			request.Header.Set(headerFirehoseRequestID, testFirehoseRequestID)

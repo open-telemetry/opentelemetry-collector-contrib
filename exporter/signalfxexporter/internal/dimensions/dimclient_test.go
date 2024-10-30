@@ -63,13 +63,13 @@ func makeHandler(dimCh chan<- dim, forcedResp *atomic.Int32) http.HandlerFunc {
 		log.Printf("Test server got request: %s", r.URL.Path)
 
 		if r.Method != "PATCH" {
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		match := patchPathRegexp.FindStringSubmatch(r.URL.Path)
 		if match == nil {
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
 
@@ -83,7 +83,7 @@ func makeHandler(dimCh chan<- dim, forcedResp *atomic.Int32) http.HandlerFunc {
 
 		dimCh <- bodyDim
 
-		rw.WriteHeader(200)
+		rw.WriteHeader(http.StatusOK)
 	}
 }
 

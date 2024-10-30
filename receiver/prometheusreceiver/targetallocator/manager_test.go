@@ -81,14 +81,14 @@ func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 
 	iptr, ok := mta.accessIndex[req.URL.Path]
 	if !ok {
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	index := int(iptr.Load())
 	iptr.Add(1)
 	pages := mta.endpoints[req.URL.Path]
 	if index >= len(pages) {
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	rw.Header().Set("Content-Type", "application/json")
