@@ -499,7 +499,7 @@ func createSentryExporter(config *Config, set exporter.Settings) (exporter.Trace
 		environment: config.Environment,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		config,

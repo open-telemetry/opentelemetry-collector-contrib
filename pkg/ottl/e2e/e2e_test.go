@@ -348,6 +348,24 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], ConvertAttributesToElementsXML("<Log id=\"1\"><Message>This is a log message!</Message></Log>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", `<Log><Message>This is a log message!</Message><id>1</id></Log>`)
+			},
+		},
+		{
+			statement: `set(body, ConvertTextToElementsXML("<a><b/>foo</a>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("<a><b></b><value>foo</value></a>")
+			},
+		},
+		{
+			statement: `set(body, ConvertTextToElementsXML("<a><b/>foo</a><c><b/>bar</c>", "/a", "custom"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Body().SetStr("<a><b></b><custom>foo</custom></a><c><b></b>bar</c>")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Double(1.0))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutDouble("test", 1.0)
@@ -643,6 +661,15 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], ToKeyValueString(ParseKeyValue("k1=v1 k2=v2=v3"), "=", " ", true))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "k1=v1 k2=\"v2=v3\"")
+			},
+		},
+		{
+			statement: `set(attributes["test"], ParseSimplifiedXML("<Log><id>1</id><Message>This is a log message!</Message></Log>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				attr := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				log := attr.PutEmptyMap("Log")
+				log.PutStr("id", "1")
+				log.PutStr("Message", "This is a log message!")
 			},
 		},
 		{
@@ -990,6 +1017,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 			statement: `set(attributes["isMap"], IsMap({"foo": {"bar": "baz", "test": "pass"}}))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutBool("isMap", true)
+			},
+		},
+		{
+			name:      "extract value from Split function result slice of type []string",
+			statement: `set(attributes["my.environment.2"], Split(resource.attributes["host.name"],"h")[1])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("my.environment.2", "ost")
 			},
 		},
 	}
