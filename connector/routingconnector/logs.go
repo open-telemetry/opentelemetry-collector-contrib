@@ -73,9 +73,15 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 func (c *logsConnector) switchLogs(ctx context.Context, ld plog.Logs) error {
 	groups := make(map[consumer.Logs]plog.Logs)
 	var errs error
-	for _, route := range c.router.routeSlice {
+	for i := 0; i < len(c.router.routeSlice) && ld.LogRecordCount() > 0; i++ {
+		route := c.router.routeSlice[i]
 		matchedLogs := plog.NewLogs()
 		switch route.statementContext {
+		case "request":
+			if route.requestCondition.matchRequest(ctx) {
+				groupAll(groups, route.consumer, ld)
+				ld = plog.NewLogs() // all logs have been routed
+			}
 		case "", "resource":
 			plogutil.MoveResourcesIf(ld, matchedLogs,
 				func(rl plog.ResourceLogs) bool {

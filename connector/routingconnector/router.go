@@ -68,9 +68,9 @@ func newRouter[C any](
 }
 
 type routingItem[C any] struct {
-	consumer         C
-	statementContext string
-
+	consumer          C
+	statementContext  string
+	requestCondition  *requestCondition
 	resourceStatement *ottl.Statement[ottlresource.TransformContext]
 	logStatement      *ottl.Statement[ottllog.TransformContext]
 }
@@ -157,12 +157,17 @@ func (r *router[C]) normalizeConditions() {
 }
 
 // registerRouteConsumers registers a consumer for the pipelines configured for each route
-func (r *router[C]) registerRouteConsumers() error {
+func (r *router[C]) registerRouteConsumers() (err error) {
 	for _, item := range r.table {
 		route, ok := r.routes[key(item)]
 		if !ok {
 			route.statementContext = item.Context
 			switch item.Context {
+			case "request":
+				route.requestCondition, err = parseRequestCondition(item.Condition)
+				if err != nil {
+					return err
+				}
 			case "", "resource":
 				statement, err := r.resourceParser.ParseStatement(item.Statement)
 				if err != nil {
@@ -200,6 +205,12 @@ func (r *router[C]) registerRouteConsumers() error {
 }
 
 func key(entry RoutingTableItem) string {
+	switch entry.Context {
+	case "", "resource":
+		return entry.Statement
+	case "request":
+		return "[request] " + entry.Condition
+	}
 	if entry.Context == "" || entry.Context == "resource" {
 		return entry.Statement
 	}
