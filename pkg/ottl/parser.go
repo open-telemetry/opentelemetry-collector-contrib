@@ -196,11 +196,11 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	}, nil
 }
 
-// AppendStatementPathsContext changes the given OTTL statement adding the context name prefix
+// appendStatementPathsContext changes the given OTTL statement adding the context name prefix
 // to all context-less paths. No modifications are performed for paths which [Path.Context]
 // value matches any WithPathContextNames value.
 // The context argument must be valid WithPathContextNames value, otherwise an error is returned.
-func (p *Parser[K]) AppendStatementPathsContext(context string, statement string) (string, error) {
+func (p *Parser[K]) appendStatementPathsContext(context string, statement string) (string, error) {
 	if _, ok := p.pathContextNames[context]; !ok {
 		return statement, fmt.Errorf(`unknown context "%s" for parser %T, valid options are: %s`, context, p, p.buildPathContextNamesText(""))
 	}
