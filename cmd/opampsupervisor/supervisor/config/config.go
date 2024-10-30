@@ -154,7 +154,6 @@ type Agent struct {
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
-	HealthCheckInterval     time.Duration    `mapstructure:"health_check_interval"`
 	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
 	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
@@ -184,10 +183,6 @@ func (a Agent) Validate() error {
 
 	if a.ConfigApplyTimeout <= 0 {
 		return errors.New("agent::config_apply_timeout must be valid duration")
-	}
-
-	if a.HealthCheckInterval <= 0 {
-		return errors.New("agent::health_check_interval must be valid duration")
 	}
 
 	return nil
@@ -240,7 +235,6 @@ func DefaultSupervisor() Supervisor {
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
 			ConfigApplyTimeout:      5 * time.Second,
-			HealthCheckInterval:     1 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
 		},

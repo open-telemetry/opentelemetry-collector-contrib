@@ -21,6 +21,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -88,7 +89,7 @@ type Supervisor struct {
 
 	startedAt time.Time
 
-	healthCheckTicker  *time.Ticker
+	healthCheckTicker  *backoff.Ticker
 	healthChecker      *healthchecker.HTTPHealthChecker
 	lastHealthCheckErr error
 
@@ -133,8 +134,6 @@ type Supervisor struct {
 	configApplyTimeout time.Duration
 	// lastHealthFromClient is the last health status of the agent received from the client.
 	lastHealthFromClient *protobufs.ComponentHealth
-	// healthCheckInterval is the interval between health checks.
-	healthCheckInterval time.Duration
 	// lastHealth is the last health status of the agent.
 	lastHealth *protobufs.ComponentHealth
 
@@ -186,7 +185,6 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	}
 
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
-	s.healthCheckInterval = s.config.Agent.HealthCheckInterval
 
 	return s, nil
 }
@@ -1031,10 +1029,13 @@ func (s *Supervisor) startAgent() {
 
 func (s *Supervisor) startHealthCheckTicker() {
 	// Prepare health checker
+	healthCheckBackoff := backoff.NewExponentialBackOff()
+	healthCheckBackoff.MaxInterval = 60 * time.Second
+	healthCheckBackoff.MaxElapsedTime = 0 // Never stop
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
 	}
-	s.healthCheckTicker = time.NewTicker(s.healthCheckInterval)
+	s.healthCheckTicker = backoff.NewTicker(healthCheckBackoff)
 }
 
 func (s *Supervisor) healthCheck() {

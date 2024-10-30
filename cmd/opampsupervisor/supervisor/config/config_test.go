@@ -37,7 +37,6 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -62,7 +61,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -89,7 +87,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -116,7 +113,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -147,7 +143,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -175,7 +170,6 @@ func TestValidate(t *testing.T) {
 					Executable:              "",
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -203,7 +197,6 @@ func TestValidate(t *testing.T) {
 					Executable:              "./path/does/not/exist",
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -230,7 +223,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					OrphanDetectionInterval: -1,
 				},
 				Capabilities: Capabilities{
@@ -259,7 +251,6 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         65536,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -288,7 +279,6 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         0,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -316,7 +306,6 @@ func TestValidate(t *testing.T) {
 					OrphanDetectionInterval: 5 * time.Second,
 					HealthCheckPort:         29848,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -343,7 +332,6 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        -5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -371,7 +359,6 @@ func TestValidate(t *testing.T) {
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 					ConfigApplyTimeout:      2 * time.Second,
-					HealthCheckInterval:     -1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -398,7 +385,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
-					HealthCheckInterval:     1 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
 				Capabilities: Capabilities{
