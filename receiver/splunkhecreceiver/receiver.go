@@ -61,12 +61,10 @@ const (
 )
 
 var (
-	errNilNextMetricsConsumer = errors.New("nil metricsConsumer")
-	errNilNextLogsConsumer    = errors.New("nil logsConsumer")
-	errEmptyEndpoint          = errors.New("empty endpoint")
-	errInvalidMethod          = errors.New("invalid http method")
-	errInvalidEncoding        = errors.New("invalid encoding")
-	errExtensionMissing       = errors.New("ack extension not found")
+	errEmptyEndpoint    = errors.New("empty endpoint")
+	errInvalidMethod    = errors.New("invalid http method")
+	errInvalidEncoding  = errors.New("invalid encoding")
+	errExtensionMissing = errors.New("ack extension not found")
 
 	okRespBody                    = []byte(responseOK)
 	eventRequiredRespBody         = []byte(responseErrEventRequired)
@@ -97,17 +95,10 @@ type splunkReceiver struct {
 }
 
 var _ receiver.Metrics = (*splunkReceiver)(nil)
+var _ receiver.Logs = (*splunkReceiver)(nil)
 
-// newMetricsReceiver creates the Splunk HEC receiver with the given configuration.
-func newMetricsReceiver(
-	settings receiver.Settings,
-	config Config,
-	nextConsumer consumer.Metrics,
-) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, errNilNextMetricsConsumer
-	}
-
+// newReceiver creates the Splunk HEC receiver with the given configuration.
+func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, error) {
 	if config.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
@@ -126,9 +117,8 @@ func newMetricsReceiver(
 		return nil, err
 	}
 	r := &splunkReceiver{
-		settings:        settings,
-		config:          &config,
-		metricsConsumer: nextConsumer,
+		settings: settings,
+		config:   &config,
 		server: &http.Server{
 			Addr: config.Endpoint,
 			// TODO: Evaluate what properties should be configurable, for now
@@ -138,51 +128,6 @@ func newMetricsReceiver(
 		},
 		obsrecv:        obsrecv,
 		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
-	}
-
-	return r, nil
-}
-
-// newLogsReceiver creates the Splunk HEC receiver with the given configuration.
-func newLogsReceiver(
-	settings receiver.Settings,
-	config Config,
-	nextConsumer consumer.Logs,
-) (receiver.Logs, error) {
-	if nextConsumer == nil {
-		return nil, errNilNextLogsConsumer
-	}
-
-	if config.Endpoint == "" {
-		return nil, errEmptyEndpoint
-	}
-	transport := "http"
-	if config.TLSSetting != nil {
-		transport = "https"
-	}
-
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             settings.ID,
-		Transport:              transport,
-		ReceiverCreateSettings: settings,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	r := &splunkReceiver{
-		settings:     settings,
-		config:       &config,
-		logsConsumer: nextConsumer,
-		server: &http.Server{
-			Addr: config.Endpoint,
-			// TODO: Evaluate what properties should be configurable, for now
-			//		set some hard-coded values.
-			ReadHeaderTimeout: defaultServerTimeout,
-			WriteTimeout:      defaultServerTimeout,
-		},
-		gzipReaderPool: &sync.Pool{New: func() any { return new(gzip.Reader) }},
-		obsrecv:        obsrecv,
 	}
 
 	return r, nil
