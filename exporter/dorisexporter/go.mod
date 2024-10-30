@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	// cannot use higher version: https://github.com/go-sql-driver/mysql/issues/1602
+	// https://github.com/go-sql-driver/mysql/issues/1602; https://github.com/apache/doris/pull/32177
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
 	github.com/stretchr/testify v1.9.0
