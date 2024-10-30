@@ -344,33 +344,6 @@ func TestValidate(t *testing.T) {
 			expectedError: "agent::bootstrap_timeout must be positive",
 		},
 		{
-			name: "Invalid health check interval",
-			config: Supervisor{
-				Server: OpAMPServer{
-					Endpoint: "wss://localhost:9090/opamp",
-					Headers: http.Header{
-						"Header1": []string{"HeaderValue"},
-					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
-				},
-				Agent: Agent{
-					Executable:              "${file_path}",
-					OrphanDetectionInterval: 5 * time.Second,
-					ConfigApplyTimeout:      2 * time.Second,
-					BootstrapTimeout:        5 * time.Second,
-				},
-				Capabilities: Capabilities{
-					AcceptsRemoteConfig: true,
-				},
-				Storage: Storage{
-					Directory: "/etc/opamp-supervisor/storage",
-				},
-			},
-			expectedError: "agent::health_check_interval must be valid duration",
-		},
-		{
 			name: "Invalid config apply timeout",
 			config: Supervisor{
 				Server: OpAMPServer{
