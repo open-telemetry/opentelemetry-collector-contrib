@@ -50,7 +50,7 @@ The following settings can be optionally configured:
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true.
-- `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false.
+- `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false. (TODO mention noop for rw2)
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
@@ -66,6 +66,15 @@ The following settings can be optionally configured:
 - `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of
   samples to be sent to the remote write endpoint. If the batch size is larger
   than this value, it will be split into multiple batches.
+- `protobuf_message` (default = `prometheus.WriteRequest`): 
+  - Protobuf message to use when writing to the remote write endpoint.
+  - The `prometheus.WriteRequest` represents the message introduced in Remote Write 1.0, which will be deprecated eventually.
+  - The `io.prometheus.write.v2.Request` was introduced in Remote Write 2.0 and replaces the former,
+    by improving efficiency and sending metadata, created timestamp and native histograms by default.
+  - Before changing this value, consult with your remote storage provider (or test) what message it supports.
+  - TODO mention feature flag and partial implementation
+
+
 
 Example:
 
