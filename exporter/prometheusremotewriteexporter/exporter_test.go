@@ -119,6 +119,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
+			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 			prwe, err := newPRWExporter(cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
@@ -211,6 +212,7 @@ func Test_Start(t *testing.T) {
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.ClientConfig = tt.clientSettings
+			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 
 			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
