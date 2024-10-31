@@ -228,8 +228,8 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 			if err != nil {
 				prwe.telemetry.recordTranslationFailure(ctx)
+				prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
 			}
-			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
 			// Call export even if a conversion error, since there may be points that were successfully converted.
 			return prwe.handleExportV2(ctx, symbolsTable, tsMap)
 		default:
