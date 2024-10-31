@@ -203,6 +203,67 @@ func TestValidateConfig(t *testing.T) {
 			},
 			error: "invalid route: both condition and statement provided",
 		},
+		{
+			name: "invalid context",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "invalid",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: "invalid context: invalid",
+		},
+		{
+			name: "log context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "log",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"log" context is not supported with "match_once: false"`,
+		},
+		{
+			name: "request context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "request",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"request" context requires a 'condition'`,
+		},
+		{
+			name: "request context with invalid condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "request",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `condition must have format 'request["<name>"] <comparator> <value>'`,
+		},
 	}
 
 	for _, tt := range tests {

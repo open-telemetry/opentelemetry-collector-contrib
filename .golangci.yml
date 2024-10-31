@@ -164,6 +164,7 @@ linters:
     - unconvert
     - unparam
     - unused
+    - usestdlibvars
     - wastedassign
 
 issues:
