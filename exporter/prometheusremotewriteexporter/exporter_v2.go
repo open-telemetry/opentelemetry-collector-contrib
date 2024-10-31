@@ -72,6 +72,7 @@ func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev
 	}
 
 	// TODO implement batching
+	// TODO how do we handle symbolsTable with batching?
 	requests := make([]*writev2.Request, 0)
 	tsArray := make([]writev2.TimeSeries, 0, len(tsMap))
 	for _, v := range tsMap {
