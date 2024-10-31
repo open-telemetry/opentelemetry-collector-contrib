@@ -16,7 +16,7 @@
 * @open-telemetry/collector-contrib-approvers
 
 cmd/githubgen/                                                      @open-telemetry/collector-contrib-approvers @atoulme
-cmd/opampsupervisor/                                                @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan @BinaryFissionGames
+cmd/opampsupervisor/                                                @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                                 @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                                 @open-telemetry/collector-contrib-approvers
 cmd/telemetrygen/                                                   @open-telemetry/collector-contrib-approvers @mx-psi @codeboten
@@ -112,8 +112,8 @@ extension/observer/ecstaskobserver/                                 @open-teleme
 extension/observer/hostobserver/                                    @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
-extension/opampcustommessages/                                      @open-telemetry/collector-contrib-approvers @BinaryFissionGames @evan-bradley
-extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan @BinaryFissionGames
+extension/opampcustommessages/                                      @open-telemetry/collector-contrib-approvers @evan-bradley
+extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan
 extension/pprofextension/                                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/remotetapextension/                                       @open-telemetry/collector-contrib-approvers @atoulme
 extension/sigv4authextension/                                       @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
@@ -168,7 +168,7 @@ pkg/translator/prometheusremotewrite/                               @open-teleme
 pkg/translator/signalfx/                                            @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/translator/skywalking/                                          @open-telemetry/collector-contrib-approvers @JaredTan95
 pkg/translator/zipkin/                                              @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
-pkg/winperfcounters/                                                @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames @alxbl @pjanotti
+pkg/winperfcounters/                                                @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @alxbl @pjanotti
 
 processor/attributesprocessor/                                      @open-telemetry/collector-contrib-approvers @boostchicken
 processor/coralogixprocessor/                                       @open-telemetry/collector-contrib-approvers @crobert-1 @galrose
@@ -181,7 +181,7 @@ processor/groupbyattrsprocessor/                                    @open-teleme
 processor/groupbytraceprocessor/                                    @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/intervalprocessor/                                        @open-telemetry/collector-contrib-approvers @RichieSams @sh0rez @djaglowski
 processor/k8sattributesprocessor/                                   @open-telemetry/collector-contrib-approvers @dmitryax @fatsheep9146 @TylerHelmuth
-processor/logdedupprocessor/                                        @open-telemetry/collector-contrib-approvers @BinaryFissionGames @MikeGoldsmith @djaglowski
+processor/logdedupprocessor/                                        @open-telemetry/collector-contrib-approvers @MikeGoldsmith @djaglowski
 processor/logstransformprocessor/                                   @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
 processor/metricsgenerationprocessor/                               @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/metricstransformprocessor/                                @open-telemetry/collector-contrib-approvers @dmitryax
@@ -211,7 +211,7 @@ processor/sumologicprocessor/                                       @open-teleme
 processor/tailsamplingprocessor/                                    @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 
-receiver/activedirectorydsreceiver/                                 @open-telemetry/collector-contrib-approvers @BinaryFissionGames @pjanotti
+receiver/activedirectorydsreceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/aerospikereceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
 receiver/apachereceiver/                                            @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/apachesparkreceiver/                                       @open-telemetry/collector-contrib-approvers @djaglowski @Caleb-Hurshman @mrsillydog
@@ -234,7 +234,7 @@ receiver/collectdreceiver/                                          @open-teleme
 receiver/couchdbreceiver/                                           @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/datadogreceiver/                                           @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @jpkrohling @MovieStoreGuy
 receiver/dockerstatsreceiver/                                       @open-telemetry/collector-contrib-approvers @jamesmoessis
-receiver/elasticsearchreceiver/                                     @open-telemetry/collector-contrib-approvers @djaglowski @BinaryFissionGames
+receiver/elasticsearchreceiver/                                     @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/expvarreceiver/                                            @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                                           @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/filestatsreceiver/                                         @open-telemetry/collector-contrib-approvers @atoulme
@@ -320,7 +320,7 @@ testbed/mockdatasenders/mockdatadogagentexporter/                   @open-teleme
 #####################################################
 reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers 
 reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers 
-reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
+reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers 
 
 
 ## UNMAINTAINED components
