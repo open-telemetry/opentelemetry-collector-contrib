@@ -8,13 +8,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor/internal/metadata"
 )
@@ -23,12 +27,13 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Attributes processor.
 func NewFactory() processor.Factory {
-	return processor.NewFactory(
+	return processorprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
-		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
+		processorprofiles.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processorprofiles.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processorprofiles.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processorprofiles.WithProfiles(createProfilesProcessor, metadata.ProfilesStability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -114,4 +119,31 @@ func createMetricsProcessor(
 		nextConsumer,
 		newMetricAttributesProcessor(set.Logger, attrProc, skipExpr).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createProfilesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer consumerprofiles.Profiles,
+) (processorprofiles.Profiles, error) {
+
+	oCfg := cfg.(*Config)
+	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
+	if err != nil {
+		return nil, err
+	}
+
+	skipExpr, err := filterprofile.NewSkipExpr(&oCfg.MatchConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelperprofiles.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		newProfileAttributesProcessor(set.Logger, attrProc, skipExpr).processProfiles,
+		processorhelperprofiles.WithCapabilities(processorCapabilities))
 }

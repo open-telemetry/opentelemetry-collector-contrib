@@ -13,7 +13,9 @@ require (
 	go.opentelemetry.io/collector/consumer v0.112.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.112.0
 	go.opentelemetry.io/collector/pdata v1.18.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.112.0
 	go.opentelemetry.io/collector/processor v0.112.0
+	go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles v0.0.0-20241030215746-b76b9f75b604
 	go.opentelemetry.io/collector/processor/processortest v0.112.0
 	go.opentelemetry.io/collector/semconv v0.112.0
 	go.uber.org/goleak v1.3.0
@@ -59,7 +61,6 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.112.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.18.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.112.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.112.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.112.0 // indirect
 	go.opentelemetry.io/collector/processor/processorprofiles v0.112.0 // indirect
@@ -82,10 +83,6 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
@@ -96,4 +93,15 @@ retract (
 	v0.65.0
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+replace (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../../pkg/ottl
+	go.opentelemetry.io/collector/component => ../../../opentelemetry-collector/component
+	go.opentelemetry.io/collector/confmap => ../../../opentelemetry-collector/confmap
+	go.opentelemetry.io/collector/consumer/consumertest => ../../../opentelemetry-collector/consumer/consumertest
+	go.opentelemetry.io/collector/pdata => ../../../opentelemetry-collector/pdata
+	go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles => ../../../opentelemetry-collector/processor/processorhelper/processorhelperprofiles
+	go.opentelemetry.io/collector/processor/processortest => ../../../opentelemetry-collector/processor/processortest
+	go.opentelemetry.io/collector/semconv => ../../../opentelemetry-collector/semconv
+)
