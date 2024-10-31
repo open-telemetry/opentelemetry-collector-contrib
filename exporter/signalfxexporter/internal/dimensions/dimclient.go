@@ -237,30 +237,32 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 
 	req = req.WithContext(
 		context.WithValue(req.Context(), RequestFailedCallbackKey, RequestFailedCallback(func(statusCode int, err error) {
-			if statusCode >= 400 && statusCode < 500 && statusCode != 404 {
-				dc.logger.Error(
-					"Unable to update dimension, not retrying",
-					zap.Error(err),
-					zap.String("URL", sanitize.URL(req.URL)),
-					zap.String("dimensionUpdate", dimUpdate.String()),
-					zap.Int("statusCode", statusCode),
-				)
-
-				// Don't retry if it is a 4xx error (except 404) since these
-				// imply an input/auth error, which is not going to be remedied
-				// by retrying.
-				// 404 errors are special because they can occur due to races
-				// within the dimension patch endpoint.
-				return
+			retry := false
+			retryMsg := "not retrying"
+			if statusCode == 400 && len(dimUpdate.Tags) > 0 {
+				// It's possible that number of tags is too large. In this case,
+				// we should retry the request without tags to update the dimension properties at least.
+				dimUpdate.Tags = nil
+				retry = true
+				retryMsg = "retrying without tags"
+			} else if statusCode == 404 || statusCode >= 500 {
+				// Retry on 5xx server errors or 404s which can occur due to races within the dimension patch endpoint.
+				retry = true
+				retryMsg = "retrying"
 			}
 
 			dc.logger.Error(
-				"Unable to update dimension, retrying",
+				"Unable to update dimension, "+retryMsg,
 				zap.Error(err),
 				zap.String("URL", sanitize.URL(req.URL)),
 				zap.String("dimensionUpdate", dimUpdate.String()),
 				zap.Int("statusCode", statusCode),
 			)
+
+			if !retry {
+				return
+			}
+
 			// The retry is meant to provide some measure of robustness against
 			// temporary API failures.  If the API is down for significant
 			// periods of time, dimension updates will probably eventually back
