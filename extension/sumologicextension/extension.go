@@ -460,7 +460,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
 		return credentials.CollectorCredentials{}, se.handleRegistrationError(res)
-	} else if res.StatusCode == 301 {
+	} else if res.StatusCode == http.StatusMovedPermanently {
 		// Use the URL from Location header for subsequent requests.
 		u := strings.TrimSuffix(res.Header.Get("Location"), "/")
 		se.SetBaseURL(u)
@@ -511,7 +511,7 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) error 
 	)
 
 	// Return unrecoverable error for 4xx status codes except 429
-	if res.StatusCode >= 400 && res.StatusCode < 500 && res.StatusCode != 429 {
+	if res.StatusCode >= 400 && res.StatusCode < 500 && res.StatusCode != http.StatusTooManyRequests {
 		return backoff.Permanent(fmt.Errorf(
 			"failed to register the collector, got HTTP status code: %d",
 			res.StatusCode,

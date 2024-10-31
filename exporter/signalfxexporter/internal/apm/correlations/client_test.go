@@ -85,7 +85,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
-				rw.WriteHeader(400)
+				rw.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			cor = &request{
