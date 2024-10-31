@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/alecthomas/participle/v2"
@@ -196,11 +197,11 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	}, nil
 }
 
-// appendStatementPathsContext changes the given OTTL statement adding the context name prefix
+// prependContextToStatementPaths changes the given OTTL statement adding the context name prefix
 // to all context-less paths. No modifications are performed for paths which [Path.Context]
 // value matches any WithPathContextNames value.
 // The context argument must be valid WithPathContextNames value, otherwise an error is returned.
-func (p *Parser[K]) appendStatementPathsContext(context string, statement string) (string, error) {
+func (p *Parser[K]) prependContextToStatementPaths(context string, statement string) (string, error) {
 	if _, ok := p.pathContextNames[context]; !ok {
 		return statement, fmt.Errorf(`unknown context "%s" for parser %T, valid options are: %s`, context, p, p.buildPathContextNamesText(""))
 	}
@@ -220,7 +221,7 @@ func (p *Parser[K]) appendStatementPathsContext(context string, statement string
 		}
 	}
 
-	return writeStatementWithPathsContext(context, statement, missingContextOffsets), nil
+	return insertContextIntoStatementOffsets(context, statement, missingContextOffsets)
 }
 
 var parser = newParser[parsedStatement]()
@@ -254,27 +255,28 @@ func parseCondition(raw string) (*booleanExpression, error) {
 	return parsed, nil
 }
 
-func writeStatementWithPathsContext(context string, statement string, offsets []int) string {
+func insertContextIntoStatementOffsets(context string, statement string, offsets []int) (string, error) {
 	if len(offsets) == 0 {
-		return statement
+		return statement, nil
 	}
 
 	contextPrefix := context + "."
 	var sb strings.Builder
 	sb.Grow(len(statement) + (len(contextPrefix) * len(offsets)))
 
+	sort.Ints(offsets)
 	left := 0
-	for i, offset := range offsets {
+	for _, offset := range offsets {
+		if offset < 0 || offset > len(statement) {
+			return statement, fmt.Errorf(`failed to insert context "%s" into statement "%s": offset %d is out of range`, context, statement, offset)
+		}
 		sb.WriteString(statement[left:offset])
 		sb.WriteString(contextPrefix)
-		if i+1 >= len(offsets) {
-			sb.WriteString(statement[offset:])
-		} else {
-			left = offset
-		}
+		left = offset
 	}
+	sb.WriteString(statement[left:])
 
-	return sb.String()
+	return sb.String(), nil
 }
 
 // newParser returns a parser that can be used to read a string into a parsedStatement. An error will be returned if the string

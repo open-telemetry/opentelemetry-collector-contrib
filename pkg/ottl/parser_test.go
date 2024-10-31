@@ -2715,7 +2715,7 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 	}
 }
 
-func Test_appendStatementPathsContext_InvalidStatement(t *testing.T) {
+func Test_prependContextToStatementPaths_InvalidStatement(t *testing.T) {
 	ps, err := NewParser(
 		CreateFactoryMap[any](),
 		testParsePath[any],
@@ -2724,11 +2724,11 @@ func Test_appendStatementPathsContext_InvalidStatement(t *testing.T) {
 		WithPathContextNames[any]([]string{"foo", "bar"}),
 	)
 	require.NoError(t, err)
-	_, err = ps.appendStatementPathsContext("foo", "this is invalid")
+	_, err = ps.prependContextToStatementPaths("foo", "this is invalid")
 	require.ErrorContains(t, err, `statement has invalid syntax`)
 }
 
-func Test_appendStatementPathsContext_InvalidContext(t *testing.T) {
+func Test_prependContextToStatementPaths_InvalidContext(t *testing.T) {
 	ps, err := NewParser(
 		CreateFactoryMap[any](),
 		testParsePath[any],
@@ -2737,11 +2737,11 @@ func Test_appendStatementPathsContext_InvalidContext(t *testing.T) {
 		WithPathContextNames[any]([]string{"foo", "bar"}),
 	)
 	require.NoError(t, err)
-	_, err = ps.appendStatementPathsContext("foobar", "set(foo, 1)")
+	_, err = ps.prependContextToStatementPaths("foobar", "set(foo, 1)")
 	require.ErrorContains(t, err, `unknown context "foobar" for parser`)
 }
 
-func Test_appendStatementPathsContext_Success(t *testing.T) {
+func Test_prependContextToStatementPaths_Success(t *testing.T) {
 	type mockSetArguments[K any] struct {
 		Target Setter[K]
 		Value  Getter[K]
@@ -2845,7 +2845,7 @@ func Test_appendStatementPathsContext_Success(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, ps)
 
-			result, err := ps.appendStatementPathsContext(tt.context, tt.statement)
+			result, err := ps.prependContextToStatementPaths(tt.context, tt.statement)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
