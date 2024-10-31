@@ -132,7 +132,6 @@ func TestE2E(t *testing.T) {
 		pmetrictest.ChangeResourceAttributeValue("k8s.cronjob.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
-		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
 		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.hpa.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("k8s.job.name", shortenNames),
