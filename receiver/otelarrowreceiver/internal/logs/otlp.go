@@ -22,13 +22,13 @@ type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Logs
 	obsrecv      *receiverhelper.ObsReport
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission.Queue
 	sizer        *plog.ProtoMarshaler
 	logger       *zap.Logger
 }
 
 // New creates a new Receiver reference.
-func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq *admission.BoundedQueue) *Receiver {
+func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq admission.Queue) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,

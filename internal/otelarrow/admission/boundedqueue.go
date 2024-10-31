@@ -37,7 +37,7 @@ type waiter struct {
 	ID           uuid.UUID
 }
 
-func NewBoundedQueue(ts component.TelemetrySettings, maxLimitBytes, maxLimitWaiters int64) *BoundedQueue {
+func NewBoundedQueue(ts component.TelemetrySettings, maxLimitBytes, maxLimitWaiters int64) Queue {
 	return &BoundedQueue{
 		maxLimitBytes:   maxLimitBytes,
 		maxLimitWaiters: maxLimitWaiters,

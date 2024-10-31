@@ -80,7 +80,7 @@ type Receiver struct {
 	newConsumer      func() arrowRecord.ConsumerAPI
 	netReporter      netstats.Interface
 	telemetryBuilder *internalmetadata.TelemetryBuilder
-	boundedQueue     *admission.BoundedQueue
+	boundedQueue     admission.Queue
 }
 
 // receiverStream holds the inFlightWG for a single stream.
@@ -97,7 +97,7 @@ func New(
 	gsettings configgrpc.ServerConfig,
 	authServer auth.Server,
 	newConsumer func() arrowRecord.ConsumerAPI,
-	bq *admission.BoundedQueue,
+	bq admission.Queue,
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
 	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")

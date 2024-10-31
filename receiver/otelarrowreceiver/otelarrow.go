@@ -45,7 +45,7 @@ type otelArrowReceiver struct {
 
 	obsrepGRPC   *receiverhelper.ObsReport
 	netReporter  *netstats.NetworkReporter
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission.Queue
 
 	settings receiver.Settings
 }
@@ -66,7 +66,12 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	if err != nil {
 		return nil, err
 	}
-	bq := admission.NewBoundedQueue(set.TelemetrySettings, int64(cfg.Admission.RequestLimitMiB<<20), cfg.Admission.WaiterLimit)
+	var bq admission.Queue
+	if cfg.Admission.RequestLimitMiB == 0 {
+		bq = admission.NewUnboundedQueue()
+	} else {
+		bq = admission.NewBoundedQueue(set.TelemetrySettings, int64(cfg.Admission.RequestLimitMiB<<20), cfg.Admission.WaiterLimit)
+	}
 	r := &otelArrowReceiver{
 		cfg:          cfg,
 		settings:     set,
