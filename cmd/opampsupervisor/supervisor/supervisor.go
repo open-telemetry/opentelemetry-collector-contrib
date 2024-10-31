@@ -1371,7 +1371,7 @@ func (s *Supervisor) startHealthCheckTicker() {
 }
 
 func (s *Supervisor) healthCheck() {
-	if !s.commander.IsRunning() {
+	if !s.commander.IsRunning() || s.healthChecker == nil {
 		return
 	}
 
