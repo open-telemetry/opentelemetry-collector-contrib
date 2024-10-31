@@ -406,7 +406,7 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 	return nil, nil
 }
 
-var admissionRegexp = regexp.MustCompile(`too many waiters`)
+var admissionRegexp = regexp.MustCompile(`too much pending data`)
 
 func countAdmissionLimitErrors(msgs []string) (cnt int) {
 	for _, msg := range msgs {

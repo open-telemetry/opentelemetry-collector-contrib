@@ -11,10 +11,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 )
 
@@ -39,10 +39,10 @@ func abs(x int64) int64 {
 	return x
 }
 
-var noopTraces = noop.NewTracerProvider()
+var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
 func newTestQueue(limitBytes, limitWaiters int64) *BoundedQueue {
-	return NewBoundedQueue(noopTraces, limitBytes, limitWaiters).(*BoundedQueue)
+	return NewBoundedQueue(noopTelemetry, limitBytes, limitWaiters).(*BoundedQueue)
 }
 
 func TestAcquireSimpleNoWaiters(t *testing.T) {
@@ -164,8 +164,10 @@ func TestAcquireContextCanceled(t *testing.T) {
 
 	exp := tracetest.NewInMemoryExporter()
 	tp := trace.NewTracerProvider(trace.WithSyncer(exp))
+	ts := noopTelemetry
+	ts.TracerProvider = tp
 
-	bq := NewBoundedQueue(tp, int64(maxLimitBytes), int64(maxLimitWaiters)).(*BoundedQueue)
+	bq := NewBoundedQueue(ts, int64(maxLimitBytes), int64(maxLimitWaiters)).(*BoundedQueue)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	var errs error
