@@ -227,6 +227,7 @@ func initPackageManager(t *testing.T, tmpDir string) *packageManager {
 	require.NoError(t, os.MkdirAll(storageDir, 0700))
 	require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0600))
 	ps, err := loadOrCreatePersistentState(filepath.Join(tmpDir, "persistent_state.yaml"))
+	require.NoError(t, err)
 
 	pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", ps, defaultSigOpts, nil)
 	require.NoError(t, err)
