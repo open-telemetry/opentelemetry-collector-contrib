@@ -74,7 +74,6 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		initialBufferSize:    f.InitialBufferSize,
 		maxLogSize:           f.MaxLogSize,
 		decoder:              decode.New(f.Encoding),
-		lineSplitFunc:        f.SplitFunc,
 		deleteAtEOF:          f.DeleteAtEOF,
 		includeFileRecordNum: f.IncludeFileRecordNumber,
 		compression:          f.Compression,
@@ -103,18 +102,14 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	}
 
 	flushFunc := m.FlushState.Func(f.SplitFunc, f.FlushTimeout)
-	r.lineSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.MaxLogSize), f.TrimFunc)
+	r.contentSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.MaxLogSize), f.TrimFunc)
 	r.emitFunc = f.EmitFunc
-	if f.HeaderConfig == nil || m.HeaderFinalized {
-		r.splitFunc = r.lineSplitFunc
-		r.processFunc = r.emitFunc
-	} else {
+	if f.HeaderConfig != nil && !m.HeaderFinalized {
+		r.headerSplitFunc = f.HeaderConfig.SplitFunc
 		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)
 		if err != nil {
 			return nil, err
 		}
-		r.splitFunc = f.HeaderConfig.SplitFunc
-		r.processFunc = r.headerReader.Process
 	}
 
 	attributes, err := f.Attributes.Resolve(file)
