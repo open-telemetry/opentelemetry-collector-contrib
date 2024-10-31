@@ -36,52 +36,11 @@ func TestNewPackageManager(t *testing.T) {
 		require.NoError(t, os.MkdirAll(storageDir, 0700))
 		require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0600))
 
-		pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", defaultSigOpts, nil)
+		pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultSigOpts, nil)
 		require.NoError(t, err)
 
 		assert.Equal(t, "v0.110.0", pm.topLevelVersion)
 		assert.Equal(t, testAgentFileHash, pm.topLevelHash)
-		assert.Equal(t, &packageState{}, pm.packageState)
-	})
-
-	t.Run("Package states is loaded from disk", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		agentFile := filepath.Join(tmpDir, "agent")
-		storageDir := filepath.Join(tmpDir, "storage")
-		packageStateFile := filepath.Join(storageDir, packagesStateFileName)
-		defaultSigOpts := config.DefaultSupervisor().Agent.Signature
-
-		require.NoError(t, os.MkdirAll(storageDir, 0700))
-		require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0600))
-		require.NoError(t, os.WriteFile(packageStateFile, []byte(`
-all_packages_hash: "679e2a15ae3d0ca7a0d70f0c287a228f0de56ab6a740e652737c751dec56fcd7"
-`), 0600))
-
-		pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", defaultSigOpts, nil)
-		require.NoError(t, err)
-
-		assert.Equal(t, "v0.110.0", pm.topLevelVersion)
-		assert.Equal(t, testAgentFileHash, pm.topLevelHash)
-		assert.Equal(t, &packageState{
-			AllPackagesHash: testAgentFileHash,
-		}, pm.packageState)
-	})
-
-	t.Run("Malformed package state on disk", func(t *testing.T) {
-		tmpDir := t.TempDir()
-		agentFile := filepath.Join(tmpDir, "agent")
-		storageDir := filepath.Join(tmpDir, "storage")
-		packageStateFile := filepath.Join(storageDir, packagesStateFileName)
-		defaultSigOpts := config.DefaultSupervisor().Agent.Signature
-
-		require.NoError(t, os.MkdirAll(storageDir, 0700))
-		require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0600))
-		require.NoError(t, os.WriteFile(packageStateFile, []byte(`
-all_packages_hash: "malformed""
-`), 0600))
-
-		_, err := newPackageManager(agentFile, storageDir, "v0.110.0", defaultSigOpts, nil)
-		require.ErrorContains(t, err, "load package state:")
 	})
 
 	t.Run("Agent does not exist", func(t *testing.T) {
@@ -92,7 +51,7 @@ all_packages_hash: "malformed""
 
 		require.NoError(t, os.MkdirAll(storageDir, 0700))
 
-		_, err := newPackageManager(agentFile, storageDir, "v0.110.0", defaultSigOpts, nil)
+		_, err := newPackageManager(agentFile, storageDir, "v0.110.0", &persistentState{}, defaultSigOpts, nil)
 		require.ErrorContains(t, err, "open agent:")
 	})
 }
@@ -267,8 +226,9 @@ func initPackageManager(t *testing.T, tmpDir string) *packageManager {
 
 	require.NoError(t, os.MkdirAll(storageDir, 0700))
 	require.NoError(t, os.WriteFile(agentFile, []byte(testAgentFileContents), 0600))
+	ps, err := loadOrCreatePersistentState(filepath.Join(tmpDir, "persistent_state.yaml"))
 
-	pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", defaultSigOpts, nil)
+	pm, err := newPackageManager(agentFile, storageDir, "v0.110.0", ps, defaultSigOpts, nil)
 	require.NoError(t, err)
 
 	return pm
