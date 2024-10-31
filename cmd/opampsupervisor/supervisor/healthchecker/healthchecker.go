@@ -23,7 +23,7 @@ func NewHTTPHealthChecker(endpoint string) *HTTPHealthChecker {
 }
 
 func (h *HTTPHealthChecker) Check(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", h.endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.endpoint, nil)
 	if err != nil {
 		return err
 	}

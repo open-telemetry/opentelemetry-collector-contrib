@@ -41,25 +41,23 @@ func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelp
 // Export implements the service Export traces func.
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
-	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
 		return ptraceotlp.NewExportResponse(), nil
 	}
+
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
+	var err error
 	sizeBytes := int64(r.sizer.TracesSize(req.Traces()))
-	err := r.boundedQueue.Acquire(ctx, sizeBytes)
-	if err != nil {
-		return ptraceotlp.NewExportResponse(), err
+	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
+		err = r.nextConsumer.ConsumeTraces(ctx, td)
+		// Release() is not checked, see #36074.
+		_ = r.boundedQueue.Release(sizeBytes) // immediate release
+	} else {
+		err = acqErr
 	}
-	defer func() {
-		if releaseErr := r.boundedQueue.Release(sizeBytes); releaseErr != nil {
-			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
-		}
-	}()
 
-	err = r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return ptraceotlp.NewExportResponse(), err

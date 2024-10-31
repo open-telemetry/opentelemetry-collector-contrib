@@ -637,7 +637,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// available.
 	acquireErr := r.boundedQueue.Acquire(inflightCtx, uncompSize)
 	if acquireErr != nil {
-		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue: %v", acquireErr)
+		return acquireErr
 	}
 	flight.uncompSize = uncompSize
 	flight.numItems = numItems

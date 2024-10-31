@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/http2/hpack"
@@ -49,10 +48,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 )
 
-var noopTraces = noop.NewTracerProvider()
+var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
 func defaultBQ() *admission.BoundedQueue {
-	return admission.NewBoundedQueue(noopTraces, int64(100000), int64(10))
+	return admission.NewBoundedQueue(noopTelemetry, int64(100000), int64(10))
 }
 
 type compareJSONTraces struct{ ptrace.Traces }
@@ -452,10 +451,10 @@ func TestBoundedQueueLimits(t *testing.T) {
 			var bq *admission.BoundedQueue
 			if tt.expectErr {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
-				bq = admission.NewBoundedQueue(noopTraces, tt.admitLimit, 0)
+				bq = admission.NewBoundedQueue(noopTelemetry, int64(sizer.TracesSize(td)-100), 10)
 			} else {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
-				bq = admission.NewBoundedQueue(noopTraces, tt.admitLimit, 0)
+				bq = admission.NewBoundedQueue(noopTelemetry, tt.admitLimit, 10)
 			}
 
 			ctc.start(ctc.newRealConsumer, bq)
