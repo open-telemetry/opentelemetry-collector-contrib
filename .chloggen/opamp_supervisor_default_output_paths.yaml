@@ -7,7 +7,7 @@ change_type: breaking
 component: cmd/opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update default output paths to stderr
+note: Update default logger output paths to stderr
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36072]
@@ -16,7 +16,7 @@ issues: [36072]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The default output paths for the opamp supervisor have been updated to stderr from [stdout, stderr].
+  The default output paths for the opamp supervisor logger have been updated to stderr from [stdout, stderr].
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
