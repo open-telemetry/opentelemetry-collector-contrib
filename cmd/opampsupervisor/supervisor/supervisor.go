@@ -275,7 +275,7 @@ func (s *Supervisor) createTemplates() error {
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	s.opampServerPort, err = s.findRandomPort()
+	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
 		return err
 	}
@@ -469,7 +469,7 @@ func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.logger))
 
 	var err error
-	s.opampServerPort, err = s.findRandomPort()
+	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
 		return err
 	}
@@ -1383,6 +1383,13 @@ func (s *Supervisor) persistentStateFilePath() string {
 
 func (s *Supervisor) agentConfigFilePath() string {
 	return filepath.Join(s.config.Storage.Directory, agentConfigFileName)
+}
+
+func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
+	if s.config.Agent.OpAMPServerPort != 0 {
+		return s.config.Agent.OpAMPServerPort, nil
+	}
+	return s.findRandomPort()
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {
