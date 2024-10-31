@@ -41,13 +41,17 @@ func abs(x int64) int64 {
 
 var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
+func newTestQueue(limitBytes, limitWaiters int64) *BoundedQueue {
+	return NewBoundedQueue(noopTelemetry, limitBytes, limitWaiters).(*BoundedQueue)
+}
+
 func TestAcquireSimpleNoWaiters(t *testing.T) {
 	maxLimitBytes := 1000
 	maxLimitWaiters := 10
 	numRequests := 40
 	requestSize := 21
 
-	bq := NewBoundedQueue(noopTelemetry, int64(maxLimitBytes), int64(maxLimitWaiters))
+	bq := newTestQueue(int64(maxLimitBytes), int64(maxLimitWaiters))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -99,7 +103,7 @@ func TestAcquireBoundedWithWaiters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bq := NewBoundedQueue(noopTelemetry, tt.maxLimitBytes, tt.maxLimitWaiters)
+			bq := newTestQueue(tt.maxLimitBytes, tt.maxLimitWaiters)
 			var blockedRequests int64
 			numReqsUntilBlocked := tt.maxLimitBytes / tt.requestSize
 			requestsAboveLimit := abs(tt.numRequests - numReqsUntilBlocked)
@@ -163,7 +167,7 @@ func TestAcquireContextCanceled(t *testing.T) {
 	ts := noopTelemetry
 	ts.TracerProvider = tp
 
-	bq := NewBoundedQueue(ts, int64(maxLimitBytes), int64(maxLimitWaiters))
+	bq := NewBoundedQueue(ts, int64(maxLimitBytes), int64(maxLimitWaiters)).(*BoundedQueue)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	var errs error
