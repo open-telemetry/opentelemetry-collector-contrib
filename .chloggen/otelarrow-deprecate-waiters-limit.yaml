@@ -7,7 +7,7 @@ change_type: deprecation
 component: otelarrowreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate the "admission::waiters_limit" flag for replacement by "admission::waiting_limit_mib"
+note: Deprecate the "admission::waiter_limit" flag for replacement by "admission::waiting_limit_mib"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36074]
