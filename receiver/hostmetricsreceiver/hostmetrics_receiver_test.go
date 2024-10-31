@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/uptimescraper"
 )
 
 var allMetrics = []string{
@@ -81,6 +82,7 @@ var factories = map[string]internal.ScraperFactory{
 	pagingscraper.TypeStr:     &pagingscraper.Factory{},
 	processesscraper.TypeStr:  &processesscraper.Factory{},
 	processscraper.TypeStr:    &processscraper.Factory{},
+	uptimescraper.TypeStr:     &uptimescraper.Factory{},
 }
 
 type testEnv struct {
@@ -390,6 +392,19 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Scrapers:         map[string]internal.Config{processscraper.TypeStr: (&processscraper.Factory{}).CreateDefaultConfig()},
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
+func Benchmark_ScrapeUptimeMetrics(b *testing.B) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		b.Skip("skipping test on non linux/windows")
+	}
+
+	cfg := &Config{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Scrapers:         map[string]internal.Config{uptimescraper.TypeStr: (&uptimescraper.Factory{}).CreateDefaultConfig()},
 	}
 
 	benchmarkScrapeMetrics(b, cfg)

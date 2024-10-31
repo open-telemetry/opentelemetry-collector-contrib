@@ -2714,3 +2714,140 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 		})
 	}
 }
+
+func Test_prependContextToStatementPaths_InvalidStatement(t *testing.T) {
+	ps, err := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"foo", "bar"}),
+	)
+	require.NoError(t, err)
+	_, err = ps.prependContextToStatementPaths("foo", "this is invalid")
+	require.ErrorContains(t, err, `statement has invalid syntax`)
+}
+
+func Test_prependContextToStatementPaths_InvalidContext(t *testing.T) {
+	ps, err := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"foo", "bar"}),
+	)
+	require.NoError(t, err)
+	_, err = ps.prependContextToStatementPaths("foobar", "set(foo, 1)")
+	require.ErrorContains(t, err, `unknown context "foobar" for parser`)
+}
+
+func Test_prependContextToStatementPaths_Success(t *testing.T) {
+	type mockSetArguments[K any] struct {
+		Target Setter[K]
+		Value  Getter[K]
+	}
+
+	mockSetFactory := NewFactory("set", &mockSetArguments[any]{}, func(_ FunctionContext, _ Arguments) (ExprFunc[any], error) {
+		return func(_ context.Context, _ any) (any, error) {
+			return nil, nil
+		}, nil
+	})
+
+	tests := []struct {
+		name             string
+		statement        string
+		context          string
+		pathContextNames []string
+		expected         string
+	}{
+		{
+			name:             "no paths",
+			statement:        `set("foo", 1)`,
+			context:          "bar",
+			pathContextNames: []string{"bar"},
+			expected:         `set("foo", 1)`,
+		},
+		{
+			name:             "single path with context",
+			statement:        `set(span.value, 1)`,
+			context:          "span",
+			pathContextNames: []string{"span"},
+			expected:         `set(span.value, 1)`,
+		},
+		{
+			name:             "single path without context",
+			statement:        "set(value, 1)",
+			context:          "span",
+			pathContextNames: []string{"span"},
+			expected:         "set(span.value, 1)",
+		},
+		{
+			name:             "single path with context - multiple context names",
+			statement:        "set(span.value, 1)",
+			context:          "spanevent",
+			pathContextNames: []string{"spanevent", "span"},
+			expected:         "set(span.value, 1)",
+		},
+		{
+			name:             "multiple paths with the same context",
+			statement:        `set(span.value, 1) where span.attributes["foo"] == "foo" and span.id == 1`,
+			context:          "another",
+			pathContextNames: []string{"another", "span"},
+			expected:         `set(span.value, 1) where span.attributes["foo"] == "foo" and span.id == 1`,
+		},
+		{
+			name:             "multiple paths with different contexts",
+			statement:        `set(another.value, 1) where span.attributes["foo"] == "foo" and another.id == 1`,
+			context:          "another",
+			pathContextNames: []string{"another", "span"},
+			expected:         `set(another.value, 1) where span.attributes["foo"] == "foo" and another.id == 1`,
+		},
+		{
+			name:             "multiple paths with and without contexts",
+			statement:        `set(value, 1) where span.attributes["foo"] == "foo" and id == 1`,
+			context:          "spanevent",
+			pathContextNames: []string{"spanevent", "span"},
+			expected:         `set(spanevent.value, 1) where span.attributes["foo"] == "foo" and spanevent.id == 1`,
+		},
+		{
+			name:             "multiple paths without context",
+			statement:        `set(value, 1) where name == attributes["foo.name"]`,
+			context:          "span",
+			pathContextNames: []string{"span"},
+			expected:         `set(span.value, 1) where span.name == span.attributes["foo.name"]`,
+		},
+		{
+			name:             "function path parameter without context",
+			statement:        `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]")`,
+			context:          "log",
+			pathContextNames: []string{"log"},
+			expected:         `set(log.attributes["test"], "pass") where IsMatch(log.name, "operation[AC]")`,
+		},
+		{
+			name:             "function path parameter with context",
+			statement:        `set(attributes["test"], "pass") where IsMatch(resource.name, "operation[AC]")`,
+			context:          "log",
+			pathContextNames: []string{"log", "resource"},
+			expected:         `set(log.attributes["test"], "pass") where IsMatch(resource.name, "operation[AC]")`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ps, err := NewParser(
+				CreateFactoryMap[any](mockSetFactory),
+				testParsePath[any],
+				componenttest.NewNopTelemetrySettings(),
+				WithEnumParser[any](testParseEnum),
+				WithPathContextNames[any](tt.pathContextNames),
+			)
+
+			require.NoError(t, err)
+			require.NotNil(t, ps)
+
+			result, err := ps.prependContextToStatementPaths(tt.context, tt.statement)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
