@@ -33,7 +33,6 @@ var (
 	// https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#packages
 	agentPackageKey = ""
 
-	packagesStateFileName     = "package-state.yaml"
 	lastPackageStatusFileName = "last-reported-package-statuses.proto"
 )
 
@@ -97,10 +96,14 @@ func newPackageManager(
 }
 
 func (p packageManager) AllPackagesHash() ([]byte, error) {
+	p.persistentState.mux.Lock()
+	defer p.persistentState.mux.Unlock()
 	return p.persistentState.AllPackagesHash, nil
 }
 
 func (p packageManager) SetAllPackagesHash(hash []byte) error {
+	p.persistentState.mux.Lock()
+	defer p.persistentState.mux.Unlock()
 	return p.persistentState.SetAllPackagesHash(hash)
 }
 
@@ -304,10 +307,6 @@ func (p packageManager) SetLastReportedStatuses(statuses *protobufs.PackageStatu
 
 func (p *packageManager) lastPackageStatusPath() string {
 	return filepath.Join(p.storageDir, lastPackageStatusFileName)
-}
-
-func (p *packageManager) packagesStatusPath() string {
-	return filepath.Join(p.storageDir, packagesStateFileName)
 }
 
 func verifyPackageIntegrity(packageBytes, expectedHash []byte) error {
