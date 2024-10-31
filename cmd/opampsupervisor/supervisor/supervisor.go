@@ -346,6 +346,11 @@ func (s *Supervisor) Start() error {
 		}
 	}
 
+	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
+	if err != nil {
+		return fmt.Errorf("get opamp server port: %w", err)
+	}
+
 	if s.config.Capabilities.AcceptsPackageAvailable || s.config.Capabilities.ReportsPackageStatuses {
 		s.packageManager, err = newPackageManager(
 			s.config.Agent.Executable,
@@ -735,18 +740,11 @@ func (s *Supervisor) startOpAMPClient() error {
 // OpAMP server.
 func (s *Supervisor) startOpAMPServer() error {
 	s.opampServer = server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
-
-	var err error
-	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
-	if err != nil {
-		return err
-	}
-
 	s.telemetrySettings.Logger.Debug("Starting OpAMP server...")
 
 	connected := &atomic.Bool{}
 
-	err = s.opampServer.Start(flattenedSettings{
+	err := s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnecting: func(_ *http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
