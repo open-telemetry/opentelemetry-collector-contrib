@@ -5,6 +5,9 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 	"math"
 	"sync"
 
@@ -13,6 +16,19 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/multierr"
 )
+
+func (prwe *prwExporter) pushMetricsV2(ctx context.Context, md pmetric.Metrics) error {
+	tsMap, symbolsTable, err := prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
+
+	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+
+	if err != nil {
+		prwe.telemetry.recordTranslationFailure(ctx)
+		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+	}
+	// Call export even if a conversion error, since there may be points that were successfully converted.
+	return prwe.handleExportV2(ctx, symbolsTable, tsMap)
+}
 
 // TODO update comment
 // export sends a Snappy-compressed WriteRequest containing TimeSeries to a remote write endpoint in order

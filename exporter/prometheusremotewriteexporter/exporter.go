@@ -202,19 +202,6 @@ func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) 
 	return prwe.handleExport(ctx, tsMap, m)
 }
 
-func (prwe *prwExporter) pushMetricsV2(ctx context.Context, md pmetric.Metrics) error {
-	tsMap, symbolsTable, err := prometheusremotewrite.FromMetricsV2(md, prwe.exporterSettings)
-
-	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
-
-	if err != nil {
-		prwe.telemetry.recordTranslationFailure(ctx)
-		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
-	}
-	// Call export even if a conversion error, since there may be points that were successfully converted.
-	return prwe.handleExportV2(ctx, symbolsTable, tsMap)
-}
-
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
