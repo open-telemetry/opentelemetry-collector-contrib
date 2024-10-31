@@ -155,6 +155,7 @@ type Agent struct {
 	Description             AgentDescription `mapstructure:"description"`
 	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
+	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
 }
 
@@ -169,6 +170,10 @@ func (a Agent) Validate() error {
 
 	if a.HealthCheckPort < 0 || a.HealthCheckPort > 65535 {
 		return errors.New("agent::health_check_port must be a valid port number")
+	}
+
+	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
+		return errors.New("agent::opamp_server_port must be a valid port number")
 	}
 
 	if a.Executable == "" {
