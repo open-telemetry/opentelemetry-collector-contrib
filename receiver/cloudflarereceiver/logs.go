@@ -113,7 +113,6 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				l.logger.Error("ServeTLS failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-
 		} else {
 			l.logger.Debug("Starting Serve",
 				zap.String("address", l.cfg.Endpoint))
@@ -126,7 +125,6 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				l.logger.Error("Serve failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-
 		}
 	}()
 	return nil
