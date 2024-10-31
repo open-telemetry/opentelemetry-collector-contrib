@@ -11,10 +11,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 )
 
@@ -39,7 +39,7 @@ func abs(x int64) int64 {
 	return x
 }
 
-var noopTraces = noop.NewTracerProvider()
+var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
 func TestAcquireSimpleNoWaiters(t *testing.T) {
 	maxLimitBytes := 1000
@@ -47,7 +47,7 @@ func TestAcquireSimpleNoWaiters(t *testing.T) {
 	numRequests := 40
 	requestSize := 21
 
-	bq := NewBoundedQueue(noopTraces, int64(maxLimitBytes), int64(maxLimitWaiters))
+	bq := NewBoundedQueue(noopTelemetry, int64(maxLimitBytes), int64(maxLimitWaiters))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -99,7 +99,7 @@ func TestAcquireBoundedWithWaiters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bq := NewBoundedQueue(noopTraces, tt.maxLimitBytes, tt.maxLimitWaiters)
+			bq := NewBoundedQueue(noopTelemetry, tt.maxLimitBytes, tt.maxLimitWaiters)
 			var blockedRequests int64
 			numReqsUntilBlocked := tt.maxLimitBytes / tt.requestSize
 			requestsAboveLimit := abs(tt.numRequests - numReqsUntilBlocked)
@@ -160,8 +160,10 @@ func TestAcquireContextCanceled(t *testing.T) {
 
 	exp := tracetest.NewInMemoryExporter()
 	tp := trace.NewTracerProvider(trace.WithSyncer(exp))
+	ts := noopTelemetry
+	ts.TracerProvider = tp
 
-	bq := NewBoundedQueue(tp, int64(maxLimitBytes), int64(maxLimitWaiters))
+	bq := NewBoundedQueue(ts, int64(maxLimitBytes), int64(maxLimitWaiters))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	var errs error

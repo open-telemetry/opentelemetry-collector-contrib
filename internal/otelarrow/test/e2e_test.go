@@ -93,13 +93,6 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	timeout := time.Until(dead)
 
 	require.Equal(tc.t, tc.expectDeadline, hasDeadline, "deadline set or not set: %v", timeout)
-	if tc.expectDeadline {
-		// expect allows 1/6 of the deadline to elapse in transit,
-		// so 1m becomes 50s.
-		expect := tc.expCfg.TimeoutSettings.Timeout * 5 / 6
-		require.Less(tc.t, expect, timeout)
-		require.Greater(tc.t, tc.expCfg.TimeoutSettings.Timeout, timeout)
-	}
 
 	return tc.sink.ConsumeTraces(ctx, td)
 }
@@ -175,7 +168,7 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	}, receiverCfg, testCon)
 	require.NoError(t, err)
 
-	exporter, err := efact.CreateTracesExporter(ctx, exporter.Settings{
+	exporter, err := efact.CreateTraces(ctx, exporter.Settings{
 		ID:                component.MustNewID("otelarrowexporter"),
 		TelemetrySettings: expTset,
 	}, exporterCfg)

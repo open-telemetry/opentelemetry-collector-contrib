@@ -29,6 +29,7 @@ The following settings are optional:
 - `collection_interval` (default = `10s`): The internal at which metrics should
 be emitted by this receiver.
 - `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
+- `job_name` (default = `prometheus_simple/${endpoint}`): Prometheus scrape job name.
 - `params` (default = `{}`): The query parameters to pass to the metrics endpoint. If specified, params are appended to `metrics_path` to form the URL with which the target is scraped.
 - `use_service_account` (default = `false`): Whether or not to use the
 Kubernetes Pod service account for authentication.
@@ -76,4 +77,3 @@ Example:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
-

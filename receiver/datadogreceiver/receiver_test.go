@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -74,8 +75,9 @@ func TestDatadogServer(t *testing.T) {
 	})
 
 	for _, tc := range []struct {
-		name string
-		op   io.Reader
+		name     string
+		op       io.Reader
+		endpoint string
 
 		expectCode    int
 		expectContent string
@@ -83,14 +85,30 @@ func TestDatadogServer(t *testing.T) {
 		{
 			name:          "invalid data",
 			op:            strings.NewReader("{"),
+			endpoint:      "http://%s/v0.7/traces",
 			expectCode:    http.StatusBadRequest,
 			expectContent: "Unable to unmarshal reqs\n",
 		},
 		{
 			name:          "Fake featuresdiscovery",
 			op:            nil, // Content-length: 0.
+			endpoint:      "http://%s/v0.7/traces",
 			expectCode:    http.StatusBadRequest,
 			expectContent: "Fake featuresdiscovery\n",
+		},
+		{
+			name:          "Older version returns OK",
+			op:            strings.NewReader("[]"),
+			endpoint:      "http://%s/v0.3/traces",
+			expectCode:    http.StatusOK,
+			expectContent: "OK",
+		},
+		{
+			name:          "Older version returns JSON",
+			op:            strings.NewReader("[]"),
+			endpoint:      "http://%s/v0.4/traces",
+			expectCode:    http.StatusOK,
+			expectContent: "{}",
 		},
 	} {
 		tc := tc
@@ -99,7 +117,7 @@ func TestDatadogServer(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				fmt.Sprintf("http://%s/v0.7/traces", dd.(*datadogReceiver).address),
+				fmt.Sprintf(tc.endpoint, dd.(*datadogReceiver).address),
 				tc.op,
 			)
 			require.NoError(t, err, "Must not error when creating request")
@@ -114,6 +132,55 @@ func TestDatadogServer(t *testing.T) {
 			assert.Equal(t, tc.expectCode, resp.StatusCode, "Must match the expected status code")
 		})
 	}
+}
+
+func TestDatadogResponse(t *testing.T) {
+	tests := []struct {
+		name           string
+		err            error
+		expectedStatus int
+	}{
+		{
+			name:           "non-permanent error",
+			err:            errors.New("non-permanenet error"),
+			expectedStatus: http.StatusServiceUnavailable,
+		},
+		{
+			name:           "permanent error",
+			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+			dd, err := newDataDogReceiver(
+				cfg,
+				receivertest.NewNopSettings(),
+			)
+			require.NoError(t, err, "Must not error when creating receiver")
+			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			t.Cleanup(cancel)
+
+			require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
+			t.Cleanup(func() {
+				require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
+			})
+
+			apiPayload := pb.TracerPayload{}
+			var reqBytes []byte
+			bytez, _ := apiPayload.MarshalMsg(reqBytes)
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("http://%s/v0.7/traces", dd.(*datadogReceiver).address), bytes.NewReader(bytez))
+			require.NoError(t, err, "Must not error creating request")
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err, "Must not error performing request")
+			require.Equal(t, tc.expectedStatus, resp.StatusCode)
+		})
+	}
+
 }
 
 func TestDatadogInfoEndpoint(t *testing.T) {
@@ -213,8 +280,6 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 	} {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
@@ -295,7 +360,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
+	require.JSONEq(t, `{"status": "ok"}`, string(body), "Expected JSON response to be `{\"status\": \"ok\"}`, got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
@@ -373,7 +438,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
+	require.JSONEq(t, `{"errors": []}`, string(body), "Expected JSON response to be `{\"errors\": []}`, got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
@@ -611,7 +676,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
-	require.Equal(t, "OK", string(body), "Expected response to be 'OK', got %s", string(body))
+	require.JSONEq(t, `{"status": "ok"}`, string(body), "Expected JSON response to be `{\"status\": \"ok\"}`, got %s", string(body))
 	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
@@ -621,6 +686,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	assert.Equal(t, 1, metrics.Len())
 	metric := metrics.At(0)
+	assert.Equal(t, "app.working", metric.Name())
 	assert.Equal(t, pmetric.MetricTypeGauge, metric.Type())
 	dps := metric.Gauge().DataPoints()
 	assert.Equal(t, 1, dps.Len())
