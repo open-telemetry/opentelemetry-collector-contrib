@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -98,7 +99,7 @@ func createDefaultConfig() component.Config {
 		BackOffConfig:       retrySettings,
 		AddMetricSuffixes:   true,
 		SendMetadata:        false,
-		RemoteWriteProtoMsg: RemoteWriteProtoMsgV1,
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 		ClientConfig:        clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{

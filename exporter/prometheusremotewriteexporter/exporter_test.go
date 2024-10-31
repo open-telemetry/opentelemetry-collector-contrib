@@ -15,6 +15,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -753,11 +754,11 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					if tt.enableSendingRW2 {
-						cfg.RemoteWriteProtoMsg = RemoteWriteProtoMsgV2
+						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV2
 						err := featuregate.GlobalRegistry().Set("exporter.prometheusremotewritexporter.enableSendingRW2", true)
 						assert.NoError(t, err)
 					} else {
-						cfg.RemoteWriteProtoMsg = RemoteWriteProtoMsgV1
+						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 					}
 
 					if useWAL {

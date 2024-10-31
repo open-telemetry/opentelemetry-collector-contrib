@@ -18,6 +18,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -53,26 +54,6 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
-// RemoteWriteProtoMsg represents the known protobuf message for the remote write
-// 1.0 and 2.0 specs.
-type RemoteWriteProtoMsg string
-
-var (
-	// RemoteWriteProtoMsgV1 represents the `prometheus.WriteRequest` protobuf
-	// message introduced in the https://prometheus.io/docs/specs/remote_write_spec/,
-	// which will eventually be deprecated.
-	//
-	// NOTE: This string is used for both HTTP header values and config value, so don't change
-	// this reference.
-	RemoteWriteProtoMsgV1 RemoteWriteProtoMsg = "prometheus.WriteRequest"
-	// RemoteWriteProtoMsgV2 represents the `io.prometheus.write.v2.Request` protobuf
-	// message introduced in https://prometheus.io/docs/specs/remote_write_spec_2_0/
-	//
-	// NOTE: This string is used for both HTTP header values and config value, so don't change
-	// this reference.
-	RemoteWriteProtoMsgV2 RemoteWriteProtoMsg = "io.prometheus.write.v2.Request"
-)
-
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
 	endpointURL          *url.URL
@@ -91,7 +72,7 @@ type prwExporter struct {
 	exporterSettings     prometheusremotewrite.Settings
 	telemetry            prwTelemetry
 	batchTimeSeriesState batchTimeSeriesState
-	RemoteWriteProtoMsg  RemoteWriteProtoMsg
+	RemoteWriteProtoMsg  config.RemoteWriteProtoMsg
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -121,6 +102,11 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	}
 
 	prwTelemetry, err := newPRWTelemetry(set)
+	if err != nil {
+		return nil, err
+	}
+
+	err = config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg)
 	if err != nil {
 		return nil, err
 	}
@@ -222,10 +208,10 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 		// If feature flag enabled check if we want to send RW1 or RW2
 		switch prwe.RemoteWriteProtoMsg {
-		case RemoteWriteProtoMsgV1:
+		case config.RemoteWriteProtoMsgV1:
 			// Rw1 case
 			return prwe.pushMetricsV1(ctx, md)
-		case RemoteWriteProtoMsgV2:
+		case config.RemoteWriteProtoMsgV2:
 			// RW2 case
 			return prwe.pushMetricsV2(ctx, md)
 
@@ -347,10 +333,10 @@ func (prwe *prwExporter) execute(ctx context.Context, data []byte) error {
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 		switch prwe.RemoteWriteProtoMsg {
-		case RemoteWriteProtoMsgV1:
+		case config.RemoteWriteProtoMsgV1:
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-		case RemoteWriteProtoMsgV2:
+		case config.RemoteWriteProtoMsgV2:
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		}
