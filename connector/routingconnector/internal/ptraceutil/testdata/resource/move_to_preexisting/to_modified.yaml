@@ -1,0 +1,117 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: resourceName
+          value:
+            stringValue: resourceC
+        - key: resourceNameAgain
+          value:
+            stringValue: resourceC
+    schemaUrl: https://opentelemetry.io/schemas/1.6.1
+    scopeSpans:
+      - attributes:
+          - key: scopeName
+            value:
+              stringValue: scopeA
+          - key: scopeNameAgain
+            value:
+              stringValue: scopeA
+        spans:
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanA
+              - key: spanNameAgain
+                value:
+                  stringValue: spanA
+            name: spanA
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanB
+              - key: spanNameAgain
+                value:
+                  stringValue: spanB
+            name: spanB
+      - attributes:
+          - key: scopeName
+            value:
+              stringValue: scopeB
+          - key: scopeNameAgain
+            value:
+              stringValue: scopeB
+        spans:
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanA
+              - key: spanNameAgain
+                value:
+                  stringValue: spanA
+            name: spanA
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanB
+              - key: spanNameAgain
+                value:
+                  stringValue: spanB
+            name: spanB
+  - resource:
+      attributes:
+        - key: resourceName
+          value:
+            stringValue: resourceB
+        - key: resourceNameAgain
+          value:
+            stringValue: resourceB
+    schemaUrl: https://opentelemetry.io/schemas/1.6.1
+    scopeSpans:
+      - attributes:
+          - key: scopeName
+            value:
+              stringValue: scopeA
+          - key: scopeNameAgain
+            value:
+              stringValue: scopeA
+        spans:
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanA
+              - key: spanNameAgain
+                value:
+                  stringValue: spanA
+            name: spanA
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanB
+              - key: spanNameAgain
+                value:
+                  stringValue: spanB
+            name: spanB
+      - attributes:
+          - key: scopeName
+            value:
+              stringValue: scopeB
+          - key: scopeNameAgain
+            value:
+              stringValue: scopeB
+        spans:
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanA
+              - key: spanNameAgain
+                value:
+                  stringValue: spanA
+            name: spanA
+          - attributes:
+              - key: spanName
+                value:
+                  stringValue: spanB
+              - key: spanNameAgain
+                value:
+                  stringValue: spanB
+            name: spanB
