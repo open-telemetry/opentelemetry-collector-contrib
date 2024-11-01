@@ -18,6 +18,9 @@ type passThroughTracesConnector struct {
 	component.ShutdownFunc
 }
 
+func (c *passThroughTracesConnector) Start(_ context.Context, _ component.Host) error { return nil }
+func (c *passThroughTracesConnector) Shutdown(_ context.Context) error                { return nil }
+
 func (c *passThroughTracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return c.nextConsumer.ConsumeTraces(ctx, td)
 }

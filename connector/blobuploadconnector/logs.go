@@ -14,9 +14,10 @@ import (
 
 type passThroughLogsConnector struct {
 	nextConsumer consumer.Logs
-	component.StartFunc
-	component.ShutdownFunc
 }
+
+func (c *passThroughLogsConnector) Start(_ context.Context, _ component.Host) error { return nil }
+func (c *passThroughLogsConnector) Shutdown(_ context.Context) error                { return nil }
 
 func (c *passThroughLogsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return c.nextConsumer.ConsumeLogs(ctx, ld)
