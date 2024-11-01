@@ -2382,8 +2382,9 @@ func Test_Statement_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			statement := Statement[any]{
-				condition: BoolExpr[any]{tt.condition},
-				function:  Expr[any]{exprFunc: tt.function},
+				condition:         BoolExpr[any]{tt.condition},
+				function:          Expr[any]{exprFunc: tt.function},
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
 			}
 
 			result, condition, err := statement.Execute(context.Background(), nil)
@@ -2497,8 +2498,9 @@ func Test_Statements_Execute_Error(t *testing.T) {
 			statements := StatementSequence[any]{
 				statements: []*Statement[any]{
 					{
-						condition: BoolExpr[any]{tt.condition},
-						function:  Expr[any]{exprFunc: tt.function},
+						condition:         BoolExpr[any]{tt.condition},
+						function:          Expr[any]{exprFunc: tt.function},
+						telemetrySettings: componenttest.NewNopTelemetrySettings(),
 					},
 				},
 				errorMode:         tt.errorMode,

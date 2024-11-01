@@ -34,18 +34,18 @@ type FakeOutput struct {
 }
 
 // NewFakeOutput creates a new fake output with default settings
-func NewFakeOutput(t testing.TB) *FakeOutput {
+func NewFakeOutput(tb testing.TB) *FakeOutput {
 	return &FakeOutput{
 		Received: make(chan *entry.Entry, 100),
-		logger:   zaptest.NewLogger(t),
+		logger:   zaptest.NewLogger(tb),
 	}
 }
 
 // NewFakeOutputWithProcessError creates a new fake output with default settings, which returns error on Process
-func NewFakeOutputWithProcessError(t testing.TB) *FakeOutput {
+func NewFakeOutputWithProcessError(tb testing.TB) *FakeOutput {
 	return &FakeOutput{
 		Received:         make(chan *entry.Entry, 100),
-		logger:           zaptest.NewLogger(t),
+		logger:           zaptest.NewLogger(tb),
 		processWithError: true,
 	}
 }
@@ -94,48 +94,48 @@ func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {
 
 // ExpectBody expects that a body will be received by the fake operator within a second
 // and that it is equal to the given body
-func (f *FakeOutput) ExpectBody(t testing.TB, body any) {
+func (f *FakeOutput) ExpectBody(tb testing.TB, body any) {
 	select {
 	case e := <-f.Received:
-		require.Equal(t, body, e.Body)
+		require.Equal(tb, body, e.Body)
 	case <-time.After(time.Second):
-		require.FailNowf(t, "Timed out waiting for entry", "%s", body)
+		require.FailNowf(tb, "Timed out waiting for entry", "%s", body)
 	}
 }
 
 // ExpectEntry expects that an entry will be received by the fake operator within a second
 // and that it is equal to the given body
-func (f *FakeOutput) ExpectEntry(t testing.TB, expected *entry.Entry) {
+func (f *FakeOutput) ExpectEntry(tb testing.TB, expected *entry.Entry) {
 	select {
 	case e := <-f.Received:
-		require.Equal(t, expected, e)
+		require.Equal(tb, expected, e)
 	case <-time.After(time.Second):
-		require.FailNowf(t, "Timed out waiting for entry", "%v", expected)
+		require.FailNowf(tb, "Timed out waiting for entry", "%v", expected)
 	}
 }
 
 // ExpectEntries expects that the given entries will be received in any order
-func (f *FakeOutput) ExpectEntries(t testing.TB, expected []*entry.Entry) {
+func (f *FakeOutput) ExpectEntries(tb testing.TB, expected []*entry.Entry) {
 	entries := make([]*entry.Entry, 0, len(expected))
 	for i := 0; i < len(expected); i++ {
 		select {
 		case e := <-f.Received:
 			entries = append(entries, e)
 		case <-time.After(time.Second):
-			require.Fail(t, "Timed out waiting for entry")
+			require.Fail(tb, "Timed out waiting for entry")
 		}
-		if t.Failed() {
+		if tb.Failed() {
 			break
 		}
 	}
-	require.ElementsMatch(t, expected, entries)
+	require.ElementsMatch(tb, expected, entries)
 }
 
 // ExpectNoEntry expects that no entry will be received within the specified time
-func (f *FakeOutput) ExpectNoEntry(t testing.TB, timeout time.Duration) {
+func (f *FakeOutput) ExpectNoEntry(tb testing.TB, timeout time.Duration) {
 	select {
 	case <-f.Received:
-		require.FailNow(t, "Should not have received entry")
+		require.FailNow(tb, "Should not have received entry")
 	case <-time.After(timeout):
 		return
 	}

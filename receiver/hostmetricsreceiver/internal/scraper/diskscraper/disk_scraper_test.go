@@ -29,7 +29,7 @@ func TestScrape(t *testing.T) {
 		initializationErr string
 		expectMetrics     int
 		expectedStartTime pcommon.Timestamp
-		mutateScraper     func(*scraper)
+		mutateScraper     func(*diskScraper)
 	}
 
 	testCases := []testCase{

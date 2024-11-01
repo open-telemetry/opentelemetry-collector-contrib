@@ -41,8 +41,9 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	_ receiver.Settings,
-	_ component.Config,
-	_ consumer.Metrics) (receiver.Metrics, error) {
-	return nil, nil
+	params receiver.Settings,
+	cfg component.Config,
+	next consumer.Metrics,
+) (receiver.Metrics, error) {
+	return newHuaweiCloudCesReceiver(params, cfg.(*Config), next), nil
 }

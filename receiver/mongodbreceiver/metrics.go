@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -563,6 +563,9 @@ func collectMetric(document bson.M, path []string) (int64, error) {
 }
 
 func dig(document bson.M, path []string) (any, error) {
+	if len(path) == 0 {
+		return nil, errKeyNotFound
+	}
 	curItem, remainingPath := path[0], path[1:]
 	value := document[curItem]
 	if value == nil {

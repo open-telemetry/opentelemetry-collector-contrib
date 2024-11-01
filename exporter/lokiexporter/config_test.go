@@ -24,6 +24,22 @@ import (
 )
 
 func TestLoadConfigNewExporter(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Headers = map[string]configopaque.String{
+		"X-Custom-Header": "loki_rocks",
+	}
+	clientConfig.Endpoint = "https://loki:3100/loki/api/v1/push"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "/var/lib/mycert.pem",
+			CertFile: "certfile",
+			KeyFile:  "keyfile",
+		},
+		Insecure: true,
+	}
+	clientConfig.ReadBufferSize = 123
+	clientConfig.WriteBufferSize = 345
+	clientConfig.Timeout = time.Second * 10
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -36,23 +52,7 @@ func TestLoadConfigNewExporter(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Headers: map[string]configopaque.String{
-						"X-Custom-Header": "loki_rocks",
-					},
-					Endpoint: "https://loki:3100/loki/api/v1/push",
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "/var/lib/mycert.pem",
-							CertFile: "certfile",
-							KeyFile:  "keyfile",
-						},
-						Insecure: true,
-					},
-					ReadBufferSize:  123,
-					WriteBufferSize: 345,
-					Timeout:         time.Second * 10,
-				},
+				ClientConfig: clientConfig,
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
@@ -92,6 +92,8 @@ func TestLoadConfigNewExporter(t *testing.T) {
 }
 
 func TestConfigValidate(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "https://loki.example.com"
 	testCases := []struct {
 		desc string
 		cfg  *Config
@@ -110,9 +112,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			desc: "Config is valid",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "https://loki.example.com",
-				},
+				ClientConfig: clientConfig,
 			},
 			err: nil,
 		},

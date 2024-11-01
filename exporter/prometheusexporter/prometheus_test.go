@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -149,9 +148,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	rsp, err := httpClient.Get("https://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := rsp.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, rsp.StatusCode, "Mismatched HTTP response status code")
 
 	blob, _ := io.ReadAll(rsp.Body)
 	_ = rsp.Body.Close()
@@ -164,9 +161,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	}
 
 	for _, w := range want {
-		if !strings.Contains(string(blob), w) {
-			t.Errorf("Missing %v from response:\n%v", w, string(blob))
-		}
+		assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 	}
 }
 
@@ -208,9 +203,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
-		if g, w := res.StatusCode, 200; g != w {
-			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-		}
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
@@ -229,9 +222,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		}
 
 		for _, w := range want {
-			if !strings.Contains(string(blob), w) {
-				t.Errorf("Missing %v from response:\n%v", w, string(blob))
-			}
+			assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 		}
 	}
 
@@ -242,9 +233,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := res.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
@@ -285,9 +274,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
-		if g, w := res.StatusCode, 200; g != w {
-			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-		}
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
@@ -302,9 +289,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		}
 
 		for _, w := range want {
-			if !strings.Contains(string(blob), w) {
-				t.Errorf("Missing %v from response:\n%v", w, string(blob))
-			}
+			assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 		}
 	}
 
@@ -315,9 +300,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := res.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
@@ -359,9 +342,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		res, err1 := http.Get("http://localhost:7777/metrics")
 		require.NoError(t, err1, "Failed to perform a scrape")
 
-		if g, w := res.StatusCode, 200; g != w {
-			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-		}
+		assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
@@ -376,9 +357,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		}
 
 		for _, w := range want {
-			if !strings.Contains(string(blob), w) {
-				t.Errorf("Missing %v from response:\n%v", w, string(blob))
-			}
+			assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 		}
 	}
 
@@ -389,9 +368,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	res, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := res.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, res.StatusCode, "Mismatched HTTP response status code")
 	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
@@ -434,9 +411,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	rsp, err := http.Get("http://localhost:7777/metrics")
 	require.NoError(t, err, "Failed to perform a scrape")
 
-	if g, w := rsp.StatusCode, 200; g != w {
-		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
-	}
+	assert.Equal(t, http.StatusOK, rsp.StatusCode, "Mismatched HTTP response status code")
 
 	blob, _ := io.ReadAll(rsp.Body)
 	_ = rsp.Body.Close()
@@ -449,9 +424,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	for _, w := range want {
-		if !strings.Contains(string(blob), w) {
-			t.Errorf("Missing %v from response:\n%v", w, string(blob))
-		}
+		assert.Contains(t, string(blob), w, "Missing %v from response:\n%v", w, string(blob))
 	}
 }
 

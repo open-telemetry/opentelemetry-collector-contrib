@@ -29,15 +29,6 @@ func TestResourcePathGetSetter(t *testing.T) {
 		modified func(resource pcommon.Resource)
 	}{
 		{
-			name:   "resource",
-			path:   nil,
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(resource pcommon.Resource) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-		},
-		{
 			name: "resource schema_url",
 			path: &TestPath[*resourceContext]{
 				N: "schema_url",

@@ -106,6 +106,24 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 				return c
 			},
 		},
+		{
+			name: "UDS server with 4s interval",
+			addr: "/tmp/statsd_test.sock",
+			configFn: func() *Config {
+				return &Config{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "/tmp/statsd_test.sock",
+						Transport: confignet.TransportTypeUnixgram,
+					},
+					AggregationInterval: 4 * time.Second,
+				}
+			},
+			clientFn: func(t *testing.T, addr string) *client.StatsD {
+				c, err := client.NewStatsD("unixgram", addr)
+				require.NoError(t, err)
+				return c
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -74,6 +74,9 @@ type HostMetadataConfig struct {
 	// If unset, or set to zero duration, there will be no timeout applied.
 	// Default is no timeout.
 	sourceTimeout time.Duration
+
+	// ReporterPeriod is the period at which the host metadata reporter will run.
+	ReporterPeriod time.Duration `mapstructure:"reporter_period"`
 }
 
 // SetSourceTimeout sets the timeout to fetch from each provider - for example AWS IMDS.

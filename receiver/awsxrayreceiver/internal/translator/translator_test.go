@@ -66,7 +66,7 @@ func TestTranslation(t *testing.T) {
 		samplePath                string
 		expectedResourceAttrs     func(seg *awsxray.Segment) map[string]any
 		expectedRecord            xray.TelemetryRecord
-		propsPerSpan              func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties
+		propsPerSpan              func(t *testing.T, testCase string, seg *awsxray.Segment) []perSpanProperties
 		verification              func(testCase string,
 			actualSeg *awsxray.Segment,
 			expectedRs ptrace.ResourceSpans,
@@ -92,7 +92,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -136,7 +136,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(18),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(t *testing.T, testCase string, seg *awsxray.Segment) []perSpanProperties {
 				rootSpanAttrs := pcommon.NewMap()
 				rootSpanAttrs.PutStr(conventions.AttributeEnduserID, *seg.User)
 				rootSpanEvts := initExceptionEvents(seg)
@@ -542,7 +542,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -596,7 +596,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)
 				attrs.PutStr(awsxray.AWSAccountAttribute, *seg.AWS.AccountID)
 				res := perSpanProperties{
@@ -638,7 +638,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *seg.ID,
@@ -676,7 +676,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(18),
 				SegmentsRejectedCount: aws.Int64(18),
 			},
-			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(*testing.T, string, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
@@ -701,7 +701,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]any{
 					conventions.AttributeHTTPMethod:                *seg.HTTP.Request.Method,
@@ -750,7 +750,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]any{
 					conventions.AttributeHTTPMethod:                *seg.HTTP.Request.Method,
@@ -800,7 +800,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]any{
 					conventions.AttributeDBConnectionString: "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2." +
@@ -847,7 +847,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(1),
 			},
-			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(*testing.T, string, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
@@ -872,7 +872,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(_ *testing.T, _ string, seg *awsxray.Segment) []perSpanProperties {
 				attrs := pcommon.NewMap()
 				assert.NoError(t, attrs.FromRaw(map[string]any{
 					awsxray.AWSXRayTracedAttribute: true,
@@ -916,7 +916,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(0),
 				SegmentsRejectedCount: aws.Int64(0),
 			},
-			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(*testing.T, string, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
@@ -941,7 +941,7 @@ func TestTranslation(t *testing.T) {
 				SegmentsReceivedCount: aws.Int64(1),
 				SegmentsRejectedCount: aws.Int64(1),
 			},
-			propsPerSpan: func(string, *testing.T, *awsxray.Segment) []perSpanProperties {
+			propsPerSpan: func(*testing.T, string, *awsxray.Segment) []perSpanProperties {
 				return nil
 			},
 			verification: func(testCase string,
@@ -972,7 +972,7 @@ func TestTranslation(t *testing.T) {
 				expectedRs = initResourceSpans(t,
 					&actualSeg,
 					tc.expectedResourceAttrs(&actualSeg),
-					tc.propsPerSpan(tc.testCase, t, &actualSeg),
+					tc.propsPerSpan(t, tc.testCase, &actualSeg),
 				)
 			}
 

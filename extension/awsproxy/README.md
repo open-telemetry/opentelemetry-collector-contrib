@@ -41,7 +41,7 @@ The TCP address and port on which this proxy listens for requests.
 
 Default: `localhost:2000`
 
-You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:2000`. This feature gate will be removed in a future release.
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 
 ### proxy_address (Optional)

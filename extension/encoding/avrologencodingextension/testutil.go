@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/linkedin/goavro/v2"
+	"github.com/stretchr/testify/require"
 )
 
 func encodeAVROLogTestData(codec *goavro.Codec, data string) []byte {
@@ -41,14 +42,10 @@ func createAVROTestData(t *testing.T) (string, []byte) {
 	t.Helper()
 
 	schema, err := loadAVROSchemaFromFile("testdata/schema1.avro")
-	if err != nil {
-		t.Fatalf("Failed to read avro schema file: %q", err.Error())
-	}
+	require.NoError(t, err, "Failed to read avro schema file")
 
 	codec, err := goavro.NewCodec(string(schema))
-	if err != nil {
-		t.Fatalf("Failed to create avro code from schema: %q", err.Error())
-	}
+	require.NoError(t, err, "Failed to create avro code from schema")
 
 	data := encodeAVROLogTestData(codec, `{
 		"timestamp": 1697187201488,

@@ -60,13 +60,14 @@ type field struct {
 
 // Value type that can be added to a Document.
 type Value struct {
-	kind      Kind
-	primitive uint64
-	dbl       float64
-	str       string
-	arr       []Value
-	doc       Document
-	ts        time.Time
+	kind Kind
+	ui   uint64
+	i    int64
+	dbl  float64
+	str  string
+	arr  []Value
+	doc  Document
+	ts   time.Time
 }
 
 // Kind represent the internal kind of a value stored in a Document.
@@ -77,6 +78,7 @@ const (
 	KindNil Kind = iota
 	KindBool
 	KindInt
+	KindUInt
 	KindDouble
 	KindString
 	KindArr
@@ -166,6 +168,11 @@ func (doc *Document) AddTraceID(key string, id pcommon.TraceID) {
 // AddInt adds an integer value to the document.
 func (doc *Document) AddInt(key string, value int64) {
 	doc.Add(key, IntValue(value))
+}
+
+// AddUInt adds an unsigned integer value to the document.
+func (doc *Document) AddUInt(key string, value uint64) {
+	doc.Add(key, UIntValue(value))
 }
 
 // AddAttributes expands and flattens all key-value pairs from the input attribute map into
@@ -424,7 +431,10 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 func StringValue(str string) Value { return Value{kind: KindString, str: str} }
 
 // IntValue creates a new value from an integer.
-func IntValue(i int64) Value { return Value{kind: KindInt, primitive: uint64(i)} }
+func IntValue(i int64) Value { return Value{kind: KindInt, i: i} }
+
+// UIntValue creates a new value from an unsigned integer.
+func UIntValue(i uint64) Value { return Value{kind: KindUInt, ui: i} }
 
 // DoubleValue creates a new value from a double value..
 func DoubleValue(d float64) Value { return Value{kind: KindDouble, dbl: d} }
@@ -435,7 +445,7 @@ func BoolValue(b bool) Value {
 	if b {
 		v = 1
 	}
-	return Value{kind: KindBool, primitive: v}
+	return Value{kind: KindBool, ui: v}
 }
 
 // ArrValue combines multiple values into an array value.
@@ -519,9 +529,11 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	case KindNil:
 		return w.OnNil()
 	case KindBool:
-		return w.OnBool(v.primitive == 1)
+		return w.OnBool(v.ui == 1)
 	case KindInt:
-		return w.OnInt64(int64(v.primitive))
+		return w.OnInt64(v.i)
+	case KindUInt:
+		return w.OnUint64(v.ui)
 	case KindDouble:
 		if math.IsNaN(v.dbl) || math.IsInf(v.dbl, 0) {
 			// NaN and Inf are undefined for JSON. Let's serialize to "null"

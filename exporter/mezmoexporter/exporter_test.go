@@ -122,9 +122,7 @@ type (
 func createHTTPServer(params *testServerParams) testServer {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			params.t.Fatal(err)
-		}
+		assert.NoError(params.t, err)
 
 		var logBody mezmoLogBody
 		if err = json.Unmarshal(body, &logBody); err != nil {

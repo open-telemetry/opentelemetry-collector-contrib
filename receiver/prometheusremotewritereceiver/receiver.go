@@ -12,13 +12,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
@@ -150,8 +153,113 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 }
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
-// For now translateV2 is not implemented and returns an empty metrics.
+// translate is not feature complete.
 // nolint
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, _ *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
-	return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+	var (
+		badRequestErrors error
+		otelMetrics      = pmetric.NewMetrics()
+		labelsBuilder    = labels.NewScratchBuilder(0)
+		stats            = promremote.WriteResponseStats{}
+		// Prometheus Remote-Write can send multiple time series with the same labels in the same request.
+		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
+		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
+		// between requests based on the metric "target_info".
+		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+	)
+
+	for _, ts := range req.Timeseries {
+		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
+
+		if !ls.Has(labels.MetricName) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
+			continue
+		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
+			continue
+		}
+
+		var rm pmetric.ResourceMetrics
+		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+		intraCacheEntry, ok := intraRequestCache[hashedLabels]
+		if ok {
+			// We found the same time series in the same request, so we should append to the same OTLP metric.
+			rm = intraCacheEntry
+		} else {
+			rm = otelMetrics.ResourceMetrics().AppendEmpty()
+			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+			intraRequestCache[hashedLabels] = rm
+		}
+
+		switch ts.Metadata.Type {
+		case writev2.Metadata_METRIC_TYPE_COUNTER:
+			addCounterDatapoints(rm, ls, ts)
+		case writev2.Metadata_METRIC_TYPE_GAUGE:
+			addGaugeDatapoints(rm, ls, ts)
+		case writev2.Metadata_METRIC_TYPE_SUMMARY:
+			addSummaryDatapoints(rm, ls, ts)
+		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+			addHistogramDatapoints(rm, ls, ts)
+		default:
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
+		}
+	}
+
+	return otelMetrics, stats, badRequestErrors
+}
+
+// parseJobAndInstance turns the job and instance labels service resource attributes.
+// Following the specification at https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
+func parseJobAndInstance(dest pcommon.Map, job, instance string) {
+	if instance != "" {
+		dest.PutStr("service.instance.id", instance)
+	}
+	if job != "" {
+		parts := strings.Split(job, "/")
+		if len(parts) == 2 {
+			dest.PutStr("service.namespace", parts[0])
+			dest.PutStr("service.name", parts[1])
+			return
+		}
+		dest.PutStr("service.name", job)
+	}
+}
+
+func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
+	// In OTel name+type+unit is the unique identifier of a metric and we should not create
+	// a new metric if it already exists.
+
+	// TODO: Check if Scope is already present by comparing labels "otel_scope_name" and "otel_scope_version"
+	// with Scope.Name and Scope.Version. If it is present, we should append to the existing Scope.
+	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge()
+	addDatapoints(m.DataPoints(), ls, ts)
+}
+
+func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+// addDatapoints adds the labels to the datapoints attributes.
+// TODO: We're still not handling several fields that make a datapoint complete, e.g. StartTimestamp,
+// Timestamp, Value, etc.
+func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, _ writev2.TimeSeries) {
+	attributes := datapoints.AppendEmpty().Attributes()
+
+	for _, l := range ls {
+		if l.Name == "instance" || l.Name == "job" || // Become resource attributes "service.name", "service.instance.id" and "service.namespace"
+			l.Name == labels.MetricName || // Becomes metric name
+			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+			continue
+		}
+		attributes.PutStr(l.Name, l.Value)
+	}
 }

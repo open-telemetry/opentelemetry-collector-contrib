@@ -4,6 +4,8 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
+	"time"
+
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -25,6 +27,7 @@ func (r rawLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, err
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()
 	slice.Append(event.Data...)
+	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	if event.SystemProperties.EnqueuedTime != nil {
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(*event.SystemProperties.EnqueuedTime))
 	}

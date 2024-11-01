@@ -105,34 +105,34 @@ func TestSummaryEnvelopes(t *testing.T) {
 	assert.Equal(t, contracts.Aggregation, dataPoint.Kind)
 }
 
-func getDataPoint(t testing.TB, metric pmetric.Metric) *contracts.DataPoint {
+func getDataPoint(tb testing.TB, metric pmetric.Metric) *contracts.DataPoint {
 	var envelopes []*contracts.Envelope = getMetricPacker().MetricToEnvelopes(metric, getResource(), getScope())
-	require.Len(t, envelopes, 1)
+	require.Len(tb, envelopes, 1)
 	envelope := envelopes[0]
-	require.NotNil(t, envelope)
+	require.NotNil(tb, envelope)
 
-	assert.NotNil(t, envelope.Tags)
-	assert.Contains(t, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
-	assert.NotNil(t, envelope.Time)
+	assert.NotNil(tb, envelope.Tags)
+	assert.Contains(tb, envelope.Tags[contracts.InternalSdkVersion], "otelc-")
+	assert.NotNil(tb, envelope.Time)
 
-	require.NotNil(t, envelope.Data)
+	require.NotNil(tb, envelope.Data)
 	envelopeData := envelope.Data.(*contracts.Data)
-	assert.Equal(t, "MetricData", envelopeData.BaseType)
+	assert.Equal(tb, "MetricData", envelopeData.BaseType)
 
-	require.NotNil(t, envelopeData.BaseData)
+	require.NotNil(tb, envelopeData.BaseData)
 
 	metricData := envelopeData.BaseData.(*contracts.MetricData)
 
-	require.Len(t, metricData.Metrics, 1)
+	require.Len(tb, metricData.Metrics, 1)
 
 	dataPoint := metricData.Metrics[0]
-	require.NotNil(t, dataPoint)
+	require.NotNil(tb, dataPoint)
 
 	actualProperties := metricData.Properties
-	require.Equal(t, "10", actualProperties["int_attribute"])
-	require.Equal(t, "str_value", actualProperties["str_attribute"])
-	require.Equal(t, "true", actualProperties["bool_attribute"])
-	require.Equal(t, "1.2", actualProperties["double_attribute"])
+	require.Equal(tb, "10", actualProperties["int_attribute"])
+	require.Equal(tb, "str_value", actualProperties["str_attribute"])
+	require.Equal(tb, "true", actualProperties["bool_attribute"])
+	require.Equal(tb, "1.2", actualProperties["double_attribute"])
 
 	return dataPoint
 }

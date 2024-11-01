@@ -1,6 +1,6 @@
 loadbalancing:
   protocol:
-    # the OTLP exporter configuration. "endpoint" values will be ignored
+    # the OTLP exporter configuration "endpoint" values will be ignored
     otlp:
       timeout: 1s
 
@@ -38,3 +38,12 @@ loadbalancing/4:
       namespace: cloudmap-1
       service_name: service-1
       port: 4319
+
+loadbalancing/5:
+  # the OTLP exporter configuration "sending_queue" values will be ignored
+  sending_queue:
+    enabled: true
+  protocol:
+    otlp:
+      sending_queue:
+        enabled: false

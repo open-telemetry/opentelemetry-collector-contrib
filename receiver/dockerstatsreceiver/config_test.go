@@ -21,11 +21,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-func loadConf(t testing.TB, path string, id component.ID) *confmap.Conf {
+func loadConf(tb testing.TB, path string, id component.ID) *confmap.Conf {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", path))
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	sub, err := cm.Sub(id.String())
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return sub
 }
 

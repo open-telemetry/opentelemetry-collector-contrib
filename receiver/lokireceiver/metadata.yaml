@@ -7,4 +7,4 @@ status:
   distributions:
   - contrib
   codeowners:
-    active: [mar4uk, jpkrohling]
+    active: [mar4uk]

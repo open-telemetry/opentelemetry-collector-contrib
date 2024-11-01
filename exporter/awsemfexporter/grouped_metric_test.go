@@ -108,7 +108,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 			for i := 0; i < metrics.Len(); i++ {
 				err := addToGroupedMetric(metrics.At(i), groupedMetrics,
-					generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+					generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 					true,
 					nil,
 					testCfg,
@@ -121,7 +121,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 				assert.Equal(t, len(tc.expectedMetricInfo), len(v.metrics))
 				assert.Equal(t, tc.expectedMetricInfo, v.metrics)
 				assert.Len(t, v.labels, 2)
-				assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, tc.expectedMetricType), v.metadata)
+				assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, tc.expectedMetricType, 0), v.metadata)
 				assert.Equal(t, tc.expectedLabels, v.labels)
 			}
 		})
@@ -150,7 +150,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
-				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 				true,
 				nil,
 				testCfg,
@@ -165,19 +165,19 @@ func TestAddToGroupedMetric(t *testing.T) {
 				case "int-gauge", "double-gauge":
 					assert.Len(t, group.metrics, 2)
 					assert.Equal(t, "Count", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeGauge), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeGauge, 0), group.metadata)
 				case "int-sum", "double-sum":
 					assert.Len(t, group.metrics, 2)
 					assert.Equal(t, "Count", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSum), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSum, 0), group.metadata)
 				case "histogram":
 					assert.Len(t, group.metrics, 1)
 					assert.Equal(t, "Seconds", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeHistogram), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeHistogram, 0), group.metadata)
 				case "summary":
 					assert.Len(t, group.metrics, 1)
 					assert.Equal(t, "Seconds", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary, 0), group.metadata)
 				default:
 					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
 				}
@@ -222,7 +222,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
-				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 				true,
 				nil,
 				testCfg,
@@ -237,19 +237,19 @@ func TestAddToGroupedMetric(t *testing.T) {
 				case "int-gauge", "double-gauge":
 					assert.Len(t, group.metrics, 2)
 					assert.Equal(t, "Count", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeGauge), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeGauge, 0), group.metadata)
 				case "int-sum", "double-sum":
 					assert.Len(t, group.metrics, 2)
 					assert.Equal(t, "Count", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSum), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSum, 0), group.metadata)
 				case "histogram":
 					assert.Len(t, group.metrics, 1)
 					assert.Equal(t, "Seconds", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeHistogram), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeHistogram, 0), group.metadata)
 				case "summary":
 					assert.Len(t, group.metrics, 1)
 					assert.Equal(t, "Seconds", metricInfo.unit)
-					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary), group.metadata)
+					assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeSummary, 0), group.metadata)
 				default:
 					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
 				}
@@ -270,7 +270,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		ilms := otelMetrics.ResourceMetrics().At(0).ScopeMetrics()
 		metric := ilms.At(0).Metrics().At(0)
 
-		metricMetadata1 := generateTestMetricMetadata(namespace, timestamp, "log-group-1", logStreamName, instrumentationLibName, metric.Type())
+		metricMetadata1 := generateTestMetricMetadata(namespace, timestamp, "log-group-1", logStreamName, instrumentationLibName, metric.Type(), 0)
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
 			metricMetadata1,
@@ -286,6 +286,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			logStreamName,
 			instrumentationLibName,
 			metric.Type(),
+			0,
 		)
 		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, nil, testCfg, emfCalcs)
 		assert.NoError(t, err)
@@ -340,7 +341,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
-				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
 				true,
 				nil,
 				testCfg,
@@ -382,7 +383,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		testCfg.logger = zap.New(obs)
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
-			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeEmpty),
+			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeEmpty, 0),
 			true,
 			nil,
 			testCfg,
@@ -404,6 +405,47 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
+	})
+
+	t.Run("Duplicate metric names with different metricIndex", func(t *testing.T) {
+		emfCalcs := setupEmfCalculators()
+		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+		groupedMetrics := make(map[any]*groupedMetric)
+		generateMetrics := []pmetric.Metrics{
+			generateTestExponentialHistogramMetricWithLongBuckets("test_multiBucket_metric"),
+		}
+		finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
+
+		rms := finalOtelMetrics.ResourceMetrics()
+		ilms := rms.At(0).ScopeMetrics()
+		metrics := ilms.At(0).Metrics()
+		assert.Equal(t, 1, metrics.Len())
+
+		for i := 0; i < metrics.Len(); i++ {
+			err := addToGroupedMetric(metrics.At(i),
+				groupedMetrics,
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type(), 0),
+				true,
+				nil,
+				testCfg,
+				emfCalcs,
+			)
+			assert.NoError(t, err)
+		}
+		assert.Len(t, groupedMetrics, 2)
+		expectedLabels := map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"}
+		expectedMetadata := map[int]cWMetricMetadata{
+			0: generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type(), 0),
+			1: generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type(), 1),
+		}
+		for _, v := range groupedMetrics {
+			assert.Len(t, v.metrics, 1)
+			assert.Len(t, v.labels, 2)
+			assert.Contains(t, expectedMetadata, v.metadata.groupedMetricMetadata.batchIndex)
+			assert.Equal(t, expectedMetadata[v.metadata.groupedMetricMetadata.batchIndex], v.metadata)
+			assert.Equal(t, expectedLabels, v.labels)
+			delete(expectedMetadata, v.metadata.groupedMetricMetadata.batchIndex)
+		}
 	})
 }
 
@@ -459,7 +501,7 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		for i := 0; i < numMetrics; i++ {
-			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
+			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type(), 0)
 			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, nil, testCfg, emfCalcs)
 			assert.NoError(b, err)
 		}
@@ -488,10 +530,12 @@ func TestTranslateUnit(t *testing.T) {
 	translateUnitCases := map[string]string{
 		"Count": "Count",
 		"ms":    "Milliseconds",
+		"ns":    "",
+		"1":     "",
 		"s":     "Seconds",
 		"us":    "Microseconds",
 		"By":    "Bytes",
-		"Bi":    "Bits",
+		"bit":   "Bits",
 	}
 	for input, output := range translateUnitCases {
 		t.Run(input, func(_ *testing.T) {
@@ -507,7 +551,7 @@ func TestTranslateUnit(t *testing.T) {
 	assert.Equal(t, "Count", v)
 }
 
-func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationScopeName string, metricType pmetric.MetricType) cWMetricMetadata {
+func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationScopeName string, metricType pmetric.MetricType, batchIndex int) cWMetricMetadata {
 	return cWMetricMetadata{
 		receiver: prometheusReceiver,
 		groupedMetricMetadata: groupedMetricMetadata{
@@ -516,6 +560,7 @@ func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, log
 			logGroup:       logGroup,
 			logStream:      logStreamName,
 			metricDataType: metricType,
+			batchIndex:     batchIndex,
 		},
 		instrumentationScopeName: instrumentationScopeName,
 	}

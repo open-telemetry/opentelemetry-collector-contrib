@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -27,6 +28,7 @@ var _ exporter.Logs = (*logExporterImp)(nil)
 type logExporterImp struct {
 	loadBalancer *loadBalancer
 
+	logger     *zap.Logger
 	started    bool
 	shutdownWg sync.WaitGroup
 	telemetry  *metadata.TelemetryBuilder
@@ -41,7 +43,9 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateLogs(ctx, params, &oCfg)
+		oParams := buildExporterSettings(params, endpoint)
+
+		return exporterFactory.CreateLogs(ctx, oParams, &oCfg)
 	}
 
 	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
@@ -52,6 +56,7 @@ func newLogsExporter(params exporter.Settings, cfg component.Config) (*logExport
 	return &logExporterImp{
 		loadBalancer: lb,
 		telemetry:    telemetry,
+		logger:       params.Logger,
 	}, nil
 }
 
@@ -110,6 +115,7 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.successAttr))
 	} else {
 		e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(le.failureAttr))
+		e.logger.Debug("failed to export log", zap.Error(err))
 	}
 
 	return err

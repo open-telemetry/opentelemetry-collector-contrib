@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
@@ -52,14 +53,14 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newMySQLScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraperWithoutType(ns.scrape, scraperhelper.WithStart(ns.start),
-		scraperhelper.WithShutdown(ns.shutdown))
+	s, err := scraper.NewMetrics(ns.scrape, scraper.WithStart(ns.start),
+		scraper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraperWithType(metadata.Type, scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

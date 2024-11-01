@@ -393,7 +393,6 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		i := i
 		t.Run(fmt.Sprintf("client-operations-thread-%d", i), func(t *testing.T) {
 			t.Parallel()
 			clientOperationsThread(t, i)

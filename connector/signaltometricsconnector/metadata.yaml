@@ -1,0 +1,33 @@
+type: signaltometrics
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_metrics, logs_to_metrics, metrics_to_metrics]
+  distributions: []
+  codeowners:
+    active: [ChrsMark, lahsivjar]
+
+tests:
+  config:
+    spans:
+      - name: span.duration.histogram
+        description: "Span duration as histogram"
+        unit: us
+        histogram:
+          value: Microseconds(end_time - start_time)
+      - name: span.duration.exponential_histogram
+        description: "Span duration as exponential histogram"
+        unit: us
+        exponential_histogram:
+          value: Microseconds(end_time - start_time)
+    logs:
+      - name: logrecord.count
+        description: "Count of log record"
+        sum:
+          value: "1" # Count each log record as 1, has to be a string
+    datapoints:
+      - name: datapoint.count
+        description: "Count of datapoint"
+        sum:
+          value: Int(1) # Count each data point as 1, can also use the Int converter

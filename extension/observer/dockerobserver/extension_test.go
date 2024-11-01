@@ -23,10 +23,7 @@ func containerJSON(t *testing.T) dtypes.ContainerJSON {
 	require.NoError(t, err)
 
 	var container dtypes.ContainerJSON
-	err = json.Unmarshal(containerRaw, &container)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, json.Unmarshal(containerRaw, &container))
 	return container
 }
 

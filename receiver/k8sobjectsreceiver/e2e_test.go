@@ -145,6 +145,8 @@ func TestE2E(t *testing.T) {
 			}, time.Duration(tc.timeoutMinutes)*time.Minute, 1*time.Second,
 				"Timeout: failed to receive logs in %d minutes", tc.timeoutMinutes)
 
+			// golden.WriteLogs(t, expectedFile, logsConsumer.AllLogs()[0])
+
 			require.NoErrorf(t, plogtest.CompareLogs(expected, logsConsumer.AllLogs()[0],
 				plogtest.IgnoreObservedTimestamp(),
 				plogtest.IgnoreResourceLogsOrder(),

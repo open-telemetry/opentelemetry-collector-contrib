@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -119,14 +120,14 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Scrap
 
 	var opts []scraperhelper.ScraperControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
-		scraper, err := scraperhelper.NewScraperWithoutType(sqlScraper.Scrape,
-			scraperhelper.WithStart(sqlScraper.Start),
-			scraperhelper.WithShutdown(sqlScraper.Shutdown))
+		s, err := scraper.NewMetrics(sqlScraper.ScrapeMetrics,
+			scraper.WithStart(sqlScraper.Start),
+			scraper.WithShutdown(sqlScraper.Shutdown))
 		if err != nil {
 			return nil, err
 		}
 
-		opt := scraperhelper.AddScraperWithType(metadata.Type, scraper)
+		opt := scraperhelper.AddScraper(metadata.Type, s)
 		opts = append(opts, opt)
 	}
 

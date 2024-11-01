@@ -922,9 +922,7 @@ func benchmarkPrioritizer(b *testing.B, numStreams int, pname PrioritizerName) {
 
 	wg.Add(1)
 	defer func() {
-		if err := tc.exporter.Shutdown(bg); err != nil {
-			b.Errorf("shutdown failed: %v", err)
-		}
+		assert.NoError(b, tc.exporter.Shutdown(bg), "shutdown failed")
 		wg.Done()
 		wg.Wait()
 	}()

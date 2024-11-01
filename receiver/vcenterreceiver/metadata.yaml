@@ -6,10 +6,10 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, schmikei, StefanKurek]
+    active: [schmikei, StefanKurek]
     seeking_new: true
 
-resource_attributes:  
+resource_attributes:
   vcenter.datacenter.name:
     description: The name of the vCenter datacenter.
     enabled: true
@@ -524,7 +524,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.resource_pool.memory.ballooned:
-    enabled: true 
+    enabled: true
     description: The amount of memory in a resource pool that is ballooned due to virtualization.
     unit: MiBy
     sum:

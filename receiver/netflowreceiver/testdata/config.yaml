@@ -1,0 +1,16 @@
+netflow/defaults:
+
+netflow/one_listener:
+  scheme: netflow
+  port: 2055
+  sockets: 1
+  workers: 1
+
+netflow/invalid_schema:
+  scheme: invalid
+
+netflow/invalid_port:
+  scheme: netflow
+  sockets: 1
+  workers: 1
+  port: 0

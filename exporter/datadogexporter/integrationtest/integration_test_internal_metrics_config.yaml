@@ -17,7 +17,7 @@ receivers:
 exporters:
   datadog:
     api:
-      key: "key"
+      key: "aaa"
     tls:
       insecure_skip_verify: true
     host_metadata:

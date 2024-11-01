@@ -22,15 +22,15 @@ import (
 )
 
 // filename attempts to get an unused filename.
-func filename(t testing.TB) string {
-	t.Helper()
+func filename(tb testing.TB) string {
+	tb.Helper()
 
 	file, err := os.CreateTemp("", "")
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	name := file.Name()
-	require.NoError(t, file.Close())
-	require.NoError(t, os.Remove(name))
+	require.NoError(tb, file.Close())
+	require.NoError(tb, os.Remove(name))
 
 	return name
 }

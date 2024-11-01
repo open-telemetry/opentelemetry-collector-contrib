@@ -22,4 +22,8 @@ awss3/3:
       suffix: "nop"
   notifications:
     opampextension: "opamp/bar"
-
+awss3/4:
+  s3downloader:
+    s3_bucket: abucket
+  starttime: "2024-01-31T15:00:00Z"
+  endtime: "2024-02-03T00:00:00Z"

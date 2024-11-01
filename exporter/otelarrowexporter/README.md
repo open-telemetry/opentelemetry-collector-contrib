@@ -305,5 +305,4 @@ processors:
     send_batch_max_size: 1500
     send_batch_size: 1000
     timeout: 1s
-    max_in_flight_size_mib: 128
 ```

@@ -56,7 +56,7 @@ func addToGroupedMetric(
 			continue
 		}
 
-		for _, dp := range dps {
+		for i, dp := range dps {
 			labels := dp.labels
 
 			if metricType, ok := labels["Type"]; ok {
@@ -86,6 +86,7 @@ func addToGroupedMetric(
 			}
 
 			// Extra params to use when grouping metrics
+			metadata.groupedMetricMetadata.batchIndex = i
 			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log
@@ -192,6 +193,11 @@ func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor
 		}
 	}
 	switch unit {
+	case "1":
+		unit = ""
+	case "ns":
+		// CloudWatch doesn't support Nanoseconds
+		unit = ""
 	case "ms":
 		unit = "Milliseconds"
 	case "s":
@@ -200,7 +206,7 @@ func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor
 		unit = "Microseconds"
 	case "By":
 		unit = "Bytes"
-	case "Bi":
+	case "bit":
 		unit = "Bits"
 	}
 	return unit

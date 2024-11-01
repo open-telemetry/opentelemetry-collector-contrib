@@ -38,7 +38,8 @@ resourceMetrics:
                         stringValue: SciFi
                   timeUnixNano: "1684613308016320000"
             name: genre.imdb
-        scope: {}
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
   - resource: {}
     scopeMetrics:
       - metrics:
@@ -81,4 +82,5 @@ resourceMetrics:
               dataPoints:
                 - timeUnixNano: "1684613308030553000"
             name: h
-        scope: {}
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver

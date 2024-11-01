@@ -35,6 +35,10 @@ func newLogsConnector(
 ) (*logsConnector, error) {
 	cfg := config.(*Config)
 
+	if !cfg.MatchOnce {
+		set.Logger.Error("The 'match_once' field has been deprecated and will be removed in v0.120.0. Remove usage of the parameter to suppress this warning.")
+	}
+
 	lr, ok := logs.(connector.LogsRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer

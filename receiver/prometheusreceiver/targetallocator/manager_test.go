@@ -873,18 +873,22 @@ func TestManagerSyncWithInitialScrapeConfigs(t *testing.T) {
 			},
 			"/jobs/job1/targets": {
 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-					{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+					{
+						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "node",
-						}},
+						},
+					},
 				}},
 				mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-					{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+					{
+						Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "node",
-						}},
+						},
+					},
 				}},
 			},
 		},

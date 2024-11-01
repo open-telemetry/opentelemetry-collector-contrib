@@ -22,7 +22,7 @@ import (
 )
 
 func TestExamples(t *testing.T) {
-	t.Setenv("DD_API_KEY", "testvalue")
+	t.Setenv("DD_API_KEY", "aaaaaaaaa")
 	factories := newTestComponents(t)
 	const configFile = "./examples/config.yaml"
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
