@@ -49,9 +49,9 @@ func TestE2E(t *testing.T) {
 	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDir)
 	require.NoErrorf(t, err, "failed to create objects")
 
-	defer func() {
+	t.Cleanup(func() {
 		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, testObjs), "failed to delete objects")
-	}()
+	})
 
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
@@ -60,11 +60,11 @@ func TestE2E(t *testing.T) {
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "")
 
-	defer func() {
+	t.Cleanup(func() {
 		for _, obj := range append(collectorObjs) {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
-	}()
+	})
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
