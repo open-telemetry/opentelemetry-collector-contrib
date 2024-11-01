@@ -25,7 +25,7 @@ import (
 type brokerTraceReceiveUnmarshallerV1 struct {
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
-	metricAttrs      attribute.Set // othere Otel attributes (to add to the metrics)
+	metricAttrs      attribute.Set // other Otel attributes (to add to the metrics)
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
@@ -53,7 +53,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) unmarshalToSpanData(message *inboundM
 	return &spanData, nil
 }
 
-// createSpan will create a new Span from the given traces and map the given SpanData to the span.
+// populateTraces will create a new Span from the given traces and map the given SpanData to the span.
 // This will set all required fields such as name version, trace and span ID, parent span ID (if applicable),
 // timestamps, errors and states.
 func (u *brokerTraceReceiveUnmarshallerV1) populateTraces(spanData *receive_v1.SpanData, traces ptrace.Traces) {
@@ -76,10 +76,13 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *r
 }
 
 func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *receive_v1.SpanData, clientSpan ptrace.Span) {
-	const clientSpanName = "(topic) receive"
+	// Set client span name
+	if spanData.Topic != "" {
+		clientSpan.SetName(spanData.Topic + " receive")
+	} else {
+		clientSpan.SetName("(unknown) receive")
+	}
 
-	// client span constants
-	clientSpan.SetName(clientSpanName)
 	// SPAN_KIND_CONSUMER == 5
 	clientSpan.SetKind(ptrace.SpanKindConsumer)
 
@@ -153,7 +156,8 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 	}
 	attrMap.PutStr(deliveryModeAttrKey, deliveryMode)
 
-	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
+	// rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
+	rgmid := rgmidToString(spanData.ReplicationGroupMessageId, u.metricAttrs, u.telemetryBuilder, u.logger)
 	if len(rgmid) > 0 {
 		attrMap.PutStr(replicationGroupMessageIDAttrKey, rgmid)
 	}
@@ -213,7 +217,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEvents(spanData *receive_v1.SpanDa
 
 	// handle transaction events
 	if transactionEvent := spanData.TransactionEvent; transactionEvent != nil {
-		u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
+		u.mapTransactionEvent(transactionEvent, clientSpan.Events())
 	}
 }
 
@@ -221,10 +225,11 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEvents(spanData *receive_v1.SpanDa
 func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *receive_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		enqueueEventSuffix               = " enqueue" // Final should be `<dest> enqueue`
-		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
+		messagingDestinationTypeEventKey = "messaging.solace.destination.type"
 		statusMessageEventKey            = "messaging.solace.enqueue_error_message"
 		rejectsAllEnqueuesKey            = "messaging.solace.rejects_all_enqueues"
 		partitionNumberKey               = "messaging.solace.partition_number"
+		ttlOverrideKey                   = "messaging.solace.ttl_override"
 	)
 	var destinationName string
 	var destinationType string
@@ -252,10 +257,13 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapEnqueueEvent(enqueueEvent *receive
 	if enqueueEvent.PartitionNumber != nil {
 		clientEvent.Attributes().PutInt(partitionNumberKey, int64(*enqueueEvent.PartitionNumber))
 	}
+	if enqueueEvent.Ttl != nil {
+		clientEvent.Attributes().PutInt(ttlOverrideKey, *enqueueEvent.Ttl)
+	}
 }
 
 // mapTransactionEvent maps a SpanData_TransactionEvent to a ClientSpan.Event
-func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent *receive_v1.SpanData_TransactionEvent, clientEvent ptrace.SpanEvent) {
+func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent *receive_v1.SpanData_TransactionEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	// map the transaction type to a name
 	var name string
 	switch transactionEvent.GetType() {
@@ -277,6 +285,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapTransactionEvent(transactionEvent 
 		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction event %s", transactionEvent.GetType()))
 		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1, metric.WithAttributeSet(u.metricAttrs))
 	}
+	clientEvent := clientSpanEvents.AppendEmpty() // create a new client span event for this event
 	clientEvent.SetName(name)
 	clientEvent.SetTimestamp(pcommon.Timestamp(transactionEvent.TimeUnixNano))
 	// map initiator enums to expected initiator strings
