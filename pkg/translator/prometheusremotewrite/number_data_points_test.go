@@ -50,7 +50,7 @@ func TestPrometheusConverter_addGaugeNumberDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addGaugeNumberDataPoints(
 				metric.Gauge().DataPoints(),
@@ -224,7 +224,7 @@ func TestPrometheusConverter_addSumNumberDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
-			converter := newPrometheusConverter()
+			converter := NewPrometheusConverter()
 
 			converter.addSumNumberDataPoints(
 				metric.Sum().DataPoints(),
