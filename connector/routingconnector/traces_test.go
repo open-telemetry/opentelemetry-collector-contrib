@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -464,25 +463,6 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			var expected0, expected1, expectedDefault *ptrace.Traces
-			if expected, readErr := golden.ReadTraces(filepath.Join(tt, "sink_0.yaml")); readErr == nil {
-				expected0 = &expected
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading sink_0.yaml: %v", readErr)
-			}
-
-			if expected, readErr := golden.ReadTraces(filepath.Join(tt, "sink_1.yaml")); readErr == nil {
-				expected1 = &expected
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading sink_1.yaml: %v", readErr)
-			}
-
-			if expected, readErr := golden.ReadTraces(filepath.Join(tt, "sink_default.yaml")); readErr == nil {
-				expectedDefault = &expected
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading sink_default.yaml: %v", readErr)
-			}
-
 			ctx := context.Background()
 			if ctxFromFile, readErr := createContextFromFile(t, filepath.Join(tt, "request.yaml")); readErr == nil {
 				ctx = ctxFromFile
@@ -490,31 +470,26 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				t.Fatalf("Error reading request.yaml: %v", readErr)
 			}
 
-			input, readErr := golden.ReadTraces(filepath.Join(tt, "input.yaml"))
+			input, readErr := golden.ReadTraces(filepath.Join("testdata", "traces", "input.yaml"))
 			require.NoError(t, readErr)
 
 			require.NoError(t, conn.ConsumeTraces(ctx, input))
 
-			if expected0 == nil {
-				assert.Empty(t, sink0.AllTraces(), "sink0 should be empty")
-			} else {
-				require.Len(t, sink0.AllTraces(), 1, "sink0 should have one ptrace.Traces")
-				assert.NoError(t, ptracetest.CompareTraces(*expected0, sink0.AllTraces()[0]), "sink0 has unexpected result")
+			assertExpected := func(actual []ptrace.Traces, filePath string) {
+				expected, err := golden.ReadTraces(filePath)
+				switch {
+				case err == nil:
+					require.Len(t, actual, 1)
+					assert.Equal(t, expected, actual[0])
+				case os.IsNotExist(err):
+					assert.Empty(t, actual)
+				default:
+					t.Fatalf("Error reading %s: %v", filePath, err)
+				}
 			}
-
-			if expected1 == nil {
-				assert.Empty(t, sink1.AllTraces(), "sink1 should be empty")
-			} else {
-				require.Len(t, sink1.AllTraces(), 1, "sink1 should have one ptrace.Traces")
-				assert.NoError(t, ptracetest.CompareTraces(*expected1, sink1.AllTraces()[0]), "sink1 has unexpected result")
-			}
-
-			if expectedDefault == nil {
-				assert.Empty(t, sinkDefault.AllTraces(), "sinkDefault should be empty")
-			} else {
-				require.Len(t, sinkDefault.AllTraces(), 1, "sinkDefault should have one ptrace.Traces")
-				assert.NoError(t, ptracetest.CompareTraces(*expectedDefault, sinkDefault.AllTraces()[0]), "sinkDefault has unexpected result")
-			}
+			assertExpected(sink0.AllTraces(), filepath.Join(tt, "sink_0.yaml"))
+			assertExpected(sink1.AllTraces(), filepath.Join(tt, "sink_1.yaml"))
+			assertExpected(sinkDefault.AllTraces(), filepath.Join(tt, "sink_default.yaml"))
 		})
 	}
 }
