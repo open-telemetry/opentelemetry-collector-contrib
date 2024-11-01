@@ -324,12 +324,20 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 	for _, span := range testCon.expSpans.GetSpans() {
 		eops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
 
-		// This span has a recognized span error which we can't easily fix. See
+		// This span has a recognized span error which we
+		// can't easily fix related to the way Canceled status
+		// are treated by otel-grpc instrumentation. See
 		// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/2644
 		if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
 			continue
 		}
 
+		// Note we also expect to see EOF errors.  The
+		// requests that see EOF are retried.
+		if span.Status.Code == otelcodes.Error &&
+			span.Name == "otel_arrow_stream_send" && span.Status.Description == "EOF" {
+			continue
+		}
 		require.NotEqual(t, otelcodes.Error, span.Status.Code,
 			"Exporter span has error: %v: %v", span.Name, span.Status.Description)
 	}
@@ -337,6 +345,14 @@ func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expe
 		rops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
 		// This span occasionally has a "transport is closing error"
 		if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
+			continue
+		}
+
+		// For the admission control Note we also expect to see EOF errors.  The
+		// requests that see EOF are retried.
+		if span.Status.Code == otelcodes.Error &&
+			span.Name == "otel_arrow_stream_inflight" &&
+			span.Status.Description == "rejecting request, too much pending data" {
 			continue
 		}
 
