@@ -569,7 +569,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, nsName),
-		DataTypes:    []string{"metrics", "logs", "traces"},
+		DataTypes:    []string{"metrics", "logs", "traces", "profiles"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
@@ -753,7 +753,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, otelNs),
-		DataTypes:    []string{"metrics", "logs", "traces"},
+		DataTypes:    []string{"metrics", "logs", "traces", "profiles"},
 	}
 
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
@@ -938,7 +938,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, nsName),
-		DataTypes:    []string{"metrics", "logs", "traces"},
+		DataTypes:    []string{"metrics", "logs", "traces", "profiles"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
