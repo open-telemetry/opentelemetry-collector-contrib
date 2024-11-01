@@ -449,12 +449,19 @@ func TestBoundedQueueLimits(t *testing.T) {
 			require.NoError(t, err)
 
 			var bq admission.Queue
+			// Note that this test exercises the case where there is or is not an
+			// error unrelated to pending data, thus we pass 0 in both cases as
+			// the WaitingLimitMiB below.
+			//
+			// There is an end-to-end test of admission control, including the
+			// ResourceExhausted status code we expect, in
+			// internal/otelarrow/test/e2e_test.go.
 			if tt.expectErr {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
-				bq = admission.NewBoundedQueue(noopTelemetry, int64(sizer.TracesSize(td)-100), 10)
+				bq = admission.NewBoundedQueue(noopTelemetry, uint64(sizer.TracesSize(td)-100), 0)
 			} else {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
-				bq = admission.NewBoundedQueue(noopTelemetry, tt.admitLimit, 10)
+				bq = admission.NewBoundedQueue(noopTelemetry, uint64(tt.admitLimit), 0)
 			}
 
 			ctc.start(ctc.newRealConsumer, bq)

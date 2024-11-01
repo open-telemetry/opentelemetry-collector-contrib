@@ -70,7 +70,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	if cfg.Admission.RequestLimitMiB == 0 {
 		bq = admission.NewUnboundedQueue()
 	} else {
-		bq = admission.NewBoundedQueue(set.TelemetrySettings, int64(cfg.Admission.RequestLimitMiB<<20), cfg.Admission.WaiterLimit)
+		bq = admission.NewBoundedQueue(set.TelemetrySettings, uint64(cfg.Admission.RequestLimitMiB<<20), uint64(cfg.Admission.WaitingLimitMiB<<20))
 	}
 	r := &otelArrowReceiver{
 		cfg:          cfg,
