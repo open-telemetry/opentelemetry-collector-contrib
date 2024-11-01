@@ -1,0 +1,10 @@
+routing:
+  default_pipelines:
+    - traces/default
+  table:
+    - condition: attributes["resourceName"] == "resourceX"
+      pipelines:
+        - traces/0
+    - condition: attributes["resourceName"] != nil
+      pipelines:
+        - traces/1

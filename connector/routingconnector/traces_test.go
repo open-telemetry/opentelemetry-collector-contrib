@@ -5,17 +5,24 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -418,4 +425,96 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, conn.Capabilities().MutatesData)
+}
+
+func TestTracesConnectorDetailed(t *testing.T) {
+	testCases := []string{
+		filepath.Join("testdata", "traces", "resource_context", "all_match_first_only"),
+		filepath.Join("testdata", "traces", "resource_context", "all_match_last_only"),
+		filepath.Join("testdata", "traces", "resource_context", "all_match_once"),
+		filepath.Join("testdata", "traces", "resource_context", "each_matches_one"),
+		filepath.Join("testdata", "traces", "resource_context", "match_none_with_default"),
+		filepath.Join("testdata", "traces", "resource_context", "match_none_without_default"),
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt, func(t *testing.T) {
+
+			cm, err := confmaptest.LoadConf(filepath.Join(tt, "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub("routing")
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			require.NoError(t, component.ValidateConfig(cfg))
+
+			var sinkDefault, sink0, sink1 consumertest.TracesSink
+			router := connector.NewTracesRouter(map[pipeline.ID]consumer.Traces{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "default"): &sinkDefault,
+				pipeline.NewIDWithName(pipeline.SignalTraces, "0"):       &sink0,
+				pipeline.NewIDWithName(pipeline.SignalTraces, "1"):       &sink1,
+			})
+
+			conn, err := factory.CreateTracesToTraces(
+				context.Background(),
+				connectortest.NewNopSettings(),
+				cfg,
+				router.(consumer.Traces),
+			)
+			require.NoError(t, err)
+
+			var expected0, expected1, expectedDefault *ptrace.Traces
+			if expected, readErr := golden.ReadTraces(filepath.Join(tt, "sink_0.yaml")); readErr == nil {
+				expected0 = &expected
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading sink_0.yaml: %v", readErr)
+			}
+
+			if expected, readErr := golden.ReadTraces(filepath.Join(tt, "sink_1.yaml")); readErr == nil {
+				expected1 = &expected
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading sink_1.yaml: %v", readErr)
+			}
+
+			if expected, readErr := golden.ReadTraces(filepath.Join(tt, "sink_default.yaml")); readErr == nil {
+				expectedDefault = &expected
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading sink_default.yaml: %v", readErr)
+			}
+
+			ctx := context.Background()
+			if ctxFromFile, readErr := createContextFromFile(t, filepath.Join(tt, "request.yaml")); readErr == nil {
+				ctx = ctxFromFile
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading request.yaml: %v", readErr)
+			}
+
+			input, readErr := golden.ReadTraces(filepath.Join(tt, "input.yaml"))
+			require.NoError(t, readErr)
+
+			require.NoError(t, conn.ConsumeTraces(ctx, input))
+
+			if expected0 == nil {
+				assert.Empty(t, sink0.AllTraces(), "sink0 should be empty")
+			} else {
+				require.Len(t, sink0.AllTraces(), 1, "sink0 should have one ptrace.Traces")
+				assert.NoError(t, ptracetest.CompareTraces(*expected0, sink0.AllTraces()[0]), "sink0 has unexpected result")
+			}
+
+			if expected1 == nil {
+				assert.Empty(t, sink1.AllTraces(), "sink1 should be empty")
+			} else {
+				require.Len(t, sink1.AllTraces(), 1, "sink1 should have one ptrace.Traces")
+				assert.NoError(t, ptracetest.CompareTraces(*expected1, sink1.AllTraces()[0]), "sink1 has unexpected result")
+			}
+
+			if expectedDefault == nil {
+				assert.Empty(t, sinkDefault.AllTraces(), "sinkDefault should be empty")
+			} else {
+				require.Len(t, sinkDefault.AllTraces(), 1, "sinkDefault should have one ptrace.Traces")
+				assert.NoError(t, ptracetest.CompareTraces(*expectedDefault, sinkDefault.AllTraces()[0]), "sinkDefault has unexpected result")
+			}
+		})
+	}
 }

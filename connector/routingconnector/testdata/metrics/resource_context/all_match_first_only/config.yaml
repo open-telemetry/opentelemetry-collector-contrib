@@ -1,0 +1,10 @@
+routing:
+  default_pipelines:
+    - metrics/default
+  table:
+    - condition: attributes["resourceName"] != nil
+      pipelines:
+        - metrics/0
+    - condition: attributes["resourceName"] == "resourceY"
+      pipelines:
+        - metrics/1
