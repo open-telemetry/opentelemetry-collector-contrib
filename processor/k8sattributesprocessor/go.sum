@@ -1279,6 +1279,8 @@ go.opentelemetry.io/collector/pdata/testdata v0.113.0 h1:vRfn85jicO2F4eOTgsWtzmU
 go.opentelemetry.io/collector/pdata/testdata v0.113.0/go.mod h1:sR+6eR+YEJhYZu9StbqzeWcCmHpfBAgX/qjP82HY9Gw=
 go.opentelemetry.io/collector/pipeline v0.113.0 h1:vSRzRe3717jV0btCNPhVkhg2lu0uFxcm2VO+vhad/eE=
 go.opentelemetry.io/collector/pipeline v0.113.0/go.mod h1:4vOvjVsoYTHVGTbfFwqfnQOSV2K3RKUHofh3jNRc2Mg=
+go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.113.0 h1:PwQnErsLvEd1x6VIyjLmKQot9huKWqIfEz1kd+8aj4k=
+go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.113.0/go.mod h1:tChJYsCG3wc6JPT9aJO3y+32V14NhmCFZOh3k5ORGdQ=
 go.opentelemetry.io/collector/processor v0.113.0 h1:BQI6MsKtiCG9HT/nmiRXTKP6SZFrjFKVfM6pTQfbc0k=
 go.opentelemetry.io/collector/processor v0.113.0/go.mod h1:oX91zMI8ZkoaYSUfUYflHiMiiBJPKtODNBUCrETLLd8=
 go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles v0.113.0 h1:bZ1i5l6/4nj7PsLqeHw7Opw5vdrpUsDvuH6a6kx+2yg=
