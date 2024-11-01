@@ -28,6 +28,7 @@ type Settings struct {
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
 func (c *PrometheusConverter) FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
+	c.reset()
 	errs := c.fromMetrics(md, settings)
 	tss := c.timeSeries()
 	out := make(map[string]*prompb.TimeSeries, len(tss))
@@ -60,7 +61,7 @@ func NewPrometheusConverter() *PrometheusConverter {
 	}
 }
 
-func (c *PrometheusConverter) Reset() {
+func (c *PrometheusConverter) reset() {
 	clear(c.labels)
 	c.labels = c.labels[:0]
 	clear(c.unique)

@@ -41,7 +41,6 @@ func BenchmarkFromMetrics(b *testing.B) {
 												tsMap, err := c.FromMetrics(payload.Metrics(), Settings{})
 												require.NoError(b, err)
 												require.NotNil(b, tsMap)
-												c.Reset()
 											}
 										})
 									}
@@ -79,7 +78,7 @@ func BenchmarkPrometheusConverter_FromMetrics(b *testing.B) {
 											for i := 0; i < b.N; i++ {
 												require.NoError(b, c.fromMetrics(payload.Metrics(), Settings{}))
 												require.NotNil(b, c.timeSeries())
-												c.Reset()
+												c.reset()
 											}
 										})
 									}

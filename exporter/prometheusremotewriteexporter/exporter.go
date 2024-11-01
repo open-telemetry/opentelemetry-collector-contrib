@@ -179,7 +179,6 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		return errors.New("shutdown has been called")
 	default:
 		converter := converterPool.Get().(*prometheusremotewrite.PrometheusConverter)
-		converter.Reset()
 		defer converterPool.Put(converter)
 
 		tsMap, err := converter.FromMetrics(md, prwe.exporterSettings)
