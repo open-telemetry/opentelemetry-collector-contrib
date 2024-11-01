@@ -8,9 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -39,7 +37,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
@@ -454,9 +451,8 @@ type inFlightData struct {
 	// consumeAndRespond() function.
 	refs atomic.Int32
 
-	numAcquired int64 // how many bytes held in the semaphore
-	numItems    int   // how many items
-	uncompSize  int64 // uncompressed data size
+	numItems   int   // how many items
+	uncompSize int64 // uncompressed data size == how many bytes held in the semaphore
 }
 
 func (id *inFlightData) recvDone(ctx context.Context, recvErrPtr *error) {
@@ -505,8 +501,8 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 
 	id.span.End()
 
-	if id.numAcquired != 0 {
-		if err := id.boundedQueue.Release(id.numAcquired); err != nil {
+	if id.uncompSize != 0 {
+		if err := id.boundedQueue.Release(id.uncompSize); err != nil {
 			id.telemetry.Logger.Error("release error", zap.Error(err))
 		}
 	}
@@ -606,19 +602,6 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		}
 	}
 
-	var prevAcquiredBytes int64
-	uncompSizeHeaderStr, uncompSizeHeaderFound := authHdrs["otlp-pdata-size"]
-	if !uncompSizeHeaderFound || len(uncompSizeHeaderStr) == 0 {
-		// This is a compressed size so make sure to acquire the difference when request is decompressed.
-		prevAcquiredBytes = int64(proto.Size(req))
-	} else {
-		var parseErr error
-		prevAcquiredBytes, parseErr = strconv.ParseInt(uncompSizeHeaderStr[0], 10, 64)
-		if parseErr != nil {
-			return status.Errorf(codes.Internal, "failed to convert string to request size: %v", parseErr)
-		}
-	}
-
 	var callerCancel context.CancelFunc
 	if encodedTimeout, has := authHdrs["grpc-timeout"]; has && len(encodedTimeout) == 1 {
 		if timeout, decodeErr := grpcutil.DecodeTimeout(encodedTimeout[0]); decodeErr != nil {
@@ -638,17 +621,6 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		}
 	}
 
-	// Use the bounded queue to memory limit based on incoming
-	// uncompressed request size and waiters.  Acquire will fail
-	// immediately if there are too many waiters, or will
-	// otherwise block until timeout or enough memory becomes
-	// available.
-	acquireErr := r.boundedQueue.Acquire(inflightCtx, prevAcquiredBytes)
-	if acquireErr != nil {
-		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue: %v", acquireErr)
-	}
-	flight.numAcquired = prevAcquiredBytes
-
 	data, numItems, uncompSize, consumeErr := r.consumeBatch(ac, req)
 
 	if consumeErr != nil {
@@ -658,18 +630,20 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		return status.Errorf(codes.Internal, "otel-arrow decode: %v", consumeErr)
 	}
 
+	// Use the bounded queue to memory limit based on incoming
+	// uncompressed request size and waiters.  Acquire will fail
+	// immediately if there are too many waiters, or will
+	// otherwise block until timeout or enough memory becomes
+	// available.
+	acquireErr := r.boundedQueue.Acquire(inflightCtx, uncompSize)
+	if acquireErr != nil {
+		return acquireErr
+	}
 	flight.uncompSize = uncompSize
 	flight.numItems = numItems
 
 	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
 	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
-
-	numAcquired, secondAcquireErr := r.acquireAdditionalBytes(inflightCtx, prevAcquiredBytes, uncompSize, hrcv.connInfo.Addr, uncompSizeHeaderFound)
-
-	flight.numAcquired = numAcquired
-	if secondAcquireErr != nil {
-		return status.Errorf(codes.ResourceExhausted, "otel-arrow bounded queue re-acquire: %v", secondAcquireErr)
-	}
 
 	// Recognize that the request is still in-flight via consumeAndRespond()
 	flight.refs.Add(1)
@@ -900,48 +874,4 @@ func (r *Receiver) consumeData(ctx context.Context, data any, flight *inFlightDa
 		final(ctx, streamFormat, flight.numItems, retErr)
 	}
 	return retErr
-}
-
-func (r *Receiver) acquireAdditionalBytes(ctx context.Context, prevAcquired, uncompSize int64, addr net.Addr, uncompSizeHeaderFound bool) (int64, error) {
-	diff := uncompSize - prevAcquired
-
-	if diff == 0 {
-		return uncompSize, nil
-	}
-
-	if uncompSizeHeaderFound {
-		var clientAddr string
-		if addr != nil {
-			clientAddr = addr.String()
-		}
-		// a mismatch between header set by exporter and the uncompSize just calculated.
-		r.telemetry.Logger.Debug("mismatch between uncompressed size in receiver and otlp-pdata-size header",
-			zap.String("client-address", clientAddr),
-			zap.Int("uncompsize", int(uncompSize)),
-			zap.Int("otlp-pdata-size", int(prevAcquired)),
-		)
-	} else if diff < 0 {
-		// proto.Size() on compressed request was greater than pdata uncompressed size.
-		r.telemetry.Logger.Debug("uncompressed size is less than compressed size",
-			zap.Int("uncompressed", int(uncompSize)),
-			zap.Int("compressed", int(prevAcquired)),
-		)
-	}
-
-	if diff < 0 {
-		// If the difference is negative, release the overage.
-		if err := r.boundedQueue.Release(-diff); err != nil {
-			return 0, err
-		}
-	} else {
-		// Release previously acquired bytes to prevent deadlock and
-		// reacquire the uncompressed size we just calculated.
-		if err := r.boundedQueue.Release(prevAcquired); err != nil {
-			return 0, err
-		}
-		if err := r.boundedQueue.Acquire(ctx, uncompSize); err != nil {
-			return 0, err
-		}
-	}
-	return uncompSize, nil
 }

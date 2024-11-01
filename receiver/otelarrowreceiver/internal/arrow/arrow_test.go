@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -408,6 +407,10 @@ func requireExhaustedStatus(t *testing.T, err error) {
 	requireStatus(t, codes.ResourceExhausted, err)
 }
 
+func requireInvalidArgumentStatus(t *testing.T, err error) {
+	requireStatus(t, codes.InvalidArgument, err)
+}
+
 func requireStatus(t *testing.T, code codes.Code, err error) {
 	require.Error(t, err)
 	status, ok := status.FromError(err)
@@ -415,55 +418,26 @@ func requireStatus(t *testing.T, code codes.Code, err error) {
 	require.Equal(t, code, status.Code())
 }
 
-func TestBoundedQueueWithPdataHeaders(t *testing.T) {
+func TestBoundedQueueLimits(t *testing.T) {
 	var sizer ptrace.ProtoMarshaler
 	stdTesting := otelAssert.NewStdUnitTest(t)
-	pdataSizeTenTraces := sizer.TracesSize(testdata.GenerateTraces(10))
-	defaultBoundedQueueLimit := int64(100000)
+	td := testdata.GenerateTraces(10)
+	tdSize := int64(sizer.TracesSize(td))
+
 	tests := []struct {
-		name               string
-		numTraces          int
-		includePdataHeader bool
-		pdataSize          string
-		rejected           bool
+		name       string
+		admitLimit int64
+		expectErr  bool
 	}{
 		{
-			name:      "no header compressed greater than uncompressed",
-			numTraces: 10,
+			name:       "admit request",
+			admitLimit: tdSize * 2,
+			expectErr:  false,
 		},
 		{
-			name:      "no header compressed less than uncompressed",
-			numTraces: 100,
-		},
-		{
-			name:               "pdata header less than uncompressedSize",
-			numTraces:          10,
-			pdataSize:          strconv.Itoa(pdataSizeTenTraces / 2),
-			includePdataHeader: true,
-		},
-		{
-			name:               "pdata header equal uncompressedSize",
-			numTraces:          10,
-			pdataSize:          strconv.Itoa(pdataSizeTenTraces),
-			includePdataHeader: true,
-		},
-		{
-			name:               "pdata header greater than uncompressedSize",
-			numTraces:          10,
-			pdataSize:          strconv.Itoa(pdataSizeTenTraces * 2),
-			includePdataHeader: true,
-		},
-		{
-			name:      "no header compressed accepted uncompressed rejected",
-			numTraces: 100,
-			rejected:  true,
-		},
-		{
-			name:               "pdata header accepted uncompressed rejected",
-			numTraces:          100,
-			rejected:           true,
-			pdataSize:          strconv.Itoa(pdataSizeTenTraces),
-			includePdataHeader: true,
+			name:       "reject request",
+			admitLimit: tdSize / 2,
+			expectErr:  true,
 		},
 	}
 	for _, tt := range tests {
@@ -471,35 +445,23 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 			tc := newHealthyTestChannel(t)
 			ctc := newCommonTestCase(t, tc)
 
-			td := testdata.GenerateTraces(tt.numTraces)
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 			require.NoError(t, err)
-			if tt.includePdataHeader {
-				var hpb bytes.Buffer
-				hpe := hpack.NewEncoder(&hpb)
-				err = hpe.WriteField(hpack.HeaderField{
-					Name:  "otlp-pdata-size",
-					Value: tt.pdataSize,
-				})
-				assert.NoError(t, err)
-				batch.Headers = make([]byte, hpb.Len())
-				copy(batch.Headers, hpb.Bytes())
-			}
 
 			var bq admission.Queue
-			if tt.rejected {
+			if tt.expectErr {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
 				bq = admission.NewBoundedQueue(noopTelemetry, int64(sizer.TracesSize(td)-100), 10)
 			} else {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
-				bq = admission.NewBoundedQueue(noopTelemetry, defaultBoundedQueueLimit, 10)
+				bq = admission.NewBoundedQueue(noopTelemetry, tt.admitLimit, 10)
 			}
 
 			ctc.start(ctc.newRealConsumer, bq)
 			ctc.putBatch(batch, nil)
 
-			if tt.rejected {
-				requireExhaustedStatus(t, ctc.wait())
+			if tt.expectErr {
+				requireInvalidArgumentStatus(t, ctc.wait())
 			} else {
 				data := <-ctc.consume
 				actualTD := data.Data.(ptrace.Traces)
