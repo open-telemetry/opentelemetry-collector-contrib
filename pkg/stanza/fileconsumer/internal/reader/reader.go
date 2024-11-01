@@ -53,7 +53,6 @@ type Reader struct {
 	includeFileRecordNum   bool
 	compression            string
 	acquireFSLock          bool
-	new                    bool // indicates that a reader is new (no previously known offset)
 }
 
 // ReadToEnd will read until the end of the file
@@ -240,9 +239,6 @@ func (r *Reader) GetFileName() string {
 	return r.fileName
 }
 
-func (r *Reader) IsNew() bool {
-	return r.new
-}
 func (m Metadata) GetFingerprint() *fingerprint.Fingerprint {
 	return m.Fingerprint
 }
@@ -260,9 +256,4 @@ func (r *Reader) updateFingerprint() {
 		return // fingerprint tampered, likely due to truncation
 	}
 	r.Fingerprint = refreshedFingerprint
-}
-
-func (r *Reader) SyncMetadata(m *Metadata) {
-	r.Metadata = m
-	r.new = false
 }

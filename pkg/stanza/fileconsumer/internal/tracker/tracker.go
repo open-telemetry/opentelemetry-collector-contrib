@@ -6,6 +6,7 @@ package tracker // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -16,6 +17,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
+
+// A convenience struct that holds a file fingerprint and its associated metadata.
+// This will be used during reader creation after the FindFiles() method.
+type Record struct {
+	File        *os.File
+	Fingerprint *fingerprint.Fingerprint
+	Metadata    *reader.Metadata
+}
 
 // Interface for tracking files that are being consumed.
 type Tracker interface {
@@ -31,7 +40,7 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
-	SyncOffsets()
+	FindFiles(records []*Record)
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -165,14 +174,14 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	if t.pollsToArchive <= 0 || t.persister == nil {
 		return
 	}
-	if err := t.updateArchive(t.archiveIndex, metadata); err != nil {
+	if err := t.writeArchive(t.archiveIndex, metadata); err != nil {
 		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
 	}
 	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
 }
 
+// readArchive loads data from the archive for a given index and returns a fileset.Filset.
 func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
-	// readArchive loads data from the archive for a given index and returns a fileset.Filset.
 	key := fmt.Sprintf("knownFiles%d", index)
 	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
 	if err != nil {
@@ -183,47 +192,45 @@ func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata]
 	return f, nil
 }
 
-func (t *fileTracker) updateArchive(index int, rmds *fileset.Fileset[*reader.Metadata]) error {
-	// updateArchive saves data to the archive for a given index and returns an error, if encountered.
+// writeArchive saves data to the archive for a given index and returns an error, if encountered.
+func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata]) error {
 	key := fmt.Sprintf("knownFiles%d", index)
 	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
 }
 
-func (t *fileTracker) SyncOffsets() {
-	// SyncOffsets goes through all new (unmatched) readers and updates the metadata, if found on archive.
+func (t *fileTracker) FindFiles(records []*Record) {
+	// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints agains that loaded set.
 
-	// To minimize disk access, we first access the index, then review unmatched readers and synchronize their metadata if a match is found.
+	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
 	// We exit if no new reader exists.
 
-	archiveReadIndex := t.archiveIndex - 1 // try loading most recently written index and iterate backwards
-	for i := 0; i < t.pollsToArchive; i++ {
-		newFound := false
-		data, err := t.readArchive(archiveReadIndex)
+	mostRecentIndex := t.archiveIndex - 1
+	foundRecords := 0
+
+	// continue executing the loop until either all records are matched or all archive sets have been processed.
+	for i := 0; i < t.pollsToArchive && foundRecords < len(records); i++ {
+		modified := false
+		data, err := t.readArchive(mostRecentIndex)
 		if err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 			continue
 		}
-		for _, v := range t.currentPollFiles.Get() {
-			if v.IsNew() {
-				newFound = true
-				if md := data.Match(v.GetFingerprint(), fileset.StartsWith); md != nil {
-					v.SyncMetadata(md)
-				}
+		for _, record := range records {
+			if md := data.Match(record.Fingerprint, fileset.StartsWith); md != nil && record.Metadata != nil {
+				// update a record's metadata with the matched metadata.
+				modified = true
+				record.Metadata = md
+				foundRecords++
 			}
 		}
-		if !newFound {
-			// No new reader is available, so there’s no need to go through the rest of the archive.
-			// Just exit to save time.
-			break
+		if modified {
+			if err := t.writeArchive(mostRecentIndex, data); err != nil {
+				t.set.Logger.Error("error while opening archive", zap.Error(err))
+				continue
+			}
 		}
-		if err := t.updateArchive(archiveReadIndex, data); err != nil {
-			t.set.Logger.Error("error while opening archive", zap.Error(err))
-			continue
-		}
-
-		archiveReadIndex = (archiveReadIndex - 1) % t.pollsToArchive
+		mostRecentIndex = (mostRecentIndex - 1) % t.pollsToArchive
 	}
-
 }
 
 // noStateTracker only tracks the current polled files. Once the poll is
@@ -281,4 +288,4 @@ func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
 
-func (t *noStateTracker) SyncOffsets() {}
+func (t *noStateTracker) FindFiles([]*Record) {}

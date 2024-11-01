@@ -230,7 +230,6 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 
 		m.tracker.Add(r)
 	}
-	m.tracker.SyncOffsets()
 }
 
 func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
