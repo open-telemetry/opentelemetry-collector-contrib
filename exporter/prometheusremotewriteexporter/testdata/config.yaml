@@ -2,6 +2,7 @@ prometheusremotewrite:
 
 prometheusremotewrite/2:
   namespace: "test-space"
+  max_batch_request_parallelism: 10
   retry_on_failure:
     enabled: true
     initial_interval: 10s
@@ -37,6 +38,10 @@ prometheusremotewrite/negative_num_consumers:
   remote_write_queue:
     queue_size: 5
     num_consumers: -1
+
+prometheusremotewrite/less_than_1_max_batch_request_parallelism:
+  endpoint: "localhost:8888"
+  max_batch_request_parallelism: 0
 
 prometheusremotewrite/disabled_target_info:
   endpoint: "localhost:8888"
