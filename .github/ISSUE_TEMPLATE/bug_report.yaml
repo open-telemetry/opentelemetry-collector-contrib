@@ -26,7 +26,6 @@ body:
       - confmap/provider/aesprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
-      - connector/blobupload
       - connector/count
       - connector/datadog
       - connector/exceptions
@@ -167,6 +166,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/blobupload
       - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative

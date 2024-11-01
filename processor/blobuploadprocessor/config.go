@@ -1,7 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package blobuploadconnector
+package blobuploadprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/blobuploadprocessor"
+
+import (
+	"go.opentelemetry.io/collector/component"
+)
 
 // Config defines the overall configuration for this component.
 type Config struct {
@@ -10,9 +14,14 @@ type Config struct {
 	LogsConfig   *LogsConfig   `mapstructure:"logs"`
 }
 
-// NewDefaultConfig instantiates a default, valid config.
-func NewDefaultConfig() *Config {
+// createTypedDefaultConfig instantiates a default, valid config.
+func createTypedDefaultConfig() *Config {
 	return &Config{}
+}
+
+// createDefaultConfig erases the type to allow use in component.
+func createDefaultConfig() component.Config {
+	return createTypedDefaultConfig()
 }
 
 // Validate ensures that the configuration is valid.

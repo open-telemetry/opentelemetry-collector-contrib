@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package blobuploadconnector
+package blobuploadprocessor
 
 import (
 	"context"
@@ -10,18 +10,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestNewFactorySucceedsAndReturnsValidResult(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
 	assert.NotNil(t, f.CreateDefaultConfig())
-	assert.Equal(t, component.StabilityLevelDevelopment, f.TracesToTracesStability())
-	assert.Equal(t, component.StabilityLevelDevelopment, f.LogsToLogsStability())
+	assert.Equal(t, component.StabilityLevelDevelopment, f.TracesStability())
+	assert.Equal(t, component.StabilityLevelDevelopment, f.LogsStability())
 }
 
 func TestNewFactoryDefaultConfigIsValid(t *testing.T) {
@@ -33,108 +33,108 @@ func TestNewFactoryDefaultConfigIsValid(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCanStartUpAndShutDownTracesToTracesWithDefaultConfig(t *testing.T) {
+func TestCanStartUpAndShutDownTracesWithDefaultConfig(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
 	assert.NotNil(t, f.CreateDefaultConfig())
 
 	consumer := consumertest.NewNop()
-	settings := connectortest.NewNopSettings()
+	settings := processortest.NewNopSettings()
 	cfg := f.CreateDefaultConfig()
 	createCtx := context.Background()
-	tracesToTraces, createErr := f.CreateTracesToTraces(createCtx, settings, cfg, consumer)
+	Traces, createErr := f.CreateTraces(createCtx, settings, cfg, consumer)
 
 	assert.NoError(t, createErr)
-	assert.NotNil(t, tracesToTraces)
+	assert.NotNil(t, Traces)
 
 	host := componenttest.NewNopHost()
 	startCtx := context.Background()
-	startErr := tracesToTraces.Start(startCtx, host)
+	startErr := Traces.Start(startCtx, host)
 	assert.NoError(t, startErr)
 
 	shutDownCtx := context.Background()
-	shutDownErr := tracesToTraces.Shutdown(shutDownCtx)
+	shutDownErr := Traces.Shutdown(shutDownCtx)
 	assert.NoError(t, shutDownErr)
 }
 
-func TestCanStartUpAndShutDownLogsToLogsWithDefaultConfig(t *testing.T) {
+func TestCanStartUpAndShutDownLogsWithDefaultConfig(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
 	assert.NotNil(t, f.CreateDefaultConfig())
 
 	consumer := consumertest.NewNop()
-	settings := connectortest.NewNopSettings()
+	settings := processortest.NewNopSettings()
 	cfg := f.CreateDefaultConfig()
 	createCtx := context.Background()
-	logsToLogs, createErr := f.CreateLogsToLogs(createCtx, settings, cfg, consumer)
+	Logs, createErr := f.CreateLogs(createCtx, settings, cfg, consumer)
 
 	assert.NoError(t, createErr)
-	assert.NotNil(t, logsToLogs)
+	assert.NotNil(t, Logs)
 
 	host := componenttest.NewNopHost()
 	startCtx := context.Background()
-	startErr := logsToLogs.Start(startCtx, host)
+	startErr := Logs.Start(startCtx, host)
 	assert.NoError(t, startErr)
 
 	shutDownCtx := context.Background()
-	shutDownErr := logsToLogs.Shutdown(shutDownCtx)
+	shutDownErr := Logs.Shutdown(shutDownCtx)
 	assert.NoError(t, shutDownErr)
 }
 
-func TestCanWriteTracesToTracesWithDefaultConfig(t *testing.T) {
+func TestCanWriteTracesWithDefaultConfig(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
 	assert.NotNil(t, f.CreateDefaultConfig())
 
 	consumer := consumertest.NewNop()
-	settings := connectortest.NewNopSettings()
+	settings := processortest.NewNopSettings()
 	cfg := f.CreateDefaultConfig()
 	createCtx := context.Background()
-	tracesToTraces, createErr := f.CreateTracesToTraces(createCtx, settings, cfg, consumer)
+	Traces, createErr := f.CreateTraces(createCtx, settings, cfg, consumer)
 
 	assert.NoError(t, createErr)
-	assert.NotNil(t, tracesToTraces)
+	assert.NotNil(t, Traces)
 
 	host := componenttest.NewNopHost()
 	startCtx := context.Background()
-	startErr := tracesToTraces.Start(startCtx, host)
+	startErr := Traces.Start(startCtx, host)
 	assert.NoError(t, startErr)
 
 	consumeCtx := context.Background()
 	dataToConsume := ptrace.NewTraces()
-	consumeErr := tracesToTraces.ConsumeTraces(consumeCtx, dataToConsume)
+	consumeErr := Traces.ConsumeTraces(consumeCtx, dataToConsume)
 	assert.NoError(t, consumeErr)
 
 	shutDownCtx := context.Background()
-	shutDownErr := tracesToTraces.Shutdown(shutDownCtx)
+	shutDownErr := Traces.Shutdown(shutDownCtx)
 	assert.NoError(t, shutDownErr)
 }
 
-func TestCanWriteLogsToLogsWithDefaultConfig(t *testing.T) {
+func TestCanWriteLogsWithDefaultConfig(t *testing.T) {
 	f := NewFactory()
 	assert.NotNil(t, f)
 	assert.NotNil(t, f.CreateDefaultConfig())
 
 	consumer := consumertest.NewNop()
-	settings := connectortest.NewNopSettings()
+	settings := processortest.NewNopSettings()
 	cfg := f.CreateDefaultConfig()
 	createCtx := context.Background()
-	logsToLogs, createErr := f.CreateLogsToLogs(createCtx, settings, cfg, consumer)
+	Logs, createErr := f.CreateLogs(createCtx, settings, cfg, consumer)
 
 	assert.NoError(t, createErr)
-	assert.NotNil(t, logsToLogs)
+	assert.NotNil(t, Logs)
 
 	host := componenttest.NewNopHost()
 	startCtx := context.Background()
-	startErr := logsToLogs.Start(startCtx, host)
+	startErr := Logs.Start(startCtx, host)
 	assert.NoError(t, startErr)
 
 	consumeCtx := context.Background()
 	dataToConsume := plog.NewLogs()
-	consumeErr := logsToLogs.ConsumeLogs(consumeCtx, dataToConsume)
+	consumeErr := Logs.ConsumeLogs(consumeCtx, dataToConsume)
 	assert.NoError(t, consumeErr)
 
 	shutDownCtx := context.Background()
-	shutDownErr := logsToLogs.Shutdown(shutDownCtx)
+	shutDownErr := Logs.Shutdown(shutDownCtx)
 	assert.NoError(t, shutDownErr)
 }

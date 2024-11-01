@@ -2,14 +2,14 @@ type: blobuploadconnector
 scope_name: otelcol/blobuploadconnector
 
 status:
-  class: connector
+  class: processor
   stability:
     # Implementation still in-progress. Please follow along at:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33737
-    development: [traces_to_traces, logs_to_logs]
+    development: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [michaelsafyan, dashpole]
+    active: [michaelsafyan, dashpole, braydonk]
 
 tests:
   config:

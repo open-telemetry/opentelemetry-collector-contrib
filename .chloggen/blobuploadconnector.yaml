@@ -1,6 +1,0 @@
-change_type: new_component
-component: blobuploadconnector
-note: Connector for uploading and replacing pieces of a signal to blob storage
-issues: [33737]
-subtext: Skeleton implementation at the moment.
-change_logs: []

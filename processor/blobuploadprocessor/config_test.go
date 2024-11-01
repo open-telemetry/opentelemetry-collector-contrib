@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package blobuploadconnector
+package blobuploadprocessor
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestDefaultConfigIsValid(t *testing.T) {
-	cfg := NewDefaultConfig()
+	cfg := createTypedDefaultConfig()
 	assert.NotNil(t, cfg)
 	assert.NoError(t, cfg.Validate())
 }
