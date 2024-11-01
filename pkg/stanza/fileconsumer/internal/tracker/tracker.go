@@ -199,16 +199,16 @@ func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Meta
 }
 
 func (t *fileTracker) FindFiles(records []*Record) {
-	// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints agains that loaded set.
+	// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
 
 	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
-	// We exit if no new reader exists.
+	// We exit if all fingerprints are matched.
 
 	mostRecentIndex := t.archiveIndex - 1
-	foundRecords := 0
+	matchedRecords := 0
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
-	for i := 0; i < t.pollsToArchive && foundRecords < len(records); i++ {
+	for i := 0; i < t.pollsToArchive && matchedRecords < len(records); i++ {
 		modified := false
 		data, err := t.readArchive(mostRecentIndex) // we load one fileset atmost once per poll
 		if err != nil {
@@ -217,10 +217,10 @@ func (t *fileTracker) FindFiles(records []*Record) {
 		}
 		for _, record := range records {
 			if md := data.Match(record.Fingerprint, fileset.StartsWith); md != nil && record.Metadata != nil {
-				// update a record's metadata with the matched metadata.
+				// populate record's metadata with the matched metadata, to indicate a successful match.
 				modified = true
 				record.Metadata = md
-				foundRecords++
+				matchedRecords++
 			}
 		}
 		if modified {
