@@ -13,6 +13,11 @@ The OpenTelemetry Transformation Language is a language for transforming open te
 
 This package reads in OTTL statements and converts them to invokable functions/booleans based on the OTTL's grammar.
 
+- [Getting Started](#getting-started)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [Resources](#resources)
+
 ## Getting Started
 
 If you're looking to write OTTL statements for a component's configuration check out these resources.
@@ -151,3 +156,9 @@ service:
 2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(instrumentation_scope.attributes[\"test\"], [\"pass\"])", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
 2024-05-29T16:38:09.601-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(attributes[\"test\"], true)", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log", "test": true}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
 ```
+
+## Resources
+
+These are previous conference presentations given about OTTL:
+- [OTTL Me Why Transforming Telemetry in the OpenTelemetry Collector Just Got Better](https://youtu.be/uVs0oUV72CE)
+- [Managing Observability Data at the Edge with the OpenTelemetry Collector and OTTL](https://youtu.be/GO0ulYLxy_8)
