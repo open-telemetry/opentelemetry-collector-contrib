@@ -92,7 +92,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs),
-		DataTypes:    []string{"metrics", "logs", "traces", "profiles"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
@@ -569,7 +572,10 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, nsName),
-		DataTypes:    []string{"metrics", "logs", "traces", "profiles"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
@@ -753,7 +759,10 @@ func TestE2E_MixRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, otelNs),
-		DataTypes:    []string{"metrics", "logs", "traces", "profiles"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
@@ -938,7 +947,10 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, nsName),
-		DataTypes:    []string{"metrics", "logs", "traces", "profiles"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
@@ -1232,7 +1244,10 @@ func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.T
 func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink, pc *consumertest.ProfilesSink) {
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
-		return len(mc.AllMetrics()) > entriesNum && len(tc.AllTraces()) > entriesNum && len(lc.AllLogs()) > entriesNum && len(pc.AllProfiles()) > entriesNum
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: assert `len(pc.AllProfiles()) > entriesNum` once #36127 is resolved
+		return len(mc.AllMetrics()) > entriesNum && len(tc.AllTraces()) > entriesNum && len(lc.AllLogs()) > entriesNum
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
 		"failed to receive %d entries,  received %d metrics, %d traces, %d logs, %d profiles in %d minutes", entriesNum,
 		len(mc.AllMetrics()), len(tc.AllTraces()), len(lc.AllLogs()), len(pc.AllProfiles()), timeoutMinutes)
