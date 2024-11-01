@@ -1153,6 +1153,12 @@ func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedServ
 
 func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expectedService string,
 	kvs map[string]*expectedValue) {
+
+	// `telemetrygen` doesn't support profiles
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+	// TODO: Remove `t.Skip()` once #36127 is resolved
+	t.Skip("Skip profiles test")
+
 	// Iterate over the received set of profiles starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
