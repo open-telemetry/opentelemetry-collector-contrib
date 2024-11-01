@@ -45,7 +45,7 @@ func newMetricsReceiver(
 	}
 	configuredUnmarshaler := unmarshalers[recordType]
 	if configuredUnmarshaler == nil {
-		return nil, fmt.Errorf("%s: recordType = %s", errUnrecognizedRecordType, recordType)
+		return nil, fmt.Errorf("%w: recordType = %s", errUnrecognizedRecordType, recordType)
 	}
 
 	mc := &metricsConsumer{
