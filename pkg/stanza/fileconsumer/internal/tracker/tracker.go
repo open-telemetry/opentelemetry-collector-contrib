@@ -210,7 +210,7 @@ func (t *fileTracker) FindFiles(records []*Record) {
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
 	for i := 0; i < t.pollsToArchive && foundRecords < len(records); i++ {
 		modified := false
-		data, err := t.readArchive(mostRecentIndex)
+		data, err := t.readArchive(mostRecentIndex) // we load one fileset atmost once per poll
 		if err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 			continue
@@ -224,6 +224,7 @@ func (t *fileTracker) FindFiles(records []*Record) {
 			}
 		}
 		if modified {
+			// we save one fileset atmost once per poll
 			if err := t.writeArchive(mostRecentIndex, data); err != nil {
 				t.set.Logger.Error("error while opening archive", zap.Error(err))
 				continue
