@@ -53,6 +53,12 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
+var converterPool = sync.Pool{
+	New: func() any {
+		return prometheusremotewrite.NewPrometheusConverter()
+	},
+}
+
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
 	endpointURL          *url.URL
@@ -70,7 +76,6 @@ type prwExporter struct {
 	exporterSettings     prometheusremotewrite.Settings
 	telemetry            prwTelemetry
 	batchTimeSeriesState batchTimeSeriesState
-	converter            prometheusremotewrite.PrometheusConverter
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -127,7 +132,6 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		},
 		telemetry:            prwTelemetry,
 		batchTimeSeriesState: newBatchTimeSericesState(),
-		converter:            *prometheusremotewrite.NewPrometheusConverter(),
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
@@ -174,9 +178,11 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
+		converter := converterPool.Get().(*prometheusremotewrite.PrometheusConverter)
+		converter.Reset()
+		defer converterPool.Put(converter)
 
-		tsMap, err := prwe.converter.FromMetrics(md, prwe.exporterSettings)
-		defer prwe.converter.Reset()
+		tsMap, err := converter.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			prwe.telemetry.recordTranslationFailure(ctx)
 			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
