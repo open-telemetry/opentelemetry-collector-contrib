@@ -12,20 +12,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type passThroughTracesConnector struct {
+type tracesToTracesImpl struct {
 	nextConsumer consumer.Traces
-	component.StartFunc
-	component.ShutdownFunc
 }
 
-func (c *passThroughTracesConnector) Start(_ context.Context, _ component.Host) error { return nil }
-func (c *passThroughTracesConnector) Shutdown(_ context.Context) error                { return nil }
+func (c *tracesToTracesImpl) Start(_ context.Context, _ component.Host) error {
+	// TODO: implement
+	return nil
+}
 
-func (c *passThroughTracesConnector) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (c *tracesToTracesImpl) Shutdown(_ context.Context) error {
+	// TODO: implement
+	return nil
+}
+
+func (c *tracesToTracesImpl) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	// TODO: implement
 	return c.nextConsumer.ConsumeTraces(ctx, td)
 }
 
-func (c *passThroughTracesConnector) Capabilities() consumer.Capabilities {
+func (c *tracesToTracesImpl) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -35,8 +41,7 @@ func createTracesToTracesConnector(_ Deps) connector.CreateTracesToTracesFunc {
 		_ connector.Settings,
 		_ component.Config,
 		nextConsumer consumer.Traces) (connector.Traces, error) {
-		// TODO: implement actual, non-pass through implementation when
-		// there is a config present with a non-empty "traces" config.
-		return &passThroughTracesConnector{nextConsumer: nextConsumer}, nil
+		// TODO: implement
+		return &tracesToTracesImpl{nextConsumer: nextConsumer}, nil
 	}
 }

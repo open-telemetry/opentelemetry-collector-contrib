@@ -12,18 +12,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type passThroughLogsConnector struct {
+type logsToLogsImpl struct {
 	nextConsumer consumer.Logs
 }
 
-func (c *passThroughLogsConnector) Start(_ context.Context, _ component.Host) error { return nil }
-func (c *passThroughLogsConnector) Shutdown(_ context.Context) error                { return nil }
+func (c *logsToLogsImpl) Start(_ context.Context, _ component.Host) error {
+	// TODO: implement
+	return nil
+}
 
-func (c *passThroughLogsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (c *logsToLogsImpl) Shutdown(_ context.Context) error {
+	// TODO: implement
+	return nil
+}
+
+func (c *logsToLogsImpl) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	// TODO: implement
 	return c.nextConsumer.ConsumeLogs(ctx, ld)
 }
 
-func (c *passThroughLogsConnector) Capabilities() consumer.Capabilities {
+func (c *logsToLogsImpl) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
@@ -33,8 +41,7 @@ func createLogsToLogsConnector(_ Deps) connector.CreateLogsToLogsFunc {
 		_ connector.Settings,
 		_ component.Config,
 		nextConsumer consumer.Logs) (connector.Logs, error) {
-		// TODO: implement actual, non-pass through implementation when
-		// there is a config present with a non-empty "logs" config.
-		return &passThroughLogsConnector{nextConsumer: nextConsumer}, nil
+		// TODO: implement
+		return &logsToLogsImpl{nextConsumer: nextConsumer}, nil
 	}
 }
