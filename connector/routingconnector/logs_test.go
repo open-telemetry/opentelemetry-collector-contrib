@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
@@ -531,25 +530,6 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			var expected0, expected1, expectedDefault *plog.Logs
-			if expected, readErr := golden.ReadLogs(filepath.Join(tt, "sink_0.yaml")); readErr == nil {
-				expected0 = &expected
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading sink_0.yaml: %v", readErr)
-			}
-
-			if expected, readErr := golden.ReadLogs(filepath.Join(tt, "sink_1.yaml")); readErr == nil {
-				expected1 = &expected
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading sink_1.yaml: %v", readErr)
-			}
-
-			if expected, readErr := golden.ReadLogs(filepath.Join(tt, "sink_default.yaml")); readErr == nil {
-				expectedDefault = &expected
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading sink_default.yaml: %v", readErr)
-			}
-
 			ctx := context.Background()
 			if ctxFromFile, readErr := createContextFromFile(t, filepath.Join(tt, "request.yaml")); readErr == nil {
 				ctx = ctxFromFile
@@ -557,31 +537,26 @@ func TestLogsConnectorDetailed(t *testing.T) {
 				t.Fatalf("Error reading request.yaml: %v", readErr)
 			}
 
-			input, readErr := golden.ReadLogs(filepath.Join(tt, "input.yaml"))
+			input, readErr := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
 			require.NoError(t, readErr)
 
 			require.NoError(t, conn.ConsumeLogs(ctx, input))
 
-			if expected0 == nil {
-				assert.Empty(t, sink0.AllLogs(), "sink0 should be empty")
-			} else {
-				require.Len(t, sink0.AllLogs(), 1, "sink0 should have one plog.Logs")
-				assert.NoError(t, plogtest.CompareLogs(*expected0, sink0.AllLogs()[0]), "sink0 has unexpected result")
+			assertExpected := func(actual []plog.Logs, filePath string) {
+				expected, err := golden.ReadLogs(filePath)
+				switch {
+				case err == nil:
+					require.Len(t, actual, 1)
+					assert.Equal(t, expected, actual[0])
+				case os.IsNotExist(err):
+					assert.Empty(t, actual)
+				default:
+					t.Fatalf("Error reading %s: %v", filePath, err)
+				}
 			}
-
-			if expected1 == nil {
-				assert.Empty(t, sink1.AllLogs(), "sink1 should be empty")
-			} else {
-				require.Len(t, sink1.AllLogs(), 1, "sink1 should have one plog.Logs")
-				assert.NoError(t, plogtest.CompareLogs(*expected1, sink1.AllLogs()[0]), "sink1 has unexpected result")
-			}
-
-			if expectedDefault == nil {
-				assert.Empty(t, sinkDefault.AllLogs(), "sinkDefault should be empty")
-			} else {
-				require.Len(t, sinkDefault.AllLogs(), 1, "sinkDefault should have one plog.Logs")
-				assert.NoError(t, plogtest.CompareLogs(*expectedDefault, sinkDefault.AllLogs()[0]), "sinkDefault has unexpected result")
-			}
+			assertExpected(sink0.AllLogs(), filepath.Join(tt, "sink_0.yaml"))
+			assertExpected(sink1.AllLogs(), filepath.Join(tt, "sink_1.yaml"))
+			assertExpected(sinkDefault.AllLogs(), filepath.Join(tt, "sink_default.yaml"))
 		})
 	}
 }
