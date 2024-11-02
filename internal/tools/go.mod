@@ -7,7 +7,7 @@ require (
 	github.com/Khan/genqlient v0.7.0
 	github.com/client9/misspell v0.3.4
 	github.com/daixiang0/gci v0.13.5
-	github.com/golangci/golangci-lint v1.59.1
+	github.com/golangci/golangci-lint v1.61.0
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
