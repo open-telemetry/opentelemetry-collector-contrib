@@ -212,15 +212,14 @@ func (r *splunkReceiver) processSuccessResponse(resp http.ResponseWriter, bodyCo
 }
 
 func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) {
-	ctx := req.Context()
 	if req.Method != http.MethodPost {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, 0, errInvalidMethod)
+		r.failRequest(resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, errInvalidMethod)
 		return
 	}
 
 	// shouldn't run into this case since we only enable this handler IF ackExt exists. But we have this check just in case
 	if r.ackExt == nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, errExtensionMissing)
+		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, errExtensionMissing)
 		return
 	}
 
@@ -228,11 +227,11 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 	var extracted bool
 	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
+			r.failRequest(resp, http.StatusBadRequest, []byte(channelErr.Error()), channelErr)
 			return
 		}
 	} else {
-		r.failRequest(ctx, resp, http.StatusBadRequest, requiredDataChannelHeader, 0, nil)
+		r.failRequest(resp, http.StatusBadRequest, requiredDataChannelHeader, nil)
 		return
 	}
 
@@ -241,19 +240,19 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	err := dec.Decode(&ackRequest)
 	if err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
+		r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 		return
 	}
 
 	if len(ackRequest.Acks) == 0 {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, errors.New("request body must include at least one ackID to be queried"))
+		r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, errors.New("request body must include at least one ackID to be queried"))
 		return
 	}
 
 	queriedAcks := r.ackExt.QueryAcks(channelID, ackRequest.Acks)
 	ackString, _ := json.Marshal(queriedAcks)
 	if err := r.processSuccessResponse(resp, []byte(fmt.Sprintf(ackResponse, ackString))); err != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, 0, err)
+		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
 	}
 }
 
@@ -262,13 +261,13 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	ctx = r.obsrecv.StartLogsOp(ctx)
 
 	if req.Method != http.MethodPost {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, 0, errInvalidMethod)
+		r.failRequest(resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, errInvalidMethod)
 		return
 	}
 
 	encoding := req.Header.Get(httpContentEncodingHeader)
 	if encoding != "" && encoding != gzipEncoding {
-		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, 0, errInvalidEncoding)
+		r.failRequest(resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, errInvalidEncoding)
 		return
 	}
 
@@ -276,14 +275,14 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	var extracted bool
 	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
+			r.failRequest(resp, http.StatusBadRequest, []byte(channelErr.Error()), channelErr)
 			return
 		}
 	}
 
 	if req.ContentLength == 0 {
 		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, nil)
-		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
+		r.failRequest(resp, http.StatusBadRequest, noDataRespBody, nil)
 		return
 	}
 
@@ -293,7 +292,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		err := reader.Reset(bodyReader)
 
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, 0, err)
+			r.failRequest(resp, http.StatusBadRequest, errGzipReaderRespBody, err)
 			_, _ = io.ReadAll(req.Body)
 			_ = req.Body.Close()
 			return
@@ -311,7 +310,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 			err = errors.New("time cannot be less than 0")
 		}
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
+			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
 		}
 		timestamp = pcommon.NewTimestampFromTime(time.Unix(t, 0))
@@ -319,7 +318,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, resourceCustomizer, r.config, timestamp)
 	if err != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, err)
+		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
 		return
 	}
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
@@ -327,7 +326,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	_ = bodyReader.Close()
 
 	if consumerErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, consumerErr)
+		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, consumerErr)
 	} else {
 		var ackErr error
 		if len(channelID) > 0 && r.ackExt != nil {
@@ -336,7 +335,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 			ackErr = r.processSuccessResponse(resp, okRespBody)
 		}
 		if ackErr != nil {
-			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, ld.LogRecordCount(), err)
+			r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, err)
 		} else {
 			r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), slLen, nil)
 		}
@@ -377,28 +376,22 @@ func (r *splunkReceiver) validateChannelHeader(channelID string) error {
 
 func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	if r.logsConsumer != nil {
-		ctx = r.obsrecv.StartLogsOp(ctx)
-	}
-	if r.metricsConsumer != nil {
-		ctx = r.obsrecv.StartMetricsOp(ctx)
-	}
 
 	if req.Method != http.MethodPost {
-		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, 0, errInvalidMethod)
+		r.failRequest(resp, http.StatusBadRequest, invalidMethodRespBodyPostOnly, errInvalidMethod)
 		return
 	}
 
 	encoding := req.Header.Get(httpContentEncodingHeader)
 	if encoding != "" && encoding != gzipEncoding {
-		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, 0, errInvalidEncoding)
+		r.failRequest(resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, errInvalidEncoding)
 		return
 	}
 
 	channelID, extracted := r.extractChannel(req)
 	if extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
+			r.failRequest(resp, http.StatusBadRequest, []byte(channelErr.Error()), channelErr)
 			return
 		}
 	}
@@ -408,7 +401,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		reader := r.gzipReaderPool.Get().(*gzip.Reader)
 		err := reader.Reset(bodyReader)
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, 0, err)
+			r.failRequest(resp, http.StatusBadRequest, errGzipReaderRespBody, err)
 			return
 		}
 		bodyReader = reader
@@ -416,7 +409,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	if req.ContentLength == 0 {
-		r.failRequest(ctx, resp, http.StatusBadRequest, noDataRespBody, 0, nil)
+		r.failRequest(resp, http.StatusBadRequest, noDataRespBody, nil)
 		return
 	}
 
@@ -429,35 +422,35 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		var msg splunk.Event
 		err := dec.Decode(&msg)
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, len(events)+len(metricEvents), err)
+			r.failRequest(resp, http.StatusBadRequest, invalidFormatRespBody, err)
 			return
 		}
 
 		if msg.Event == nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, eventRequiredRespBody, len(events)+len(metricEvents), nil)
+			r.failRequest(resp, http.StatusBadRequest, eventRequiredRespBody, nil)
 			return
 		}
 
 		if msg.Event == "" {
-			r.failRequest(ctx, resp, http.StatusBadRequest, eventBlankRespBody, len(events)+len(metricEvents), nil)
+			r.failRequest(resp, http.StatusBadRequest, eventBlankRespBody, nil)
 			return
 		}
 
 		for _, v := range msg.Fields {
 			if !isFlatJSONField(v) {
-				r.failRequest(ctx, resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events)+len(metricEvents))), len(events)+len(metricEvents), nil)
+				r.failRequest(resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events)+len(metricEvents))), nil)
 				return
 			}
 		}
 		if msg.IsMetric() {
 			if r.metricsConsumer == nil {
-				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedMetricEvent, len(metricEvents), err)
+				r.failRequest(resp, http.StatusBadRequest, errUnsupportedMetricEvent, err)
 				return
 			}
 			metricEvents = append(metricEvents, &msg)
 		} else {
 			if r.logsConsumer == nil {
-				r.failRequest(ctx, resp, http.StatusBadRequest, errUnsupportedLogEvent, len(events), err)
+				r.failRequest(resp, http.StatusBadRequest, errUnsupportedLogEvent, err)
 				return
 			}
 			events = append(events, &msg)
@@ -468,21 +461,24 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if r.logsConsumer != nil && len(events) > 0 {
 		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
 		if err != nil {
-			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, len(events), err)
+			r.failRequest(resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 			return
 		}
+		ctx = r.obsrecv.StartLogsOp(ctx)
 		decodeErr := r.logsConsumer.ConsumeLogs(ctx, ld)
+		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
 		if decodeErr != nil {
-			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
+			r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
 			return
 		}
 	}
 	if r.metricsConsumer != nil && len(metricEvents) > 0 {
 		md, _ := splunkHecToMetricsData(r.settings.Logger, metricEvents, resourceCustomizer, r.config)
-
+		ctx = r.obsrecv.StartMetricsOp(ctx)
 		decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
 		if decodeErr != nil {
-			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(metricEvents), decodeErr)
+			r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
 			return
 		}
 	}
@@ -494,14 +490,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		ackErr = r.processSuccessResponse(resp, okRespBody)
 	}
 	if ackErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events)+len(metricEvents), ackErr)
-	} else {
-		if r.logsConsumer != nil {
-			r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), len(events), nil)
-		}
-		if r.metricsConsumer != nil {
-			r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), len(metricEvents), nil)
-		}
+		r.failRequest(resp, http.StatusInternalServerError, errInternalServerError, ackErr)
 	}
 }
 
@@ -519,11 +508,9 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(resour
 }
 
 func (r *splunkReceiver) failRequest(
-	ctx context.Context,
 	resp http.ResponseWriter,
 	httpStatusCode int,
 	jsonResponse []byte,
-	numRecordsReceived int,
 	err error,
 ) {
 	resp.WriteHeader(httpStatusCode)
@@ -534,13 +521,6 @@ func (r *splunkReceiver) failRequest(
 		if writeErr != nil {
 			r.settings.Logger.Warn("Error writing HTTP response message", zap.Error(writeErr))
 		}
-	}
-
-	if r.logsConsumer != nil {
-		r.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
-	}
-	if r.metricsConsumer != nil {
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), numRecordsReceived, err)
 	}
 
 	if r.settings.Logger.Core().Enabled(zap.DebugLevel) {
