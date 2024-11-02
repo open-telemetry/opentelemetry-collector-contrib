@@ -5,6 +5,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -632,6 +633,23 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	return &transformedPod
 }
 
+// parseAttributesFromImage parses the image name and tag for differently-formatted image names.
+func parseNameAndTagFromImage(image string) (name, tag string, err error) {
+	ref, err := reference.Parse(image)
+	if err != nil {
+		return
+	}
+	namedRef, ok := ref.(reference.Named)
+	if !ok {
+		return "", "", errors.New("cannot retrieve image name")
+	}
+	name = namedRef.Name()
+	if taggedRef, ok := namedRef.(reference.Tagged); ok {
+		tag = taggedRef.Tag()
+	}
+	return
+}
+
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
 	containers := PodContainers{
 		ByID:   map[string]*Container{},
@@ -643,16 +661,14 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			nameTagSep := strings.LastIndex(spec.Image, ":")
-			if c.Rules.ContainerImageName {
-				if nameTagSep > 0 {
-					container.ImageName = spec.Image[:nameTagSep]
-				} else {
-					container.ImageName = spec.Image
+			name, tag, err := parseNameAndTagFromImage(spec.Image)
+			if err == nil {
+				if c.Rules.ContainerImageName {
+					container.ImageName = name
 				}
-			}
-			if c.Rules.ContainerImageTag && nameTagSep > 0 {
-				container.ImageTag = spec.Image[nameTagSep+1:]
+				if c.Rules.ContainerImageTag {
+					container.ImageTag = tag
+				}
 			}
 			containers.ByName[spec.Name] = container
 		}

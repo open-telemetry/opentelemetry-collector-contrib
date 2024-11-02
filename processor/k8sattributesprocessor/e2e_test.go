@@ -52,7 +52,7 @@ func newExpectedValue(mode int, value string) *expectedValue {
 
 // TestE2E_ClusterRBAC tests the k8s attributes processor in a k8s cluster with the collector's service account having
 // cluster-wide permissions to list/watch namespaces, nodes, pods and replicasets. The config in the test does not
-// set filter::namespace.
+// set filter::namespace, and the telemetrygen image has a latest tag but no digest.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
 // `/tmp/kube-config-otelcol-e2e-testing`. Run the following command prior to running the test locally:
 //
@@ -432,7 +432,8 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 	}
 }
 
-// Test with `filter::namespace` set and only role binding to collector's SA. We can't get node and namespace labels/annotations.
+// Test with `filter::namespace` set and only role binding to collector's SA. We can't get node and namespace labels/annotations,
+// and the telemetrygen image has a digest but no tag.
 func TestE2E_NamespacedRBAC(t *testing.T) {
 
 	testDir := filepath.Join("testdata", "e2e", "namespacedrbac")
@@ -504,7 +505,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -528,7 +529,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -552,7 +553,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -575,7 +576,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 }
 
 // Test with `filter::namespace` set, role binding for namespace-scoped objects (pod, replicaset) and clusterrole
-// binding for node and namespace objects.
+// binding for node and namespace objects, and the telemetrygen image has a tag and digest.
 func TestE2E_MixRBAC(t *testing.T) {
 
 	testDir := filepath.Join("testdata", "e2e", "mixrbac")
@@ -662,7 +663,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(equal, "0.112.0"),
 				"container.id":                 newExpectedValue(exist, ""),
 				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
 				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
@@ -689,7 +690,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(equal, "0.112.0"),
 				"container.id":                 newExpectedValue(exist, ""),
 				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
 				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
@@ -716,7 +717,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(equal, "0.112.0"),
 				"container.id":                 newExpectedValue(exist, ""),
 				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
 				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
@@ -745,7 +746,8 @@ func TestE2E_MixRBAC(t *testing.T) {
 // While `k8s.pod.ip` is not set in `k8sattributes:extract:metadata` and the `pod_association` is not `connection`
 // we expect that the `k8s.pod.ip` metadata is not added.
 // While `container.image.repo_digests` is not set in `k8sattributes::extract::metadata`, we expect
-// that the `container.image.repo_digests` metadata is not added
+// that the `container.image.repo_digests` metadata is not added.
+// The telemetrygen image has neither a tag nor digest (implicitly latest version)
 func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 	testDir := filepath.Join("testdata", "e2e", "namespaced_rbac_no_pod_ip")
 
@@ -816,7 +818,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -840,7 +842,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -864,7 +866,7 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
-				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},

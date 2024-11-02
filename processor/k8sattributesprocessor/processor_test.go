@@ -1131,7 +1131,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 						ByName: map[string]*kube.Container{
 							"app": {
 								Statuses: map[int]kube.ContainerStatus{
-									2: {ImageRepoDigest: "docker.io/otel/collector@sha256:deadbeef02"},
+									2: {ImageRepoDigest: "docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 								},
 							},
 						},
@@ -1145,7 +1145,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
-				containerImageRepoDigests:             []string{"docker.io/otel/collector@sha256:deadbeef02"},
+				containerImageRepoDigests:             []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
 		{
