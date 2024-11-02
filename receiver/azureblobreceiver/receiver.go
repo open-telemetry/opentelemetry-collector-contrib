@@ -57,7 +57,6 @@ func (b *blobReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 }
 
 func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
-
 	if b.nextLogsConsumer == nil {
 		return nil
 	}

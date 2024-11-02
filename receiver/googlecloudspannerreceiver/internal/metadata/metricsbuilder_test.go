@@ -29,7 +29,6 @@ type mockItemFilterResolver struct {
 func (r *mockItemFilterResolver) Resolve(string) (filter.ItemFilter, error) {
 	args := r.Called()
 	return args.Get(0).(filter.ItemFilter), args.Error(1)
-
 }
 
 func (r *mockItemFilterResolver) Shutdown() error {
@@ -345,7 +344,6 @@ func executeShutdown(t *testing.T, metricsBuilder MetricsBuilder, expectError bo
 
 func executeMockedShutdown(t *testing.T, metricsBuilder MetricsBuilder, filterResolver *mockItemFilterResolver,
 	expectedError error) {
-
 	filterResolver.On("Shutdown").Return(expectedError)
 	_ = metricsBuilder.Shutdown()
 	filterResolver.AssertExpectations(t)
