@@ -174,6 +174,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
+				tp.telemetryBuilder.ProcessorProbabilisticSamplerCountSpansSampled.Add(ctx, 1)
 				return !commonShouldSampleLogic(
 					ctx,
 					s,

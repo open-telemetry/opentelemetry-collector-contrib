@@ -14,6 +14,14 @@ Count of logs that were sampled or not
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_processor_probabilistic_sampler_count_spans_sampled
+
+Count of spans that were sampled or not
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
 ### otelcol_processor_probabilistic_sampler_count_traces_sampled
 
 Count of traces that were sampled or not

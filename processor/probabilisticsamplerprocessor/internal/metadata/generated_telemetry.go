@@ -30,6 +30,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 type TelemetryBuilder struct {
 	meter                                           metric.Meter
 	ProcessorProbabilisticSamplerCountLogsSampled   metric.Int64Counter
+	ProcessorProbabilisticSamplerCountSpansSampled  metric.Int64Counter
 	ProcessorProbabilisticSamplerCountTracesSampled metric.Int64Counter
 	meters                                          map[configtelemetry.Level]metric.Meter
 }
@@ -57,6 +58,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.ProcessorProbabilisticSamplerCountLogsSampled, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
 		"otelcol_processor_probabilistic_sampler_count_logs_sampled",
 		metric.WithDescription("Count of logs that were sampled or not"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorProbabilisticSamplerCountSpansSampled, err = builder.meters[configtelemetry.LevelBasic].Int64Counter(
+		"otelcol_processor_probabilistic_sampler_count_spans_sampled",
+		metric.WithDescription("Count of spans that were sampled or not"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
