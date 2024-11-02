@@ -1,0 +1,195 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resourceName
+          value:
+            stringValue: resourceA
+        - key: resourceNameAgain
+          value:
+            stringValue: resourceA
+    schemaUrl: https://opentelemetry.io/schemas/1.6.1
+    scopeMetrics:
+      - attributes:
+          - key: scopeName
+            value:
+              stringValue: scopeA
+          - key: scopeNameAgain
+            value:
+              stringValue: scopeA
+        metrics:
+          - name: sumMonotonicCumulative
+            sum:
+              aggregationTemporality: 2 # AGGREGATION_TEMPORALITY_CUMULATIVE
+              isMonotonic: true
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "101"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "102"
+          - name: sumNonmonotonicCumulative
+            sum:
+              aggregationTemporality: 2 # AGGREGATION_TEMPORALITY_CUMULATIVE
+              isMonotonic: false
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "102"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "101"
+          - name: sumMonotonicDelta
+            sum:
+              aggregationTemporality: 1 # AGGREGATION_TEMPORALITY_DELTA
+              isMonotonic: true
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "1"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "2"
+          - name: sumNonmonotonicDelta
+            sum:
+              aggregationTemporality: 1 # AGGREGATION_TEMPORALITY_DELTA
+              isMonotonic: false
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "2"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "1"
+      - attributes:
+          - key: scopeName
+            value:
+              stringValue: scopeB
+          - key: scopeNameAgain
+            value:
+              stringValue: scopeB
+        metrics:
+          - name: sumMonotonicCumulative
+            sum:
+              aggregationTemporality: 2 # AGGREGATION_TEMPORALITY_CUMULATIVE
+              isMonotonic: true
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "101"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "102"
+          - name: sumNonmonotonicCumulative
+            sum:
+              aggregationTemporality: 2 # AGGREGATION_TEMPORALITY_CUMULATIVE
+              isMonotonic: false
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "102"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "101"
+          - name: sumMonotonicDelta
+            sum:
+              aggregationTemporality: 1 # AGGREGATION_TEMPORALITY_DELTA
+              isMonotonic: true
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "1"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "2"
+          - name: sumNonmonotonicDelta
+            sum:
+              aggregationTemporality: 1 # AGGREGATION_TEMPORALITY_DELTA
+              isMonotonic: false
+              dataPoints:
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointA
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointA
+                  asInt: "2"
+                - attributes:
+                    - key: dataPointName
+                      value:
+                        stringValue: dataPointB
+                    - key: dataPointNameAgain
+                      value:
+                        stringValue: dataPointB
+                  asInt: "1"

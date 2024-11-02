@@ -39,14 +39,14 @@ func TestWithTracesMarshalers_err(t *testing.T) {
 
 	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
 	f := NewFactory(withTracesMarshalers(tracesMarshaler))
-	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	r, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
 	require.Error(t, err)
 }
 
-func TestCreateTracesExporter_err(t *testing.T) {
+func TestCreateTraces_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
@@ -58,7 +58,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCreateMetricsExporter_err(t *testing.T) {
+func TestCreateMetrics_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
@@ -69,7 +69,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestCreateLogsExporter_err(t *testing.T) {
+func TestCreateLogs_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
