@@ -1122,5 +1122,4 @@ func TestDecodeXRaySpanID(t *testing.T) {
 	// null point
 	_, err = decodeXRaySpanID(nil)
 	assert.Error(t, err)
-
 }

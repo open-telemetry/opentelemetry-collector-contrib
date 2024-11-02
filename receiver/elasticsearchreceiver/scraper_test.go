@@ -258,7 +258,6 @@ func TestScrapingError(t *testing.T) {
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
 				require.EqualError(t, err, err404.Error())
-
 			},
 		},
 		{
@@ -285,7 +284,6 @@ func TestScrapingError(t *testing.T) {
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
 				require.EqualError(t, err, err404.Error())
-
 			},
 		},
 		{

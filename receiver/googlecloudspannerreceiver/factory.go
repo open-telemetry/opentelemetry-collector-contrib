@@ -46,7 +46,6 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	rCfg := baseCfg.(*Config)
 	r := newGoogleCloudSpannerReceiver(settings.Logger, rCfg)
 

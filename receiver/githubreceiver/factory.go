@@ -67,7 +67,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	// check that the configuration is valid
 	conf, ok := cfg.(*Config)
 	if !ok {

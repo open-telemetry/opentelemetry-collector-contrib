@@ -71,7 +71,6 @@ func nodeGetterFactory(cfg *clientConfig, policy *as.ClientPolicy, authEnabled b
 		authEnabled,
 	)
 	return cluster, err
-
 }
 
 // newASClient creates a new defaultASClient connected to the given host and port

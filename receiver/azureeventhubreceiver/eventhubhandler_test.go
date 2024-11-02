@@ -74,7 +74,6 @@ func (m *mockDataConsumer) setNextTracesConsumer(nextTracesConsumer consumer.Tra
 func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
 
 func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) error {
-
 	logsContext := m.obsrecv.StartLogsOp(ctx)
 
 	logs, err := m.logsUnmarshaler.UnmarshalLogs(event)

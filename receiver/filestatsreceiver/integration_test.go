@@ -46,5 +46,4 @@ func Test_Integration(t *testing.T) {
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
-
 }

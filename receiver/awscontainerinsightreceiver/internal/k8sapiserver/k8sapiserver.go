@@ -246,7 +246,6 @@ func (k *K8sAPIServer) Shutdown() error {
 }
 
 func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {
-
 	for {
 		leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 			Lock: lock,

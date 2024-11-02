@@ -24,7 +24,6 @@ func (m *mockHTTPClient) Do(_ *http.Request) (*http.Response, error) {
 }
 
 func TestGetContainerInstanceIDFromArn(t *testing.T) {
-
 	oldFormatARN := "arn:aws:ecs:region:aws_account_id:task/task-id"
 	result, _ := GetContainerInstanceIDFromArn(oldFormatARN)
 	assert.Equal(t, "task-id", result, "Expected to be equal")
@@ -39,7 +38,6 @@ func TestGetContainerInstanceIDFromArn(t *testing.T) {
 }
 
 func TestIsClosed(t *testing.T) {
-
 	channel := make(chan bool)
 
 	assert.False(t, isClosed(channel))
@@ -47,11 +45,9 @@ func TestIsClosed(t *testing.T) {
 	close(channel)
 
 	assert.True(t, isClosed(channel))
-
 }
 
 func TestRequestSuccessWithKnownLength(t *testing.T) {
-
 	respBody := "body"
 	response := &http.Response{
 		StatusCode:    http.StatusOK,
@@ -72,11 +68,9 @@ func TestRequestSuccessWithKnownLength(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, body)
-
 }
 
 func TestRequestSuccessWithUnknownLength(t *testing.T) {
-
 	respBody := "body"
 	response := &http.Response{
 		StatusCode:    http.StatusOK,
@@ -97,11 +91,9 @@ func TestRequestSuccessWithUnknownLength(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.NotNil(t, body)
-
 }
 
 func TestRequestWithFailedStatus(t *testing.T) {
-
 	respBody := "body"
 	response := &http.Response{
 		Status:        "Bad Request",
@@ -123,11 +115,9 @@ func TestRequestWithFailedStatus(t *testing.T) {
 	assert.Nil(t, body)
 
 	assert.Error(t, err)
-
 }
 
 func TestRequestWithLargeContentLength(t *testing.T) {
-
 	respBody := "body"
 	response := &http.Response{
 		StatusCode:    http.StatusOK,
@@ -148,5 +138,4 @@ func TestRequestWithLargeContentLength(t *testing.T) {
 	assert.Nil(t, body)
 
 	assert.Error(t, err)
-
 }

@@ -45,7 +45,6 @@ func TestGetCGroupPathForTask(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := getCGroupPathForTask(cgroupMount, controller, tt.input, clusterName)
 
 			if tt.err != nil {
@@ -96,7 +95,6 @@ func TestGetCGroupPathFromARN(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := getTaskCgroupPathFromARN(tt.input)
 
 			if tt.err != nil {
@@ -110,7 +108,6 @@ func TestGetCGroupPathFromARN(t *testing.T) {
 }
 
 func TestGetCGroupMountPoint(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		input   string
@@ -149,7 +146,6 @@ func TestGetCGroupMountPoint(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := getCGroupMountPoint(tt.input)
 
 			if tt.err != nil {
@@ -160,7 +156,6 @@ func TestGetCGroupMountPoint(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestGetCPUReservedInTask(t *testing.T) {
@@ -217,7 +212,6 @@ func TestGetCPUReservedInTask(t *testing.T) {
 			assert.Equal(t, tt.expectRes, got)
 		})
 	}
-
 }
 
 func TestGetMEMReservedInTask(t *testing.T) {
@@ -337,5 +331,4 @@ func TestGetCPUReservedAndMemReserved(t *testing.T) {
 	assert.Equal(t, int64(0), cgroup.getCPUReserved())
 
 	assert.Equal(t, int64(0), cgroup.getMemReserved())
-
 }

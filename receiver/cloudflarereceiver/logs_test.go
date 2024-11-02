@@ -317,7 +317,6 @@ func TestHandleRequest(t *testing.T) {
 				consumer = consumertest.NewErr(errors.New("consumer failed"))
 				if tc.permanentFailure {
 					consumer = consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer failed")))
-
 				}
 			} else {
 				consumer = &consumertest.LogsSink{}

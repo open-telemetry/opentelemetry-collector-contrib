@@ -28,7 +28,6 @@ func (mi *MockHostInfo) GetInstanceIPReadyC() chan bool {
 }
 
 func TestECSInstanceInfo(t *testing.T) {
-
 	var ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 	instanceReadyC := make(chan bool)
@@ -81,5 +80,4 @@ func TestECSInstanceInfo(t *testing.T) {
 
 	assert.Equal(t, "", ecsinstanceinfo.GetClusterName())
 	assert.Equal(t, "", ecsinstanceinfo.GetContainerInstanceID())
-
 }

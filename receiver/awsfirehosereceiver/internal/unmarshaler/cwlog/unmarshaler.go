@@ -84,7 +84,6 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 					builders[attrs] = lb
 				}
 				lb.AddLog(log)
-
 			}
 		}
 	}

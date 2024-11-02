@@ -37,7 +37,6 @@ func newMetricsReceiver(
 	unmarshalers map[string]unmarshaler.MetricsUnmarshaler,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	recordType := config.RecordType
 	if recordType == "" {
 		recordType = defaultMetricsRecordType

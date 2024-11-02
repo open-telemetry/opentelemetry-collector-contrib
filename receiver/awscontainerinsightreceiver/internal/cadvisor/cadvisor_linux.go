@@ -196,7 +196,6 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIDsUsedAsPV
 }
 
 func (c *Cadvisor) addECSMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
-
 	if len(cadvisormetrics) == 0 {
 		c.logger.Warn("cadvisor can't collect any metrics!")
 	}
@@ -300,7 +299,6 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 
 		// add tags for EKS
 		if c.containerOrchestrator == ci.EKS {
-
 			tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
 
 			out := c.k8sDecorator.Decorate(m)
@@ -308,7 +306,6 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 				result = append(result, out)
 			}
 		}
-
 	}
 
 	return result

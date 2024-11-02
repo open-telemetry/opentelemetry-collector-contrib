@@ -97,7 +97,6 @@ func TestGetMetricAttributes(t *testing.T) {
 				return true
 			})
 		})
-
 	}
 }
 
@@ -142,7 +141,6 @@ func TestDatadogTagToKeyValuePair(t *testing.T) {
 			assert.Equal(t, c.expectedValue, value, "Expected value %s, got %s", c.expectedValue, value)
 		})
 	}
-
 }
 
 func TestTranslateDataDogKeyToOtel(t *testing.T) {

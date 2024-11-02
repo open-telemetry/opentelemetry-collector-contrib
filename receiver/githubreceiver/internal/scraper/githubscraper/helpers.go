@@ -128,7 +128,6 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
 	if ghs.cfg.ClientConfig.Endpoint != "" {
-
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
 		gu, err := url.JoinPath(ghs.cfg.ClientConfig.Endpoint, "api/graphql")
@@ -260,7 +259,6 @@ func (ghs *githubScraper) evalCommits(
 			additions += c.Nodes[b].Additions
 			deletions += c.Nodes[b].Deletions
 		}
-
 	}
 	return additions, deletions, age, nil
 }

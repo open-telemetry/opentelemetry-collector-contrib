@@ -1318,5 +1318,4 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 		})
 	}
-
 }

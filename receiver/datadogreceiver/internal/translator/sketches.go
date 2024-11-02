@@ -208,7 +208,6 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 				positiveBuckets[highestCountIdx] += additionalCount
 			}
 		}
-
 	}
 
 	return negativeBuckets, positiveBuckets, zeroCount, nil

@@ -49,7 +49,6 @@ func TestCreateMetrics(t *testing.T) {
 				)
 
 				require.NoError(t, err)
-
 			},
 		},
 	}

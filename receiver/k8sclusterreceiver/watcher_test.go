@@ -185,7 +185,6 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			obs, logs := observer.New(zap.WarnLevel)
 			obsLogger := zap.New(obs)
 			rw := &resourceWatcher{

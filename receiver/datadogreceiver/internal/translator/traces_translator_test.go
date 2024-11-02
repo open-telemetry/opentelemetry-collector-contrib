@@ -75,7 +75,6 @@ func getTraces(t *testing.T) (traces pb.Traces) {
 		t.Fatal(err)
 	}
 	return traces
-
 }
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {

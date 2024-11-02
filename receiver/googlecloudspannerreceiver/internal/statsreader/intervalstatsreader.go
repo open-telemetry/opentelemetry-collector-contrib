@@ -37,7 +37,6 @@ func newIntervalStatsReader(
 	database *datasource.Database,
 	metricsMetadata *metadata.MetricsMetadata,
 	config ReaderConfig) *intervalStatsReader {
-
 	reader := currentStatsReader{
 		logger:                 logger,
 		database:               database,

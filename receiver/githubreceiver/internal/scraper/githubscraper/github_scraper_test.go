@@ -196,7 +196,6 @@ func TestScrape(t *testing.T) {
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
 			))
-
 		})
 	}
 }
