@@ -226,9 +226,8 @@ func attributesToMap(attributes pcommon.Map) string {
 
 	jsonData, err := json.Marshal(m)
 	if err != nil {
-		// Handle error more gracefully
-		return "{}" // or any appropriate fallback
+		return "{}"
 	}
 
-	return string(jsonData) // Return the JSON string
+	return string(jsonData)
 }

@@ -14,9 +14,8 @@ import (
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(metadata.Type,
 		createDefaultConfig,
-		// exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		// exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 
@@ -70,5 +69,42 @@ func createLogsExporter(
 	}
 
 	set.Logger.Info("Logs exporter created successfully")
+	return exporter, nil
+}
+
+func createTracesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	config component.Config) (exporter.Traces, error) {
+
+	set.Logger.Info("createLogsExporter called")
+
+	cfg := config.(*Config)
+	s, err := newTracesExporter(set.Logger, cfg)
+	if err != nil {
+		set.Logger.Error("Failed to create new logs exporter", zap.Error(err))
+		return nil, err
+	}
+
+	set.Logger.Info("newLogsExporter created successfully")
+
+	exporter, err := exporterhelper.NewTracesExporter(
+		ctx,
+		set,
+		cfg,
+		s.pushTraceData,
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithStart(s.start),
+		exporterhelper.WithShutdown(s.shutdown),
+		exporterhelper.WithTimeout(s.cfg.TimeoutSettings),
+	)
+
+	if err != nil {
+		set.Logger.Error("Failed to create traces exporter", zap.Error(err))
+		return nil, err
+	}
+
+	set.Logger.Info("Traces exporter created successfully")
 	return exporter, nil
 }

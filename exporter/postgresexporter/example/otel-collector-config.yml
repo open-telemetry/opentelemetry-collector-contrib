@@ -23,11 +23,9 @@ exporters:
       initial_interval: 5s
       max_interval: 30s
       max_elapsed_time: 300s
-  debug:
 service:
   pipelines:
     logs:
       receivers: [ otlp ]
       exporters: 
-        - debug
         - postgresexporter
