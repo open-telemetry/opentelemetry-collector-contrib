@@ -483,17 +483,10 @@ func TestTracesConnectorDetailed(t *testing.T) {
 				t.Fatalf("Error reading sink_default.yaml: %v", readErr)
 			}
 
-			ctx := context.Background()
-			if ctxFromFile, readErr := createContextFromFile(t, filepath.Join(tt, "request.yaml")); readErr == nil {
-				ctx = ctxFromFile
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading request.yaml: %v", readErr)
-			}
-
 			input, readErr := golden.ReadTraces(filepath.Join(tt, "input.yaml"))
 			require.NoError(t, readErr)
 
-			require.NoError(t, conn.ConsumeTraces(ctx, input))
+			require.NoError(t, conn.ConsumeTraces(context.Background(), input))
 
 			if expected0 == nil {
 				assert.Empty(t, sink0.AllTraces(), "sink0 should be empty")
