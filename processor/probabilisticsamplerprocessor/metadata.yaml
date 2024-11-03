@@ -29,7 +29,7 @@ telemetry:
         value_type: int
         monotonic: true
     processor_probabilistic_sampler_count_spans_sampled:
-      enabled: true
+      enabled: false
       description: Count of spans that were sampled or not
       unit: "1"
       sum:
