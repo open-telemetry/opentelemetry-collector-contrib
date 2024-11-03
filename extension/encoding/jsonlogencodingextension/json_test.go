@@ -47,7 +47,7 @@ func TestInvalidUnmarshal(t *testing.T) {
 		},
 	}
 	_, err := e.UnmarshalLogs([]byte("NOT A JSON"))
-	assert.ErrorContains(t, err, "ReadMapCB: expect { or n, but found N")
+	assert.ErrorContains(t, err, "expected { character for map value")
 }
 
 func TestPrettyLogProcessor(t *testing.T) {

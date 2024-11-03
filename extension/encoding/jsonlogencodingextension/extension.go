@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -37,7 +37,7 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("Marshal: Expected 'Map' found '%v'", logRecord.Type().String())
 	}
-	buf, err := jsoniter.Marshal(raw)
+	buf, err := json.Marshal(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 	// get json logs from the buffer
 	jsonVal := map[string]any{}
-	if err := jsoniter.Unmarshal(buf, &jsonVal); err != nil {
+	if err := json.Unmarshal(buf, &jsonVal); err != nil {
 		return p, err
 	}
 
@@ -96,7 +96,7 @@ func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
 		}
 	}
 
-	return jsoniter.Marshal(logs)
+	return json.Marshal(logs)
 }
 
 type logBody struct {
