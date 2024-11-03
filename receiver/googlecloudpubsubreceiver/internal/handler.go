@@ -57,7 +57,6 @@ func NewHandler(
 	clientID string,
 	subscription string,
 	callback func(ctx context.Context, message *pubsubpb.ReceivedMessage) error) (*StreamHandler, error) {
-
 	handler := StreamHandler{
 		logger:       logger,
 		client:       client,
