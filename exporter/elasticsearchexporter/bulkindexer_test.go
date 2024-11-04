@@ -171,7 +171,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			name: "500",
 			roundTripFunc: func(*http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: 500,
+					StatusCode: http.StatusInternalServerError,
 					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 					Body:       io.NopCloser(strings.NewReader("error")),
 				}, nil
@@ -182,7 +182,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			name: "429",
 			roundTripFunc: func(*http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: 429,
+					StatusCode: http.StatusTooManyRequests,
 					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 					Body:       io.NopCloser(strings.NewReader("error")),
 				}, nil
@@ -200,7 +200,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			name: "known version conflict error",
 			roundTripFunc: func(*http.Request) (*http.Response, error) {
 				return &http.Response{
-					StatusCode: 200,
+					StatusCode: http.StatusOK,
 					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
 					Body: io.NopCloser(strings.NewReader(
 						`{"items":[{"create":{"_index":".ds-metrics-generic.otel-default","status":400,"error":{"type":"version_conflict_engine_exception","reason":""}}}]}`)),

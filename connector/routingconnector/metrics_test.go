@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutiltest"
 )
 
 func TestMetricsRegisterConsumersForValidRoute(t *testing.T) {
@@ -494,4 +496,142 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, conn.Capabilities().MutatesData)
+}
+
+func TestMetricsConnectorDetailedConcise(t *testing.T) {
+	idSink0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
+	idSink1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
+	idSinkD := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")
+
+	isNotNil := `attributes["resourceName"] != nil`
+	isA := `attributes["resourceName"] == "resourceA"`
+	isB := `attributes["resourceName"] == "resourceB"`
+	isX := `attributes["resourceName"] == "resourceX"`
+	isY := `attributes["resourceName"] == "resourceY"`
+
+	testCfg := func(conditionZero, conditionOne string, withDefault bool) *Config {
+		cfg := createDefaultConfig().(*Config)
+		cfg.MatchOnce = true
+		cfg.Table = []RoutingTableItem{
+			{
+				Condition: conditionZero,
+				Pipelines: []pipeline.ID{idSink0},
+			},
+			{
+				Condition: conditionOne,
+				Pipelines: []pipeline.ID{idSink1},
+			},
+		}
+		if withDefault {
+			cfg.DefaultPipelines = []pipeline.ID{idSinkD}
+		}
+		return cfg
+	}
+
+	testCases := []struct {
+		name        string
+		cfg         *Config
+		input       pmetric.Metrics
+		expectSink0 pmetric.Metrics
+		expectSink1 pmetric.Metrics
+		expectSinkD pmetric.Metrics
+	}{
+		{
+			name:        "all_match_first_only",
+			cfg:         testCfg(isNotNil, isY, true),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name:        "all_match_last_only",
+			cfg:         testCfg(isX, isNotNil, true),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name:        "all_match_only_once",
+			cfg:         testCfg(isNotNil, isB, true),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name:        "each_matches_one",
+			cfg:         testCfg(isA, isB, true),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetricutiltest.NewMetrics("A", "CD", "EF", "FG"),
+			expectSink1: pmetricutiltest.NewMetrics("B", "CD", "EF", "FG"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name:        "some_match_with_default",
+			cfg:         testCfg(isX, isB, true),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewMetrics("B", "CD", "EF", "FG"),
+			expectSinkD: pmetricutiltest.NewMetrics("A", "CD", "EF", "FG"),
+		},
+		{
+			name:        "some_match_without_default",
+			cfg:         testCfg(isX, isB, false),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewMetrics("B", "CD", "EF", "FG"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name:        "match_none_with_default",
+			cfg:         testCfg(isX, isY, true),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+		},
+		{
+			name:        "match_none_without_default",
+			cfg:         testCfg(isX, isY, false),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "FG"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			var sinkD, sink0, sink1 consumertest.MetricsSink
+			router := connector.NewMetricsRouter(map[pipeline.ID]consumer.Metrics{
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "0"):       &sink0,
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "1"):       &sink1,
+				pipeline.NewIDWithName(pipeline.SignalMetrics, "default"): &sinkD,
+			})
+
+			conn, err := NewFactory().CreateMetricsToMetrics(
+				context.Background(),
+				connectortest.NewNopSettings(),
+				tt.cfg,
+				router.(consumer.Metrics),
+			)
+			require.NoError(t, err)
+
+			require.NoError(t, conn.ConsumeMetrics(context.Background(), tt.input))
+
+			assertExpected := func(sink *consumertest.MetricsSink, expected pmetric.Metrics, name string) {
+				if expected == (pmetric.Metrics{}) {
+					assert.Empty(t, sink.AllMetrics(), name)
+				} else {
+					require.Len(t, sink.AllMetrics(), 1, name)
+					assert.Equal(t, expected, sink.AllMetrics()[0], name)
+				}
+			}
+			assertExpected(&sink0, tt.expectSink0, "sink0")
+			assertExpected(&sink1, tt.expectSink1, "sink1")
+			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
+		})
+	}
 }
