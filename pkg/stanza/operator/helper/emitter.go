@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-// LogEmitter is a stanza operator that emits log entries to a channel
+// LogEmitter is a stanza operator that emits log entries to the consumer callback function `consumerFunc`
 type LogEmitter struct {
 	OutputOperator
 	closeChan     chan struct{}
