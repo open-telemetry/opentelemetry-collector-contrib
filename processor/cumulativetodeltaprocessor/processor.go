@@ -5,12 +5,10 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
-	"math"
-	"slices"
-	"strings"
-
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"math"
+	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
@@ -19,8 +17,8 @@ import (
 type cumulativeToDeltaProcessor struct {
 	includeFS          filterset.FilterSet
 	excludeFS          filterset.FilterSet
-	includeMetricTypes []string
-	excludeMetricTypes []string
+	includeMetricTypes map[pmetric.MetricType]bool
+	excludeMetricTypes map[pmetric.MetricType]bool
 	logger             *zap.Logger
 	deltaCalculator    *tracking.MetricTracker
 	cancelFunc         context.CancelFunc
@@ -32,8 +30,8 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 		logger:             logger,
 		deltaCalculator:    tracking.NewMetricTracker(ctx, logger, config.MaxStaleness, config.InitialValue),
 		cancelFunc:         cancel,
-		includeMetricTypes: config.Include.MetricTypes,
-		excludeMetricTypes: config.Exclude.MetricTypes,
+		includeMetricTypes: getMetricTypeFilter(config.Include.MetricTypes),
+		excludeMetricTypes: getMetricTypeFilter(config.Exclude.MetricTypes),
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
@@ -42,6 +40,20 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 		p.excludeFS, _ = filterset.CreateFilterSet(config.Exclude.Metrics, &config.Exclude.Config)
 	}
 	return p
+}
+
+func getMetricTypeFilter(types []string) map[pmetric.MetricType]bool {
+	res := map[pmetric.MetricType]bool{}
+	for _, t := range types {
+		switch strings.ToLower(t) {
+		case strings.ToLower(pmetric.MetricTypeSum.String()):
+			res[pmetric.MetricTypeSum] = true
+		case strings.ToLower(pmetric.MetricTypeHistogram.String()):
+			res[pmetric.MetricTypeHistogram] = true
+		default:
+		}
+	}
+	return res
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
@@ -119,9 +131,9 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 
 func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metric pmetric.Metric) bool {
 	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metric.Name())) &&
-		(len(ctdp.includeMetricTypes) == 0 || slices.Contains(ctdp.includeMetricTypes, strings.ToLower(metric.Type().String()))) &&
+		(len(ctdp.includeMetricTypes) == 0 || ctdp.includeMetricTypes[metric.Type()]) &&
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metric.Name())) &&
-		(len(ctdp.excludeMetricTypes) == 0 || !slices.Contains(ctdp.excludeMetricTypes, strings.ToLower(metric.Type().String())))
+		(len(ctdp.excludeMetricTypes) == 0 || !ctdp.excludeMetricTypes[metric.Type()])
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertNumberDataPoints(dps pmetric.NumberDataPointSlice, baseIdentity tracking.MetricIdentity) {

@@ -23,8 +23,8 @@ Configuration is specified through a list of metrics. The processor uses metric 
 
 The following settings can be optionally configured:
 
-- `include`: List of metrics names, patterns or metric types to convert to delta.
-- `exclude`: List of metrics names, patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.**
+- `include`: List of metrics names (case-insensitive), patterns or metric types to convert to delta. Valid values are: `sum`, `histogram`.
+- `exclude`: List of metrics names (case-insensitive), patterns or metric types to not convert to delta.  **If a metric name matches both include and exclude, exclude takes precedence.** Valid values are: `sum`, `histogram`.
 - `max_staleness`: The total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely. Default: 0
 - `initial_value`: Handling of the first observed point for a given metric identity.
   When the collector (re)starts, there's no record of how much of a given cumulative counter has already been converted to delta values.

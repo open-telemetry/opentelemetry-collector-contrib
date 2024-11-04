@@ -5,7 +5,7 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"fmt"
-	"slices"
+	"golang.org/x/exp/maps"
 	"strings"
 	"time"
 
@@ -16,10 +16,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
-var validMetricTypes = []string{
-	strings.ToLower(pmetric.MetricTypeSum.String()),
-	strings.ToLower(pmetric.MetricTypeHistogram.String()),
+var validMetricTypes = map[string]bool{
+	strings.ToLower(pmetric.MetricTypeSum.String()):       true,
+	strings.ToLower(pmetric.MetricTypeHistogram.String()): true,
 }
+
+var validMetricTypeList = maps.Keys(validMetricTypes)
 
 // Config defines the configuration for the processor.
 type Config struct {
@@ -63,23 +65,21 @@ func (config *Config) Validate() error {
 		return fmt.Errorf("metrics must be supplied if match_type is set")
 	}
 
-	for i, metricType := range config.Exclude.MetricTypes {
-		config.Exclude.MetricTypes[i] = strings.ToLower(metricType)
-		if !slices.Contains(validMetricTypes, config.Exclude.MetricTypes[i]) {
+	for _, metricType := range config.Exclude.MetricTypes {
+		if valid := validMetricTypes[strings.ToLower(metricType)]; !valid {
 			return fmt.Errorf(
 				"found invalid metric type in exclude.metric_types: %s. Valid values are [%s]",
 				metricType,
-				strings.Join(validMetricTypes, ","),
+				strings.Join(validMetricTypeList, ","),
 			)
 		}
 	}
-	for i, metricType := range config.Include.MetricTypes {
-		config.Include.MetricTypes[i] = strings.ToLower(metricType)
-		if !slices.Contains(validMetricTypes, config.Include.MetricTypes[i]) {
+	for _, metricType := range config.Include.MetricTypes {
+		if valid := validMetricTypes[strings.ToLower(metricType)]; !valid {
 			return fmt.Errorf(
 				"found invalid metric type in include.metric_types: %s. Valid values are [%s]",
 				metricType,
-				strings.Join(validMetricTypes, ","),
+				strings.Join(validMetricTypeList, ","),
 			)
 		}
 	}
