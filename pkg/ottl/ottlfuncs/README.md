@@ -1726,11 +1726,9 @@ attributes:
 
 Once the `SliceToMap` function has been applied to a value, the converted entries are addressable via their keys:
 
-```
-`set(attributes["thingsMap"], SliceToMap(attributes["things"], ["name"]))`
-`set(attributes["element_1"], attributes["thingsMap"]["foo'])`
-`set(attributes["element_2"], attributes["thingsMap"]["bar'])`
-```
+- `set(attributes["thingsMap"], SliceToMap(attributes["things"], ["name"]))`
+- `set(attributes["element_1"], attributes["thingsMap"]["foo'])`
+- `set(attributes["element_2"], attributes["thingsMap"]["bar'])`
 
 ### Sort
 
