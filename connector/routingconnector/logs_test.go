@@ -5,15 +5,11 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
@@ -21,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
@@ -472,91 +468,469 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	assert.False(t, conn.Capabilities().MutatesData)
 }
 
-func TestLogsConnectorDetailed(t *testing.T) {
-	testCases := []string{
-		filepath.Join("testdata", "logs", "request_context", "match_any_value"),
-		filepath.Join("testdata", "logs", "request_context", "match_grpc_value"),
-		filepath.Join("testdata", "logs", "request_context", "match_http_value"),
-		filepath.Join("testdata", "logs", "request_context", "match_http_value2"),
-		filepath.Join("testdata", "logs", "request_context", "match_no_grpc_value"),
-		filepath.Join("testdata", "logs", "request_context", "match_no_http_value"),
-		filepath.Join("testdata", "logs", "request_context", "no_request_values"),
-		filepath.Join("testdata", "logs", "resource_context", "all_match_first_only"),
-		filepath.Join("testdata", "logs", "resource_context", "all_match_last_only"),
-		filepath.Join("testdata", "logs", "resource_context", "all_match_once"),
-		filepath.Join("testdata", "logs", "resource_context", "each_matches_one"),
-		filepath.Join("testdata", "logs", "resource_context", "match_none_with_default"),
-		filepath.Join("testdata", "logs", "resource_context", "match_none_without_default"),
-		filepath.Join("testdata", "logs", "log_context", "all_match_first_only"),
-		filepath.Join("testdata", "logs", "log_context", "all_match_last_only"),
-		filepath.Join("testdata", "logs", "log_context", "match_none_with_default"),
-		filepath.Join("testdata", "logs", "log_context", "match_none_without_default"),
-		filepath.Join("testdata", "logs", "log_context", "some_match_each_route"),
-		filepath.Join("testdata", "logs", "log_context", "with_resource_condition"),
-		filepath.Join("testdata", "logs", "log_context", "with_scope_condition"),
-		filepath.Join("testdata", "logs", "log_context", "with_resource_and_scope_conditions"),
-		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_grpc_request"),
-		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_http_request"),
-		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_resource"),
-		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_grpc_request"),
-		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_http_request"),
-		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_logs"),
+func TestLogsConnectorDetailedConcise(t *testing.T) {
+	idSink0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
+	idSink1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
+	idSinkD := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
+
+	isAcme := `request["X-Tenant"] == "acme"`
+
+	isAnyResource := `attributes["resourceName"] != nil`
+	isResourceA := `attributes["resourceName"] == "resourceA"`
+	isResourceB := `attributes["resourceName"] == "resourceB"`
+	isResourceX := `attributes["resourceName"] == "resourceX"`
+	isResourceY := `attributes["resourceName"] == "resourceY"`
+
+	isScopeC := `instrumentation_scope.name == "scopeC"`
+	isScopeD := `instrumentation_scope.name == "scopeD"`
+
+	isAnyLog := `body != nil`
+	isLogE := `body == "logE"`
+	isLogF := `body == "logF"`
+	isLogX := `body == "logX"`
+	isLogY := `body == "logY"`
+
+	and, or := " and ", " or "
+
+	testCases := []struct {
+		name        string
+		cfg         *Config
+		ctx         context.Context
+		input       plog.Logs
+		expectSink0 plog.Logs
+		expectSink1 plog.Logs
+		expectSinkD plog.Logs
+	}{
+		{
+			name: "request/no_request_values",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         context.Background(),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		{
+			name: "request/match_any_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx: withGRPCMetadata(
+				withHTTPMetadata(
+					context.Background(),
+					map[string][]string{"X-Tenant": {"acme"}},
+				),
+				map[string]string{"X-Tenant": "notacme"},
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "request/match_grpc_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "request/match_no_grpc_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "notacme"}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		{
+			name: "request/match_http_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "request/match_http_value2",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme", "acme"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "request/match_no_http_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		{
+			name: "resource/all_match_first_only",
+			cfg: testConfig(
+				withRoute("resource", isAnyResource, idSink0),
+				withRoute("resource", isResourceY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "resource/all_match_last_only",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isAnyResource, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "resource/all_match_only_once",
+			cfg: testConfig(
+				withRoute("resource", isAnyResource, idSink0),
+				withRoute("resource", isResourceA+or+isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "resource/each_matches_one",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("A", "CD", "EF"),
+			expectSink1: plogutiltest.NewLogs("B", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "resource/some_match_with_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plogutiltest.NewLogs("B", "CD", "EF"),
+			expectSinkD: plogutiltest.NewLogs("A", "CD", "EF"),
+		},
+		{
+			name: "resource/some_match_without_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plogutiltest.NewLogs("B", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "resource/match_none_with_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		{
+			name: "resource/match_none_without_default",
+			cfg: testConfig(
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceY, idSink1),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/all_match_first_only",
+			cfg: testConfig(
+				withRoute("log", isAnyLog, idSink0),
+				withRoute("log", isLogY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/all_match_last_only",
+			cfg: testConfig(
+				withRoute("log", isLogX, idSink0),
+				withRoute("log", isAnyLog, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/all_match_only_once",
+			cfg: testConfig(
+				withRoute("log", isAnyLog, idSink0),
+				withRoute("log", isLogE+or+isLogF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/each_matches_one",
+			cfg: testConfig(
+				withRoute("log", isLogE, idSink0),
+				withRoute("log", isLogF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "E"),
+			expectSink1: plogutiltest.NewLogs("AB", "CD", "F"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/some_match_with_default",
+			cfg: testConfig(
+				withRoute("log", isLogX, idSink0),
+				withRoute("log", isLogF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plogutiltest.NewLogs("AB", "CD", "F"),
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "E"),
+		},
+		{
+			name: "log/some_match_without_default",
+			cfg: testConfig(
+				withRoute("log", isLogX, idSink0),
+				withRoute("log", isLogF, idSink1),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plogutiltest.NewLogs("AB", "CD", "F"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/match_none_with_default",
+			cfg: testConfig(
+				withRoute("log", isLogX, idSink0),
+				withRoute("log", isLogY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "CD", "EF"),
+		},
+		{
+			name: "log/match_none_without_default",
+			cfg: testConfig(
+				withRoute("log", isLogX, idSink0),
+				withRoute("log", isLogY, idSink1),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plog.Logs{},
+			expectSink1: plog.Logs{},
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "log/with_resource_condition",
+			cfg: testConfig(
+				withRoute("log", "resource."+isResourceB+and+isAnyLog, idSink0),
+				withRoute("log", isLogY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("B", "CD", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("A", "CD", "EF"),
+		},
+		{
+			name: "log/with_scope_condition",
+			cfg: testConfig(
+				withRoute("log", isScopeC+and+isAnyLog, idSink0),
+				withRoute("log", isLogY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "C", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogs("AB", "D", "EF"),
+		},
+		{
+			name: "log/with_resource_and_scope_conditions",
+			cfg: testConfig(
+				withRoute("log", "resource."+isResourceB+and+isScopeD+and+isAnyLog, idSink0),
+				withRoute("log", isLogY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("B", "D", "EF"),
+			expectSink1: plog.Logs{},
+			expectSinkD: plogutiltest.NewLogsFromOpts(
+				plogutiltest.WithResource('A', plogutiltest.WithScope('C', "EF"), plogutiltest.WithScope('D', "EF")),
+				plogutiltest.WithResource('B', plogutiltest.WithScope('C', "EF")),
+			),
+		},
+		{
+			name: "match_resource_then_logs",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("log", isLogE, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("A", "CD", "EF"),
+			expectSink1: plogutiltest.NewLogs("B", "CD", "E"),
+			expectSinkD: plogutiltest.NewLogs("B", "CD", "F"),
+		},
+		{
+			name: "match_logs_then_resource",
+			cfg: testConfig(
+				withRoute("log", isLogE, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "E"),
+			expectSink1: plogutiltest.NewLogs("B", "CD", "F"),
+			expectSinkD: plogutiltest.NewLogs("A", "CD", "F"),
+		},
+		{
+			name: "match_resource_then_grpc_request",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("A", "CD", "EF"),
+			expectSink1: plogutiltest.NewLogs("B", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "match_logs_then_grpc_request",
+			cfg: testConfig(
+				withRoute("log", isLogF, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "F"),
+			expectSink1: plogutiltest.NewLogs("AB", "CD", "E"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "match_resource_then_http_request",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("A", "CD", "EF"),
+			expectSink1: plogutiltest.NewLogs("B", "CD", "EF"),
+			expectSinkD: plog.Logs{},
+		},
+		{
+			name: "match_logs_then_http_request",
+			cfg: testConfig(
+				withRoute("log", isLogF, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectSink0: plogutiltest.NewLogs("AB", "CD", "F"),
+			expectSink1: plogutiltest.NewLogs("AB", "CD", "E"),
+			expectSinkD: plog.Logs{},
+		},
 	}
 
 	for _, tt := range testCases {
-		t.Run(tt, func(t *testing.T) {
-
-			cm, err := confmaptest.LoadConf(filepath.Join(tt, "config.yaml"))
-			require.NoError(t, err)
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
-			sub, err := cm.Sub("routing")
-			require.NoError(t, err)
-			require.NoError(t, sub.Unmarshal(cfg))
-			require.NoError(t, component.ValidateConfig(cfg))
-
-			var sinkDefault, sink0, sink1 consumertest.LogsSink
+		t.Run(tt.name, func(t *testing.T) {
+			var sinkD, sink0, sink1 consumertest.LogsSink
 			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
-				pipeline.NewIDWithName(pipeline.SignalLogs, "default"): &sinkDefault,
 				pipeline.NewIDWithName(pipeline.SignalLogs, "0"):       &sink0,
 				pipeline.NewIDWithName(pipeline.SignalLogs, "1"):       &sink1,
+				pipeline.NewIDWithName(pipeline.SignalLogs, "default"): &sinkD,
 			})
 
-			conn, err := factory.CreateLogsToLogs(
+			conn, err := NewFactory().CreateLogsToLogs(
 				context.Background(),
 				connectortest.NewNopSettings(),
-				cfg,
+				tt.cfg,
 				router.(consumer.Logs),
 			)
 			require.NoError(t, err)
 
 			ctx := context.Background()
-			if ctxFromFile, readErr := createContextFromFile(t, filepath.Join(tt, "request.yaml")); readErr == nil {
-				ctx = ctxFromFile
-			} else if !os.IsNotExist(readErr) {
-				t.Fatalf("Error reading request.yaml: %v", readErr)
+			if tt.ctx != nil {
+				ctx = tt.ctx
 			}
 
-			input, readErr := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
-			require.NoError(t, readErr)
+			require.NoError(t, conn.ConsumeLogs(ctx, tt.input))
 
-			require.NoError(t, conn.ConsumeLogs(ctx, input))
-
-			assertExpected := func(actual []plog.Logs, filePath string) {
-				expected, err := golden.ReadLogs(filePath)
-				switch {
-				case err == nil:
-					require.Len(t, actual, 1)
-					assert.Equal(t, expected, actual[0])
-				case os.IsNotExist(err):
-					assert.Empty(t, actual)
-				default:
-					t.Fatalf("Error reading %s: %v", filePath, err)
+			assertExpected := func(sink *consumertest.LogsSink, expected plog.Logs, name string) {
+				if expected == (plog.Logs{}) {
+					assert.Empty(t, sink.AllLogs(), name)
+				} else {
+					require.Len(t, sink.AllLogs(), 1, name)
+					assert.Equal(t, expected, sink.AllLogs()[0], name)
 				}
 			}
-			assertExpected(sink0.AllLogs(), filepath.Join(tt, "sink_0.yaml"))
-			assertExpected(sink1.AllLogs(), filepath.Join(tt, "sink_1.yaml"))
-			assertExpected(sinkDefault.AllLogs(), filepath.Join(tt, "sink_default.yaml"))
+			assertExpected(&sink0, tt.expectSink0, "sink0")
+			assertExpected(&sink1, tt.expectSink1, "sink1")
+			assertExpected(&sinkD, tt.expectSinkD, "sinkD")
 		})
 	}
 }
