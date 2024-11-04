@@ -6,7 +6,6 @@ package adapter
 import (
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -17,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -285,7 +285,6 @@ pipeline:
 	require.NoError(b, conf.Unmarshal(&operatorCfg))
 
 	operatorCfgs := []operator.Config{operatorCfg}
-	//require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	storageClient := storagetest.NewInMemoryClient(
 		component.KindReceiver,
