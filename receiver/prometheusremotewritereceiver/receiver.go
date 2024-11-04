@@ -14,11 +14,13 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	promconfig "github.com/prometheus/prometheus/config"
+	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
@@ -26,9 +28,10 @@ import (
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	return &prometheusRemoteWriteReceiver{
-		settings:     settings,
-		nextConsumer: nextConsumer,
-		config:       cfg,
+		settings:         settings,
+		nextConsumer:     nextConsumer,
+		config:           cfg,
+		jobInstanceCache: make(map[string]pmetric.ResourceMetrics),
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
@@ -39,8 +42,9 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	config *Config
-	server *http.Server
+	jobInstanceCache map[string]pmetric.ResourceMetrics
+	config           *Config
+	server           *http.Server
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -150,8 +154,105 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 }
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
-// For now translateV2 is not implemented and returns an empty metrics.
+// translate is not feature complete.
 // nolint
-func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, _ *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
-	return pmetric.NewMetrics(), promremote.WriteResponseStats{}, nil
+func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+	var (
+		badRequestErrors []error
+		otelMetrics      = pmetric.NewMetrics()
+		b                = labels.NewScratchBuilder(0)
+		stats            = promremote.WriteResponseStats{}
+	)
+
+	for _, ts := range req.Timeseries {
+		ls := ts.ToLabels(&b, req.Symbols)
+
+		if !ls.Has(labels.MetricName) {
+			badRequestErrors = append(badRequestErrors, fmt.Errorf("missing metric name in labels"))
+			continue
+		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
+			badRequestErrors = append(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
+			continue
+		}
+
+		var rm pmetric.ResourceMetrics
+		// This cache should be populated by the metric 'target_info', but we're not handling it yet.
+		cacheEntry, ok := prw.jobInstanceCache[ls.Get("instance")+ls.Get("job")]
+		if ok {
+			rm = pmetric.NewResourceMetrics()
+			cacheEntry.CopyTo(rm)
+		} else {
+			// A remote-write request can have multiple timeseries with the same instance and job labels.
+			// While they are different timeseries in Prometheus, we're handling it as the same OTLP metric
+			// until we support 'target_info'.
+			rm = otelMetrics.ResourceMetrics().AppendEmpty()
+			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("instance"), ls.Get("job"))
+			prw.jobInstanceCache[ls.Get("instance")+ls.Get("job")] = rm
+		}
+
+		switch ts.Metadata.Type {
+		case writev2.Metadata_METRIC_TYPE_COUNTER:
+			addCounterDatapoints(rm, ls, ts)
+		case writev2.Metadata_METRIC_TYPE_GAUGE:
+			addGaugeDatapoints(rm, ls, ts)
+		case writev2.Metadata_METRIC_TYPE_SUMMARY:
+			addSummaryDatapoints(rm, ls, ts)
+		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+			addHistogramDatapoints(rm, ls, ts)
+		default:
+			badRequestErrors = append(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
+		}
+	}
+
+	return otelMetrics, stats, errors.Join(badRequestErrors...)
+}
+
+// parseJobAndInstance turns the job and instance labels service resource attributes.
+// Following the specification at https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
+func parseJobAndInstance(dest pcommon.Map, instance, job string) {
+	if job != "" {
+		dest.PutStr("service.namespace", job)
+	}
+	if instance != "" {
+		parts := strings.Split(instance, "/")
+		if len(parts) == 2 {
+			dest.PutStr("service.name", parts[0])
+			dest.PutStr("service.instance.id", parts[1])
+			return
+		}
+		dest.PutStr("service.name", instance)
+	}
+}
+
+func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge()
+	addDatapoints(m.DataPoints(), ls, ts)
+}
+
+func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+// addDatapoints adds the labels to the datapoints attributes.
+// TODO: We're still not handling several fields that make a datapoint complete, e.g. StartTimestamp,
+// Timestamp, Value, etc.
+func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, _ writev2.TimeSeries) {
+	attributes := datapoints.AppendEmpty().Attributes()
+
+	for _, l := range ls {
+		if l.Name == "instance" || l.Name == "job" || // Become resource attributes "service.name", "service.instance.id" and "service.namespace"
+			l.Name == labels.MetricName || // Becomes metric name
+			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+			continue
+		}
+		attributes.PutStr(l.Name, l.Value)
+	}
 }
