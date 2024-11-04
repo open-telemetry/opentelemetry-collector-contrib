@@ -104,6 +104,22 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, 1, len(r2.PrometheusConfig.ScrapeConfigs))
 	assert.Equal(t, "demo", r2.PrometheusConfig.ScrapeConfigs[0].JobName)
 	assert.Equal(t, promModel.Duration(5*time.Second), r2.PrometheusConfig.ScrapeConfigs[0].ScrapeInterval)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "k8Setup").String())
+	require.NoError(t, err)
+
+	t.Setenv("POD_NAME", "collector-1")
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, component.ValidateConfig(cfg))
+
+	r3 := cfg.(*Config)
+	assert.Equal(t, "https://target-allocator-service:80", r3.TargetAllocator.Endpoint)
+	assert.Equal(t, 30*time.Second, r3.TargetAllocator.Interval)
+	assert.Equal(t, "collector-1", r3.TargetAllocator.CollectorID)
+	assert.Equal(t, promModel.Duration(15*time.Second), r3.PrometheusConfig.GlobalConfig.ScrapeInterval)
+	assert.Equal(t, promModel.Duration(10*time.Second), r3.PrometheusConfig.GlobalConfig.ScrapeTimeout)
+
 }
 
 func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
@@ -340,35 +356,4 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateAuthorization(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.Authorization = &promConfig.Authorization{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.Authorization.CredentialsFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.Authorization.CredentialsFile = filepath.Join("testdata", "dummy-tls-cert-file")
-	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateTLSConfig(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.CertFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.CertFile = filepath.Join("testdata", "dummy-tls-cert-file")
-	cfg.TLSConfig.KeyFile = "none"
-	require.Error(t, component.ValidateConfig(cfg))
-	cfg.TLSConfig.KeyFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.NoError(t, component.ValidateConfig(cfg))
-}
-
-func TestPromHTTPClientConfigValidateMain(t *testing.T) {
-	cfg := PromHTTPClientConfig{}
-	require.NoError(t, component.ValidateConfig(cfg))
-	cfg.BearerToken = "foo"
-	cfg.BearerTokenFile = filepath.Join("testdata", "dummy-tls-key-file")
-	require.Error(t, component.ValidateConfig(cfg))
 }

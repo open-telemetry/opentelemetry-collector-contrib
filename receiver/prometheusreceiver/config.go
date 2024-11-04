@@ -6,19 +6,17 @@ package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
-	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
 )
 
 // Config defines configuration for Prometheus receiver.
@@ -37,7 +35,7 @@ type Config struct {
 	// ReportExtraScrapeMetrics - enables reporting of additional metrics for Prometheus client like scrape_body_size_bytes
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
-	TargetAllocator *TargetAllocator `mapstructure:"target_allocator"`
+	TargetAllocator *targetallocator.Config `mapstructure:"target_allocator"`
 }
 
 // Validate checks the receiver configuration is valid.
@@ -48,32 +46,12 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-type TargetAllocator struct {
-	confighttp.ClientConfig `mapstructure:",squash"`
-	Interval                time.Duration         `mapstructure:"interval"`
-	CollectorID             string                `mapstructure:"collector_id"`
-	HTTPSDConfig            *PromHTTPSDConfig     `mapstructure:"http_sd_config"`
-	HTTPScrapeConfig        *PromHTTPClientConfig `mapstructure:"http_scrape_config"`
-}
-
-func (cfg *TargetAllocator) Validate() error {
-	// ensure valid endpoint
-	if _, err := url.ParseRequestURI(cfg.Endpoint); err != nil {
-		return fmt.Errorf("TargetAllocator endpoint is not valid: %s", cfg.Endpoint)
-	}
-	// ensure valid collectorID without variables
-	if cfg.CollectorID == "" || strings.Contains(cfg.CollectorID, "${") {
-		return fmt.Errorf("CollectorID is not a valid ID")
-	}
-
-	return nil
-}
-
 // PromConfig is a redeclaration of promconfig.Config because we need custom unmarshaling
 // as prometheus "config" uses `yaml` tags.
 type PromConfig promconfig.Config
 
 var _ confmap.Unmarshaler = (*PromConfig)(nil)
+var _ confmap.Marshaler = (*PromConfig)(nil)
 
 func (cfg *PromConfig) Unmarshal(componentParser *confmap.Conf) error {
 	cfgMap := componentParser.ToStringMap()
@@ -81,6 +59,20 @@ func (cfg *PromConfig) Unmarshal(componentParser *confmap.Conf) error {
 		return nil
 	}
 	return unmarshalYAML(cfgMap, (*promconfig.Config)(cfg))
+}
+
+func (cfg PromConfig) Marshal(componentParser *confmap.Conf) error {
+	yamlOut, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
+	}
+
+	var result map[string]any
+	err = yaml.UnmarshalStrict(yamlOut, &result)
+	if err != nil {
+		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
+	}
+	return componentParser.Merge(confmap.NewFromStringMap(result))
 }
 
 func (cfg *PromConfig) Validate() error {
@@ -124,43 +116,6 @@ func (cfg *PromConfig) Validate() error {
 		}
 	}
 	return nil
-}
-
-// PromHTTPSDConfig is a redeclaration of promHTTP.SDConfig because we need custom unmarshaling
-// as prometheus "config" uses `yaml` tags.
-type PromHTTPSDConfig promHTTP.SDConfig
-
-var _ confmap.Unmarshaler = (*PromHTTPSDConfig)(nil)
-
-func (cfg *PromHTTPSDConfig) Unmarshal(componentParser *confmap.Conf) error {
-	cfgMap := componentParser.ToStringMap()
-	if len(cfgMap) == 0 {
-		return nil
-	}
-	cfgMap["url"] = "http://placeholder" // we have to set it as else marshaling will fail
-	return unmarshalYAML(cfgMap, (*promHTTP.SDConfig)(cfg))
-}
-
-type PromHTTPClientConfig commonconfig.HTTPClientConfig
-
-var _ confmap.Unmarshaler = (*PromHTTPClientConfig)(nil)
-
-func (cfg *PromHTTPClientConfig) Unmarshal(componentParser *confmap.Conf) error {
-	cfgMap := componentParser.ToStringMap()
-	if len(cfgMap) == 0 {
-		return nil
-	}
-	return unmarshalYAML(cfgMap, (*commonconfig.HTTPClientConfig)(cfg))
-}
-
-func (cfg *PromHTTPClientConfig) Validate() error {
-	httpCfg := (*commonconfig.HTTPClientConfig)(cfg)
-	if err := validateHTTPClientConfig(httpCfg); err != nil {
-		return err
-	}
-	// Prometheus UnmarshalYaml implementation by default calls Validate,
-	// but it is safer to do it here as well.
-	return httpCfg.Validate()
 }
 
 func unmarshalYAML(in map[string]any, out any) error {
