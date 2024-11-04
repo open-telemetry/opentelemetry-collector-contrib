@@ -27,10 +27,10 @@ func sliceToMapFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, fmt.Errorf("SliceToMapFactory args must be of type *SliceToMapArguments[K")
 	}
 
-	return sliceToMap(args.Target, args.KeyPath, args.ValuePath)
+	return getSliceToMapFunc(args.Target, args.KeyPath, args.ValuePath)
 }
 
-func sliceToMap[K any](target ottl.Getter[K], keyPath []string, valuePath ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
+func getSliceToMapFunc[K any](target ottl.Getter[K], keyPath []string, valuePath ottl.Optional[[]string]) (ottl.ExprFunc[K], error) {
 	if len(keyPath) == 0 {
 		return nil, fmt.Errorf("key path must contain at least one element")
 	}
