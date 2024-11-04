@@ -21,11 +21,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestGoldenData(t *testing.T) {
-	processors := map[string]string{
-		"batch": `
+	processors := []correctnesstests.ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
     send_batch_size: 1024
 `,
+		},
 	}
 	sampleTest := correctnesstests.PipelineDef{
 		TestName:  "test routing",
@@ -49,7 +52,7 @@ func testWithGoldenDataset(
 	receiver testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
 	connector testbed.DataConnector,
-	processors map[string]string,
+	processors []correctnesstests.ProcessorNameAndConfigBody,
 ) {
 	dataProvider := testbed.NewGoldenDataProvider(
 		"../../../internal/coreinternal/goldendataset/testdata/generated_pict_pairs_traces.txt",

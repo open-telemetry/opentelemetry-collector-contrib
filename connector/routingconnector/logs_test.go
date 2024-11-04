@@ -5,17 +5,23 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
@@ -464,4 +470,93 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, conn.Capabilities().MutatesData)
+}
+
+func TestLogsConnectorDetailed(t *testing.T) {
+	testCases := []string{
+		filepath.Join("testdata", "logs", "request_context", "match_any_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_grpc_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_http_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_http_value2"),
+		filepath.Join("testdata", "logs", "request_context", "match_no_grpc_value"),
+		filepath.Join("testdata", "logs", "request_context", "match_no_http_value"),
+		filepath.Join("testdata", "logs", "request_context", "no_request_values"),
+		filepath.Join("testdata", "logs", "resource_context", "all_match_first_only"),
+		filepath.Join("testdata", "logs", "resource_context", "all_match_last_only"),
+		filepath.Join("testdata", "logs", "resource_context", "all_match_once"),
+		filepath.Join("testdata", "logs", "resource_context", "each_matches_one"),
+		filepath.Join("testdata", "logs", "resource_context", "match_none_with_default"),
+		filepath.Join("testdata", "logs", "resource_context", "match_none_without_default"),
+		filepath.Join("testdata", "logs", "log_context", "all_match_first_only"),
+		filepath.Join("testdata", "logs", "log_context", "all_match_last_only"),
+		filepath.Join("testdata", "logs", "log_context", "match_none_with_default"),
+		filepath.Join("testdata", "logs", "log_context", "match_none_without_default"),
+		filepath.Join("testdata", "logs", "log_context", "some_match_each_route"),
+		filepath.Join("testdata", "logs", "log_context", "with_resource_condition"),
+		filepath.Join("testdata", "logs", "log_context", "with_scope_condition"),
+		filepath.Join("testdata", "logs", "log_context", "with_resource_and_scope_conditions"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_grpc_request"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_http_request"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_logs_then_resource"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_grpc_request"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_http_request"),
+		filepath.Join("testdata", "logs", "mixed_context", "match_resource_then_logs"),
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt, func(t *testing.T) {
+
+			cm, err := confmaptest.LoadConf(filepath.Join(tt, "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub("routing")
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			require.NoError(t, component.ValidateConfig(cfg))
+
+			var sinkDefault, sink0, sink1 consumertest.LogsSink
+			router := connector.NewLogsRouter(map[pipeline.ID]consumer.Logs{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "default"): &sinkDefault,
+				pipeline.NewIDWithName(pipeline.SignalLogs, "0"):       &sink0,
+				pipeline.NewIDWithName(pipeline.SignalLogs, "1"):       &sink1,
+			})
+
+			conn, err := factory.CreateLogsToLogs(
+				context.Background(),
+				connectortest.NewNopSettings(),
+				cfg,
+				router.(consumer.Logs),
+			)
+			require.NoError(t, err)
+
+			ctx := context.Background()
+			if ctxFromFile, readErr := createContextFromFile(t, filepath.Join(tt, "request.yaml")); readErr == nil {
+				ctx = ctxFromFile
+			} else if !os.IsNotExist(readErr) {
+				t.Fatalf("Error reading request.yaml: %v", readErr)
+			}
+
+			input, readErr := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+			require.NoError(t, readErr)
+
+			require.NoError(t, conn.ConsumeLogs(ctx, input))
+
+			assertExpected := func(actual []plog.Logs, filePath string) {
+				expected, err := golden.ReadLogs(filePath)
+				switch {
+				case err == nil:
+					require.Len(t, actual, 1)
+					assert.Equal(t, expected, actual[0])
+				case os.IsNotExist(err):
+					assert.Empty(t, actual)
+				default:
+					t.Fatalf("Error reading %s: %v", filePath, err)
+				}
+			}
+			assertExpected(sink0.AllLogs(), filepath.Join(tt, "sink_0.yaml"))
+			assertExpected(sink1.AllLogs(), filepath.Join(tt, "sink_1.yaml"))
+			assertExpected(sinkDefault.AllLogs(), filepath.Join(tt, "sink_default.yaml"))
+		})
+	}
 }

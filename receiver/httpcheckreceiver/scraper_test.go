@@ -195,7 +195,6 @@ func TestNilClient(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
-
 }
 
 func TestScraperMultipleTargets(t *testing.T) {
