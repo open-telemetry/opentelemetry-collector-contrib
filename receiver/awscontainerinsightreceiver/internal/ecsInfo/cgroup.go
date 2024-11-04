@@ -85,7 +85,6 @@ func newCGroupScanner(ctx context.Context, mountConfigPath string, logger *zap.L
 }
 
 func (c *cgroupScanner) refresh() {
-
 	if c.ecsTaskInfoProvider == nil {
 		return
 	}
