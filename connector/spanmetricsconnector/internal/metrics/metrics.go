@@ -47,7 +47,9 @@ type explicitHistogram struct {
 	bounds []float64
 
 	maxExemplarCount *int
-	startTimestamp   pcommon.Timestamp
+
+	startTimestamp    pcommon.Timestamp
+	lastSeenTimestamp pcommon.Timestamp
 }
 
 type exponentialHistogram struct {
@@ -57,7 +59,9 @@ type exponentialHistogram struct {
 	histogram *structure.Histogram[float64]
 
 	maxExemplarCount *int
-	startTimestamp   pcommon.Timestamp
+
+	startTimestamp    pcommon.Timestamp
+	lastSeenTimestamp pcommon.Timestamp
 }
 
 type generateStartTimestamp = func(Key) pcommon.Timestamp
@@ -91,6 +95,7 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map, 
 		m.metrics[key] = h
 	}
 
+	h.lastSeenTimestamp = startTimestamp
 	return h
 }
 
@@ -104,8 +109,14 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 	dps.EnsureCapacity(len(m.metrics))
 	for _, h := range m.metrics {
 		dp := dps.AppendEmpty()
+		var startTimeStamp pcommon.Timestamp
+		if temporality == pmetric.AggregationTemporalityDelta {
+			startTimeStamp = h.lastSeenTimestamp
+		} else {
+			startTimeStamp = h.startTimestamp
+		}
+		dp.SetStartTimestamp(startTimeStamp)
 		dp.SetTimestamp(timestamp)
-		dp.SetStartTimestamp(h.startTimestamp)
 		dp.ExplicitBounds().FromRaw(h.bounds)
 		dp.BucketCounts().FromRaw(h.bucketCounts)
 		dp.SetCount(h.count)
@@ -115,7 +126,6 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 		}
 		h.exemplars.CopyTo(dp.Exemplars())
 		h.attributes.CopyTo(dp.Attributes())
-		dp.Attributes().PutInt("startTimestamp", int64(h.startTimestamp))
 	}
 }
 
@@ -143,6 +153,7 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Ma
 		m.metrics[key] = h
 	}
 
+	h.lastSeenTimestamp = startTimeStamp
 	return h
 }
 
@@ -156,7 +167,13 @@ func (m *exponentialHistogramMetrics) BuildMetrics(
 	dps.EnsureCapacity(len(m.metrics))
 	for _, e := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(e.startTimestamp)
+		var startTimeStamp pcommon.Timestamp
+		if temporality == pmetric.AggregationTemporalityDelta {
+			startTimeStamp = e.lastSeenTimestamp
+		} else {
+			startTimeStamp = e.startTimestamp
+		}
+		dp.SetStartTimestamp(startTimeStamp)
 		dp.SetTimestamp(timestamp)
 		expoHistToExponentialDataPoint(e.histogram, dp)
 		for i := 0; i < e.exemplars.Len(); i++ {
@@ -164,7 +181,6 @@ func (m *exponentialHistogramMetrics) BuildMetrics(
 		}
 		e.exemplars.CopyTo(dp.Exemplars())
 		e.attributes.CopyTo(dp.Attributes())
-		dp.Attributes().PutInt("startTimestamp", int64(e.startTimestamp))
 	}
 }
 
@@ -239,11 +255,14 @@ func (h *exponentialHistogram) AddExemplar(traceID pcommon.TraceID, spanID pcomm
 }
 
 type Sum struct {
-	attributes       pcommon.Map
-	count            uint64
+	attributes pcommon.Map
+	count      uint64
+
 	exemplars        pmetric.ExemplarSlice
 	maxExemplarCount *int
-	startTimestamp   pcommon.Timestamp
+
+	startTimestamp    pcommon.Timestamp
+	lastSeenTimestamp pcommon.Timestamp
 }
 
 func (s *Sum) Add(value uint64) {
@@ -273,6 +292,7 @@ func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimestamp
 		}
 		m.metrics[key] = s
 	}
+	s.lastSeenTimestamp = startTimestamp
 	return s
 }
 
@@ -298,7 +318,13 @@ func (m *SumMetrics) BuildMetrics(
 	dps.EnsureCapacity(len(m.metrics))
 	for _, s := range m.metrics {
 		dp := dps.AppendEmpty()
-		dp.SetStartTimestamp(s.startTimestamp)
+		var startTimeStamp pcommon.Timestamp
+		if temporality == pmetric.AggregationTemporalityDelta {
+			startTimeStamp = s.lastSeenTimestamp
+		} else {
+			startTimeStamp = s.startTimestamp
+		}
+		dp.SetStartTimestamp(startTimeStamp)
 		dp.SetTimestamp(timestamp)
 		dp.SetIntValue(int64(s.count))
 		for i := 0; i < s.exemplars.Len(); i++ {
