@@ -26,7 +26,7 @@ import (
 )
 
 func TestIntegration(t *testing.T) {
-	t.Skip("Broken test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34489")
+	t.Skip("Broken test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36177")
 
 	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
 	// nolint:staticcheck
