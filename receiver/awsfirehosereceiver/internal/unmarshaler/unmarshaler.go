@@ -20,7 +20,7 @@ type MetricsUnmarshaler interface {
 // LogsUnmarshaler deserializes the message body
 type LogsUnmarshaler interface {
 	// Unmarshal deserializes the records into logs.
-	Unmarshal(records [][]byte) (plog.Logs, error)
+	Unmarshal(records [][]byte, commonAttributes map[string]string, firehoseARN string, timestamp int64) (plog.Logs, error)
 
 	// Type of the serialized messages.
 	Type() string

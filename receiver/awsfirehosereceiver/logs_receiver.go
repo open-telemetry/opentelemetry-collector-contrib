@@ -61,8 +61,8 @@ func newLogsReceiver(
 // Consume uses the configured unmarshaler to deserialize the records into a
 // single plog.Logs. It will send the final result
 // to the next consumer.
-func (mc *logsConsumer) Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error) {
-	md, err := mc.unmarshaler.Unmarshal(records)
+func (mc *logsConsumer) Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string, firehoseARN string, timestamp int64) (int, error) {
+	md, err := mc.unmarshaler.Unmarshal(records, commonAttributes, firehoseARN, timestamp)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
