@@ -57,9 +57,9 @@ exporter/datasetexporter/                                           @open-teleme
 exporter/dorisexporter/                                             @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l
 exporter/elasticsearchexporter/                                     @open-telemetry/collector-contrib-approvers @JaredTan95 @carsonip @lahsivjar
 exporter/fileexporter/                                              @open-telemetry/collector-contrib-approvers @atingchen
-exporter/googlecloudexporter/                                       @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya  @psx95
+exporter/googlecloudexporter/                                       @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @psx95
 exporter/googlecloudpubsubexporter/                                 @open-telemetry/collector-contrib-approvers @alexvanboxel
-exporter/googlemanagedprometheusexporter/                           @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya  @psx95
+exporter/googlemanagedprometheusexporter/                           @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @psx95
 exporter/honeycombmarkerexporter/                                   @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
 exporter/influxdbexporter/                                          @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/kafkaexporter/                                             @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
@@ -97,7 +97,7 @@ extension/encoding/jsonlogencodingextension/                        @open-teleme
 extension/encoding/otlpencodingextension/                           @open-telemetry/collector-contrib-approvers @dao-jun @VihasMakwana
 extension/encoding/textencodingextension/                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 extension/encoding/zipkinencodingextension/                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @dao-jun
-extension/googleclientauthextension/                                @open-telemetry/collector-contrib-approvers @dashpole  @aabmass @jsuereth @punya @psx95
+extension/googleclientauthextension/                                @open-telemetry/collector-contrib-approvers @dashpole @aabmass @jsuereth @punya @psx95
 extension/headerssetterextension/                                   @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                                     @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckv2extension/                                   @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
@@ -108,7 +108,6 @@ extension/observer/                                                 @open-teleme
 extension/observer/cfgardenobserver/                                @open-telemetry/collector-contrib-approvers @crobert-1 @cemdk @tomasmota @m1rp @jriguera
 extension/observer/dockerobserver/                                  @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecsobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
-extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers
 extension/observer/hostobserver/                                    @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
@@ -250,7 +249,6 @@ receiver/httpcheckreceiver/                                         @open-teleme
 receiver/iisreceiver/                                               @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                          @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                            @open-telemetry/collector-contrib-approvers @yurishkuro
-receiver/jmxreceiver/                                               @open-telemetry/collector-contrib-approvers
 receiver/journaldreceiver/                                          @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                        @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv
 receiver/k8seventsreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
@@ -325,3 +323,5 @@ reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 
 ## UNMAINTAINED components
 
+extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers 
+receiver/jmxreceiver/                                               @open-telemetry/collector-contrib-approvers 
