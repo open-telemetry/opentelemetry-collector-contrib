@@ -3,6 +3,8 @@
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
+import "math"
+
 var (
 	defaultContextInferPriority = []string{
 		"log",
@@ -16,28 +18,17 @@ var (
 	}
 )
 
-type ContextInferrer interface {
-	Infer(statements []string) (string, error)
+// contextInferrer is an interface used to infer the OTTL context from statements paths.
+type contextInferrer interface {
+	// infer returns the OTTL context inferred from the given statements paths.
+	infer(statements []string) (string, error)
 }
 
-type staticContextInferrer struct {
-	context string
+type priorityContextInferrer struct {
+	contextPriority map[string]int
 }
 
-func (s *staticContextInferrer) Infer(_ []string) (string, error) {
-	return s.context, nil
-}
-
-func NewStaticContextInferrer(context string) ContextInferrer {
-	return &staticContextInferrer{context: context}
-}
-
-type defaultContextInferrer struct {
-	contextPriority      map[string]int
-	ignoreUnknownContext bool
-}
-
-func (s *defaultContextInferrer) Infer(statements []string) (string, error) {
+func (s *priorityContextInferrer) infer(statements []string) (string, error) {
 	var inferredContext string
 	var inferredContextPriority int
 
@@ -50,10 +41,8 @@ func (s *defaultContextInferrer) Infer(statements []string) (string, error) {
 		for _, p := range getParsedStatementPaths(parsed) {
 			pathContextPriority, ok := s.contextPriority[p.Context]
 			if !ok {
-				if s.ignoreUnknownContext {
-					continue
-				}
-				pathContextPriority = len(s.contextPriority) // Lowest priority
+				// Lowest priority
+				pathContextPriority = math.MaxInt
 			}
 
 			if inferredContext == "" || pathContextPriority < inferredContextPriority {
@@ -66,17 +55,25 @@ func (s *defaultContextInferrer) Infer(statements []string) (string, error) {
 	return inferredContext, nil
 }
 
-func NewDefaultContextInferrer() ContextInferrer {
-	return NewContextInferrerWithPriority(defaultContextInferPriority, false)
+// defaultPriorityContextInferrer is like newPriorityContextInferrer, but using the default
+// context priorities and ignoring unknown/non-prioritized contexts.
+func defaultPriorityContextInferrer() contextInferrer {
+	return newPriorityContextInferrer(defaultContextInferPriority)
 }
 
-func NewContextInferrerWithPriority(contextsPriority []string, ignoreUnknownContext bool) ContextInferrer {
+// newPriorityContextInferrer creates a new priority-based context inferrer.
+// To infer the context, it compares all [ottl.Path.Context] values, prioritizing them based
+// on the provide contextsPriority argument, the lower the context position is in the array,
+// the more priority it will have over other items.
+// If unknown/non-prioritized contexts are found on the statements, they can be either ignored
+// or considered when no other prioritized context is found. To skip unknown contexts, the
+// ignoreUnknownContext argument must be set to false.
+func newPriorityContextInferrer(contextsPriority []string) contextInferrer {
 	contextPriority := make(map[string]int, len(contextsPriority))
 	for i, ctx := range contextsPriority {
 		contextPriority[ctx] = i
 	}
-	return &defaultContextInferrer{
-		contextPriority:      contextPriority,
-		ignoreUnknownContext: ignoreUnknownContext,
+	return &priorityContextInferrer{
+		contextPriority: contextPriority,
 	}
 }

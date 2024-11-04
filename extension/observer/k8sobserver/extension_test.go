@@ -127,6 +127,7 @@ func TestExtensionObserveServices(t *testing.T) {
 	}, sink.removed[0])
 
 	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
 }
 
 func TestExtensionObservePods(t *testing.T) {
@@ -209,6 +210,7 @@ func TestExtensionObservePods(t *testing.T) {
 	}, sink.removed[0])
 
 	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
 }
 
 func TestExtensionObserveNodes(t *testing.T) {
@@ -304,6 +306,92 @@ func TestExtensionObserveNodes(t *testing.T) {
 			ExternalIP:          "externalIP",
 			ExternalDNS:         "externalDNS",
 			KubeletEndpointPort: 1234,
+		},
+	}, sink.removed[0])
+
+	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
+}
+
+func TestExtensionObserveIngresses(t *testing.T) {
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
+	config.ObserveIngresses = true
+	mockServiceHost(t, config)
+
+	set := extensiontest.NewNopSettings()
+	set.ID = component.NewID(metadata.Type)
+	ext, err := newObserver(config, set)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+
+	obs := ext.(*k8sObserver)
+	ingressListerWatcher := framework.NewFakeControllerSource()
+	obs.ingressListerWatcher = ingressListerWatcher
+
+	ingressListerWatcher.Add(ingress)
+
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+	sink := &endpointSink{}
+	obs.ListAndWatch(sink)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.added) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/ingress-1-UID/host-1/",
+		Target: "https://host-1/",
+		Details: &observer.K8sIngress{
+			Name:      "application-ingress",
+			UID:       "k8s_observer/ingress-1-UID/host-1/",
+			Labels:    map[string]string{"env": "prod"},
+			Namespace: "default",
+			Scheme:    "https",
+			Host:      "host-1",
+			Path:      "/",
+		},
+	}, sink.added[0])
+
+	ingressListerWatcher.Modify(ingressV2)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.changed) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/ingress-1-UID/host-1/",
+		Target: "https://host-1/",
+		Details: &observer.K8sIngress{
+			Name:      "application-ingress",
+			UID:       "k8s_observer/ingress-1-UID/host-1/",
+			Labels:    map[string]string{"env": "hardening"},
+			Namespace: "default",
+			Scheme:    "https",
+			Host:      "host-1",
+			Path:      "/",
+		},
+	}, sink.changed[0])
+
+	ingressListerWatcher.Delete(ingressV2)
+
+	requireSink(t, sink, func() bool {
+		return len(sink.removed) == 1
+	})
+
+	assert.Equal(t, observer.Endpoint{
+		ID:     "k8s_observer/ingress-1-UID/host-1/",
+		Target: "https://host-1/",
+		Details: &observer.K8sIngress{
+			Name:      "application-ingress",
+			UID:       "k8s_observer/ingress-1-UID/host-1/",
+			Labels:    map[string]string{"env": "hardening"},
+			Namespace: "default",
+			Scheme:    "https",
+			Host:      "host-1",
+			Path:      "/",
 		},
 	}, sink.removed[0])
 

@@ -16,3 +16,4 @@ tests:
       any:
         # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
         - "github.com/godbus/dbus.(*Conn).inWorker"
+        - "github.com/apache/pulsar-client-go/pulsar/internal.(*connectionPool).checkAndCleanIdleConnections"

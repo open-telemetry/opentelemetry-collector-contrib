@@ -4,29 +4,18 @@
 package ottl
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_NewStaticContextInferrer_Infer(t *testing.T) {
-	for _, context := range defaultContextInferPriority {
-		statements := []string{fmt.Sprintf("set(%s.field, 1)", context)}
-		inferredContext, err := NewStaticContextInferrer(context).Infer(statements)
-		require.NoError(t, err)
-		assert.Equal(t, context, inferredContext)
-	}
-}
-
-func Test_NewContextInferrerWithPriority_Infer(t *testing.T) {
+func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 	tests := []struct {
-		name          string
-		priority      []string
-		ignoreUnknown bool
-		statements    []string
-		expected      string
+		name       string
+		priority   []string
+		statements []string
+		expected   string
 	}{
 		{
 			name:       "with priority and contexts",
@@ -55,41 +44,46 @@ func Test_NewContextInferrerWithPriority_Infer(t *testing.T) {
 			expected:   "foo",
 		},
 		{
-			name:          "with ignore unknown false",
-			priority:      []string{"foo", "bar"},
-			ignoreUnknown: false,
-			statements:    []string{"set(span.foo, true) where span.bar == true"},
-			expected:      "span",
-		},
-		{
-			name:          "with ignore unknown true",
-			priority:      []string{"foo", "bar"},
-			ignoreUnknown: true,
-			statements:    []string{"set(span.foo, true) where span.bar == true"},
-			expected:      "",
-		},
-		{
-			name:          "with ignore unknown true and mixed statement contexts",
-			priority:      []string{"foo", "span"},
-			ignoreUnknown: true,
-			statements:    []string{"set(bar.foo, true) where span.bar == true"},
-			expected:      "span",
+			name:       "with unknown context",
+			priority:   []string{"foo", "bar"},
+			statements: []string{"set(span.foo, true) where span.bar == true"},
+			expected:   "span",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			inferrer := NewContextInferrerWithPriority(tt.priority, tt.ignoreUnknown)
-			inferredContext, err := inferrer.Infer(tt.statements)
+			inferrer := newPriorityContextInferrer(tt.priority)
+			inferredContext, err := inferrer.infer(tt.statements)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})
 	}
 }
 
-func Test_ContextInferrer_InvalidStatement(t *testing.T) {
-	inferrer := NewContextInferrerWithPriority([]string{"foo"}, false)
+func Test_NewPriorityContextInferrer_InvalidStatement(t *testing.T) {
+	inferrer := newPriorityContextInferrer([]string{"foo"})
 	statements := []string{"set(foo.field,"}
-	_, err := inferrer.Infer(statements)
+	_, err := inferrer.infer(statements)
 	require.ErrorContains(t, err, "unexpected token")
+}
+
+func Test_DefaultPriorityContextInferrer(t *testing.T) {
+	expectedPriority := []string{
+		"log",
+		"metric",
+		"datapoint",
+		"spanevent",
+		"span",
+		"resource",
+		"scope",
+		"instrumentation_scope",
+	}
+
+	inferrer := defaultPriorityContextInferrer().(*priorityContextInferrer)
+	require.NotNil(t, inferrer)
+
+	for pri, ctx := range expectedPriority {
+		require.Equal(t, pri, inferrer.contextPriority[ctx])
+	}
 }
