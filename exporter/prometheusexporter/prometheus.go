@@ -6,13 +6,14 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"net/http"
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"net/http"
-	"strings"
 )
 
 type prometheusExporter struct {
