@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -93,6 +94,8 @@ var (
 			Dockerfile: "snmp_agent.Dockerfile",
 		},
 		ExposedPorts: []string{"1024:1024/udp"},
+		WaitingFor: wait.ForListeningPort("1024/udp").
+			WithStartupTimeout(30 * time.Second),
 	}
 )
 
