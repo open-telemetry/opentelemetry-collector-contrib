@@ -93,7 +93,7 @@ var (
 			Context:    filepath.Join("testdata", "integration", "docker"),
 			Dockerfile: "snmp_agent.Dockerfile",
 		},
-		ExposedPorts: []string{"161:161/udp"},
+		ExposedPorts: []string{"161/udp"},
 		WaitingFor: wait.ForListeningPort("161/udp").
 			WithStartupTimeout(2 * time.Minute),
 	}
