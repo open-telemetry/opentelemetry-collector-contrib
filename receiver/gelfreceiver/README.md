@@ -23,6 +23,8 @@ Receives GELF logs over UDP.
 | `async_readers`      | 1                | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance.                                                 |
 | `async_processors`                | 1                   | A map of `key: value` pairs to add to the entry's resource                                                         |
 | `udp_max_queue_length`          | 100                | Determines max length of channel being used by async reader routines. When channel reaches max number, reader routine will block until channel has room. |
+| `enable_short_and_full_message` | false | When set to true, both short and full message fields will be enabled in the log attributes. |
+| `enable_gelf_raw_message`       | false | When set to true, the raw GELF message will be included in the log attributes. |
 | `operators`               | []                   | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 
 ### Operators

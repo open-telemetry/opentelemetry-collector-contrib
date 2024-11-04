@@ -6,7 +6,6 @@ package gelfinternal // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"fmt"
 	"net"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -15,7 +14,7 @@ import (
 )
 
 const (
-	operatorType = "gelf_input"
+	operatorType             = "gelf_input"
 	defaultReaders           = 1
 	defaultProcessors        = 1
 	defaultUDPMaxQueueLength = 100
@@ -55,11 +54,13 @@ type Config struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress     string `mapstructure:"listen_address,omitempty"`
-	Protocol          string `mapstructure:"protocol,omitempty"`
-	AsyncReaders      int    `mapstructure:"async_readers,omitempty"`
-	AsyncProcessors   int    `mapstructure:"async_processors,omitempty"`
-	UDPMaxQueueLength int    `mapstructure:"udp_max_queue_length,omitempty"`
+	ListenAddress             string `mapstructure:"listen_address,omitempty"`
+	Protocol                  string `mapstructure:"protocol,omitempty"`
+	AsyncReaders              int    `mapstructure:"async_readers,omitempty"`
+	AsyncProcessors           int    `mapstructure:"async_processors,omitempty"`
+	UDPMaxQueueLength         int    `mapstructure:"udp_max_queue_length,omitempty"`
+	EnableShortAndFullMessage bool   `mapstructure:"enable_short_and_full_message,omitempty"`
+	EnableGELFRawMessage      bool   `mapstructure:"enable_gelf_raw_message,omitempty"`
 }
 
 // Build will build a udp input operator.
@@ -91,20 +92,16 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	udpInput := &Input{
-		InputOperator:   inputOperator,
-		address:         c.ListenAddress,
-		protocol:        c.Protocol,
-		udpMessageQueue: make(chan UDPMessage, c.UDPMaxQueueLength),
-		readBufferPool: sync.Pool{
-			New: func() any {
-				buffer := make([]byte, MaxUDPSize)
-				return &buffer
-			},
-		},
-		buffer:          make(map[string]*MapGelfMessage),
-		lastBuffer:      make(map[string]*MapGelfMessage),
-		asyncReaders:    c.AsyncReaders,
-		asyncProcessors: c.AsyncProcessors,
+		InputOperator:             inputOperator,
+		address:                   c.ListenAddress,
+		protocol:                  c.Protocol,
+		udpMessageQueue:           make(chan UDPMessage, c.UDPMaxQueueLength),
+		buffer:                    make(map[string]*MapGelfMessage),
+		lastBuffer:                make(map[string]*MapGelfMessage),
+		asyncReaders:              c.AsyncReaders,
+		asyncProcessors:           c.AsyncProcessors,
+		enableShortAndFullMessage: c.EnableShortAndFullMessage,
+		enableGELFRawMessage:      c.EnableGELFRawMessage,
 	}
 
 	return udpInput, nil
