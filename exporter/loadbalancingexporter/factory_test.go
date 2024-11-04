@@ -91,9 +91,6 @@ func TestBuildExporterConfig(t *testing.T) {
 	// verify
 	grpcSettings := defaultCfg.ClientConfig
 	grpcSettings.Endpoint = "the-endpoint"
-	if c.(*Config).QueueSettings.Enabled {
-		defaultCfg.QueueConfig.Enabled = false
-	}
 	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
 
 	assert.Equal(t, defaultCfg.TimeoutConfig, exporterCfg.TimeoutConfig)
