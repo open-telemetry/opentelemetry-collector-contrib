@@ -10,15 +10,34 @@ import (
 	"strings"
 )
 
+type AllowRawGELFMessage struct {
+	Enabled                    bool   `mapstructure:"enabled,omitempty"`
+	RawGelfMessageAttributeKey string `mapstructure:"raw_gelf_message_attribute_key,omitempty"`
+	IgnoreAttributesWithPrefix string `mapstructure:"remove_attributes_with_prefix,omitempty"`
+}
+
+type UseGELFAttributes struct {
+	Enabled                     bool   `mapstructure:"enabled,omitempty"`
+	AttributesPrefix            string `mapstructure:"attributes_prefix,omitempty"`
+	ExtractStandardAttributes   bool   `mapstructure:"extract_standard_attributes,omitempty"`
+	ExtractAdditionalAttributes bool   `mapstructure:"extract_additional_attributes,omitempty"`
+}
+
+type FeatureFlags struct {
+	AllowRawGELFMessage AllowRawGELFMessage `mapstructure:"allow_raw_gelf_message,omitempty"`
+	UseGELFAttributes   UseGELFAttributes   `mapstructure:"append_gelf_additional_attributes,omitempty"`
+}
+
 // Config defines configuration for file exporter.
 type Config struct {
-	Endpoint        string `mapstructure:"endpoint"`
-	Protocol        string `mapstructure:"protocol,omitempty"`
-	CompressionType string `mapstructure:"compression,omitempty"`
-	ChunksOverflow  bool   `mapstructure:"send_chunks_with_overflow,omitempty"`
-	ChunkSize       int    `mapstructure:"chunk_size,omitempty"`
-	Hostname        string `mapstructure:"hostname,omitempty"`
-	TCPTimeout      int    `mapstructure:"tcp_timeout_millis,omitempty"`
+	Endpoint        string       `mapstructure:"endpoint"`
+	Protocol        string       `mapstructure:"protocol,omitempty"`
+	CompressionType string       `mapstructure:"compression,omitempty"`
+	ChunksOverflow  bool         `mapstructure:"send_chunks_with_overflow,omitempty"`
+	ChunkSize       int          `mapstructure:"chunk_size,omitempty"`
+	Hostname        string       `mapstructure:"hostname,omitempty"`
+	TCPTimeout      int          `mapstructure:"tcp_timeout_millis,omitempty"`
+	FeatureFlags    FeatureFlags `mapstructure:"feature_flags,omitempty"`
 }
 
 // Validate checks if the exporter configuration is valid
@@ -42,7 +61,7 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Protocol == "tcp" && cfg.TCPTimeout < 0 {
 		cfg.TCPTimeout = defaultTCPTimeout
-	}else{
+	} else {
 		if cfg.TCPTimeout > 30000 {
 			return fmt.Errorf("TCP timeout must be less than 30000")
 		}
@@ -67,6 +86,17 @@ func (cfg *Config) Validate() error {
 			cfg.Hostname = "localhost"
 		} else {
 			cfg.Hostname = internalHostname
+		}
+	}
+
+	if cfg.FeatureFlags.AllowRawGELFMessage.Enabled {
+		// Both Raw GELF message and GELF attributes cannot be enabled at the same time, due to conflict in fields
+		if cfg.FeatureFlags.UseGELFAttributes.Enabled {
+			return fmt.Errorf("Raw GELF message and GELF attributes cannot be enabled at the same time")
+		}
+
+		if cfg.FeatureFlags.AllowRawGELFMessage.RawGelfMessageAttributeKey == "" {
+			return fmt.Errorf("GELF message attribute key must be non-empty")
 		}
 	}
 

@@ -16,24 +16,28 @@ import (
 	"io"
 	"net"
 	"os"
+	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
 var (
-	defaultTCPTimeout      = 2000
-	defaultChunkSize       = 1420
-	magicChunked           = []byte{0x1e, 0x0f}
-	magicZlib              = []byte{0x78}
-	magicGzip              = []byte{0x1f, 0x8b}
-	chunkedHeaderLen       = 12
-	defaultCompressionType = "gzip"
+	defaultTCPTimeout             = 2000
+	defaultChunkSize              = 1420
+	magicChunked                  = []byte{0x1e, 0x0f}
+	magicZlib                     = []byte{0x78}
+	magicGzip                     = []byte{0x1f, 0x8b}
+	chunkedHeaderLen              = 12
+	defaultCompressionType        = "gzip"
+	standardAttributesWithMessage = []string{"version", "host", "timestamp", "level", "facility", "line", "file", "short_message", "full_message"}
 )
 
 type gelfexporter struct {
@@ -314,35 +318,130 @@ func (g *gelfexporter) writeChunked(ctx context.Context, gelfBytes []byte) (err 
 	return nil
 }
 
-func (g *gelfexporter) convertLogsToGELF(ctx context.Context, incomingTimestamp float64, severity int32, body string) error {
+func (g *gelfexporter) convertLogsToGELF(ctx context.Context, incomingTimestamp float64, severity int32, body string, otelAttributes pcommon.Map) error {
 
 	var err error
+	var messageBytes []byte
 
-	short := []byte(body)
-	full := []byte("")
-	if i := bytes.IndexRune(short, '\n'); i > 0 {
-		full = short
-		short = short[:i]
-
-	}
-
-	message := GELFMessage{
-		Version:   "1.1",
-		Host:      g.config.Hostname,
-		Short:     string(short),
-		Full:      string(full),
-		Timestamp: incomingTimestamp,
-		Level:     severity,
-	}
-
-	// messageBytes, err := json.Marshal(message)
-
+	jsonMessage := make(map[string]any)
 	messageBuffer := newBuffer()
 	defer bufPool.Put(messageBuffer)
-	if err = message.MarshalJSONBuf(messageBuffer); err != nil {
-		return err
+
+	// Additional field regex:
+	// https://archivedocs.graylog.org/en/latest/pages/gelf.html#gelf-payload-specification
+	additionalFieldRegex, _ := regexp.Compile("^[\\w\\.\\-]*$")
+	attributes := otelAttributes.AsRaw()
+
+	// If raw GELF message support is enabled then we will extract the string from attrs,
+	// and push it as a raw GELF message.
+	if g.config.FeatureFlags.AllowRawGELFMessage.Enabled && g.config.FeatureFlags.AllowRawGELFMessage.RawGelfMessageAttributeKey != "" {
+		g.logger.Debug("Using raw GELF message format via attribute key", zap.String("attribute_key", g.config.FeatureFlags.AllowRawGELFMessage.RawGelfMessageAttributeKey))
+		if rawMessage, ok := attributes[g.config.FeatureFlags.AllowRawGELFMessage.RawGelfMessageAttributeKey]; ok {
+			// Convert rawMessage to JSON
+			if rawMessageStr, ok := rawMessage.(string); ok {
+				if err = json.Unmarshal([]byte(rawMessageStr), &jsonMessage); err != nil {
+					return fmt.Errorf("Error while unmarshalling raw GELF message: %w", err)
+				}
+
+				// Handle additional attributes which can be inserted via otel
+				for key, value := range attributes {
+					if additionalFieldRegex.MatchString(key) {
+						if !(g.config.FeatureFlags.AllowRawGELFMessage.IgnoreAttributesWithPrefix != "" && strings.HasPrefix(key, g.config.FeatureFlags.AllowRawGELFMessage.IgnoreAttributesWithPrefix)) {
+							jsonMessage["_"+key] = value
+						}
+					}
+				}
+			}
+		} else {
+			return fmt.Errorf("GELF message attribute key is required")
+		}
+		// If UseGELFAttributes is enabled, we will extract the standard attributes and additional attributes
+		// from the otel attributes and push them as a GELF message, if the attributes are not present, we will
+		// use the otel format values to push the message.
+	} else if g.config.FeatureFlags.UseGELFAttributes.Enabled && g.config.FeatureFlags.UseGELFAttributes.ExtractStandardAttributes {
+
+		g.logger.Debug("Using GELF message format with standard and additional attributes")
+
+		prefix := g.config.FeatureFlags.UseGELFAttributes.AttributesPrefix
+
+		for _, attribute := range standardAttributesWithMessage {
+			if value, ok := attributes[prefix+attribute]; ok {
+				// TODO: Need to check if timestamp, level can be handled as strings.
+				jsonMessage[attribute] = value
+			} else {
+				// handle short and full message fields if not extracted from attributes
+				// handle version, host, timestamp, level using otel format
+				switch attribute {
+				case "short_message":
+					// first 100 characters of the body
+					jsonMessage["short_message"] = body[:100]
+				case "full_message":
+					// full body
+					jsonMessage["full_message"] = body
+				case "version":
+					jsonMessage["version"] = "1.1"
+				case "host":
+					jsonMessage["host"] = g.config.Hostname
+				case "timestamp":
+					jsonMessage["timestamp"] = incomingTimestamp
+				case "level":
+					jsonMessage["level"] = severity
+				}
+
+				return fmt.Errorf("Standard attribute %s is missing", attribute)
+			}
+		}
+
+		// Extract additional attributes from otel attributes like _application, _service, etc.
+		// For example, if prefix is gelf. and attribute key is gelf._application, then the key will be _application.
+		if g.config.FeatureFlags.UseGELFAttributes.ExtractAdditionalAttributes {
+			for key, value := range attributes {
+				keyWithoutPrefix := strings.ReplaceAll(key, prefix+"_", "")
+				if additionalFieldRegex.MatchString(keyWithoutPrefix) {
+					jsonMessage["_"+keyWithoutPrefix] = value
+				} else {
+					// If key does not match the regex, then we cannot accept it.
+					g.logger.Debug("GELF Additional field key is not valid", zap.String("key", keyWithoutPrefix))
+				}
+			}
+		}
+
+	} else {
+		g.logger.Debug("Using default GELF message format")
+		short := body
+		full := ""
+		if i := strings.IndexRune(short, '\n'); i > 0 {
+			full = short
+			short = short[:i]
+			jsonMessage["short_message"] = string(short)
+			jsonMessage["full_message"] = string(full)
+		} else if len(body) > 1000 {
+			jsonMessage["short_message"] = body[:100]
+			jsonMessage["full_message"] = body
+		} else {
+			jsonMessage["short_message"] = string(short)
+		}
+		jsonMessage["version"] = "1.1"
+		jsonMessage["host"] = g.config.Hostname
+		jsonMessage["timestamp"] = incomingTimestamp
+		jsonMessage["level"] = severity
+
+		// Handle additional attributes which can be inserted via otel
+		for key, value := range attributes {
+			if additionalFieldRegex.MatchString(key) {
+				if !(g.config.FeatureFlags.AllowRawGELFMessage.IgnoreAttributesWithPrefix != "" && strings.HasPrefix(key, g.config.FeatureFlags.AllowRawGELFMessage.IgnoreAttributesWithPrefix)) {
+					jsonMessage["_"+key] = value
+				}
+			}
+		}
 	}
-	messageBytes := messageBuffer.Bytes()
+
+	g.logger.Debug("GELF message", zap.Any("message", jsonMessage))
+	messageBytes, err = json.Marshal(jsonMessage)
+	if err != nil {
+		return fmt.Errorf("Error while marshalling GELF message: %w", err)
+	}
+	messageBuffer.Write(messageBytes)
 
 	var (
 		compressedBuf *bytes.Buffer
@@ -361,7 +460,7 @@ func (g *gelfexporter) convertLogsToGELF(ctx context.Context, incomingTimestamp 
 		defer bufPool.Put(compressedBuf)
 		zw, err = gzip.NewWriterLevel(compressedBuf, flate.BestSpeed)
 	case "none":
-		gelfBytes = messageBytes
+		gelfBytes = messageBuffer.Bytes()
 	default:
 		return fmt.Errorf("Invalid compression type: %s", g.config.CompressionType)
 	}
@@ -377,7 +476,7 @@ func (g *gelfexporter) convertLogsToGELF(ctx context.Context, incomingTimestamp 
 		if err != nil {
 			return err
 		}
-		if _, err = zw.Write(messageBytes); err != nil {
+		if _, err = zw.Write(messageBuffer.Bytes()); err != nil {
 			zw.Close()
 			return err
 		}
@@ -415,15 +514,21 @@ func (g *gelfexporter) pushLogsData(ctx context.Context, logs plog.Logs) error {
 				body := lr.Body()
 				var outputTimestamp float64
 				var outputSeverity int32
+
 				timestamp := lr.Timestamp()
 				severity := int32(lr.SeverityNumber())
 				severityText := lr.SeverityText()
+				attributes := lr.Attributes()
 
 				// g.logger.Debug("Timestamp: %s, Severity: %s, Body: %s, SeverityText: %s", timestamp, severity, body.AsString(), severityText)
 
 				// If timestamp is not set, set it to the current time
 				if timestamp == 0 {
-					outputTimestamp = float64(time.Now().UnixNano())
+					// FIXME: lr.ObservedTimestamp() is not working properly, it's giving wrong unix timestamp.
+					outputTimestamp = float64(time.Now().UTC().Unix())
+					g.logger.Debug("Timestamp not set, setting it to current time")
+					g.logger.Debug("Timestamp", zap.Time("timestamp", time.Unix(int64(outputTimestamp), 0)))
+
 				} else {
 					outputTimestamp = float64(timestamp)
 				}
@@ -436,8 +541,16 @@ func (g *gelfexporter) pushLogsData(ctx context.Context, logs plog.Logs) error {
 					outputSeverity = logLevelToSeverity("INFO")
 				}
 
+				g.logger.Debug(
+					"Otel Data - ",
+					zap.Float64("Timestamp", outputTimestamp),
+					zap.Int32("Severity", outputSeverity),
+					zap.String("Body", body.AsString()),
+					zap.String("SeverityText", severityText),
+				)
+
 				// Convert logs to GELF format
-				err := g.convertLogsToGELF(ctx, outputTimestamp, outputSeverity, body.AsString())
+				err := g.convertLogsToGELF(ctx, outputTimestamp, outputSeverity, body.AsString(), attributes)
 				if err != nil {
 					return err
 				}
