@@ -48,7 +48,6 @@ func newCloudFoundryMetricsReceiver(
 	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics) (*cloudFoundryReceiver, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -72,7 +71,6 @@ func newCloudFoundryLogsReceiver(
 	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Logs) (*cloudFoundryReceiver, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -152,7 +150,6 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
 	host component.Host) {
-
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
 		envelopes := stream()
@@ -192,7 +189,6 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
 	host component.Host) {
-
 	for {
 		envelopes := stream()
 		if envelopes == nil {

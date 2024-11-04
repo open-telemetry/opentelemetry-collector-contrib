@@ -74,7 +74,6 @@ func TestPullTimestampsWithDifference(t *testing.T) {
 	}
 
 	assert.Equal(t, upperBound, timestamps[expectedAmountOfTimestamps])
-
 }
 
 func TestShiftToStartOfMinute(t *testing.T) {
