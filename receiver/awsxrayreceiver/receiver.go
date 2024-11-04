@@ -41,7 +41,6 @@ type xrayReceiver struct {
 func newReceiver(config *Config,
 	consumer consumer.Traces,
 	set receiver.Settings) (receiver.Traces, error) {
-
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{

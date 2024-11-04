@@ -180,7 +180,6 @@ func TestDatadogResponse(t *testing.T) {
 			require.Equal(t, tc.expectedStatus, resp.StatusCode)
 		})
 	}
-
 }
 
 func TestDatadogInfoEndpoint(t *testing.T) {
