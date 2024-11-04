@@ -68,18 +68,18 @@ func (config *Config) Validate() error {
 	for _, metricType := range config.Exclude.MetricTypes {
 		if valid := validMetricTypes[strings.ToLower(metricType)]; !valid {
 			return fmt.Errorf(
-				"found invalid metric type in exclude.metric_types: %s. Valid values are [%s]",
+				"found invalid metric type in exclude.metric_types: %s. Valid values are %s",
 				metricType,
-				strings.Join(validMetricTypeList, ","),
+				validMetricTypeList,
 			)
 		}
 	}
 	for _, metricType := range config.Include.MetricTypes {
 		if valid := validMetricTypes[strings.ToLower(metricType)]; !valid {
 			return fmt.Errorf(
-				"found invalid metric type in include.metric_types: %s. Valid values are [%s]",
+				"found invalid metric type in include.metric_types: %s. Valid values are %s",
 				metricType,
-				strings.Join(validMetricTypeList, ","),
+				validMetricTypeList,
 			)
 		}
 	}

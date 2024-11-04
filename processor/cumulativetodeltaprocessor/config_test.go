@@ -4,6 +4,7 @@
 package cumulativetodeltaprocessor
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -115,11 +116,11 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_include_metric_type_filter"),
-			errorMessage: "found invalid metric type in include.metric_types: gauge. Valid values are [sum,histogram]",
+			errorMessage: fmt.Sprintf("found invalid metric type in include.metric_types: gauge. Valid values are %s", validMetricTypeList),
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_exclude_metric_type_filter"),
-			errorMessage: "found invalid metric type in exclude.metric_types: Invalid. Valid values are [sum,histogram]",
+			errorMessage: fmt.Sprintf("found invalid metric type in exclude.metric_types: Invalid. Valid values are %s", validMetricTypeList),
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "missing_match_type"),
