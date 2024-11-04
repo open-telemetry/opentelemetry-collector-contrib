@@ -52,11 +52,7 @@ func createDefaultConfig() component.Config {
 func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg := cfg.Protocol.OTLP
 	oCfg.Endpoint = endpoint
-	// If top level queue is enabled - per-endpoint queue must be disable
-	// This helps us to avoid unexpected issues with mixing 2 level of exporter queues
-	if cfg.QueueSettings.Enabled {
-		oCfg.QueueConfig.Enabled = false
-	}
+
 	return oCfg
 }
 
