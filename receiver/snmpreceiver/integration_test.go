@@ -95,7 +95,7 @@ var (
 		},
 		ExposedPorts: []string{"1024:1024/udp"},
 		WaitingFor: wait.ForListeningPort("1024/udp").
-			WithStartupTimeout(30 * time.Second),
+			WithStartupTimeout(2 * time.Minute),
 	}
 )
 
