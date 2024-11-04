@@ -42,16 +42,13 @@ func getConnectionState(endpoint string) (tls.ConnectionState, error) {
 func (s *scraper) scrapeEndpoint(endpoint string, wg *sync.WaitGroup, mux *sync.Mutex) {
 	defer wg.Done()
 
-	mux.Lock()
-	defer mux.Unlock()
-
 	state, err := s.getConnectionState(endpoint)
 	if err != nil {
 		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", endpoint), zap.Error(err))
 		return
 	}
 
-	s.settings.Logger.Error("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
+	s.settings.Logger.Info("Peer Certificates", zap.Int("certificates_count", len(state.PeerCertificates)))
 	if len(state.PeerCertificates) == 0 {
 		s.settings.Logger.Error("No TLS certificates found. Verify the endpoint serves TLS certificates.", zap.String("endpoint", endpoint))
 		return
@@ -65,6 +62,8 @@ func (s *scraper) scrapeEndpoint(endpoint string, wg *sync.WaitGroup, mux *sync.
 	timeLeftInt := int64(timeLeft)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	mux.Lock()
+	defer mux.Unlock()
 	s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, endpoint)
 }
 
