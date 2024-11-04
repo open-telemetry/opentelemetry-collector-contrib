@@ -177,7 +177,7 @@ func WithMetricParser(functions map[string]ottl.Factory[ottlmetric.TransformCont
 		if err != nil {
 			return err
 		}
-		opt := ottl.WithContextParser(ottlmetric.PathContextName, &metricParser, convertMetricStatements)
+		opt := ottl.WithParserCollectionContext(ottlmetric.PathContextName, &metricParser, convertMetricStatements)
 		return opt(pc)
 	}
 }
@@ -197,7 +197,7 @@ func WithDataPointParser(functions map[string]ottl.Factory[ottldatapoint.Transfo
 		if err != nil {
 			return err
 		}
-		return ottl.WithContextParser(ottldatapoint.PathContextName, &dataPointParser, convertDataPointStatements)(pc)
+		return ottl.WithParserCollectionContext(ottldatapoint.PathContextName, &dataPointParser, convertDataPointStatements)(pc)
 	}
 }
 
@@ -217,7 +217,7 @@ func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[ContextStatements, consumer.Metrics]{
 		withCommonContextParsers[consumer.Metrics](),
-		ottl.WithParserCollectionContextRewriteLog[ContextStatements, consumer.Metrics](true),
+		ottl.EnableParserCollectionModifiedStatementLogging[ContextStatements, consumer.Metrics](true),
 	}
 
 	for _, option := range options {

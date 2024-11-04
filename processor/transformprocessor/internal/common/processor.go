@@ -185,12 +185,12 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[ContextStatem
 			return err
 		}
 
-		err = ottl.WithContextParser[ottlresource.TransformContext, ContextStatements, R](ottlresource.PathContextName, &rp, parseResourceContextStatements)(pc)
+		err = ottl.WithParserCollectionContext[ottlresource.TransformContext, ContextStatements, R](ottlresource.PathContextName, &rp, parseResourceContextStatements)(pc)
 		if err != nil {
 			return err
 		}
 
-		err = ottl.WithContextParser[ottlscope.TransformContext, ContextStatements, R](ottlscope.PathContextName, &sp, parseScopeContextStatements)(pc)
+		err = ottl.WithParserCollectionContext[ottlscope.TransformContext, ContextStatements, R](ottlscope.PathContextName, &sp, parseScopeContextStatements)(pc)
 		if err != nil {
 			return err
 		}

@@ -63,7 +63,7 @@ func WithLogParser(functions map[string]ottl.Factory[ottllog.TransformContext]) 
 		if err != nil {
 			return err
 		}
-		return ottl.WithContextParser(ottllog.PathContextName, &logParser, convertLogStatements)(pc)
+		return ottl.WithParserCollectionContext(ottllog.PathContextName, &logParser, convertLogStatements)(pc)
 	}
 }
 
@@ -83,7 +83,7 @@ func WithLogErrorMode(errorMode ottl.ErrorMode) LogParserCollectionOption {
 func NewLogParserCollection(settings component.TelemetrySettings, options ...LogParserCollectionOption) (*LogParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[ContextStatements, consumer.Logs]{
 		withCommonContextParsers[consumer.Logs](),
-		ottl.WithParserCollectionContextRewriteLog[ContextStatements, consumer.Logs](true),
+		ottl.EnableParserCollectionModifiedStatementLogging[ContextStatements, consumer.Logs](true),
 	}
 
 	for _, option := range options {

@@ -105,7 +105,7 @@ func WithSpanParser(functions map[string]ottl.Factory[ottlspan.TransformContext]
 		if err != nil {
 			return err
 		}
-		return ottl.WithContextParser(ottlspan.PathContextName, &parser, convertSpanStatements)(pc)
+		return ottl.WithParserCollectionContext(ottlspan.PathContextName, &parser, convertSpanStatements)(pc)
 	}
 }
 
@@ -124,7 +124,7 @@ func WithSpanEventParser(functions map[string]ottl.Factory[ottlspanevent.Transfo
 		if err != nil {
 			return err
 		}
-		return ottl.WithContextParser(ottlspanevent.PathContextName, &parser, convertSpanEventStatements)(pc)
+		return ottl.WithParserCollectionContext(ottlspanevent.PathContextName, &parser, convertSpanEventStatements)(pc)
 	}
 }
 
@@ -144,7 +144,7 @@ func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[ContextStatements, consumer.Traces]{
 		withCommonContextParsers[consumer.Traces](),
-		ottl.WithParserCollectionContextRewriteLog[ContextStatements, consumer.Traces](true),
+		ottl.EnableParserCollectionModifiedStatementLogging[ContextStatements, consumer.Traces](true),
 	}
 
 	for _, option := range options {
