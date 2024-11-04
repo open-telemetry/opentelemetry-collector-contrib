@@ -108,7 +108,6 @@ extension/observer/                                                 @open-teleme
 extension/observer/cfgardenobserver/                                @open-telemetry/collector-contrib-approvers @crobert-1 @cemdk @tomasmota @m1rp @jriguera
 extension/observer/dockerobserver/                                  @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecsobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
-extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers
 extension/observer/hostobserver/                                    @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @ChrsMark
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
@@ -250,7 +249,6 @@ receiver/httpcheckreceiver/                                         @open-teleme
 receiver/iisreceiver/                                               @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                          @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                            @open-telemetry/collector-contrib-approvers @yurishkuro
-receiver/jmxreceiver/                                               @open-telemetry/collector-contrib-approvers
 receiver/journaldreceiver/                                          @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                        @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv
 receiver/k8seventsreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
@@ -325,3 +323,5 @@ reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 
 ## UNMAINTAINED components
 
+extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers 
+receiver/jmxreceiver/                                               @open-telemetry/collector-contrib-approvers 
