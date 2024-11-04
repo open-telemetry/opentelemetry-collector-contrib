@@ -6,6 +6,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -28,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -258,24 +260,55 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 }
 
 func BenchmarkReadLine(b *testing.B) {
+	receivedAllLogs := make(chan struct{})
 	filePath := filepath.Join(b.TempDir(), "bench.log")
 
 	pipelineYaml := fmt.Sprintf(`
-- type: file_input
+pipeline:
+  type: file_input
   include:
     - %s
   start_at: beginning`,
 		filePath)
 
-	var operatorCfgs []operator.Config
-	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
+	confmapFilePath := filepath.Join(b.TempDir(), "conf.yaml")
+	require.NoError(b, os.WriteFile(confmapFilePath, []byte(pipelineYaml), 0666))
+
+	testConfMaps, err := confmaptest.LoadConf(confmapFilePath)
+	require.NoError(b, err)
+
+	conf, err := testConfMaps.Sub("pipeline")
+	require.NoError(b, err)
+	require.NotNil(b, conf)
+
+	operatorCfg := operator.Config{}
+	require.NoError(b, conf.Unmarshal(&operatorCfg))
+
+	operatorCfgs := []operator.Config{operatorCfg}
+	//require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
+
+	storageClient := storagetest.NewInMemoryClient(
+		component.KindReceiver,
+		component.MustNewID("foolog"),
+		"test",
+	)
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+	require.NoError(b, err)
+
+	mockConsumer := &testConsumer{
+		receivedAllLogs: receivedAllLogs,
+		expectedLogs:    uint32(b.N),
+		receivedLogs:    atomic.Uint32{},
+	}
+	rcv := &receiver{
+		consumer:      mockConsumer,
+		obsrecv:       obsrecv,
+		storageClient: storageClient,
+	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
-		for _, e := range entries {
-			convert(e)
-		}
-	})
+	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -286,6 +319,10 @@ func BenchmarkReadLine(b *testing.B) {
 	}.Build(set)
 	require.NoError(b, err)
 
+	rcv.pipe = pipe
+	rcv.set = set
+	rcv.emitter = emitter
+
 	// Populate the file that will be consumed
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
 	require.NoError(b, err)
@@ -294,15 +331,13 @@ func BenchmarkReadLine(b *testing.B) {
 		require.NoError(b, err)
 	}
 
-	storageClient := storagetest.NewInMemoryClient(
-		component.KindReceiver,
-		component.MustNewID("foolog"),
-		"test",
-	)
-
 	// Run the actual benchmark
 	b.ResetTimer()
-	require.NoError(b, pipe.Start(storageClient))
+	require.NoError(b, rcv.Start(context.Background(), nil))
+
+	<-receivedAllLogs
+
+	require.NoError(b, rcv.Shutdown(context.Background()))
 }
 
 func BenchmarkParseAndMap(b *testing.B) {
