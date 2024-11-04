@@ -272,7 +272,7 @@ pipeline:
 		filePath)
 
 	confmapFilePath := filepath.Join(b.TempDir(), "conf.yaml")
-	require.NoError(b, os.WriteFile(confmapFilePath, []byte(pipelineYaml), 0666))
+	require.NoError(b, os.WriteFile(confmapFilePath, []byte(pipelineYaml), 0600))
 
 	testConfMaps, err := confmaptest.LoadConf(confmapFilePath)
 	require.NoError(b, err)
