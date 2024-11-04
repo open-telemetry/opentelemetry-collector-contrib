@@ -92,14 +92,14 @@ func createTracesExporter(ctx context.Context, params exporter.Settings, cfg com
 		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithRetry(c.BackOffConfig),
 	)
-	}
+}
 
 func createLogsExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	exporter, err := newLogsExporter(params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure loadbalancing logs exporter: %w", err)
-}
+	}
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -120,7 +120,7 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, cfg co
 	exporter, err := newMetricsExporter(params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure loadbalancing metrics exporter: %w", err)
-}
+	}
 
 	return exporterhelper.NewMetrics(
 		ctx,
