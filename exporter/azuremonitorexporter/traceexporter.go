@@ -73,7 +73,7 @@ func newTracesExporter(config *Config, transportChannel transportChannel, teleme
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		config,

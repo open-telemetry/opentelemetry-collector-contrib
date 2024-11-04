@@ -29,9 +29,9 @@ In these situations the function will error if it does not know how to do the co
 Use `ErrorMode` to determine how the `Statement` handles these errors.
 See the component-specific guides for how each uses error mode:
 
-- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#ottl)
-- [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
-- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md#configuration)
+- [routingconnector](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/routingconnector/README.md#configuration)
+- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md#config)
 
 ## Editors
 
@@ -449,6 +449,7 @@ Available Converters:
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [RemoveXML](#removexml)
 - [Seconds](#seconds)
@@ -1291,7 +1292,7 @@ The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
 
-Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Unmarshalling is done using [goccy/go-json](https://github.com/goccy/go-json).
 Each JSON type is converted into a `pdata.Value` using the following map:
 
 ```
@@ -1335,6 +1336,132 @@ Examples:
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(attributes["pairs"])`
 
+### ParseSimplifiedXML
+
+`ParseSimplifiedXML(target)`
+
+The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
+
+The goal of this Converter is to produce a more user-friendly representation of XML data than the `ParseXML` Converter.
+This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
+
+This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
+a direct representation of XML data. Users are encouraged to simplify their XML documents prior to using `ParseSimplifiedXML`.
+
+See other functions which may be useful for preparing XML documents:
+
+- `ConvertAttributesToElementsXML`
+- `ConvertTextToElementsXML`
+- `RemoveXML`
+- `InsertXML`
+- `GetXML`
+
+#### Formal Definitions
+
+A "Simplified XML" document contains no attributes and no extraneous text content.
+
+An element has "extraneous text content" when it contains both text and element content. e.g.
+
+```xml
+<foo>
+    bar <!-- extraneous text content -->
+    <hello>world</hello> <!-- element content -->
+</foo>
+```
+
+#### Parsing logic
+
+1. Declaration elements, attributes, comments, and extraneous text content are ignored.
+2. Elements which contain a value are converted into key/value pairs.
+   e.g. `<foo>bar</foo>` becomes `"foo": "bar"`
+3. Elements which contain child elements are converted into a key/value pair where the value is a map.
+   e.g. `<foo> <bar>baz</bar> </foo>` becomes `"foo": { "bar": "baz" }`
+4. Sibling elements that share the same tag will be combined into a slice.
+   e.g. `<a> <b>1</b> <c>2</c> <c>3</c> </foo>` becomes `"a": { "b": "1", "c": [ "2", "3" ] }`.
+5. Empty elements are dropped, but they can determine whether a value should be a slice or map.
+   e.g. `<a> <b>1</b> <b/> </a>` becomes `"a": { "b": [ "1" ] }` instead of `"a": { "b": "1" }`
+
+#### Examples
+
+Parse a Simplified XML document from the body:
+
+```xml
+<event>
+    <id>1</id>
+    <user>jane</user>
+    <details>
+      <time>2021-10-01T12:00:00Z</time>
+      <description>Something happened</description>
+      <cause>unknown</cause>
+    </details>
+</event>
+```
+
+```json
+{
+  "event": {
+    "id": 1,
+    "user": "jane",
+    "details": {
+      "time": "2021-10-01T12:00:00Z",
+      "description": "Something happened",
+      "cause": "unknown"
+    }
+  }
+}
+```
+
+Parse a Simplified XML document with unique child elements:
+
+```xml
+<x>
+  <y>1</y>
+  <z>2</z>
+</x>
+```
+
+```json
+{
+  "x": {
+    "y": "1",
+    "z": "2"
+  }
+}
+```
+
+Parse a Simplified XML document with multiple elements of the same tag:
+
+```xml
+<a>
+  <b>1</b>
+  <b>2</b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
+
+Parse a Simplified XML document with CDATA element:
+
+```xml
+<a>
+  <b>1</b>
+  <b><![CDATA[2]]></b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
 
 ### ParseXML
 
