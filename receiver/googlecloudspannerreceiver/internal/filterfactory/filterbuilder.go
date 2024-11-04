@@ -57,7 +57,6 @@ func (b filterBuilder) buildFilterByMetricPositiveTotalLimit() (map[string]filte
 
 func (b filterBuilder) handleLowCardinalityGroups(groups []*metadata.MetricsMetadata, remainingTotalLimit int,
 	filterByMetric map[string]filter.ItemFilter) (int, error) {
-
 	if len(groups) == 0 {
 		return remainingTotalLimit, nil
 	}
@@ -73,7 +72,6 @@ func (b filterBuilder) handleLowCardinalityGroups(groups []*metadata.MetricsMeta
 
 func (b filterBuilder) handleHighCardinalityGroups(groups []*metadata.MetricsMetadata, remainingTotalLimit int,
 	filterByMetric map[string]filter.ItemFilter) (int, error) {
-
 	if len(groups) == 0 {
 		return remainingTotalLimit, nil
 	}
@@ -94,7 +92,6 @@ func (b filterBuilder) handleHighCardinalityGroups(groups []*metadata.MetricsMet
 
 func (b filterBuilder) constructFiltersForGroups(totalLimitPerMetric int, limitPerMetricByTimestamp int,
 	groups []*metadata.MetricsMetadata, remainingTotalLimit int, filterByMetric map[string]filter.ItemFilter) (int, error) {
-
 	newTotalLimit := remainingTotalLimit
 
 	for _, metadataItem := range groups {

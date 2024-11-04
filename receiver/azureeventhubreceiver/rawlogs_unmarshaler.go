@@ -15,14 +15,12 @@ type rawLogsUnmarshaler struct {
 }
 
 func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
-
 	return rawLogsUnmarshaler{
 		logger: logger,
 	}
 }
 
 func (r rawLogsUnmarshaler) UnmarshalLogs(event *eventhub.Event) (plog.Logs, error) {
-
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()

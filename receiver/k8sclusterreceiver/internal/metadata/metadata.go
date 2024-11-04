@@ -135,7 +135,6 @@ func GetMetadataUpdate(oldMetadata, newMetadata map[metadataPkg.ResourceID]*Kube
 // If the delta between old (oldProps) and new (newProps) revisions of a
 // resource end up being empty, nil is returned.
 func getMetadataDelta(oldProps, newProps map[string]string) *metadataPkg.MetadataDelta {
-
 	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
 
 	// If metadata exist in the previous revision as well, collect if
