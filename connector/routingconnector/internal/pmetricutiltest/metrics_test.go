@@ -57,7 +57,7 @@ func TestNewMetrics(t *testing.T) {
 			m.SetName("metricD") // resourceB.scopeC.metricD
 			dps = m.SetEmptyGauge()
 			dp = dps.DataPoints().AppendEmpty()
-			dp.Attributes().PutStr("dpName", "dpE") // resource.scopeC.metricD.dpE
+			dp.Attributes().PutStr("dpName", "dpE") // resourceB.scopeC.metricD.dpE
 			return md
 		}()
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("AB", "C", "D", "E")))
