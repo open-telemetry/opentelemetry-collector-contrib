@@ -30,7 +30,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.112.0
-	github.com/prometheus/common v0.60.0
+	github.com/prometheus/common v0.60.1
 	github.com/prometheus/prometheus v0.54.1
 	github.com/shirou/gopsutil/v4 v4.24.9
 	github.com/stretchr/testify v1.9.0
@@ -81,13 +81,13 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.134 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.58.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.58.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.58.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.58.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.58.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.58.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.58.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.58.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.31.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.14 // indirect
@@ -95,7 +95,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.20.0 // indirect
 	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
-	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20240626203959-61d1e3462e30 // indirect
 	github.com/antchfx/xmlquery v1.4.2 // indirect
@@ -113,8 +113,8 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/digitalocean/godo v1.118.0 // indirect
-	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v27.1.1+incompatible // indirect
+	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/docker v27.3.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -250,7 +250,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/cobra v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/tinylib/msgp v1.2.2 // indirect
+	github.com/tinylib/msgp v1.2.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect

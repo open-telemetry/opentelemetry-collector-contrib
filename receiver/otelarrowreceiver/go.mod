@@ -25,6 +25,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.112.1-0.20241029112935-002a74860455
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/metric v1.31.0
+	go.opentelemetry.io/otel/sdk v1.31.0
 	go.opentelemetry.io/otel/sdk/metric v1.31.0
 	go.opentelemetry.io/otel/trace v1.31.0
 	go.uber.org/goleak v1.3.0
@@ -33,7 +34,6 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.30.0
 	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.35.1
 )
 
 require (
@@ -81,7 +81,6 @@ require (
 	go.opentelemetry.io/collector/pipeline v0.112.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.112.1-0.20241029112935-002a74860455 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
@@ -90,6 +89,7 @@ require (
 	golang.org/x/tools v0.22.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9 // indirect
+	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
