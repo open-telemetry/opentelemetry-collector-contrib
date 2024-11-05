@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	cloud.google.com/go/compute/metadata v0.5.2
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.3
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0
 	github.com/aws/aws-sdk-go v1.55.5
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/consul/api v1.30.0
@@ -40,7 +40,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v26.1.5+incompatible // indirect
+	github.com/docker/docker v27.3.1+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.0 // indirect
