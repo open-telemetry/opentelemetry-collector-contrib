@@ -12,7 +12,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -131,6 +133,20 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
 			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
+
+			// Test profiles consumer
+			tpn := new(consumertest.ProfilesSink)
+			rpp, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), tt.config, tpn)
+			require.NoError(t, err)
+			assert.True(t, rpp.Capabilities().MutatesData)
+
+			sourceProfileData := generateProfileData(tt.sourceAttributes)
+			wantProfileData := generateProfileData(tt.wantAttributes)
+			err = rpp.ConsumeProfiles(context.Background(), sourceProfileData)
+			require.NoError(t, err)
+			profiles := tpn.AllProfiles()
+			require.Len(t, profiles, 1)
+			compareProfileAttributes(t, wantProfileData, sourceProfileData)
 		})
 	}
 }
@@ -169,4 +185,25 @@ func generateLogData(attributes map[string]string) plog.Logs {
 		resource.Attributes().PutStr(k, v)
 	}
 	return ld
+}
+
+func generateProfileData(attributes map[string]string) pprofile.Profiles {
+	p := pprofile.NewProfiles()
+	rp := p.ResourceProfiles().AppendEmpty()
+
+	for k, v := range attributes {
+		rp.Resource().Attributes().PutStr(k, v)
+	}
+	return p
+}
+
+func compareProfileAttributes(t *testing.T, expected pprofile.Profiles, got pprofile.Profiles) {
+	require.Equal(t, expected.ResourceProfiles().Len(), got.ResourceProfiles().Len())
+
+	for i := 0; i < expected.ResourceProfiles().Len(); i++ {
+		expectedResourceProfile := expected.ResourceProfiles().At(i)
+		gotResourceProfile := got.ResourceProfiles().At(i)
+
+		require.Equal(t, expectedResourceProfile.Resource().Attributes(), gotResourceProfile.Resource().Attributes())
+	}
 }
