@@ -15,7 +15,10 @@ require (
 	go.uber.org/goleak v1.3.0
 )
 
-require go.opentelemetry.io/collector/consumer/consumertest v0.113.0
+require (
+	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
+)
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -23,7 +26,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/expr-lang/expr v1.16.9 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect

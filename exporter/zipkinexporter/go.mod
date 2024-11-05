@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.113.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
 	go.opentelemetry.io/collector/pdata v1.19.0
-	go.opentelemetry.io/collector/receiver v0.113.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -26,7 +26,7 @@ require (
 	github.com/apache/thrift v0.21.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
@@ -65,6 +65,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.19.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.113.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.113.0 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.113.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.113.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect

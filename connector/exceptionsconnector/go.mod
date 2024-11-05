@@ -40,10 +40,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.112.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector v0.113.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0 // indirect
 	go.opentelemetry.io/collector/connector/connectorprofiles v0.113.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.113.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
 	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.113.0 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect

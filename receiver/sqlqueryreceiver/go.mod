@@ -27,6 +27,7 @@ require (
 require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
 	go.opentelemetry.io/collector/extension/experimental/storage v0.113.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
 )
 
 require (

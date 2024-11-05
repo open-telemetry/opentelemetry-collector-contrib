@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
 	go.opentelemetry.io/collector/pdata v1.19.0
 	go.opentelemetry.io/collector/receiver v0.113.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.23.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53

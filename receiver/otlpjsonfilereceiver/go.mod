@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.113.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
 )
 
 require (

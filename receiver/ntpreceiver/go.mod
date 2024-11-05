@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/filter v0.113.0
 	go.opentelemetry.io/collector/pdata v1.19.0
 	go.opentelemetry.io/collector/receiver v0.113.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
