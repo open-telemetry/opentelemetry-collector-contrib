@@ -278,7 +278,6 @@ func setupReceiver(
 	initialSyncTimeout time.Duration,
 	tt componenttest.TestTelemetry,
 	namespace string) *kubernetesReceiver {
-
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift

@@ -4,7 +4,7 @@ status:
   class: processor
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
     active: [sh0rez, RichieSams, jpkrohling]
