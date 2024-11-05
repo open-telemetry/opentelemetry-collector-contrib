@@ -144,6 +144,39 @@ func Test_flatten(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "zero depth",
+			target: map[string]any{
+				"0": map[string]any{
+					"1": map[string]any{
+						"2": map[string]any{
+							"3": "value",
+						},
+					},
+				},
+				"1": []any{
+					map[string]any{
+						"1": "value",
+					},
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.NewTestingOptional[int64](0),
+			expected: map[string]any{
+				"0": map[string]any{
+					"1": map[string]any{
+						"2": map[string]any{
+							"3": "value",
+						},
+					},
+				},
+				"1": []any{
+					map[string]any{
+						"1": "value",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -69,7 +69,7 @@ func flattenHelper(m pcommon.Map, result pcommon.Map, prefix string, currentDept
 		switch {
 		case v.Type() == pcommon.ValueTypeMap && currentDepth < maxDepth:
 			flattenHelper(v.Map(), result, prefix+k, currentDepth+1, maxDepth)
-		case v.Type() == pcommon.ValueTypeSlice:
+		case v.Type() == pcommon.ValueTypeSlice && currentDepth < maxDepth:
 			for i := 0; i < v.Slice().Len(); i++ {
 				v.Slice().At(i).CopyTo(result.PutEmpty(fmt.Sprintf("%v.%v", prefix+k, i)))
 			}
