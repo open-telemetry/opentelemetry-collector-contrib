@@ -87,7 +87,20 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet, waitForMetadata bool, waitForMetadataTimeout time.Duration) (Client, error) {
+func New(
+	set component.TelemetrySettings,
+	apiCfg k8sconfig.APIConfig,
+	rules ExtractionRules,
+	filters Filters,
+	associations []Association,
+	exclude Excludes,
+	newClientSet APIClientsetProvider,
+	newInformer InformerProvider,
+	newNamespaceInformer InformerProviderNamespace,
+	newReplicaSetInformer InformerProviderReplicaSet,
+	waitForMetadata bool,
+	waitForMetadataTimeout time.Duration,
+) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
