@@ -25,7 +25,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for hostmetricsreceiver/uptime metrics.
+// MetricsConfig provides config for hostmetricsreceiver/system metrics.
 type MetricsConfig struct {
 	SystemUptime MetricConfig `mapstructure:"system.uptime"`
 }
@@ -38,7 +38,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for hostmetricsreceiver/uptime metrics builder.
+// MetricsBuilderConfig is a configuration for hostmetricsreceiver/system metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
