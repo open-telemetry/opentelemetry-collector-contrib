@@ -6,7 +6,7 @@ status:
     development: [extension]
   distributions: [contrib]
   codeowners:
-    active: []
+    active: [mx-psi, rogercoll]
 
 tests:
   config:
