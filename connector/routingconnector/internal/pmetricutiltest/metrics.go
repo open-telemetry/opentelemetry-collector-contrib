@@ -22,21 +22,21 @@ import "go.opentelemetry.io/collector/pdata/pmetric"
 //	            each with dp1, dp2, dp3, dp4
 //
 // Each byte in the input string is a unique ID for the corresponding element.
-func NewMetrics(rIDs, sIDs, mIDs, dpIDs string) pmetric.Metrics {
+func NewMetrics(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	for ri := 0; ri < len(rIDs); ri++ {
-		r := md.ResourceMetrics().AppendEmpty()
-		r.Resource().Attributes().PutStr("resourceName", "resource"+string(rIDs[ri]))
-		for si := 0; si < len(sIDs); si++ {
-			s := r.ScopeMetrics().AppendEmpty()
-			s.Scope().SetName("scope" + string(sIDs[si]))
-			for mi := 0; mi < len(mIDs); mi++ {
-				m := s.Metrics().AppendEmpty()
-				m.SetName("metric" + string(mIDs[mi]))
+	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+		rm := md.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
+		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+			sm := rm.ScopeMetrics().AppendEmpty()
+			sm.Scope().SetName("scope" + string(scopeIDs[scopeN]))
+			for metricN := 0; metricN < len(metricIDs); metricN++ {
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("metric" + string(metricIDs[metricN]))
 				dps := m.SetEmptyGauge()
-				for di := 0; di < len(dpIDs); di++ {
+				for dataPointN := 0; dataPointN < len(dataPointIDs); dataPointN++ {
 					dp := dps.DataPoints().AppendEmpty()
-					dp.Attributes().PutStr("dpName", "dp"+string(dpIDs[di]))
+					dp.Attributes().PutStr("dpName", "dp"+string(dataPointIDs[dataPointN]))
 				}
 			}
 		}

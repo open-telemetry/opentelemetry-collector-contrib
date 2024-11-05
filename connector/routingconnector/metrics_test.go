@@ -498,7 +498,7 @@ func TestMetricsConnectorCapabilities(t *testing.T) {
 	assert.False(t, conn.Capabilities().MutatesData)
 }
 
-func TestMetricsConnectorDetailedConcise(t *testing.T) {
+func TestMetricsConnectorDetailed(t *testing.T) {
 	idSink0 := pipeline.NewIDWithName(pipeline.SignalMetrics, "0")
 	idSink1 := pipeline.NewIDWithName(pipeline.SignalMetrics, "1")
 	idSinkD := pipeline.NewIDWithName(pipeline.SignalMetrics, "default")

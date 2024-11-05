@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/routi
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.112.0
 	github.com/stretchr/testify v1.9.0
