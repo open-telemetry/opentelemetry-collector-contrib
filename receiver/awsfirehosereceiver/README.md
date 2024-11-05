@@ -86,3 +86,7 @@ For example:
 ### otlp_v1
 The OTLP v1 format as produced by CloudWatch metric streams.
 See [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-opentelemetry-100.html) for details.
+
+### firehoselogs
+The record type for logs sent directly from AWS services to Firehose. 
+For example, VPC flow logs can be configured to send to Firehose directly. Please see [documentation](https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-firehose.html) for more details.

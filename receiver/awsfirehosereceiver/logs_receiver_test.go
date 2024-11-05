@@ -94,7 +94,7 @@ func TestLogsConsumer(t *testing.T) {
 				unmarshaler: unmarshalertest.NewErrLogs(testCase.unmarshalerErr),
 				consumer:    consumertest.NewErr(testCase.consumerErr),
 			}
-			gotStatus, gotErr := mc.Consume(context.TODO(), nil, nil)
+			gotStatus, gotErr := mc.Consume(context.TODO(), nil, nil, "", 0)
 			require.Equal(t, testCase.wantStatus, gotStatus)
 			require.Equal(t, testCase.wantErr, gotErr)
 		})
@@ -110,7 +110,7 @@ func TestLogsConsumer(t *testing.T) {
 		}
 		gotStatus, gotErr := mc.Consume(context.TODO(), nil, map[string]string{
 			"CommonAttributes": "Test",
-		})
+		}, "", 0)
 		require.Equal(t, http.StatusOK, gotStatus)
 		require.NoError(t, gotErr)
 		gotRms := rc.result.ResourceLogs()

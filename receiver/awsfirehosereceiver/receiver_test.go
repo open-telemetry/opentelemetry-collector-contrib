@@ -39,7 +39,7 @@ func newNopFirehoseConsumer(statusCode int, err error) *nopFirehoseConsumer {
 	return &nopFirehoseConsumer{statusCode, err}
 }
 
-func (nfc *nopFirehoseConsumer) Consume(context.Context, [][]byte, map[string]string) (int, error) {
+func (nfc *nopFirehoseConsumer) Consume(context.Context, [][]byte, map[string]string, string, int64) (int, error) {
 	return nfc.statusCode, nfc.err
 }
 
