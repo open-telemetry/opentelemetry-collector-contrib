@@ -1,26 +1,31 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package uptimescraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/uptimescraper"
+package systemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 
 import (
 	"context"
 	"errors"
 	"runtime"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/uptimescraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper/internal/metadata"
 )
 
-// This file implements Factory for Uptime scraper.
+// This file implements Factory for System scraper.
 
 const (
 	// TypeStr the value of "type" key in configuration.
-	TypeStr = "uptime"
+	TypeStr = "system"
+)
+
+var (
+	// scraperType is the component type used for the built scraper.
+	scraperType component.Type = component.MustNewType(TypeStr)
 )
 
 // Factory is the Factory for scraper.
@@ -47,7 +52,7 @@ func (f *Factory) CreateMetricsScraper(
 	uptimeScraper := newUptimeScraper(ctx, settings, cfg.(*Config))
 
 	return scraperhelper.NewScraper(
-		hostmeta.Type,
+		scraperType,
 		uptimeScraper.scrape,
 		scraperhelper.WithStart(uptimeScraper.start),
 	)

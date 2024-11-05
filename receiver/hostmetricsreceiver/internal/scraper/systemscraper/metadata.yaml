@@ -1,4 +1,4 @@
-type: hostmetricsreceiver/uptime
+type: hostmetricsreceiver/system
 
 parent: hostmetrics
 
