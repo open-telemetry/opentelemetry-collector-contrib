@@ -65,6 +65,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
