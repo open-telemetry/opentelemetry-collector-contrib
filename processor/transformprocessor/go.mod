@@ -99,8 +99,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
