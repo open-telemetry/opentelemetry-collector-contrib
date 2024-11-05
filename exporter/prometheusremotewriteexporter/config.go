@@ -45,6 +45,7 @@ type Config struct {
 	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
 
 	// CreatedMetric allows customizing creation of _created metrics
+	// Deprecated: This feature is useless in PRWv1 and and PRWv2 already have the created timestamp in the proto
 	CreatedMetric *CreatedMetric `mapstructure:"export_created_metric,omitempty"`
 
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
