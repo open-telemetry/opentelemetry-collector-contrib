@@ -107,7 +107,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `flatten(attributes, depth=0)`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			statement: `flatten(attributes, depth=1)`,
