@@ -84,11 +84,12 @@ jobs:
         run: make chlog-preview > changelog_preview.md
       - name: Install markdown-link-check
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
-        run: npm install -g markdown-link-check
+        run: npm install -g markdown-link-check@3.12.2
       - name: Run markdown-link-check
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: |
           markdown-link-check \
             --verbose \
             --config .github/workflows/check_links_config.json \
-            changelog_preview.md
+            changelog_preview.md \
+            || { echo "Check that anchor links are lowercase"; exit 1; }
