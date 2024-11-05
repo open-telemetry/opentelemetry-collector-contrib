@@ -29,7 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	_ "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
