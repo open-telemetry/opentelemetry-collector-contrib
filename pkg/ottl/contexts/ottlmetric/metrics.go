@@ -31,6 +31,11 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
+func NewTransformContextSimple(metric pmetric.Metric, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
+	return NewTransformContext(metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetrics.Resource(), scopeMetrics, resourceMetrics)
+}
+
+// Deprecated: Use NewTransformContextSimple instead.
 func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
 	return TransformContext{
 		metric:               metric,

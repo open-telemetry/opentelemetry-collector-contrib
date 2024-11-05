@@ -60,6 +60,11 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
+func NewTransformContextSimple(dataPoint any, metric pmetric.Metric, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
+	return NewTransformContext(dataPoint, metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetrics.Resource(), scopeMetrics, resourceMetrics)
+}
+
+// Deprecated: Use NewTransformContextSimple instead.
 func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
 	return TransformContext{
 		dataPoint:            dataPoint,

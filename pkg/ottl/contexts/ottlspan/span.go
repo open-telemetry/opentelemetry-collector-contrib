@@ -41,6 +41,11 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
+func NewTransformContextSimple(span ptrace.Span, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans) TransformContext {
+	return NewTransformContext(span, scopeSpans.Scope(), resourceSpans.Resource(), scopeSpans, resourceSpans)
+}
+
+// Deprecated: Use NewTransformContextSimple instead.
 func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans) TransformContext {
 	return TransformContext{
 		span:                 span,
