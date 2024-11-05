@@ -40,15 +40,15 @@ func createDefaultConfig() component.Config {
 
 func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	cgroupConfig := cfg.(*Config)
-	return newCgroupRuntime(cgroupConfig,
+	return newCgroupRuntime(cgroupConfig, set.Logger,
 		func() (undoFunc, error) {
 			undo, err := maxprocs.Set(maxprocs.Logger(func(str string, params ...interface{}) {
 				set.Logger.Debug(fmt.Sprintf(str, params))
 			}))
 			return undoFunc(undo), err
 		},
-		func() (undoFunc, error) {
-			initial, err := memlimit.SetGoMemLimitWithOpts(memlimit.WithRatio(cgroupConfig.GoMemLimit.Ratio))
+		func(ratio float64) (undoFunc, error) {
+			initial, err := memlimit.SetGoMemLimitWithOpts(memlimit.WithRatio(ratio))
 			return func() { debug.SetMemoryLimit(initial) }, err
 		}), nil
 }

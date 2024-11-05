@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestExtension(t *testing.T) {
@@ -51,7 +52,8 @@ func TestExtension(t *testing.T) {
 				allCalls += 1
 				return func() { allCalls += 1 }, nil
 			}
-			cg := newCgroupRuntime(test.config, setterMock, setterMock)
+			settings := extensiontest.NewNopSettings()
+			cg := newCgroupRuntime(test.config, settings.Logger, setterMock, func(_ float64) (undoFunc, error) { return setterMock() })
 			ctx := context.Background()
 
 			err := cg.Start(ctx, componenttest.NewNopHost())
