@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"runtime/debug"
 
+	"github.com/KimMachineGun/automemlimit/memlimit"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/automaxprocs/maxprocs"
 
-	"github.com/KimMachineGun/automemlimit/memlimit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata"
 )
 
@@ -42,7 +42,7 @@ func createExtension(_ context.Context, set extension.Settings, cfg component.Co
 	cgroupConfig := cfg.(*Config)
 	return newCgroupRuntime(cgroupConfig, set.Logger,
 		func() (undoFunc, error) {
-			undo, err := maxprocs.Set(maxprocs.Logger(func(str string, params ...interface{}) {
+			undo, err := maxprocs.Set(maxprocs.Logger(func(str string, params ...any) {
 				set.Logger.Debug(fmt.Sprintf(str, params))
 			}))
 			return undoFunc(undo), err

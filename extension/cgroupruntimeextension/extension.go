@@ -39,7 +39,7 @@ func newCgroupRuntime(cfg *Config, logger *zap.Logger, maxProcsFn maxProcsFn, me
 	}
 }
 
-func (c *cgroupRuntimeExtension) Start(ctx context.Context, host component.Host) error {
+func (c *cgroupRuntimeExtension) Start(_ context.Context, _ component.Host) error {
 	var err error
 	if c.config.GoMaxProcs.Enabled {
 		c.undoMaxProcsFn, err = c.maxProcsFn()

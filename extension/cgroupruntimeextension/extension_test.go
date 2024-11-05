@@ -48,9 +48,10 @@ func TestExtension(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			allCalls := 0
+			var _err error
 			setterMock := func() (undoFunc, error) {
-				allCalls += 1
-				return func() { allCalls += 1 }, nil
+				allCalls++
+				return func() { allCalls++ }, _err
 			}
 			settings := extensiontest.NewNopSettings()
 			cg := newCgroupRuntime(test.config, settings.Logger, setterMock, func(_ float64) (undoFunc, error) { return setterMock() })
