@@ -12,6 +12,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -282,7 +283,7 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	}
 	payload, _ := json.Marshal(body)
 	w.Header().Set(headerContentType, "application/json")
-	w.Header().Set(headerContentLength, fmt.Sprintf("%d", len(payload)))
+	w.Header().Set(headerContentLength, strconv.Itoa(len(payload)))
 	w.WriteHeader(statusCode)
 	if _, err = w.Write(payload); err != nil {
 		fmr.settings.Logger.Error("Failed to send response", zap.Error(err))

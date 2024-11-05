@@ -5,6 +5,7 @@ package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -56,7 +57,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 		return 0, fmt.Errorf("endpoint port is not a number: %w", err)
 	}
 	if port < 1 || port > 65535 {
-		return 0, fmt.Errorf("port number must be between 1 and 65535")
+		return 0, errors.New("port number must be between 1 and 65535")
 	}
 	return int(port), nil
 }

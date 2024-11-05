@@ -450,7 +450,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	body, err := json.Marshal(buildSplunkHecMsg(sec, 0))
 	require.NoErrorf(t, err, "failed to marshal Splunk message: %v", err)
 
-	url := fmt.Sprintf("https://%s", addr)
+	url := "https://" + addr
 
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
@@ -1833,7 +1833,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				for _, k := range []string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.SourceType, config.HecToOtelAttrs.Source, config.HecToOtelAttrs.Host} {
 					v, ok := resource.Get(k)
 					if !ok {
-						assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
+						assert.Fail(t, "does not contain query param: "+k)
 					}
 					assert.Equal(t, "bar", v.AsString())
 				}
@@ -1858,7 +1858,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 				for _, k := range [2]string{config.HecToOtelAttrs.Index, config.HecToOtelAttrs.Source} {
 					v, ok := resource.Get(k)
 					if !ok {
-						assert.Fail(t, fmt.Sprintf("does not contain query param: %s", k))
+						assert.Fail(t, "does not contain query param: "+k)
 					}
 					assert.Equal(t, "bar", v.AsString())
 				}
