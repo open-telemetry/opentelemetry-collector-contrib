@@ -468,7 +468,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	assert.False(t, conn.Capabilities().MutatesData)
 }
 
-func TestLogsConnectorDetailedConcise(t *testing.T) {
+func TestLogsConnectorDetailed(t *testing.T) {
 	idSink0 := pipeline.NewIDWithName(pipeline.SignalLogs, "0")
 	idSink1 := pipeline.NewIDWithName(pipeline.SignalLogs, "1")
 	idSinkD := pipeline.NewIDWithName(pipeline.SignalLogs, "default")
