@@ -11,7 +11,6 @@ dist:
   name: otelcontribcol
   description: Local OpenTelemetry Collector Contrib binary, testing only.
   version: 0.112.0-dev
-  otelcol_version: 0.112.0
 
 extensions:
   - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.112.0
