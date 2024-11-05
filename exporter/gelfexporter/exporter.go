@@ -387,8 +387,6 @@ func (g *gelfexporter) convertLogsToGELF(ctx context.Context, incomingTimestamp 
 				case "level":
 					jsonMessage["level"] = severity
 				}
-
-				return fmt.Errorf("Standard attribute %s is missing", attribute)
 			}
 		}
 
@@ -396,9 +394,10 @@ func (g *gelfexporter) convertLogsToGELF(ctx context.Context, incomingTimestamp 
 		// For example, if prefix is gelf. and attribute key is gelf._application, then the key will be _application.
 		if g.config.FeatureFlags.UseGELFAttributes.ExtractAdditionalAttributes {
 			for key, value := range attributes {
-				keyWithoutPrefix := strings.ReplaceAll(key, prefix+"_", "")
-				if additionalFieldRegex.MatchString(keyWithoutPrefix) {
-					jsonMessage["_"+keyWithoutPrefix] = value
+				keyWithoutPrefix := strings.ReplaceAll(key, prefix, "")
+				// If key matches the regex, and it should not have gelf. prefix, then we will accept it.
+				if additionalFieldRegex.MatchString(keyWithoutPrefix) && string(keyWithoutPrefix[0]) == "_" {
+					jsonMessage[keyWithoutPrefix] = value
 				} else {
 					// If key does not match the regex, then we cannot accept it.
 					g.logger.Debug("GELF Additional field key is not valid", zap.String("key", keyWithoutPrefix))
@@ -436,6 +435,11 @@ func (g *gelfexporter) convertLogsToGELF(ctx context.Context, incomingTimestamp 
 		}
 	}
 
+	// fmt.Println("GELF message: %v", jsonMessage)
+	// // Print key-value in jsonMessage with type of each value
+	// for key, value := range jsonMessage {
+	// 	fmt.Printf("\nKey: %s, Value: %v, Type: %T", key, value, value)
+	// }
 	g.logger.Debug("GELF message", zap.Any("message", jsonMessage))
 	messageBytes, err = json.Marshal(jsonMessage)
 	if err != nil {
