@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {

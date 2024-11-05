@@ -40,10 +40,8 @@ type scraper struct {
 }
 
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-
 	var records []map[string]string
 	if u, notURLerr := url.Parse(s.cfg.Endpoint); notURLerr == nil && strings.HasPrefix(u.Scheme, "http") {
-
 		resp, err := s.httpClient.Get(s.cfg.Endpoint + ";csv")
 		if err != nil {
 			return pmetric.NewMetrics(), err

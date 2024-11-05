@@ -49,7 +49,6 @@ func (f *eventhubReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-
 	receiver, err := f.getReceiver(pipeline.SignalLogs, cfg, settings)
 	if err != nil {
 		return nil, err
@@ -66,7 +65,6 @@ func (f *eventhubReceiverFactory) createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	receiver, err := f.getReceiver(pipeline.SignalMetrics, cfg, settings)
 	if err != nil {
 		return nil, err
@@ -83,7 +81,6 @@ func (f *eventhubReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
 	receiver, err := f.getReceiver(pipeline.SignalTraces, cfg, settings)
 	if err != nil {
 		return nil, err
@@ -99,7 +96,6 @@ func (f *eventhubReceiverFactory) getReceiver(
 	cfg component.Config,
 	settings receiver.Settings,
 ) (component.Component, error) {
-
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)

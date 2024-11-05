@@ -50,12 +50,11 @@ func TestLoadConfigRootPath(t *testing.T) {
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
 	cpuScraperCfg.SetRootPath("testdata")
 	cpuScraperCfg.SetEnvMap(common.EnvMap{
-		common.HostDevEnvKey:     "testdata/dev",
-		common.HostEtcEnvKey:     "testdata/etc",
-		common.HostProcMountinfo: "testdata",
-		common.HostRunEnvKey:     "testdata/run",
-		common.HostSysEnvKey:     "testdata/sys",
-		common.HostVarEnvKey:     "testdata/var",
+		common.HostDevEnvKey: "testdata/dev",
+		common.HostEtcEnvKey: "testdata/etc",
+		common.HostRunEnvKey: "testdata/run",
+		common.HostSysEnvKey: "testdata/sys",
+		common.HostVarEnvKey: "testdata/var",
 	})
 	expectedConfig.Scrapers = map[string]internal.Config{cpuscraper.TypeStr: cpuScraperCfg}
 

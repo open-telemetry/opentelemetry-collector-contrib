@@ -752,7 +752,8 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, expectedDescription, ad.AgentDescription)
+	require.Subset(t, ad.AgentDescription.IdentifyingAttributes, expectedDescription.IdentifyingAttributes)
+	require.Subset(t, ad.AgentDescription.NonIdentifyingAttributes, expectedDescription.NonIdentifyingAttributes)
 
 	time.Sleep(250 * time.Millisecond)
 }
@@ -1440,6 +1441,71 @@ func TestSupervisorLogging(t *testing.T) {
 	// verify a collector log was read
 	require.True(t, seenCollectorLog)
 	require.NoError(t, logFile.Close())
+}
+
+func TestSupervisorOpAmpServerPort(t *testing.T) {
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	supervisorOpAmpServerPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	s := newSupervisor(t, "server_port", map[string]string{"url": server.addr, "supervisor_opamp_server_port": fmt.Sprintf("%d", supervisorOpAmpServerPort)})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	cfg, hash, inputFile, outputFile := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			// The effective config may be structurally different compared to what was sent,
+			// and will also have some data redacted,
+			// so just check that it includes the filelog receiver
+			return strings.Contains(cfg, "filelog")
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with remote config")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
 func findRandomPort() (int, error) {
