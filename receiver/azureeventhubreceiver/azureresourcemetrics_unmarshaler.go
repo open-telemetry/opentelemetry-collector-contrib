@@ -51,7 +51,6 @@ type azureMetricRecord struct {
 }
 
 func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventMetricsUnmarshaler {
-
 	return azureResourceMetricsUnmarshaler{
 		buildInfo: buildInfo,
 		logger:    logger,
@@ -64,7 +63,6 @@ func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *z
 // metric record appears as fields and attributes in the
 // OpenTelemetry representation;
 func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event) (pmetric.Metrics, error) {
-
 	md := pmetric.NewMetrics()
 
 	var azureMetrics azureMetricRecords
