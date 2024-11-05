@@ -139,7 +139,6 @@ func TestGet(t *testing.T) {
 
 func TestGetNodeStats(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if strings.Contains(r.URL.Path, "/invalid_json") {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte(`{"}`))
