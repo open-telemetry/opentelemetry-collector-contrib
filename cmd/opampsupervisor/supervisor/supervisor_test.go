@@ -417,7 +417,7 @@ service:
 					t,
 					&protobufs.RemoteConfigStatus{
 						LastRemoteConfigHash: remoteConfig.ConfigHash,
-						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
 					},
 					rcs,
 				)
@@ -516,7 +516,7 @@ service:
 					t,
 					&protobufs.RemoteConfigStatus{
 						LastRemoteConfigHash: remoteConfig.ConfigHash,
-						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+						Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING,
 					},
 					rcs,
 				)
