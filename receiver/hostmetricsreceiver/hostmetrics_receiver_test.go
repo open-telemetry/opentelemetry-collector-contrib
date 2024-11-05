@@ -34,7 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/uptimescraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 )
 
 var allMetrics = []string{
@@ -82,7 +82,7 @@ var factories = map[string]internal.ScraperFactory{
 	pagingscraper.TypeStr:     &pagingscraper.Factory{},
 	processesscraper.TypeStr:  &processesscraper.Factory{},
 	processscraper.TypeStr:    &processscraper.Factory{},
-	uptimescraper.TypeStr:     &uptimescraper.Factory{},
+	systemscraper.TypeStr:     &systemscraper.Factory{},
 }
 
 type testEnv struct {
@@ -404,7 +404,7 @@ func Benchmark_ScrapeUptimeMetrics(b *testing.B) {
 
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-		Scrapers:         map[string]internal.Config{uptimescraper.TypeStr: (&uptimescraper.Factory{}).CreateDefaultConfig()},
+		Scrapers:         map[string]internal.Config{systemscraper.TypeStr: (&systemscraper.Factory{}).CreateDefaultConfig()},
 	}
 
 	benchmarkScrapeMetrics(b, cfg)
@@ -444,6 +444,7 @@ func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 			networkscraper.TypeStr:    &networkscraper.Config{},
 			pagingscraper.TypeStr:     (&pagingscraper.Factory{}).CreateDefaultConfig(),
 			processesscraper.TypeStr:  &processesscraper.Config{},
+			systemscraper.TypeStr:     &systemscraper.Config{},
 		},
 	}
 
