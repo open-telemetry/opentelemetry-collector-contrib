@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+const appTokenLength = 36
+
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
@@ -43,7 +45,7 @@ func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != "eu" && strings.ToLower(cfg.Region) != "us" && strings.ToLower(cfg.Region) != "custom" {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if len(cfg.AppToken) != 36 {
+	if len(cfg.AppToken) != appTokenLength {
 		return fmt.Errorf("invalid app_token: %s. app_token should be 36 characters", cfg.AppToken)
 	}
 	if strings.ToLower(cfg.Region) == "eu" {
