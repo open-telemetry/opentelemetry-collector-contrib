@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
-	github.com/docker/docker v26.1.5+incompatible
+	github.com/docker/docker v27.3.1+incompatible
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/confmap v1.18.0
