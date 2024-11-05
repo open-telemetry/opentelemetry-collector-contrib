@@ -27,6 +27,9 @@ type Settings struct {
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.
+// Only call this function when the result of the previous call is no longer needed
+// (i.e. has been exported out of process). The return values of this function depend on
+// internal state which is reset on every call.
 func (c *PrometheusConverter) FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
 	c.reset()
 	errs := c.fromMetrics(md, settings)
@@ -44,8 +47,6 @@ func (c *PrometheusConverter) FromMetrics(md pmetric.Metrics, settings Settings)
 // best to keep it around for the lifetime of the Go process. Due to this shared
 // state, PrometheusConverter is NOT thread-safe and is only intended to be used by
 // a single go-routine at a time.
-// Each FromMetrics call should be followed by a Reset when the metrics can be safely
-// discarded.
 type PrometheusConverter struct {
 	unique    map[uint64]*prompb.TimeSeries
 	conflicts map[uint64][]*prompb.TimeSeries
