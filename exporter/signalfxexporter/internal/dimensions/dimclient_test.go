@@ -273,6 +273,63 @@ func TestDimensionClient(t *testing.T) {
 		require.EqualValues(t, 2, server.requestCount.Load())
 	})
 
+	t.Run("successful retry without tags on 400 response", func(t *testing.T) {
+		server.reset()
+		server.respCode = http.StatusBadRequest
+
+		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+			Name:  "AWSUniqueID",
+			Value: "abcd",
+			Properties: map[string]*string{
+				"c": newString("d"),
+			},
+			Tags: map[string]bool{
+				"running": true,
+			},
+		}))
+		server.handleRequest()
+		require.Empty(t, server.acceptedDims)
+
+		// The next successful request should be sent without tags.
+		server.respCode = http.StatusOK
+		server.handleRequest()
+		require.Equal(t, []dim{
+			{
+				Key:   "AWSUniqueID",
+				Value: "abcd",
+				Properties: map[string]*string{
+					"c": newString("d"),
+				},
+			},
+		}, server.acceptedDims)
+		require.EqualValues(t, 2, server.requestCount.Load())
+	})
+
+	t.Run("retry without tags only once", func(t *testing.T) {
+		server.reset()
+		server.respCode = http.StatusBadRequest
+
+		require.NoError(t, client.acceptDimension(&DimensionUpdate{
+			Name:  "AWSUniqueID",
+			Value: "abcd",
+			Properties: map[string]*string{
+				"c": newString("d"),
+			},
+			Tags: map[string]bool{
+				"running": true,
+			},
+		}))
+		server.handleRequest()
+		require.Empty(t, server.acceptedDims)
+
+		// handle retry
+		server.handleRequest()
+
+		// ensure no more retries
+		time.Sleep(100 * time.Millisecond)
+		require.EqualValues(t, 2, server.requestCount.Load())
+	})
+
 	t.Run("send successive quick updates to same dim", func(t *testing.T) {
 		server.reset()
 
