@@ -17,7 +17,7 @@ This exporter supports sending metrics to [Sematext Cloud](https://sematext.com/
 
 The following configuration options are supported:
 * `timeout` (default = 5s) Timeout for requests
-* `Region`  Region specifies the Sematext region the user is operating in; must be one of:
+* `region`  Region specifies the Sematext region the user is operating in; must be one of:
   * `US`
   * `EU`
 * `app_token` App token specifies the token of Sematext Monitoring App to which the user wants to send data to.
