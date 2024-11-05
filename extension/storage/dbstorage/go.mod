@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/stora
 go 1.22.0
 
 require (
-	github.com/docker/docker v27.1.1+incompatible
+	github.com/docker/docker v27.3.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/mattn/go-sqlite3 v1.14.24
@@ -51,6 +51,7 @@ require (
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/sys/user v0.1.0 // indirect
+	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
