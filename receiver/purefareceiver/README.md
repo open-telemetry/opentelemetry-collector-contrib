@@ -17,7 +17,7 @@ The Pure Storage FlashArray receiver, receives metrics from Pure Storage interna
 ## Configuration
 
 The following settings are required:
- -  `endpoint` (default: `http://172.0.0.0:9490/metrics/array`): The URL of the scraper selected endpoint
+ -  `endpoint` (default: `http://127.0.0.0:9490/metrics/array`): The URL of the scraper selected endpoint
 
 Example:
 

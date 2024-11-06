@@ -71,6 +71,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
+		httpConfig.TLSConfig.InsecureSkipVerify = true
 
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
@@ -81,7 +82,8 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 			Scheme:           u.Scheme,
 			MetricsPath:      fmt.Sprintf("/metrics/%s", h.scraperType),
 			Params: url.Values{
-				"endpoint": {arr.Address},
+				"endpoint":  {arr.Address},
+				"namespace": {arr.Namespace},
 			},
 
 			ServiceDiscoveryConfigs: discovery.Configs{
