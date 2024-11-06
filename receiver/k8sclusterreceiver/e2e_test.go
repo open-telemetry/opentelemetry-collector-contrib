@@ -29,7 +29,7 @@ import (
 const expectedFileClusterScoped = "./testdata/e2e/cluster-scoped/expected.yaml"
 const expectedFileNamespaceScoped = "./testdata/e2e/namespace-scoped/expected.yaml"
 
-const testObjectsDirClusterScoped = "./testdata/e2e/cluster-scoped/testobjects/"
+const testObjectsDir = "./testdata/e2e/testobjects/"
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
 // TestE2EClusterScoped tests the k8s cluster receiver with a real k8s cluster.
@@ -49,7 +49,7 @@ func TestE2EClusterScoped(t *testing.T) {
 	require.NoError(t, err)
 
 	// k8s test objs
-	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDirClusterScoped)
+	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDir)
 	require.NoErrorf(t, err, "failed to create objects")
 
 	t.Cleanup(func() {
@@ -171,6 +171,14 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
+	// k8s test objs
+	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDir)
+	require.NoErrorf(t, err, "failed to create objects")
+
+	t.Cleanup(func() {
+		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, testObjs), "failed to delete objects")
+	})
+
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
 	defer shutdownSink()
@@ -178,11 +186,11 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "namespace-scoped", "collector"))
 
-	defer func() {
+	t.Cleanup(func() {
 		for _, obj := range append(collectorObjs) {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
-	}()
+	})
 
 	wantEntries := 4 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
