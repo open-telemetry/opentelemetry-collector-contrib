@@ -22,6 +22,7 @@ func TestLoadConfig(t *testing.T) {
 		id                    component.ID
 		expected              component.Config
 		unmarshalErrorMessage string
+		validateErrorMessage  string
 	}{
 		{
 			id: component.NewID(metadata.Type),
@@ -34,7 +35,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:                    component.NewIDWithName(metadata.Type, "invalid_ratio"),
+			id:                   component.NewIDWithName(metadata.Type, "invalid_ratio"),
+			validateErrorMessage: "gomemlimit ratio must be between 0 and 1",
+		},
+		{
+			id:                    component.NewIDWithName(metadata.Type, "invalid_ratio_type"),
 			unmarshalErrorMessage: "decoding failed due to the following error(s):\n\n'gomemlimit.ratio' expected type 'float64', got unconvertible type 'string', value: 'not_valid'",
 		},
 	}
@@ -55,6 +60,11 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			require.NoError(t, sub.Unmarshal(cfg))
+
+			if tt.validateErrorMessage != "" {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.validateErrorMessage)
+				return
+			}
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

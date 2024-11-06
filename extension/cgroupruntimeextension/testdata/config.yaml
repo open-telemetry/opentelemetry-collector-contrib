@@ -1,4 +1,7 @@
 cgroupruntime:
 cgroupruntime/invalid_ratio:
   gomemlimit:
+    ratio: 1.1
+cgroupruntime/invalid_ratio_type:
+  gomemlimit:
     ratio: "not_valid"
