@@ -160,7 +160,14 @@ agent:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
     non_identifying_attributes:
       custom.attribute: "custom-value"
-      
+
+  # The port the Collector's health check extension will be configured to use
+  health_check_port:
+
+  # The port the Supervisor will start its OpAmp server on and the Collector's 
+  # OpAmp extension will connect to
+  opamp_server_port: 
+
 ```
 
 ### Operation When OpAMP Server is Unavailable

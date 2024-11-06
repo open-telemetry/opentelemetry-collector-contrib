@@ -84,7 +84,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 		"Content-Type": jsonContentType,
 		"User-Agent":   configopaque.String(userAgent),
 	}
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.Background(),
 		set,
 		config,
@@ -109,7 +109,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 		"User-Agent":    configopaque.String(userAgent),
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		context.Background(),
 		set,
 		config,

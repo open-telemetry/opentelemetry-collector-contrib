@@ -52,7 +52,7 @@ func (cs *CarbonDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

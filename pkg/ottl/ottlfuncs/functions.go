@@ -73,6 +73,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewParseCSVFactory[K](),
 		NewParseJSONFactory[K](),
 		NewParseKeyValueFactory[K](),
+		NewParseSimplifiedXMLFactory[K](),
 		NewParseXMLFactory[K](),
 		NewRemoveXMLFactory[K](),
 		NewSecondsFactory[K](),
@@ -100,5 +101,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewAppendFactory[K](),
 		NewYearFactory[K](),
 		NewHexFactory[K](),
+		NewSliceToMapFactory[K](),
 	}
 }
