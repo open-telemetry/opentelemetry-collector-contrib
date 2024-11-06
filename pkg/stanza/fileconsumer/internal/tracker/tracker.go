@@ -198,13 +198,13 @@ func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Meta
 	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
 }
 
+// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
 func (t *fileTracker) FindFiles(records []*Record) {
-	// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
 
 	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
 	// We exit if all fingerprints are matched.
 
-	mostRecentIndex := t.archiveIndex - 1
+	mostRecentIndex := (t.archiveIndex - 1) % t.pollsToArchive
 	matchedRecords := 0
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
