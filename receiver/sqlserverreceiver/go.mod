@@ -29,6 +29,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
+	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/SAP/go-hdb v1.12.4 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
@@ -89,8 +90,8 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sijms/go-ora/v2 v2.8.22 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
-	github.com/snowflakedb/gosnowflake v1.11.2 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/snowflakedb/gosnowflake v1.12.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.112.0 // indirect
