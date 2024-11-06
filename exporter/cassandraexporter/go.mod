@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/gocql/gocql v1.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.113.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/config/configopaque v1.19.0
