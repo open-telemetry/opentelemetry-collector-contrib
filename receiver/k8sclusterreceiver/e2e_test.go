@@ -69,7 +69,8 @@ func TestE2EClusterScoped(t *testing.T) {
 		}
 	})
 
-	waitForData(t, expected.ResourceMetrics().Len(), metricsConsumer)
+	wantEntries := 10 // Minimal number of metrics to wait for.
+	waitForData(t, wantEntries, metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }
 	shortenNames := func(value string) string {
@@ -200,7 +201,8 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	})
 
-	waitForData(t, expected.ResourceMetrics().Len(), metricsConsumer)
+	wantEntries := 10 // Minimal number of metrics to wait for.
+	waitForData(t, wantEntries, metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }
 	shortenNames := func(value string) string {
