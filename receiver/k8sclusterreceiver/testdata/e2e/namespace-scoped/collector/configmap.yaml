@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Name }}-config
-  namespace: default
+  namespace: my-namespace
 data:
   relay: |
     exporters:
@@ -10,6 +10,8 @@ data:
         endpoint: {{ .HostEndpoint }}:4317
         tls:
           insecure: true
+      debug:
+        verbosity: normal
     extensions:
       health_check:
         endpoint: 0.0.0.0:13133
@@ -28,5 +30,6 @@ data:
         metrics:
           exporters:
           - otlp
+          - debug
           receivers:
           - k8s_cluster

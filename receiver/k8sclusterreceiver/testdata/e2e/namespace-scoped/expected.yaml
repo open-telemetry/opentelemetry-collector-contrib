@@ -246,7 +246,7 @@ resourceMetrics:
             stringValue: a38da134-af71-4bc1-a585-c9e0342f9aab
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -303,7 +303,7 @@ resourceMetrics:
             stringValue: 37a9e0cc-5315-4e89-bb2b-5221849ff483
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -360,7 +360,7 @@ resourceMetrics:
             stringValue: b7ecbf9e-8e1a-4d70-beda-aab183645382
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -411,7 +411,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.replicaset.name
           value:
             stringValue: otelcol-786b94f3-67cf69944f
@@ -444,7 +444,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.statefulset.name
           value:
             stringValue: test-k8scluster-receiver-statefulset
@@ -493,7 +493,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -520,7 +520,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -547,7 +547,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -574,7 +574,7 @@ resourceMetrics:
       attributes:
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -613,7 +613,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -660,7 +660,7 @@ resourceMetrics:
             stringValue: nginx
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -707,7 +707,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -754,7 +754,7 @@ resourceMetrics:
             stringValue: nginx
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -801,7 +801,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -1265,7 +1265,7 @@ resourceMetrics:
             stringValue: opentelemetry-collector
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
@@ -1423,7 +1423,7 @@ resourceMetrics:
             stringValue: alpine
         - key: k8s.namespace.name
           value:
-            stringValue: default
+            stringValue: my-namespace
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
