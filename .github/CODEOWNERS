@@ -70,7 +70,6 @@ exporter/logzioexporter/                                            @open-teleme
 exporter/lokiexporter/                                              @open-telemetry/collector-contrib-approvers @gramidt @jpkrohling @mar4uk
 exporter/mezmoexporter/                                             @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-exporter/opensearchexporter/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @MitchellGale @MaxKsyunz @YANG-DB
 exporter/otelarrowexporter/                                         @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
 exporter/prometheusexporter/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 exporter/prometheusremotewriteexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil @dashpole
@@ -323,5 +322,6 @@ reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 
 ## UNMAINTAINED components
 
+exporter/opensearchexporter/                                        @open-telemetry/collector-contrib-approvers 
 extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers 
 receiver/jmxreceiver/                                               @open-telemetry/collector-contrib-approvers 
