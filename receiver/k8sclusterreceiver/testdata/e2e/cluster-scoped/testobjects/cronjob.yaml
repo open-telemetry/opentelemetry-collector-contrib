@@ -15,5 +15,5 @@ spec:
               args:
                 - /bin/sh
                 - -c
-                - "echo Running; sleep 120"
+                - "echo Running; sleep 240"
           restartPolicy: OnFailure
