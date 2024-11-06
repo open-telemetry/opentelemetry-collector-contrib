@@ -44,7 +44,6 @@ The following settings are available:
 ### Limitations
 
 - The `match_once` setting is only supported when using the `resource` context. If any routes use `log` or `request` context, `match_once` must be set to `true`.
-- The `request` context is only supported for logs at this time.
 - The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
 
 ### Supported [OTTL] functions
