@@ -424,27 +424,6 @@ processors:
     override: false
 ```
 
-### Heroku
-
-** You must first enable the [Heroku metadata feature](https://devcenter.heroku.com/articles/dyno-metadata) on the application **
-
-Queries [Heroku metadata](https://devcenter.heroku.com/articles/dyno-metadata) to retrieve the following resource attributes:
-
-* heroku.release.version (identifier for the current release)
-* heroku.release.creation_timestamp (time and date the release was created)
-* heroku.release.commit (commit hash for the current release)
-* heroku.app.name (application name)
-* heroku.app.id (unique identifier for the application)
-* heroku.dyno.id (dyno identifier. Used as host name)
-
-```yaml
-processors:
-  resourcedetection/heroku:
-    detectors: [env, heroku]
-    timeout: 2s
-    override: false
-```
-
 ### Kubeadm Metadata
 
 Queries the K8S API server to retrieve the following resource attributes:
