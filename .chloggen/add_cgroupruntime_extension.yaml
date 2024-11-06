@@ -7,7 +7,7 @@ change_type: new_component
 component: extension/cgroupruntime
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add initial cgroup runtime extension code.
+note: Initial implementation for cgroupruntime extension.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [30289]
