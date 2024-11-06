@@ -71,10 +71,10 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
-		httpConfig.TLSConfig.InsecureSkipVerify = true
 
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
+			ScrapeProtocols:  config.DefaultGlobalConfig.ScrapeProtocols,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
 			ScrapeTimeout:    model.Duration(h.scrapeInterval),
 			JobName:          fmt.Sprintf("%s/%s/%s", "purefa", h.scraperType, arr.Address),
@@ -83,7 +83,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 			MetricsPath:      fmt.Sprintf("/metrics/%s", h.scraperType),
 			Params: url.Values{
 				"endpoint":  {arr.Address},
-				"namespace": {arr.Namespace},
+				"namespace": {"purefa"},
 			},
 
 			ServiceDiscoveryConfigs: discovery.Configs{
