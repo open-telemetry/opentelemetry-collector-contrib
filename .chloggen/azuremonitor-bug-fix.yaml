@@ -4,7 +4,7 @@
 change_type: 'bug_fix'
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: azuremonitor
+component: azuremonitorexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: "Fixes an issue where the Azure Monitor exporter was not sending data to App Insights due to the Telemetry Channel not being flushed."
