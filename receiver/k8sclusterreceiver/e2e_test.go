@@ -52,9 +52,9 @@ func TestE2EClusterScoped(t *testing.T) {
 	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDir)
 	require.NoErrorf(t, err, "failed to create objects")
 
-	t.Cleanup(func() {
+	defer func() {
 		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, testObjs), "failed to delete objects")
-	})
+	}()
 
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
@@ -63,11 +63,11 @@ func TestE2EClusterScoped(t *testing.T) {
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "cluster-scoped", "collector"))
 
-	t.Cleanup(func() {
+	defer func() {
 		for _, obj := range append(collectorObjs) {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
-	})
+	}()
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
@@ -175,9 +175,9 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDir)
 	require.NoErrorf(t, err, "failed to create objects")
 
-	t.Cleanup(func() {
+	defer func() {
 		require.NoErrorf(t, k8stest.DeleteObjects(k8sClient, testObjs), "failed to delete objects")
-	})
+	}()
 
 	metricsConsumer := new(consumertest.MetricsSink)
 	shutdownSink := startUpSink(t, metricsConsumer)
@@ -186,11 +186,11 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "namespace-scoped", "collector"))
 
-	t.Cleanup(func() {
+	defer func() {
 		for _, obj := range append(collectorObjs) {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
-	})
+	}()
 
 	wantEntries := 4 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
