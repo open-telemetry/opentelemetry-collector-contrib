@@ -3,10 +3,10 @@ type: solarwindsapmsettings
 status:
   class: extension
   stability:
-    development: [extension]
+    unmaintained: [extension]
   distributions: []
   codeowners:
-    active: [jerrytfleung, cheempz]
+    active: []
 
 tests:
   config:

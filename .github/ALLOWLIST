@@ -24,5 +24,7 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
+extension/encoding/avrologencodingextension/
 extension/observer/ecstaskobserver/
+extension/solarwindsapmsettingsextension/
 receiver/jmxreceiver/

@@ -6,7 +6,7 @@ status:
     alpha: [traces,metrics,logs]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, adcharre]
+    active: [atoulme]
 tests:
   config:
     starttime: "2024-01-31"

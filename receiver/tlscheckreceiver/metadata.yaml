@@ -6,7 +6,7 @@ status:
     development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, michael-burt]
+    active: [atoulme]
 
 
 resource_attributes:

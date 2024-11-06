@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, TylerHelmuth, abhishek-at-cloudwerx]
+    active: [dashpole, TylerHelmuth]
 
 # TODO: Update the receiver to pass the tests
 tests:

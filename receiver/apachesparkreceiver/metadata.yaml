@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, Caleb-Hurshman, mrsillydog]
+    active: [djaglowski, mrsillydog]
 
 resource_attributes:
   spark.application.id:

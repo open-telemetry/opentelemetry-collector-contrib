@@ -6,7 +6,7 @@ status:
     alpha: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, emreyalvac]
+    active: [atoulme]
 
 # TODO: Update the exporter to pass the tests
 tests:

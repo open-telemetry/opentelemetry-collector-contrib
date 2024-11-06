@@ -6,7 +6,7 @@ status:
     beta: [logs]
   distributions: [contrib]
   codeowners:
-    active: [wgliang, yiyang5055]
+    active: [wgliang]
 
 # TODO: Update the exporter to pass the tests
 tests:

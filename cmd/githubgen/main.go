@@ -31,7 +31,6 @@ type generator interface {
 // reports/distributions/*
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
-	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
 	flag.Parse()
 	var generators []generator
 	for _, arg := range flag.Args() {
@@ -49,7 +48,7 @@ func main() {
 	if len(generators) == 0 {
 		generators = []generator{issueTemplatesGenerator{}, codeownersGenerator{}}
 	}
-	if err := run(*folder, *allowlistFilePath, generators); err != nil {
+	if err := run(*folder, generators); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -84,12 +83,11 @@ type distributionData struct {
 }
 
 type githubData struct {
-	folders           []string
-	codeowners        []string
-	allowlistFilePath string
-	maxLength         int
-	components        map[string]metadata
-	distributions     []distributionData
+	folders       []string
+	codeowners    []string
+	maxLength     int
+	components    map[string]metadata
+	distributions []distributionData
 }
 
 func loadMetadata(filePath string) (metadata, error) {
@@ -111,7 +109,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-func run(folder string, allowlistFilePath string, generators []generator) error {
+func run(folder string, generators []generator) error {
 
 	components := map[string]metadata{}
 	var foldersList []string
@@ -171,12 +169,11 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	}
 
 	data := &githubData{
-		folders:           foldersList,
-		codeowners:        codeownersList,
-		allowlistFilePath: allowlistFilePath,
-		maxLength:         maxLength,
-		components:        components,
-		distributions:     distributions,
+		folders:       foldersList,
+		codeowners:    codeownersList,
+		maxLength:     maxLength,
+		components:    components,
+		distributions: distributions,
 	}
 
 	for _, g := range generators {

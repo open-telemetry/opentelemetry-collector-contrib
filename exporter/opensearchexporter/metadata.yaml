@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]
+    active: [Aneurysm9]
 
 tests:
   expect_consumer_error: true

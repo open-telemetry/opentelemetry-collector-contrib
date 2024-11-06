@@ -7,7 +7,7 @@ status:
     development: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [atoulme, joker-star-l]
+    active: [atoulme]
 
 # TODO: Update the exporter to pass the tests
 tests:

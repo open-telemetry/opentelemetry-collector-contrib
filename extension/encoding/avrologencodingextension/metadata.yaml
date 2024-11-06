@@ -3,10 +3,10 @@ type: avro_log_encoding
 status:
   class: extension
   stability:
-    development: [extension]
+    unmaintained: [extension]
   distributions: []
   codeowners:
-    active: [thmshmm]
+    active: []
 
 tests:
   config:
