@@ -59,14 +59,14 @@ func NewBoundedQueue(ts component.TelemetrySettings, maxLimitAdmit, maxLimitWait
 // - element=nil, error=non-nil: the fast failure path
 // - element=non-nil, error=non-nil: the slow success path
 func (bq *BoundedQueue) acquireOrGetWaiter(pending uint64) (*list.Element, error) {
-	bq.lock.Lock()
-	defer bq.lock.Unlock()
-
 	if pending > bq.maxLimitAdmit {
 		// when the request will never succeed because it is
 		// individually over the total limit, fail fast.
 		return nil, ErrRequestTooLarge
 	}
+
+	bq.lock.Lock()
+	defer bq.lock.Unlock()
 
 	if bq.currentAdmitted+pending <= bq.maxLimitAdmit {
 		// the fast success path.
