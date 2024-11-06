@@ -819,7 +819,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			),
 		},
 		{
-			name: "match_resource_then_logs",
+			name: "mixed/match_resource_then_logs",
 			cfg: testConfig(
 				withRoute("resource", isResourceA, idSink0),
 				withRoute("log", isLogE, idSink1),
@@ -831,7 +831,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSinkD: plogutiltest.NewLogs("B", "CD", "F"),
 		},
 		{
-			name: "match_logs_then_resource",
+			name: "mixed/match_logs_then_resource",
 			cfg: testConfig(
 				withRoute("log", isLogE, idSink0),
 				withRoute("resource", isResourceB, idSink1),
@@ -843,7 +843,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSinkD: plogutiltest.NewLogs("A", "CD", "F"),
 		},
 		{
-			name: "match_resource_then_grpc_request",
+			name: "mixed/match_resource_then_grpc_request",
 			cfg: testConfig(
 				withRoute("resource", isResourceA, idSink0),
 				withRoute("request", isAcme, idSink1),
@@ -856,7 +856,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSinkD: plog.Logs{},
 		},
 		{
-			name: "match_logs_then_grpc_request",
+			name: "mixed/match_logs_then_grpc_request",
 			cfg: testConfig(
 				withRoute("log", isLogF, idSink0),
 				withRoute("request", isAcme, idSink1),
@@ -869,7 +869,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSinkD: plog.Logs{},
 		},
 		{
-			name: "match_resource_then_http_request",
+			name: "mixed/match_resource_then_http_request",
 			cfg: testConfig(
 				withRoute("resource", isResourceA, idSink0),
 				withRoute("request", isAcme, idSink1),
@@ -882,7 +882,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSinkD: plog.Logs{},
 		},
 		{
-			name: "match_logs_then_http_request",
+			name: "mixed/match_logs_then_http_request",
 			cfg: testConfig(
 				withRoute("log", isLogF, idSink0),
 				withRoute("request", isAcme, idSink1),
