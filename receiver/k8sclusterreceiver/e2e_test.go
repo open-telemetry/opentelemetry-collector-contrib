@@ -7,6 +7,7 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -25,9 +26,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const expectedFile = "./testdata/e2e/expected.yaml"
+const expectedFileClusterScoped = "./testdata/e2e/cluster-scoped/expected.yaml"
+const expectedFileNamespaceScoped = "./testdata/e2e/namespace-scoped/expected.yaml"
+
+const testObjectsDirClusterScoped = "./testdata/e2e/cluster-scoped/testobjects/"
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
-const testObjectsDir = "./testdata/e2e/testobjects/"
 
 // TestE2EClusterScoped tests the k8s cluster receiver with a real k8s cluster.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
@@ -39,15 +42,14 @@ const testObjectsDir = "./testdata/e2e/testobjects/"
 func TestE2EClusterScoped(t *testing.T) {
 
 	var expected pmetric.Metrics
-	expectedFile := filepath.Join("testdata", "e2e", "cluster-scoped", "expected.yaml")
-	expected, err := golden.ReadMetrics(expectedFile)
+	expected, err := golden.ReadMetrics(expectedFileClusterScoped)
 	require.NoError(t, err)
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
 	// k8s test objs
-	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDir)
+	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDirClusterScoped)
 	require.NoErrorf(t, err, "failed to create objects")
 
 	t.Cleanup(func() {
@@ -163,8 +165,7 @@ func TestE2EClusterScoped(t *testing.T) {
 func TestE2ENamespaceScoped(t *testing.T) {
 
 	var expected pmetric.Metrics
-	expectedFile := filepath.Join("testdata", "e2e", "namespace-scoped", "expected.yaml")
-	expected, err := golden.ReadMetrics(expectedFile)
+	expected, err := golden.ReadMetrics(expectedFileNamespaceScoped)
 	require.NoError(t, err)
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
@@ -199,7 +200,19 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreMetricValues("k8s.deployment.desired", "k8s.deployment.available", "k8s.container.restarts", "k8s.container.cpu_request", "k8s.container.memory_request", "k8s.container.memory_limit"),
+		pmetrictest.IgnoreMetricValues(
+			"k8s.container.cpu_request",
+			"k8s.container.memory_limit",
+			"k8s.container.memory_request",
+			"k8s.container.restarts",
+			"k8s.cronjob.active_jobs",
+			"k8s.deployment.available",
+			"k8s.deployment.desired",
+			"k8s.job.active_pods",
+			"k8s.job.desired_successful_pods",
+			"k8s.job.failed_pods",
+			"k8s.job.max_parallel_pods",
+			"k8s.job.successful_pods"),
 		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
 		pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
 		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
