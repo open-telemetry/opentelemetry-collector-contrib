@@ -166,6 +166,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/blobupload
       - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative

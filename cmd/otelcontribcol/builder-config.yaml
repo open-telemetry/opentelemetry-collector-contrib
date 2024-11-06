@@ -102,6 +102,7 @@ processors:
   - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.112.0
   - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.112.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/blobuploadprocessor v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor v0.112.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.112.0
@@ -352,6 +353,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver => ../../receiver/elasticsearchreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor => ../../processor/metricsgenerationprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ../../processor/attributesprocessor
+  - github.com/open-telemetry/opentelemetry-collector-contrib/processor/blobuploadprocessor => ../../processor/blobuploadprocessor
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver => ../../receiver/sqlqueryreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver => ../../receiver/purefareceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver => ../../receiver/purefbreceiver

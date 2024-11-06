@@ -1,0 +1,6 @@
+change_type: new_component
+component: blobuploadprocessor
+note: Processor for uploading pieces of a signal to blob storage and replacing with a ref
+issues: [33737]
+subtext: Skeleton implementation at the moment.
+change_logs: []
