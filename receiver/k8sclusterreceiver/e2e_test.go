@@ -7,6 +7,7 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -40,7 +41,6 @@ const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2EClusterScoped(t *testing.T) {
-
 	var expected pmetric.Metrics
 	expected, err := golden.ReadMetrics(expectedFileClusterScoped)
 	require.NoError(t, err)
@@ -69,9 +69,7 @@ func TestE2EClusterScoped(t *testing.T) {
 		}
 	})
 
-	wantEntries := 48 // Minimal number of metrics to wait for.
-	waitForData(t, wantEntries, metricsConsumer)
-	// golden.WriteMetrics(t, expectedFile, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+	waitForData(t, expected.ResourceMetrics().Len(), metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }
 	shortenNames := func(value string) string {
@@ -172,7 +170,17 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	require.NoError(t, err)
 
 	// k8s test objs
-	testObjs, err := k8stest.CreateObjects(k8sClient, testObjectsDir)
+
+	var testObjs []*unstructured.Unstructured
+	// the k8stest.Delete function does not wait for all objects to be fully deleted, therefore using Eventually here to retry in case
+	// one of the objects from the previous test is still being deleted
+	require.Eventually(t, func() bool {
+		testObjs, err = k8stest.CreateObjects(k8sClient, testObjectsDir)
+		if err != nil {
+			return false
+		}
+		return true
+	}, 30*time.Second, 5*time.Second)
 	require.NoErrorf(t, err, "failed to create objects")
 
 	t.Cleanup(func() {
@@ -192,8 +200,7 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	})
 
-	wantEntries := 4 // Minimal number of metrics to wait for.
-	waitForData(t, wantEntries, metricsConsumer)
+	waitForData(t, expected.ResourceMetrics().Len(), metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }
 	shortenNames := func(value string) string {
