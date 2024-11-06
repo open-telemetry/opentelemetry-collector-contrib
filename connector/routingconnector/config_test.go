@@ -276,3 +276,31 @@ func TestValidateConfig(t *testing.T) {
 		})
 	}
 }
+
+type testConfigOption func(*Config)
+
+func withRoute(context, condition string, pipelines ...pipeline.ID) testConfigOption {
+	return func(cfg *Config) {
+		cfg.Table = append(cfg.Table,
+			RoutingTableItem{
+				Context:   context,
+				Condition: condition,
+				Pipelines: pipelines,
+			})
+	}
+}
+
+func withDefault(pipelines ...pipeline.ID) testConfigOption {
+	return func(cfg *Config) {
+		cfg.DefaultPipelines = pipelines
+	}
+}
+
+func testConfig(opts ...testConfigOption) *Config {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MatchOnce = true
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return cfg
+}
