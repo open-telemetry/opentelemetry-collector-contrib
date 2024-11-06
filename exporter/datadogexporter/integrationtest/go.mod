@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.113.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.113.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tinylib/msgp v1.2.3
+	github.com/tinylib/msgp v1.2.4
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/confmap v1.19.0
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.19.0
