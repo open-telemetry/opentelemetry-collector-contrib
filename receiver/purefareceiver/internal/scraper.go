@@ -32,26 +32,29 @@ const (
 )
 
 type scraper struct {
-	scraperType    ScraperType
-	endpoint       string
-	configs        []ScraperConfig
-	scrapeInterval time.Duration
-	labels         model.LabelSet
+	scraperType        ScraperType
+	endpoint           string
+	insecureskipverify bool
+	configs            []ScraperConfig
+	scrapeInterval     time.Duration
+	labels             model.LabelSet
 }
 
 func NewScraper(_ context.Context,
 	scraperType ScraperType,
 	endpoint string,
+	insecureskipverify bool,
 	configs []ScraperConfig,
 	scrapeInterval time.Duration,
 	labels model.LabelSet,
 ) Scraper {
 	return &scraper{
-		scraperType:    scraperType,
-		endpoint:       endpoint,
-		configs:        configs,
-		scrapeInterval: scrapeInterval,
-		labels:         labels,
+		scraperType:        scraperType,
+		endpoint:           endpoint,
+		insecureskipverify: insecureskipverify,
+		configs:            configs,
+		scrapeInterval:     scrapeInterval,
+		labels:             labels,
 	}
 }
 
@@ -71,6 +74,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
+		httpConfig.TLSConfig.InsecureSkipVerify = h.insecureskipverify
 
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,

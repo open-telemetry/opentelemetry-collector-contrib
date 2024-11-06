@@ -37,6 +37,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	}
 
 	endpoint := "http://example.com"
+	insecureskipverify := false
 	interval := 15 * time.Second
 	cfgs := []ScraperConfig{
 		{
@@ -47,7 +48,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		},
 	}
 
-	scraper := NewScraper(context.Background(), "hosts", endpoint, cfgs, interval, model.LabelSet{})
+	scraper := NewScraper(context.Background(), "hosts", endpoint, insecureskipverify, cfgs, interval, model.LabelSet{})
 
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
