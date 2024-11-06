@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/trans
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.112.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.112.0
@@ -99,8 +98,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
 
