@@ -74,6 +74,11 @@ func (c *metricsConnector) switchMetrics(ctx context.Context, md pmetric.Metrics
 		route := c.router.routeSlice[i]
 		matchedMetrics := pmetric.NewMetrics()
 		switch route.statementContext {
+		case "request":
+			if route.requestCondition.matchRequest(ctx) {
+				groupAllMetrics(groups, route.consumer, md)
+				md = pmetric.NewMetrics() // all metrics have been routed
+			}
 		case "", "resource":
 			pmetricutil.MoveResourcesIf(md, matchedMetrics,
 				func(rs pmetric.ResourceMetrics) bool {
