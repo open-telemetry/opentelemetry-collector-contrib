@@ -29,8 +29,8 @@ import (
 const expectedFileClusterScoped = "./testdata/e2e/cluster-scoped/expected.yaml"
 const expectedFileNamespaceScoped = "./testdata/e2e/namespace-scoped/expected.yaml"
 
-const testObjectsDirClusterScoped = "./testdata/e2e/testobjects/cluster-scoped"
-const testObjectsDirNamespaceScoped = "./testdata/e2e/testobjects/namespace-scoped"
+const testObjectsDirClusterScoped = "./testdata/e2e/cluster-scoped/testobjects"
+const testObjectsDirNamespaceScoped = "./testdata/e2e/namespace-scoped/testobjects"
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
 // TestE2EClusterScoped tests the k8s cluster receiver with a real k8s cluster.
