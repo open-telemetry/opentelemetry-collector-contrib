@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -85,6 +86,13 @@ type RemoteWriteQueue struct {
 
 var _ component.Config = (*Config)(nil)
 
+var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewriteexporter.exportCreatedMetric",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Allow enabling the export_created_metric feature."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
+)
+
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.RemoteWriteQueue.QueueSize < 0 {
@@ -106,7 +114,7 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.CreatedMetric == nil {
 		cfg.CreatedMetric = &CreatedMetric{
-			Enabled: false,
+			Enabled: exportCreatedMetricGate.IsEnabled(),
 		}
 	}
 	if cfg.MaxBatchSizeBytes < 0 {
