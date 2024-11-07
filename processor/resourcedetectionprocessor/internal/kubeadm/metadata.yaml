@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/kubeadm
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   k8s.cluster.name:
     description: The Kubernetes cluster name
