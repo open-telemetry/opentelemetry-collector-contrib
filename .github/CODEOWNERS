@@ -231,6 +231,7 @@ receiver/googlecloudspannerreceiver/              @open-telemetry/collector-cont
 receiver/haproxyreceiver/                         @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/httpcheckreceiver/                       @open-telemetry/collector-contrib-approvers @codeboten
+receiver/huaweicloudcesreceiver/                  @open-telemetry/collector-contrib-approvers @narcis96
 receiver/iisreceiver/                             @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                        @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                          @open-telemetry/collector-contrib-approvers @yurishkuro
