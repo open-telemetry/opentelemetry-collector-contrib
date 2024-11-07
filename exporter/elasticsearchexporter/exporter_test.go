@@ -300,7 +300,7 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("publish with configured mapping mode header", func(t *testing.T) {
 		expectedECS := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","message":"hello world","service":{"name":"myservice"}}`
-		expectedOtlp := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"application":"myapp","service":{"name":"myservice"}},"Body":"hello world","Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+		expectedOtel := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"application":"myapp","service.name":"myservice"},"body":{"text":"hello world"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0}`
 		tests := []struct {
 			name     string
 			cfgMode  string
@@ -309,21 +309,21 @@ func TestExporterLogs(t *testing.T) {
 		}{
 			{
 				name:     "mapping mode in header",
-				cfgMode:  "otlp",
-				header:   "ecs",
-				expected: expectedECS,
+				cfgMode:  "ecs",
+				header:   "otel",
+				expected: expectedOtel,
 			},
 			{
 				name:     "invalid mapping mode in header",
-				cfgMode:  "otlp",
+				cfgMode:  "ecs",
 				header:   "invalid",
-				expected: expectedOtlp,
+				expected: expectedECS,
 			},
 			{
-				name:     "absent mapping mode in header",
-				cfgMode:  "otlp",
+				name:     "empty mapping mode in header",
+				cfgMode:  "ecs",
 				header:   "",
-				expected: expectedOtlp,
+				expected: expectedECS,
 			},
 		}
 
@@ -336,9 +336,10 @@ func TestExporterLogs(t *testing.T) {
 					actual := string(docs[0].Document)
 					assert.Equal(t, tt.expected, actual)
 
-					// Second document should fallback to the config mapping
+					// Second client call does not include a header so it
+					// should use the default mapping mode.
 					actual = string(docs[1].Document)
-					assert.Equal(t, expectedOtlp, actual)
+					assert.Equal(t, expectedECS, actual)
 
 					return itemsAllOK(docs)
 				})
@@ -358,15 +359,16 @@ func TestExporterLogs(t *testing.T) {
 				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
 
 				// Set the mapping mode via the header
-				cl := client.FromContext(context.Background())
+				ctx := context.Background()
+				cl := client.FromContext(ctx)
 				cl.Metadata = client.NewMetadata(map[string][]string{HeaderXElasticMappingMode: {tt.header}})
-				ctx := client.NewContext(context.Background(), cl)
+				ctx = client.NewContext(ctx, cl)
 
 				mustSendLogsCtx(t, ctx, exporter, logs)
 
-				// Send logs again without the header this time.
+				// // Send logs again without the header this time.
 				mustSendLogs(t, exporter, logs)
-				rec.WaitItems(1)
+				rec.WaitItems(2)
 			})
 		}
 	})

@@ -33,7 +33,6 @@ type elasticsearchExporter struct {
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
 	model          mappingModel
-	otel           bool
 
 	wg          sync.WaitGroup // active sessions
 	bulkIndexer bulkIndexer
@@ -49,8 +48,6 @@ func newExporter(
 		dedot: cfg.Mapping.Dedot,
 		mode:  cfg.MappingMode(),
 	}
-
-	otel := model.mode == MappingOTel
 
 	userAgent := fmt.Sprintf(
 		"%s/%s (%s/%s)",
@@ -69,7 +66,6 @@ func newExporter(
 		dynamicIndex:   dynamicIndex,
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
-		otel:           otel,
 	}
 }
 
@@ -116,6 +112,8 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	}
 	defer session.End()
 
+	otel := e.isOtelMode(ctx)
+
 	var errs []error
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -127,7 +125,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, rl.SchemaUrl(), logs.At(k), scope, ill.SchemaUrl(), session); err != nil {
+				if err := e.pushLogRecord(ctx, resource, rl.SchemaUrl(), logs.At(k), scope, ill.SchemaUrl(), session, otel); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -174,6 +172,15 @@ func (e *elasticsearchExporter) modelFromContext(ctx context.Context) mappingMod
 	return model
 }
 
+// isOtelMode returns true if the exporter is in OTel mode.
+func (e *elasticsearchExporter) isOtelMode(ctx context.Context) bool {
+	m, ok := e.modelFromContext(ctx).(*encodeModel)
+	if !ok {
+		return false
+	}
+	return m.mode == MappingOTel
+}
+
 func (e *elasticsearchExporter) pushLogRecord(
 	ctx context.Context,
 	resource pcommon.Resource,
@@ -182,10 +189,11 @@ func (e *elasticsearchExporter) pushLogRecord(
 	scope pcommon.InstrumentationScope,
 	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
+	otel bool,
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
+		fIndex = routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -222,6 +230,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 		validationErrs []error // log instead of returning these so that upstream does not retry
 		errs           []error
 	)
+	otel := e.isOtelMode(ctx)
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
@@ -237,7 +246,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 				metric := scopeMetrics.Metrics().At(k)
 
 				upsertDataPoint := func(dp dataPoint) error {
-					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp)
+					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp, otel)
 					if err != nil {
 						return err
 					}
@@ -350,10 +359,11 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	dataPoint dataPoint,
+	otel bool,
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
+		fIndex = routeDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -379,6 +389,8 @@ func (e *elasticsearchExporter) pushTraceData(
 	}
 	defer session.End()
 
+	otel := e.isOtelMode(ctx)
+
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -391,7 +403,7 @@ func (e *elasticsearchExporter) pushTraceData(
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, resource, il.SchemaUrl(), span, scope, scopeSpan.SchemaUrl(), session); err != nil {
+				if err := e.pushTraceRecord(ctx, resource, il.SchemaUrl(), span, scope, scopeSpan.SchemaUrl(), session, otel); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -399,7 +411,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				}
 				for ii := 0; ii < span.Events().Len(); ii++ {
 					spanEvent := span.Events().At(ii)
-					if err := e.pushSpanEvent(ctx, resource, il.SchemaUrl(), span, spanEvent, scope, scopeSpan.SchemaUrl(), session); err != nil {
+					if err := e.pushSpanEvent(ctx, resource, il.SchemaUrl(), span, spanEvent, scope, scopeSpan.SchemaUrl(), session, otel); err != nil {
 						errs = append(errs, err)
 					}
 				}
@@ -424,10 +436,11 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	scope pcommon.InstrumentationScope,
 	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
+	otel bool,
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, span.Name())
+		fIndex = routeSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel, span.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -455,10 +468,11 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	scope pcommon.InstrumentationScope,
 	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
+	otel bool,
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpanEvent(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
+		fIndex = routeSpanEvent(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
