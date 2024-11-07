@@ -5,6 +5,8 @@ metadata:
   namespace: default
 spec:
   schedule: "*/1 * * * *"
+  # ensure that only one job/pod is active for the lifetime of the test
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
       template:
@@ -15,5 +17,5 @@ spec:
               args:
                 - /bin/sh
                 - -c
-                - "echo Running; sleep 120"
+                - "echo Running; sleep 600"
           restartPolicy: OnFailure

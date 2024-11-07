@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: default
         - key: k8s.namespace.uid
           value:
-            stringValue: feb94a85-d29f-4693-a6d7-ca5206a5141e
+            stringValue: 7f2b26ac-b0f5-4929-a959-5cd2c6daa767
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -19,7 +19,7 @@ resourceMetrics:
             name: k8s.namespace.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -27,7 +27,7 @@ resourceMetrics:
             stringValue: kube-node-lease
         - key: k8s.namespace.uid
           value:
-            stringValue: ff852fe4-f42e-48d7-883d-3df03ab5741c
+            stringValue: 23a9792c-bccb-4307-bc28-eb7b37a7c271
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -40,7 +40,7 @@ resourceMetrics:
             name: k8s.namespace.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -48,7 +48,7 @@ resourceMetrics:
             stringValue: kube-public
         - key: k8s.namespace.uid
           value:
-            stringValue: 66be991c-1e7d-4a14-af98-4f421bee9ec4
+            stringValue: 38490c86-545d-47ca-8d32-b613b7ca546a
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -61,7 +61,7 @@ resourceMetrics:
             name: k8s.namespace.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -69,7 +69,7 @@ resourceMetrics:
             stringValue: kube-system
         - key: k8s.namespace.uid
           value:
-            stringValue: 1fdcff4f-01e0-459a-baaa-463b5f52eaa2
+            stringValue: 850c440b-d959-4c07-a7da-abd8fd1b0c1b
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -82,7 +82,7 @@ resourceMetrics:
             name: k8s.namespace.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -90,7 +90,7 @@ resourceMetrics:
             stringValue: local-path-storage
         - key: k8s.namespace.uid
           value:
-            stringValue: cf6c8796-7d4b-4e61-ae41-9c90207c7c06
+            stringValue: c475b194-71ef-4911-aff3-f4848f777417
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -103,7 +103,7 @@ resourceMetrics:
             name: k8s.namespace.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.node.name
@@ -111,7 +111,7 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.node.uid
           value:
-            stringValue: 080365b3-8b82-48dc-9885-d88364004eb3
+            stringValue: 9b78ed70-9ff6-4cf4-a94c-5df055362770
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -123,7 +123,7 @@ resourceMetrics:
             name: k8s.node.condition_ready
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.cronjob.name
@@ -131,7 +131,7 @@ resourceMetrics:
             stringValue: test-k8scluster-receiver-cronjob
         - key: k8s.cronjob.uid
           value:
-            stringValue: 6a3c3e99-5db1-481f-9d5d-782ae9de9f58
+            stringValue: 342bf5aa-ded4-4177-82fa-01002b66b971
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -141,14 +141,14 @@ resourceMetrics:
           - description: The number of actively running jobs for a cronjob
             gauge:
               dataPoints:
-                - asInt: "2"
+                - asInt: "1"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.cronjob.active_jobs
             unit: '{job}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.daemonset.name
@@ -156,7 +156,7 @@ resourceMetrics:
             stringValue: kindnet
         - key: k8s.daemonset.uid
           value:
-            stringValue: 4b389825-8fb0-4c66-a774-c9dfcba9d813
+            stringValue: bcb148ce-6b1b-48b8-ade7-c54f95949a35
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -197,7 +197,7 @@ resourceMetrics:
             unit: '{node}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.daemonset.name
@@ -205,7 +205,7 @@ resourceMetrics:
             stringValue: kube-proxy
         - key: k8s.daemonset.uid
           value:
-            stringValue: b88aca8b-5776-4f6a-b1f4-d430f972e7fc
+            stringValue: 88bb9c34-24d1-45cd-8fce-39d5b216c158
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -246,7 +246,7 @@ resourceMetrics:
             unit: '{node}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.deployment.name
@@ -254,7 +254,7 @@ resourceMetrics:
             stringValue: coredns
         - key: k8s.deployment.uid
           value:
-            stringValue: 40f70689-1d8b-4eaf-b1b9-c7f1604ad616
+            stringValue: 9d878e59-fc7e-4959-97d8-7434a08b5711
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -279,7 +279,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.deployment.name
@@ -287,7 +287,7 @@ resourceMetrics:
             stringValue: local-path-provisioner
         - key: k8s.deployment.uid
           value:
-            stringValue: c97a7ce6-7bc2-475b-ad74-ccbd1c464e17
+            stringValue: b542b645-1939-4eb7-bb0b-a3cfa3eceba2
         - key: k8s.namespace.name
           value:
             stringValue: local-path-storage
@@ -312,15 +312,15 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.deployment.name
           value:
-            stringValue: otelcol-786b94f3
+            stringValue: otelcol-aa664a32
         - key: k8s.deployment.uid
           value:
-            stringValue: 6433ed08-d04b-458d-b3db-f526238a1e65
+            stringValue: a787af64-c9cc-4532-8514-b769cce0f651
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -345,7 +345,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.hpa.name
@@ -353,7 +353,7 @@ resourceMetrics:
             stringValue: test-k8scluster-receiver-hpa
         - key: k8s.hpa.uid
           value:
-            stringValue: 963572dc-4663-4fb2-930a-e143320a03c3
+            stringValue: 0859b2dc-76e0-4ecb-b8c9-91bc2e05d9f4
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -394,15 +394,15 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.job.name
           value:
-            stringValue: test-k8scluster-receiver-cronjob-28839770
+            stringValue: test-k8scluster-receiver-cronjob-28848323
         - key: k8s.job.uid
           value:
-            stringValue: a38da134-af71-4bc1-a585-c9e0342f9aab
+            stringValue: fc819ca2-19ea-4c90-a46f-0b4f468e088c
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -451,64 +451,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: k8s.job.name
-          value:
-            stringValue: test-k8scluster-receiver-cronjob-28839771
-        - key: k8s.job.uid
-          value:
-            stringValue: 37a9e0cc-5315-4e89-bb2b-5221849ff483
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: The number of actively running pods for a job
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.job.active_pods
-            unit: '{pod}'
-          - description: The desired number of successfully finished pods the job should be run with
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.job.desired_successful_pods
-            unit: '{pod}'
-          - description: The number of pods which reached phase Failed for a job
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.job.failed_pods
-            unit: '{pod}'
-          - description: The max desired number of pods the job should run at any given time
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.job.max_parallel_pods
-            unit: '{pod}'
-          - description: The number of pods which reached phase Succeeded for a job
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.job.successful_pods
-            unit: '{pod}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.job.name
@@ -516,7 +459,7 @@ resourceMetrics:
             stringValue: test-k8scluster-receiver-job
         - key: k8s.job.uid
           value:
-            stringValue: b7ecbf9e-8e1a-4d70-beda-aab183645382
+            stringValue: f9d8177f-2b94-4db6-a170-7c82fb37fc60
         - key: k8s.namespace.name
           value:
             stringValue: default
@@ -565,7 +508,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -573,10 +516,10 @@ resourceMetrics:
             stringValue: default
         - key: k8s.replicaset.name
           value:
-            stringValue: otelcol-786b94f3-67cf69944f
+            stringValue: otelcol-aa664a32-694bd5645b
         - key: k8s.replicaset.uid
           value:
-            stringValue: d532dd9c-0490-4f85-be78-fd21d8a1b56f
+            stringValue: 4dce2ca5-5236-40e2-a934-6c92782da3d7
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -598,7 +541,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -609,7 +552,7 @@ resourceMetrics:
             stringValue: test-k8scluster-receiver-statefulset
         - key: k8s.statefulset.uid
           value:
-            stringValue: 5ceb9f10-fc64-4d70-b6f8-228b4a0cfd3c
+            stringValue: 59d53c2e-cce4-403b-bcc0-b83fc1bc36b9
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -647,7 +590,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -655,10 +598,10 @@ resourceMetrics:
             stringValue: kube-system
         - key: k8s.replicaset.name
           value:
-            stringValue: coredns-7db6d8ff4d
+            stringValue: coredns-76f75df574
         - key: k8s.replicaset.uid
           value:
-            stringValue: 2c8fee82-58d4-46c4-ae5e-81afcc5f9948
+            stringValue: d4a8fe9f-b4f6-4af4-8f00-9b87b00113d8
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -680,7 +623,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -688,10 +631,10 @@ resourceMetrics:
             stringValue: local-path-storage
         - key: k8s.replicaset.name
           value:
-            stringValue: local-path-provisioner-988d74bc
+            stringValue: local-path-provisioner-7577fdbbfb
         - key: k8s.replicaset.uid
           value:
-            stringValue: e58f8ba2-8df8-425e-8a2a-c07cf351bbd8
+            stringValue: 45dc7e2d-aff2-4ae8-b6d5-1b48dabbf262
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -713,7 +656,7 @@ resourceMetrics:
             unit: '{pod}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -724,10 +667,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: otelcol-786b94f3-67cf69944f-6zv25
+            stringValue: otelcol-aa664a32-694bd5645b-9fmzd
         - key: k8s.pod.uid
           value:
-            stringValue: 1fb8be2b-ae32-41c2-a172-e6cb9beb7c37
+            stringValue: 6913e713-f407-4186-aa31-946410566b81
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -740,7 +683,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -751,10 +694,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: test-k8scluster-receiver-cronjob-28839770-9pp7g
+            stringValue: test-k8scluster-receiver-cronjob-28848323-mcsr8
         - key: k8s.pod.uid
           value:
-            stringValue: e388cfa8-06c3-47b6-a7a6-113d7cdda849
+            stringValue: 0010e2e8-8797-4bfb-8ef5-ac9c87cee06c
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -767,7 +710,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -778,10 +721,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: test-k8scluster-receiver-cronjob-28839771-llccr
+            stringValue: test-k8scluster-receiver-job-4whkq
         - key: k8s.pod.uid
           value:
-            stringValue: 0c2351b3-842c-4632-95c2-e7b061128a98
+            stringValue: b93fa4ec-ab09-4815-9c20-bc4860febfcc
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -794,34 +737,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: test-k8scluster-receiver-job-bzjrh
-        - key: k8s.pod.uid
-          value:
-            stringValue: 7e8bdace-4bce-4750-bd8c-d7359bb3e56b
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
-            gauge:
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.pod.phase
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -835,7 +751,7 @@ resourceMetrics:
             stringValue: test-k8scluster-receiver-statefulset-0
         - key: k8s.pod.uid
           value:
-            stringValue: f1ea5486-77b7-41c6-a3be-d03650011801
+            stringValue: b2dd866e-3a93-465b-a6be-ee129972b9e1
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -848,7 +764,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -859,10 +775,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: coredns-7db6d8ff4d-5kh78
+            stringValue: coredns-76f75df574-mmjtf
         - key: k8s.pod.uid
           value:
-            stringValue: 2c5b60e0-a01e-4312-8818-d85f94ab841e
+            stringValue: ed088c60-0fe4-4b70-9eba-55ea389dc573
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -875,7 +791,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -886,10 +802,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: coredns-7db6d8ff4d-p89tc
+            stringValue: coredns-76f75df574-pfdx5
         - key: k8s.pod.uid
           value:
-            stringValue: f3494708-493a-4f0f-965c-dcedfdca253f
+            stringValue: ed6fbad4-9bc1-4142-9f4d-e772b6c9cfbd
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -902,7 +818,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -916,7 +832,7 @@ resourceMetrics:
             stringValue: etcd-kind-control-plane
         - key: k8s.pod.uid
           value:
-            stringValue: 40e8f13b-bec6-4dae-98d9-fd86939dfc4c
+            stringValue: 89fb113f-1bd3-4623-b46c-933da87e2719
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -929,7 +845,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -940,10 +856,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: kindnet-qwzhw
+            stringValue: kindnet-gj7ss
         - key: k8s.pod.uid
           value:
-            stringValue: 955e1f8c-2fe3-4a1d-85e6-31ff7410dc00
+            stringValue: 3bc0ca83-314f-4653-9179-43351ce6ec3d
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -956,7 +872,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -970,7 +886,7 @@ resourceMetrics:
             stringValue: kube-apiserver-kind-control-plane
         - key: k8s.pod.uid
           value:
-            stringValue: d2032a9e-8c7c-4d9c-bbcb-526bd1a7b4f7
+            stringValue: f66aabd7-0b50-4839-9a1f-fc35eb59d040
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -983,7 +899,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -997,7 +913,7 @@ resourceMetrics:
             stringValue: kube-controller-manager-kind-control-plane
         - key: k8s.pod.uid
           value:
-            stringValue: e3e6d44a-5bc6-4687-85f1-37eb42c42c05
+            stringValue: c74f189c-1292-4ad0-9cb3-ec00d9aea238
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -1010,7 +926,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -1021,10 +937,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: kube-proxy-kktz6
+            stringValue: kube-proxy-vf6lk
         - key: k8s.pod.uid
           value:
-            stringValue: c347e316-1bab-4b4d-bc37-4f526fca19a4
+            stringValue: 3ab3dafa-1d0a-450c-b04e-908f8c634a7a
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -1037,7 +953,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -1051,7 +967,7 @@ resourceMetrics:
             stringValue: kube-scheduler-kind-control-plane
         - key: k8s.pod.uid
           value:
-            stringValue: 991bbf5d-d6b9-4e33-8954-2a5f3505ff2d
+            stringValue: de119c6f-e99f-4a50-b5cd-ba1264b496fb
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -1064,7 +980,7 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: k8s.namespace.name
@@ -1075,10 +991,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: local-path-provisioner-988d74bc-c2wx7
+            stringValue: local-path-provisioner-7577fdbbfb-q4vsw
         - key: k8s.pod.uid
           value:
-            stringValue: 1169e7ae-031e-4535-bb94-aee23b0b7df3
+            stringValue: ff867316-a95b-4024-9da6-ad397f94750a
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -1091,68 +1007,21 @@ resourceMetrics:
             name: k8s.pod.phase
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: container.id
           value:
-            stringValue: 10c9bec31ac94fc58e65ce5ed809455727eee9daae8ea80668990e848a7e7da0
+            stringValue: 24a762e91f4c1f45583fb6a59963d3f7c8f4f05040b1a5ebd90c8f062c389b2f
         - key: container.image.name
           value:
-            stringValue: docker.io/library/alpine
+            stringValue: registry.k8s.io/kube-scheduler-amd64
         - key: container.image.tag
           value:
-            stringValue: latest
+            stringValue: v1.29.2
         - key: k8s.container.name
           value:
-            stringValue: alpine
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: test-k8scluster-receiver-cronjob-28839771-llccr
-        - key: k8s.pod.uid
-          value:
-            stringValue: 0c2351b3-842c-4632-95c2-e7b061128a98
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: 1f493fa217d539d5b74ffc4579e887f904f630d320105a2b83a987105342ae80
-        - key: container.image.name
-          value:
-            stringValue: registry.k8s.io/kube-proxy-arm64
-        - key: container.image.tag
-          value:
-            stringValue: v1.30.0
-        - key: k8s.container.name
-          value:
-            stringValue: kube-proxy
+            stringValue: kube-scheduler
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1161,13 +1030,21 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: kube-proxy-kktz6
+            stringValue: kube-scheduler-kind-control-plane
         - key: k8s.pod.uid
           value:
-            stringValue: c347e316-1bab-4b4d-bc37-4f526fca19a4
+            stringValue: de119c6f-e99f-4a50-b5cd-ba1264b496fb
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asDouble: 0.1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_request
+            unit: '{cpu}'
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1185,106 +1062,12 @@ resourceMetrics:
             unit: '{restart}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: container.id
           value:
-            stringValue: 2cb1cb272a301a00f50020c3e4751bfa9a281496a6dc35f02a5546451e894e93
-        - key: container.image.name
-          value:
-            stringValue: docker.io/library/nginx
-        - key: container.image.tag
-          value:
-            stringValue: latest
-        - key: k8s.container.name
-          value:
-            stringValue: nginx
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: test-k8scluster-receiver-statefulset-0
-        - key: k8s.pod.uid
-          value:
-            stringValue: f1ea5486-77b7-41c6-a3be-d03650011801
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: 567cd0ad83d68987dfb4dbffd056732b25bd2fc89e912605c16a5d1a4cd2b54c
-        - key: container.image.name
-          value:
-            stringValue: docker.io/library/alpine
-        - key: container.image.tag
-          value:
-            stringValue: latest
-        - key: k8s.container.name
-          value:
-            stringValue: alpine
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: test-k8scluster-receiver-job-bzjrh
-        - key: k8s.pod.uid
-          value:
-            stringValue: 7e8bdace-4bce-4750-bd8c-d7359bb3e56b
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: 6af7be5c276ef225d046ad0de442ee450c39122a12991f9da82c9629f949967b
+            stringValue: 45e131a79cddf6a61e8283d9ec6f55305e2e222858853e7e799b40e349763dca
         - key: container.image.name
           value:
             stringValue: registry.k8s.io/coredns/coredns
@@ -1302,10 +1085,10 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: coredns-7db6d8ff4d-5kh78
+            stringValue: coredns-76f75df574-pfdx5
         - key: k8s.pod.uid
           value:
-            stringValue: 2c5b60e0-a01e-4312-8818-d85f94ab841e
+            stringValue: ed6fbad4-9bc1-4142-9f4d-e772b6c9cfbd
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -1350,21 +1133,68 @@ resourceMetrics:
             unit: '{restart}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: container.id
           value:
-            stringValue: 7349de0618283fb11a957febc6689a0fbbfd9b52af1106bb3608bc4278a27ecf
+            stringValue: 5d94185c2a933a3b7f6be03668a145d76d4d881429edb95836f1ba4c8ca266bb
         - key: container.image.name
           value:
-            stringValue: registry.k8s.io/kube-scheduler-arm64
+            stringValue: docker.io/library/nginx
         - key: container.image.tag
           value:
-            stringValue: v1.30.0
+            stringValue: latest
         - key: k8s.container.name
           value:
-            stringValue: kube-scheduler
+            stringValue: nginx
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: test-k8scluster-receiver-statefulset-0
+        - key: k8s.pod.uid
+          value:
+            stringValue: b2dd866e-3a93-465b-a6be-ee129972b9e1
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: 5e156d44eca670f77bdbfd440118ef874e369814bff85f01c39f960dcec1254a
+        - key: container.image.name
+          value:
+            stringValue: registry.k8s.io/kube-controller-manager-amd64
+        - key: container.image.tag
+          value:
+            stringValue: v1.29.2
+        - key: k8s.container.name
+          value:
+            stringValue: kube-controller-manager
         - key: k8s.namespace.name
           value:
             stringValue: kube-system
@@ -1373,17 +1203,17 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: kube-scheduler-kind-control-plane
+            stringValue: kube-controller-manager-kind-control-plane
         - key: k8s.pod.uid
           value:
-            stringValue: 991bbf5d-d6b9-4e33-8954-2a5f3505ff2d
+            stringValue: c74f189c-1292-4ad0-9cb3-ec00d9aea238
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
           - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
             gauge:
               dataPoints:
-                - asDouble: 0.1
+                - asDouble: 0.2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: k8s.container.cpu_request
@@ -1405,18 +1235,490 @@ resourceMetrics:
             unit: '{restart}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
   - resource:
       attributes:
         - key: container.id
           value:
-            stringValue: 9c70b20960c36ddb400607a354058cd7525ec491251379c5aa84c359c5d518d7
+            stringValue: 7e0eab8dbcf238dcb63b71b6d3889171dfe5c6febf66e5d6a8a793c53af4a2f9
+        - key: container.image.name
+          value:
+            stringValue: docker.io/kindest/kindnetd
+        - key: container.image.tag
+          value:
+            stringValue: v20240202-8f1494ea
+        - key: k8s.container.name
+          value:
+            stringValue: kindnet-cni
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: kindnet-gj7ss
+        - key: k8s.pod.uid
+          value:
+            stringValue: 3bc0ca83-314f-4653-9179-43351ce6ec3d
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asDouble: 0.1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_limit
+            unit: '{cpu}'
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asDouble: 0.1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_request
+            unit: '{cpu}'
+          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asInt: "52428800"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_limit
+            unit: By
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asInt: "52428800"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_request
+            unit: By
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: 95dd9be2d5d8a17bdde0d4ee90910dee65589de65eb7428b85068e66f0467501
+        - key: container.image.name
+          value:
+            stringValue: docker.io/library/alpine
+        - key: container.image.tag
+          value:
+            stringValue: latest
+        - key: k8s.container.name
+          value:
+            stringValue: alpine
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: test-k8scluster-receiver-cronjob-28848323-mcsr8
+        - key: k8s.pod.uid
+          value:
+            stringValue: 0010e2e8-8797-4bfb-8ef5-ac9c87cee06c
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: cf67cab7bc6b163d1d43edd2ed222ae5f76e123eb1ff0a1b770757feeebd66cf
+        - key: container.image.name
+          value:
+            stringValue: registry.k8s.io/kube-apiserver-amd64
+        - key: container.image.tag
+          value:
+            stringValue: v1.29.2
+        - key: k8s.container.name
+          value:
+            stringValue: kube-apiserver
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-apiserver-kind-control-plane
+        - key: k8s.pod.uid
+          value:
+            stringValue: f66aabd7-0b50-4839-9a1f-fc35eb59d040
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asDouble: 0.25
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_request
+            unit: '{cpu}'
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: d291e1a11a62f9340ff410465c38db9e57a3646c5b9b3b479e968d1dea5c38de
+        - key: container.image.name
+          value:
+            stringValue: docker.io/library/alpine
+        - key: container.image.tag
+          value:
+            stringValue: latest
+        - key: k8s.container.name
+          value:
+            stringValue: alpine
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: test-k8scluster-receiver-job-4whkq
+        - key: k8s.pod.uid
+          value:
+            stringValue: b93fa4ec-ab09-4815-9c20-bc4860febfcc
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: d54bdc2a7810420f7a2b46c187f5d44d3d4ff1f714f1aa47062d5bb6a46821f8
+        - key: container.image.name
+          value:
+            stringValue: docker.io/library/otelcontribcol
+        - key: container.image.tag
+          value:
+            stringValue: latest
+        - key: k8s.container.name
+          value:
+            stringValue: opentelemetry-collector
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: otelcol-aa664a32-694bd5645b-9fmzd
+        - key: k8s.pod.uid
+          value:
+            stringValue: 6913e713-f407-4186-aa31-946410566b81
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asDouble: 0.128
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_limit
+            unit: '{cpu}'
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asDouble: 0.128
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_request
+            unit: '{cpu}'
+          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asInt: "268435456"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_limit
+            unit: By
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asInt: "268435456"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_request
+            unit: By
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: deecc7697ef991519718ffbc8f59e496f8ffc1c4120455f115f9cadf149bad95
+        - key: container.image.name
+          value:
+            stringValue: docker.io/kindest/local-path-provisioner
+        - key: container.image.tag
+          value:
+            stringValue: v20240202-8f1494ea
+        - key: k8s.container.name
+          value:
+            stringValue: local-path-provisioner
+        - key: k8s.namespace.name
+          value:
+            stringValue: local-path-storage
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: local-path-provisioner-7577fdbbfb-q4vsw
+        - key: k8s.pod.uid
+          value:
+            stringValue: ff867316-a95b-4024-9da6-ad397f94750a
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: dfabe34b0764f7189eb24204d390caefc32f56d0e713048532e637db0ce0184e
+        - key: container.image.name
+          value:
+            stringValue: registry.k8s.io/kube-proxy-amd64
+        - key: container.image.tag
+          value:
+            stringValue: v1.29.2
+        - key: k8s.container.name
+          value:
+            stringValue: kube-proxy
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: kube-proxy-vf6lk
+        - key: k8s.pod.uid
+          value:
+            stringValue: 3ab3dafa-1d0a-450c-b04e-908f8c634a7a
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: ed83ae29a5becf08c8cca7e1bf12f11f89e7ee9ac4ac1e50a38f18d68791aff5
+        - key: container.image.name
+          value:
+            stringValue: registry.k8s.io/coredns/coredns
+        - key: container.image.tag
+          value:
+            stringValue: v1.11.1
+        - key: k8s.container.name
+          value:
+            stringValue: coredns
+        - key: k8s.namespace.name
+          value:
+            stringValue: kube-system
+        - key: k8s.node.name
+          value:
+            stringValue: kind-control-plane
+        - key: k8s.pod.name
+          value:
+            stringValue: coredns-76f75df574-mmjtf
+        - key: k8s.pod.uid
+          value:
+            stringValue: ed088c60-0fe4-4b70-9eba-55ea389dc573
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asDouble: 0.1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.cpu_request
+            unit: '{cpu}'
+          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asInt: "178257920"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_limit
+            unit: By
+          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
+            gauge:
+              dataPoints:
+                - asInt: "73400320"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.memory_request
+            unit: By
+          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.ready
+          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: k8s.container.restarts
+            unit: '{restart}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
+          version: 0.112.0-dev
+  - resource:
+      attributes:
+        - key: container.id
+          value:
+            stringValue: f3f77fad1afc9498b4a341a1fb241821a91fc33f1401bd4e62920e929659be7e
         - key: container.image.name
           value:
             stringValue: registry.k8s.io/etcd
         - key: container.image.tag
           value:
-            stringValue: 3.5.12-0
+            stringValue: 3.5.10-0
         - key: k8s.container.name
           value:
             stringValue: etcd
@@ -1431,7 +1733,7 @@ resourceMetrics:
             stringValue: etcd-kind-control-plane
         - key: k8s.pod.uid
           value:
-            stringValue: 40e8f13b-bec6-4dae-98d9-fd86939dfc4c
+            stringValue: 89fb113f-1bd3-4623-b46c-933da87e2719
     schemaUrl: https://opentelemetry.io/schemas/1.18.0
     scopeMetrics:
       - metrics:
@@ -1468,437 +1770,4 @@ resourceMetrics:
             unit: '{restart}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: 9c9e2d8cc660d21018432215b93bd4b9f26fbb0b0dfe71dca8c7089997cce23e
-        - key: container.image.name
-          value:
-            stringValue: registry.k8s.io/coredns/coredns
-        - key: container.image.tag
-          value:
-            stringValue: v1.11.1
-        - key: k8s.container.name
-          value:
-            stringValue: coredns
-        - key: k8s.namespace.name
-          value:
-            stringValue: kube-system
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: coredns-7db6d8ff4d-p89tc
-        - key: k8s.pod.uid
-          value:
-            stringValue: f3494708-493a-4f0f-965c-dcedfdca253f
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asDouble: 0.1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.cpu_request
-            unit: '{cpu}'
-          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asInt: "178257920"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.memory_limit
-            unit: By
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asInt: "73400320"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.memory_request
-            unit: By
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: acef2130e48fde6137e919c9eebc876435ff8a6a22031754fc1dde00cb6dae92
-        - key: container.image.name
-          value:
-            stringValue: docker.io/kindest/local-path-provisioner
-        - key: container.image.tag
-          value:
-            stringValue: v20240202-8f1494ea
-        - key: k8s.container.name
-          value:
-            stringValue: local-path-provisioner
-        - key: k8s.namespace.name
-          value:
-            stringValue: local-path-storage
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: local-path-provisioner-988d74bc-c2wx7
-        - key: k8s.pod.uid
-          value:
-            stringValue: 1169e7ae-031e-4535-bb94-aee23b0b7df3
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: bd25536854ec1e582f0bb3ac0f79ce761ae97317d9ba1f7b256f3e833bcba862
-        - key: container.image.name
-          value:
-            stringValue: registry.k8s.io/kube-apiserver-arm64
-        - key: container.image.tag
-          value:
-            stringValue: v1.30.0
-        - key: k8s.container.name
-          value:
-            stringValue: kube-apiserver
-        - key: k8s.namespace.name
-          value:
-            stringValue: kube-system
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: kube-apiserver-kind-control-plane
-        - key: k8s.pod.uid
-          value:
-            stringValue: d2032a9e-8c7c-4d9c-bbcb-526bd1a7b4f7
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asDouble: 0.25
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.cpu_request
-            unit: '{cpu}'
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: cc67e9bcb82cbeed83bc8dec9cf2b0c7915d921e793efb0d21da5225dfeb907d
-        - key: container.image.name
-          value:
-            stringValue: registry.k8s.io/kube-controller-manager-arm64
-        - key: container.image.tag
-          value:
-            stringValue: v1.30.0
-        - key: k8s.container.name
-          value:
-            stringValue: kube-controller-manager
-        - key: k8s.namespace.name
-          value:
-            stringValue: kube-system
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: kube-controller-manager-kind-control-plane
-        - key: k8s.pod.uid
-          value:
-            stringValue: e3e6d44a-5bc6-4687-85f1-37eb42c42c05
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asDouble: 0.2
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.cpu_request
-            unit: '{cpu}'
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: e14e6f08e774618b74202d19334266e4c65c1feb0b26ef7e8b7807644754f730
-        - key: container.image.name
-          value:
-            stringValue: docker.io/library/otelcontribcol
-        - key: container.image.tag
-          value:
-            stringValue: latest
-        - key: k8s.container.name
-          value:
-            stringValue: opentelemetry-collector
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: otelcol-786b94f3-67cf69944f-6zv25
-        - key: k8s.pod.uid
-          value:
-            stringValue: 1fb8be2b-ae32-41c2-a172-e6cb9beb7c37
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asDouble: 0.128
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.cpu_limit
-            unit: '{cpu}'
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asDouble: 0.128
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.cpu_request
-            unit: '{cpu}'
-          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asInt: "268435456"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.memory_limit
-            unit: By
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asInt: "268435456"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.memory_request
-            unit: By
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: ed3ab86077c3de40d6d9125bf4f25dbf1734c58c9c3a864e5ccc1ce3bcfc1d30
-        - key: container.image.name
-          value:
-            stringValue: docker.io/kindest/kindnetd
-        - key: container.image.tag
-          value:
-            stringValue: v20240202-8f1494ea
-        - key: k8s.container.name
-          value:
-            stringValue: kindnet-cni
-        - key: k8s.namespace.name
-          value:
-            stringValue: kube-system
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: kindnet-qwzhw
-        - key: k8s.pod.uid
-          value:
-            stringValue: 955e1f8c-2fe3-4a1d-85e6-31ff7410dc00
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asDouble: 0.1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.cpu_limit
-            unit: '{cpu}'
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asDouble: 0.1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.cpu_request
-            unit: '{cpu}'
-          - description: Maximum resource limit set for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asInt: "52428800"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.memory_limit
-            unit: By
-          - description: Resource requested for the container. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#resourcerequirements-v1-core for details
-            gauge:
-              dataPoints:
-                - asInt: "52428800"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.memory_request
-            unit: By
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: container.id
-          value:
-            stringValue: f01b9f5343f9ba34db396889c75d6128dace385b8f0c7aed2d39866ddd0df826
-        - key: container.image.name
-          value:
-            stringValue: docker.io/library/alpine
-        - key: container.image.tag
-          value:
-            stringValue: latest
-        - key: k8s.container.name
-          value:
-            stringValue: alpine
-        - key: k8s.namespace.name
-          value:
-            stringValue: default
-        - key: k8s.node.name
-          value:
-            stringValue: kind-control-plane
-        - key: k8s.pod.name
-          value:
-            stringValue: test-k8scluster-receiver-cronjob-28839770-9pp7g
-        - key: k8s.pod.uid
-          value:
-            stringValue: e388cfa8-06c3-47b6-a7a6-113d7cdda849
-    schemaUrl: https://opentelemetry.io/schemas/1.18.0
-    scopeMetrics:
-      - metrics:
-          - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.ready
-          - description: How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: k8s.container.restarts
-            unit: '{restart}'
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
-          version: latest
+          version: 0.112.0-dev
