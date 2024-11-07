@@ -175,8 +175,9 @@ func TestClientStartStop(t *testing.T) {
 	}()
 	c.Stop()
 	<-done
-	time.Sleep(time.Second)
-	assert.True(t, fctr.HasStopped())
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		assert.True(collect, fctr.HasStopped())
+	}, time.Second, time.Millisecond)
 }
 
 func TestConstructorErrors(t *testing.T) {
@@ -1994,8 +1995,8 @@ func TestWaitForMetadata(t *testing.T) {
 		err:              false,
 	}, {
 		name: "wait but never synced",
-		informerProvider: func(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
-			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector)}
+		informerProvider: func(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector, stopCh chan struct{}) cache.SharedInformer {
+			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector, stopCh)}
 		},
 		err: true,
 	}}
