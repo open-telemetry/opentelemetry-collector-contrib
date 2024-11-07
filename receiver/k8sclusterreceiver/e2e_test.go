@@ -196,8 +196,35 @@ func TestE2ENamespaceScoped(t *testing.T) {
 
 	replaceWithStar := func(string) string { return "*" }
 	shortenNames := func(value string) string {
+		if strings.HasPrefix(value, "coredns") {
+			return "coredns"
+		}
+		if strings.HasPrefix(value, "kindnet") {
+			return "kindnet"
+		}
+		if strings.HasPrefix(value, "kube-apiserver") {
+			return "kube-apiserver"
+		}
+		if strings.HasPrefix(value, "kube-proxy") {
+			return "kube-proxy"
+		}
+		if strings.HasPrefix(value, "kube-scheduler") {
+			return "kube-scheduler"
+		}
+		if strings.HasPrefix(value, "kube-controller-manager") {
+			return "kube-controller-manager"
+		}
+		if strings.HasPrefix(value, "local-path-provisioner") {
+			return "local-path-provisioner"
+		}
 		if strings.HasPrefix(value, "otelcol") {
 			return "otelcol"
+		}
+		if strings.HasPrefix(value, "test-k8scluster-receiver-cronjob") {
+			return "test-k8scluster-receiver-cronjob"
+		}
+		if strings.HasPrefix(value, "test-k8scluster-receiver-job") {
+			return "test-k8scluster-receiver-job"
 		}
 		return value
 	}
@@ -220,18 +247,23 @@ func TestE2ENamespaceScoped(t *testing.T) {
 			"k8s.job.failed_pods",
 			"k8s.job.max_parallel_pods",
 			"k8s.job.successful_pods"),
-		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
-		pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
-		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
-		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.uid", replaceWithStar),
-		pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
-		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
-		pmetrictest.ChangeResourceAttributeValue("container.image.tag", replaceWithStar),
-		pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
-		pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
-		pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
+		pmetrictest.ChangeResourceAttributeValue("container.image.tag", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.cronjob.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.daemonset.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.name", shortenNames),
+		pmetrictest.ChangeResourceAttributeValue("k8s.deployment.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.hpa.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.job.name", shortenNames),
+		pmetrictest.ChangeResourceAttributeValue("k8s.job.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.namespace.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.node.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.pod.name", shortenNames),
+		pmetrictest.ChangeResourceAttributeValue("k8s.pod.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.name", shortenNames),
+		pmetrictest.ChangeResourceAttributeValue("k8s.replicaset.uid", replaceWithStar),
+		pmetrictest.ChangeResourceAttributeValue("k8s.statefulset.uid", replaceWithStar),
 		pmetrictest.IgnoreScopeVersion(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
