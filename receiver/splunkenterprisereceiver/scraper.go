@@ -1741,7 +1741,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 
 // Scrape info endpoints
 func (s *splunkScraper) scrapeInfo(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	
+
 	switch {
 	case !s.conf.MetricsBuilderConfig.Metrics.SplunkServerInfo.Enabled:
 		return
