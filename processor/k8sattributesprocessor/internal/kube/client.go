@@ -40,20 +40,24 @@ var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                      sync.RWMutex
-	deleteMut              sync.Mutex
-	logger                 *zap.Logger
-	kc                     kubernetes.Interface
-	informer               cache.SharedInformer
-	namespaceInformer      cache.SharedInformer
-	nodeInformer           cache.SharedInformer
-	replicasetInformer     cache.SharedInformer
-	replicasetRegex        *regexp.Regexp
-	cronJobRegex           *regexp.Regexp
-	deleteQueue            []deleteRequest
-	stopCh                 chan struct{}
-	waitForMetadata        bool
-	waitForMetadataTimeout time.Duration
+	m                             sync.RWMutex
+	deleteMut                     sync.Mutex
+	logger                        *zap.Logger
+	kc                            kubernetes.Interface
+	informer                      cache.SharedInformer
+	podHandlerRegistration        cache.ResourceEventHandlerRegistration
+	namespaceInformer             cache.SharedInformer
+	namespaceHandlerRegistration  cache.ResourceEventHandlerRegistration
+	nodeInformer                  cache.SharedInformer
+	nodeHandlerRegistration       cache.ResourceEventHandlerRegistration
+	replicasetInformer            cache.SharedInformer
+	replicasetHandlerRegistration cache.ResourceEventHandlerRegistration
+	replicasetRegex               *regexp.Regexp
+	cronJobRegex                  *regexp.Regexp
+	deleteQueue                   []deleteRequest
+	stopCh                        chan struct{}
+	waitForMetadata               bool
+	waitForMetadataTimeout        time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -162,7 +166,7 @@ func New(
 		}
 	}
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector, c.stopCh)
 	err = c.informer.SetTransform(
 		func(object any) (any, error) {
 			originalPod, success := object.(*api_v1.Pod)
@@ -177,13 +181,13 @@ func New(
 		return nil, err
 	}
 
-	c.namespaceInformer = newNamespaceInformer(c.kc)
+	c.namespaceInformer = newNamespaceInformer(c.kc, c.stopCh)
 
 	if rules.DeploymentName || rules.DeploymentUID {
 		if newReplicaSetInformer == nil {
 			newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace, c.stopCh)
 		err = c.replicasetInformer.SetTransform(
 			func(object any) (any, error) {
 				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
@@ -208,8 +212,11 @@ func New(
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
+	var err error
+	c.m.Lock()
+	defer c.m.Unlock()
 	synced := make([]cache.InformerSynced, 0)
-	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.podHandlerRegistration, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
@@ -217,10 +224,9 @@ func (c *WatchClient) Start() error {
 	if err != nil {
 		return err
 	}
-	synced = append(synced, reg.HasSynced)
-	go c.informer.Run(c.stopCh)
+	synced = append(synced, c.podHandlerRegistration.HasSynced)
 
-	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
@@ -228,11 +234,10 @@ func (c *WatchClient) Start() error {
 	if err != nil {
 		return err
 	}
-	synced = append(synced, reg.HasSynced)
-	go c.namespaceInformer.Run(c.stopCh)
+	synced = append(synced, c.namespaceHandlerRegistration.HasSynced)
 
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if c.replicasetInformer != nil {
+		c.replicasetHandlerRegistration, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
@@ -240,12 +245,11 @@ func (c *WatchClient) Start() error {
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.replicasetInformer.Run(c.stopCh)
+		synced = append(synced, c.replicasetHandlerRegistration.HasSynced)
 	}
 
 	if c.nodeInformer != nil {
-		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		c.nodeHandlerRegistration, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
 			DeleteFunc: c.handleNodeDelete,
@@ -253,8 +257,7 @@ func (c *WatchClient) Start() error {
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.nodeInformer.Run(c.stopCh)
+		synced = append(synced, c.nodeHandlerRegistration.HasSynced)
 	}
 
 	if c.waitForMetadata {
@@ -272,6 +275,42 @@ func (c *WatchClient) Start() error {
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
+	c.m.Lock()
+	defer c.m.Unlock()
+	var eventHandlerRemovalErrors []error
+	if c.podHandlerRegistration != nil {
+		if err := c.informer.RemoveEventHandler(c.podHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.podHandlerRegistration = nil
+	}
+
+	if c.namespaceHandlerRegistration != nil {
+		if err := c.namespaceInformer.RemoveEventHandler(c.namespaceHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.namespaceHandlerRegistration = nil
+	}
+
+	if c.replicasetInformer != nil && c.replicasetHandlerRegistration != nil {
+		if err := c.replicasetInformer.RemoveEventHandler(c.replicasetHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.replicasetHandlerRegistration = nil
+	}
+
+	if c.nodeInformer != nil && c.nodeHandlerRegistration != nil {
+		if err := c.nodeInformer.RemoveEventHandler(c.nodeHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.nodeHandlerRegistration = nil
+	}
+
+	if len(eventHandlerRemovalErrors) > 0 {
+		multiErr := errors.Join(eventHandlerRemovalErrors...)
+		c.logger.Error("error removing event handlers from informers", zap.Error(multiErr))
+	}
+
 	close(c.stopCh)
 }
 

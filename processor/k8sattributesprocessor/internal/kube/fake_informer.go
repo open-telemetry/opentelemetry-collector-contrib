@@ -26,13 +26,16 @@ func NewFakeInformer(
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
+	closeCh chan struct{},
 ) cache.SharedInformer {
-	return &FakeInformer{
+	informer := &FakeInformer{
 		FakeController: &FakeController{},
 		namespace:      namespace,
 		labelSelector:  labelSelector,
 		fieldSelector:  fieldSelector,
 	}
+	go informer.Run(closeCh)
+	return informer
 }
 
 func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
@@ -69,6 +72,7 @@ type FakeNamespaceInformer struct {
 
 func NewFakeNamespaceInformer(
 	_ kubernetes.Interface,
+	_ chan struct{},
 ) cache.SharedInformer {
 	return &FakeInformer{
 		FakeController: &FakeController{},
@@ -95,10 +99,13 @@ type FakeReplicaSetInformer struct {
 func NewFakeReplicaSetInformer(
 	_ kubernetes.Interface,
 	_ string,
+	stopCh chan struct{},
 ) cache.SharedInformer {
-	return &FakeInformer{
+	informer := &FakeInformer{
 		FakeController: &FakeController{},
 	}
+	go informer.Run(stopCh)
+	return informer
 }
 
 func (f *FakeReplicaSetInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
@@ -154,10 +161,13 @@ type NoOpInformer struct {
 
 func NewNoOpInformer(
 	_ kubernetes.Interface,
+	stopCh chan struct{},
 ) cache.SharedInformer {
-	return &NoOpInformer{
+	informer := &NoOpInformer{
 		NoOpController: &NoOpController{},
 	}
+	go informer.Run(stopCh)
+	return informer
 }
 
 func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
