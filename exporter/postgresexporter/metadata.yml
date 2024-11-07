@@ -1,0 +1,10 @@
+type: postgres
+
+status:
+  class: exporter 
+  stability:
+    development: [logs, traces]
+  codeowners:
+    active: [destrex271]
+
+
