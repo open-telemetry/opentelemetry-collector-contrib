@@ -220,7 +220,7 @@ func TestSetupInformerForKind(t *testing.T) {
 func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
-	logsConsumer := new(consumertest.LogsSink)
+	entitiesConsumer := new(consumertest.LogsSink)
 
 	// Setup k8s resources.
 	pods := createPods(t, client, 1)
@@ -229,7 +229,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	updatedPod := getUpdatedPod(origPod)
 
 	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
-	rw.entityLogConsumer = logsConsumer
+	rw.entitiesConsumer = entitiesConsumer
 
 	step1 := time.Now()
 

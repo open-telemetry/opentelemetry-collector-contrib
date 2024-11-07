@@ -9,10 +9,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
@@ -140,6 +143,13 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	if len(droppedAttributes) > 0 {
 		p.logger.Info("dropped resource information", zap.Strings("resource keys", droppedAttributes))
 	}
+	if res.Entities().Len() > 0 {
+		types := make([]string, 0, res.Entities().Len())
+		for i := 0; i < res.Entities().Len(); i++ {
+			types = append(types, res.Entities().At(i).Type())
+		}
+		p.logger.Info("detected entities: " + strings.Join(types, ", "))
+	}
 
 	p.detectedResource.resource = res
 	p.detectedResource.schemaURL = mergedSchemaURL
@@ -191,8 +201,124 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 		}
 		return true
 	})
+
+	for i := 0; i < from.Entities().Len(); i++ {
+		fromEntity := from.Entities().At(i)
+		isNewEntity := true
+		for j := 0; j < to.Entities().Len(); j++ {
+			toEntity := to.Entities().At(j)
+			if toEntity.Type() == fromEntity.Type() {
+				isNewEntity = false
+				MergeEntity(toEntity, fromEntity, overrideTo)
+			}
+		}
+		if isNewEntity {
+			fromEntity.CopyTo(to.Entities().AppendEmpty())
+		}
+	}
 }
 
 func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
+}
+
+func MergeEntity(to, from pcommon.ResourceEntityRef, overrideTo bool) {
+	fromID := from.IdAttrKeys().AsRaw()
+	toID := to.IdAttrKeys().AsRaw()
+	idSuperset := slicesUnion(fromID, toID)
+	// We assume that the entity IDs are the same if one of them is a superset of the other.
+	if len(idSuperset) == len(fromID) || len(idSuperset) == len(toID) {
+		to.IdAttrKeys().FromRaw(idSuperset)
+		to.DescrAttrKeys().FromRaw(slicesUnion(from.DescrAttrKeys().AsRaw(), to.DescrAttrKeys().AsRaw()))
+	} else if overrideTo {
+		// If the entity IDs are different, we are not able to merge them.
+		// We pick one of them and ignore the other based on the overrideTo flag.
+		from.CopyTo(to)
+	}
+}
+
+func slicesUnion(a, b []string) []string {
+	slices.Sort(a)
+	slices.Sort(b)
+	i, j := 0, 0
+	var result []string
+
+	for i < len(a) && j < len(b) {
+		if a[i] < b[j] {
+			result = append(result, a[i])
+			i++
+		} else if a[i] > b[j] {
+			result = append(result, b[j])
+			j++
+		} else { // a[i] == b[j]
+			result = append(result, a[i])
+			i++
+			j++
+		}
+	}
+
+	// Append remaining elements from either slice
+	for i < len(a) {
+		result = append(result, a[i])
+		i++
+	}
+	for j < len(b) {
+		result = append(result, b[j])
+		j++
+	}
+
+	return result
+}
+
+// MergeEntityRef merges information from one entity reference to entity event if the entity IDs match (one is a superset of the other).
+func MergeEntityRef(to pentity.EntityEvent, from pcommon.ResourceEntityRef, fromAttrs pcommon.Map, overrideTo bool) {
+	fromAttrsRaw := fromAttrs.AsRaw()
+	fromID := map[string]any{}
+	for _, key := range from.IdAttrKeys().AsRaw() {
+		val, ok := fromAttrsRaw[key]
+		if ok {
+			fromID[key] = val
+		}
+	}
+	toID := to.Id().AsRaw()
+	idSuperset, match := mapUnion(fromID, toID)
+	// We assume that the entity IDs are the same if one of them is a superset of the other.
+	if !match {
+		return
+	}
+	if len(idSuperset) != len(toID) {
+		_ = to.Id().FromRaw(idSuperset)
+	}
+	for i := 0; i < from.DescrAttrKeys().Len(); i++ {
+		key := from.DescrAttrKeys().At(i)
+		valFrom, okFrom := fromAttrs.Get(key)
+		_, okTo := to.EntityState().Attributes().Get(key)
+		if okFrom && (overrideTo || !okTo) {
+			valFrom.CopyTo(to.EntityState().Attributes().PutEmpty(key))
+		}
+	}
+}
+
+// mapUnion returns the union of two maps. If the maps have the same key with different values, it returns false.
+func mapUnion(a, b map[string]any) (map[string]any, bool) {
+	result := map[string]any{}
+	for k, v := range a {
+		result[k] = v
+	}
+	for k, v := range b {
+		val, ok := result[k]
+		if ok && val != v {
+			return nil, false
+		}
+		result[k] = v
+	}
+	return result, true
+}
+
+func RemoveInvalidEntities(re pentity.ResourceEntities) {
+	for i := 0; i < re.ScopeEntities().Len(); i++ {
+		re.Resource().Entities().RemoveIf(func(entity pcommon.ResourceEntityRef) bool {
+			return entity.Type() == "" || entity.IdAttrKeys().Len() == 0
+		})
+	}
 }

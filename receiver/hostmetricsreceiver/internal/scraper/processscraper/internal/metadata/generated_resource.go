@@ -80,6 +80,34 @@ func (rb *ResourceBuilder) SetProcessPid(val int64) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundProcessPid := r.Attributes().Get("process.pid")
+	if foundProcessPid {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("process")
+		ref.IdAttrKeys().Append("process.pid")
+		if _, ok := r.Attributes().Get("process.parent_pid"); ok {
+			ref.DescrAttrKeys().Append("process.parent_pid")
+		}
+		if _, ok := r.Attributes().Get("process.executable.name"); ok {
+			ref.DescrAttrKeys().Append("process.executable.name")
+		}
+		if _, ok := r.Attributes().Get("process.executable.path"); ok {
+			ref.DescrAttrKeys().Append("process.executable.path")
+		}
+		if _, ok := r.Attributes().Get("process.command"); ok {
+			ref.DescrAttrKeys().Append("process.command")
+		}
+		if _, ok := r.Attributes().Get("process.command_line"); ok {
+			ref.DescrAttrKeys().Append("process.command_line")
+		}
+		if _, ok := r.Attributes().Get("process.owner"); ok {
+			ref.DescrAttrKeys().Append("process.owner")
+		}
+		if _, ok := r.Attributes().Get("process.cgroup"); ok {
+			ref.DescrAttrKeys().Append("process.cgroup")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

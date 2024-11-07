@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/elastic_beanstalk
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -32,3 +27,8 @@ resource_attributes:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+
+entities:
+  - type: service
+    id_attributes: [service.instance.id]
+    descriptive_attributes: [service.version, deployment.environment]

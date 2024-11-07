@@ -87,6 +87,28 @@ func (rb *ResourceBuilder) SetFaasVersion(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundFaasInstance := r.Attributes().Get("faas.instance")
+	if foundFaasInstance {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("faas.function")
+		ref.IdAttrKeys().Append("faas.instance")
+		if _, ok := r.Attributes().Get("faas.name"); ok {
+			ref.DescrAttrKeys().Append("faas.name")
+		}
+		if _, ok := r.Attributes().Get("faas.version"); ok {
+			ref.DescrAttrKeys().Append("faas.version")
+		}
+		if _, ok := r.Attributes().Get("faas.max_memory"); ok {
+			ref.DescrAttrKeys().Append("faas.max_memory")
+		}
+		if _, ok := r.Attributes().Get("aws.log.group.names"); ok {
+			ref.DescrAttrKeys().Append("aws.log.group.names")
+		}
+		if _, ok := r.Attributes().Get("aws.log.stream.names"); ok {
+			ref.DescrAttrKeys().Append("aws.log.stream.names")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

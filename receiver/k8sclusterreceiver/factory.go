@@ -46,7 +46,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(newLogsReceiver, metadata.MetricsStability),
+		receiver.WithEntities(newEntitiesReceiver, metadata.EntitiesStability),
 	)
 }
 

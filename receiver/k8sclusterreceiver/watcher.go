@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pentity"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -22,6 +23,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
@@ -44,6 +46,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
+const (
+	kubeSystemNamespace = "kube-system"
+	clusterIDKey        = "k8s.cluster.uid"
+	clusterEntityType   = "k8s.cluster"
+)
+
 type sharedInformer interface {
 	Start(<-chan struct{})
 	WaitForCacheSync(<-chan struct{}) map[reflect.Type]bool
@@ -60,7 +68,8 @@ type resourceWatcher struct {
 	initialSyncDone     *atomic.Bool
 	initialSyncTimedOut *atomic.Bool
 	config              *Config
-	entityLogConsumer   consumer.Logs
+	entitiesConsumer    consumer.Entities
+	clusterID           string
 
 	// For mocking.
 	makeClient               func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error)
@@ -95,6 +104,11 @@ func (rw *resourceWatcher) initialize() error {
 		if err != nil {
 			return fmt.Errorf("Failed to create OpenShift quota API client: %w", err)
 		}
+	}
+
+	ns, err := client.CoreV1().Namespaces().Get(context.Background(), kubeSystemNamespace, metav1.GetOptions{})
+	if err == nil {
+		rw.clusterID = string(ns.UID)
 	}
 
 	err = rw.prepareSharedInformerFactory()
@@ -255,7 +269,7 @@ func (rw *resourceWatcher) onAdd(obj any) {
 }
 
 func (rw *resourceWatcher) hasDestination() bool {
-	return len(rw.metadataConsumers) != 0 || rw.entityLogConsumer != nil
+	return len(rw.metadataConsumers) != 0 || rw.entitiesConsumer != nil
 }
 
 func (rw *resourceWatcher) onUpdate(oldObj, newObj any) {
@@ -364,15 +378,24 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[exper
 		}
 	}
 
-	if rw.entityLogConsumer != nil {
+	if rw.entitiesConsumer != nil {
 		// Represent metadata update as entity events.
-		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp, rw.config.MetadataCollectionInterval)
+		entityEvents := metadata.GetEntityEvents(oldMetadata, newMetadata, timestamp)
 
-		// Convert entity events to log representation.
-		logs := entityEvents.ConvertAndMoveToLogs()
+		if entityEvents.Len() != 0 {
+			out := pentity.NewEntities()
+			re := out.ResourceEntities().AppendEmpty()
 
-		if logs.LogRecordCount() != 0 {
-			err := rw.entityLogConsumer.ConsumeLogs(context.Background(), logs)
+			// Set k8s.cluster as a parent entity.
+			if rw.clusterID != "" {
+				re.Resource().Attributes().PutStr(clusterIDKey, rw.clusterID)
+				clusterEntity := re.Resource().Entities().AppendEmpty()
+				clusterEntity.SetType(clusterEntityType)
+				clusterEntity.IdAttrKeys().Append(clusterIDKey)
+			}
+
+			entityEvents.MoveAndAppendTo(re.ScopeEntities().AppendEmpty().EntityEvents())
+			err := rw.entitiesConsumer.ConsumeEntities(context.Background(), out)
 			if err != nil {
 				rw.logger.Error("Error sending entity events to the consumer", zap.Error(err))
 

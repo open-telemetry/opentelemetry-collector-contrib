@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/system
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   host.name:
     description: The host.name
@@ -60,3 +55,8 @@ resource_attributes:
     description: The host.cpu.cache.l2.size
     type: int
     enabled: false
+
+entities:
+  - type: host
+    id_attributes: [host.id]
+    descriptive_attributes: [host.name, os.type, host.arch, host.ip, host.mac, host.cpu.vendor.id, host.cpu.family, host.cpu.model.id, host.cpu.model.name, host.cpu.stepping, host.cpu.cache.l2.size]

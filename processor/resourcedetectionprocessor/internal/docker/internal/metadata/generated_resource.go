@@ -38,6 +38,16 @@ func (rb *ResourceBuilder) SetOsType(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundHostName := r.Attributes().Get("host.name")
+	if foundHostName {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("host")
+		ref.IdAttrKeys().Append("host.name")
+		if _, ok := r.Attributes().Get("os.type"); ok {
+			ref.DescrAttrKeys().Append("os.type")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

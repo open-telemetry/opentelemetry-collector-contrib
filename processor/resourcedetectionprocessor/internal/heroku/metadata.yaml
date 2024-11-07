@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/heroku
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active: [atoulme]
-
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -40,3 +35,9 @@ resource_attributes:
     description: Heroku relese version set as service.version.
     enabled: true
     type: string
+
+
+entities:
+  - type: service
+    id_attributes: [service.instance.id]
+    descriptive_attributes: [service.name, service.version]

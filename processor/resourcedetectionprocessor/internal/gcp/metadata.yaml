@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/gcp
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   host.name:
     description: The host.name
@@ -76,3 +71,13 @@ resource_attributes:
     description: The hostname of the GCE instance.
     type: string
     enabled: false
+
+entities:
+  - type: host
+    id_attributes: [host.id]
+    descriptive_attributes: [host.name, host.type, cloud.provider, cloud.platform, cloud.region, cloud.availability_zone, gcp.gce.instance.name, gcp.gce.instance.hostname]
+  - type: cloud_account
+    id_attributes: [cloud.provider, cloud.account.id]
+  - type: faas.function
+    id_attributes: [faas.instance]
+    descriptive_attributes: [faas.name, faas.version]

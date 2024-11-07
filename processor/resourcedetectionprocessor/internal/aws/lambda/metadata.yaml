@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/lambda
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -48,3 +43,9 @@ resource_attributes:
 tests:
   skip_lifecycle: true
   skip_shutdown: true
+
+
+entities:
+  - type: faas.function
+    id_attributes: [faas.instance]
+    descriptive_attributes: [faas.name, faas.version, faas.max_memory, aws.log.group.names, aws.log.stream.names]

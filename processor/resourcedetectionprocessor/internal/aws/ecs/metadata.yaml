@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/ecs
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -68,6 +63,13 @@ resource_attributes:
     description: The aws.log.stream.arns
     type: slice
     enabled: true
+
+entities:
+  - type: aws.ecs.task
+    id_attributes: [aws.ecs.task.arn]
+    descriptive_attributes: [aws.ecs.cluster.arn, aws.ecs.task.family, aws.ecs.task.id, aws.ecs.task.revision, aws.ecs.launchtype, aws.log.group.names, aws.log.group.arns, aws.log.stream.names, aws.log.stream.arns]
+  - type: cloud_account
+    id_attributes: [cloud.provider, cloud.account.id]
 
 tests:
   skip_lifecycle: true

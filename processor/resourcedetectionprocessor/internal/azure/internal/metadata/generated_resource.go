@@ -94,6 +94,39 @@ func (rb *ResourceBuilder) SetHostName(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundHostID := r.Attributes().Get("host.id")
+	if foundHostID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("host")
+		ref.IdAttrKeys().Append("host.id")
+		if _, ok := r.Attributes().Get("host.name"); ok {
+			ref.DescrAttrKeys().Append("host.name")
+		}
+		if _, ok := r.Attributes().Get("azure.resourcegroup.name"); ok {
+			ref.DescrAttrKeys().Append("azure.resourcegroup.name")
+		}
+		if _, ok := r.Attributes().Get("azure.vm.name"); ok {
+			ref.DescrAttrKeys().Append("azure.vm.name")
+		}
+		if _, ok := r.Attributes().Get("azure.vm.scaleset.name"); ok {
+			ref.DescrAttrKeys().Append("azure.vm.scaleset.name")
+		}
+		if _, ok := r.Attributes().Get("azure.vm.size"); ok {
+			ref.DescrAttrKeys().Append("azure.vm.size")
+		}
+		if _, ok := r.Attributes().Get("cloud.region"); ok {
+			ref.DescrAttrKeys().Append("cloud.region")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
+	_, foundCloudProvider := r.Attributes().Get("cloud.provider")
+	_, foundCloudAccountID := r.Attributes().Get("cloud.account.id")
+	if foundCloudProvider && foundCloudAccountID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("cloud_account")
+		ref.IdAttrKeys().Append("cloud.provider", "cloud.account.id")
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

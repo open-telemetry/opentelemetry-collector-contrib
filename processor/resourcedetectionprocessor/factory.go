@@ -75,7 +75,9 @@ func NewFactory() processor.Factory {
 		createDefaultConfig,
 		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
-		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability))
+		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		processor.WithEntities(f.createEntitiesProcessor, metadata.EntitiesStability),
+	)
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -160,6 +162,27 @@ func (f *factory) createLogsProcessor(
 		cfg,
 		nextConsumer,
 		rdp.processLogs,
+		processorhelper.WithCapabilities(consumerCapabilities),
+		processorhelper.WithStart(rdp.Start))
+}
+
+func (f *factory) createEntitiesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Entities,
+) (processor.Entities, error) {
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelper.NewEntities(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		rdp.processEntities,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
 }

@@ -22,12 +22,6 @@ github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncj
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-go.opentelemetry.io/collector/config/confignet v1.18.0 h1:ncaBuvH/AxwXk1JgGVpKObGtR105qxgGWqsA6aqsYXc=
-go.opentelemetry.io/collector/config/confignet v1.18.0/go.mod h1:o3v4joAEjvLwntqexg5ixMqRrU1+Vst+jWuCUaBNgOg=
-go.opentelemetry.io/collector/config/configopaque v1.18.0 h1:aoEecgd5m8iZCX+S+iH6SK/lG6ULqCqtrtz7PeHw7vE=
-go.opentelemetry.io/collector/config/configopaque v1.18.0/go.mod h1:6zlLIyOoRpJJ+0bEKrlZOZon3rOp5Jrz9fMdR4twOS4=
-go.opentelemetry.io/collector/config/configtls v1.18.0 h1:IQemIIuryeHgrpBJMbLl+LgTxvFBbv7Hhi+0WwlxpCU=
-go.opentelemetry.io/collector/config/configtls v1.18.0/go.mod h1:lD2dlDqeTKq7OecFwIZMufDaa8erSlEoHMJrFPHrZNw=
 go.opentelemetry.io/collector/featuregate v1.18.0 h1:1CvP1K3XmVs7WZCs/A1j8rsC7JQWu+y+vF8vxKjLaOU=
 go.opentelemetry.io/collector/featuregate v1.18.0/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=

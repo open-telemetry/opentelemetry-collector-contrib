@@ -87,6 +87,36 @@ func (rb *ResourceBuilder) SetHostType(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundHostID := r.Attributes().Get("host.id")
+	if foundHostID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("host")
+		ref.IdAttrKeys().Append("host.id")
+		if _, ok := r.Attributes().Get("host.name"); ok {
+			ref.DescrAttrKeys().Append("host.name")
+		}
+		if _, ok := r.Attributes().Get("host.image.id"); ok {
+			ref.DescrAttrKeys().Append("host.image.id")
+		}
+		if _, ok := r.Attributes().Get("host.type"); ok {
+			ref.DescrAttrKeys().Append("host.type")
+		}
+		if _, ok := r.Attributes().Get("cloud.region"); ok {
+			ref.DescrAttrKeys().Append("cloud.region")
+		}
+		if _, ok := r.Attributes().Get("cloud.availability_zone"); ok {
+			ref.DescrAttrKeys().Append("cloud.availability_zone")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
+	_, foundCloudProvider := r.Attributes().Get("cloud.provider")
+	_, foundCloudAccountID := r.Attributes().Get("cloud.account.id")
+	if foundCloudProvider && foundCloudAccountID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("cloud_account")
+		ref.IdAttrKeys().Append("cloud.provider", "cloud.account.id")
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

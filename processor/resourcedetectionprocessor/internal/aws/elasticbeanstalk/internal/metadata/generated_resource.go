@@ -59,6 +59,19 @@ func (rb *ResourceBuilder) SetServiceVersion(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundServiceInstanceID := r.Attributes().Get("service.instance.id")
+	if foundServiceInstanceID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("service")
+		ref.IdAttrKeys().Append("service.instance.id")
+		if _, ok := r.Attributes().Get("service.version"); ok {
+			ref.DescrAttrKeys().Append("service.version")
+		}
+		if _, ok := r.Attributes().Get("deployment.environment"); ok {
+			ref.DescrAttrKeys().Append("deployment.environment")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

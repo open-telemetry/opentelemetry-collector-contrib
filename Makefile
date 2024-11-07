@@ -306,8 +306,8 @@ docker-telemetrygen:
 	rm cmd/telemetrygen/telemetrygen_*
 
 .PHONY: generate
-generate: install-tools
-	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
+generate:
+	#cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 

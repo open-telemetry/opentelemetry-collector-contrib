@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/docker
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   host.name:
     description: The host.name
@@ -16,3 +11,9 @@ resource_attributes:
     description: The os.type
     type: string
     enabled: true
+
+
+entities:
+  - type: host
+    id_attributes: [host.name]
+    descriptive_attributes: [os.type]

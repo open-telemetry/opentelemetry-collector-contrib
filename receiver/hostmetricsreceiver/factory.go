@@ -56,7 +56,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
+		receiver.WithEntities(createEntitiesReceiver, metadata.LogsStability))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -100,13 +100,13 @@ func createMetricsReceiver(
 	)
 }
 
-func createLogsReceiver(
-	_ context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Logs,
-) (receiver.Logs, error) {
+func createEntitiesReceiver(
+	_ context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Entities,
+) (receiver.Entities, error) {
 	return &hostEntitiesReceiver{
-		cfg:      cfg.(*Config),
-		nextLogs: consumer,
-		settings: &set,
+		cfg:          cfg.(*Config),
+		nextEntities: consumer,
+		settings:     &set,
 	}, nil
 }
 

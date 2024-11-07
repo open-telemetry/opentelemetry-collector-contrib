@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/ec2
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   host.name:
     description: The hostname
@@ -44,6 +39,13 @@ resource_attributes:
     description: The host id
     type: string
     enabled: true
+
+entities:
+  - type: host
+    id_attributes: [host.id]
+    descriptive_attributes: [host.name, host.image.id, host.type, cloud.region, cloud.availability_zone]
+  - type: cloud_account
+    id_attributes: [cloud.provider, cloud.account.id]
 
 tests:
   skip_lifecycle: true

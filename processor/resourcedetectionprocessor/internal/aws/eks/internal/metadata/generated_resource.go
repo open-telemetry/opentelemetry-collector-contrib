@@ -45,6 +45,15 @@ func (rb *ResourceBuilder) SetK8sClusterName(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	if true {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("k8s.cluster")
+		ref.IdAttrKeys().Append()
+		if _, ok := r.Attributes().Get("k8s.cluster.name"); ok {
+			ref.DescrAttrKeys().Append("k8s.cluster.name")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/consul
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   cloud.region:
     description: The cloud.region
@@ -20,3 +15,8 @@ resource_attributes:
     description: The host.id
     type: string
     enabled: true
+
+entities:
+  - type: host
+    id_attributes: [host.id]
+    descriptive_attributes: [host.name, cloud.region]

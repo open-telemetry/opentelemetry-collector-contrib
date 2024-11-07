@@ -144,10 +144,10 @@ func newMetricsReceiver(
 	return r, nil
 }
 
-// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newLogsReceiver(
-	ctx context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Logs,
-) (receiver.Logs, error) {
+// newEntitiesReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newEntitiesReceiver(
+	ctx context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Entities,
+) (receiver.Entities, error) {
 	var err error
 	r := receivers.GetOrAdd(
 		cfg, func() component.Component {
@@ -159,7 +159,7 @@ func newLogsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	r.Unwrap().(*kubernetesReceiver).resourceWatcher.entityLogConsumer = consumer
+	r.Unwrap().(*kubernetesReceiver).resourceWatcher.entitiesConsumer = consumer
 	return r, nil
 }
 

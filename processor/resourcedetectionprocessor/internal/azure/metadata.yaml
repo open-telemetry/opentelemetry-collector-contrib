@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/azure
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active: [mx-psi]
-
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -48,3 +43,11 @@ resource_attributes:
     description: The azure.vm.size
     enabled: true
     type: string
+
+
+entities:
+  - type: host
+    id_attributes: [host.id]
+    descriptive_attributes: [host.name, azure.resourcegroup.name, azure.vm.name, azure.vm.scaleset.name, azure.vm.size, cloud.region]
+  - type: cloud_account
+    id_attributes: [cloud.provider, cloud.account.id]

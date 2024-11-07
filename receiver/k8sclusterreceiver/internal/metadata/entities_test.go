@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pentity"
 
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
@@ -18,7 +19,7 @@ func Test_GetEntityEvents(t *testing.T) {
 	tests := []struct {
 		name     string
 		old, new map[metadataPkg.ResourceID]*KubernetesMetadata
-		events   metadataPkg.EntityEventsSlice
+		events   pentity.EntityEventSlice
 	}{
 		{
 			name: "new entity",
@@ -32,12 +33,12 @@ func Test_GetEntityEvents(t *testing.T) {
 					},
 				},
 			},
-			events: func() metadataPkg.EntityEventsSlice {
-				out := metadataPkg.NewEntityEventsSlice()
+			events: func() pentity.EntityEventSlice {
+				out := pentity.NewEntityEventSlice()
 				event := out.AppendEmpty()
-				_ = event.ID().FromRaw(map[string]any{"k8s.pod.uid": "123"})
-				state := event.SetEntityState()
-				state.SetEntityType("k8s.pod")
+				event.SetEntityType("k8s.pod")
+				_ = event.Id().FromRaw(map[string]any{"k8s.pod.uid": "123"})
+				state := event.SetEmptyEntityState()
 				_ = state.Attributes().FromRaw(map[string]any{"label1": "value1"})
 				return out
 			}(),
@@ -54,11 +55,11 @@ func Test_GetEntityEvents(t *testing.T) {
 					},
 				},
 			},
-			events: func() metadataPkg.EntityEventsSlice {
-				out := metadataPkg.NewEntityEventsSlice()
+			events: func() pentity.EntityEventSlice {
+				out := pentity.NewEntityEventSlice()
 				event := out.AppendEmpty()
-				_ = event.ID().FromRaw(map[string]any{"k8s.pod.uid": "123"})
-				event.SetEntityDelete()
+				_ = event.Id().FromRaw(map[string]any{"k8s.pod.uid": "123"})
+				event.SetEmptyEntityDelete()
 				return out
 			}(),
 		},
@@ -88,12 +89,12 @@ func Test_GetEntityEvents(t *testing.T) {
 					},
 				},
 			},
-			events: func() metadataPkg.EntityEventsSlice {
-				out := metadataPkg.NewEntityEventsSlice()
+			events: func() pentity.EntityEventSlice {
+				out := pentity.NewEntityEventSlice()
 				event := out.AppendEmpty()
-				_ = event.ID().FromRaw(map[string]any{"k8s.pod.uid": "123"})
-				state := event.SetEntityState()
-				state.SetEntityType("k8s.pod")
+				event.SetEntityType("k8s.pod")
+				_ = event.Id().FromRaw(map[string]any{"k8s.pod.uid": "123"})
+				state := event.SetEmptyEntityState()
 				_ = state.Attributes().FromRaw(map[string]any{"label1": "value1", "label2": "foo", "new": "bar"})
 				return out
 			}(),
@@ -124,12 +125,12 @@ func Test_GetEntityEvents(t *testing.T) {
 					},
 				},
 			},
-			events: func() metadataPkg.EntityEventsSlice {
-				out := metadataPkg.NewEntityEventsSlice()
+			events: func() pentity.EntityEventSlice {
+				out := pentity.NewEntityEventSlice()
 				event := out.AppendEmpty()
-				_ = event.ID().FromRaw(map[string]any{"k8s.pod.uid": "123"})
-				state := event.SetEntityState()
-				state.SetEntityType("k8s.pod")
+				event.SetEntityType("k8s.pod")
+				_ = event.Id().FromRaw(map[string]any{"k8s.pod.uid": "123"})
+				state := event.SetEmptyEntityState()
 				_ = state.Attributes().FromRaw(
 					map[string]any{
 						"label1": "value1", "label2": "value2", "label3": "value3",
@@ -160,17 +161,17 @@ func Test_GetEntityEvents(t *testing.T) {
 					},
 				},
 			},
-			events: func() metadataPkg.EntityEventsSlice {
-				out := metadataPkg.NewEntityEventsSlice()
+			events: func() pentity.EntityEventSlice {
+				out := pentity.NewEntityEventSlice()
 
 				event := out.AppendEmpty()
-				_ = event.ID().FromRaw(map[string]any{"k8s.pod.uid": "123"})
-				event.SetEntityDelete()
+				_ = event.Id().FromRaw(map[string]any{"k8s.pod.uid": "123"})
+				event.SetEmptyEntityDelete()
 
 				event = out.AppendEmpty()
-				_ = event.ID().FromRaw(map[string]any{"k8s.pod.uid": "234"})
-				state := event.SetEntityState()
-				state.SetEntityType("k8s.pod")
+				event.SetEntityType("k8s.pod")
+				_ = event.Id().FromRaw(map[string]any{"k8s.pod.uid": "234"})
+				state := event.SetEmptyEntityState()
 				_ = state.Attributes().FromRaw(map[string]any{"label2": "value2"})
 				return out
 			}(),
@@ -190,19 +191,17 @@ func Test_GetEntityEvents(t *testing.T) {
 
 				// Convert and test expected events.
 				timestamp := pcommon.NewTimestampFromTime(time.Now())
-				events := GetEntityEvents(tt.old, tt.new, timestamp, 1*time.Hour)
+				events := GetEntityEvents(tt.old, tt.new, timestamp)
 				require.Equal(t, tt.events.Len(), events.Len())
 				for i := 0; i < events.Len(); i++ {
 					actual := events.At(i)
 					expected := tt.events.At(i)
 					assert.EqualValues(t, timestamp, actual.Timestamp())
-					assert.EqualValues(t, expected.EventType(), actual.EventType())
-					assert.EqualValues(t, expected.ID().AsRaw(), actual.ID().AsRaw())
-					if expected.EventType() == metadataPkg.EventTypeState {
-						estate := expected.EntityStateDetails()
-						astate := actual.EntityStateDetails()
-						assert.EqualValues(t, estate.EntityType(), astate.EntityType())
-						assert.EqualValues(t, 1*time.Hour, astate.Interval())
+					assert.EqualValues(t, expected.Type(), actual.Type())
+					assert.EqualValues(t, expected.Id().AsRaw(), actual.Id().AsRaw())
+					if expected.Type() == pentity.EventTypeEntityState {
+						estate := expected.EntityState()
+						astate := actual.EntityState()
 						assert.EqualValues(t, estate.Attributes().AsRaw(), astate.Attributes().AsRaw())
 					}
 				}

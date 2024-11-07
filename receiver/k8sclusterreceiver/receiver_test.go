@@ -223,7 +223,7 @@ func setupReceiver(
 	client *fake.Clientset,
 	osQuotaClient quotaclientset.Interface,
 	metricsConsumer consumer.Metrics,
-	logsConsumer consumer.Logs,
+	entitiesConsumer consumer.Entities,
 	initialSyncTimeout time.Duration,
 	tt componenttest.TestTelemetry) *kubernetesReceiver {
 	distribution := distributionKubernetes
@@ -249,7 +249,7 @@ func setupReceiver(
 		return osQuotaClient, nil
 	}
 	kr.resourceWatcher.initialTimeout = initialSyncTimeout
-	kr.resourceWatcher.entityLogConsumer = logsConsumer
+	kr.resourceWatcher.entitiesConsumer = entitiesConsumer
 	return kr
 }
 

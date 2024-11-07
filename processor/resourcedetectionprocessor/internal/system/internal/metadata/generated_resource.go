@@ -115,6 +115,46 @@ func (rb *ResourceBuilder) SetOsType(val string) {
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
+	_, foundHostID := r.Attributes().Get("host.id")
+	if foundHostID {
+		ref := pcommon.NewResourceEntityRef()
+		ref.SetType("host")
+		ref.IdAttrKeys().Append("host.id")
+		if _, ok := r.Attributes().Get("host.name"); ok {
+			ref.DescrAttrKeys().Append("host.name")
+		}
+		if _, ok := r.Attributes().Get("os.type"); ok {
+			ref.DescrAttrKeys().Append("os.type")
+		}
+		if _, ok := r.Attributes().Get("host.arch"); ok {
+			ref.DescrAttrKeys().Append("host.arch")
+		}
+		if _, ok := r.Attributes().Get("host.ip"); ok {
+			ref.DescrAttrKeys().Append("host.ip")
+		}
+		if _, ok := r.Attributes().Get("host.mac"); ok {
+			ref.DescrAttrKeys().Append("host.mac")
+		}
+		if _, ok := r.Attributes().Get("host.cpu.vendor.id"); ok {
+			ref.DescrAttrKeys().Append("host.cpu.vendor.id")
+		}
+		if _, ok := r.Attributes().Get("host.cpu.family"); ok {
+			ref.DescrAttrKeys().Append("host.cpu.family")
+		}
+		if _, ok := r.Attributes().Get("host.cpu.model.id"); ok {
+			ref.DescrAttrKeys().Append("host.cpu.model.id")
+		}
+		if _, ok := r.Attributes().Get("host.cpu.model.name"); ok {
+			ref.DescrAttrKeys().Append("host.cpu.model.name")
+		}
+		if _, ok := r.Attributes().Get("host.cpu.stepping"); ok {
+			ref.DescrAttrKeys().Append("host.cpu.stepping")
+		}
+		if _, ok := r.Attributes().Get("host.cpu.cache.l2.size"); ok {
+			ref.DescrAttrKeys().Append("host.cpu.cache.l2.size")
+		}
+		ref.CopyTo(r.Entities().AppendEmpty())
+	}
 	rb.res = pcommon.NewResource()
 	return r
 }

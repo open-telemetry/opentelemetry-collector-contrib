@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/eks
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -20,6 +15,12 @@ resource_attributes:
     description: The EKS cluster name. This attribute is currently only available when running on EC2 instances, and requires permission to run the EC2:DescribeInstances action.
     type: string
     enabled: false
+
+entities:
+  - type: k8s.cluster
+    descriptive_attributes: [k8s.cluster.name]
+  - type: cloud_account
+    id_attributes: [cloud.provider, cloud.account.id]
 
 tests:
   skip_lifecycle: true

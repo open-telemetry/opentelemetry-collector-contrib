@@ -130,12 +130,12 @@ func TestNewSharedReceiver(t *testing.T) {
 	assert.Equal(t, mc, kr.metricsConsumer)
 
 	lc := consumertest.NewNop()
-	lr, err := newLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, lc)
+	lr, err := newEntitiesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, lc)
 	require.NoError(t, err)
 
 	// Verify that the log consumer is correct set.
 	kr = lr.(*sharedcomponent.SharedComponent).Unwrap().(*kubernetesReceiver)
-	assert.Equal(t, lc, kr.resourceWatcher.entityLogConsumer)
+	assert.Equal(t, lc, kr.resourceWatcher.entitiesConsumer)
 
 	// Make sure only one receiver is created both for metrics and logs.
 	assert.Equal(t, mr, lr)
