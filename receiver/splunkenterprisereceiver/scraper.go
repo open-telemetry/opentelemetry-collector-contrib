@@ -1741,8 +1741,10 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 
 // Scrape info endpoints
 func (s *splunkScraper) scrapeInfo(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-
+	
 	switch {
+	case !s.conf.MetricsBuilderConfig.Metrics.SplunkServerInfo.Enabled:
+		return
 	case s.splunkClient.isConfigured(typeSh):
 		ctx = context.WithValue(ctx, endpointType("type"), typeSh)
 	case s.splunkClient.isConfigured(typeCm):
@@ -1783,9 +1785,6 @@ func (s *splunkScraper) scrapeInfo(ctx context.Context, now pcommon.Timestamp, e
 	}
 
 	for _, f := range info.Entries {
-
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerInfo.Enabled {
-			s.mb.RecordSplunkServerInfoDataPoint(now, 1, info.Host, f.Content.Build, f.Content.Version)
-		}
+		s.mb.RecordSplunkServerInfoDataPoint(now, 1, info.Host, f.Content.Build, f.Content.Version)
 	}
 }
