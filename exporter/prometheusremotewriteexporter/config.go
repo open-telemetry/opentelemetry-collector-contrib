@@ -89,7 +89,7 @@ var _ component.Config = (*Config)(nil)
 var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewriteexporter.exportCreatedMetric",
 	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Allow enabling the export_created_metric feature."),
+	featuregate.WithRegisterDescription("Set the default value of the export_created_metric feature."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
 )
 
