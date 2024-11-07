@@ -81,14 +81,14 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.134 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.58.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.58.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.58.1 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.135 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.58.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.58.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.58.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.58.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.58.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.58.2 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.2 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.31.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.14 // indirect
@@ -160,7 +160,7 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.23.0 // indirect
 	github.com/hashicorp/consul/api v1.29.2 // indirect
 	github.com/hashicorp/cronexpr v1.1.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -324,8 +324,8 @@ require (
 	golang.org/x/tools v0.24.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/api v0.188.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20241007155032-5fefd90f89a9 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20241021214115-324edc3d5d38 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241021214115-324edc3d5d38 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
