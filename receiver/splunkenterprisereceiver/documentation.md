@@ -444,8 +444,8 @@ This is the overall status of the kvstore for the given deployment.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.kvstore.storage.engine | The backend storage used by the KV store. | Any Str |
-| splunk.kvstore.external | Value denoting if the KV store is using an external service. | Any Str |
+| splunk.kvstore.storage.engine | The backend storage used by the KV store | Any Str |
+| splunk.kvstore.external | Value denoting if the KV store is using an external service | Any Str |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
 
 ### splunk.server.introspection.queues.current
@@ -559,7 +559,7 @@ Gauge tracking, in megabytes, memory used to cache job status and job info of al
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
-| splunk.searchartifacts.cache.type | The search artifacts cache type. | Any Str |
+| splunk.searchartifacts.cache.type | The search artifacts cache type | Any Str |
 
 ### splunk.server.searchartifacts.savedsearches
 

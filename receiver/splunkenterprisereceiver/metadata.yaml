@@ -31,13 +31,13 @@ attributes:
     description: The string value of the status returned when reporting on KV store using the introspection endpoint
     type: string
   splunk.kvstore.external:
-    description: Value denoting if the KV store is using an external service.
+    description: Value denoting if the KV store is using an external service
     type: string
   splunk.kvstore.storage.engine:
-    description: The backend storage used by the KV store.
+    description: The backend storage used by the KV store
     type: string
   splunk.searchartifacts.cache.type:
-    description: The search artifacts cache type.
+    description: The search artifacts cache type
     type: string
 
 metrics:
