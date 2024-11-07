@@ -81,7 +81,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
-			ScrapeProtocols:  config.DefaultGlobalConfig.ScrapeProtocols,
+			ScrapeProtocols:  config.DefaultScrapeProtocols,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
 			ScrapeTimeout:    model.Duration(h.scrapeInterval),
 			JobName:          fmt.Sprintf("%s/%s/%s", "purefa", h.scraperType, arr.Address),
