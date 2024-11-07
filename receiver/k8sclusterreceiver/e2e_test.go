@@ -295,6 +295,7 @@ func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
 		if len(mc.AllMetrics()) == 0 {
 			return false
 		}
+		t.Logf("received %d metrics", mc.AllMetrics()[len(mc.AllMetrics())-1].ResourceMetrics().Len())
 		return mc.AllMetrics()[len(mc.AllMetrics())-1].ResourceMetrics().Len() == entriesNum
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
 		"failed to receive %d entries,  received %d metrics in %d minutes", entriesNum,
