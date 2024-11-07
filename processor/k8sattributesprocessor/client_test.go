@@ -39,19 +39,39 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
+func newFakeClient(
+	_ component.TelemetrySettings,
+	_ k8sconfig.APIConfig,
+	rules kube.ExtractionRules,
+	filters kube.Filters,
+	associations []kube.Association,
+	_ kube.Excludes,
+	_ kube.APIClientsetProvider,
+	_ kube.InformersFactoryList,
+	_ bool,
+	_ time.Duration,
+) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
+	closeCh := make(chan struct{})
+	podInformer, err := kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh)
+	if err != nil {
+		return nil, err
+	}
+	rsInformer, err := kube.NewFakeReplicaSetInformer(cs, "", nil, closeCh)
+	if err != nil {
+		return nil, err
+	}
 	return &fakeClient{
 		Pods:               map[kube.PodIdentifier]*kube.Pod{},
 		Rules:              rules,
 		Filters:            filters,
 		Associations:       associations,
-		Informer:           kube.NewFakeInformer(cs, "", ls, fs),
-		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs),
-		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs),
-		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs),
+		Informer:           podInformer,
+		NamespaceInformer:  kube.NewFakeNamespaceInformer(cs, closeCh),
+		NodeInformer:       kube.NewFakeNodeInformer(cs, "", 5*time.Second, closeCh),
+		ReplicaSetInformer: rsInformer,
 		StopCh:             make(chan struct{}),
 	}, nil
 }

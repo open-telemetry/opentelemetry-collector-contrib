@@ -26,13 +26,20 @@ func NewFakeInformer(
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
-) cache.SharedInformer {
-	return &FakeInformer{
+	transformFunc cache.TransformFunc,
+	closeCh chan struct{},
+) (cache.SharedInformer, error) {
+	informer := &FakeInformer{
 		FakeController: &FakeController{},
 		namespace:      namespace,
 		labelSelector:  labelSelector,
 		fieldSelector:  fieldSelector,
 	}
+	if err := informer.SetTransform(transformFunc); err != nil {
+		return nil, err
+	}
+	go informer.Run(closeCh)
+	return informer, nil
 }
 
 func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
@@ -69,6 +76,7 @@ type FakeNamespaceInformer struct {
 
 func NewFakeNamespaceInformer(
 	_ kubernetes.Interface,
+	_ chan struct{},
 ) cache.SharedInformer {
 	return &FakeInformer{
 		FakeController: &FakeController{},
@@ -95,10 +103,14 @@ type FakeReplicaSetInformer struct {
 func NewFakeReplicaSetInformer(
 	_ kubernetes.Interface,
 	_ string,
-) cache.SharedInformer {
-	return &FakeInformer{
+	_ cache.TransformFunc,
+	stopCh chan struct{},
+) (cache.SharedInformer, error) {
+	informer := &FakeInformer{
 		FakeController: &FakeController{},
 	}
+	go informer.Run(stopCh)
+	return informer, nil
 }
 
 func (*FakeReplicaSetInformer) AddEventHandler(cache.ResourceEventHandler) {}
@@ -116,6 +128,19 @@ func (*FakeReplicaSetInformer) GetStore() cache.Store {
 
 func (f *FakeReplicaSetInformer) GetController() cache.Controller {
 	return f.FakeController
+}
+
+func NewFakeNodeInformer(
+	_ kubernetes.Interface,
+	_ string,
+	_ time.Duration,
+	stopCh chan struct{},
+) cache.SharedInformer {
+	informer := &FakeInformer{
+		FakeController: &FakeController{},
+	}
+	go informer.Run(stopCh)
+	return informer
 }
 
 type FakeController struct {
@@ -154,10 +179,13 @@ type NoOpInformer struct {
 
 func NewNoOpInformer(
 	_ kubernetes.Interface,
+	stopCh chan struct{},
 ) cache.SharedInformer {
-	return &NoOpInformer{
+	informer := &NoOpInformer{
 		NoOpController: &NoOpController{},
 	}
+	go informer.Run(stopCh)
+	return informer
 }
 
 func NewNoOpWorkloadInformer(
