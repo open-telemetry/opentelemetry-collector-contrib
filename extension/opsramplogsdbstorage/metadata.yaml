@@ -1,0 +1,14 @@
+type: level_db_storage
+scope_name: otelcol/level_db_storage
+
+status:
+  class: extension
+  stability:
+    beta: [ logs ]
+  distributions:
+    - core
+    - contrib
+  codeowners:
+    active: [ lokesh.balla ]
+tests:
+  skip_lifecycle: true
