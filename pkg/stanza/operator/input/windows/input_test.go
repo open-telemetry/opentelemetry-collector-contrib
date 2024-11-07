@@ -30,6 +30,13 @@ func TestInputCreate_Stop(t *testing.T) {
 	assert.NoError(t, input.Stop())
 }
 
+// TestInputCreate_PartialStart_Stop ensures the input correctly shuts down even if it was minimally started.
+func TestInputCreate_PartialStart_Stop(t *testing.T) {
+	input := newTestInput()
+	input.cancel = func() {}
+	assert.NoError(t, input.Stop())
+}
+
 // TestInputStart_LocalSubscriptionError ensures the input correctly handles local subscription errors.
 func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	persister := testutil.NewMockPersister("")
