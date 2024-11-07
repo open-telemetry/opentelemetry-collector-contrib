@@ -62,6 +62,8 @@ type MetricsConfig struct {
 	SplunkServerSearchartifactsCompleted        MetricConfig `mapstructure:"splunk.server.searchartifacts.completed"`
 	SplunkServerSearchartifactsIncomplete       MetricConfig `mapstructure:"splunk.server.searchartifacts.incomplete"`
 	SplunkServerSearchartifactsInvalid          MetricConfig `mapstructure:"splunk.server.searchartifacts.invalid"`
+	SplunkServerSearchartifactsJobCacheCount    MetricConfig `mapstructure:"splunk.server.searchartifacts.job.cache.count"`
+	SplunkServerSearchartifactsJobCacheSize     MetricConfig `mapstructure:"splunk.server.searchartifacts.job.cache.size"`
 	SplunkServerSearchartifactsSavedsearches    MetricConfig `mapstructure:"splunk.server.searchartifacts.savedsearches"`
 	SplunkServerSearchartifactsScheduled        MetricConfig `mapstructure:"splunk.server.searchartifacts.scheduled"`
 	SplunkTypingQueueRatio                      MetricConfig `mapstructure:"splunk.typing.queue.ratio"`
@@ -172,6 +174,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkServerSearchartifactsInvalid: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsJobCacheCount: MetricConfig{
+			Enabled: false,
+		},
+		SplunkServerSearchartifactsJobCacheSize: MetricConfig{
 			Enabled: false,
 		},
 		SplunkServerSearchartifactsSavedsearches: MetricConfig{
