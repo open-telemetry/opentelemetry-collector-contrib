@@ -59,7 +59,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	assert.Len(t, scCfgs, 1)
 	assert.EqualValues(t, "purefa", scCfgs[0].Params.Get("namespace"))
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
-	assert.True(t, true, scCfgs[0].HTTPClientConfig.TLSConfig.InsecureSkipVerify)
+	assert.True(t, scCfgs[0].HTTPClientConfig.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "array01", scCfgs[0].Params.Get("endpoint"))
 	assert.Equal(t, "/metrics/hosts", scCfgs[0].MetricsPath)
 	assert.Equal(t, "purefa/hosts/array01", scCfgs[0].JobName)
