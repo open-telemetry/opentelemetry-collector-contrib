@@ -43,11 +43,8 @@ require (
 	go.opentelemetry.io/collector/client v1.19.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.113.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.113.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.113.0 // indirect
-	go.opentelemetry.io/collector/processor/processorprofiles v0.113.0 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
