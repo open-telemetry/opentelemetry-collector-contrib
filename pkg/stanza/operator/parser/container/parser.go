@@ -63,12 +63,11 @@ type Parser struct {
 	asyncConsumerStarted    bool
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
+	timeLayout              string
 }
 
 // Process will parse an entry of Container logs
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
-	var timeLayout string
-
 	format := p.format
 	if format == "" {
 		format, err = p.detectFormat(entry)
@@ -79,14 +78,10 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 	switch format {
 	case dockerFormat:
-		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleAttributeMappings)
+		p.timeLayout = goTimeLayout
+		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleTimeAndAttributeMappings)
 		if err != nil {
 			return fmt.Errorf("failed to process the docker log: %w", err)
-		}
-		timeLayout = goTimeLayout
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
 		}
 	case containerdFormat, crioFormat:
 		p.criConsumerStartOnce.Do(func() {
@@ -119,22 +114,17 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			if err != nil {
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
-			timeLayout = goTimeLayout
+			p.timeLayout = goTimeLayout
 		} else {
 			// parse the message
 			err = p.ParserOperator.ParseWith(ctx, entry, p.parseCRIO)
 			if err != nil {
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
-			timeLayout = crioTimeLayout
+			p.timeLayout = crioTimeLayout
 		}
 
-		err = parseTime(entry, timeLayout)
-		if err != nil {
-			return fmt.Errorf("failed to parse time: %w", err)
-		}
-
-		err = p.handleAttributeMappings(entry)
+		err = p.handleTimeAndAttributeMappings(entry)
 		if err != nil {
 			return fmt.Errorf("failed to handle attribute mappings: %w", err)
 		}
@@ -251,9 +241,14 @@ func (p *Parser) parseDocker(value any) (any, error) {
 	return parsedValue, nil
 }
 
-// handleAttributeMappings handles fields' mappings and k8s meta extraction
-func (p *Parser) handleAttributeMappings(e *entry.Entry) error {
-	err := p.handleMoveAttributes(e)
+// handleTimeAndAttributeMappings handles fields' mappings and k8s meta extraction
+func (p *Parser) handleTimeAndAttributeMappings(e *entry.Entry) error {
+	err := parseTime(e, p.timeLayout)
+	if err != nil {
+		return fmt.Errorf("failed to parse time: %w", err)
+	}
+
+	err = p.handleMoveAttributes(e)
 	if err != nil {
 		return err
 	}
