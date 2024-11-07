@@ -7,7 +7,7 @@ change_type: deprecation
 component: exporter/prometheusremotewrite
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: deprecate export_created metric
+note: Deprecate configuration option `export_created metric`
 
 # One or more tracking issues or pull requests related to the change
 issues: [35003]
