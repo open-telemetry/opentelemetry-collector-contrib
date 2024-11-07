@@ -14,6 +14,9 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configopaque v1.19.0
 	go.opentelemetry.io/collector/config/configtls v1.19.0
+	go.opentelemetry.io/collector/confmap v1.19.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.19.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.19.0
 	go.opentelemetry.io/collector/semconv v0.113.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -25,9 +28,10 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
+	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect

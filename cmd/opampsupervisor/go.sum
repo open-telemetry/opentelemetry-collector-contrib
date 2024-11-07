@@ -4,8 +4,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fsnotify/fsnotify v1.8.0 h1:dAwr6QBTBZIkG8roQaJjGof0pp0EeF+tNV7YBP3F/8M=
 github.com/fsnotify/fsnotify v1.8.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
-github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 h1:TQcrn6Wq+sKGkpyPvppOz99zsMBaUOKXq6HSv655U1c=
-github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
+github.com/go-viper/mapstructure/v2 v2.2.1 h1:ZAaOCxANMuZx5RCeg0mBdEZk7DZasvvZIxtHqx8aGss=
+github.com/go-viper/mapstructure/v2 v2.2.1/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
@@ -16,6 +16,8 @@ github.com/knadh/koanf/maps v0.1.1 h1:G5TjmUh2D7G2YWf5SQQqSiHRJEjaicvU0KpypqB3NI
 github.com/knadh/koanf/maps v0.1.1/go.mod h1:npD/QZY3V6ghQDdcQzl1W4ICNVTkohC8E73eI2xW4yI=
 github.com/knadh/koanf/parsers/yaml v0.1.0 h1:ZZ8/iGfRLvKSaMEECEBPM1HQslrZADk8fP1XFUxVI5w=
 github.com/knadh/koanf/parsers/yaml v0.1.0/go.mod h1:cvbUDC7AL23pImuQP0oRw/hPuccrNBS2bps8asS0CwY=
+github.com/knadh/koanf/providers/confmap v0.1.0 h1:gOkxhHkemwG4LezxxN8DMOFopOPghxRVp7JbIvdvqzU=
+github.com/knadh/koanf/providers/confmap v0.1.0/go.mod h1:2uLhxQzJnyHKfxG927awZC7+fyHFdQkd697K4MdLnIU=
 github.com/knadh/koanf/providers/file v1.1.2 h1:aCC36YGOgV5lTtAFz2qkgtWdeQsgfxUkxDOe+2nQY3w=
 github.com/knadh/koanf/providers/file v1.1.2/go.mod h1:/faSBcv2mxPVjFrXck95qeoyoZ5myJ6uxN8OOVNJJCI=
 github.com/knadh/koanf/providers/rawbytes v0.1.0 h1:dpzgu2KO6uf6oCb4aP05KDmKmAmI51k5pe8RYKQ0qME=
@@ -42,6 +44,12 @@ go.opentelemetry.io/collector/config/configopaque v1.19.0 h1:7uvntQeAAtqCaeiS2dD
 go.opentelemetry.io/collector/config/configopaque v1.19.0/go.mod h1:6zlLIyOoRpJJ+0bEKrlZOZon3rOp5Jrz9fMdR4twOS4=
 go.opentelemetry.io/collector/config/configtls v1.19.0 h1:GQ/cF1hgNqHVBq2oSSrOFXxVCyMDyd5kq4R/RMEbL98=
 go.opentelemetry.io/collector/config/configtls v1.19.0/go.mod h1:1hyqnYB3JqEUlk1ME/s9HYz4oCRcxQCRxsJitFFT/cA=
+go.opentelemetry.io/collector/confmap v1.19.0 h1:TQ0lZpAKqgsE0EKk+u4JA+uBbPYeFRmWP3GH43w40CY=
+go.opentelemetry.io/collector/confmap v1.19.0/go.mod h1:GgNu1ElPGmLn9govqIfjaopvdspw4PJ9KeDtWC4E2Q4=
+go.opentelemetry.io/collector/confmap/provider/envprovider v1.19.0 h1:f8O/I5pVRN86Gx5mHekNx92S6fGdOS4VcooRJKWe6Bs=
+go.opentelemetry.io/collector/confmap/provider/envprovider v1.19.0/go.mod h1:AiaW5YW1LD0/WlZuc8eZuZPBH6PA9QqsiAYRX1iC6T0=
+go.opentelemetry.io/collector/confmap/provider/fileprovider v1.19.0 h1:TYwyk4ea3U+5MYcEjrzZAaonBcLlabQu8CZeB7ekAYY=
+go.opentelemetry.io/collector/confmap/provider/fileprovider v1.19.0/go.mod h1:i3mL4OSGI5JM0hnzHujhJK+LDlvO3XrJxBsuclfU/jY=
 go.opentelemetry.io/collector/semconv v0.113.0 h1:twenSI7M7MJMJKW8D6a/GXxPZTPbama/weywBtV2iFw=
 go.opentelemetry.io/collector/semconv v0.113.0/go.mod h1:zCJ5njhWpejR+A40kiEoeFm1xq1uzyZwMnRNX6/D82A=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
