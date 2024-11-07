@@ -74,6 +74,11 @@ func (c *tracesConnector) switchTraces(ctx context.Context, td ptrace.Traces) er
 		route := c.router.routeSlice[i]
 		matchedSpans := ptrace.NewTraces()
 		switch route.statementContext {
+		case "request":
+			if route.requestCondition.matchRequest(ctx) {
+				groupAllTraces(groups, route.consumer, td)
+				td = ptrace.NewTraces() // all traces have been routed
+			}
 		case "", "resource":
 			ptraceutil.MoveResourcesIf(td, matchedSpans,
 				func(rs ptrace.ResourceSpans) bool {
