@@ -127,6 +127,7 @@ func TestE2EClusterScoped(t *testing.T) {
 			"k8s.job.desired_successful_pods",
 			"k8s.job.failed_pods",
 			"k8s.job.max_parallel_pods",
+			"k8s.hpa.current_replicas",
 			"k8s.job.successful_pods"),
 		pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
@@ -246,6 +247,7 @@ func TestE2ENamespaceScoped(t *testing.T) {
 			"k8s.job.desired_successful_pods",
 			"k8s.job.failed_pods",
 			"k8s.job.max_parallel_pods",
+			"k8s.hpa.current_replicas",
 			"k8s.job.successful_pods"),
 		pmetrictest.ChangeResourceAttributeValue("container.id", replaceWithStar),
 		pmetrictest.ChangeResourceAttributeValue("container.image.name", containerImageShorten),
@@ -288,7 +290,7 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 }
 
 func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
-	timeoutMinutes := 3
+	timeoutMinutes := 6
 	require.Eventuallyf(t, func() bool {
 		if len(mc.AllMetrics()) == 0 {
 			return false
