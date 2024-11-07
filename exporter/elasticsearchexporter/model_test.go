@@ -386,8 +386,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 		semconv.AttributeK8SStatefulSetName:    "statefulset.name",
 		semconv.AttributeK8SReplicaSetName:     "replicaset.name",
 		semconv.AttributeK8SDaemonSetName:      "daemonset.name",
-		semconv.AttributeK8SClusterName:        "cluster.name",
 		semconv.AttributeK8SContainerName:      "container.name",
+		semconv.AttributeK8SClusterName:        "cluster.name",
 	})
 	require.NoError(t, err)
 
@@ -457,8 +457,8 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"kubernetes.statefulset.name": "statefulset.name",
 		"kubernetes.replicaset.name":  "replicaset.name",
 		"kubernetes.daemonset.name":   "daemonset.name",
-		"kubernetes.cluster.name":     "cluster.name",
-		"kubernetes.container.name":   "container.name"
+		"kubernetes.container.name":   "container.name",
+		"orchestrator.cluster.name":   "cluster.name"
 	}`, buf.String())
 }
 
