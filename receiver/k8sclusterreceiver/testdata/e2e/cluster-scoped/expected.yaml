@@ -695,7 +695,7 @@ resourceMetrics:
             stringValue: kind-control-plane
         - key: k8s.pod.name
           value:
-            stringValue: test-k8scluster-receiver-cronjob-28839770-9pp7g
+            stringValue: test-k8scluster-receiver-job-28839770-9pp7g
         - key: k8s.pod.uid
           value:
             stringValue: e388cfa8-06c3-47b6-a7a6-113d7cdda849
