@@ -37,7 +37,7 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, errors.New("path to config file cannot be empty")
 	}
 
-	resolverSettings := &confmap.ResolverSettings{
+	resolverSettings := confmap.ResolverSettings{
 		URIs: []string{configFile},
 		ProviderFactories: []confmap.ProviderFactory{
 			fileprovider.NewFactory(),
@@ -47,7 +47,7 @@ func Load(configFile string) (Supervisor, error) {
 		DefaultScheme:      "env",
 	}
 
-	resolver, err := confmap.NewResolver(*resolverSettings)
+	resolver, err := confmap.NewResolver(resolverSettings)
 	if err != nil {
 		return Supervisor{}, err
 	}
