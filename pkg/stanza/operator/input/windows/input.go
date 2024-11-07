@@ -154,7 +154,16 @@ func (i *Input) Start(persister operator.Persister) error {
 
 // Stop will stop reading events from a subscription.
 func (i *Input) Stop() error {
+	if i.cancel == nil {
+		// Nothing to do: either already stopped or never started.
+		return nil
+	}
+
 	i.cancel()
+	i.cancel = nil
+
+	// Warning: all calls made below must be safe to be done even if Start() was not called or failed.
+
 	i.wg.Wait()
 
 	if err := i.subscription.Close(); err != nil {
