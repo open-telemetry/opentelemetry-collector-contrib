@@ -71,6 +71,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
