@@ -20,6 +20,7 @@ var searchDict = map[string]string{
 }
 
 var apiDict = map[string]string{
+	`SplunkInfo`:                `/services/server/info?output_mode=json`,
 	`SplunkIndexerThroughput`:   `/services/server/introspection/indexer?output_mode=json`,
 	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
 	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
@@ -155,4 +156,19 @@ type DispatchArtifactContent struct {
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
+}
+
+// '/services/server/info'
+type Info struct {
+	Host    string      `json:"origin"`
+	Entries []InfoEntry `json:"entry"`
+}
+
+type InfoEntry struct {
+	Content InfoContent `json:"content"`
+}
+
+type InfoContent struct {
+	Build   string `json:"build"`
+	Version string `json:"version"`
 }

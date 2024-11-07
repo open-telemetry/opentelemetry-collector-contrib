@@ -1496,6 +1496,59 @@ func newMetricSplunkSchedulerCompletionRatio(cfg MetricConfig) metricSplunkSched
 	return m
 }
 
+type metricSplunkServerInfo struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.info metric with initial data.
+func (m *metricSplunkServerInfo) init() {
+	m.data.SetName("splunk.server.info")
+	m.data.SetDescription("Gauge tracking splunkd build and version information.")
+	m.data.SetUnit("{splunkd_build}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerInfo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkBuildInfoAttributeValue string, splunkVersionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.build_info", splunkBuildInfoAttributeValue)
+	dp.Attributes().PutStr("splunk.version", splunkVersionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerInfo) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerInfo) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerInfo(cfg MetricConfig) metricSplunkServerInfo {
+	m := metricSplunkServerInfo{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkServerIntrospectionQueuesCurrent struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2095,6 +2148,7 @@ type MetricsBuilder struct {
 	metricSplunkSchedulerAvgExecutionLatency          metricSplunkSchedulerAvgExecutionLatency
 	metricSplunkSchedulerAvgRunTime                   metricSplunkSchedulerAvgRunTime
 	metricSplunkSchedulerCompletionRatio              metricSplunkSchedulerCompletionRatio
+	metricSplunkServerInfo                            metricSplunkServerInfo
 	metricSplunkServerIntrospectionQueuesCurrent      metricSplunkServerIntrospectionQueuesCurrent
 	metricSplunkServerIntrospectionQueuesCurrentBytes metricSplunkServerIntrospectionQueuesCurrentBytes
 	metricSplunkServerSearchartifactsAdhoc            metricSplunkServerSearchartifactsAdhoc
@@ -2161,6 +2215,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkSchedulerAvgExecutionLatency:          newMetricSplunkSchedulerAvgExecutionLatency(mbc.Metrics.SplunkSchedulerAvgExecutionLatency),
 		metricSplunkSchedulerAvgRunTime:                   newMetricSplunkSchedulerAvgRunTime(mbc.Metrics.SplunkSchedulerAvgRunTime),
 		metricSplunkSchedulerCompletionRatio:              newMetricSplunkSchedulerCompletionRatio(mbc.Metrics.SplunkSchedulerCompletionRatio),
+		metricSplunkServerInfo:                            newMetricSplunkServerInfo(mbc.Metrics.SplunkServerInfo),
 		metricSplunkServerIntrospectionQueuesCurrent:      newMetricSplunkServerIntrospectionQueuesCurrent(mbc.Metrics.SplunkServerIntrospectionQueuesCurrent),
 		metricSplunkServerIntrospectionQueuesCurrentBytes: newMetricSplunkServerIntrospectionQueuesCurrentBytes(mbc.Metrics.SplunkServerIntrospectionQueuesCurrentBytes),
 		metricSplunkServerSearchartifactsAdhoc:            newMetricSplunkServerSearchartifactsAdhoc(mbc.Metrics.SplunkServerSearchartifactsAdhoc),
@@ -2266,6 +2321,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkSchedulerAvgExecutionLatency.emit(ils.Metrics())
 	mb.metricSplunkSchedulerAvgRunTime.emit(ils.Metrics())
 	mb.metricSplunkSchedulerCompletionRatio.emit(ils.Metrics())
+	mb.metricSplunkServerInfo.emit(ils.Metrics())
 	mb.metricSplunkServerIntrospectionQueuesCurrent.emit(ils.Metrics())
 	mb.metricSplunkServerIntrospectionQueuesCurrentBytes.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsAdhoc.emit(ils.Metrics())
@@ -2441,6 +2497,11 @@ func (mb *MetricsBuilder) RecordSplunkSchedulerAvgRunTimeDataPoint(ts pcommon.Ti
 // RecordSplunkSchedulerCompletionRatioDataPoint adds a data point to splunk.scheduler.completion.ratio metric.
 func (mb *MetricsBuilder) RecordSplunkSchedulerCompletionRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
 	mb.metricSplunkSchedulerCompletionRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerInfoDataPoint adds a data point to splunk.server.info metric.
+func (mb *MetricsBuilder) RecordSplunkServerInfoDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkBuildInfoAttributeValue string, splunkVersionAttributeValue string) {
+	mb.metricSplunkServerInfo.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkBuildInfoAttributeValue, splunkVersionAttributeValue)
 }
 
 // RecordSplunkServerIntrospectionQueuesCurrentDataPoint adds a data point to splunk.server.introspection.queues.current metric.

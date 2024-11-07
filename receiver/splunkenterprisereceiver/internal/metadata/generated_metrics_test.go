@@ -165,6 +165,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts, 1, "splunk.host-val")
 
 			allMetricsCount++
+			mb.RecordSplunkServerInfoDataPoint(ts, 1, "splunk.host-val", "splunk.build_info-val", "splunk.version-val")
+
+			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 1, "splunk.queue.name-val")
 
 			allMetricsCount++
@@ -673,6 +676,27 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.server.info":
+					assert.False(t, validatedMetrics["splunk.server.info"], "Found a duplicate in the metrics slice: splunk.server.info")
+					validatedMetrics["splunk.server.info"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking splunkd build and version information.", ms.At(i).Description())
+					assert.Equal(t, "{splunkd_build}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.host")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.build_info")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.build_info-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.version")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.version-val", attrVal.Str())
 				case "splunk.server.introspection.queues.current":
 					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
 					validatedMetrics["splunk.server.introspection.queues.current"] = true

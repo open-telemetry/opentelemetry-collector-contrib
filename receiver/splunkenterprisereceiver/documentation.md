@@ -448,6 +448,22 @@ This is the overall status of the kvstore for the given deployment.
 | splunk.kvstore.external | Value denoting if the KV store is using an external service | Any Str |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
 
+### splunk.server.info
+
+Gauge tracking splunkd build and version information.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {splunkd_build} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+| splunk.build_info | The build of Splunk. | Any Str |
+| splunk.version | The version of Splunk. | Any Str |
+
 ### splunk.server.introspection.queues.current
 
 Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.

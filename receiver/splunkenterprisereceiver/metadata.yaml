@@ -39,6 +39,12 @@ attributes:
   splunk.searchartifacts.cache.type:
     description: The search artifacts cache type
     type: string
+  splunk.build_info:
+    description: The build of Splunk.
+    type: string
+  splunk.version:
+    description: The version of Splunk.
+    type: string
 
 metrics:
   splunk.license.index.usage:
@@ -345,6 +351,15 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [splunk.host]
+  splunk.server.info:
+    enabled: false
+    description: Gauge tracking splunkd build and version information.
+    unit: "{splunkd_build}"
+    gauge:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [splunk.host, splunk.build_info, splunk.version]
 
 tests:
   config:

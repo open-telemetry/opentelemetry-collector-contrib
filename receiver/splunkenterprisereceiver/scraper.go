@@ -103,6 +103,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeIndexerAvgRate,
 		s.scrapeKVStoreStatus,
 		s.scrapeSearchArtifacts,
+		s.scrapeInfo,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1735,5 +1736,56 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint)
 		}
 
+	}
+}
+
+// Scrape info endpoints
+func (s *splunkScraper) scrapeInfo(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+
+	switch {
+	case s.splunkClient.isConfigured(typeSh):
+		ctx = context.WithValue(ctx, endpointType("type"), typeSh)
+	case s.splunkClient.isConfigured(typeCm):
+		ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+	case s.splunkClient.isConfigured(typeIdx):
+		ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
+	default:
+		errs <- errNoClientFound
+		return
+	}
+
+	var info Info
+
+	ept := apiDict[`SplunkInfo`]
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		errs <- err
+		return
+	}
+	err = json.Unmarshal(body, &info)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	for _, f := range info.Entries {
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerInfo.Enabled {
+			s.mb.RecordSplunkServerInfoDataPoint(now, 1, info.Host, f.Content.Build, f.Content.Version)
+		}
 	}
 }
