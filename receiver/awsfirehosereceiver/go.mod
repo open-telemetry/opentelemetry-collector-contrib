@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.112.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.113.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/component/componentstatus v0.113.0

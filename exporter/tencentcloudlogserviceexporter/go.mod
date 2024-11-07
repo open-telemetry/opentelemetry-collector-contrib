@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencen
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.112.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.113.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1031
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1034
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/config/configopaque v1.19.0
 	go.opentelemetry.io/collector/confmap v1.19.0
