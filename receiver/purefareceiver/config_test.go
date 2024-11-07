@@ -30,13 +30,14 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewID(metadata.Type),
 			expected: &Config{
 				ArrayName: "foobar.example.com",
+				Namespace: "purefa",
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
-						Array:       15 * time.Second,
-						Hosts:       15 * time.Second,
-						Directories: 15 * time.Second,
-						Pods:        15 * time.Second,
-						Volumes:     15 * time.Second,
+						Array:       60 * time.Second,
+						Hosts:       60 * time.Second,
+						Directories: 60 * time.Second,
+						Pods:        60 * time.Second,
+						Volumes:     60 * time.Second,
 					},
 				},
 			},

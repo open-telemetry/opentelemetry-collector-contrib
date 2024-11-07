@@ -37,7 +37,8 @@ func TestToPrometheusConfig(t *testing.T) {
 	}
 
 	endpoint := "http://example.com"
-	insecureskipverify := false
+	namespace := "purefa"
+	insecureskipverify := true
 	interval := 15 * time.Second
 	cfgs := []ScraperConfig{
 		{
@@ -48,7 +49,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		},
 	}
 
-	scraper := NewScraper(context.Background(), "hosts", endpoint, insecureskipverify, cfgs, interval, model.LabelSet{})
+	scraper := NewScraper(context.Background(), "hosts", endpoint, namespace, insecureskipverify, cfgs, interval, model.LabelSet{})
 
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
@@ -56,7 +57,9 @@ func TestToPrometheusConfig(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.Len(t, scCfgs, 1)
+	assert.EqualValues(t, "purefa", scCfgs[0].Params.Get("namespace"))
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
+	assert.True(t, true, scCfgs[0].HTTPClientConfig.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "array01", scCfgs[0].Params.Get("endpoint"))
 	assert.Equal(t, "/metrics/hosts", scCfgs[0].MetricsPath)
 	assert.Equal(t, "purefa/hosts/array01", scCfgs[0].JobName)

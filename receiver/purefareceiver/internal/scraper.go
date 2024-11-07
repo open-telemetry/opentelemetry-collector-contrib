@@ -34,6 +34,7 @@ const (
 type scraper struct {
 	scraperType        ScraperType
 	endpoint           string
+	namespace          string
 	insecureskipverify bool
 	configs            []ScraperConfig
 	scrapeInterval     time.Duration
@@ -43,6 +44,7 @@ type scraper struct {
 func NewScraper(_ context.Context,
 	scraperType ScraperType,
 	endpoint string,
+	namespace string,
 	insecureskipverify bool,
 	configs []ScraperConfig,
 	scrapeInterval time.Duration,
@@ -51,6 +53,7 @@ func NewScraper(_ context.Context,
 	return &scraper{
 		scraperType:        scraperType,
 		endpoint:           endpoint,
+		namespace:          namespace,
 		insecureskipverify: insecureskipverify,
 		configs:            configs,
 		scrapeInterval:     scrapeInterval,
@@ -87,7 +90,7 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 			MetricsPath:      fmt.Sprintf("/metrics/%s", h.scraperType),
 			Params: url.Values{
 				"endpoint":  {arr.Address},
-				"namespace": {"purefa"},
+				"namespace": {h.namespace},
 			},
 
 			ServiceDiscoveryConfigs: discovery.Configs{
