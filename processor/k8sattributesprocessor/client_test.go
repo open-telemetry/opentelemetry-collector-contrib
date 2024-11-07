@@ -41,15 +41,16 @@ func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules k
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
+	closeCh := make(chan struct{})
 	return &fakeClient{
 		Pods:               map[kube.PodIdentifier]*kube.Pod{},
 		Rules:              rules,
 		Filters:            filters,
 		Associations:       associations,
-		Informer:           kube.NewFakeInformer(cs, "", ls, fs),
-		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs),
-		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs),
-		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs),
+		Informer:           kube.NewFakeInformer(cs, "", ls, fs, closeCh),
+		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs, closeCh),
+		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs, closeCh),
+		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs, closeCh),
 		StopCh:             make(chan struct{}),
 	}, nil
 }
