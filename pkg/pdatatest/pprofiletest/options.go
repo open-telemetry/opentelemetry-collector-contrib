@@ -165,7 +165,22 @@ func IgnoreProfileContainersOrder() CompareProfilesOption {
 func sortProfileContainerSlices(ls pprofile.Profiles) {
 	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
 		for j := 0; j < ls.ResourceProfiles().At(i).ScopeProfiles().Len(); j++ {
-			//ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.ProfileContainer) bool { return true })
+			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.ProfileContainer) bool {
+				if a.StartTime() != b.StartTime() {
+					return a.StartTime() < b.StartTime()
+				}
+				if a.EndTime() != b.EndTime() {
+					return a.EndTime() < b.EndTime()
+				}
+				as := a.ProfileID()
+				bs := b.ProfileID()
+				if !bytes.Equal(as[:], bs[:]) {
+					return bytes.Compare(as[:], bs[:]) < 0
+				}
+				aAttrs := pdatautil.MapHash(a.Attributes())
+				bAttrs := pdatautil.MapHash(b.Attributes())
+				return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
+			})
 		}
 	}
 }
