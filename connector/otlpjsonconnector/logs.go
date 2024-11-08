@@ -53,7 +53,8 @@ func (c *connectorLogs) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 
 				// Check if the "resourceLogs" key exists in the JSON data
 				value := token.AsString()
-				if logRegex.MatchString(value) {
+				switch {
+				case logRegex.MatchString(value):
 					var l plog.Logs
 					l, err := logsUnmarshaler.UnmarshalLogs([]byte(value))
 					if err != nil {
@@ -64,11 +65,12 @@ func (c *connectorLogs) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 					if err != nil {
 						c.logger.Error("could not consume logs from otlp json", zap.Error(err))
 					}
-				} else if metricRegex.MatchString(value) || traceRegex.MatchString(value) {
+				case metricRegex.MatchString(value), traceRegex.MatchString(value):
+					// If it's a metric or trace payload, simply continue
 					continue
-				} else {
+				default:
+					// If no regex matches, log the invalid payload
 					c.logger.Error("Invalid otlp payload")
-
 				}
 
 			}
