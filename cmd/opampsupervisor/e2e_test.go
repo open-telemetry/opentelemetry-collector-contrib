@@ -188,7 +188,7 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 		"goos":        runtime.GOOS,
 		"goarch":      runtime.GOARCH,
 		"extension":   extension,
-		"storage_dir": t.TempDir(),
+		"storage_dir": strings.ReplaceAll(t.TempDir(), "\\", "\\\\"),
 	}
 
 	for key, val := range extraConfigData {
