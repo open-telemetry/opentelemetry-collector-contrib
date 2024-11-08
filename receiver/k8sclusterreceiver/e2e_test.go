@@ -7,22 +7,24 @@ package k8sclusterreceiver
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+
 	"github.com/google/uuid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 const expectedFileClusterScoped = "./testdata/e2e/cluster-scoped/expected.yaml"
@@ -69,6 +71,8 @@ func TestE2EClusterScoped(t *testing.T) {
 	})
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
+	// the commented line below writes the received list of metrics to the expected.yaml
+	// golden.WriteMetrics(t, expectedFileClusterScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 	waitForData(t, wantEntries, metricsConsumer)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
@@ -152,6 +156,8 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	})
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
+	// the commented line below writes the received list of metrics to the expected.yaml
+	// golden.WriteMetrics(t, expectedFileNamespaceScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
 	waitForData(t, wantEntries, metricsConsumer)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
