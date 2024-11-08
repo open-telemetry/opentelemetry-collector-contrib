@@ -69,7 +69,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		adxCfg,
@@ -101,7 +101,7 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewTracesExporter(
+	exporter, err := exporterhelper.NewTraces(
 		ctx,
 		set,
 		adxCfg,
@@ -133,7 +133,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewLogsExporter(
+	exporter, err := exporterhelper.NewLogs(
 		ctx,
 		set,
 		adxCfg,

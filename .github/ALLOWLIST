@@ -24,4 +24,6 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
-receiver/googlecloudspannerreceiver/
+exporter/opensearchexporter/
+extension/observer/ecstaskobserver/
+receiver/jmxreceiver/

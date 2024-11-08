@@ -51,7 +51,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	rCfg := cfg.(*Config)
 	return newMetricsReceiver(params, *rCfg, consumer)
 }
