@@ -268,31 +268,38 @@ If the target ECS field name is specified as an empty string (""), the converter
 
 When "Preserved" is true, the attribute will be preserved in the payload and duplicated as mapped to its ECS equivalent.
 
-| Semantic Convention Name | ECS Name | Preserve |
-|--------------------------|----------|----------|
-| cloud.platform           | cloud.service.name | false |
-| container.image.tags     | container.image.tag | false |
-| deployment.environment   | service.environment | false |
-| host.arch                | host.architecture | false |
-| host.name                | host.hostname | true |
-| k8s.deployment.name      | kubernetes.deployment.name | false |
-| k8s.namespace.name       | kubernetes.namespace | false |
-| k8s.node.name            | kubernetes.node.name | false |
-| k8s.pod.name             | kubernetes.pod.name | false |
-| k8s.pod.uid              | kubernetes.pod.uid | false |
-| os.description           | host.os.full | false |
-| os.name                  | host.os.name | false |
-| os.type                  | host.os.platform | false |
-| os.version               | host.os.version | false |
-| process.executable.path  | process.executable | false |
-| process.runtime.name     | service.runtime.name | false |
-| process.runtime.version  | service.runtime.version | false |
-| service.instance.id      | service.node.name | false |
-| telemetry.distro.name    | "" | false |
-| telemetry.distro.version | "" | false |
-| telemetry.sdk.language   | "" | false |
-| telemetry.sdk.name       | "" | false |
-| telemetry.sdk.version    | "" | false |
+| Semantic Convention Name | ECS Name                    | Preserve |
+|--------------------------|-----------------------------|----------|
+| cloud.platform           | cloud.service.name          | false    |
+| container.image.tags     | container.image.tag         | false    |
+| deployment.environment   | service.environment         | false    |
+| host.arch                | host.architecture           | false    |
+| host.name                | host.hostname               | true     |
+| k8s.cluster.name         | orchestrator.cluster.name   | false    |
+| k8s.container.name       | kubernetes.container.name   | false    |
+| k8s.cronjob.name         | kubernetes.cronjob.name     | false    |
+| k8s.daemonset.name       | kubernetes.daemonset.name   | false    |
+| k8s.deployment.name      | kubernetes.deployment.name  | false    |
+| k8s.job.name             | kubernetes.job.name         | false    |
+| k8s.namespace.name       | kubernetes.namespace        | false    |
+| k8s.node.name            | kubernetes.node.name        | false    |
+| k8s.pod.name             | kubernetes.pod.name         | false    |
+| k8s.pod.uid              | kubernetes.pod.uid          | false    |
+| k8s.replicaset.name      | kubernetes.replicaset.name  | false    |
+| k8s.statefulset.name     | kubernetes.statefulset.name | false    |
+| os.description           | host.os.full                | false    |
+| os.name                  | host.os.name                | false    |
+| os.type                  | host.os.platform            | false    |
+| os.version               | host.os.version             | false    |
+| process.executable.path  | process.executable          | false    |
+| process.runtime.name     | service.runtime.name        | false    |
+| process.runtime.version  | service.runtime.version     | false    |
+| service.instance.id      | service.node.name           | false    |
+| telemetry.distro.name    | ""                          | false    |
+| telemetry.distro.version | ""                          | false    |
+| telemetry.sdk.language   | ""                          | false    |
+| telemetry.sdk.name       | ""                          | false    |
+| telemetry.sdk.version    | ""                          | false    |
 
 ### Compound Mapping
 
