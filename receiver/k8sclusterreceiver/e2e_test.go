@@ -71,46 +71,6 @@ func TestE2EClusterScoped(t *testing.T) {
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
-	replaceWithStar := func(string) string { return "*" }
-	shortenNames := func(value string) string {
-		if strings.HasPrefix(value, "coredns") {
-			return "coredns"
-		}
-		if strings.HasPrefix(value, "kindnet") {
-			return "kindnet"
-		}
-		if strings.HasPrefix(value, "kube-apiserver") {
-			return "kube-apiserver"
-		}
-		if strings.HasPrefix(value, "kube-proxy") {
-			return "kube-proxy"
-		}
-		if strings.HasPrefix(value, "kube-scheduler") {
-			return "kube-scheduler"
-		}
-		if strings.HasPrefix(value, "kube-controller-manager") {
-			return "kube-controller-manager"
-		}
-		if strings.HasPrefix(value, "local-path-provisioner") {
-			return "local-path-provisioner"
-		}
-		if strings.HasPrefix(value, "otelcol") {
-			return "otelcol"
-		}
-		if strings.HasPrefix(value, "test-k8scluster-receiver-cronjob") {
-			return "test-k8scluster-receiver-cronjob"
-		}
-		if strings.HasPrefix(value, "test-k8scluster-receiver-job") {
-			return "test-k8scluster-receiver-job"
-		}
-		return value
-	}
-	containerImageShorten := func(value string) string {
-		// Extracts the image name by removing the repository prefix.
-		// Also removes any architecture identifier suffix, if present, by applying shortenNames.
-		return shortenNames(value[(strings.LastIndex(value, "/") + 1):])
-	}
-
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
@@ -194,43 +154,6 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
-	replaceWithStar := func(string) string { return "*" }
-	shortenNames := func(value string) string {
-		if strings.HasPrefix(value, "coredns") {
-			return "coredns"
-		}
-		if strings.HasPrefix(value, "kindnet") {
-			return "kindnet"
-		}
-		if strings.HasPrefix(value, "kube-apiserver") {
-			return "kube-apiserver"
-		}
-		if strings.HasPrefix(value, "kube-proxy") {
-			return "kube-proxy"
-		}
-		if strings.HasPrefix(value, "kube-scheduler") {
-			return "kube-scheduler"
-		}
-		if strings.HasPrefix(value, "kube-controller-manager") {
-			return "kube-controller-manager"
-		}
-		if strings.HasPrefix(value, "local-path-provisioner") {
-			return "local-path-provisioner"
-		}
-		if strings.HasPrefix(value, "otelcol") {
-			return "otelcol"
-		}
-		if strings.HasPrefix(value, "test-k8scluster-receiver-cronjob") {
-			return "test-k8scluster-receiver-cronjob"
-		}
-		if strings.HasPrefix(value, "test-k8scluster-receiver-job") {
-			return "test-k8scluster-receiver-job"
-		}
-		return value
-	}
-	containerImageShorten := func(value string) string {
-		return value[(strings.LastIndex(value, "/") + 1):]
-	}
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
@@ -272,6 +195,48 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 	),
 	)
+}
+
+func shortenNames(value string) string {
+	if strings.HasPrefix(value, "coredns") {
+		return "coredns"
+	}
+	if strings.HasPrefix(value, "kindnet") {
+		return "kindnet"
+	}
+	if strings.HasPrefix(value, "kube-apiserver") {
+		return "kube-apiserver"
+	}
+	if strings.HasPrefix(value, "kube-proxy") {
+		return "kube-proxy"
+	}
+	if strings.HasPrefix(value, "kube-scheduler") {
+		return "kube-scheduler"
+	}
+	if strings.HasPrefix(value, "kube-controller-manager") {
+		return "kube-controller-manager"
+	}
+	if strings.HasPrefix(value, "local-path-provisioner") {
+		return "local-path-provisioner"
+	}
+	if strings.HasPrefix(value, "otelcol") {
+		return "otelcol"
+	}
+	if strings.HasPrefix(value, "test-k8scluster-receiver-cronjob") {
+		return "test-k8scluster-receiver-cronjob"
+	}
+	if strings.HasPrefix(value, "test-k8scluster-receiver-job") {
+		return "test-k8scluster-receiver-job"
+	}
+	return value
+}
+
+func replaceWithStar(_ string) string { return "*" }
+
+func containerImageShorten(value string) string {
+	// Extracts the image name by removing the repository prefix.
+	// Also removes any architecture identifier suffix, if present, by applying shortenNames.
+	return shortenNames(value[(strings.LastIndex(value, "/") + 1):])
 }
 
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
