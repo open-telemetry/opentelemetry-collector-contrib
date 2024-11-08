@@ -1483,7 +1483,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			InitContainers: []api_v1.Container{
 				{
 					Name:  "init_container",
-					Image: "test/init-image:1.0.2",
+					Image: "test/init-image",
 				},
 			},
 		},
@@ -1722,7 +1722,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"init-container-id-789": {
 						ImageName: "test/init-image",
-						ImageTag:  "1.0.2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
@@ -1751,7 +1751,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"init_container": {
 						ImageName: "test/init-image",
-						ImageTag:  "1.0.2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},

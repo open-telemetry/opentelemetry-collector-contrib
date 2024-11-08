@@ -634,6 +634,8 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 }
 
 // parseAttributesFromImage parses the image name and tag for differently-formatted image names.
+// returns "latest" as the default if tag not present. also checks if the image contains a digest.
+// if it does, no latest tag is assumed.
 func parseNameAndTagFromImage(image string) (name, tag string, err error) {
 	ref, err := reference.Parse(image)
 	if err != nil {
@@ -646,6 +648,11 @@ func parseNameAndTagFromImage(image string) (name, tag string, err error) {
 	name = namedRef.Name()
 	if taggedRef, ok := namedRef.(reference.Tagged); ok {
 		tag = taggedRef.Tag()
+	}
+	if tag == "" {
+		if digestedRef, ok := namedRef.(reference.Digested); !ok || digestedRef.String() == "" {
+			tag = "latest"
+		}
 	}
 	return
 }
