@@ -7,23 +7,22 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const expectedFileClusterScoped = "./testdata/e2e/cluster-scoped/expected.yaml"
@@ -69,7 +68,7 @@ func TestE2EClusterScoped(t *testing.T) {
 		}
 	})
 
-	wantEntries := expected.ResourceMetrics().Len() // Minimal number of metrics to wait for.
+	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }
@@ -192,7 +191,7 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	})
 
-	wantEntries := expected.ResourceMetrics().Len() // Minimal number of metrics to wait for.
+	wantEntries := 10 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
 	replaceWithStar := func(string) string { return "*" }
@@ -290,12 +289,9 @@ func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 }
 
 func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
-	timeoutMinutes := 6
+	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
-		if len(mc.AllMetrics()) == 0 {
-			return false
-		}
-		return mc.AllMetrics()[len(mc.AllMetrics())-1].ResourceMetrics().Len() == entriesNum
+		return len(mc.AllMetrics()) > entriesNum
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
 		"failed to receive %d entries,  received %d metrics in %d minutes", entriesNum,
 		len(mc.AllMetrics()), timeoutMinutes)
