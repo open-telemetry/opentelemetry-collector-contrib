@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/gcp
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   host.name:
     description: The host.name
