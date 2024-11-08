@@ -165,7 +165,7 @@ func IgnoreProfileContainersOrder() CompareProfilesOption {
 func sortProfileContainerSlices(ls pprofile.Profiles) {
 	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
 		for j := 0; j < ls.ResourceProfiles().At(i).ScopeProfiles().Len(); j++ {
-			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.ProfileContainer) bool { return true })
+			//ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.ProfileContainer) bool { return true })
 		}
 	}
 }
