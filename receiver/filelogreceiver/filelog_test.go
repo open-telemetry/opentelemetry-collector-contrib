@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"io"
 	"os"
 	"path/filepath"
@@ -82,44 +83,41 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
-	converter.Start()
-	defer converter.Stop()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
-
 	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
+	expectedLogs := []plog.Logs{}
 	// Build the expected set by using adapter.Converter to translate entries
 	// to pdata Logs.
-	queueEntry := func(t *testing.T, c *adapter.Converter, msg string, severity entry.Severity) {
+	entries := []*entry.Entry{}
+	queueEntry := func(t *testing.T, msg string, severity entry.Severity) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
 		e.Severity = severity
 		e.AddAttribute("file_name", "simple.log")
-		require.NoError(t, c.Batch([]*entry.Entry{e}))
+		entries = append(entries, e)
 	}
-	queueEntry(t, converter, "Something routine", entry.Info)
-	queueEntry(t, converter, "Something bad happened!", entry.Error)
-	queueEntry(t, converter, "Some details...", entry.Debug)
+	queueEntry(t, "Something routine", entry.Info)
+	queueEntry(t, "Something bad happened!", entry.Error)
+	queueEntry(t, "Some details...", entry.Debug)
+
+	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries))
 
 	dir, err := os.Getwd()
 	require.NoError(t, err)
 	t.Logf("Working Directory: %s", dir)
-
-	wg.Wait()
 
 	require.Eventually(t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
 		"expected %d but got %d logs",
 		3, sink.LogRecordCount(),
 	)
 	// TODO: Figure out a nice way to assert each logs entry content.
-	// require.Equal(t, expectedLogs, sink.AllLogs())
+	require.Equal(t, expectedLogs, sink.AllLogs())
+	for i, expectedLog := range expectedLogs {
+		require.NoError(t, plogtest.CompareLogs(expectedLog, sink.AllLogs()[i]), plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp())
+	}
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
@@ -169,12 +167,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
-	converter.Start()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
 	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
@@ -185,6 +177,8 @@ func (rt *rotationTest) Run(t *testing.T) {
 		require.NoError(t, file.Close())
 	}()
 	require.NoError(t, err)
+
+	expectedLogs := []plog.Logs{}
 
 	for i := 0; i < numLogs; i++ {
 		if (i+1)%maxLinesPerFile == 0 {
@@ -227,7 +221,8 @@ func (rt *rotationTest) Run(t *testing.T) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
-		require.NoError(t, converter.Batch([]*entry.Entry{e}))
+
+		expectedLogs = append(expectedLogs, adapter.ConvertEntries([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
 		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
@@ -235,15 +230,13 @@ func (rt *rotationTest) Run(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 
-	wg.Wait()
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
 		"expected %d but got %d logs",
 		numLogs, sink.LogRecordCount(),
 	)
 	// TODO: Figure out a nice way to assert each logs entry content.
-	// require.Equal(t, expectedLogs, sink.AllLogs())
+	require.Equal(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
-	converter.Stop()
 }
 
 func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGroup) {
