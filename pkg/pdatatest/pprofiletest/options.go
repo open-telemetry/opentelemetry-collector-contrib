@@ -5,9 +5,7 @@ package pprofiletest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
-	"time"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
@@ -49,77 +47,67 @@ func (opt ignoreResourceAttributeValue) maskProfilesResourceAttributeValue(profi
 	}
 }
 
-// IgnoreProfileRecordAttributeValue is a CompareProfilesOption that sets the value of an attribute
-// to empty bytes for every profile record
-func IgnoreProfileRecordAttributeValue(attributeName string) CompareProfilesOption {
-	return ignoreProfileRecordAttributeValue{
+// IgnoreResourceAttributeValue is a CompareProfilesOption that removes a resource attribute
+// from all resources.
+func IgnoreScopeAttributeValue(attributeName string) CompareProfilesOption {
+	return ignoreScopeAttributeValue{
 		attributeName: attributeName,
 	}
 }
 
-type ignoreProfileRecordAttributeValue struct {
+type ignoreScopeAttributeValue struct {
 	attributeName string
 }
 
-func (opt ignoreProfileRecordAttributeValue) applyOnProfiles(expected, actual pprofile.Profiles) {
-	opt.maskProfileRecordAttributeValue(expected)
-	opt.maskProfileRecordAttributeValue(actual)
+func (opt ignoreScopeAttributeValue) applyOnProfiles(expected, actual pprofile.Profiles) {
+	opt.maskProfilesScopeAttributeValue(expected)
+	opt.maskProfilesScopeAttributeValue(actual)
 }
 
-func (opt ignoreProfileRecordAttributeValue) maskProfileRecordAttributeValue(profiles pprofile.Profiles) {
+func (opt ignoreScopeAttributeValue) maskProfilesScopeAttributeValue(profiles pprofile.Profiles) {
 	rls := profiles.ResourceProfiles()
 	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
 		sls := rls.At(i).ScopeProfiles()
 		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).ProfileRecords()
+			lr := sls.At(j)
+			val, exists := lr.Scope().Attributes().Get(opt.attributeName)
+			if exists {
+				val.SetEmptyBytes()
+			}
+
+		}
+	}
+}
+
+// IgnoreProfileContainerAttributeValue is a CompareProfilesOption that sets the value of an attribute
+// to empty bytes for every profile
+func IgnoreProfileContainerAttributeValue(attributeName string) CompareProfilesOption {
+	return ignoreProfileContainerAttributeValue{
+		attributeName: attributeName,
+	}
+}
+
+type ignoreProfileContainerAttributeValue struct {
+	attributeName string
+}
+
+func (opt ignoreProfileContainerAttributeValue) applyOnProfiles(expected, actual pprofile.Profiles) {
+	opt.maskProfileContainerAttributeValue(expected)
+	opt.maskProfileContainerAttributeValue(actual)
+}
+
+func (opt ignoreProfileContainerAttributeValue) maskProfileContainerAttributeValue(profiles pprofile.Profiles) {
+	rls := profiles.ResourceProfiles()
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		sls := rls.At(i).ScopeProfiles()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).Profiles()
 			for k := 0; k < lrs.Len(); k++ {
 				lr := lrs.At(k)
 				val, exists := lr.Attributes().Get(opt.attributeName)
 				if exists {
 					val.SetEmptyBytes()
 				}
-			}
-		}
-	}
-}
-
-func IgnoreTimestamp() CompareProfilesOption {
-	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
-		now := pcommon.NewTimestampFromTime(time.Now())
-		maskTimestamp(expected, now)
-		maskTimestamp(actual, now)
-	})
-}
-
-func maskTimestamp(profiles pprofile.Profiles, ts pcommon.Timestamp) {
-	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).ProfileRecords()
-			for k := 0; k < lrs.Len(); k++ {
-				lrs.At(k).SetTimestamp(ts)
-			}
-		}
-	}
-}
-
-func IgnoreObservedTimestamp() CompareProfilesOption {
-	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
-		now := pcommon.NewTimestampFromTime(time.Now())
-		maskObservedTimestamp(expected, now)
-		maskObservedTimestamp(actual, now)
-	})
-}
-
-func maskObservedTimestamp(profiles pprofile.Profiles, ts pcommon.Timestamp) {
-	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).ProfileRecords()
-			for k := 0; k < lrs.Len(); k++ {
-				lrs.At(k).SetObservedTimestamp(ts)
 			}
 		}
 	}
@@ -166,49 +154,18 @@ func sortScopeProfilesSlices(ls pprofile.Profiles) {
 	}
 }
 
-// IgnoreProfileRecordsOrder is a CompareProfilesOption that ignores the order of profile records.
-func IgnoreProfileRecordsOrder() CompareProfilesOption {
+// IgnoreProfilesOrder is a CompareProfilesOption that ignores the order of profile records.
+func IgnoreProfileContainersOrder() CompareProfilesOption {
 	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
-		sortProfileRecordSlices(expected)
-		sortProfileRecordSlices(actual)
+		sortProfileContainerSlices(expected)
+		sortProfileContainerSlices(actual)
 	})
 }
 
-func sortProfileRecordSlices(ls pprofile.Profiles) {
+func sortProfileContainerSlices(ls pprofile.Profiles) {
 	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
 		for j := 0; j < ls.ResourceProfiles().At(i).ScopeProfiles().Len(); j++ {
-			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).ProfileRecords().Sort(func(a, b pprofile.ProfileRecord) bool {
-				if a.ObservedTimestamp() != b.ObservedTimestamp() {
-					return a.ObservedTimestamp() < b.ObservedTimestamp()
-				}
-				if a.Timestamp() != b.Timestamp() {
-					return a.Timestamp() < b.Timestamp()
-				}
-				if a.SeverityNumber() != b.SeverityNumber() {
-					return a.SeverityNumber() < b.SeverityNumber()
-				}
-				if a.SeverityText() != b.SeverityText() {
-					return a.SeverityText() < b.SeverityText()
-				}
-				at := a.TraceID()
-				bt := b.TraceID()
-				if !bytes.Equal(at[:], bt[:]) {
-					return bytes.Compare(at[:], bt[:]) < 0
-				}
-				as := a.SpanID()
-				bs := b.SpanID()
-				if !bytes.Equal(as[:], bs[:]) {
-					return bytes.Compare(as[:], bs[:]) < 0
-				}
-				aAttrs := pdatautil.MapHash(a.Attributes())
-				bAttrs := pdatautil.MapHash(b.Attributes())
-				if !bytes.Equal(aAttrs[:], bAttrs[:]) {
-					return bytes.Compare(aAttrs[:], bAttrs[:]) < 0
-				}
-				ab := pdatautil.ValueHash(a.Body())
-				bb := pdatautil.ValueHash(b.Body())
-				return bytes.Compare(ab[:], bb[:]) < 0
-			})
+			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.ProfileContainer) bool { return true })
 		}
 	}
 }
