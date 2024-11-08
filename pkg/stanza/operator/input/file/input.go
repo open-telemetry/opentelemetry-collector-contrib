@@ -5,6 +5,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -35,6 +36,20 @@ func (i *Input) Start(persister operator.Persister) error {
 // Stop will stop the file monitoring process
 func (i *Input) Stop() error {
 	return i.fileConsumer.Stop()
+}
+
+func (i *Input) emitBatch(ctx context.Context, tokens []emit.Token) error {
+	var errs []error
+	for _, token := range tokens {
+		err := i.emit(ctx, token)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }
 
 func (i *Input) emit(ctx context.Context, token emit.Token) error {
