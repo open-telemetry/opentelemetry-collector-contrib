@@ -37,9 +37,22 @@ type Config struct {
 
 type InvolvedObjectProperties struct {
 	// Include only the specified reasons. If its empty, list events of all reasons.
-	IncludeReasons []string `mapstructure:"include_reasons,omitempty"`
+	IncludeReasons []ReasonProperties `mapstructure:"include_reasons,omitempty"`
 
 	//Can be enhanced to take in object names with reg ex etc.
+}
+
+type ReasonProperties struct {
+	Name       string     `mapstructure:"name"`
+	Attributes []KeyValue `mapstructure:"attributes,omitempty"`
+}
+
+type KeyValue struct {
+	// This is a required field.
+	Key string `mapstructure:"key"`
+
+	// This is a required field.
+	Value any `mapstructure:"value"`
 }
 
 func (cfg *Config) Validate() error {

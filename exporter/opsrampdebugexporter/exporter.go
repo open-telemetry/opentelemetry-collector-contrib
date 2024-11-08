@@ -21,7 +21,8 @@ import (
 )
 
 var (
-	LogsOpsRampChannel = make(chan plog.Logs, 1000)
+	LogsOpsRampChannel   = make(chan plog.Logs, 1000)
+	EventsOpsRampChannel = make(chan plog.Logs, 100)
 )
 
 type debugExporter struct {
@@ -92,11 +93,41 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 		zap.Int("resource logs", ld.ResourceLogs().Len()),
 		zap.Int("log records", ld.LogRecordCount()))
 
-	select {
-	case LogsOpsRampChannel <- ld:
-		s.logger.Info("#######LogsExporter: Successfully sent to channel")
-	default:
-		s.logger.Info("#######LogsExporter: failed sent to channel")
+	eventsSlice := plog.NewResourceLogsSlice()
+	logsSlice := plog.NewResourceLogsSlice()
+
+	rlSlice := ld.ResourceLogs()
+	for i := 0; i < rlSlice.Len(); i++ {
+		rl := rlSlice.At(i)
+		resource := rl.Resource()
+
+		if val, found := resource.Attributes().Get("type"); found && val.Str() == "event" {
+			rl.CopyTo(eventsSlice.AppendEmpty())
+		} else {
+			rl.CopyTo(logsSlice.AppendEmpty())
+		}
+	}
+
+	if logsSlice.Len() != 0 {
+		logs := plog.NewLogs()
+		logsSlice.CopyTo(logs.ResourceLogs())
+		select {
+		case LogsOpsRampChannel <- logs:
+			s.logger.Info("#######LogsExporter: Successfully sent to logs channel")
+		default:
+			s.logger.Info("#######LogsExporter: failed sent to logs channel")
+		}
+	}
+
+	if eventsSlice.Len() != 0 {
+		eventLogs := plog.NewLogs()
+		eventsSlice.CopyTo(eventLogs.ResourceLogs())
+		select {
+		case EventsOpsRampChannel <- eventLogs:
+			s.logger.Info("#######LogsExporter: Successfully sent to events channel")
+		default:
+			s.logger.Info("#######LogsExporter: failed sent to eventschannel")
+		}
 	}
 
 	if s.verbosity == configtelemetry.LevelBasic {
