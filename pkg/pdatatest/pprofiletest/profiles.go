@@ -24,7 +24,7 @@ func CompareProfiles(expected, actual pprofile.Profiles, options ...CompareProfi
 	}
 
 	if exp.IsReadOnly() != act.IsReadOnly() {
-		return fmt.Errorf("readOnly state differs from expected '%s'", exp.IsReadOnly())
+		return fmt.Errorf("readOnly state differs from expected '%t'", exp.IsReadOnly())
 	}
 
 	if exp.SampleCount() != act.SampleCount() {
@@ -648,7 +648,7 @@ func CompareProfileFunctionSlice(expected, actual pprofile.FunctionSlice) error 
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf(`function are out of order: function "name: %d" expected at index %d, found at index %d`,
-							elr.Name(), elr.ID(), e, a))
+							elr.Name(), e, a))
 				}
 				break
 			}
