@@ -90,3 +90,12 @@ func (i *InputOperator) Process(_ context.Context, _ *entry.Entry) error {
 		"Ensure that operator is not configured to receive logs from other operators",
 	)
 }
+
+// ProcessBatch will always return an error if called.
+func (i *InputOperator) ProcessBatch(_ context.Context, _ []entry.Entry) error {
+	i.Logger().Error("Operator received a batch of entries, but can not process")
+	return errors.NewError(
+		"Operator can not process logs.",
+		"Ensure that operator is not configured to receive logs from other operators",
+	)
+}

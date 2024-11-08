@@ -61,6 +61,25 @@ func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
 	return nil
 }
 
+// Write writes a batch of entries to the outputs of the operator.
+// A batch is a collection of entries that are sent in one go.
+func (w *WriterOperator) WriteBatch(ctx context.Context, entries []entry.Entry) error {
+	for i, op := range w.OutputOperators {
+		if i == len(w.OutputOperators)-1 {
+			return op.ProcessBatch(ctx, entries)
+		}
+		copyOfEntries := make([]entry.Entry, 0, len(entries))
+		for _, entry := range entries {
+			copyOfEntries = append(copyOfEntries, *entry.Copy())
+		}
+		err := op.ProcessBatch(ctx, copyOfEntries)
+		if err != nil {
+			w.Logger().Error("Failed to process entries", zap.Error(err))
+		}
+	}
+	return nil
+}
+
 // CanOutput always returns true for a writer operator.
 func (w *WriterOperator) CanOutput() bool {
 	return true
