@@ -386,13 +386,16 @@ func TestMemoryLimiterHit(t *testing.T) {
 	otlpreceiver.WithTimeout(`
     timeout: 0s
 `)
-	processors := map[string]string{
-		"memory_limiter": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "memory_limiter",
+			Body: `
   memory_limiter:
     check_interval: 1s
     limit_mib: 300
     spike_limit_mib: 150
 `,
+		},
 	}
 	ScenarioMemoryLimiterHit(
 		t,
@@ -402,6 +405,7 @@ func TestMemoryLimiterHit(t *testing.T) {
 			DataItemsPerSecond: 100000,
 			ItemsPerBatch:      1000,
 			Parallel:           1,
+			MaxDelay:           20 * time.Second,
 		},
 		performanceResultsSummary, 100, processors)
 }

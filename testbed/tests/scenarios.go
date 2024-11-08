@@ -559,7 +559,7 @@ func ScenarioMemoryLimiterHit(
 	loadOptions testbed.LoadOptions,
 	resultsSummary testbed.TestResultsSummary,
 	sleepTime int,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
