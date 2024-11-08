@@ -32,7 +32,7 @@ resourceMetrics:
             stringValue: container-id
         - key: container.image.name
           value:
-            stringValue: container-image-name
+            stringValue: docker.io/otel/test-image
         - key: container.image.tag
           value:
             stringValue: latest

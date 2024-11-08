@@ -232,7 +232,7 @@ func NewPodSpecWithContainer(containerName string) *corev1.PodSpec {
 		Containers: []corev1.Container{
 			{
 				Name:  containerName,
-				Image: "container-image-name",
+				Image: "docker.io/otel/test-image@sha256:22eeed9e66facc651d4344ef7d9ce912fccff5bb3969e745eed3ab953f309534",
 				Resources: corev1.ResourceRequirements{
 					Limits: corev1.ResourceList{
 						corev1.ResourceCPU: *resource.NewQuantity(20, resource.DecimalSI),
@@ -254,7 +254,7 @@ func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodSta
 				Name:         containerName,
 				Ready:        true,
 				RestartCount: 3,
-				Image:        "container-image-name",
+				Image:        "docker.io/otel/test-image@sha256:22eeed9e66facc651d4344ef7d9ce912fccff5bb3969e745eed3ab953f309534",
 				ContainerID:  containerID,
 				State: corev1.ContainerState{
 					Running: &corev1.ContainerStateRunning{},
@@ -288,6 +288,7 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 		},
 	}
 }
+
 func WithOwnerReferences(or []v1.OwnerReference, obj any) any {
 	switch o := obj.(type) {
 	case *corev1.Pod:
