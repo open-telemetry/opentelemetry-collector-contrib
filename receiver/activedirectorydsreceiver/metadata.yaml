@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [BinaryFissionGames, pjanotti]
+    active: [pjanotti]
     seeking_new: true
   unsupported_platforms: [darwin, linux]
 

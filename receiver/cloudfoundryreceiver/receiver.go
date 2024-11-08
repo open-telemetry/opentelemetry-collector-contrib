@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
@@ -47,7 +48,6 @@ func newCloudFoundryMetricsReceiver(
 	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics) (*cloudFoundryReceiver, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -71,7 +71,6 @@ func newCloudFoundryLogsReceiver(
 	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Logs) (*cloudFoundryReceiver, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -151,7 +150,6 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
 	host component.Host) {
-
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
 		envelopes := stream()
@@ -179,6 +177,9 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if libraryMetrics.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartMetricsOp(ctx)
 			err := cfr.nextMetrics.ConsumeMetrics(ctx, metrics)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume metrics", zap.Error(err))
+			}
 			cfr.obsrecv.EndMetricsOp(obsCtx, dataFormat, metrics.DataPointCount(), err)
 		}
 	}
@@ -188,7 +189,6 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
 	host component.Host) {
-
 	for {
 		envelopes := stream()
 		if envelopes == nil {
@@ -213,6 +213,9 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 		if libraryLogs.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
 			err := cfr.nextLogs.ConsumeLogs(ctx, logs)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume logs", zap.Error(err))
+			}
 			cfr.obsrecv.EndLogsOp(obsCtx, dataFormat, logs.LogRecordCount(), err)
 		}
 	}

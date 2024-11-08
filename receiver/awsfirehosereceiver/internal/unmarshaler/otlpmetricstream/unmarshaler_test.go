@@ -97,7 +97,6 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-
 			got, err := unmarshaler.Unmarshal(testCase.records)
 			if testCase.wantErr != nil {
 				require.Error(t, err)

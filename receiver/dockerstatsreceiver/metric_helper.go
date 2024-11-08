@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 )
 
@@ -27,7 +26,7 @@ const nanosInASecond = 1e9
 // For more information, please see https://www.bis.doc.gov
 // See also https://www.apache.org/dev/crypto.html and/or seek legal counsel.
 
-func calculateCPUPercent(previous *dtypes.CPUStats, v *dtypes.CPUStats) float64 {
+func calculateCPUPercent(previous *ctypes.CPUStats, v *ctypes.CPUStats) float64 {
 	var (
 		cpuPercent = 0.0
 		// calculate the change for the cpu usage of the container in between readings
@@ -58,7 +57,7 @@ func calculateCPUPercent(previous *dtypes.CPUStats, v *dtypes.CPUStats) float64 
 //
 // On Docker 19.03 and older, the result was `mem.Usage - mem.Stats["cache"]`.
 // See https://github.com/moby/moby/issues/40727 for the background.
-func calculateMemUsageNoCache(memoryStats *dtypes.MemoryStats) uint64 {
+func calculateMemUsageNoCache(memoryStats *ctypes.MemoryStats) uint64 {
 	// cgroup v1
 	if v, isCgroup1 := memoryStats.Stats["total_inactive_file"]; isCgroup1 && v < memoryStats.Usage {
 		return memoryStats.Usage - v
