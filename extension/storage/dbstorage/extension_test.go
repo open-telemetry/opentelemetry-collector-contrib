@@ -6,6 +6,8 @@ package dbstorage
 import (
 	"context"
 	"fmt"
+	"os"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -22,10 +24,18 @@ import (
 )
 
 func TestExtensionIntegrityWithSqlite(t *testing.T) {
+	if runtime.GOOS == "windows" && os.Getenv("GITHUB_ACTIONS") == "true" {
+		t.Skip("Skipping test on Windows GH runners: test requires Docker to be running Linux containers")
+	}
+
 	testExtensionIntegrity(t, newSqliteTestExtension(t))
 }
 
 func TestExtensionIntegrityWithPostgres(t *testing.T) {
+	if runtime.GOOS == "windows" && os.Getenv("GITHUB_ACTIONS") == "true" {
+		t.Skip("Skipping test on Windows GH runners: test requires Docker to be running Linux containers")
+	}
+
 	testExtensionIntegrity(t, newPostgresTestExtension(t))
 }
 
