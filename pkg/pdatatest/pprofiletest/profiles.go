@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
 )
 
 // CompareProfiles compares each part of two given Profiles and returns
