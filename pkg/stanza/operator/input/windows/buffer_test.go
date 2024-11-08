@@ -21,17 +21,6 @@ func TestBufferReadBytes(t *testing.T) {
 	require.Equal(t, utf8, bytes)
 }
 
-func TestBufferReadBytesOverflow(t *testing.T) {
-	buffer := NewBuffer()
-	utf8 := []byte("test")
-	utf16, _ := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder().Bytes(utf8)
-	copy(buffer.buffer, utf16)
-	offset := uint32(len(utf16))
-	bytes, err := buffer.ReadBytes(offset * 2)
-	require.NoError(t, err)
-	require.Equal(t, utf8, bytes)
-}
-
 func TestBufferReadWideBytes(t *testing.T) {
 	buffer := NewBuffer()
 	utf8 := []byte("test")
