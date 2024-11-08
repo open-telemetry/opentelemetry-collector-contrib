@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -85,13 +84,6 @@ type RemoteWriteQueue struct {
 // TODO(jbd): Add capacity, max_samples_per_send to QueueConfig.
 
 var _ component.Config = (*Config)(nil)
-
-var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
-)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

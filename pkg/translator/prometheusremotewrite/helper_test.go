@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
@@ -785,12 +786,14 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	tests := []struct {
-		name   string
-		metric func() pmetric.Metric
-		want   func() map[uint64]*prompb.TimeSeries
+		name          string
+		isGateEnabled bool
+		metric        func() pmetric.Metric
+		want          func() map[uint64]*prompb.TimeSeries
 	}{
 		{
-			name: "histogram with start time",
+			name:          "histogram with start time",
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -836,7 +839,8 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name: "histogram without start time",
+			name:          "histogram without start time",
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -876,6 +880,10 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
 			converter := newPrometheusConverter()
+
+			oldValue := exportCreatedMetricGate.IsEnabled()
+			testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, tt.isGateEnabled)
+			defer testutil.SetFeatureGateForTest(t, exportCreatedMetricGate, oldValue)
 
 			converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
