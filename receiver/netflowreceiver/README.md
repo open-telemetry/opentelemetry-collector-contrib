@@ -21,7 +21,7 @@ This gives OpenTelemetry users the capability of monitoring network traffic, and
 
 ## Getting started
 
-By default the receiver will listen for ipfix and netflow on port `2055` and sflow on port `6343`. The receiver can be configured to listen on different ports and protocols.
+By default the receiver will listen for ipfix and netflow on port `2055`. The receiver can be configured to listen on different ports and protocols.
 
 Example configuration:
 
@@ -63,31 +63,40 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 |-------|-------------|--------| ------- |
 | scheme | The type of flow data that to receive | `sflow`, `netflow`, `flow` | `netflow` |
 | hostname | The hostname or IP address to bind to | `localhost` | `0.0.0.0` |
-| port | The port to bind to | `2055` | `2055` |
+| port | The port to bind to | `2055` or `6343` | `2055` |
 | sockets | The number of sockets to use | 1 | 1 |
 | workers | The number of workers used to decode incoming flow messages | 2 | 2 |
 | queue_size | The size of the incoming netflow packets queue | 1000 | 1000000 |
 
 ## Data format
 
-The netflow data is standardized for the different schemas and is converted to OpenTelemetry logs. The output will follow the format:
+The netflow data is standardized for the different schemas and is converted to OpenTelemetry logs following the [semantic conventions](https://opentelemetry.io/docs/specs/semconv/general/attributes/#server-client-and-shared-network-attributes)
+
+The output will adhere the format:
 
 ```json
 {
-    "type": "SFLOW_5",
-    "time_received_ns": 1681583295157626000,
-    "sequence_num": 2999,
-    "sampling_rate": 100,
-    "sampler_address": "192.168.0.1",
-    "time_flow_start_ns": 1681583295157626000,
-    "time_flow_end_ns": 1681583295157626000,
-    "bytes": 1500,
-    "packets": 1,
-    "src_addr": "fd01::1",
-    "dst_addr": "fd01::2",
-    "etype": "IPv6",
-    "proto": "TCP",
-    "src_port": 443,
-    "dst_port": 50001
+    "destination": {
+        "address": "192.168.0.1",
+        "port": 22
+    },
+    "flow": {
+        "end": 1731073104662487000,
+        "sampler_address": "192.168.0.2",
+        "sequence_num": 49,
+        "start": 1731073077662487000,
+        "time_received": 1731073138662487000,
+        "type": "NETFLOW_V5"
+    },
+    "io": {
+        "bytes": 529,
+        "packets": 378
+    },
+    "source": {
+        "address": "192.168.0.3",
+        "port": 40
+    },
+    "transport": "TCP",
+    "type": "IPv4"
 }
 ```
