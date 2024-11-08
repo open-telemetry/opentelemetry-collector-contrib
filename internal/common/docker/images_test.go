@@ -16,7 +16,7 @@ func TestDockerImageToElements(t *testing.T) {
 		args           args
 		wantRepository string
 		wantTag        string
-		wantSHA256     string
+		wantDigest     string
 		wantErr        bool
 	}{
 		{
@@ -26,7 +26,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "",
 			wantTag:        "",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        true,
 		},
 		{
@@ -36,17 +36,27 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "",
 			wantTag:        "",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        true,
 		},
 		{
 			name: "image with sha256 hash",
 			args: args{
-				image: "alpine:test@sha256:00000000000000",
+				image: "alpine:test@sha256:22eeed9e66facc651d4344ef7d9ce912fccff5bb3969e745eed3ab953f309534",
 			},
-			wantRepository: "alpine",
+			wantRepository: "docker.io/library/alpine",
 			wantTag:        "test",
-			wantSHA256:     "00000000000000",
+			wantDigest:     "sha256:22eeed9e66facc651d4344ef7d9ce912fccff5bb3969e745eed3ab953f309534",
+			wantErr:        false,
+		},
+		{
+			name: "image with sha256 hash and no tag",
+			args: args{
+				image: "alpine@sha256:22eeed9e66facc651d4344ef7d9ce912fccff5bb3969e745eed3ab953f309534",
+			},
+			wantRepository: "docker.io/library/alpine",
+			wantTag:        "",
+			wantDigest:     "sha256:22eeed9e66facc651d4344ef7d9ce912fccff5bb3969e745eed3ab953f309534",
 			wantErr:        false,
 		},
 		{
@@ -54,9 +64,9 @@ func TestDockerImageToElements(t *testing.T) {
 			args: args{
 				image: "alpine",
 			},
-			wantRepository: "alpine",
+			wantRepository: "docker.io/library/alpine",
 			wantTag:        "latest",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 		{
@@ -64,9 +74,9 @@ func TestDockerImageToElements(t *testing.T) {
 			args: args{
 				image: "alpine:v1.0.0",
 			},
-			wantRepository: "alpine",
+			wantRepository: "docker.io/library/alpine",
 			wantTag:        "v1.0.0",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 		{
@@ -74,9 +84,9 @@ func TestDockerImageToElements(t *testing.T) {
 			args: args{
 				image: "alpine/alpine",
 			},
-			wantRepository: "alpine/alpine",
+			wantRepository: "docker.io/alpine/alpine",
 			wantTag:        "latest",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 		{
@@ -84,9 +94,9 @@ func TestDockerImageToElements(t *testing.T) {
 			args: args{
 				image: "alpine/alpine:2.0.0",
 			},
-			wantRepository: "alpine/alpine",
+			wantRepository: "docker.io/alpine/alpine",
 			wantTag:        "2.0.0",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 		{
@@ -96,7 +106,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com/alpine/alpine",
 			wantTag:        "latest",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 		{
@@ -106,7 +116,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com/alpine/alpine",
 			wantTag:        "1",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 		{
@@ -116,7 +126,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com:3000/alpine/alpine",
 			wantTag:        "latest",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 		{
@@ -126,7 +136,7 @@ func TestDockerImageToElements(t *testing.T) {
 			},
 			wantRepository: "example.com:3000/alpine/alpine",
 			wantTag:        "test",
-			wantSHA256:     "",
+			wantDigest:     "",
 			wantErr:        false,
 		},
 	}
@@ -143,8 +153,8 @@ func TestDockerImageToElements(t *testing.T) {
 			if image.Tag != tt.wantTag {
 				t.Errorf("ParseImageName() tag = %v, want %v", image.Tag, tt.wantTag)
 			}
-			if image.SHA256 != tt.wantSHA256 {
-				t.Errorf("ParseImageName() hash = %v, want %v", image.SHA256, tt.wantSHA256)
+			if image.Digest != tt.wantDigest {
+				t.Errorf("ParseImageName() hash = %v, want %v", image.Digest, tt.wantDigest)
 			}
 		})
 	}

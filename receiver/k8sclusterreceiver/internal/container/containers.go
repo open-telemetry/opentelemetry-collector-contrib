@@ -88,7 +88,9 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 		docker.LogParseError(err, imageStr, logger)
 	} else {
 		rb.SetContainerImageName(image.Repository)
-		rb.SetContainerImageTag(image.Tag)
+		if image.Tag != "" {
+			rb.SetContainerImageTag(image.Tag)
+		}
 	}
 	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }

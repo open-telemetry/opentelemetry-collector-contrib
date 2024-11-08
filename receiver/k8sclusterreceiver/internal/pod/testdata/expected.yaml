@@ -33,9 +33,6 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: docker.io/otel/test-image
-        - key: container.image.tag
-          value:
-            stringValue: latest
         - key: k8s.container.name
           value:
             stringValue: container-name

@@ -274,7 +274,7 @@ func NewEvictedTerminatedPodStatusWithContainer(containerName, containerID strin
 				Name:         containerName,
 				Ready:        true,
 				RestartCount: 3,
-				Image:        "container-image-name",
+				Image:        "docker.io/otel/test-image@sha256:22eeed9e66facc651d4344ef7d9ce912fccff5bb3969e745eed3ab953f309534",
 				ContainerID:  containerID,
 				State: corev1.ContainerState{
 					Terminated: &corev1.ContainerStateTerminated{},

@@ -5,19 +5,15 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"errors"
-	"regexp"
 
 	"go.uber.org/zap"
-)
-
-var (
-	extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:(?P<sha256>\d+))?$`)
+	"k8s.io/kubernetes/pkg/util/parsers"
 )
 
 type ImageRef struct {
 	Repository string
 	Tag        string
-	SHA256     string
+	Digest     string
 }
 
 // ParseImageName extracts image repository and tag from a combined image reference
@@ -27,24 +23,15 @@ func ParseImageName(image string) (ImageRef, error) {
 		return ImageRef{}, errors.New("empty image")
 	}
 
-	match := extractImageRegexp.FindStringSubmatch(image)
-	if len(match) == 0 {
-		return ImageRef{}, errors.New("failed to match regex against image")
+	repository, tag, digest, err := parsers.ParseImageName(image)
+	if err != nil {
+		return ImageRef{}, errors.New("failed to parse image")
 	}
-
-	tag := "latest"
-	if foundTag := match[extractImageRegexp.SubexpIndex("tag")]; foundTag != "" {
-		tag = foundTag
-	}
-
-	repository := match[extractImageRegexp.SubexpIndex("repository")]
-
-	hash := match[extractImageRegexp.SubexpIndex("sha256")]
 
 	return ImageRef{
 		Repository: repository,
 		Tag:        tag,
-		SHA256:     hash,
+		Digest:     digest,
 	}, nil
 }
 
