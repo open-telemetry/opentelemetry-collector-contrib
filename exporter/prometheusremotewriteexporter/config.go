@@ -87,9 +87,9 @@ type RemoteWriteQueue struct {
 var _ component.Config = (*Config)(nil)
 
 var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewriteexporter.exportCreatedMetric",
+	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
 	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("Set the default value of the export_created_metric feature."),
+	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
 )
 
@@ -114,7 +114,7 @@ func (cfg *Config) Validate() error {
 	}
 	if cfg.CreatedMetric == nil {
 		cfg.CreatedMetric = &CreatedMetric{
-			Enabled: exportCreatedMetricGate.IsEnabled(),
+			Enabled: false,
 		}
 	}
 	if cfg.MaxBatchSizeBytes < 0 {
