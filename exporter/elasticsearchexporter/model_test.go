@@ -381,6 +381,13 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"k8s.pod.name":                         "opentelemetry-pod-autoconf",
 		"k8s.pod.uid":                          "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
 		"k8s.deployment.name":                  "coredns",
+		semconv.AttributeK8SJobName:            "job.name",
+		semconv.AttributeK8SCronJobName:        "cronjob.name",
+		semconv.AttributeK8SStatefulSetName:    "statefulset.name",
+		semconv.AttributeK8SReplicaSetName:     "replicaset.name",
+		semconv.AttributeK8SDaemonSetName:      "daemonset.name",
+		semconv.AttributeK8SContainerName:      "container.name",
+		semconv.AttributeK8SClusterName:        "cluster.name",
 	})
 	require.NoError(t, err)
 
@@ -444,7 +451,14 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"kubernetes.node.name":       "node-1",
 		"kubernetes.pod.name":        "opentelemetry-pod-autoconf",
 		"kubernetes.pod.uid":         "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"kubernetes.deployment.name": "coredns"
+		"kubernetes.deployment.name": "coredns",
+		"kubernetes.job.name":         "job.name",
+		"kubernetes.cronjob.name":     "cronjob.name",
+		"kubernetes.statefulset.name": "statefulset.name",
+		"kubernetes.replicaset.name":  "replicaset.name",
+		"kubernetes.daemonset.name":   "daemonset.name",
+		"kubernetes.container.name":   "container.name",
+		"orchestrator.cluster.name":   "cluster.name"
 	}`, buf.String())
 }
 
