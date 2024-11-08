@@ -427,25 +427,118 @@ func TestTracesConnectorDetailed(t *testing.T) {
 	idSink1 := pipeline.NewIDWithName(pipeline.SignalTraces, "1")
 	idSinkD := pipeline.NewIDWithName(pipeline.SignalTraces, "default")
 
-	isNotNil := `attributes["resourceName"] != nil`
-	isA := `attributes["resourceName"] == "resourceA"`
-	isB := `attributes["resourceName"] == "resourceB"`
-	isX := `attributes["resourceName"] == "resourceX"`
-	isY := `attributes["resourceName"] == "resourceY"`
+	isAcme := `request["X-Tenant"] == "acme"`
+
+	isAnyResource := `attributes["resourceName"] != nil`
+	isResourceA := `attributes["resourceName"] == "resourceA"`
+	isResourceB := `attributes["resourceName"] == "resourceB"`
+	isResourceX := `attributes["resourceName"] == "resourceX"`
+	isResourceY := `attributes["resourceName"] == "resourceY"`
 
 	testCases := []struct {
 		name        string
 		cfg         *Config
+		ctx         context.Context
 		input       ptrace.Traces
 		expectSink0 ptrace.Traces
 		expectSink1 ptrace.Traces
 		expectSinkD ptrace.Traces
 	}{
 		{
-			name: "all_match_first_only",
+			name: "request/no_request_values",
 			cfg: testConfig(
-				withRoute("resource", isNotNil, idSink0),
-				withRoute("resource", isY, idSink1),
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         context.Background(),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "request/match_any_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx: withGRPCMetadata(
+				withHTTPMetadata(
+					context.Background(),
+					map[string][]string{"X-Tenant": {"acme"}},
+				),
+				map[string]string{"X-Tenant": "notacme"},
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_grpc_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_no_grpc_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "notacme"}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "request/match_http_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_http_value2",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme", "acme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "request/match_no_http_value",
+			cfg: testConfig(
+				withRoute("request", isAcme, idSink0),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"notacme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptrace.Traces{},
+			expectSink1: ptrace.Traces{},
+			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "resource/all_match_first_only",
+			cfg: testConfig(
+				withRoute("resource", isAnyResource, idSink0),
+				withRoute("resource", isResourceY, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
@@ -454,10 +547,10 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSinkD: ptrace.Traces{},
 		},
 		{
-			name: "all_match_last_only",
+			name: "resource/all_match_last_only",
 			cfg: testConfig(
-				withRoute("resource", isX, idSink0),
-				withRoute("resource", isNotNil, idSink1),
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isAnyResource, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
@@ -466,10 +559,10 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSinkD: ptrace.Traces{},
 		},
 		{
-			name: "all_match_only_once",
+			name: "resource/all_match_only_once",
 			cfg: testConfig(
-				withRoute("resource", isNotNil, idSink0),
-				withRoute("resource", isA+" or "+isB, idSink1),
+				withRoute("resource", isAnyResource, idSink0),
+				withRoute("resource", isResourceA+" or "+isResourceB, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
@@ -478,10 +571,10 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSinkD: ptrace.Traces{},
 		},
 		{
-			name: "each_matches_one",
+			name: "resource/each_matches_one",
 			cfg: testConfig(
-				withRoute("resource", isA, idSink0),
-				withRoute("resource", isB, idSink1),
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("resource", isResourceB, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
@@ -490,10 +583,10 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSinkD: ptrace.Traces{},
 		},
 		{
-			name: "some_match_with_default",
+			name: "resource/some_match_with_default",
 			cfg: testConfig(
-				withRoute("resource", isX, idSink0),
-				withRoute("resource", isB, idSink1),
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceB, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
@@ -502,10 +595,10 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSinkD: ptraceutiltest.NewTraces("A", "CD", "EF", "FG"),
 		},
 		{
-			name: "some_match_without_default",
+			name: "resource/some_match_without_default",
 			cfg: testConfig(
-				withRoute("resource", isX, idSink0),
-				withRoute("resource", isB, idSink1),
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceB, idSink1),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
 			expectSink0: ptrace.Traces{},
@@ -513,10 +606,10 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSinkD: ptrace.Traces{},
 		},
 		{
-			name: "match_none_with_default",
+			name: "resource/match_none_with_default",
 			cfg: testConfig(
-				withRoute("resource", isX, idSink0),
-				withRoute("resource", isY, idSink1),
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceY, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
@@ -525,14 +618,40 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			expectSinkD: ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
 		},
 		{
-			name: "match_none_without_default",
+			name: "resource/match_none_without_default",
 			cfg: testConfig(
-				withRoute("resource", isX, idSink0),
-				withRoute("resource", isY, idSink1),
+				withRoute("resource", isResourceX, idSink0),
+				withRoute("resource", isResourceY, idSink1),
 			),
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
 			expectSink0: ptrace.Traces{},
 			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "mixed/match_resource_then_grpc_request",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "mixed/match_resource_then_http_request",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("A", "CD", "EF", "GH"),
+			expectSink1: ptraceutiltest.NewTraces("B", "CD", "EF", "GH"),
 			expectSinkD: ptrace.Traces{},
 		},
 	}
@@ -554,7 +673,12 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			require.NoError(t, conn.ConsumeTraces(context.Background(), tt.input))
+			ctx := context.Background()
+			if tt.ctx != nil {
+				ctx = tt.ctx
+			}
+
+			require.NoError(t, conn.ConsumeTraces(ctx, tt.input))
 
 			assertExpected := func(sink *consumertest.TracesSink, expected ptrace.Traces, name string) {
 				if expected == (ptrace.Traces{}) {
