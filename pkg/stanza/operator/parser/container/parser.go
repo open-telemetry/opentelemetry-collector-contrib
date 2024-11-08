@@ -95,7 +95,6 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
-			go p.criConsumer(ctx)
 			p.asyncConsumerStarted = true
 		})
 
@@ -141,22 +140,6 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	return nil
 }
 
-// criConsumer receives log entries from the criLogEmitter and
-// writes them to the output of the main parser
-func (p *Parser) criConsumer(ctx context.Context) {
-	entriesChan := p.criLogEmitter.OutChannel()
-	p.criConsumers.Add(1)
-	defer p.criConsumers.Done()
-	for entries := range entriesChan {
-		for _, e := range entries {
-			err := p.Write(ctx, e)
-			if err != nil {
-				p.Logger().Error("failed to write entry", zap.Error(err))
-			}
-		}
-	}
-}
-
 // Stop ensures that the internal recombineParser, the internal criLogEmitter and
 // the crioConsumer are stopped in the proper order without being affected by
 // any possible race conditions
@@ -165,7 +148,6 @@ func (p *Parser) Stop() error {
 		// nothing is started return
 		return nil
 	}
-
 	var stopErrs []error
 	err := p.recombineParser.Stop()
 	if err != nil {
@@ -303,6 +285,15 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 
 	}
 	return nil
+}
+
+func (p *Parser) consumeEntries(ctx context.Context, entries []*entry.Entry) {
+	for _, e := range entries {
+		err := p.Write(ctx, e)
+		if err != nil {
+			p.Logger().Error("failed to write entry", zap.Error(err))
+		}
+	}
 }
 
 func moveField(e *entry.Entry, originalKey, mappedKey string) error {
