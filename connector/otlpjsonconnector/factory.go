@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 
 // createLogsConnector returns a connector which consume logs and export logs
 func createLogsConnector(
-	c context.Context,
+	_ context.Context,
 	set connector.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,

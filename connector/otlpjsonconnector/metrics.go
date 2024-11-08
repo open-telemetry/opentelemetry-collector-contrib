@@ -51,9 +51,11 @@ func (c *connectorMetrics) ConsumeLogs(ctx context.Context, pl plog.Logs) error 
 			for k := 0; k < logRecord.LogRecords().Len(); k++ {
 				lRecord := logRecord.LogRecords().At(k)
 				token := lRecord.Body()
-				if metricRegex.MatchString(token.AsString()) {
+
+				value := token.AsString()
+				if metricRegex.MatchString(value) {
 					var m pmetric.Metrics
-					m, err := metricsUnmarshaler.UnmarshalMetrics([]byte(token.AsString()))
+					m, err := metricsUnmarshaler.UnmarshalMetrics([]byte(value))
 					if err != nil {
 						c.logger.Error("could not extract metrics from otlp json", zap.Error(err))
 						continue
@@ -63,7 +65,7 @@ func (c *connectorMetrics) ConsumeLogs(ctx context.Context, pl plog.Logs) error 
 						c.logger.Error("could not consume metrics from otlp json", zap.Error(err))
 					}
 
-				} else if logRegex.MatchString(token.AsString()) || traceRegex.MatchString(token.AsString()) {
+				} else if logRegex.MatchString(value) || traceRegex.MatchString(value) {
 					continue
 				} else {
 					c.logger.Error("Invalid otlp payload")
