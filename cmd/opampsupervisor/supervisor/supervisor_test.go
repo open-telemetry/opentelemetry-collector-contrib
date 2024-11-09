@@ -1372,3 +1372,34 @@ service:
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, noopConfig)
 }
+
+func TestSupervisor_configStrictUnmarshal(t *testing.T) {
+	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
+	require.NoError(t, err)
+
+	configuration := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  accepts_restart_command_invalid_key: true
+`
+
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	require.NoError(t, err)
+
+	_, err = config.Load(cfgPath)
+	require.Error(t, err)
+	require.True(t, strings.HasPrefix(err.Error(), "cannot parse"))
+
+	fmt.Println(err.Error())
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Chmod(tmpDir, 0o700))
+		require.NoError(t, os.RemoveAll(tmpDir))
+	})
+}
