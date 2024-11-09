@@ -213,10 +213,10 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []fileset.Matcha
 		}
 		for index := range indices {
 			if md := data.Match(fps[index], fileset.StartsWith); md != nil {
-				// append the matched metadata/file pair to the new array
+				// update the matched metadata for this index
 				matchedMetadata[index] = md
-				modified = true
 				delete(indices, index)
+				modified = true
 			}
 		}
 		if modified {
@@ -226,7 +226,7 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []fileset.Matcha
 			}
 		}
 	}
-	// append remaining files
+	// add remaining fingerprints i.e. unmatched fingerprints
 	for index := range indices {
 		matchedMetadata[index] = fps[index]
 	}
