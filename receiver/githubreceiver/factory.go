@@ -22,7 +22,7 @@ import (
 
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
-		githubscraper.TypeStr: &githubscraper.Factory{},
+		metadata.Type.String(): &githubscraper.Factory{},
 	}
 
 	errConfigNotValid = errors.New("configuration is not valid for the github receiver")
@@ -67,7 +67,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	// check that the configuration is valid
 	conf, ok := cfg.(*Config)
 	if !ok {

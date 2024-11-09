@@ -58,7 +58,7 @@ jobs:
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.6"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-mod-cache
@@ -69,6 +69,14 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
+      - name: Build shared test tools
+        # If component tests share Makefile targets they need to be added here to avoid
+        # concurrent component tests clashing when building such targets. This applies
+        # specifically to Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34691
+        run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:

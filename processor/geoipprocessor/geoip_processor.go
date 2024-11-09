@@ -10,7 +10,9 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
@@ -26,15 +28,17 @@ var (
 type geoIPProcessor struct {
 	providers          []provider.GeoIPProvider
 	resourceAttributes []attribute.Key
+	logger             *zap.Logger
 
 	cfg *Config
 }
 
-func newGeoIPProcessor(processorConfig *Config, resourceAttributes []attribute.Key, providers []provider.GeoIPProvider) *geoIPProcessor {
+func newGeoIPProcessor(processorConfig *Config, resourceAttributes []attribute.Key, providers []provider.GeoIPProvider, params processor.Settings) *geoIPProcessor {
 	return &geoIPProcessor{
 		resourceAttributes: resourceAttributes,
 		providers:          providers,
 		cfg:                processorConfig,
+		logger:             params.Logger,
 	}
 }
 
@@ -69,10 +73,15 @@ func ipFromAttributes(attributes []attribute.Key, resource pcommon.Map) (net.IP,
 // geoLocation fetches geolocation information for the given IP address using the configured providers.
 // It returns a set of attributes containing the geolocation data, or an error if the location could not be determined.
 func (g *geoIPProcessor) geoLocation(ctx context.Context, ip net.IP) (attribute.Set, error) {
-	allAttributes := attribute.EmptySet()
-	for _, provider := range g.providers {
-		geoAttributes, err := provider.Location(ctx, ip)
+	allAttributes := &attribute.Set{}
+	for _, geoProvider := range g.providers {
+		geoAttributes, err := geoProvider.Location(ctx, ip)
 		if err != nil {
+			// continue if no metadata is found
+			if errors.Is(err, provider.ErrNoMetadataFound) {
+				g.logger.Debug(err.Error(), zap.String("IP", ip.String()))
+				continue
+			}
 			return attribute.Set{}, err
 		}
 		*allAttributes = attribute.NewSet(append(allAttributes.ToSlice(), geoAttributes.ToSlice()...)...)

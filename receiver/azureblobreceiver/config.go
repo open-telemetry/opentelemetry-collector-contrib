@@ -69,16 +69,17 @@ type AuthType string
 const (
 	ServicePrincipalAuth AuthType = "service_principal"
 	ConnectionStringAuth AuthType = "connection_string"
+	DefaultAuth          AuthType = "default"
 )
 
 func (e *AuthType) UnmarshalText(text []byte) error {
 	str := AuthType(text)
 	switch str {
-	case ServicePrincipalAuth, ConnectionStringAuth:
+	case ServicePrincipalAuth, ConnectionStringAuth, DefaultAuth:
 		*e = str
 		return nil
 	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", str, ServicePrincipalAuth, ConnectionStringAuth)
+		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v,%v]", str, ServicePrincipalAuth, ConnectionStringAuth, DefaultAuth)
 	}
 }
 

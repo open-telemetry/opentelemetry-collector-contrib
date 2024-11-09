@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -40,8 +41,8 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
@@ -99,8 +100,8 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
@@ -193,8 +194,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
@@ -248,8 +249,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 	defaultExp := &mockMetricsExporter{}
 	mExp := &mockMetricsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): mExp,
 		},
@@ -310,8 +311,8 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 		defaultExp := &mockMetricsExporter{}
 		mExp := &mockMetricsExporter{}
 
-		host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-			component.DataTypeMetrics: {
+		host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+			pipeline.SignalMetrics: {
 				component.MustNewID("otlp"):              defaultExp,
 				component.MustNewIDWithName("otlp", "2"): mExp,
 			},
@@ -343,8 +344,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 	firstExp := &mockMetricsExporter{}
 	secondExp := &mockMetricsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "1"): firstExp,
 			component.MustNewIDWithName("otlp", "2"): secondExp,
@@ -433,8 +434,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		assert.Len(t, firstExp.AllMetrics(), 1)
 		assert.Len(t, secondExp.AllMetrics(), 1)
 
-		assert.Equal(t, firstExp.AllMetrics()[0].MetricCount(), 2)
-		assert.Equal(t, secondExp.AllMetrics()[0].MetricCount(), 2)
+		assert.Equal(t, 2, firstExp.AllMetrics()[0].MetricCount())
+		assert.Equal(t, 2, secondExp.AllMetrics()[0].MetricCount())
 		assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
 	})
 
@@ -478,8 +479,8 @@ func TestMetricsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
 	firstExp := &mockMetricsExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "1"): firstExp,
 		},

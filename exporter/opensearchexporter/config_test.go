@@ -45,6 +45,13 @@ func TestLoadConfig(t *testing.T) {
 			configValidateAssert: assert.NoError,
 		},
 		{
+			id:       component.NewIDWithName(metadata.Type, "default"),
+			expected: withDefaultConfig(),
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
+				return assert.ErrorContains(t, err, "endpoint must be specified")
+			},
+		},
+		{
 			id: component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
 				Dataset:   "ngnix",

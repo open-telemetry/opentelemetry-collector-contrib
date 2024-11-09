@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -32,23 +33,23 @@ func defaultClient(t *testing.T, endpoint string) client {
 }
 
 func TestNewCouchDBClient(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
 	t.Run("Invalid config", func(t *testing.T) {
 		couchdbClient, err := newCouchDBClient(
 			context.Background(),
 			&Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
-						},
-					},
-				}},
+				ClientConfig: clientConfig,
+			},
 			componenttest.NewNopHost(),
 			componenttest.NewNopTelemetrySettings())
 
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create HTTP Client: ")
+		require.ErrorContains(t, err, "failed to create HTTP Client: ")
 		require.Nil(t, couchdbClient)
 	})
 	t.Run("no error", func(t *testing.T) {
@@ -61,15 +62,15 @@ func TestGet(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, p, _ := r.BasicAuth()
 		if u == "unauthorized" || p == "unauthorized" {
-			w.WriteHeader(401)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		if strings.Contains(r.URL.Path, "/_stats/couchdb") {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		if strings.Contains(r.URL.Path, "/invalid_endpoint") {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		if strings.Contains(r.URL.Path, "/invalid_body") {
@@ -77,7 +78,7 @@ func TestGet(t *testing.T) {
 			return
 		}
 
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer ts.Close()
 
@@ -86,38 +87,36 @@ func TestGet(t *testing.T) {
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "invalid port ")
+		require.ErrorContains(t, err, "invalid port ")
 	})
 	t.Run("invalid endpoint", func(t *testing.T) {
 		url := ts.URL + "/invalid_endpoint"
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "404 Not Found")
+		require.ErrorContains(t, err, "404 Not Found")
 	})
 	t.Run("invalid body", func(t *testing.T) {
 		url := ts.URL + "/invalid_body"
 		couchdbClient := defaultClient(t, url)
 
 		result, err := couchdbClient.Get(url)
-		require.Error(t, err)
 		require.Nil(t, result)
-		require.Contains(t, err.Error(), "failed to read response body ")
+		require.ErrorContains(t, err, "failed to read response body ")
 	})
 	t.Run("401 Unauthorized", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.Endpoint = url
+
 		couchdbClient, err := newCouchDBClient(
 			context.Background(),
 			&Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: url,
-				},
-				Username: "unauthorized",
-				Password: "unauthorized",
+				ClientConfig: clientConfig,
+				Username:     "unauthorized",
+				Password:     "unauthorized",
 			},
 			componenttest.NewNopHost(),
 			componenttest.NewNopTelemetrySettings())
@@ -126,8 +125,7 @@ func TestGet(t *testing.T) {
 
 		result, err := couchdbClient.Get(url)
 		require.Nil(t, result)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "401 Unauthorized")
+		require.ErrorContains(t, err, "401 Unauthorized")
 	})
 	t.Run("no error", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
@@ -141,20 +139,19 @@ func TestGet(t *testing.T) {
 
 func TestGetNodeStats(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		if strings.Contains(r.URL.Path, "/invalid_json") {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte(`{"}`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
 		if strings.Contains(r.URL.Path, "/_stats/couchdb") {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte(`{"key":["value"]}`))
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			return
 		}
-		w.WriteHeader(404)
+		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer ts.Close()
 
@@ -183,14 +180,15 @@ func TestGetNodeStats(t *testing.T) {
 }
 
 func TestBuildReq(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: defaultEndpoint,
-			},
-			Username: "otelu",
-			Password: "otelp",
+			ClientConfig: clientConfig,
+			Username:     "otelu",
+			Password:     "otelp",
 		},
 		logger: zap.NewNop(),
 	}
@@ -205,12 +203,13 @@ func TestBuildReq(t *testing.T) {
 }
 
 func TestBuildBadReq(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+
 	couchdbClient := couchDBClient{
 		client: &http.Client{},
 		cfg: &Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: defaultEndpoint,
-			},
+			ClientConfig: clientConfig,
 		},
 		logger: zap.NewNop(),
 	}

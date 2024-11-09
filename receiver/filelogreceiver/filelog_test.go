@@ -5,6 +5,7 @@ package filelogreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
@@ -62,7 +64,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 	cfg := testdataConfigYaml()
 	cfg.InputConfig.StartAt = "middle"
 
-	_, err := NewFactory().CreateLogsReceiver(
+	_, err := NewFactory().CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
@@ -88,7 +90,7 @@ func TestReadStaticFile(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -174,7 +176,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -189,9 +191,13 @@ func (rt *rotationTest) Run(t *testing.T) {
 			if rt.copyTruncate {
 				// Recreate the backup file
 				// if backupFileName exists
-				if _, err = os.Stat(backupFileName); err == nil {
-					require.NoError(t, os.Remove(backupFileName))
-				}
+				require.Eventually(t, func() bool {
+					// On Windows you can't remove a file if it still has some handle opened to it. So remove the file
+					// in a loop until any async operation on it is done.
+					removeErr := os.Remove(backupFileName)
+					return errors.Is(removeErr, os.ErrNotExist)
+				}, 5*time.Second, 100*time.Millisecond)
+
 				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0600)
 				require.NoError(t, openErr)
 
@@ -350,7 +356,7 @@ func TestConsumeContract(t *testing.T) {
 	receivertest.CheckConsumeContract(receivertest.CheckConsumeContractParams{
 		T:             t,
 		Factory:       NewFactory(),
-		DataType:      component.DataTypeLogs,
+		Signal:        pipeline.SignalLogs,
 		Config:        cfg,
 		Generator:     flg,
 		GenerateCount: 10000,

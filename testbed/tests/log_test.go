@@ -159,10 +159,13 @@ func TestLog10kDPS(t *testing.T) {
 		},
 	}
 
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
+		},
 	}
 
 	for _, test := range tests {
@@ -247,6 +250,7 @@ func TestLogLargeFiles(t *testing.T) {
 		sender       testbed.DataSender
 		receiver     testbed.DataReceiver
 		loadOptions  testbed.LoadOptions
+		resourceSpec testbed.ResourceSpec
 		sleepSeconds int
 	}{
 		{
@@ -262,6 +266,10 @@ func TestLogLargeFiles(t *testing.T) {
 				DataItemsPerSecond: 200000,
 				ItemsPerBatch:      1,
 				Parallel:           100,
+			},
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
 			},
 			sleepSeconds: 100,
 		},
@@ -279,13 +287,21 @@ func TestLogLargeFiles(t *testing.T) {
 				ItemsPerBatch:      10,
 				Parallel:           10,
 			},
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 100,
+				ExpectedMaxRAM: 150,
+			},
 			sleepSeconds: 200,
 		},
 	}
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
-`}
+`,
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ScenarioLong(
@@ -302,10 +318,13 @@ func TestLogLargeFiles(t *testing.T) {
 }
 
 func TestLargeFileOnce(t *testing.T) {
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
+		},
 	}
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
@@ -345,7 +364,7 @@ func TestLargeFileOnce(t *testing.T) {
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.WaitForN(func() bool { return dataItemsGenerated.Load() == tc.MockBackend.DataItemsReceived() }, 20*time.Second, "all logs received")
+	tc.WaitForN(func() bool { return dataItemsGenerated.Load() == tc.MockBackend.DataItemsReceived() }, 200*time.Second, "all logs received")
 
 	tc.StopAgent()
 	tc.ValidateData()

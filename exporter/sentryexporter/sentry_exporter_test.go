@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/getsentry/sentry-go"
@@ -16,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -380,7 +381,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				conventions.AttributeHTTPMethod: "POST",
+				conventions.AttributeHTTPMethod: http.MethodPost,
 			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "http.server",
@@ -461,13 +462,13 @@ func TestGenerateTagsFromAttributes(t *testing.T) {
 	tags := generateTagsFromAttributes(attrs)
 
 	stringVal := tags["string-key"]
-	assert.Equal(t, stringVal, "string-value")
+	assert.Equal(t, "string-value", stringVal)
 	boolVal := tags["bool-key"]
-	assert.Equal(t, boolVal, "true")
+	assert.Equal(t, "true", boolVal)
 	doubleVal := tags["double-key"]
-	assert.Equal(t, doubleVal, "123.123")
+	assert.Equal(t, "123.123", doubleVal)
 	intVal := tags["int-key"]
-	assert.Equal(t, intVal, "321")
+	assert.Equal(t, "321", intVal)
 }
 
 type SpanStatusCase struct {

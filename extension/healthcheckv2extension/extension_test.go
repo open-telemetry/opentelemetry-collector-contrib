@@ -20,9 +20,9 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 )
 
 func TestComponentStatus(t *testing.T) {
@@ -35,7 +35,7 @@ func TestComponentStatus(t *testing.T) {
 	// Status before Start will be StatusNone
 	st, ok := ext.aggregator.AggregateStatus(status.ScopeAll, status.Concise)
 	require.True(t, ok)
-	assert.Equal(t, st.Status(), componentstatus.StatusNone)
+	assert.Equal(t, componentstatus.StatusNone, st.Status())
 
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -131,5 +131,5 @@ func TestNotifyConfig(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	assert.Equal(t, confJSON, body)
+	assert.JSONEq(t, string(confJSON), string(body))
 }

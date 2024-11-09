@@ -73,7 +73,7 @@ func ensureExporter(params exporter.Settings, pCfg *Config) *pubsubExporter {
 func createDefaultConfig() component.Config {
 	return &Config{
 		UserAgent:       "opentelemetry-collector-contrib {{version}}",
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		TimeoutSettings: exporterhelper.TimeoutConfig{Timeout: defaultTimeout},
 		Watermark: WatermarkConfig{
 			Behavior:     "current",
 			AllowedDrift: 0,
@@ -89,7 +89,7 @@ func createTracesExporter(
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -110,7 +110,7 @@ func createMetricsExporter(
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -132,7 +132,7 @@ func createLogsExporter(
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

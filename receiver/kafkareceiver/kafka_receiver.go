@@ -5,15 +5,16 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
@@ -41,6 +42,7 @@ type kafkaTracesConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       TracesUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -62,6 +64,7 @@ type kafkaMetricsConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       MetricsUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -83,6 +86,7 @@ type kafkaLogsConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       LogsUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -100,11 +104,7 @@ var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
 var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
 var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesU
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
-		unmarshaler:       unmarshaler,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -170,6 +170,22 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	if err != nil {
 		return err
 	}
+	// extensions take precedence over internal encodings
+	if unmarshaler, errExt := loadEncodingExtension[ptrace.Unmarshaler](
+		host,
+		c.config.Encoding,
+	); errExt == nil {
+		c.unmarshaler = &tracesEncodingUnmarshaler{
+			unmarshaler: *unmarshaler,
+			encoding:    c.config.Encoding,
+		}
+	}
+	if unmarshaler, ok := defaultTracesUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
+		c.unmarshaler = unmarshaler
+	}
+	if c.unmarshaler == nil {
+		return errUnrecognizedEncoding
+	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
 		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
@@ -193,16 +209,14 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 			headers: c.headers,
 		}
 	}
-	go func() {
-		if err := c.consumeLoop(ctx, consumerGroup); !errors.Is(err, context.Canceled) {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-		}
-	}()
+	c.consumeLoopWG.Add(1)
+	go c.consumeLoop(ctx, consumerGroup)
 	<-consumerGroup.ready
 	return nil
 }
 
-func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -213,7 +227,7 @@ func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.Co
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
-			return ctx.Err()
+			return
 		}
 	}
 }
@@ -223,17 +237,14 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -243,7 +254,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
-		unmarshaler:       unmarshaler,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -266,6 +277,22 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	})
 	if err != nil {
 		return err
+	}
+	// extensions take precedence over internal encodings
+	if unmarshaler, errExt := loadEncodingExtension[pmetric.Unmarshaler](
+		host,
+		c.config.Encoding,
+	); errExt == nil {
+		c.unmarshaler = &metricsEncodingUnmarshaler{
+			unmarshaler: *unmarshaler,
+			encoding:    c.config.Encoding,
+		}
+	}
+	if unmarshaler, ok := defaultMetricsUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
+		c.unmarshaler = unmarshaler
+	}
+	if c.unmarshaler == nil {
+		return errUnrecognizedEncoding
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
@@ -290,16 +317,14 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 			headers: c.headers,
 		}
 	}
-	go func() {
-		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-		}
-	}()
+	c.consumeLoopWG.Add(1)
+	go c.consumeLoop(ctx, metricsConsumerGroup)
 	<-metricsConsumerGroup.ready
 	return nil
 }
 
-func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -310,7 +335,7 @@ func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.C
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
-			return ctx.Err()
+			return
 		}
 	}
 }
@@ -320,17 +345,14 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
-	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-
+func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -340,7 +362,7 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
-		unmarshaler:       unmarshaler,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -363,6 +385,25 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	})
 	if err != nil {
 		return err
+	}
+	// extensions take precedence over internal encodings
+	if unmarshaler, errExt := loadEncodingExtension[plog.Unmarshaler](
+		host,
+		c.config.Encoding,
+	); errExt == nil {
+		c.unmarshaler = &logsEncodingUnmarshaler{
+			unmarshaler: *unmarshaler,
+			encoding:    c.config.Encoding,
+		}
+	}
+	if unmarshaler, errInt := getLogsUnmarshaler(
+		c.config.Encoding,
+		defaultLogsUnmarshalers(c.settings.BuildInfo.Version, c.settings.Logger),
+	); c.unmarshaler == nil && errInt == nil {
+		c.unmarshaler = unmarshaler
+	}
+	if c.unmarshaler == nil {
+		return errUnrecognizedEncoding
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
@@ -387,16 +428,14 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 			headers: c.headers,
 		}
 	}
-	go func() {
-		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-		}
-	}()
+	c.consumeLoopWG.Add(1)
+	go c.consumeLoop(ctx, logsConsumerGroup)
 	<-logsConsumerGroup.ready
 	return nil
 }
 
-func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -407,7 +446,7 @@ func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.Cons
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
-			return ctx.Err()
+			return
 		}
 	}
 }
@@ -417,6 +456,7 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
@@ -719,4 +759,31 @@ func toSaramaInitialOffset(initialOffset string) (int64, error) {
 	default:
 		return 0, errInvalidInitialOffset
 	}
+}
+
+// loadEncodingExtension tries to load an available extension for the given encoding.
+func loadEncodingExtension[T any](host component.Host, encoding string) (*T, error) {
+	extensionID, err := encodingToComponentID(encoding)
+	if err != nil {
+		return nil, err
+	}
+	encodingExtension, ok := host.GetExtensions()[*extensionID]
+	if !ok {
+		return nil, fmt.Errorf("unknown encoding extension %q", encoding)
+	}
+	unmarshaler, ok := encodingExtension.(T)
+	if !ok {
+		return nil, fmt.Errorf("extension %q is not an unmarshaler", encoding)
+	}
+	return &unmarshaler, nil
+}
+
+// encodingToComponentID converts an encoding string to a component ID using the given encoding as type.
+func encodingToComponentID(encoding string) (*component.ID, error) {
+	componentType, err := component.NewType(encoding)
+	if err != nil {
+		return nil, fmt.Errorf("invalid component type: %w", err)
+	}
+	id := component.NewID(componentType)
+	return &id, nil
 }

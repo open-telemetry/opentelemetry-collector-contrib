@@ -292,7 +292,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		}
 
 		// Create the HTTP POST request to send to the endpoint
-		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
 			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
@@ -326,7 +326,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
 		// Reference: https://github.com/prometheus/prometheus/pull/12677
-		if prwe.retryOnHTTP429 && resp.StatusCode == 429 {
+		if prwe.retryOnHTTP429 && resp.StatusCode == http.StatusTooManyRequests {
 			return rerr
 		}
 

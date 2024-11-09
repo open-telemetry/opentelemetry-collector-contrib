@@ -5,6 +5,7 @@ package jaeger
 
 import (
 	"encoding/binary"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -363,8 +364,8 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 	actual, err := ProtoToTraces([]*model.Batch{jb})
 	assert.NoError(t, err)
 
-	assert.Equal(t, actual.ResourceSpans().Len(), 1)
-	assert.Equal(t, actual.ResourceSpans().At(0).ScopeSpans().Len(), 2)
+	assert.Equal(t, 1, actual.ResourceSpans().Len())
+	assert.Equal(t, 2, actual.ResourceSpans().At(0).ScopeSpans().Len())
 
 	ils0 := actual.ResourceSpans().At(0).ScopeSpans().At(0)
 	ils1 := actual.ResourceSpans().At(0).ScopeSpans().At(1)
@@ -465,7 +466,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 			name: "Ignore http.status_code == 200 if error set to true.",
 			attrs: map[string]any{
 				tracetranslator.TagError:            true,
-				conventions.AttributeHTTPStatusCode: 200,
+				conventions.AttributeHTTPStatusCode: http.StatusOK,
 			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,

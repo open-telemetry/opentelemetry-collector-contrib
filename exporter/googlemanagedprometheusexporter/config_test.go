@@ -38,52 +38,51 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r0, factory.CreateDefaultConfig().(*Config))
 
 	r1 := cfg.Exporters[component.NewIDWithName(metadata.Type, "customname")].(*Config)
-	assert.Equal(t, r1,
-		&Config{
-			TimeoutSettings: exporterhelper.TimeoutSettings{
-				Timeout: 20 * time.Second,
-			},
-			GMPConfig: GMPConfig{
-				ProjectID: "my-project",
-				UserAgent: "opentelemetry-collector-contrib {{version}}",
-				MetricConfig: MetricConfig{
-					Config: googlemanagedprometheus.Config{
-						AddMetricSuffixes: false,
-						ExtraMetricsConfig: googlemanagedprometheus.ExtraMetricsConfig{
-							EnableTargetInfo: false,
-							EnableScopeInfo:  false,
-						},
+	assert.Equal(t, &Config{
+		TimeoutSettings: exporterhelper.TimeoutConfig{
+			Timeout: 20 * time.Second,
+		},
+		GMPConfig: GMPConfig{
+			ProjectID: "my-project",
+			UserAgent: "opentelemetry-collector-contrib {{version}}",
+			MetricConfig: MetricConfig{
+				Config: googlemanagedprometheus.Config{
+					AddMetricSuffixes: false,
+					ExtraMetricsConfig: googlemanagedprometheus.ExtraMetricsConfig{
+						EnableTargetInfo: false,
+						EnableScopeInfo:  false,
 					},
-					Prefix: "my-metric-domain.com",
-					ResourceFilters: []collector.ResourceFilter{
-						{
-							Prefix: "cloud",
-						},
-						{
-							Prefix: "k8s",
-						},
-						{
-							Prefix: "faas",
-						},
-						{
-							Regex: "container.id",
-						},
-						{
-							Regex: "process.pid",
-						},
-						{
-							Regex: "host.name",
-						},
-						{
-							Regex: "host.id",
-						},
+				},
+				Prefix: "my-metric-domain.com",
+				ResourceFilters: []collector.ResourceFilter{
+					{
+						Prefix: "cloud",
+					},
+					{
+						Prefix: "k8s",
+					},
+					{
+						Prefix: "faas",
+					},
+					{
+						Regex: "container.id",
+					},
+					{
+						Regex: "process.pid",
+					},
+					{
+						Regex: "host.name",
+					},
+					{
+						Regex: "host.id",
 					},
 				},
 			},
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
-		})
+		},
+		QueueSettings: exporterhelper.QueueConfig{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
+		},
+	}, r1)
 }

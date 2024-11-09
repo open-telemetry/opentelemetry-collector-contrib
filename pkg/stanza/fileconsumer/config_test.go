@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -456,7 +455,7 @@ func TestBuild(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -665,7 +664,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
-				require.Equal(t, m.pollInterval, 10*time.Millisecond)
+				require.Equal(t, 10*time.Millisecond, m.pollInterval)
 			},
 		},
 		{
@@ -724,11 +723,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 }
 
 func TestBuildWithHeader(t *testing.T) {
-	require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), true))
-	t.Cleanup(func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(AllowHeaderMetadataParsing.ID(), false))
-	})
-
 	basicConfig := func() *Config {
 		cfg := NewConfig()
 		cfg.Include = []string{"/var/log/testpath.*"}

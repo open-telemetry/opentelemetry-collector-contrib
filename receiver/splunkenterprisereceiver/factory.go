@@ -61,7 +61,7 @@ func createMetricsReceiver(
 	cfg := baseCfg.(*Config)
 	splunkScraper := newSplunkMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(),
+	scraper, err := scraperhelper.NewScraper(metadata.Type,
 		splunkScraper.scrape,
 		scraperhelper.WithStart(splunkScraper.start))
 	if err != nil {

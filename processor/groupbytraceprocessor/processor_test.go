@@ -253,7 +253,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	err = p.markAsReleased(traceID, p.eventMachine.workers[workerIndexForTraceID(traceID, config.NumWorkers)].fire)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
@@ -290,7 +290,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	err := p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestAddSpansToExistingTrace(t *testing.T) {
@@ -385,7 +385,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
@@ -412,7 +412,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	err := p.onTraceRemoved(traceID)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {

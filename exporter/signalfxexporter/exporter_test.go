@@ -218,7 +218,7 @@ func TestConsumeMetrics(t *testing.T) {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
 				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.Contains(t, err.Error(), "response content")
+				assert.ErrorContains(t, err, "response content")
 				return
 			}
 
@@ -545,7 +545,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
-			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -793,7 +793,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
-			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			sfxExp, err := NewFactory().CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
@@ -807,7 +807,7 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 				defer receivedTokens.Unlock()
 				return len(receivedTokens.tokens) == 1
 			}, 1*time.Second, 10*time.Millisecond)
-			assert.Equal(t, receivedTokens.tokens[0], tt.expectedToken)
+			assert.Equal(t, tt.expectedToken, receivedTokens.tokens[0])
 		})
 	}
 }
@@ -1260,7 +1260,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), rCfg)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(metadata.MetadataExporter)
@@ -1446,7 +1446,7 @@ func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	for _, dp := range dps {
 		if dp.Metric == "cpu.num_processors" || dp.Metric == "cpu.idle" {
 			intVal := dp.Value.IntValue
-			require.NotNil(t, intVal, fmt.Sprintf("unexpected nil IntValue for %q", dp.Metric))
+			require.NotNilf(t, intVal, "unexpected nil IntValue for %q", dp.Metric)
 			found[dp.Metric] = *intVal
 		} else {
 			// account for unexpected w/ test-failing placeholder
@@ -1843,7 +1843,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				assert.Error(t, err)
 				assert.True(t, consumererror.IsPermanent(err))
 				assert.True(t, strings.HasPrefix(err.Error(), tt.expectedErrorMsg))
-				assert.Contains(t, err.Error(), "response content")
+				assert.ErrorContains(t, err, "response content")
 				return
 			}
 
