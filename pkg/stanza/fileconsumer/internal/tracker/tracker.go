@@ -6,7 +6,6 @@ package tracker // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -15,16 +14,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
-
-// A convenience struct that holds a file fingerprint and its associated metadata.
-// This will be used during reader creation after the FindFiles() method.
-type Record struct {
-	File        *os.File
-	Fingerprint *fingerprint.Fingerprint
-	Metadata    *reader.Metadata
-}
 
 // Interface for tracking files that are being consumed.
 type Tracker interface {
@@ -40,7 +32,7 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
-	FindFiles(records []*Record)
+	FindFiles([]*fingerprint.Fingerprint) []fileset.Matchable
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -199,39 +191,46 @@ func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Meta
 }
 
 // FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
-func (t *fileTracker) FindFiles(records []*Record) {
-
+func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []fileset.Matchable {
 	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
 	// We exit if all fingerprints are matched.
 
-	mostRecentIndex := (t.archiveIndex - 1) % t.pollsToArchive
-	matchedRecords := 0
+	mostRecentIndex := util.Mod(t.archiveIndex-1, t.pollsToArchive)
+	matchedMetadata := make([]fileset.Matchable, len(fps))
+	indices := make(map[int]bool) // Track fp indices of original fps slice
+
+	for i := 0; i < len(fps); i++ {
+		indices[i] = true
+	}
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
-	for i := 0; i < t.pollsToArchive && matchedRecords < len(records); i++ {
+	for i := 0; i < t.pollsToArchive && len(indices) > 0; i, mostRecentIndex = i+1, util.Mod(mostRecentIndex-1, t.pollsToArchive) {
 		modified := false
 		data, err := t.readArchive(mostRecentIndex) // we load one fileset atmost once per poll
 		if err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 			continue
 		}
-		for _, record := range records {
-			if md := data.Match(record.Fingerprint, fileset.StartsWith); md != nil && record.Metadata != nil {
-				// populate record's metadata with the matched metadata, to indicate a successful match.
+		for index := range indices {
+			if md := data.Match(fps[index], fileset.StartsWith); md != nil {
+				// append the matched metadata/file pair to the new array
+				matchedMetadata[index] = md
 				modified = true
-				record.Metadata = md
-				matchedRecords++
+				delete(indices, index)
 			}
 		}
 		if modified {
 			// we save one fileset atmost once per poll
 			if err := t.writeArchive(mostRecentIndex, data); err != nil {
 				t.set.Logger.Error("error while opening archive", zap.Error(err))
-				continue
 			}
 		}
-		mostRecentIndex = (mostRecentIndex - 1) % t.pollsToArchive
 	}
+	// append remaining files
+	for index := range indices {
+		matchedMetadata[index] = fps[index]
+	}
+	return matchedMetadata
 }
 
 // noStateTracker only tracks the current polled files. Once the poll is
@@ -289,4 +288,4 @@ func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
 
-func (t *noStateTracker) FindFiles([]*Record) {}
+func (t *noStateTracker) FindFiles([]*fingerprint.Fingerprint) []fileset.Matchable { return nil }

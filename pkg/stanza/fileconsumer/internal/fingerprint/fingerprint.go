@@ -96,6 +96,10 @@ func (f *Fingerprint) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (f *Fingerprint) GetFingerprint() *Fingerprint {
+	return f
+}
+
 type marshal struct {
 	FirstBytes []byte `json:"first_bytes"`
 }
