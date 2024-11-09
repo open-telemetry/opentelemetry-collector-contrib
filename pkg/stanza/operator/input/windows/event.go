@@ -27,7 +27,7 @@ type Event struct {
 }
 
 // GetPublisherName will get the publisher name of the event.
-func (e *Event) GetPublisherName(buffer Buffer) (string, error) {
+func (e *Event) GetPublisherName(buffer *Buffer) (string, error) {
 	if e.handle == 0 {
 		return "", fmt.Errorf("event handle does not exist")
 	}
@@ -77,7 +77,7 @@ func NewEvent(handle uintptr) Event {
 }
 
 // RenderSimple will render the event as EventXML without formatted info.
-func (e *Event) RenderSimple(buffer Buffer) (*EventXML, error) {
+func (e *Event) RenderSimple(buffer *Buffer) (*EventXML, error) {
 	if e.handle == 0 {
 		return nil, fmt.Errorf("event handle does not exist")
 	}
@@ -100,7 +100,7 @@ func (e *Event) RenderSimple(buffer Buffer) (*EventXML, error) {
 }
 
 // RenderDeep will render the event as EventXML with all available formatted info.
-func (e *Event) RenderDeep(buffer Buffer, publisher Publisher) (*EventXML, error) {
+func (e *Event) RenderDeep(buffer *Buffer, publisher Publisher) (*EventXML, error) {
 	if e.handle == 0 {
 		return nil, fmt.Errorf("event handle does not exist")
 	}
