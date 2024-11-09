@@ -475,22 +475,20 @@ func TestLogsConnectorDetailed(t *testing.T) {
 
 	isAcme := `request["X-Tenant"] == "acme"`
 
-	isAnyResource := `attributes["resourceName"] != nil`
 	isResourceA := `attributes["resourceName"] == "resourceA"`
 	isResourceB := `attributes["resourceName"] == "resourceB"`
 	isResourceX := `attributes["resourceName"] == "resourceX"`
 	isResourceY := `attributes["resourceName"] == "resourceY"`
 
-	isScopeC := `instrumentation_scope.name == "scopeC"`
-	isScopeD := `instrumentation_scope.name == "scopeD"`
-
-	isAnyLog := `body != nil`
 	isLogE := `body == "logE"`
 	isLogF := `body == "logF"`
 	isLogX := `body == "logX"`
 	isLogY := `body == "logY"`
 
-	and, or := " and ", " or "
+	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
+	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
+
+	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
 		name        string
@@ -594,7 +592,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		{
 			name: "resource/all_match_first_only",
 			cfg: testConfig(
-				withRoute("resource", isAnyResource, idSink0),
+				withRoute("resource", "true", idSink0),
 				withRoute("resource", isResourceY, idSink1),
 				withDefault(idSinkD),
 			),
@@ -607,7 +605,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			name: "resource/all_match_last_only",
 			cfg: testConfig(
 				withRoute("resource", isResourceX, idSink0),
-				withRoute("resource", isAnyResource, idSink1),
+				withRoute("resource", "true", idSink1),
 				withDefault(idSinkD),
 			),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
@@ -618,8 +616,8 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		{
 			name: "resource/all_match_only_once",
 			cfg: testConfig(
-				withRoute("resource", isAnyResource, idSink0),
-				withRoute("resource", isResourceA+or+isResourceB, idSink1),
+				withRoute("resource", "true", idSink0),
+				withRoute("resource", isResourceA+" or "+isResourceB, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
@@ -688,7 +686,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		{
 			name: "log/all_match_first_only",
 			cfg: testConfig(
-				withRoute("log", isAnyLog, idSink0),
+				withRoute("log", "true", idSink0),
 				withRoute("log", isLogY, idSink1),
 				withDefault(idSinkD),
 			),
@@ -701,7 +699,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			name: "log/all_match_last_only",
 			cfg: testConfig(
 				withRoute("log", isLogX, idSink0),
-				withRoute("log", isAnyLog, idSink1),
+				withRoute("log", "true", idSink1),
 				withDefault(idSinkD),
 			),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
@@ -712,8 +710,8 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		{
 			name: "log/all_match_only_once",
 			cfg: testConfig(
-				withRoute("log", isAnyLog, idSink0),
-				withRoute("log", isLogE+or+isLogF, idSink1),
+				withRoute("log", "true", idSink0),
+				withRoute("log", isLogE+" or "+isLogF, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
@@ -782,7 +780,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		{
 			name: "log/with_resource_condition",
 			cfg: testConfig(
-				withRoute("log", "resource."+isResourceB+and+isAnyLog, idSink0),
+				withRoute("log", isResourceBFromLowerContext, idSink0),
 				withRoute("log", isLogY, idSink1),
 				withDefault(idSinkD),
 			),
@@ -794,7 +792,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		{
 			name: "log/with_scope_condition",
 			cfg: testConfig(
-				withRoute("log", isScopeC+and+isAnyLog, idSink0),
+				withRoute("log", isScopeCFromLowerContext, idSink0),
 				withRoute("log", isLogY, idSink1),
 				withDefault(idSinkD),
 			),
@@ -806,7 +804,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 		{
 			name: "log/with_resource_and_scope_conditions",
 			cfg: testConfig(
-				withRoute("log", "resource."+isResourceB+and+isScopeD+and+isAnyLog, idSink0),
+				withRoute("log", isResourceBFromLowerContext+" and "+isScopeDFromLowerContext, idSink0),
 				withRoute("log", isLogY, idSink1),
 				withDefault(idSinkD),
 			),

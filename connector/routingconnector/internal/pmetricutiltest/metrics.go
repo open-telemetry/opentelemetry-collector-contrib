@@ -43,3 +43,59 @@ func NewMetrics(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.M
 	}
 	return md
 }
+
+type Resource struct {
+	id     byte
+	scopes []Scope
+}
+
+type Scope struct {
+	id      byte
+	metrics []Metric
+}
+
+type Metric struct {
+	id         byte
+	dataPoints string
+}
+
+func WithResource(id byte, scopes ...Scope) Resource {
+	r := Resource{id: id}
+	r.scopes = append(r.scopes, scopes...)
+	return r
+}
+
+func WithScope(id byte, metrics ...Metric) Scope {
+	s := Scope{id: id}
+	s.metrics = append(s.metrics, metrics...)
+	return s
+}
+
+func WithMetric(id byte, dataPoints string) Metric {
+	return Metric{id: id, dataPoints: dataPoints}
+}
+
+// NewMetricsFromOpts creates a pmetric.Metrics with the specified resources, scopes, metrics,
+// and data points. The general idea is the same as NewMetrics, but this function allows for
+// more flexibility in creating non-uniform structures.
+func NewMetricsFromOpts(resources ...Resource) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	for _, resource := range resources {
+		r := md.ResourceMetrics().AppendEmpty()
+		r.Resource().Attributes().PutStr("resourceName", "resource"+string(resource.id))
+		for _, scope := range resource.scopes {
+			s := r.ScopeMetrics().AppendEmpty()
+			s.Scope().SetName("scope" + string(scope.id))
+			for _, metric := range scope.metrics {
+				m := s.Metrics().AppendEmpty()
+				m.SetName("metric" + string(metric.id))
+				dps := m.SetEmptyGauge().DataPoints()
+				for i := 0; i < len(metric.dataPoints); i++ {
+					dp := dps.AppendEmpty()
+					dp.Attributes().PutStr("dpName", "dp"+string(metric.dataPoints[i]))
+				}
+			}
+		}
+	}
+	return md
+}

@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
@@ -84,6 +85,15 @@ func (c *metricsConnector) switchMetrics(ctx context.Context, md pmetric.Metrics
 				func(rs pmetric.ResourceMetrics) bool {
 					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
+		case "metric":
+			pmetricutil.MoveMetricsWithContextIf(md, matchedMetrics,
+				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
+					mtx := ottlmetric.NewTransformContext(m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
+					_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
 					errs = errors.Join(errs, err)
 					return isMatch
 				},
