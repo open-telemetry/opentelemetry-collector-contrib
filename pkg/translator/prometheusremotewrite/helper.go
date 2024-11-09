@@ -282,7 +282,7 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 		c.addExemplars(pt, bucketBounds)
 
 		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 {
+		if settings.ExportCreatedMetric && startTimestamp != 0 && exportCreatedMetricGate.IsEnabled() {
 			labels := createLabels(baseName+createdSuffix, baseLabels)
 			c.addTimeSeriesIfNeeded(labels, startTimestamp, pt.Timestamp())
 		}
