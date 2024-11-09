@@ -119,7 +119,7 @@ func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[
 	if !strings.HasSuffix(datapointURL.Path, "v2/datapoint") {
 		datapointURL.Path = path.Join(datapointURL.Path, "v2/datapoint")
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", datapointURL.String(), body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, datapointURL.String(), body)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}

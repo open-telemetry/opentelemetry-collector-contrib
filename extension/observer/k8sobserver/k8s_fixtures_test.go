@@ -168,6 +168,12 @@ var ingress = &networkingv1.Ingress{
 	},
 }
 
+var ingressV2 = func() *networkingv1.Ingress {
+	i2 := ingress.DeepCopy()
+	i2.Labels["env"] = "hardening"
+	return i2
+}()
+
 var ingressMultipleHost = &networkingv1.Ingress{
 	ObjectMeta: metav1.ObjectMeta{
 		Namespace: "default",

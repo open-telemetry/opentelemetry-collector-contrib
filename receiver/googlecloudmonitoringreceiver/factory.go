@@ -37,7 +37,6 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	rCfg := baseCfg.(*Config)
 	r := newGoogleCloudMonitoringReceiver(rCfg, settings.Logger)
 

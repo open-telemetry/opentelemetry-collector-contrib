@@ -57,6 +57,13 @@ var resourceAttrsConversionMap = map[string]string{
 	semconv.AttributeK8SNodeName:            "kubernetes.node.name",
 	semconv.AttributeK8SPodName:             "kubernetes.pod.name",
 	semconv.AttributeK8SPodUID:              "kubernetes.pod.uid",
+	semconv.AttributeK8SJobName:             "kubernetes.job.name",
+	semconv.AttributeK8SCronJobName:         "kubernetes.cronjob.name",
+	semconv.AttributeK8SStatefulSetName:     "kubernetes.statefulset.name",
+	semconv.AttributeK8SReplicaSetName:      "kubernetes.replicaset.name",
+	semconv.AttributeK8SDaemonSetName:       "kubernetes.daemonset.name",
+	semconv.AttributeK8SContainerName:       "kubernetes.container.name",
+	semconv.AttributeK8SClusterName:         "orchestrator.cluster.name",
 }
 
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
