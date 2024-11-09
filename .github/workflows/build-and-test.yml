@@ -229,11 +229,6 @@ jobs:
         run: |
           make gendistributions
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
-      - name: Gen CODEOWNERS
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
-        run: |
-          GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} make gengithub
-          git diff -s --exit-code || (echo 'Generated code is out of date, please apply this diff and commit the changes in this PR.' && git diff && exit 1)
       - name: CodeGen
         run: |
           make -j2 generate
