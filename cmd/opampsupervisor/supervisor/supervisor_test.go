@@ -1385,7 +1385,7 @@ server:
 
 capabilities:
   reports_effective_config: true
-  accepts_restart_command_invalid_key: true
+  invalid_key: invalid_value
 `
 
 	cfgPath := filepath.Join(tmpDir, "config.yaml")
