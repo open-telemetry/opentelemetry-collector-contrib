@@ -33,7 +33,7 @@ type nopHost struct {
 	component.Host
 }
 
-func (nh *nopHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
+func (nh *nopHost) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 
@@ -226,7 +226,6 @@ func setupReceiver(
 	logsConsumer consumer.Logs,
 	initialSyncTimeout time.Duration,
 	tt componenttest.TestTelemetry) *kubernetesReceiver {
-
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift

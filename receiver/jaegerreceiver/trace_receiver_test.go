@@ -55,7 +55,7 @@ func jaegerBatchToHTTPBody(b *jaegerthrift.Batch) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := httptest.NewRequest("POST", "/api/traces", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/traces", bytes.NewReader(body))
 	r.Header.Add("content-type", "application/x-thrift")
 	return r, nil
 }
@@ -95,8 +95,7 @@ func TestReception(t *testing.T) {
 	_, port, _ := net.SplitHostPort(addr)
 	collectorAddr := fmt.Sprintf("http://localhost:%s/api/traces", port)
 	td := generateTraceData()
-	batches, err := jaeger.ProtoFromTraces(td)
-	require.NoError(t, err)
+	batches := jaeger.ProtoFromTraces(td)
 	for _, batch := range batches {
 		require.NoError(t, sendToCollector(collectorAddr, modelToThrift(batch)))
 	}
@@ -389,7 +388,7 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(buf))
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}

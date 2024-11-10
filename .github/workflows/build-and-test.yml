@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -164,7 +164,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -188,7 +188,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -251,7 +251,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["1.23.0", "1.22.7"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["1.23.0", "1.22.8"] # 1.20 is interpreted as 1.2 without quotes
         runner: [ubuntu-latest]
         group:
           - receiver-0
@@ -368,7 +368,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -407,7 +407,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -434,7 +434,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -506,7 +506,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -556,7 +556,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Mkdir bin and dist
         run: |

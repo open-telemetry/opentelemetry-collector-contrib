@@ -43,7 +43,6 @@ func newMetricsReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	if config.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
