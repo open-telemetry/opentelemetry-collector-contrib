@@ -1394,7 +1394,7 @@ capabilities:
 
 	_, err = config.Load(cfgPath)
 	require.Error(t, err)
-	require.True(t, strings.HasPrefix(err.Error(), "cannot parse"))
+	require.ErrorContains(t, err, "cannot parse")
 
 	fmt.Println(err.Error())
 
