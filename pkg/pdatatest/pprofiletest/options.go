@@ -151,7 +151,7 @@ func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofi
 
 // IgnoreProfileContainerTimestampValues is a CompareProfilesOption that sets the value of start and end timestamp
 // to empty bytes for every profile
-func IgnoreProfileContainerTimestampValues(attributeName string) CompareProfilesOption {
+func IgnoreProfileContainerTimestampValues() CompareProfilesOption {
 	return ignoreProfileContainerTimestampValues{}
 }
 
@@ -180,7 +180,7 @@ func (opt ignoreProfileContainerTimestampValues) maskProfileContainerTimestampVa
 
 // IgnoreProfileTimestampValues is a CompareProfilesOption that sets the value of start timestamp
 // and duration to empty bytes for every profile
-func IgnoreProfileTimestampValues(attributeName string) CompareProfilesOption {
+func IgnoreProfileTimestampValues() CompareProfilesOption {
 	return ignoreProfileTimestampValues{}
 }
 
