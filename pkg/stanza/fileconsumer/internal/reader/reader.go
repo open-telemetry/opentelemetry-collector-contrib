@@ -209,7 +209,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		err = r.emitFunc(ctx, token, r.FileAttributes)
+		err = r.emitFunc(ctx, emit.NewToken(token, r.FileAttributes))
 		if err != nil {
 			r.set.Logger.Error("failed to process token", zap.Error(err))
 		}

@@ -1275,7 +1275,6 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			batch = copyBatch(batch)
 
 			if len(md) != 0 {
-
 				hpb.Reset()
 				for key, vals := range md {
 					for _, val := range vals {

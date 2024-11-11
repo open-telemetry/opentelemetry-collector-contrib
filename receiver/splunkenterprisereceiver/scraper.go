@@ -426,7 +426,6 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
-
 	}
 	// Record the results
 	var host string
@@ -1665,7 +1664,6 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	}
 
 	for _, f := range da.Entries {
-
 		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
 			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
 			if err != nil {

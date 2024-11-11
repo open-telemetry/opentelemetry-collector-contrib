@@ -505,11 +505,20 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 
 	isAcme := `request["X-Tenant"] == "acme"`
 
-	isAnyResource := `attributes["resourceName"] != nil`
 	isResourceA := `attributes["resourceName"] == "resourceA"`
 	isResourceB := `attributes["resourceName"] == "resourceB"`
 	isResourceX := `attributes["resourceName"] == "resourceX"`
 	isResourceY := `attributes["resourceName"] == "resourceY"`
+
+	isMetricE := `name == "metricE"`
+	isMetricF := `name == "metricF"`
+	isMetricX := `name == "metricX"`
+	isMetricY := `name == "metricY"`
+
+	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
+	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
+
+	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
 		name        string
@@ -613,7 +622,7 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 		{
 			name: "resource/all_match_first_only",
 			cfg: testConfig(
-				withRoute("resource", isAnyResource, idSink0),
+				withRoute("resource", "true", idSink0),
 				withRoute("resource", isResourceY, idSink1),
 				withDefault(idSinkD),
 			),
@@ -626,7 +635,7 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			name: "resource/all_match_last_only",
 			cfg: testConfig(
 				withRoute("resource", isResourceX, idSink0),
-				withRoute("resource", isAnyResource, idSink1),
+				withRoute("resource", "true", idSink1),
 				withDefault(idSinkD),
 			),
 			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
@@ -637,7 +646,7 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 		{
 			name: "resource/all_match_only_once",
 			cfg: testConfig(
-				withRoute("resource", isAnyResource, idSink0),
+				withRoute("resource", "true", idSink0),
 				withRoute("resource", isResourceA+" or "+isResourceB, idSink1),
 				withDefault(idSinkD),
 			),
@@ -705,6 +714,168 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			expectSinkD: pmetric.Metrics{},
 		},
 		{
+			name: "metric/all_match_first_only",
+			cfg: testConfig(
+				withRoute("metric", "true", idSink0),
+				withRoute("metric", isMetricY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "metric/all_match_last_only",
+			cfg: testConfig(
+				withRoute("metric", isMetricX, idSink0),
+				withRoute("metric", "true", idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "metric/all_match_only_once",
+			cfg: testConfig(
+				withRoute("metric", "true", idSink0),
+				withRoute("metric", isMetricE+" or "+isMetricF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "metric/each_matches_one",
+			cfg: testConfig(
+				withRoute("metric", isMetricE, idSink0),
+				withRoute("metric", isMetricF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "E", "GH"),
+			expectSink1: pmetricutiltest.NewMetrics("AB", "CD", "F", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "metric/some_match_with_default",
+			cfg: testConfig(
+				withRoute("metric", isMetricX, idSink0),
+				withRoute("metric", isMetricF, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewMetrics("AB", "CD", "F", "GH"),
+			expectSinkD: pmetricutiltest.NewMetrics("AB", "CD", "E", "GH"),
+		},
+		{
+			name: "metric/some_match_without_default",
+			cfg: testConfig(
+				withRoute("metric", isMetricX, idSink0),
+				withRoute("metric", isMetricF, idSink1),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewMetrics("AB", "CD", "F", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "metric/match_none_with_default",
+			cfg: testConfig(
+				withRoute("metric", isMetricX, idSink0),
+				withRoute("metric", isMetricY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "metric/match_none_without_default",
+			cfg: testConfig(
+				withRoute("metric", isMetricX, idSink0),
+				withRoute("metric", isMetricY, idSink1),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "metric/with_resource_condition",
+			cfg: testConfig(
+				withRoute("metric", isResourceBFromLowerContext, idSink0),
+				withRoute("metric", isMetricY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("B", "CD", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewMetrics("A", "CD", "EF", "GH"),
+		},
+		{
+			name: "metric/with_scope_condition",
+			cfg: testConfig(
+				withRoute("metric", isScopeCFromLowerContext, idSink0),
+				withRoute("metric", isMetricY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "C", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewMetrics("AB", "D", "EF", "GH"),
+		},
+		{
+			name: "metric/with_resource_and_scope_conditions",
+			cfg: testConfig(
+				withRoute("metric", isResourceBFromLowerContext+" and "+isScopeDFromLowerContext, idSink0),
+				withRoute("metric", isMetricY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("B", "D", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewMetricsFromOpts(
+				pmetricutiltest.WithResource('A',
+					pmetricutiltest.WithScope('C', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+					pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+				),
+				pmetricutiltest.WithResource('B',
+					pmetricutiltest.WithScope('C', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+				),
+			),
+		},
+		{
+			name: "mixed/match_resource_then_metrics",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("metric", isMetricE, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("A", "CD", "EF", "GH"),
+			expectSink1: pmetricutiltest.NewMetrics("B", "CD", "E", "GH"),
+			expectSinkD: pmetricutiltest.NewMetrics("B", "CD", "F", "GH"),
+		},
+		{
+			name: "mixed/match_metrics_then_resource",
+			cfg: testConfig(
+				withRoute("metric", isMetricE, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "E", "GH"),
+			expectSink1: pmetricutiltest.NewMetrics("B", "CD", "F", "GH"),
+			expectSinkD: pmetricutiltest.NewMetrics("A", "CD", "F", "GH"),
+		},
+		{
 			name: "mixed/match_resource_then_grpc_request",
 			cfg: testConfig(
 				withRoute("resource", isResourceA, idSink0),
@@ -718,6 +889,19 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			expectSinkD: pmetric.Metrics{},
 		},
 		{
+			name: "mixed/match_metrics_then_grpc_request",
+			cfg: testConfig(
+				withRoute("metric", isMetricF, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "F", "GH"),
+			expectSink1: pmetricutiltest.NewMetrics("AB", "CD", "E", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
 			name: "mixed/match_resource_then_http_request",
 			cfg: testConfig(
 				withRoute("resource", isResourceA, idSink0),
@@ -728,6 +912,19 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
 			expectSink0: pmetricutiltest.NewMetrics("A", "CD", "EF", "GH"),
 			expectSink1: pmetricutiltest.NewMetrics("B", "CD", "EF", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "mixed/match_metrics_then_http_request",
+			cfg: testConfig(
+				withRoute("metric", isMetricF, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewMetrics("AB", "CD", "F", "GH"),
+			expectSink1: pmetricutiltest.NewMetrics("AB", "CD", "E", "GH"),
 			expectSinkD: pmetric.Metrics{},
 		},
 	}

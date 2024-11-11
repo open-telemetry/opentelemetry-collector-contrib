@@ -102,7 +102,6 @@ func TestMetricRenamingKeepAction(t *testing.T) {
 			}
 		}
 	})
-
 }
 
 func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -266,7 +265,6 @@ func TestLabelRenaming(t *testing.T) {
 			}
 		}
 	})
-
 }
 
 func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -373,7 +371,6 @@ func TestLabelRenamingKeepAction(t *testing.T) {
 			}
 		}
 	})
-
 }
 
 func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
