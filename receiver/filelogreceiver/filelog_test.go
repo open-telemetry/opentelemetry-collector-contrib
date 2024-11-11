@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -91,7 +90,7 @@ func TestReadStaticFile(t *testing.T) {
 	// Build the expected set by using adapter.Converter to translate entries
 	// to pdata Logs.
 	entries := []*entry.Entry{}
-	queueEntry := func(t *testing.T, msg string, severity entry.Severity) {
+	queueEntry := func(msg string, severity entry.Severity) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
 		e.Body = fmt.Sprintf("2020-08-25 %s %s", severity.String(), msg)
@@ -102,9 +101,9 @@ func TestReadStaticFile(t *testing.T) {
 		e.AddAttribute("msg", msg)
 		entries = append(entries, e)
 	}
-	queueEntry(t, "Something routine", entry.Info)
-	queueEntry(t, "Something bad happened!", entry.Error)
-	queueEntry(t, "Some details...", entry.Debug)
+	queueEntry("Something routine", entry.Info)
+	queueEntry("Something bad happened!", entry.Error)
+	queueEntry("Some details...", entry.Debug)
 
 	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries))
 
@@ -246,19 +245,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 	// TODO: Figure out a nice way to assert each logs entry content.
 	require.Equal(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
-}
-
-func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	n := 0
-	for pLog := range ch {
-		n += pLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len()
-
-		if n == count {
-			return
-		}
-	}
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {

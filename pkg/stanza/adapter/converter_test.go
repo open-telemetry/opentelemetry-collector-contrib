@@ -10,13 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap/zaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func BenchmarkConvertSimple(b *testing.B) {
@@ -384,9 +381,6 @@ func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
-
-			set := componenttest.NewNopTelemetrySettings()
-			set.Logger = zaptest.NewLogger(t)
 
 			entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, tc.numberOFScopes)
 
@@ -803,8 +797,6 @@ func BenchmarkConverter(b *testing.B) {
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				set := componenttest.NewNopTelemetrySettings()
-				set.Logger = zaptest.NewLogger(b)
 
 				b.ReportAllocs()
 
