@@ -11,9 +11,10 @@ import (
 	"sync"
 
 	"github.com/cespare/xxhash/v2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
 func ConvertEntries(entries []*entry.Entry) plog.Logs {
