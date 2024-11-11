@@ -212,7 +212,7 @@ func (pc parserCollection) parseCommonContextStatements(contextStatement Context
 }
 
 func parseGlobalExpr[K any](
-	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (expr.BoolExpr[K], error),
+	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (*ottl.ConditionSequence[K], error),
 	conditions []string,
 	pc parserCollection,
 	standardFuncs map[string]ottl.Factory[K]) (expr.BoolExpr[K], error) {
