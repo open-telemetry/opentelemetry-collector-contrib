@@ -92,7 +92,7 @@ func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) erro
 	connectErr := v.client.EnsureConnection(ctx)
 	// don't fail to start if we cannot establish connection, just log an error
 	if connectErr != nil {
-		v.logger.Error(fmt.Sprintf("unable to establish a connection to the vSphere SDK %s", connectErr.Error()))
+		v.logger.Error("unable to establish a connection to the vSphere SDK " + connectErr.Error())
 	}
 	return nil
 }

@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -252,7 +253,7 @@ func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource 
 			return "", fmt.Errorf("could not perform initial list for watch on %v, %w", config.gvr.String(), err)
 		}
 		if objects == nil {
-			return "", fmt.Errorf("nil objects returned, this is an error in the k8sobjectsreceiver")
+			return "", errors.New("nil objects returned, this is an error in the k8sobjectsreceiver")
 		}
 
 		resourceVersion = objects.GetResourceVersion()

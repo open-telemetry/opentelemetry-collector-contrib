@@ -3,7 +3,7 @@
 package solacereceiver
 
 import (
-	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/Azure/go-amqp"
@@ -285,7 +285,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 	}
 	var i = 1
 	for _, dataRef := range validEgressSpans {
-		name := "valid span " + fmt.Sprint(i)
+		name := "valid span " + strconv.Itoa(i)
 		i++
 		want := dataRef.out
 		spanData := dataRef.in

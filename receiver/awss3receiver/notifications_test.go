@@ -5,7 +5,7 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -65,7 +65,7 @@ func (h hostWithCustomCapabilityRegistry) GetExtensions() map[component.ID]compo
 
 func (m *mockCustomCapabilityRegistry) Register(_ string, _ ...opampcustommessages.CustomCapabilityRegisterOption) (handler opampcustommessages.CustomCapabilityHandler, err error) {
 	if m.shouldFailRegister {
-		return nil, fmt.Errorf("register failed")
+		return nil, errors.New("register failed")
 	}
 	if m.shouldRegisterReturnNilHandler {
 		return nil, nil
@@ -80,13 +80,13 @@ func (m *mockCustomCapabilityRegistry) Message() <-chan *protobufs.CustomMessage
 func (m *mockCustomCapabilityRegistry) SendMessage(messageType string, message []byte) (messageSendingChannel chan struct{}, err error) {
 	m.sendMessageCalls++
 	if m.unregisterCalled {
-		return nil, fmt.Errorf("unregister called")
+		return nil, errors.New("unregister called")
 	}
 	if m.shouldReturnPending != nil && m.shouldReturnPending() {
 		return m.pendingChannel, types.ErrCustomMessagePending
 	}
 	if m.shouldFailSend {
-		return nil, fmt.Errorf("send failed")
+		return nil, errors.New("send failed")
 	}
 	m.sentMessages = append(m.sentMessages, customMessage{messageType: messageType, message: message})
 	return nil, nil

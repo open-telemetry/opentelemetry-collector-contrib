@@ -4,6 +4,7 @@
 package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,7 +35,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.GRPC == nil && cfg.HTTP == nil {
-		return fmt.Errorf("must specify at least one protocol when using the Skywalking receiver")
+		return errors.New("must specify at least one protocol when using the Skywalking receiver")
 	}
 
 	if cfg.GRPC != nil {
@@ -56,7 +57,7 @@ func (cfg *Config) Validate() error {
 // Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil || len(componentParser.AllKeys()) == 0 {
-		return fmt.Errorf("empty config for Skywalking receiver")
+		return errors.New("empty config for Skywalking receiver")
 	}
 
 	// UnmarshalExact will not set struct properties to nil even if no key is provided,

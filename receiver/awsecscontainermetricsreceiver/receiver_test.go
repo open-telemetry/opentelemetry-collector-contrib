@@ -6,7 +6,6 @@ package awsecscontainermetricsreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
@@ -96,7 +95,7 @@ type invalidFakeClient struct {
 }
 
 func (f invalidFakeClient) GetResponse(_ string) ([]byte, error) {
-	return nil, fmt.Errorf("intentional error")
+	return nil, errors.New("intentional error")
 }
 
 func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {

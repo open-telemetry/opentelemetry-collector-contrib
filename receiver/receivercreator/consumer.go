@@ -5,6 +5,7 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -80,7 +81,7 @@ func (*enhancingConsumer) Capabilities() consumer.Capabilities {
 
 func (ec *enhancingConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	if ec.logs == nil {
-		return fmt.Errorf("no log consumer available")
+		return errors.New("no log consumer available")
 	}
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
@@ -92,7 +93,7 @@ func (ec *enhancingConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) erro
 
 func (ec *enhancingConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	if ec.metrics == nil {
-		return fmt.Errorf("no metric consumer available")
+		return errors.New("no metric consumer available")
 	}
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
@@ -104,7 +105,7 @@ func (ec *enhancingConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 
 func (ec *enhancingConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	if ec.traces == nil {
-		return fmt.Errorf("no trace consumer available")
+		return errors.New("no trace consumer available")
 	}
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {

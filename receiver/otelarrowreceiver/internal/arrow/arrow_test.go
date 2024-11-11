@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -340,9 +341,9 @@ func (ctc *commonTestCase) newErrorConsumer() arrowRecord.ConsumerAPI {
 	mock := arrowRecordMock.NewMockConsumerAPI(ctc.ctrl)
 
 	mock.EXPECT().Close().Times(1).Return(nil)
-	mock.EXPECT().TracesFrom(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("test invalid error"))
-	mock.EXPECT().MetricsFrom(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("test invalid error"))
-	mock.EXPECT().LogsFrom(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("test invalid error"))
+	mock.EXPECT().TracesFrom(gomock.Any()).AnyTimes().Return(nil, errors.New("test invalid error"))
+	mock.EXPECT().MetricsFrom(gomock.Any()).AnyTimes().Return(nil, errors.New("test invalid error"))
+	mock.EXPECT().LogsFrom(gomock.Any()).AnyTimes().Return(nil, errors.New("test invalid error"))
 
 	return mock
 }
@@ -549,7 +550,7 @@ func TestReceiverRecvError(t *testing.T) {
 
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 
-	ctc.putBatch(nil, fmt.Errorf("test recv error"))
+	ctc.putBatch(nil, errors.New("test recv error"))
 
 	err := ctc.wait()
 	require.ErrorContains(t, err, "test recv error")
@@ -1259,7 +1260,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 				Metadata: client.NewMetadata(newmd),
 			}), nil
 		}
-		return ctx, fmt.Errorf("not authorized")
+		return ctx, errors.New("not authorized")
 	})
 
 	go func() {

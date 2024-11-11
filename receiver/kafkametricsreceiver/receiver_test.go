@@ -5,7 +5,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -37,7 +37,7 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
 	assert.Nil(t, r)
-	expectedError := fmt.Errorf("no scraper found for key: cpu")
+	expectedError := errors.New("no scraper found for key: cpu")
 	if assert.Error(t, err) {
 		assert.Equal(t, expectedError, err)
 	}
@@ -75,7 +75,7 @@ func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
 	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
-		return nil, fmt.Errorf("fail")
+		return nil, errors.New("fail")
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())

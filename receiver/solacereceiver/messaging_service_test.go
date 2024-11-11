@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"fmt"
+	"errors"
 	"net"
 	"reflect"
 	"runtime"
@@ -182,7 +182,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 
 func TestAMQPDialFailure(t *testing.T) {
 	const expectedAddr = "some-host:1234"
-	var expectedErr = fmt.Errorf("some error")
+	var expectedErr = errors.New("some error")
 	dialFunc = func(_ context.Context, addr string, _ *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
@@ -207,7 +207,7 @@ func TestAMQPDialFailure(t *testing.T) {
 func TestAMQPDialConfigOptionsWithoutTLS(t *testing.T) {
 	// try creating a service without a tls config calling dial expecting no tls config passed
 	const expectedAddr = "some-host:1234"
-	var expectedErr = fmt.Errorf("some error")
+	var expectedErr = errors.New("some error")
 	expectedAuthConnOption := amqp.SASLTypeAnonymous()
 	dialFunc = func(_ context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
@@ -235,7 +235,7 @@ func TestAMQPDialConfigOptionsWithoutTLS(t *testing.T) {
 func TestAMQPDialConfigOptionsWithTLS(t *testing.T) {
 	// try creating a service with a tls config calling dial
 	const expectedAddr = "some-host:1234"
-	var expectedErr = fmt.Errorf("some error")
+	var expectedErr = errors.New("some error")
 	expectedAuthConnOption := amqp.SASLTypeAnonymous()
 	expectedTLSConnOption := &tls.Config{
 		InsecureSkipVerify: false,
@@ -302,7 +302,7 @@ func TestAMQPNewClientDialAndCloseConnFailure(t *testing.T) {
 	closed := false
 	conn.setCloseHandler(func() error {
 		closed = true
-		return fmt.Errorf("some error")
+		return errors.New("some error")
 	})
 	service.close(context.Background())
 	// expect conn.Close to have been called

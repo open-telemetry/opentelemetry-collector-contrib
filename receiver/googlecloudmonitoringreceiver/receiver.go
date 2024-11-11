@@ -160,7 +160,7 @@ func (mr *monitoringReceiver) initializeClient(ctx context.Context) error {
 		return fmt.Errorf("failed to find default credentials: %w", err)
 	}
 	if creds == nil || creds.JSON == nil {
-		return fmt.Errorf("no valid credentials found")
+		return errors.New("no valid credentials found")
 	}
 
 	// Attempt to create the monitoring client

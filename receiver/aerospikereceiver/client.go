@@ -5,7 +5,6 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"crypto/tls"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -266,7 +265,7 @@ func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error)
 
 	commands := make([]string, len(names))
 	for i, name := range names {
-		commands[i] = fmt.Sprintf("namespace/%s", name)
+		commands[i] = "namespace/" + name
 	}
 
 	res, err = n.RequestInfo(policy, commands...)

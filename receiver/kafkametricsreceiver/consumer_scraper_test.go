@@ -5,7 +5,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"regexp"
 	"testing"
 
@@ -53,7 +53,7 @@ func TestConsumerScraper_createConsumerScraper(t *testing.T) {
 
 func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("new client failed")
+		return nil, errors.New("new client failed")
 	}
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
@@ -65,7 +65,7 @@ func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 
 func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("new client failed")
+		return nil, errors.New("new client failed")
 	}
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
@@ -83,7 +83,7 @@ func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
 		return client, nil
 	}
 	newClusterAdmin = func([]string, *sarama.Config) (sarama.ClusterAdmin, error) {
-		return nil, fmt.Errorf("new cluster admin failed")
+		return nil, errors.New("new cluster admin failed")
 	}
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())

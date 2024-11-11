@@ -6,7 +6,6 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -660,7 +659,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 }
 
 func TestReceiverFlowControlDelayedRetry(t *testing.T) {
-	someError := consumererror.NewPermanent(fmt.Errorf("some error"))
+	someError := consumererror.NewPermanent(errors.New("some error"))
 	testCases := []struct {
 		name         string
 		nextConsumer consumer.Traces
@@ -773,7 +772,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			// we want to return an error at first, then set the next consumer to a noop consumer
 			receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 				receiver.nextConsumer = tc.nextConsumer
-				return fmt.Errorf("Some temporary error")
+				return errors.New("Some temporary error")
 			})
 			require.NoError(t, err)
 
@@ -953,7 +952,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 			return nil
 		})
 		require.NoError(t, err)
-		return fmt.Errorf("Some temporary error")
+		return errors.New("Some temporary error")
 	})
 	require.NoError(t, err)
 
@@ -1050,7 +1049,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 			})
 		}
 		require.NoError(t, err)
-		return fmt.Errorf("Some temporary error")
+		return errors.New("Some temporary error")
 	})
 	require.NoError(t, err)
 
