@@ -218,7 +218,6 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 				// Ignore the seqnums for now. We will use them later.
 				_ = spanSeqnum
 				_ = traceSeqnum
-
 			}
 		}
 	}
