@@ -241,7 +241,6 @@ func TestLogOtlpSendingQueue(t *testing.T) {
 			nil,
 			nil)
 	})
-
 }
 
 func TestLogLargeFiles(t *testing.T) {

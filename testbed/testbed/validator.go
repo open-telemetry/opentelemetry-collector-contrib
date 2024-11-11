@@ -48,7 +48,6 @@ func (v *LogPresentValidator) Validate(tc *TestCase) {
 }
 
 func (v *LogPresentValidator) RecordResults(tc *TestCase) {
-
 	var result string
 	if tc.t.Failed() {
 		result = "FAIL"
@@ -418,7 +417,6 @@ func (v *CorrectnessTestValidator) diffSpanLinks(sentSpan ptrace.Span, recdSpan 
 				}
 				v.assertionFailures = append(v.assertionFailures, af)
 			}
-
 		}
 	}
 	if sentSpan.DroppedLinksCount() != recdSpan.DroppedLinksCount() {

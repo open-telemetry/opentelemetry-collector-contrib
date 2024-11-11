@@ -345,5 +345,4 @@ func (tc *TestCase) AgentLogsContains(text string) bool {
 
 	res, _ := grep.Output()
 	return string(res) != ""
-
 }
