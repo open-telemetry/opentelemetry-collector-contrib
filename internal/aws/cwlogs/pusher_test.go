@@ -172,7 +172,6 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 	p.logEventBatch.byteTotal = 1
 	assert.Nil(t, p.addLogEvent(nil))
 	assert.Len(t, p.logEventBatch.putLogEventsInput.LogEvents, 1)
-
 }
 
 func TestAddLogEventWithValidation(t *testing.T) {
