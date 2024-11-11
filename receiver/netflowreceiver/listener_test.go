@@ -16,7 +16,7 @@ func TestCreateValidDefaultListener(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := receivertest.NewNopSettings()
-	receiver, err := factory.CreateLogsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	receiver, err := factory.CreateLogs(context.Background(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, receiver, "receiver creation failed")
 	assert.Equal(t, "netflow", receiver.(*netflowReceiver).config.Scheme)
