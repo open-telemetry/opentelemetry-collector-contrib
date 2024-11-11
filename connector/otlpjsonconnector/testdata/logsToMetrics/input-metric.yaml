@@ -1,0 +1,11 @@
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+            body:
+              stringValue: '{"resourceMetrics":[{"resource":{"attributes":[{"key":"resource-attr","value":{"stringValue":"resource-attr-val-1"}}]},"scopeMetrics":[{"scope":{},"metrics":[{"name":"gauge-int","unit":"1","gauge":{"dataPoints":[{"attributes":[{"key":"label-2","value":{"stringValue":"label-value-2"}}],"startTimeUnixNano":"1000000","timeUnixNano":"1000000","asInt":"456"}]}}]}]}]}'
+            spanId: ""
+            traceId: ""
+        scope: {}
+

@@ -59,7 +59,10 @@ type Converter struct {
 	pLogsChan chan plog.Logs
 
 	stopOnce sync.Once
-	stopChan chan struct{}
+
+	// converterChan is an internal communication channel signaling stop was called
+	// prevents sending to closed channels
+	converterChan chan struct{}
 
 	// workerChan is an internal communication channel that gets the log
 	// entries from Batch() calls and it receives the data in workerLoop().
@@ -73,6 +76,10 @@ type Converter struct {
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
 	wg sync.WaitGroup
+
+	// flushWg is a WaitGroup that makes sure that we wait for flush loop to exit
+	// when Stop() is called.
+	flushWg sync.WaitGroup
 }
 
 type converterOption interface {
@@ -94,12 +101,12 @@ func (o workerCountOption) apply(c *Converter) {
 func NewConverter(set component.TelemetrySettings, opts ...converterOption) *Converter {
 	set.Logger = set.Logger.With(zap.String("component", "converter"))
 	c := &Converter{
-		set:         set,
-		workerChan:  make(chan []*entry.Entry),
-		workerCount: int(math.Max(1, float64(runtime.NumCPU()/4))),
-		pLogsChan:   make(chan plog.Logs),
-		stopChan:    make(chan struct{}),
-		flushChan:   make(chan plog.Logs),
+		set:           set,
+		workerChan:    make(chan []*entry.Entry),
+		workerCount:   int(math.Max(1, float64(runtime.NumCPU()/4))),
+		pLogsChan:     make(chan plog.Logs),
+		converterChan: make(chan struct{}),
+		flushChan:     make(chan plog.Logs),
 	}
 	for _, opt := range opts {
 		opt.apply(c)
@@ -115,14 +122,23 @@ func (c *Converter) Start() {
 		go c.workerLoop()
 	}
 
-	c.wg.Add(1)
+	c.flushWg.Add(1)
 	go c.flushLoop()
 }
 
 func (c *Converter) Stop() {
 	c.stopOnce.Do(func() {
-		close(c.stopChan)
+		close(c.converterChan)
+
+		// close workerChan and wait for entries to be processed
+		close(c.workerChan)
 		c.wg.Wait()
+
+		// close flushChan and wait for flush loop to finish
+		close(c.flushChan)
+		c.flushWg.Wait()
+
+		// close pLogsChan so callers can stop processing
 		close(c.pLogsChan)
 	})
 }
@@ -138,76 +154,59 @@ func (c *Converter) OutChannel() <-chan plog.Logs {
 func (c *Converter) workerLoop() {
 	defer c.wg.Done()
 
-	for {
-
-		select {
-		case <-c.stopChan:
-			return
-
-		case entries, ok := <-c.workerChan:
-			if !ok {
-				return
-			}
-
-			resourceHashToIdx := make(map[uint64]int)
-			scopeIdxByResource := make(map[uint64]map[string]int)
-
-			pLogs := plog.NewLogs()
-			var sl plog.ScopeLogs
-
-			for _, e := range entries {
-				resourceID := HashResource(e.Resource)
-				var rl plog.ResourceLogs
-
-				resourceIdx, ok := resourceHashToIdx[resourceID]
-				if !ok {
-					resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
-
-					rl = pLogs.ResourceLogs().AppendEmpty()
-					upsertToMap(e.Resource, rl.Resource().Attributes())
-
-					scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
-					sl = rl.ScopeLogs().AppendEmpty()
-					sl.Scope().SetName(e.ScopeName)
-				} else {
-					rl = pLogs.ResourceLogs().At(resourceIdx)
-					scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
-					if !ok {
-						scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
-						sl = rl.ScopeLogs().AppendEmpty()
-						sl.Scope().SetName(e.ScopeName)
-					} else {
-						sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
-					}
-				}
-				convertInto(e, sl.LogRecords().AppendEmpty())
-			}
-
-			// Send plogs directly to flushChan
-			select {
-			case c.flushChan <- pLogs:
-			case <-c.stopChan:
-			}
-		}
+	for entries := range c.workerChan {
+		// Send plogs directly to flushChan
+		c.flushChan <- ConvertEntries(entries)
 	}
 }
 
+func ConvertEntries(entries []*entry.Entry) plog.Logs {
+	resourceHashToIdx := make(map[uint64]int)
+	scopeIdxByResource := make(map[uint64]map[string]int)
+
+	pLogs := plog.NewLogs()
+	var sl plog.ScopeLogs
+
+	for _, e := range entries {
+		resourceID := HashResource(e.Resource)
+		var rl plog.ResourceLogs
+
+		resourceIdx, ok := resourceHashToIdx[resourceID]
+		if !ok {
+			resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
+
+			rl = pLogs.ResourceLogs().AppendEmpty()
+			upsertToMap(e.Resource, rl.Resource().Attributes())
+
+			scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
+			sl = rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(e.ScopeName)
+		} else {
+			rl = pLogs.ResourceLogs().At(resourceIdx)
+			scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
+			if !ok {
+				scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
+				sl = rl.ScopeLogs().AppendEmpty()
+				sl.Scope().SetName(e.ScopeName)
+			} else {
+				sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
+			}
+		}
+		convertInto(e, sl.LogRecords().AppendEmpty())
+	}
+	return pLogs
+}
+
 func (c *Converter) flushLoop() {
-	defer c.wg.Done()
+	defer c.flushWg.Done()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	for {
-		select {
-		case <-c.stopChan:
-			return
-
-		case pLogs := <-c.flushChan:
-			if err := c.flush(ctx, pLogs); err != nil {
-				c.set.Logger.Debug("Problem sending log entries",
-					zap.Error(err),
-				)
-			}
+	for pLogs := range c.flushChan {
+		if err := c.flush(ctx, pLogs); err != nil {
+			c.set.Logger.Debug("Problem sending log entries",
+				zap.Error(err),
+			)
 		}
 	}
 }
@@ -221,10 +220,6 @@ func (c *Converter) flush(ctx context.Context, pLogs plog.Logs) error {
 		return fmt.Errorf("flushing log entries interrupted, err: %w", ctx.Err())
 
 	case c.pLogsChan <- pLogs:
-
-	// The converter has been stopped so bail the flush.
-	case <-c.stopChan:
-		return errors.New("logs converter has been stopped")
 	}
 
 	return nil
@@ -232,12 +227,15 @@ func (c *Converter) flush(ctx context.Context, pLogs plog.Logs) error {
 
 // Batch takes in an entry.Entry and sends it to an available worker for processing.
 func (c *Converter) Batch(e []*entry.Entry) error {
+	// in case Stop was called do not process batch
 	select {
-	case c.workerChan <- e:
-		return nil
-	case <-c.stopChan:
+	case <-c.converterChan:
 		return errors.New("logs converter has been stopped")
+	default:
 	}
+
+	c.workerChan <- e
+	return nil
 }
 
 // convert converts one entry.Entry into plog.LogRecord allocating it.

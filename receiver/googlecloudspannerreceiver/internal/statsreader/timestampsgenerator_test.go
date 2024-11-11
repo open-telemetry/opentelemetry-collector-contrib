@@ -39,7 +39,7 @@ func TestTimestampsGenerator_PullTimestamps(t *testing.T) {
 			}
 			timestamps := generator.pullTimestamps(testCase.lastPullTimestamp, now)
 
-			assert.Equal(t, testCase.amountOfTimestamps, len(timestamps))
+			assert.Len(t, timestamps, testCase.amountOfTimestamps)
 		})
 	}
 }
@@ -51,7 +51,7 @@ func TestPullTimestampsWithDifference(t *testing.T) {
 
 	timestamps := pullTimestampsWithDifference(lowerBound, upperBound, time.Minute)
 
-	assert.Equal(t, expectedAmountOfTimestamps, len(timestamps))
+	assert.Len(t, timestamps, expectedAmountOfTimestamps)
 
 	expectedTimestamp := lowerBound.Add(time.Minute)
 
@@ -64,7 +64,7 @@ func TestPullTimestampsWithDifference(t *testing.T) {
 	upperBound = lowerBound.Add(5 * time.Minute).Add(15 * time.Second)
 	timestamps = pullTimestampsWithDifference(lowerBound, upperBound, time.Minute)
 
-	assert.Equal(t, 6, len(timestamps))
+	assert.Len(t, timestamps, 6)
 
 	expectedTimestamp = lowerBound.Add(time.Minute)
 
@@ -74,7 +74,6 @@ func TestPullTimestampsWithDifference(t *testing.T) {
 	}
 
 	assert.Equal(t, upperBound, timestamps[expectedAmountOfTimestamps])
-
 }
 
 func TestShiftToStartOfMinute(t *testing.T) {

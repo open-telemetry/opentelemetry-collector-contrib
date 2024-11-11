@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -48,8 +49,7 @@ func (f *eventhubReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-
-	receiver, err := f.getReceiver(component.DataTypeLogs, cfg, settings)
+	receiver, err := f.getReceiver(pipeline.SignalLogs, cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,7 @@ func (f *eventhubReceiverFactory) createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
-	receiver, err := f.getReceiver(component.DataTypeMetrics, cfg, settings)
+	receiver, err := f.getReceiver(pipeline.SignalMetrics, cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +81,7 @@ func (f *eventhubReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
-	receiver, err := f.getReceiver(component.DataTypeTraces, cfg, settings)
+	receiver, err := f.getReceiver(pipeline.SignalTraces, cfg, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +92,10 @@ func (f *eventhubReceiverFactory) createTracesReceiver(
 }
 
 func (f *eventhubReceiverFactory) getReceiver(
-	receiverType component.Type,
+	signal pipeline.Signal,
 	cfg component.Config,
 	settings receiver.Settings,
 ) (component.Component, error) {
-
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)
@@ -110,21 +107,21 @@ func (f *eventhubReceiverFactory) getReceiver(
 		var logsUnmarshaler eventLogsUnmarshaler
 		var metricsUnmarshaler eventMetricsUnmarshaler
 		var tracesUnmarshaler eventTracesUnmarshaler
-		switch receiverType {
-		case component.DataTypeLogs:
+		switch signal {
+		case pipeline.SignalLogs:
 			if logFormat(receiverConfig.Format) == rawLogFormat {
 				logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
 			} else {
-				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger)
+				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.ApplySemanticConventions)
 			}
-		case component.DataTypeMetrics:
+		case pipeline.SignalMetrics:
 			if logFormat(receiverConfig.Format) == rawLogFormat {
 				metricsUnmarshaler = nil
 				err = errors.New("raw format not supported for Metrics")
 			} else {
 				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger)
 			}
-		case component.DataTypeTraces:
+		case pipeline.SignalTraces:
 			if logFormat(receiverConfig.Format) == rawLogFormat {
 				tracesUnmarshaler = nil
 				err = errors.New("raw format not supported for Traces")
@@ -140,7 +137,7 @@ func (f *eventhubReceiverFactory) getReceiver(
 		eventHandler := newEventhubHandler(receiverConfig, settings)
 
 		var rcvr component.Component
-		rcvr, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, tracesUnmarshaler, eventHandler, settings)
+		rcvr, err = newReceiver(signal, logsUnmarshaler, metricsUnmarshaler, tracesUnmarshaler, eventHandler, settings)
 		return rcvr
 	})
 

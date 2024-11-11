@@ -77,7 +77,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 	if err != nil {
 		return nil, err // Can't do anything
 	}
-	if resp.StatusCode == 429 {
+	if resp.StatusCode == http.StatusTooManyRequests {
 		expBackoff := &backoff.ExponentialBackOff{
 			InitialInterval:     rt.backoffConfig.InitialInterval,
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
@@ -110,7 +110,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 			if err != nil {
 				return nil, err
 			}
-			if resp.StatusCode != 429 {
+			if resp.StatusCode != http.StatusTooManyRequests {
 				break
 			}
 		}
@@ -217,7 +217,6 @@ func (s *MongoDBAtlasClient) GetOrganization(ctx context.Context, orgID string) 
 		return nil, fmt.Errorf("error retrieving project page: %w", err)
 	}
 	return org, nil
-
 }
 
 // Projects returns a list of projects accessible within the provided organization
@@ -719,7 +718,6 @@ type GetAccessLogsOptions struct {
 
 // GetAccessLogs returns the access logs specified for the cluster requested
 func (s *MongoDBAtlasClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
-
 	options := mongodbatlas.AccessLogOptions{
 		// Earliest Timestamp in epoch milliseconds from when Atlas should access log results
 		Start: fmt.Sprintf("%d", opts.MinDate.UTC().UnixMilli()),

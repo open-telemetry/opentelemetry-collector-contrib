@@ -5,7 +5,6 @@ package arrow
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -216,7 +215,7 @@ func TestStreamUnknownBatchError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }
@@ -248,12 +247,10 @@ func TestStreamStatusUnavailableInvalid(t *testing.T) {
 			}()
 			// sender should get "test unavailable" once, success second time.
 			err := tc.mustSendAndWait()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "test unavailable")
+			require.ErrorContains(t, err, "test unavailable")
 
 			err = tc.mustSendAndWait()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "test invalid")
+			require.ErrorContains(t, err, "test invalid")
 
 			err = tc.mustSendAndWait()
 			require.NoError(t, err)
@@ -283,8 +280,7 @@ func TestStreamStatusUnrecognized(t *testing.T) {
 				channel.recv <- statusUnrecognizedFor(batch.BatchId)
 			}()
 			err := tc.mustSendAndWait()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "test unrecognized")
+			require.ErrorContains(t, err, "test unrecognized")
 
 			// Note: do not cancel the context, the stream should be
 			// shutting down due to the error.
@@ -321,8 +317,8 @@ func TestStreamUnsupported(t *testing.T) {
 
 			tc.waitForShutdown()
 
-			require.Less(t, 0, len(tc.observedLogs.All()), "should have at least one log: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
+			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
 		})
 	}
 }
@@ -347,7 +343,7 @@ func TestStreamSendError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }

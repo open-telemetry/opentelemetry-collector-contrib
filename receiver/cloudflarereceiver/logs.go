@@ -25,6 +25,7 @@ import (
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver/internal/metadata"
 )
 
@@ -112,7 +113,6 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				l.logger.Error("ServeTLS failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-
 		} else {
 			l.logger.Debug("Starting Serve",
 				zap.String("address", l.cfg.Endpoint))
@@ -125,7 +125,6 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				l.logger.Error("Serve failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-
 		}
 	}()
 	return nil
@@ -185,7 +184,7 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 	}
 
 	if err := l.consumer.ConsumeLogs(req.Context(), l.processLogs(pcommon.NewTimestampFromTime(time.Now()), logs)); err != nil {
-		rw.WriteHeader(http.StatusInternalServerError)
+		errorutil.HTTPError(rw, err)
 		l.logger.Error("Failed to consumer alert as log", zap.Error(err))
 		return
 	}

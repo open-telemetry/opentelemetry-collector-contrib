@@ -53,7 +53,7 @@ func TestRoundTripper(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, roundTripper)
 
-	req := &http.Request{Method: "Get", Header: map[string][]string{}}
+	req := &http.Request{Method: http.MethodGet, Header: map[string][]string{}}
 	resp, err := roundTripper.RoundTrip(req)
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")

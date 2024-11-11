@@ -32,74 +32,76 @@ resourceMetrics:
           - histogram:
               aggregationTemporality: 2
               dataPoints:
-                  - attributes:
-                      - key: client
-                        value:
-                          stringValue: user
-                      - key: connection_type
-                        value:
-                          stringValue: virtual_node
-                      - key: failed
-                        value:
-                          boolValue: false
-                      - key: server
-                        value:
-                          stringValue: bar-requester
-                      - key: server_peer.service
-                        value:
-                          stringValue: external-platform
-                      - key: virtual_node
-                        value:
-                          stringValue: client
-                    bucketCounts:
-                      - "1"
-                      - "0"
-                      - "0"
-                      - "0"
-                    count: "1"
-                    explicitBounds:
-                      - 0.1
-                      - 1
-                      - 10
-                    startTimeUnixNano: "1000000"
-                    sum: 0.000000
-                    timeUnixNano: "2000000"
-            name: traces_service_graph_request_server_seconds
+                - attributes:
+                    - key: client
+                      value:
+                        stringValue: user
+                    - key: connection_type
+                      value:
+                        stringValue: virtual_node
+                    - key: failed
+                      value:
+                        boolValue: false
+                    - key: server
+                      value:
+                        stringValue: bar-requester
+                    - key: server_peer.service
+                      value:
+                        stringValue: external-platform
+                    - key: virtual_node
+                      value:
+                        stringValue: client
+                  bucketCounts:
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "1"
+                  explicitBounds:
+                    - 0.1
+                    - 1
+                    - 10
+                  startTimeUnixNano: "1000000"
+                  sum: 1e-06
+                  timeUnixNano: "2000000"
+            name: traces_service_graph_request_server
+            unit: s
           - histogram:
               aggregationTemporality: 2
               dataPoints:
-                  - attributes:
-                      - key: client
-                        value:
-                          stringValue: user
-                      - key: connection_type
-                        value:
-                          stringValue: virtual_node
-                      - key: failed
-                        value:
-                          boolValue: false
-                      - key: server
-                        value:
-                          stringValue: bar-requester
-                      - key: server_peer.service
-                        value:
-                          stringValue: external-platform
-                      - key: virtual_node
-                        value:
-                          stringValue: client
-                    bucketCounts:
-                      - "1"
-                      - "0"
-                      - "0"
-                      - "0"
-                    count: "1"
-                    explicitBounds:
-                      - 0.1
-                      - 1
-                      - 10
-                    startTimeUnixNano: "1000000"
-                    sum: 0.000001
-                    timeUnixNano: "2000000"
-            name: traces_service_graph_request_client_seconds
+                - attributes:
+                    - key: client
+                      value:
+                        stringValue: user
+                    - key: connection_type
+                      value:
+                        stringValue: virtual_node
+                    - key: failed
+                      value:
+                        boolValue: false
+                    - key: server
+                      value:
+                        stringValue: bar-requester
+                    - key: server_peer.service
+                      value:
+                        stringValue: external-platform
+                    - key: virtual_node
+                      value:
+                        stringValue: client
+                  bucketCounts:
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "1"
+                  explicitBounds:
+                    - 0.1
+                    - 1
+                    - 10
+                  startTimeUnixNano: "1000000"
+                  sum: 0
+                  timeUnixNano: "2000000"
+            name: traces_service_graph_request_client
+            unit: s
         scope:
           name: traces_service_graph

@@ -30,9 +30,9 @@ func NewFactory() exporter.Factory {
 
 // CreateDefaultConfig creates the default configuration for DDAPM Exporter
 func createDefaultConfig() component.Config {
-	return &Config{
-		ClientConfig: confighttp.ClientConfig{Endpoint: "localhost:8126"},
-	}
+	client := confighttp.NewDefaultClientConfig()
+	client.Endpoint = "localhost:8126"
+	return client
 }
 
 func CreateTracesExporter(
@@ -51,12 +51,12 @@ func CreateTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.Background(),
 		set,
 		dd.pushTraces,
 		consumer.ConsumeTracesFunc(dd.pushTraces),
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 	)
 }

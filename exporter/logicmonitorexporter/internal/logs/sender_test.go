@@ -64,7 +64,7 @@ func TestSendLogs(t *testing.T) {
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.Error(t, err)
-		assert.Equal(t, true, consumererror.IsPermanent(err))
+		assert.True(t, consumererror.IsPermanent(err))
 	})
 
 	t.Run("should not return permanent failure error", func(t *testing.T) {
@@ -87,7 +87,7 @@ func TestSendLogs(t *testing.T) {
 		err = sender.SendLogs(ctx, []model.LogInput{logInput})
 		cancel()
 		assert.Error(t, err)
-		assert.Equal(t, false, consumererror.IsPermanent(err))
+		assert.False(t, consumererror.IsPermanent(err))
 	})
 }
 

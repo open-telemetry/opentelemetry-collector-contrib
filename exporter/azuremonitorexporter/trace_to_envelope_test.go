@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -105,7 +105,7 @@ var (
 // - a specific SpanStatus as opposed to none
 // - an error http.status_code
 // - http.route is specified which should replace Span name as part of the RequestData name
-// - no  http.client_ip or net.peer.ip specified which causes data.Source to be empty
+// - no http.client_ip or net.peer.ip specified which causes data.Source to be empty
 // - adds a few different types of attributes
 func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	span := getDefaultHTTPServerSpan()
@@ -512,7 +512,7 @@ func TestSpanWithEventsToEnvelopes(t *testing.T) {
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 
 	assert.NotNil(t, envelopes)
-	assert.Equal(t, 3, len(envelopes))
+	assert.Len(t, envelopes, 3)
 
 	validateEnvelope := func(spanEvent ptrace.SpanEvent, envelope *contracts.Envelope, targetEnvelopeName string) {
 		assert.Equal(t, targetEnvelopeName, envelope.Name)

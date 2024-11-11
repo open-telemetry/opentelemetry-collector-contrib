@@ -42,7 +42,6 @@ func (_m *MockClient) Close() error {
 
 // Connect provides a mock function with given fields:
 func (_m *MockClient) Connect() error {
-
 	ret := _m.Called()
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -101,7 +100,6 @@ func TestStart(t *testing.T) {
 		{
 			desc: "Valid Config",
 			testFunc: func(t *testing.T) {
-
 				scraper := &snmpScraper{
 					cfg:      createDefaultConfig().(*Config),
 					settings: receivertest.NewNopSettings(),
@@ -137,7 +135,7 @@ func TestScrape(t *testing.T) {
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -172,7 +170,7 @@ func TestScrape(t *testing.T) {
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, clientErr.Error())
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -208,7 +206,7 @@ func TestScrape(t *testing.T) {
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, expectedScrapeErr.Error())
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -639,7 +637,7 @@ func TestScrape(t *testing.T) {
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, clientErr.Error())
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -687,7 +685,7 @@ func TestScrape(t *testing.T) {
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, expectedScrapeErrMsg)
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -1289,7 +1287,7 @@ func TestScrape(t *testing.T) {
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr1, expectedErr2))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -1373,7 +1371,7 @@ func TestScrape(t *testing.T) {
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr3, expectedErr4))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -1838,7 +1836,7 @@ func TestScrape(t *testing.T) {
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr1, expectedErr2))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -1918,7 +1916,7 @@ func TestScrape(t *testing.T) {
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr3, expectedErr4))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{

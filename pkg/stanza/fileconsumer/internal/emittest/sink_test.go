@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 )
 
 func TestNextToken(t *testing.T) {
@@ -202,7 +204,7 @@ func sinkTest(t *testing.T, opts ...SinkOpt) (*Sink, []*Call) {
 	}
 	go func() {
 		for _, c := range testCalls {
-			require.NoError(t, s.Callback(context.Background(), c.Token, c.Attrs))
+			assert.NoError(t, s.Callback(context.Background(), emit.NewToken(c.Token, c.Attrs)))
 		}
 	}()
 	return s, testCalls

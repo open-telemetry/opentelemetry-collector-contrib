@@ -110,7 +110,8 @@ func TestSuccessfulScrape(t *testing.T) {
 		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder()))
 	}
 }
 
@@ -164,7 +165,6 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 	}
 
 	return metrics, nil
-
 }
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {

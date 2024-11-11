@@ -91,7 +91,7 @@ func newKubletScraper(
 	}
 
 	return scraperhelper.NewScraper(
-		metadata.Type.String(),
+		metadata.Type,
 		ks.scrape,
 		scraperhelper.WithStart(ks.start),
 		scraperhelper.WithShutdown(ks.shutdown),

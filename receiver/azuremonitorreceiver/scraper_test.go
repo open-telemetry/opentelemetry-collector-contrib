@@ -32,7 +32,7 @@ func TestNewScraper(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 
 	scraper := newScraper(cfg, receivertest.NewNopSettings())
-	require.Len(t, scraper.resources, 0)
+	require.Empty(t, scraper.resources)
 }
 
 func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error) {
@@ -64,7 +64,6 @@ func armMonitorMetricsClientFuncMock(string, azcore.TokenCredential, *arm.Client
 }
 
 func TestAzureScraperStart(t *testing.T) {
-
 	cfg := createDefaultConfig().(*Config)
 
 	tests := []struct {
@@ -340,7 +339,6 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
-
 	}
 }
 

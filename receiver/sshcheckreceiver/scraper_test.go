@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/pkg/sftp"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -68,7 +69,7 @@ func (s *sshServer) runSSHServer(t *testing.T) string {
 				case <-s.done:
 					return
 				default:
-					require.NoError(t, err)
+					assert.NoError(t, err)
 				}
 			}
 			_, chans, reqs, err := ssh.NewServerConn(conn, config)
@@ -313,7 +314,6 @@ func TestCancellation(t *testing.T) {
 	_, err := scrpr.scrape(ctx)
 	require.Error(t, err, "should have returned error on canceled context")
 	require.EqualValues(t, err.Error(), ctx.Err().Error(), "scrape should return context's error")
-
 }
 
 // issue # 18193

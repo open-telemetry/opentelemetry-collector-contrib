@@ -238,7 +238,6 @@ func TestEvents(t *testing.T) {
 
 loop:
 	for {
-
 		select {
 		case err := <-errs:
 			if err != nil && !errors.Is(err, io.EOF) {
@@ -252,5 +251,4 @@ loop:
 	}
 
 	assert.Equal(t, expectedEvents, actualEvents)
-
 }

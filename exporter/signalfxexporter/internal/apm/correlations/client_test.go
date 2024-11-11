@@ -64,7 +64,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodGet:
 			match := getPathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 3 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			corCh <- &request{
@@ -79,13 +79,13 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodPut:
 			match := putPathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 4 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
-				rw.WriteHeader(400)
+				rw.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			cor = &request{
@@ -101,7 +101,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodDelete:
 			match := deletePathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 5 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			cor = &request{
@@ -114,13 +114,13 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 				},
 			}
 		default:
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		corCh <- cor
 
-		rw.WriteHeader(200)
+		rw.WriteHeader(http.StatusOK)
 	})
 }
 
@@ -208,7 +208,7 @@ func TestCorrelationClient(t *testing.T) {
 		forcedRespCode.Store(200)
 		respPayload := map[string][]string{"sf_services": {"testService1"}}
 		respJSON, err := json.Marshal(&respPayload)
-		require.Nil(t, err, "json marshaling failed in test")
+		require.NoError(t, err, "json marshaling failed in test")
 		forcedRespPayload.Store(respJSON)
 
 		var wg sync.WaitGroup
@@ -232,11 +232,11 @@ func TestCorrelationClient(t *testing.T) {
 		client.Correlate(testData, CorrelateCB(func(_ *Correlation, _ error) {}))
 
 		cors := waitForCors(serverCh, 1, 3)
-		require.Len(t, cors, 0)
+		require.Empty(t, cors)
 
 		forcedRespCode.Store(200)
 		cors = waitForCors(serverCh, 1, 3)
-		require.Len(t, cors, 0)
+		require.Empty(t, cors)
 	})
 	t.Run("does retry 500 responses", func(t *testing.T) {
 		forcedRespCode.Store(500)
@@ -249,7 +249,7 @@ func TestCorrelationClient(t *testing.T) {
 		client.Correlate(testData, CorrelateCB(func(_ *Correlation, _ error) {}))
 
 		cors := waitForCors(serverCh, 1, 4)
-		require.Len(t, cors, 0)
+		require.Empty(t, cors)
 		require.Equal(t, uint32(5), client.(*Client).maxAttempts)
 		require.Equal(t, int64(5), atomic.LoadInt64(&client.(*Client).TotalRetriedUpdates))
 

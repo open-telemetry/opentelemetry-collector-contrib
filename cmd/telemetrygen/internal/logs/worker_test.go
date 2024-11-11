@@ -86,9 +86,9 @@ func TestRateOfLogs(t *testing.T) {
 
 	// verify
 	// the minimum acceptable number of logs for the rate of 10/sec for half a second
-	assert.True(t, len(m.logs) >= 5, "there should have been 5 or more logs, had %d", len(m.logs))
+	assert.GreaterOrEqual(t, len(m.logs), 5, "there should have been 5 or more logs, had %d", len(m.logs))
 	// the maximum acceptable number of logs for the rate of 10/sec for half a second
-	assert.True(t, len(m.logs) <= 20, "there should have been less than 20 logs, had %d", len(m.logs))
+	assert.LessOrEqual(t, len(m.logs), 20, "there should have been less than 20 logs, had %d", len(m.logs))
 }
 
 func TestUnthrottled(t *testing.T) {
@@ -109,7 +109,7 @@ func TestUnthrottled(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	require.NoError(t, Run(cfg, expFunc, logger))
 
-	assert.True(t, len(m.logs) > 100, "there should have been more than 100 logs, had %d", len(m.logs))
+	assert.Greater(t, len(m.logs), 100, "there should have been more than 100 logs, had %d", len(m.logs))
 }
 
 func TestCustomBody(t *testing.T) {
@@ -177,7 +177,7 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 
 		l.WalkAttributes(func(attr log.KeyValue) bool {
 			if attr.Key == telemetryAttrKeyOne {
-				assert.EqualValues(t, attr.Value.AsString(), telemetryAttrValueOne)
+				assert.EqualValues(t, telemetryAttrValueOne, attr.Value.AsString())
 			}
 			return true
 		})
@@ -226,6 +226,58 @@ func TestLogsWithTraceIDAndSpanID(t *testing.T) {
 	for _, l := range m.logs {
 		assert.Equal(t, "ae87dadd90e9935a4bc9660628efd569", l.TraceID().String())
 		assert.Equal(t, "5828fa4960140870", l.SpanID().String())
+	}
+}
+
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		wantErrMessage string
+	}{
+		{
+			name: "No duration or NumLogs",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				TraceID: "123",
+			},
+			wantErrMessage: "either `logs` or `duration` must be greater than 0",
+		},
+		{
+			name: "TraceID invalid",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumLogs: 5,
+				TraceID: "123",
+			},
+			wantErrMessage: "TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'",
+		},
+		{
+			name: "SpanID invalid",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumLogs: 5,
+				TraceID: "ae87dadd90e9935a4bc9660628efd569",
+				SpanID:  "123",
+			},
+			wantErrMessage: "SpanID must be a 16 character hex string, like: '5828fa4960140870'",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockExporter{}
+			expFunc := func() (sdklog.Exporter, error) {
+				return m, nil
+			}
+			logger, _ := zap.NewDevelopment()
+			require.EqualError(t, Run(tt.cfg, expFunc, logger), tt.wantErrMessage)
+		})
 	}
 }
 

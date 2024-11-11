@@ -41,6 +41,7 @@ type Config struct {
 	LogStatements    []common.ContextStatements `mapstructure:"log_statements"`
 
 	FlattenData bool `mapstructure:"flatten_data"`
+	logger      *zap.Logger
 }
 
 var _ component.Config = (*Config)(nil)

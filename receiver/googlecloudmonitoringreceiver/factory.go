@@ -23,8 +23,11 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultControllerConfig()
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ControllerConfig: cfg,
 	}
 }
 
@@ -34,11 +37,10 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	rCfg := baseCfg.(*Config)
 	r := newGoogleCloudMonitoringReceiver(rCfg, settings.Logger)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), r.Scrape, scraperhelper.WithStart(r.Start),
+	scraper, err := scraperhelper.NewScraper(metadata.Type, r.Scrape, scraperhelper.WithStart(r.Start),
 		scraperhelper.WithShutdown(r.Shutdown))
 	if err != nil {
 		return nil, err

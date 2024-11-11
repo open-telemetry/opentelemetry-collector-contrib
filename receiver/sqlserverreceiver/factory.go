@@ -52,7 +52,6 @@ func setupQueries(cfg *Config) []string {
 		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
 		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled ||
 		cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled {
-
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
@@ -120,7 +119,7 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Scrap
 
 	var opts []scraperhelper.ScraperControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
-		scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sqlScraper.Scrape,
+		scraper, err := scraperhelper.NewScraper(metadata.Type, sqlScraper.Scrape,
 			scraperhelper.WithStart(sqlScraper.Start),
 			scraperhelper.WithShutdown(sqlScraper.Shutdown))
 

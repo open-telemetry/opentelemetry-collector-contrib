@@ -24,8 +24,8 @@ func TestMarshalUnmarshal(t *testing.T) {
 
 	buf, err := e.MarshalLogs(ld)
 	assert.NoError(t, err)
-	assert.True(t, len(buf) > 0)
-	assert.Equal(t, json, string(buf))
+	assert.NotEmpty(t, buf)
+	assert.JSONEq(t, json, string(buf))
 }
 
 func TestInvalidMarshal(t *testing.T) {
@@ -37,7 +37,7 @@ func TestInvalidMarshal(t *testing.T) {
 	p := plog.NewLogs()
 	p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("NOT A MAP")
 	_, err := e.MarshalLogs(p)
-	assert.ErrorContains(t, err, "Marshal: Expected 'Map' found 'Str'")
+	assert.ErrorContains(t, err, "marshal: expected 'Map' found 'Str'")
 }
 
 func TestInvalidUnmarshal(t *testing.T) {
@@ -59,7 +59,7 @@ func TestPrettyLogProcessor(t *testing.T) {
 	lp, err := j.logProcessor(sampleLog())
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
-	assert.Equal(t, string(lp), `[{"body":{"log":"test"},"logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`)
+	assert.JSONEq(t, `[{"body":{"log":"test"},"logAttributes":{"foo":"bar"},"resourceAttributes":{"test":"logs-test"}},{"body":"log testing","resourceAttributes":{"test":"logs-test"}}]`, string(lp))
 }
 
 func sampleLog() plog.Logs {

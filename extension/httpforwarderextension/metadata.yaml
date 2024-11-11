@@ -4,9 +4,10 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: []
+  distributions: [contrib, k8s]
   codeowners:
-    active: [atoulme, rmfitzpatrick]
+    active: [atoulme]
+    emeritus: [rmfitzpatrick]
 
 tests:
   config:

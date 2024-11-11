@@ -6,7 +6,8 @@ status:
     beta: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [aboguszewski-sumo, kkujawa-sumo, mat-rumian, rnishtala-sumo, sumo-drosiek]
+    active: [rnishtala-sumo, chan-tim-sumo]
+    emeritus: [aboguszewski-sumo, kasia-kujawa, mat-rumian, sumo-drosiek]
 
 # TODO: Update the exporter to pass the tests
 tests:

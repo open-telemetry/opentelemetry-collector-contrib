@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
@@ -81,7 +81,7 @@ func TestMakeCauseAwsSdkSpan(t *testing.T) {
 	assert.False(t, isThrottle)
 	assert.NotNil(t, cause)
 
-	assert.Equal(t, 1, len(cause.CauseObject.Exceptions))
+	assert.Len(t, cause.CauseObject.Exceptions, 1)
 	exception := cause.CauseObject.Exceptions[0]
 	assert.Equal(t, AwsIndividualHTTPErrorEventType, *exception.Type)
 	assert.True(t, *exception.Remote)
@@ -193,7 +193,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, errorMsg))
+	assert.Contains(t, jsonStr, errorMsg)
 }
 
 func TestCauseWithHttpStatusMessage(t *testing.T) {
@@ -218,7 +218,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, errorMsg))
+	assert.Contains(t, jsonStr, errorMsg)
 }
 
 func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {

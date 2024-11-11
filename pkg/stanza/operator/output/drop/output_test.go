@@ -26,8 +26,7 @@ func TestBuildIvalid(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = nil
 	_, err := cfg.Build(set)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "build context is missing a logger")
+	require.ErrorContains(t, err, "build context is missing a logger")
 }
 
 func TestProcess(t *testing.T) {
@@ -38,5 +37,5 @@ func TestProcess(t *testing.T) {
 
 	entry := entry.New()
 	result := op.Process(context.Background(), entry)
-	require.Nil(t, result)
+	require.NoError(t, result)
 }

@@ -37,7 +37,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	dp := expectedMetric.Sum().DataPoints().AppendEmpty()
 	dp.SetIntValue(32)
 	dp.Attributes().PutStr("mykey", "myvalue")
-	assert.Equal(t, metric, expectedMetrics)
+	assert.Equal(t, expectedMetrics, metric)
 }
 
 func TestSetTimestampsForCounterMetric(t *testing.T) {
@@ -63,7 +63,6 @@ func TestSetTimestampsForCounterMetric(t *testing.T) {
 		metric.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 	)
-
 }
 
 func TestBuildGaugeMetric(t *testing.T) {
@@ -90,7 +89,7 @@ func TestBuildGaugeMetric(t *testing.T) {
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	dp.Attributes().PutStr("mykey", "myvalue")
 	dp.Attributes().PutStr("mykey2", "myvalue2")
-	assert.Equal(t, metric, expectedMetrics)
+	assert.Equal(t, expectedMetrics, metric)
 }
 
 func TestBuildSummaryMetricUnsampled(t *testing.T) {
@@ -272,5 +271,4 @@ func TestBuildHistogramMetric(t *testing.T) {
 	require.Equal(t, "myvalue", val.Str())
 	val, _ = datapoint.Attributes().Get("mykey2")
 	require.Equal(t, "myvalue2", val.Str())
-
 }

@@ -4,6 +4,7 @@
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 
 import (
+	"fmt"
 	"net"
 	"os/exec"
 	"runtime"
@@ -110,14 +111,14 @@ func createExclusionsList(t testing.TB, exclusionsText string) []portpair {
 	var exclusions []portpair
 
 	parts := strings.Split(exclusionsText, "--------")
-	require.Equal(t, len(parts), 3)
+	require.Len(t, parts, 3)
 	portsText := strings.Split(parts[2], "*")
 	require.Greater(t, len(portsText), 1) // original text may have a suffix like " - Administered port exclusions."
 	lines := strings.Split(portsText[0], "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			entries := strings.Fields(strings.TrimSpace(line))
-			require.Equal(t, len(entries), 2)
+			require.Len(t, entries, 2)
 			pair := portpair{entries[0], entries[1]}
 			exclusions = append(exclusions, pair)
 		}
@@ -144,4 +145,9 @@ func GetAvailablePort(t testing.TB) int {
 	require.NoError(t, err)
 
 	return portInt
+}
+
+// EndpointForPort gets the endpoint for a given port using localhost.
+func EndpointForPort(port int) string {
+	return fmt.Sprintf("localhost:%d", port)
 }

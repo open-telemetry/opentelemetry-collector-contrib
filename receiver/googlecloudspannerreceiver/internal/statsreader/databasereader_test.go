@@ -50,7 +50,7 @@ func TestNewDatabaseReader(t *testing.T) {
 
 	assert.Equal(t, databaseID, reader.database.DatabaseID())
 	assert.Equal(t, logger, reader.logger)
-	assert.Equal(t, 0, len(reader.readers))
+	assert.Empty(t, reader.readers)
 }
 
 func TestNewDatabaseReaderWithError(t *testing.T) {
@@ -94,7 +94,7 @@ func TestInitializeReaders(t *testing.T) {
 
 	readers := initializeReaders(logger, parsedMetadata, database, readerConfig)
 
-	assert.Equal(t, 2, len(readers))
+	assert.Len(t, readers, 2)
 	assert.IsType(t, &currentStatsReader{}, readers[0])
 	assert.IsType(t, &intervalStatsReader{}, readers[1])
 }

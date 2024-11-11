@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
@@ -948,7 +948,7 @@ func TestTranslation(t *testing.T) {
 		t.Run(tc.testCase, func(t *testing.T) {
 			content, err := os.ReadFile(tc.samplePath)
 			assert.NoError(t, err, "can not read raw segment")
-			assert.True(t, len(content) > 0, "content length is 0")
+			assert.NotEmpty(t, content, "content length is 0")
 
 			var (
 				actualSeg  awsxray.Segment
@@ -1092,7 +1092,7 @@ func TestDecodeXRayTraceID(t *testing.T) {
 	traceIDBytes, err := decodeXRayTraceID(&traceID)
 	expectedTraceIDBytes := [16]byte{0x5f, 0x84, 0xc7, 0xa1, 0xe7, 0xd1, 0x85, 0x2d, 0xb8, 0xc4, 0xfd, 0x35, 0xd8, 0x8b, 0xf4, 0x9a}
 	if assert.NoError(t, err) {
-		assert.Equal(t, traceIDBytes, expectedTraceIDBytes)
+		assert.Equal(t, expectedTraceIDBytes, traceIDBytes)
 	}
 
 	// invalid format
@@ -1111,7 +1111,7 @@ func TestDecodeXRaySpanID(t *testing.T) {
 	spanIDBytes, err := decodeXRaySpanID(&spanID)
 	expectedSpanIDBytes := [8]byte{0xde, 0xfd, 0xfd, 0x99, 0x12, 0xdc, 0x5a, 0x56}
 	if assert.NoError(t, err) {
-		assert.Equal(t, spanIDBytes, expectedSpanIDBytes)
+		assert.Equal(t, expectedSpanIDBytes, spanIDBytes)
 	}
 
 	// invalid format
@@ -1122,5 +1122,4 @@ func TestDecodeXRaySpanID(t *testing.T) {
 	// null point
 	_, err = decodeXRaySpanID(nil)
 	assert.Error(t, err)
-
 }

@@ -8,10 +8,12 @@ import (
 	"log"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -40,7 +42,7 @@ func (v *LogPresentValidator) Validate(tc *TestCase) {
 		successMsg = fmt.Sprintf("Log '%s' not found", logMsg)
 	}
 
-	if assert.True(tc.t, tc.AgentLogsContains(logMsg) == v.Present, errorMsg) {
+	if assert.Equal(tc.t, tc.AgentLogsContains(logMsg), v.Present, errorMsg) {
 		log.Print(successMsg)
 	}
 }
@@ -128,7 +130,7 @@ func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
 	if len(tc.MockBackend.ReceivedTraces) > 0 {
 		v.assertSentRecdTracingDataEqual(append(tc.MockBackend.ReceivedTraces, tc.MockBackend.DroppedTraces...))
 	}
-	assert.EqualValues(tc.t, 0, len(v.assertionFailures), "There are span data mismatches.")
+	assert.Empty(tc.t, v.assertionFailures, "There are span data mismatches.")
 }
 
 func (v *CorrectnessTestValidator) RecordResults(tc *TestCase) {
@@ -560,4 +562,74 @@ func populateSpansMap(spansMap map[string]ptrace.Span, tds []ptrace.Traces) {
 
 func traceIDAndSpanIDToString(traceID pcommon.TraceID, spanID pcommon.SpanID) string {
 	return fmt.Sprintf("%s-%s", traceID, spanID)
+}
+
+type CorrectnessLogTestValidator struct {
+	dataProvider DataProvider
+}
+
+func NewCorrectnessLogTestValidator(provider DataProvider) *CorrectnessLogTestValidator {
+	return &CorrectnessLogTestValidator{
+		dataProvider: provider,
+	}
+}
+
+func (c *CorrectnessLogTestValidator) Validate(tc *TestCase) {
+	if dataProvider, ok := c.dataProvider.(*perfTestDataProvider); ok {
+		logsReceived := tc.MockBackend.ReceivedLogs
+
+		idsSent := make([][2]string, 0)
+		idsReceived := make([][2]string, 0)
+
+		for batch := 0; batch < int(dataProvider.traceIDSequence.Load()); batch++ {
+			for idx := 0; idx < dataProvider.options.ItemsPerBatch; idx++ {
+				idsSent = append(idsSent, [2]string{"batch_" + strconv.Itoa(batch), "item_" + strconv.Itoa(idx)})
+			}
+		}
+		for _, log := range logsReceived {
+			for i := 0; i < log.ResourceLogs().Len(); i++ {
+				for j := 0; j < log.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
+					s := log.ResourceLogs().At(i).ScopeLogs().At(j)
+					for k := 0; k < s.LogRecords().Len(); k++ {
+						logRecord := s.LogRecords().At(k)
+						batchIndex, ok := logRecord.Attributes().Get("batch_index")
+						require.True(tc.t, ok, "batch_index missing from attributes; use perfDataProvider")
+						itemIndex, ok := logRecord.Attributes().Get("item_index")
+						require.True(tc.t, ok, "item_index missing from attributes; use perfDataProvider")
+
+						idsReceived = append(idsReceived, [2]string{batchIndex.Str(), itemIndex.Str()})
+					}
+				}
+			}
+		}
+
+		assert.ElementsMatch(tc.t, idsSent, idsReceived)
+	}
+}
+
+func (c *CorrectnessLogTestValidator) RecordResults(tc *TestCase) {
+	rc := tc.agentProc.GetTotalConsumption()
+
+	var result string
+	if tc.t.Failed() {
+		result = "FAIL"
+	} else {
+		result = "PASS"
+	}
+
+	// Remove "Test" prefix from test name.
+	testName := tc.t.Name()[4:]
+
+	tc.resultsSummary.Add(tc.t.Name(), &PerformanceTestResult{
+		testName:          testName,
+		result:            result,
+		receivedSpanCount: tc.MockBackend.DataItemsReceived(),
+		sentSpanCount:     tc.LoadGenerator.DataItemsSent(),
+		duration:          time.Since(tc.startTime),
+		cpuPercentageAvg:  rc.CPUPercentAvg,
+		cpuPercentageMax:  rc.CPUPercentMax,
+		ramMibAvg:         rc.RAMMiBAvg,
+		ramMibMax:         rc.RAMMiBMax,
+		errorCause:        tc.errorCause,
+	})
 }
