@@ -8,6 +8,7 @@ import (
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -43,11 +44,12 @@ type listerHandleWrapper interface {
 }
 
 type eventhubHandler struct {
-	hub          hubWrapper
-	dataConsumer dataConsumer
-	config       *Config
-	settings     receiver.Settings
-	cancel       context.CancelFunc
+	hub           hubWrapper
+	dataConsumer  dataConsumer
+	config        *Config
+	settings      receiver.Settings
+	cancel        context.CancelFunc
+	storageClient storage.Client
 }
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
@@ -58,6 +60,7 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 		h.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))
 		return err
 	}
+	h.storageClient = storageClient
 
 	if h.hub == nil { // set manually for testing.
 		hub, newHubErr := eventhub.NewHubFromConnectionString(h.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: storageClient}))
@@ -160,6 +163,13 @@ func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub
 }
 
 func (h *eventhubHandler) close(ctx context.Context) error {
+	if h.storageClient != nil {
+		if err := h.storageClient.Close(ctx); err != nil {
+			return err
+		}
+		h.storageClient = nil
+	}
+
 	if h.hub != nil {
 		err := h.hub.Close(ctx)
 		if err != nil {
