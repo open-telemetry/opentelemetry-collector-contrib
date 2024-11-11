@@ -28,7 +28,7 @@ func NewFactory() processor.Factory {
 		processorprofiles.WithTraces(createTracesProcessor, metadata.TracesStability),
 		processorprofiles.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
 		processorprofiles.WithLogs(createLogsProcessor, metadata.LogsStability),
-		processorprofiles.WithProfiles(createProfilesProcessor, metadata.LogsStability),
+		processorprofiles.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
 	)
 }
 
