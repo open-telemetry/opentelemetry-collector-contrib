@@ -47,7 +47,7 @@ type eventProps struct {
 }
 
 func TestTranslation(t *testing.T) {
-	var defaultServerSpanAttrs = func(seg *awsxray.Segment) pcommon.Map {
+	defaultServerSpanAttrs := func(seg *awsxray.Segment) pcommon.Map {
 		m := pcommon.NewMap()
 		assert.NoError(t, m.FromRaw(map[string]any{
 			conventions.AttributeHTTPMethod:       *seg.HTTP.Request.Method,
@@ -110,7 +110,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -495,7 +496,8 @@ func TestTranslation(t *testing.T) {
 					attrs:       pcommon.NewMap(),
 				}
 
-				return []perSpanProperties{rootSpan,
+				return []perSpanProperties{
+					rootSpan,
 					childSpan7df6,
 					childSpan7318,
 					childSpan0239,
@@ -517,7 +519,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					"one segment should translate to 1 ResourceSpans")
@@ -557,7 +560,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -611,7 +615,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -651,7 +656,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -675,7 +681,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error,
+			) {
 				assert.EqualError(t, err,
 					"unexpected namespace: "+*actualSeg.Subsegments[0].Subsegments[0].Namespace,
 					testCase+": translation should've failed")
@@ -720,7 +727,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -769,7 +777,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -818,7 +827,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -842,7 +852,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error,
+			) {
 				assert.EqualError(t, err,
 					"failed to parse out the database name in the \"sql.url\" field, rawUrl: "+*actualSeg.SQL.URL,
 					testCase+": translation should've failed")
@@ -884,7 +895,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error,
+			) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
@@ -909,7 +921,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error,
+			) {
 				assert.EqualError(t, err,
 					fmt.Sprintf(
 						"the value assigned to the `cause` field does not appear to be a string: %v",
@@ -933,7 +946,8 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
+				_ ptrace.ResourceSpans, _ ptrace.Traces, err error,
+			) {
 				assert.EqualError(t, err, `segment "start_time" can not be nil`,
 					testCase+": translation should've failed")
 			},

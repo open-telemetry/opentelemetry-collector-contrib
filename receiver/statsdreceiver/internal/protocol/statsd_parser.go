@@ -398,7 +398,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 		result.addition = true
 	}
 
-	var metricType, additionalParts, _ = strings.Cut(rest, "|")
+	metricType, additionalParts, _ := strings.Cut(rest, "|")
 	inType := MetricType(metricType)
 	switch inType {
 	case CounterType, GaugeType, HistogramType, TimingType, DistributionType:
@@ -423,7 +423,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 
 			result.sampleRate = f
 		case strings.HasPrefix(part, "#"):
-			var tagsStr = strings.TrimPrefix(part, "#")
+			tagsStr := strings.TrimPrefix(part, "#")
 
 			// handle an empty tag set
 			// where the tags part was still sent (some clients do this)

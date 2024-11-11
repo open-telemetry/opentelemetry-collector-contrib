@@ -16,9 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var (
-	_ observer.Notify = (*observerHandler)(nil)
-)
+var _ observer.Notify = (*observerHandler)(nil)
 
 const (
 	// tmpSetEndpointConfigKey denotes the observerHandler (not the user) has set an "endpoint" target field

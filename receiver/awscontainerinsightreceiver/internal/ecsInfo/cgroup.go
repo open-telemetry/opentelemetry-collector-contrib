@@ -196,6 +196,7 @@ func readInt64(dirpath string, file string) (int64, error) {
 
 	return val, nil
 }
+
 func getCGroupMountPoint(mountConfigPath string) (string, error) {
 	f, err := os.Open(mountConfigPath)
 	if err != nil {
