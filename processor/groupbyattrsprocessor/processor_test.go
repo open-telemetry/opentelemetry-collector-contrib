@@ -845,7 +845,6 @@ func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCo
 }
 
 func TestMetricAdvancedGrouping(t *testing.T) {
-
 	// Input:
 	//
 	// Resource {host.name="localhost"}
