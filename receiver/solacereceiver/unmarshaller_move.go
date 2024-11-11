@@ -70,7 +70,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(spanData *move
 }
 
 func (u *brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1.SpanData, span ptrace.Span) {
-
 	// hard coded to internal span
 	// SPAN_KIND_CONSUMER == 1
 	span.SetKind(ptrace.SpanKindInternal)

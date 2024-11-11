@@ -93,7 +93,6 @@ func TestNodeOptionalMetrics(t *testing.T) {
 		pmetrictest.IgnoreScopeMetricsOrder(),
 	),
 	)
-
 }
 func TestNodeConditionValue(t *testing.T) {
 	type args struct {

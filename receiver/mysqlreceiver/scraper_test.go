@@ -123,7 +123,6 @@ func TestScrape(t *testing.T) {
 		// and the other failure comes from a row that fails to parse as a number
 		require.Equal(t, 5, partialError.Failed, "Expected partial error count to be 5")
 	})
-
 }
 
 var _ client = (*mockClient)(nil)
@@ -194,7 +193,6 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 		stats = append(stats, s)
 	}
 	return stats, nil
-
 }
 
 func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
