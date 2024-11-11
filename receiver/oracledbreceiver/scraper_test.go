@@ -40,7 +40,6 @@ var queryResponses = map[string][]metricRow{
 }
 
 func TestScraper_Scrape(t *testing.T) {
-
 	tests := []struct {
 		name       string
 		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
@@ -165,5 +164,4 @@ func TestScraper_Scrape(t *testing.T) {
 			assert.Equal(t, int64(78944), found.Sum().DataPoints().At(0).IntValue())
 		})
 	}
-
 }

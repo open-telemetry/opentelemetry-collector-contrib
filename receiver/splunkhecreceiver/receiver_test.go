@@ -628,7 +628,6 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			case <-time.After(5 * time.Second):
 				assert.Fail(t, "Timeout")
 			}
-
 		})
 	}
 }
@@ -1786,7 +1785,6 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 				assert.Equal(t, http.StatusBadRequest, w.Code)
 				assert.JSONEq(t, fmt.Sprintf(responseErrHandlingIndexedFields, 0), w.Body.String())
 			}
-
 		})
 	}
 }

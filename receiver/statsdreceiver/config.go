@@ -34,7 +34,6 @@ func (c *Config) Validate() error {
 
 	var TimerHistogramMappingMissingObjectName bool
 	for _, eachMap := range c.TimerHistogramMapping {
-
 		if eachMap.StatsdType == "" {
 			TimerHistogramMappingMissingObjectName = true
 			break

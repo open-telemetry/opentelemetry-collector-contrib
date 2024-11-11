@@ -165,7 +165,6 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 	}
 
 	return metrics, nil
-
 }
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {

@@ -52,7 +52,6 @@ func setupQueries(cfg *Config) []string {
 		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
 		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled ||
 		cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled {
-
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 

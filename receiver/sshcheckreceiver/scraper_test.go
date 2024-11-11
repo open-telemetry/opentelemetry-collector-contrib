@@ -314,7 +314,6 @@ func TestCancellation(t *testing.T) {
 	_, err := scrpr.scrape(ctx)
 	require.Error(t, err, "should have returned error on canceled context")
 	require.EqualValues(t, err.Error(), ctx.Err().Error(), "scrape should return context's error")
-
 }
 
 // issue # 18193

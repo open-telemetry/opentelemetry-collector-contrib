@@ -62,7 +62,6 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name"] = "single"
 				pt.Fields["_value"] = int64Ptr(13)
 				return pt
-
 			}(),
 			wantMetricsData: buildDefaultMetricsData(nanos),
 			hecConfig:       defaultTestingHecConfig,

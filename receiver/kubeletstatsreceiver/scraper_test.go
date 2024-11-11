@@ -303,7 +303,6 @@ func TestScraperWithMetadata(t *testing.T) {
 				pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreMetricsOrder()))
-
 		})
 	}
 }

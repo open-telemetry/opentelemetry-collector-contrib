@@ -66,7 +66,6 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
 	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
@@ -94,7 +93,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)

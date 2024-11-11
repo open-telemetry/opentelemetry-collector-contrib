@@ -207,7 +207,6 @@ func (m *Metadata) getContainerID(podUID string, containerName string) (string, 
 					return stripContainerID(containerStatus.ContainerID), nil
 				}
 			}
-
 		}
 	}
 

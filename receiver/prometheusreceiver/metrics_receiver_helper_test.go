@@ -185,7 +185,6 @@ func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.M
 					// only count target pages that are not 404, matching mock ServerHTTP func response logic
 					want++
 				}
-
 			}
 			if len(scrapes) < want {
 				// If we don't have enough scrapes yet lets return false and wait for another tick

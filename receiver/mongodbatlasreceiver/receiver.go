@@ -211,7 +211,6 @@ func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 			// Remove the port from the node
 			n, _, _ := strings.Cut(node, ":")
 			clusterMap[n] = cluster.Name
-
 		}
 
 		providerMap[cluster.Name] = providerValues{

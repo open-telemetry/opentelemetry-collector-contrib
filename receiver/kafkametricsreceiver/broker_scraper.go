@@ -47,7 +47,6 @@ func (s *brokerScraper) shutdown(context.Context) error {
 }
 
 func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
-
 	var scrapeErrors = scrapererror.ScrapeErrors{}
 
 	if s.client == nil {

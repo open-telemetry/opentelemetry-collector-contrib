@@ -51,7 +51,6 @@ func newSQLServerScraper(id component.ID,
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
 	mb *metadata.MetricsBuilder) *sqlServerScraperHelper {
-
 	return &sqlServerScraperHelper{
 		id:                 id,
 		sqlQuery:           query,

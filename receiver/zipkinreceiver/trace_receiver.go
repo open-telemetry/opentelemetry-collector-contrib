@@ -254,7 +254,6 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write(errNextConsumerRespBody)
 	}
-
 }
 
 func transportType(r *http.Request, asZipkinv1 bool) string {

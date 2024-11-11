@@ -69,7 +69,6 @@ type solaceTracesReceiver struct {
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
-
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {
 		set.Logger.Warn("Error validating messaging service configuration", zap.Any("error", err))
@@ -222,7 +221,6 @@ func (s *solaceTracesReceiver) receiveMessages(ctx context.Context, service mess
 			return err
 		}
 	}
-
 }
 
 // receiveMessage is the heart of the receiver's control flow. It will receive messages, unmarshal the message and forward the trace.

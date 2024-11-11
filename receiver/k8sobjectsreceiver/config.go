@@ -57,7 +57,6 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-
 	validObjects, err := c.getValidObjects()
 	if err != nil {
 		return err
@@ -149,7 +148,6 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 				Resource: resource.Name,
 			})
 		}
-
 	}
 	return validObjects, nil
 }

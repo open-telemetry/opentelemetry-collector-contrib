@@ -58,5 +58,4 @@ func appendMetadata(resourceLog plog.ResourceLogs, query url.Values) {
 			resourceLog.Resource().Attributes().PutStr(k, query.Get(k))
 		}
 	}
-
 }
