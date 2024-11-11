@@ -63,7 +63,6 @@ func TestSetTimestampsForCounterMetric(t *testing.T) {
 		metric.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 		expectedMetrics.Metrics().At(0).Sum().DataPoints().At(0).Timestamp(),
 	)
-
 }
 
 func TestBuildGaugeMetric(t *testing.T) {
@@ -272,5 +271,4 @@ func TestBuildHistogramMetric(t *testing.T) {
 	require.Equal(t, "myvalue", val.Str())
 	val, _ = datapoint.Attributes().Get("mykey2")
 	require.Equal(t, "myvalue2", val.Str())
-
 }
