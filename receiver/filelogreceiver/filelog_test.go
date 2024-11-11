@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"io"
 	"os"
 	"path/filepath"
@@ -231,7 +230,6 @@ func (rt *rotationTest) Run(t *testing.T) {
 		e.Body = fmt.Sprintf("2020-08-25 %s", msg)
 		e.AddAttribute("ts", "2020-08-25")
 		e.AddAttribute("msg", msg)
-		e.ObservedTimestamp = expectedTimestamp
 
 		expectedLogEntries = append(expectedLogEntries, e)
 
@@ -248,29 +246,27 @@ func (rt *rotationTest) Run(t *testing.T) {
 	)
 
 	// gather all Log entries into one ResourceLog so they can be compared with the expectedLogs ResourceLog
-	allReceivedLogs := plog.NewResourceLogs()
-	sink.AllLogs()[0].ResourceLogs().At(0).CopyTo(allReceivedLogs)
+	allReceivedLogs := plog.NewLogs()
+	sink.AllLogs()[0].CopyTo(allReceivedLogs)
 
 	for i, l := range sink.AllLogs() {
 		if i == 0 {
 			continue
 		}
 		for i := 0; i < l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(); i++ {
-			lr := allReceivedLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
+			lr := allReceivedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
 
 			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).CopyTo(lr)
 		}
 	}
 
-	// override observed timestamp attributes here as the plogtest.COmpareResourceLogs does not provide the IgnoreObservedTimestamp option
-	for i := 0; i < allReceivedLogs.ScopeLogs().At(0).LogRecords().Len(); i++ {
-		allReceivedLogs.ScopeLogs().At(0).LogRecords().At(i).SetObservedTimestamp(pcommon.NewTimestampFromTime(expectedTimestamp))
-	}
 	require.NoError(
 		t,
-		plogtest.CompareResourceLogs(
-			expectedLogs.ResourceLogs().At(0),
+		plogtest.CompareLogs(
+			expectedLogs,
 			allReceivedLogs,
+			plogtest.IgnoreLogRecordsOrder(),
+			plogtest.IgnoreObservedTimestamp(),
 		),
 	)
 	require.NoError(t, rcvr.Shutdown(context.Background()))
