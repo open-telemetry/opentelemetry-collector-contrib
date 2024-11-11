@@ -60,7 +60,6 @@ func (f *blobReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-
 	receiver, err := f.getReceiver(set, cfg)
 
 	if err != nil {
@@ -79,7 +78,6 @@ func (f *blobReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
 	receiver, err := f.getReceiver(set, cfg)
 
 	if err != nil {
@@ -94,7 +92,6 @@ func (f *blobReceiverFactory) createTracesReceiver(
 func (f *blobReceiverFactory) getReceiver(
 	set receiver.Settings,
 	cfg component.Config) (component.Component, error) {
-
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)

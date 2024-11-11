@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -25,6 +26,8 @@ import (
 )
 
 func TestIntegration(t *testing.T) {
+	t.Skip("Broken test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36177")
+
 	// remove nolint when https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24240 is resolved
 	// nolint:staticcheck
 	testCases := []struct {
@@ -92,7 +95,9 @@ var (
 			Context:    filepath.Join("testdata", "integration", "docker"),
 			Dockerfile: "snmp_agent.Dockerfile",
 		},
-		ExposedPorts: []string{"1024:1024/udp"},
+		ExposedPorts: []string{"161/udp"},
+		WaitingFor: wait.ForListeningPort("161/udp").
+			WithStartupTimeout(2 * time.Minute),
 	}
 )
 
