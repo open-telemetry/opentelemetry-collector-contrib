@@ -5,6 +5,7 @@ package postgresqlreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -453,7 +454,7 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 				lockType: "relation",
 				locks:    5600,
 			},
-		}, fmt.Errorf("some error"))
+		}, errors.New("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
 				clientAddr:   "unix",
@@ -542,8 +543,8 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 
-		index1 := fmt.Sprintf("%s_test1_pkey", database)
-		index2 := fmt.Sprintf("%s_test2_pkey", database)
+		index1 := database + "_test1_pkey"
+		index2 := database + "_test2_pkey"
 		indexStats := map[indexIdentifer]indexStat{
 			indexKey(database, schema, table1, index1): {
 				database: database,

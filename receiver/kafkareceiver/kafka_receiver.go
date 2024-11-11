@@ -5,6 +5,7 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -32,7 +33,7 @@ const (
 	attrPartition    = "partition"
 )
 
-var errInvalidInitialOffset = fmt.Errorf("invalid initial offset")
+var errInvalidInitialOffset = errors.New("invalid initial offset")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
