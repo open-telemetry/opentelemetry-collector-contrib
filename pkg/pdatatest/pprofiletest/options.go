@@ -5,7 +5,9 @@ package pprofiletest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
+	"time"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/internal"
@@ -107,6 +109,146 @@ func (opt ignoreProfileContainerAttributeValue) maskProfileContainerAttributeVal
 				val, exists := lr.Attributes().Get(opt.attributeName)
 				if exists {
 					val.SetEmptyBytes()
+				}
+			}
+		}
+	}
+}
+
+// IgnoreProfileAttributeValue is a CompareProfilesOption that sets the value of an attribute
+// to empty bytes for every profile
+func IgnoreProfileAttributeValue(attributeName string) CompareProfilesOption {
+	return ignoreProfileAttributeValue{
+		attributeName: attributeName,
+	}
+}
+
+type ignoreProfileAttributeValue struct {
+	attributeName string
+}
+
+func (opt ignoreProfileAttributeValue) applyOnProfiles(expected, actual pprofile.Profiles) {
+	opt.maskProfileAttributeValue(expected)
+	opt.maskProfileAttributeValue(actual)
+}
+
+func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofile.Profiles) {
+	rls := profiles.ResourceProfiles()
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		sls := rls.At(i).ScopeProfiles()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).Profiles()
+			for k := 0; k < lrs.Len(); k++ {
+				lr := lrs.At(k).Profile()
+				val, exists := lr.AttributeTable().Get(opt.attributeName)
+				if exists {
+					val.SetEmptyBytes()
+				}
+			}
+		}
+	}
+}
+
+// IgnoreProfileContainerTimestampValues is a CompareProfilesOption that sets the value of start and end timestamp
+// to empty bytes for every profile
+func IgnoreProfileContainerTimestampValues(attributeName string) CompareProfilesOption {
+	return ignoreProfileContainerTimestampValues{}
+}
+
+type ignoreProfileContainerTimestampValues struct {
+}
+
+func (opt ignoreProfileContainerTimestampValues) applyOnProfiles(expected, actual pprofile.Profiles) {
+	opt.maskProfileContainerTimestampValues(expected)
+	opt.maskProfileContainerTimestampValues(actual)
+}
+
+func (opt ignoreProfileContainerTimestampValues) maskProfileContainerTimestampValues(profiles pprofile.Profiles) {
+	rls := profiles.ResourceProfiles()
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		sls := rls.At(i).ScopeProfiles()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).Profiles()
+			for k := 0; k < lrs.Len(); k++ {
+				lr := lrs.At(k)
+				lr.SetStartTime(pcommon.NewTimestampFromTime(time.Time{}))
+				lr.SetEndTime(pcommon.NewTimestampFromTime(time.Time{}))
+			}
+		}
+	}
+}
+
+// IgnoreProfileTimestampValues is a CompareProfilesOption that sets the value of start timestamp
+// and duration to empty bytes for every profile
+func IgnoreProfileTimestampValues(attributeName string) CompareProfilesOption {
+	return ignoreProfileTimestampValues{}
+}
+
+type ignoreProfileTimestampValues struct {
+}
+
+func (opt ignoreProfileTimestampValues) applyOnProfiles(expected, actual pprofile.Profiles) {
+	opt.maskProfileTimestampValues(expected)
+	opt.maskProfileTimestampValues(actual)
+}
+
+func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles pprofile.Profiles) {
+	rls := profiles.ResourceProfiles()
+	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+		sls := rls.At(i).ScopeProfiles()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).Profiles()
+			for k := 0; k < lrs.Len(); k++ {
+				lr := lrs.At(k).Profile()
+				lr.SetStartTime(pcommon.NewTimestampFromTime(time.Time{}))
+				lr.SetDuration(pcommon.NewTimestampFromTime(time.Time{}))
+			}
+		}
+	}
+}
+
+// IgnoreProfileContainerAttributesOrder is a CompareprofilesOption that ignores the order of profile container attributes.
+func IgnoreProfileContainerAttributesOrder() CompareProfilesOption {
+	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
+		orderProfileContainerAttributes(expected)
+		orderProfileContainerAttributes(actual)
+	})
+}
+
+func orderProfileContainerAttributes(metrics pprofile.Profiles) {
+	rms := metrics.ResourceProfiles()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeProfiles()
+		for j := 0; j < ilms.Len(); j++ {
+			msl := ilms.At(j).Profiles()
+			for g := 0; g < msl.Len(); g++ {
+				for k := 0; k < msl.At(g).Attributes().Len(); k++ {
+					rawOrdered := internal.OrderMapByKey(msl.At(g).Attributes().AsRaw())
+					_ = msl.At(g).Attributes().FromRaw(rawOrdered)
+				}
+			}
+		}
+	}
+}
+
+// IgnoreProfileAttributesOrder is a CompareprofilesOption that ignores the order of profile attributes.
+func IgnoreProfileAttributesOrder() CompareProfilesOption {
+	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
+		orderProfileAttributes(expected)
+		orderProfileAttributes(actual)
+	})
+}
+
+func orderProfileAttributes(metrics pprofile.Profiles) {
+	rms := metrics.ResourceProfiles()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeProfiles()
+		for j := 0; j < ilms.Len(); j++ {
+			msl := ilms.At(j).Profiles()
+			for g := 0; g < msl.Len(); g++ {
+				for k := 0; k < msl.At(g).Profile().AttributeTable().Len(); k++ {
+					rawOrdered := internal.OrderMapByKey(msl.At(g).Profile().AttributeTable().AsRaw())
+					_ = msl.At(g).Profile().AttributeTable().FromRaw(rawOrdered)
 				}
 			}
 		}
