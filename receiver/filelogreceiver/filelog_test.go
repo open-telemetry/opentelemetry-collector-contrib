@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"io"
 	"os"
 	"path/filepath"
@@ -186,8 +187,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	}()
 	require.NoError(t, err)
 
-	expectedLogs := []plog.Logs{}
-
+	expectedLogEntries := []*entry.Entry{}
 	for i := 0; i < numLogs; i++ {
 		if (i+1)%maxLinesPerFile == 0 {
 			if rt.copyTruncate {
@@ -228,22 +228,51 @@ func (rt *rotationTest) Run(t *testing.T) {
 		// Build the expected set by converting entries to pdata Logs...
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
+		e.Body = fmt.Sprintf("2020-08-25 %s", msg)
+		e.AddAttribute("ts", "2020-08-25")
+		e.AddAttribute("msg", msg)
+		e.ObservedTimestamp = expectedTimestamp
 
-		expectedLogs = append(expectedLogs, adapter.ConvertEntries([]*entry.Entry{e}))
+		expectedLogEntries = append(expectedLogEntries, e)
 
 		// ... and write the logs lines to the actual file consumed by receiver.
 		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
 		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 	}
+	expectedLogs := adapter.ConvertEntries(expectedLogEntries)
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
 		"expected %d but got %d logs",
 		numLogs, sink.LogRecordCount(),
 	)
-	// TODO: Figure out a nice way to assert each logs entry content.
-	// require.Equal(t, expectedLogs, sink.AllLogs())
+
+	// gather all Log entries into one ResourceLog so they can be compared with the expectedLogs ResourceLog
+	allReceivedLogs := plog.NewResourceLogs()
+	sink.AllLogs()[0].ResourceLogs().At(0).CopyTo(allReceivedLogs)
+
+	for i, l := range sink.AllLogs() {
+		if i == 0 {
+			continue
+		}
+		for i := 0; i < l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(); i++ {
+			lr := allReceivedLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
+
+			l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).CopyTo(lr)
+		}
+	}
+
+	// override observed timestamp attributes here as the plogtest.COmpareResourceLogs does not provide the IgnoreObservedTimestamp option
+	for i := 0; i < allReceivedLogs.ScopeLogs().At(0).LogRecords().Len(); i++ {
+		allReceivedLogs.ScopeLogs().At(0).LogRecords().At(i).SetObservedTimestamp(pcommon.NewTimestampFromTime(expectedTimestamp))
+	}
+	require.NoError(
+		t,
+		plogtest.CompareResourceLogs(
+			expectedLogs.ResourceLogs().At(0),
+			allReceivedLogs,
+		),
+	)
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
