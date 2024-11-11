@@ -37,8 +37,8 @@ func flatten[K any](target ottl.PMapGetter[K], p ottl.Optional[string], d ottl.O
 	depth := int64(math.MaxInt64)
 	if !d.IsEmpty() {
 		depth = d.Get()
-		if depth < 0 {
-			return nil, fmt.Errorf("invalid depth for flatten function, %d cannot be negative", depth)
+		if depth < 1 {
+			return nil, fmt.Errorf("invalid depth '%d' for flatten function, must be greater than 0", depth)
 		}
 	}
 

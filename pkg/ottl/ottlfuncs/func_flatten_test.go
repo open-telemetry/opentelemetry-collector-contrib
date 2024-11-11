@@ -145,7 +145,7 @@ func Test_flatten(t *testing.T) {
 			},
 		},
 		{
-			name: "zero depth",
+			name: "max depth with slice",
 			target: map[string]any{
 				"0": map[string]any{
 					"1": map[string]any{
@@ -154,23 +154,23 @@ func Test_flatten(t *testing.T) {
 						},
 					},
 				},
-				"1": []any{
-					map[string]any{
-						"1": "value",
+				"1": map[string]any{
+					"1": []any{
+						map[string]any{
+							"1": "value",
+						},
 					},
 				},
 			},
 			prefix: ottl.Optional[string]{},
-			depth:  ottl.NewTestingOptional[int64](0),
+			depth:  ottl.NewTestingOptional[int64](1),
 			expected: map[string]any{
-				"0": map[string]any{
-					"1": map[string]any{
-						"2": map[string]any{
-							"3": "value",
-						},
+				"0.1": map[string]any{
+					"2": map[string]any{
+						"3": "value",
 					},
 				},
-				"1": []any{
+				"1.1": []any{
 					map[string]any{
 						"1": "value",
 					},
