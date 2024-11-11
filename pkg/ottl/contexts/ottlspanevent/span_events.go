@@ -179,7 +179,6 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	default:
 		return nil, internal.FormatDefaultErrorMessage(path.Name(), path.String(), "Span Event", internal.SpanEventRef)
 	}
-
 }
 func accessCache() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{

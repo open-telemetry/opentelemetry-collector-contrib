@@ -122,7 +122,6 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 				client.logger.Error("cwlog_client: Error occurs in PutLogEvents", zap.Error(awsErr))
 				return err
 			}
-
 		}
 
 		//TODO: Should have metrics to provide visibility of these failures

@@ -137,7 +137,6 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 				logger.Debug("Fetch region from ec2 metadata", zap.String("region", awsRegion))
 			}
 		}
-
 	}
 
 	if awsRegion == "" {

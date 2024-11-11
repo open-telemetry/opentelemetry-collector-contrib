@@ -188,7 +188,6 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 						dp.SetDoubleValue((medianNumbers[mNumber-1] + medianNumbers[mNumber]) / 2)
 					}
 				}
-
 			}
 		case pmetric.NumberDataPointValueTypeInt:
 			medianNumbers := []int64{dp.IntValue()}

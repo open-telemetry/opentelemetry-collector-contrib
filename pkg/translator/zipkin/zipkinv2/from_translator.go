@@ -98,7 +98,6 @@ func spanToZipkinSpan(
 	localServiceName string,
 	zTags map[string]string,
 ) (*zipkinmodel.SpanModel, error) {
-
 	tags := aggregateSpanTags(span, zTags)
 
 	zs := &zipkinmodel.SpanModel{}
@@ -318,7 +317,6 @@ func zipkinEndpointFromTags(
 	remoteEndpoint bool,
 	redundantKeys map[string]bool,
 ) (endpoint *zipkinmodel.Endpoint) {
-
 	serviceName := localServiceName
 	if peerSvc, ok := zTags[conventions.AttributePeerService]; ok && remoteEndpoint {
 		serviceName = peerSvc

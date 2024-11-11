@@ -65,7 +65,6 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 }
 
 func TestThriftBatchToInternalTraces(t *testing.T) {
-
 	tests := []struct {
 		name string
 		jb   *jaeger.Batch

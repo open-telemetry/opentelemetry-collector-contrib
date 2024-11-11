@@ -282,7 +282,6 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
 			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
 		}
-
 	}
 	return nil
 }

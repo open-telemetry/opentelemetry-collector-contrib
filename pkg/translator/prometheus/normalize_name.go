@@ -106,7 +106,6 @@ func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffix
 
 // Build a normalized name for the specified metric
 func normalizeName(metric pmetric.Metric, namespace string) string {
-
 	// Split metric name in "tokens" (remove all non-alphanumeric)
 	nameTokens := strings.FieldsFunc(
 		metric.Name(),
@@ -138,7 +137,6 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 				}
 			}
 		}
-
 	}
 
 	// Append _total for Counters

@@ -195,7 +195,6 @@ type logPusher struct {
 // NewPusher creates a logPusher instance
 func NewPusher(streamKey StreamKey, retryCnt int,
 	svcStructuredLog Client, logger *zap.Logger) Pusher {
-
 	pusher := newLogPusher(streamKey, svcStructuredLog, logger)
 
 	pusher.retryCnt = defaultRetryCount
@@ -250,7 +249,6 @@ func (p *logPusher) ForceFlush() error {
 }
 
 func (p *logPusher) pushEventBatch(req any) error {
-
 	// http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
 	// The log events in the batch must be in chronological ordered by their
 	// timestamp (the time the event occurred, expressed as the number of milliseconds
@@ -296,7 +294,6 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 }
 
 func (p *logPusher) renewEventBatch() *eventBatch {
-
 	var prevBatch *eventBatch
 	if len(p.logEventBatch.putLogEventsInput.LogEvents) > 0 {
 		prevBatch = p.logEventBatch
