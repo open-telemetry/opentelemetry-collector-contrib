@@ -94,9 +94,12 @@ func TestReadStaticFile(t *testing.T) {
 	queueEntry := func(t *testing.T, msg string, severity entry.Severity) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
+		e.Body = fmt.Sprintf("2020-08-25 %s %s", severity.String(), msg)
 		e.Severity = severity
-		e.AddAttribute("file_name", "simple.log")
+		e.AddAttribute("log.file.name", "simple.log")
+		e.AddAttribute("time", "2020-08-25")
+		e.AddAttribute("sev", severity.String())
+		e.AddAttribute("msg", msg)
 		entries = append(entries, e)
 	}
 	queueEntry(t, "Something routine", entry.Info)
@@ -113,10 +116,16 @@ func TestReadStaticFile(t *testing.T) {
 		"expected %d but got %d logs",
 		3, sink.LogRecordCount(),
 	)
-	// TODO: Figure out a nice way to assert each logs entry content.
-	require.Equal(t, expectedLogs, sink.AllLogs())
+
 	for i, expectedLog := range expectedLogs {
-		require.NoError(t, plogtest.CompareLogs(expectedLog, sink.AllLogs()[i]), plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp())
+		require.NoError(t,
+			plogtest.CompareLogs(
+				expectedLog,
+				sink.AllLogs()[i],
+				plogtest.IgnoreObservedTimestamp(),
+				plogtest.IgnoreTimestamp(),
+			),
+		)
 	}
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
