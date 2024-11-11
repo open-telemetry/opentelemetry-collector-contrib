@@ -77,7 +77,7 @@ func (c *Config) Validate() error {
 				return err
 			}
 			fallthrough
-		case "log": // ok
+		case "metric", "log": // ok
 			if !c.MatchOnce {
 				return fmt.Errorf(`%q context is not supported with "match_once: false"`, item.Context)
 			}
