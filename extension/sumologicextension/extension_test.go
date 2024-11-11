@@ -113,12 +113,12 @@ func TestBasicStart(t *testing.T) {
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -175,12 +175,12 @@ func TestStoreCredentials(t *testing.T) {
 				// metadata
 				case 2:
 					assert.Equal(t, metadataURL, req.URL.Path)
-					w.WriteHeader(200)
+					w.WriteHeader(http.StatusOK)
 
 				// heartbeat
 				case 3:
 					assert.Equal(t, heartbeatURL, req.URL.Path)
-					w.WriteHeader(204)
+					w.WriteHeader(http.StatusNoContent)
 
 				// should not produce any more requests
 				default:
@@ -318,12 +318,12 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 				// heartbeat
 				case 1:
 					assert.Equal(t, heartbeatURL, req.URL.Path)
-					w.WriteHeader(204)
+					w.WriteHeader(http.StatusNoContent)
 
 				// metadata
 				case 2:
 					assert.Equal(t, metadataURL, req.URL.Path)
-					w.WriteHeader(200)
+					w.WriteHeader(http.StatusOK)
 
 				// should not produce any more requests
 				default:
@@ -418,12 +418,12 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 				// metadata
 				case 2:
 					assert.Equal(t, metadataURL, req.URL.Path)
-					w.WriteHeader(200)
+					w.WriteHeader(http.StatusOK)
 
 				// heartbeat
 				case 3:
 					assert.Equal(t, heartbeatURL, req.URL.Path)
-					w.WriteHeader(204)
+					w.WriteHeader(http.StatusNoContent)
 
 				// should not produce any more requests
 				default:
@@ -527,12 +527,12 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -597,7 +597,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// register again because force registration was set
 			case 3:
@@ -620,7 +620,7 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 			// metadata
 			case 4:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// should not produce any more requests
 			default:
@@ -690,12 +690,12 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -788,12 +788,12 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 							assert.Equal(t, "Basic "+token, authHeader,
 								"collector didn't send correct Authorization header with heartbeat request")
 
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// metadata
 						case 2:
 							assert.Equal(t, metadataURL, req.URL.Path)
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 
 						// should not produce any more requests
 						default:
@@ -852,12 +852,12 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 							assert.Equal(t, "Basic "+token, authHeader,
 								"collector didn't send correct Authorization header with heartbeat request")
 
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// metadata
 						case 3:
 							assert.Equal(t, metadataURL, req.URL.Path)
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 
 						// should not produce any more requests
 						default:
@@ -921,11 +921,11 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// metadata
 						case 3:
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 
 						// heartbeat
 						case 4:
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// should not produce any more requests
 						default:
@@ -973,11 +973,11 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// metadata
 						case 2:
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 
 						// heartbeat
 						case 3:
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// should not produce any more requests
 						default:
@@ -1070,12 +1070,12 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 			// metadata
 			case reqNum == retriesLimit+1:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// heartbeat
 			case reqNum == retriesLimit+2:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -1185,27 +1185,27 @@ func TestRegistrationRedirect(t *testing.T) {
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// heartbeat
 			case 4:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// metadata
 			case 5:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// heartbeat
 			case 6:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -1325,12 +1325,12 @@ func TestCollectorReregistersAfterHTTPUnathorizedFromHeartbeat(t *testing.T) {
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// heartbeat
 			case 4:
@@ -1345,7 +1345,7 @@ func TestCollectorReregistersAfterHTTPUnathorizedFromHeartbeat(t *testing.T) {
 
 			default:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 			}
 		})
 	}())
@@ -1429,7 +1429,7 @@ func TestRegistrationRequestPayload(t *testing.T) {
 			// metadata
 			case 2:
 				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				w.WriteHeader(http.StatusOK)
 			}
 
 		})

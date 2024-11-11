@@ -38,7 +38,6 @@ func newLogsReceiver(
 	unmarshalers map[string]unmarshaler.LogsUnmarshaler,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-
 	recordType := config.RecordType
 	if recordType == "" {
 		recordType = defaultLogsRecordType

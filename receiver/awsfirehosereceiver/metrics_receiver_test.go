@@ -6,6 +6,7 @@ package awsfirehosereceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 		"WithInvalidRecordType": {
 			consumer:   consumertest.NewNop(),
 			recordType: "test",
-			wantErr:    errUnrecognizedRecordType,
+			wantErr:    fmt.Errorf("%w: recordType = %s", errUnrecognizedRecordType, "test"),
 		},
 	}
 	for name, testCase := range testCases {
