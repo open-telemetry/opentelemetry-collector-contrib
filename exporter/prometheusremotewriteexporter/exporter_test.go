@@ -5,7 +5,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -38,6 +37,7 @@ import (
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
