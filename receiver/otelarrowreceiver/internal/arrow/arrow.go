@@ -420,10 +420,10 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 }
 
 func (r *receiverStream) newInFlightData(ctx context.Context, method string, batchID int64, pendingCh chan<- batchResp) *inFlightData {
-	_, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
+	_, span := r.tracer.Start(ctx, "otelarrow_stream_inflight")
 
 	r.inFlightWG.Add(1)
-	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, 1)
+	r.telemetryBuilder.OtelarrowReceiverInFlightRequests.Add(ctx, 1)
 	id := &inFlightData{
 		receiverStream: r,
 		method:         method,
@@ -507,10 +507,10 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 	}
 
 	if id.uncompSize != 0 {
-		id.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(ctx, -id.uncompSize)
+		id.telemetryBuilder.OtelarrowReceiverInFlightBytes.Add(ctx, -id.uncompSize)
 	}
 	if id.numItems != 0 {
-		id.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(ctx, int64(-id.numItems))
+		id.telemetryBuilder.OtelarrowReceiverInFlightItems.Add(ctx, int64(-id.numItems))
 	}
 
 	// The netstats code knows that uncompressed size is
@@ -522,7 +522,7 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 	sized.Length = id.uncompSize
 	id.netReporter.CountReceive(ctx, sized)
 
-	id.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, -1)
+	id.telemetryBuilder.OtelarrowReceiverInFlightRequests.Add(ctx, -1)
 	id.inFlightWG.Done()
 }
 
@@ -585,7 +585,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 
 	// start this span after hrcv.combineHeaders returns extracted context. This will allow this span
 	// to be a part of the data path trace instead of only being included as a child of the stream inflight trace.
-	inflightCtx, span := r.tracer.Start(inflightCtx, "otel_arrow_stream_recv")
+	inflightCtx, span := r.tracer.Start(inflightCtx, "otelarrow_stream_recv")
 	defer span.End()
 
 	// Authorize the request, if configured, prior to acquiring resources.
@@ -638,8 +638,8 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	flight.uncompSize = uncompSize
 	flight.numItems = numItems
 
-	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
-	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
+	r.telemetryBuilder.OtelarrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
+	r.telemetryBuilder.OtelarrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
 
 	// Recognize that the request is still in-flight via consumeAndRespond()
 	flight.refs.Add(1)

@@ -560,7 +560,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 
 	// Number of export requests: exact match.  This span covers
 	// handling one request in the Arrow exporter.
-	require.Equal(t, total, expOps["otel_arrow_stream_send/Unset"])
+	require.Equal(t, total, expOps["otelarrow_stream_send/Unset"])
 
 	// Receiver spans
 	//
@@ -577,10 +577,10 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	// For each stream, there is one Recv() span at the end that ends
 	// in cancelation (or EOF).  So we expect total to be less than
 	// this span count.
-	require.Equal(t, total+recvStreamsUnset+recvStreamsError, recvOps["otel_arrow_stream_inflight/Unset"])
+	require.Equal(t, total+recvStreamsUnset+recvStreamsError, recvOps["otelarrow_stream_inflight/Unset"])
 
 	// This is in request context, the Arrow stream handling one request.
-	require.Equal(t, total, recvOps["otel_arrow_stream_recv/Unset"])
+	require.Equal(t, total, recvOps["otelarrow_stream_recv/Unset"])
 
 	// This is in request context, the receiverhelper's per-request span.
 	require.Equal(t, total, recvOps["receiver/otelarrowreceiver/TraceDataReceived/Unset"])

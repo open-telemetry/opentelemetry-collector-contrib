@@ -10,7 +10,7 @@ status:
 
 telemetry:
   metrics:
-    otel_arrow_receiver_in_flight_bytes:
+    otelarrow_receiver_in_flight_bytes:
       description: Number of bytes in flight
       unit: By
       enabled: true
@@ -18,7 +18,7 @@ telemetry:
         monotonic: false
         value_type: int
 
-    otel_arrow_receiver_in_flight_items:
+    otelarrow_receiver_in_flight_items:
       description: Number of items in flight
       enabled: true
       unit: "1"
@@ -26,7 +26,7 @@ telemetry:
         monotonic: false
         value_type: int
 
-    otel_arrow_receiver_in_flight_requests:
+    otelarrow_receiver_in_flight_requests:
       description: Number of requests in flight
       enabled: true
       unit: "1"

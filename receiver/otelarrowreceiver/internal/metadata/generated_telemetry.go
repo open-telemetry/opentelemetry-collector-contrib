@@ -29,9 +29,9 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                             metric.Meter
-	OtelArrowReceiverInFlightBytes    metric.Int64UpDownCounter
-	OtelArrowReceiverInFlightItems    metric.Int64UpDownCounter
-	OtelArrowReceiverInFlightRequests metric.Int64UpDownCounter
+	OtelarrowReceiverInFlightBytes    metric.Int64UpDownCounter
+	OtelarrowReceiverInFlightItems    metric.Int64UpDownCounter
+	OtelarrowReceiverInFlightRequests metric.Int64UpDownCounter
 	meters                            map[configtelemetry.Level]metric.Meter
 }
 
@@ -55,20 +55,20 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
 	var err, errs error
-	builder.OtelArrowReceiverInFlightBytes, err = builder.meters[configtelemetry.LevelBasic].Int64UpDownCounter(
-		"otelcol_otel_arrow_receiver_in_flight_bytes",
+	builder.OtelarrowReceiverInFlightBytes, err = builder.meters[configtelemetry.LevelBasic].Int64UpDownCounter(
+		"otelcol_otelarrow_receiver_in_flight_bytes",
 		metric.WithDescription("Number of bytes in flight"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelArrowReceiverInFlightItems, err = builder.meters[configtelemetry.LevelBasic].Int64UpDownCounter(
-		"otelcol_otel_arrow_receiver_in_flight_items",
+	builder.OtelarrowReceiverInFlightItems, err = builder.meters[configtelemetry.LevelBasic].Int64UpDownCounter(
+		"otelcol_otelarrow_receiver_in_flight_items",
 		metric.WithDescription("Number of items in flight"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.OtelArrowReceiverInFlightRequests, err = builder.meters[configtelemetry.LevelBasic].Int64UpDownCounter(
-		"otelcol_otel_arrow_receiver_in_flight_requests",
+	builder.OtelarrowReceiverInFlightRequests, err = builder.meters[configtelemetry.LevelBasic].Int64UpDownCounter(
+		"otelcol_otelarrow_receiver_in_flight_requests",
 		metric.WithDescription("Number of requests in flight"),
 		metric.WithUnit("1"),
 	)

@@ -281,7 +281,7 @@ func (s *Stream) write(ctx context.Context) (retErr error) {
 }
 
 func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hpack.Encoder) (retErr error) {
-	ctx, span := s.tracer.Start(wri.producerCtx, "otel_arrow_stream_send")
+	ctx, span := s.tracer.Start(wri.producerCtx, "otelarrow_stream_send")
 	defer span.End()
 
 	defer func() {
