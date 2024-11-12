@@ -23,20 +23,10 @@ resourceMetrics:
                       value:
                         stringValue: bbb
                   negative:
-                    bucketCounts:
-                      - 6
-                      - 21
-                      - 9
-                      - 19
-                      - 7
+                    bucketCounts: [6, 21, 9, 19, 7]
                     offset: 6
                   positive:
-                    bucketCounts:
-                      - 9
-                      - 12
-                      - 17
-                      - 8
-                      - 34
+                    bucketCounts: [9, 12, 17, 8, 34]
                     offset: 2
                   scale: 4
                   timeUnixNano: 80
