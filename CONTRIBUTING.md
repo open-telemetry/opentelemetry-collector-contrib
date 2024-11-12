@@ -342,16 +342,24 @@ In order to facilitate proper label usage and to empower Code Owners, you are ab
 
 The following general labels are supported:
 
-| Label                | Label in Comment     |
-|----------------------|----------------------|
-| `arm64`              | `arm64`              |
-| `good first issue`   | `good-first-issue`   |
-| `help wanted`        | `help-wanted`        |
-| `discussion needed`  | `discussion-needed`  |
-| `needs triage`       | `needs-triage`       |
-| `os:mac`             | `os:mac`             |
-| `os:windows`         | `os:windows`         |
-| `waiting for author` | `waiting-for-author` |
+| Label                     | Label in Comment          |
+|---------------------------|---------------------------|
+| `arm64`                   | `arm64`                   |
+| `good first issue`        | `good-first-issue`        |
+| `help wanted`             | `help-wanted`             |
+| `discussion needed`       | `discussion-needed`       |
+| `needs triage`            | `needs-triage`            |
+| `os:mac`                  | `os:mac`                  |
+| `os:windows`              | `os:windows`              |
+| `waiting for author`      | `waiting-for-author`      |
+| `waiting-for-code-owners` | `waiting-for-code-owners` |
+| `bug`                     | `bug`                     |
+| `priority:p0`             | `priority:p0`             |
+| `priority:p1`             | `priority:p1`             |
+| `priority:p2`             | `priority:p2`             |
+| `priority:p3`             | `priority:p3`             |
+| `Stale`                   | `stale`                   |
+| `never stale`             | `never-stale`             |
 
 To delete a label, prepend the label with `-`. Note that you must make a new comment to modify labels; you cannot edit an existing comment.
 
