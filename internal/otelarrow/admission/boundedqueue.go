@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package admission2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
+package admission // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
 
 import (
 	"container/list"
