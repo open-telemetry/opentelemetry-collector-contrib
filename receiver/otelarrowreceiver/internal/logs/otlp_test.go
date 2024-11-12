@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -207,7 +206,8 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) (net.Addr, *tracet
 	})
 	require.NoError(t, err)
 	bq := admission.NewBoundedQueue(telset, maxBytes, 0)
-	r := New(zap.NewNop(), lc, obsrecv, bq)
+	r, err := New(telset, lc, obsrecv, bq)
+	require.NoError(t, err)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	plogotlp.RegisterGRPCServer(srv, r)

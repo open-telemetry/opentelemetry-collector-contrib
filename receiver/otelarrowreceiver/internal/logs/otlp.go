@@ -6,6 +6,7 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -13,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -20,22 +22,28 @@ const dataFormatProtobuf = "protobuf"
 // Receiver is the type used to handle logs from OpenTelemetry exporters.
 type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
-	nextConsumer consumer.Logs
-	obsrecv      *receiverhelper.ObsReport
-	boundedQueue admission.Queue
-	sizer        *plog.ProtoMarshaler
-	logger       *zap.Logger
+	nextConsumer     consumer.Logs
+	obsrecv          *receiverhelper.ObsReport
+	boundedQueue     admission.Queue
+	sizer            *plog.ProtoMarshaler
+	logger           *zap.Logger
+	telemetryBuilder *internalmetadata.TelemetryBuilder
 }
 
 // New creates a new Receiver reference.
-func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq admission.Queue) *Receiver {
-	return &Receiver{
-		nextConsumer: nextConsumer,
-		obsrecv:      obsrecv,
-		boundedQueue: bq,
-		sizer:        &plog.ProtoMarshaler{},
-		logger:       logger,
+func New(telset component.TelemetrySettings, nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq admission.Queue) (*Receiver, error) {
+	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(telset)
+	if err != nil {
+		return nil, err
 	}
+	return &Receiver{
+		nextConsumer:     nextConsumer,
+		obsrecv:          obsrecv,
+		boundedQueue:     bq,
+		sizer:            &plog.ProtoMarshaler{},
+		logger:           telset.Logger,
+		telemetryBuilder: telemetryBuilder,
+	}, nil
 }
 
 // Export implements the service Export logs func.
@@ -46,10 +54,15 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 		return plogotlp.NewExportResponse(), nil
 	}
 
+	sizeBytes := int64(r.sizer.LogsSize(req.Logs()))
+
+	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(ctx, sizeBytes)
+	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(ctx, int64(numRecords))
+	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, 1)
+
 	ctx = r.obsrecv.StartLogsOp(ctx)
 
 	var err error
-	sizeBytes := int64(r.sizer.LogsSize(req.Logs()))
 	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeLogs(ctx, ld)
 		// Release() is not checked, see #36074.
@@ -59,6 +72,10 @@ func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plog
 	}
 
 	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numRecords, err)
+
+	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(ctx, -sizeBytes)
+	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(ctx, -int64(numRecords))
+	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, -1)
 
 	return plogotlp.NewExportResponse(), err
 }

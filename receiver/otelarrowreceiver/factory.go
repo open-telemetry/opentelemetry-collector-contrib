@@ -75,8 +75,7 @@ func createTraces(
 		return nil, err
 	}
 
-	recv.Unwrap().(*otelArrowReceiver).registerTraceConsumer(nextConsumer)
-	return recv, nil
+	return recv, recv.Unwrap().(*otelArrowReceiver).registerTraceConsumer(nextConsumer)
 }
 
 // createMetrics creates a metrics receiver based on provided config.
@@ -96,8 +95,7 @@ func createMetrics(
 	if err != nil {
 		return nil, err
 	}
-	recv.Unwrap().(*otelArrowReceiver).registerMetricsConsumer(consumer)
-	return recv, nil
+	return recv, recv.Unwrap().(*otelArrowReceiver).registerMetricsConsumer(consumer)
 }
 
 // createLog creates a log receiver based on provided config.
@@ -118,8 +116,7 @@ func createLog(
 		return nil, err
 	}
 
-	recv.Unwrap().(*otelArrowReceiver).registerLogsConsumer(consumer)
-	return recv, nil
+	return recv, recv.Unwrap().(*otelArrowReceiver).registerLogsConsumer(consumer)
 }
 
 // This is the map of already created OTel-Arrow receivers for particular configurations.

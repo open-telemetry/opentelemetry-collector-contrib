@@ -192,16 +192,19 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
-	r.tracesReceiver = trace.New(r.settings.Logger, tc, r.obsrepGRPC, r.boundedQueue)
+func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) (err error) {
+	r.tracesReceiver, err = trace.New(r.settings.TelemetrySettings, tc, r.obsrepGRPC, r.boundedQueue)
+	return
 }
 
-func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
-	r.metricsReceiver = metrics.New(r.settings.Logger, mc, r.obsrepGRPC, r.boundedQueue)
+func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) (err error) {
+	r.metricsReceiver, err = metrics.New(r.settings.TelemetrySettings, mc, r.obsrepGRPC, r.boundedQueue)
+	return
 }
 
-func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
-	r.logsReceiver = logs.New(r.settings.Logger, lc, r.obsrepGRPC, r.boundedQueue)
+func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) (err error) {
+	r.logsReceiver, err = logs.New(r.settings.TelemetrySettings, lc, r.obsrepGRPC, r.boundedQueue)
+	return
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}
