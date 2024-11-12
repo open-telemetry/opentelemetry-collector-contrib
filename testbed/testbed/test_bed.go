@@ -64,7 +64,6 @@ func DoTestMain(m *testing.M, resultsSummary TestResultsSummary) {
 
 	// Load the test bed config first.
 	err := Start(resultsSummary)
-
 	if err != nil {
 		log.Fatal(err.Error())
 	}
