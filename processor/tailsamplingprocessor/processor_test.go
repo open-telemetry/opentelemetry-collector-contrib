@@ -472,7 +472,6 @@ func TestSubSecondDecisionTime(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return len(msp.AllTraces()) == 1
 	}, time.Second, 10*time.Millisecond)
-
 }
 
 func TestPolicyLoggerAddsPolicyName(t *testing.T) {
