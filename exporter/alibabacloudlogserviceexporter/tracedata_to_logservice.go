@@ -188,7 +188,6 @@ func eventsToString(events ptrace.SpanEventSlice) string {
 	}
 	eventArrayBytes, _ := json.Marshal(&eventArray)
 	return string(eventArrayBytes)
-
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {

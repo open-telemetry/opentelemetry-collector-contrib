@@ -48,7 +48,6 @@ func spanToEnvelopes(
 	span ptrace.Span,
 	spanEventsEnabled bool,
 	logger *zap.Logger) ([]*contracts.Envelope, error) {
-
 	spanKind := span.Kind()
 
 	// According to the SpanKind documentation, we can assume it to be INTERNAL
@@ -552,7 +551,6 @@ func copyAndMapAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
 	mappingFunc func(k string, v pcommon.Value)) {
-
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		setAttributeValueAsProperty(k, v, properties)
 		if mappingFunc != nil {
@@ -566,7 +564,6 @@ func copyAndMapAttributes(
 func copyAttributesWithoutMapping(
 	attributeMap pcommon.Map,
 	properties map[string]string) {
-
 	copyAndMapAttributes(attributeMap, properties, nil)
 }
 
@@ -574,7 +571,6 @@ func copyAttributesWithoutMapping(
 func copyAndExtractHTTPAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string) *HTTPAttributes {
-
 	attrs := &HTTPAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -588,7 +584,6 @@ func copyAndExtractHTTPAttributes(
 func copyAndExtractRPCAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string) *RPCAttributes {
-
 	attrs := &RPCAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -602,7 +597,6 @@ func copyAndExtractRPCAttributes(
 func copyAndExtractDatabaseAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string) *DatabaseAttributes {
-
 	attrs := &DatabaseAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -616,7 +610,6 @@ func copyAndExtractDatabaseAttributes(
 func copyAndExtractMessagingAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string) *MessagingAttributes {
-
 	attrs := &MessagingAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -630,7 +623,6 @@ func copyAndExtractMessagingAttributes(
 func copyAndExtractExceptionAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string) *ExceptionAttributes {
-
 	attrs := &ExceptionAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -705,7 +697,6 @@ func setAttributeValueAsProperty(
 	key string,
 	attributeValue pcommon.Value,
 	properties map[string]string) {
-
 	switch attributeValue.Type() {
 	case pcommon.ValueTypeBool:
 		properties[key] = strconv.FormatBool(attributeValue.Bool())

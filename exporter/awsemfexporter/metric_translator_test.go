@@ -347,7 +347,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-
 			groupedMetrics := make(map[any]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.NoError(t, err)
@@ -459,7 +458,6 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 			assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
 		})
 	}
-
 }
 
 func TestTranslateGroupedMetricToCWMetric(t *testing.T) {

@@ -338,7 +338,6 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, want, string(doc))
-
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
@@ -1136,7 +1135,6 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 }
 
 func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelRecord {
-
 	s := `{
     "@timestamp": "2024-03-12T20:00:41.123456780Z",
     "attributes": {
@@ -1176,7 +1174,6 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
 		record = fn(record)
 	}
 	return record
-
 }
 
 func deleteDatasetAttributes(or OTelRecord) {

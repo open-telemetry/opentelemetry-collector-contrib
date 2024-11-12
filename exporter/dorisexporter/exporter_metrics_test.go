@@ -250,7 +250,6 @@ func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.M
 			exemplars.FilteredAttributes().PutStr("key2", "value2")
 			exemplars.SetSpanID([8]byte{1, 2, 3, byte(i)})
 			exemplars.SetTraceID([16]byte{1, 2, 3, byte(i)})
-
 		}
 
 		// histogram
@@ -276,7 +275,6 @@ func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.M
 			exemplars.FilteredAttributes().PutStr("key2", "value2")
 			exemplars.SetSpanID([8]byte{1, 2, 3, byte(i)})
 			exemplars.SetTraceID([16]byte{1, 2, 3, byte(i)})
-
 		}
 
 		// exp histogram
@@ -394,7 +392,6 @@ func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.M
 			exemplars.FilteredAttributes().PutStr("key2", "value2")
 			exemplars.SetSpanID([8]byte{1, 2, 3, byte(i)})
 			exemplars.SetTraceID([16]byte{1, 2, 3, byte(i)})
-
 		}
 
 		// exp histogram
@@ -424,7 +421,6 @@ func simpleMetrics(count int, typeSet map[pmetric.MetricType]struct{}) pmetric.M
 			exemplars.FilteredAttributes().PutStr("key2", "value2")
 			exemplars.SetSpanID([8]byte{1, 2, 3, byte(i)})
 			exemplars.SetTraceID([16]byte{1, 2, 3, byte(i)})
-
 		}
 
 		// summary

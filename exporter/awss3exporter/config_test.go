@@ -223,7 +223,6 @@ func TestMarshallerName(t *testing.T) {
 		MarshalerName: "otlp_proto",
 	}, e,
 	)
-
 }
 
 func TestCompressionName(t *testing.T) {
@@ -265,5 +264,4 @@ func TestCompressionName(t *testing.T) {
 		MarshalerName: "otlp_proto",
 	}, e,
 	)
-
 }

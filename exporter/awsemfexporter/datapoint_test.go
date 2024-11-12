@@ -355,7 +355,6 @@ func shutdownEmfCalculators(c *emfCalculators) error {
 	var errs error
 	errs = multierr.Append(errs, c.delta.Shutdown())
 	return multierr.Append(errs, c.summary.Shutdown())
-
 }
 
 func TestIsStaleNaNInf_NumberDataPointSlice(t *testing.T) {
@@ -398,7 +397,6 @@ func TestIsStaleNaNInf_NumberDataPointSlice(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			// Given the number datapoint (including Sum and Gauge OTEL metric type) with data type as int or double
 			numberDPS := pmetric.NewNumberDataPointSlice()
 
@@ -425,7 +423,6 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 	emfCalcs := setupEmfCalculators()
 	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
-
 		testCases := []struct {
 			name              string
 			adjustToDelta     bool
@@ -511,7 +508,6 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
-
 				// Given the number datapoint (including Sum and Gauge OTEL metric type) with data type as int or double
 				numberDPS := pmetric.NewNumberDataPointSlice()
 				numberDP := numberDPS.AppendEmpty()
@@ -579,7 +575,6 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 				histogramDP.SetSum(17.13)
 				histogramDP.Attributes().PutStr("label1", "value1")
 				return histogramDPS
-
 			}(),
 			expectedDatapoint: dataPoint{
 				name:   "foo",
@@ -620,14 +615,11 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 			assert.True(t, retained)
 			assert.Equal(t, 1, histogramDatapointSlice.Len())
 			assert.Equal(t, tc.expectedDatapoint, dps[0])
-
 		})
 	}
-
 }
 
 func TestIsStaleNaNInf_HistogramDataPointSlice(t *testing.T) {
-
 	testCases := []struct {
 		name           string
 		histogramDPS   pmetric.HistogramDataPointSlice
@@ -791,7 +783,6 @@ func TestIsStaleNaNInf_HistogramDataPointSlice(t *testing.T) {
 			tc.boolAssertFunc(t, isStaleNanInf)
 		})
 	}
-
 }
 
 func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.T) {
@@ -829,7 +820,6 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 				histogramDP.SetSum(17.13)
 				histogramDP.Attributes().PutStr("label1", "value1")
 				return histogramDPS
-
 			}(),
 			expectedDatapoint: dataPoint{
 				name:   "foo",
@@ -892,11 +882,9 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			assert.Equal(t, tc.expectedDatapoint, dps[0])
 		})
 	}
-
 }
 
 func TestIsStaleNaNInf_ExponentialHistogramDataPointSlice(t *testing.T) {
-
 	testCases := []struct {
 		name           string
 		histogramDPS   pmetric.ExponentialHistogramDataPointSlice
@@ -1089,7 +1077,6 @@ func TestIsStaleNaNInf_ExponentialHistogramDataPointSlice(t *testing.T) {
 			tc.boolAssertFunc(t, isStaleNaNInf)
 		})
 	}
-
 }
 
 func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
@@ -1170,7 +1157,6 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 						assert.Equal(t, tc.expectedDatapoint[i].labels, dp.labels)
 						assert.InDelta(t, tc.expectedDatapoint[i].value, dp.value, 0.002)
 					}
-
 				}
 			})
 		}
@@ -1366,7 +1352,6 @@ func TestIsStaleNaNInf_SummaryDataPointSlice(t *testing.T) {
 			tc.expectedBoolAssert(t, isStaleNaNInf)
 		})
 	}
-
 }
 
 func TestCreateLabels(t *testing.T) {
@@ -1455,7 +1440,6 @@ func TestGetDataPoints(t *testing.T) {
 		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metric.Type())
 
 		t.Run(tc.name, func(t *testing.T) {
-
 			if tc.isPrometheusMetrics {
 				metadata.receiver = prometheusReceiver
 			} else {

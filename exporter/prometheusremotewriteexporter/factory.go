@@ -36,7 +36,6 @@ func NewFactory() exporter.Factory {
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
-
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration")

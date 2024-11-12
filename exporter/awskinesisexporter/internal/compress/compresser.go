@@ -63,7 +63,6 @@ func gzipCompressor(in []byte) ([]byte, error) {
 
 	err = w.Flush()
 	if err != nil {
-
 		return nil, err
 	}
 

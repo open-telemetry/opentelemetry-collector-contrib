@@ -298,7 +298,6 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
-
 		rec := newBulkRecorder()
 		var (
 			prefix = "resprefix-"
@@ -515,7 +514,6 @@ func TestExporterLogs(t *testing.T) {
 
 			assertRecordedItems(t, expected, rec, false)
 		}
-
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -1439,7 +1437,6 @@ func TestExporterTraces(t *testing.T) {
 	})
 
 	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
-
 		rec := newBulkRecorder()
 		var (
 			prefix = "resprefix-"
@@ -1485,7 +1482,6 @@ func TestExporterTraces(t *testing.T) {
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
-
 		rec := newBulkRecorder()
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {

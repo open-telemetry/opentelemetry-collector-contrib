@@ -174,7 +174,6 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if len(prometheusExporterScrape) != 0 {
 		t.Fatalf("Left-over unmatched Prometheus scrape content: %q\n", prometheusExporterScrape)
 	}
-
 }
 
 // the following triggers G101: Potential hardcoded credentials

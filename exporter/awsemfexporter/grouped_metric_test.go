@@ -405,7 +405,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
 	})
-
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {

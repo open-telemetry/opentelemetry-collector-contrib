@@ -1211,7 +1211,6 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		}
 		t.Run(test.name, testFn(false))
 		t.Run(test.name+"_MultiMetric", testFn(true))
-
 	}
 }
 
@@ -1541,7 +1540,6 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
@@ -2105,5 +2103,4 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	for _, e := range expected {
 		assert.Contains(t, string(p), e)
 	}
-
 }
