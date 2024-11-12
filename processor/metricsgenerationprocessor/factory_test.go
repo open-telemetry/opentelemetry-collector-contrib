@@ -40,7 +40,6 @@ func TestCreateProcessors(t *testing.T) {
 	for k := range cm.ToStringMap() {
 		// Check if all processor variations that are defined in test config can be actually created
 		t.Run(k, func(t *testing.T) {
-
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
