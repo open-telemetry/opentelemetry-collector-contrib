@@ -42,11 +42,11 @@ examples/demo/                                    @open-telemetry/collector-cont
 exporter/alertmanagerexporter/                    @open-telemetry/collector-contrib-approvers @jpkrohling @sokoide @mcube8
 exporter/alibabacloudlogserviceexporter/          @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/               @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
-exporter/awsemfexporter/                          @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia @bryan-aguilar
+exporter/awsemfexporter/                          @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia @bryan-aguilar
 exporter/awskinesisexporter/                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                           @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
 exporter/awsxrayexporter/                         @open-telemetry/collector-contrib-approvers @wangzlei @srprash
-exporter/azuredataexplorerexporter/               @open-telemetry/collector-contrib-approvers @asaharn @ag-ramachandran
+exporter/azuredataexplorerexporter/               @open-telemetry/collector-contrib-approvers @ag-ramachandran
 exporter/azuremonitorexporter/                    @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                          @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 exporter/cassandraexporter/                       @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
@@ -63,7 +63,7 @@ exporter/googlemanagedprometheusexporter/         @open-telemetry/collector-cont
 exporter/honeycombmarkerexporter/                 @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
 exporter/influxdbexporter/                        @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/kafkaexporter/                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
-exporter/kineticaexporter/                        @open-telemetry/collector-contrib-approvers @am-kinetica @TylerHelmuth
+exporter/kineticaexporter/                        @open-telemetry/collector-contrib-approvers @TylerHelmuth
 exporter/loadbalancingexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                    @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                          @open-telemetry/collector-contrib-approvers @yotamloe
@@ -81,7 +81,7 @@ exporter/signalfxexporter/                        @open-telemetry/collector-cont
 exporter/splunkhecexporter/                       @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 exporter/sumologicexporter/                       @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo
 exporter/syslogexporter/                          @open-telemetry/collector-contrib-approvers @kasia-kujawa @rnishtala-sumo @andrzej-stencel
-exporter/tencentcloudlogserviceexporter/          @open-telemetry/collector-contrib-approvers @wgliang @yiyang5055
+exporter/tencentcloudlogserviceexporter/          @open-telemetry/collector-contrib-approvers @wgliang
 exporter/zipkinexporter/                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 
 extension/ackextension/                           @open-telemetry/collector-contrib-approvers @zpzhuSplunk @splunkericl
