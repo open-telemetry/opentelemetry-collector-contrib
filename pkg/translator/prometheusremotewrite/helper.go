@@ -221,7 +221,6 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 
 			sumlabels := createLabels(baseName+sumStr, baseLabels)
 			c.addSample(sum, sumlabels)
-
 		}
 
 		// treat count as a sample in an individual TimeSeries

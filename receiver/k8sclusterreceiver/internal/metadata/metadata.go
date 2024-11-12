@@ -54,8 +54,7 @@ func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 
 	metadata[constants.K8sKeyWorkLoadKind] = resourceType
 	metadata[constants.K8sKeyWorkLoadName] = om.Name
-	metadata[fmt.Sprintf("%s.creation_timestamp",
-		rType)] = om.GetCreationTimestamp().Format(time.RFC3339)
+	metadata[rType+".creation_timestamp"] = om.GetCreationTimestamp().Format(time.RFC3339)
 
 	for _, or := range om.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
@@ -80,7 +79,7 @@ func GetOTelNameFromKind(kind string) string {
 }
 
 func getOTelEntityTypeFromKind(kind string) string {
-	return fmt.Sprintf("k8s.%s", kind)
+	return "k8s." + kind
 }
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to
@@ -135,7 +134,6 @@ func GetMetadataUpdate(oldMetadata, newMetadata map[metadataPkg.ResourceID]*Kube
 // If the delta between old (oldProps) and new (newProps) revisions of a
 // resource end up being empty, nil is returned.
 func getMetadataDelta(oldProps, newProps map[string]string) *metadataPkg.MetadataDelta {
-
 	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
 
 	// If metadata exist in the previous revision as well, collect if

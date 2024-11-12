@@ -91,7 +91,6 @@ func TestMetric10kDPS(t *testing.T) {
 			)
 		})
 	}
-
 }
 
 func TestMetricsFromFile(t *testing.T) {

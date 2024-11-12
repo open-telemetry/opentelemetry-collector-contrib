@@ -426,7 +426,6 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
-
 	}
 	// Record the results
 	var host string
@@ -1665,8 +1664,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	}
 
 	for _, f := range da.Entries {
-
-		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
 			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1674,7 +1672,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsAdhocDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled {
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled {
 			scheduledCount, err := strconv.ParseInt(f.Content.ScheduledCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1682,7 +1680,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsScheduledDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsCompleted.Enabled {
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsCompleted.Enabled {
 			completedCount, err := strconv.ParseInt(f.Content.CompletedCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1690,15 +1688,15 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsCompletedDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsIncomplete.Enabled {
-			incompleCount, err := strconv.ParseInt(f.Content.IncompleCount, 10, 64)
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsIncomplete.Enabled {
+			incompleteCount, err := strconv.ParseInt(f.Content.IncompleteCount, 10, 64)
 			if err != nil {
 				errs <- err
 			}
-			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleCount, s.conf.SHEndpoint.Endpoint)
+			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleteCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsInvalid.Enabled {
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsInvalid.Enabled {
 			invalidCount, err := strconv.ParseInt(f.Content.InvalidCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1706,12 +1704,33 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsInvalidDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled {
-			savedSearchesCount, err := strconv.ParseInt(f.Content.SsCount, 10, 64)
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled {
+			savedSearchesCount, err := strconv.ParseInt(f.Content.SavedSearchesCount, 10, 64)
 			if err != nil {
 				errs <- err
 			}
 			s.mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(now, savedSearchesCount, s.conf.SHEndpoint.Endpoint)
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled {
+			infoCacheSize, err := strconv.ParseInt(f.Content.InfoCacheSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			statusCacheSize, err := strconv.ParseInt(f.Content.StatusCacheSize, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, infoCacheSize, s.conf.SHEndpoint.Endpoint, "info")
+			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, statusCacheSize, s.conf.SHEndpoint.Endpoint, "status")
+		}
+
+		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled {
+			cacheTotalEntries, err := strconv.ParseInt(f.Content.CacheTotalEntries, 10, 64)
+			if err != nil {
+				errs <- err
+			}
+			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint)
 		}
 	}
 }

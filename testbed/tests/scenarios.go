@@ -26,6 +26,11 @@ var (
 	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
 )
 
+type ProcessorNameAndConfigBody struct {
+	Name string
+	Body string
+}
+
 // createConfigYaml creates a collector config file that corresponds to the
 // sender and receiver used in the test and returns the config file name.
 // Map of processor names to their configs. Config is in YAML and must be
@@ -36,10 +41,9 @@ func createConfigYaml(
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	resultDir string,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) string {
-
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
 	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
 	// This is because our DataSender sends to Collector's receiver and our DataReceiver
@@ -51,12 +55,12 @@ func createConfigYaml(
 	processorsList := ""
 	if len(processors) > 0 {
 		first := true
-		for name, cfg := range processors {
-			processorsSections += cfg + "\n"
+		for i := range processors {
+			processorsSections += processors[i].Body + "\n"
 			if !first {
 				processorsList += ","
 			}
-			processorsList += name
+			processorsList += processors[i].Name
 			first = false
 		}
 	}
@@ -133,7 +137,7 @@ func Scenario10kItemsPerSecond(
 	receiver testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -191,7 +195,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 	backend testbed.DataReceiver,
 	resourceSpec testbed.ResourceSpec,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -261,12 +265,11 @@ func genRandByteString(length int) string {
 
 // Scenario1kSPSWithAttrs runs a performance test at 1k sps with specified span attributes
 // and test options.
-func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors map[string]string, extensions map[string]string) {
+func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, processors []ProcessorNameAndConfigBody, extensions map[string]string) {
 	for i := range tests {
 		test := tests[i]
 
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
-
 			options := constructLoadOptions(test)
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
@@ -317,8 +320,8 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 // Defines RAM usage range for defined processor type.
 type processorConfig struct {
 	Name string
-	// map of processor types to their config YAML to use.
-	Processor           map[string]string
+	// slice of processor structs with their names and config YAML to use.
+	Processor           []ProcessorNameAndConfigBody
 	ExpectedMaxRAM      uint32
 	ExpectedMinFinalRAM uint32
 }
@@ -374,7 +377,7 @@ func ScenarioSendingQueuesFull(
 	resourceSpec testbed.ResourceSpec,
 	sleepTime int,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -456,7 +459,7 @@ func ScenarioSendingQueuesNotFull(
 	resourceSpec testbed.ResourceSpec,
 	sleepTime int,
 	resultsSummary testbed.TestResultsSummary,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
@@ -508,7 +511,7 @@ func ScenarioLong(
 	loadOptions testbed.LoadOptions,
 	resultsSummary testbed.TestResultsSummary,
 	sleepTime int,
-	processors map[string]string,
+	processors []ProcessorNameAndConfigBody,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)

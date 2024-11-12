@@ -222,7 +222,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpanCount())
 				sink.Reset()
 			}
-
 		})
 	}
 }
@@ -246,7 +245,6 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 		{100, false, true},
 	} {
 		t.Run(fmt.Sprint(tt.pct, "_", tt.failClosed), func(t *testing.T) {
-
 			ctx := context.Background()
 			traces := ptrace.NewTraces()
 			span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -388,7 +386,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, mode := range AllModes {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 
 				cfg := &Config{}
@@ -846,7 +843,6 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	for _, tt := range tests {
 		for _, mode := range []SamplerMode{Equalizing, Proportional} {
 			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
 				if tt.cfg != nil {
@@ -1013,7 +1009,6 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 				expectMessage := ""
 				if tt.sf != nil {
 					expectMessage = tt.sf(mode)
-
 				}
 
 				tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)

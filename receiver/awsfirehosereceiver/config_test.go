@@ -4,7 +4,6 @@
 package awsfirehosereceiver
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -20,10 +19,10 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	for _, configType := range []string{
-		"cwmetrics", "cwlogs", "invalid",
+		"cwmetrics", "cwlogs", "otlp_v1", "invalid",
 	} {
 		t.Run(configType, func(t *testing.T) {
-			fileName := fmt.Sprintf("%s_config.yaml", configType)
+			fileName := configType + "_config.yaml"
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", fileName))
 			require.NoError(t, err)
 
