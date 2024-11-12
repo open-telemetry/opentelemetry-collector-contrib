@@ -59,6 +59,7 @@ type tailSamplingSpanProcessor struct {
 	nonSampledIDCache cache.Cache[bool]
 	deleteChan        chan pcommon.TraceID
 	numTracesOnMap    *atomic.Uint64
+	recordPolicy    bool
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -205,6 +206,12 @@ func withNonSampledDecisionCache(c cache.Cache[bool]) Option {
 	}
 }
 
+func withRecordPolicy() Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.recordPolicy = true
+	}
+}
+
 func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case Composite:
@@ -308,12 +315,12 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) sampling.Decision {
 	finalDecision := sampling.NotSampled
-	samplingDecision := map[sampling.Decision]bool{
-		sampling.Error:            false,
-		sampling.Sampled:          false,
-		sampling.NotSampled:       false,
-		sampling.InvertSampled:    false,
-		sampling.InvertNotSampled: false,
+	samplingDecisions := map[sampling.Decision]*policy{
+		sampling.Error:            nil,
+		sampling.Sampled:          nil,
+		sampling.NotSampled:       nil,
+		sampling.InvertSampled:    nil,
+		sampling.InvertNotSampled: nil,
 	}
 
 	ctx := context.Background()
@@ -323,7 +330,9 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		decision, err := p.evaluator.Evaluate(ctx, id, trace)
 		tsp.telemetry.ProcessorTailSamplingSamplingDecisionLatency.Record(ctx, int64(time.Since(policyEvaluateStartTime)/time.Microsecond), p.attribute)
 		if err != nil {
-			samplingDecision[sampling.Error] = true
+			if samplingDecisions[sampling.Error] == nil {
+				samplingDecisions[sampling.Error] = p
+			}
 			metrics.evaluateErrorCount++
 			tsp.logger.Debug("Sampling policy error", zap.Error(err))
 		} else {
@@ -332,18 +341,29 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 				tsp.telemetry.ProcessorTailSamplingCountSpansSampled.Add(ctx, trace.SpanCount.Load(), p.attribute, decisionToAttribute[decision])
 			}
 
-			samplingDecision[decision] = true
+			// We associate the first policy with the sampling decision to understand what policy sampled a span
+			if samplingDecisions[decision] == nil {
+				samplingDecisions[decision] = p
+			}
 		}
 	}
 
+	var sampledPolicy *policy
+
 	// InvertNotSampled takes precedence over any other decision
 	switch {
-	case samplingDecision[sampling.InvertNotSampled]:
+	case samplingDecisions[sampling.InvertNotSampled] != nil:
 		finalDecision = sampling.NotSampled
-	case samplingDecision[sampling.Sampled]:
+	case samplingDecisions[sampling.Sampled] != nil:
 		finalDecision = sampling.Sampled
-	case samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled]:
+		sampledPolicy = samplingDecisions[sampling.Sampled]
+	case samplingDecisions[sampling.InvertSampled] != nil && samplingDecisions[sampling.NotSampled] == nil:
 		finalDecision = sampling.Sampled
+		sampledPolicy = samplingDecisions[sampling.InvertSampled]
+	}
+
+	if tsp.recordPolicy && sampledPolicy != nil {
+		sampling.SetAttrOnScopeSpans(trace, "tailsampling.policy", sampledPolicy.name)
 	}
 
 	return finalDecision
