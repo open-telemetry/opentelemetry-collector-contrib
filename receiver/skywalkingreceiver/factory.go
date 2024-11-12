@@ -7,6 +7,7 @@ package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -66,7 +67,6 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
 	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
@@ -94,7 +94,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	// Convert settings in the source c to configuration struct
 	// that Skywalking receiver understands.
 	rCfg := cfg.(*Config)
@@ -148,7 +147,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 		return 0, fmt.Errorf("endpoint port is not a number: %w", err)
 	}
 	if port < 1 || port > 65535 {
-		return 0, fmt.Errorf("port number must be between 1 and 65535")
+		return 0, errors.New("port number must be between 1 and 65535")
 	}
 	return int(port), nil
 }

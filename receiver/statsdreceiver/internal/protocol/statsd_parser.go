@@ -459,7 +459,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 			// As per DogStatD protocol v1.3:
 			// https://docs.datadoghq.com/developers/dogstatsd/datagram_shell/?tab=metrics#dogstatsd-protocol-v13
 			if inType != CounterType && inType != GaugeType {
-				return result, fmt.Errorf("only GAUGE and COUNT metrics support a timestamp")
+				return result, errors.New("only GAUGE and COUNT metrics support a timestamp")
 			}
 
 			timestampStr := strings.TrimPrefix(part, "T")

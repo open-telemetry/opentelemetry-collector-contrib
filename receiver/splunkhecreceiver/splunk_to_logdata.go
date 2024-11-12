@@ -140,7 +140,6 @@ func convertToValue(logger *zap.Logger, src any, dest pcommon.Value) error {
 	default:
 		logger.Debug("Unsupported value conversion", zap.Any("value", src))
 		return errCannotConvertValue
-
 	}
 	return nil
 }

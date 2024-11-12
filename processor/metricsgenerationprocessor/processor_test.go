@@ -325,10 +325,8 @@ func TestMetricsGenerationProcessor(t *testing.T) {
 						case pmetric.NumberDataPointValueTypeInt:
 							require.Equal(t, eDataPoints.At(j).IntValue(), aDataPoints.At(j).IntValue())
 						}
-
 					}
 				}
-
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))

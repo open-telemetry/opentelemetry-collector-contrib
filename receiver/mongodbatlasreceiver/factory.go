@@ -31,7 +31,6 @@ func NewFactory() receiver.Factory {
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 		receiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
-
 }
 
 func createMetricsReceiver(

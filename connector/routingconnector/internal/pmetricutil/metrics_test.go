@@ -80,3 +80,147 @@ func TestMoveResourcesIf(t *testing.T) {
 		})
 	}
 }
+
+func TestMoveMetricsWithContextIf(t *testing.T) {
+	testCases := []struct {
+		name       string
+		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool
+		from       pmetric.Metrics
+		to         pmetric.Metrics
+		expectFrom pmetric.Metrics
+		expectTo   pmetric.Metrics
+	}{
+		{
+			name: "move_none",
+			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+				return false
+			},
+			from:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			expectTo:   pmetric.NewMetrics(),
+		},
+		{
+			name: "move_all",
+			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+				return true
+			},
+			from:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetric.NewMetrics(),
+			expectTo:   pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "move_all_from_one_resource",
+			moveIf: func(rl pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+				rname, ok := rl.Resource().Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceB"
+			},
+			from:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetricutiltest.NewMetrics("A", "CD", "EF", "GH"),
+			expectTo:   pmetricutiltest.NewMetrics("B", "CD", "EF", "GH"),
+		},
+		{
+			name: "move_all_from_one_scope",
+			moveIf: func(rl pmetric.ResourceMetrics, sl pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+				rname, ok := rl.Resource().Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceB" && sl.Scope().Name() == "scopeC"
+			},
+			from: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:   pmetric.NewMetrics(),
+			expectFrom: pmetricutiltest.NewMetricsFromOpts(
+				pmetricutiltest.WithResource('A',
+					pmetricutiltest.WithScope('C', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+					pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+				),
+				pmetricutiltest.WithResource('B',
+					pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+				),
+			),
+			expectTo: pmetricutiltest.NewMetrics("B", "C", "EF", "GH"),
+		},
+		{
+			name: "move_all_from_one_scope_in_each_resource",
+			moveIf: func(_ pmetric.ResourceMetrics, sl pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+				return sl.Scope().Name() == "scopeD"
+			},
+			from:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetricutiltest.NewMetrics("AB", "C", "EF", "GH"),
+			expectTo:   pmetricutiltest.NewMetrics("AB", "D", "EF", "GH"),
+		},
+		{
+			name: "move_one",
+			moveIf: func(rl pmetric.ResourceMetrics, sl pmetric.ScopeMetrics, m pmetric.Metric) bool {
+				rname, ok := rl.Resource().Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceA" && sl.Scope().Name() == "scopeD" && m.Name() == "metricF"
+			},
+			from: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:   pmetric.NewMetrics(),
+			expectFrom: pmetricutiltest.NewMetricsFromOpts(
+				pmetricutiltest.WithResource('A',
+					pmetricutiltest.WithScope('C', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+					pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH")),
+				),
+				pmetricutiltest.WithResource('B',
+					pmetricutiltest.WithScope('C', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+					pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+				),
+			),
+			expectTo: pmetricutiltest.NewMetrics("A", "D", "F", "GH"),
+		},
+		{
+			name: "move_one_from_each_scope",
+			moveIf: func(_ pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, m pmetric.Metric) bool {
+				return m.Name() == "metricE"
+			},
+			from:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:         pmetric.NewMetrics(),
+			expectFrom: pmetricutiltest.NewMetrics("AB", "CD", "F", "GH"),
+			expectTo:   pmetricutiltest.NewMetrics("AB", "CD", "E", "GH"),
+		},
+		{
+			name: "move_one_from_each_scope_in_one_resource",
+			moveIf: func(rl pmetric.ResourceMetrics, _ pmetric.ScopeMetrics, m pmetric.Metric) bool {
+				rname, ok := rl.Resource().Attributes().Get("resourceName")
+				return ok && rname.AsString() == "resourceB" && m.Name() == "metricE"
+			},
+			from: pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:   pmetric.NewMetrics(),
+			expectFrom: pmetricutiltest.NewMetricsFromOpts(
+				pmetricutiltest.WithResource('A',
+					pmetricutiltest.WithScope('C', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+					pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH")),
+				),
+				pmetricutiltest.WithResource('B',
+					pmetricutiltest.WithScope('C', pmetricutiltest.WithMetric('F', "GH")),
+					pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('F', "GH")),
+				),
+			),
+			expectTo: pmetricutiltest.NewMetrics("B", "CD", "E", "GH"),
+		},
+		{
+			name: "move_some_to_preexisting",
+			moveIf: func(_ pmetric.ResourceMetrics, sl pmetric.ScopeMetrics, _ pmetric.Metric) bool {
+				return sl.Scope().Name() == "scopeD"
+			},
+			from:       pmetricutiltest.NewMetrics("AB", "CD", "EF", "GH"),
+			to:         pmetricutiltest.NewMetrics("1", "2", "3", "4"),
+			expectFrom: pmetricutiltest.NewMetrics("AB", "C", "EF", "GH"),
+			expectTo: pmetricutiltest.NewMetricsFromOpts(
+				pmetricutiltest.WithResource('1', pmetricutiltest.WithScope('2', pmetricutiltest.WithMetric('3', "4"))),
+				pmetricutiltest.WithResource('A', pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH"))),
+				pmetricutiltest.WithResource('B', pmetricutiltest.WithScope('D', pmetricutiltest.WithMetric('E', "GH"), pmetricutiltest.WithMetric('F', "GH"))),
+			),
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			pmetricutil.MoveMetricsWithContextIf(tt.from, tt.to, tt.moveIf)
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.expectFrom, tt.from), "from not modified as expected")
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.expectTo, tt.to), "to not as expected")
+		})
+	}
+}

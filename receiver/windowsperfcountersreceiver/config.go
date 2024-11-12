@@ -4,6 +4,7 @@
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -57,11 +58,11 @@ func (c *Config) Validate() error {
 	var errs error
 
 	if c.CollectionInterval <= 0 {
-		errs = multierr.Append(errs, fmt.Errorf("collection_interval must be a positive duration"))
+		errs = multierr.Append(errs, errors.New("collection_interval must be a positive duration"))
 	}
 
 	if len(c.PerfCounters) == 0 {
-		errs = multierr.Append(errs, fmt.Errorf("must specify at least one perf counter"))
+		errs = multierr.Append(errs, errors.New("must specify at least one perf counter"))
 	}
 
 	for name, metric := range c.MetricMetaData {
@@ -116,7 +117,7 @@ func (c *Config) Validate() error {
 	}
 
 	if perfCounterMissingObjectName {
-		errs = multierr.Append(errs, fmt.Errorf("must specify object name for all perf counters"))
+		errs = multierr.Append(errs, errors.New("must specify object name for all perf counters"))
 	}
 
 	return errs

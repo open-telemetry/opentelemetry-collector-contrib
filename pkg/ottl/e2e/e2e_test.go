@@ -285,7 +285,6 @@ func Test_e2e_editors(t *testing.T) {
 				sv, _ := v.Map().Get("slice")
 				s := sv.Slice()
 				s.AppendEmpty().SetStr("sample_value")
-
 			},
 		},
 		{
@@ -295,7 +294,6 @@ func Test_e2e_editors(t *testing.T) {
 				s := v.Map().PutEmptySlice("flags")
 				s.AppendEmpty().SetStr("pass")
 				s.AppendEmpty().SetStr("sample_value")
-
 			},
 		},
 		{
@@ -971,7 +969,6 @@ func Test_e2e_converters(t *testing.T) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutInt("foo", 2)
 				m.PutInt("bar", 5)
-
 			},
 		},
 	}

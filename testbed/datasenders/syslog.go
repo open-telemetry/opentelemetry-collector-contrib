@@ -122,7 +122,6 @@ func (f *SyslogWriter) SendCheck() error {
 		if err != nil {
 			return nil
 		}
-
 	}
 	return nil
 }

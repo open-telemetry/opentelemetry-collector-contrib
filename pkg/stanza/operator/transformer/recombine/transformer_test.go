@@ -815,7 +815,6 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 		require.NoError(b, recombine.Process(ctx, next))
 		recombine.flushAllSources(ctx)
 	}
-
 }
 
 func TestTimeout(t *testing.T) {
@@ -900,7 +899,6 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 				return
 			case <-ticker.C:
 				assert.NoError(t, recombine.Process(ctx, next))
-
 			}
 		}
 	}()
