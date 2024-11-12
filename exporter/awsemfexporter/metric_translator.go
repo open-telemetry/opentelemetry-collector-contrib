@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -33,8 +32,6 @@ const (
 	fieldPrometheusMetricType = "prom_metric_type"
 
 	// metric attributes for AWS EMF, not to be treated as metric labels
-	// emfAttributeFilterRE          = regexp.MustCompile("^awsemf.[A-Za-z_]*$")
-	emfAttributeFilter            = "^awsemf.[A-Za-z_]*$"
 	emfStorageResolutionAttribute = "aws.emf.storage_resolution"
 )
 
@@ -222,11 +219,7 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 		idx++
 	}
 
-	fmt.Printf("##--## Dim Set: %+v\n", dimSet)
-
 	dimensions := [][]string{dimSet}
-
-	fmt.Printf("##--## Dimensions: %+v", dimensions)
 
 	// Apply single/zero dimension rollup to labels
 	rollupDimensionArray := dimensionRollup(dimensionRollupOption, labels)
@@ -245,8 +238,6 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 
 	// Add on rolled-up dimensions
 	dimensions = append(dimensions, rollupDimensionArray...)
-
-	fmt.Printf("##--## Post Dimensions: %+v", dimensions)
 
 	metrics := make([]cWMetricInfo, len(groupedMetric.metrics))
 	idx = 0
@@ -503,9 +494,8 @@ func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, d
 func filterAWSEMFAttributes(labels map[string]string) map[string]string {
 	// remove any labels that are attributes specific to AWS EMF Exporter
 	filteredLabels := make(map[string]string)
-	emfAttributeFilterRE := regexp.MustCompile(emfAttributeFilter)
 	for labelName := range labels {
-		if !emfAttributeFilterRE.MatchString(labelName) {
+		if labelName != emfStorageResolutionAttribute {
 			filteredLabels[labelName] = labels[labelName]
 		}
 	}
