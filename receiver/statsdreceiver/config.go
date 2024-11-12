@@ -4,6 +4,7 @@
 package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -29,7 +30,7 @@ func (c *Config) Validate() error {
 	var errs error
 
 	if c.AggregationInterval <= 0 {
-		errs = multierr.Append(errs, fmt.Errorf("aggregation_interval must be a positive duration"))
+		errs = multierr.Append(errs, errors.New("aggregation_interval must be a positive duration"))
 	}
 
 	var TimerHistogramMappingMissingObjectName bool
@@ -70,7 +71,7 @@ func (c *Config) Validate() error {
 			// Non-histogram observer w/ histogram config
 			var empty protocol.HistogramConfig
 			if eachMap.Histogram != empty {
-				errs = multierr.Append(errs, fmt.Errorf("histogram configuration requires observer_type: histogram"))
+				errs = multierr.Append(errs, errors.New("histogram configuration requires observer_type: histogram"))
 			}
 		}
 		if len(eachMap.Summary.Percentiles) != 0 {
@@ -80,13 +81,13 @@ func (c *Config) Validate() error {
 				}
 			}
 			if eachMap.ObserverType != protocol.SummaryObserver {
-				errs = multierr.Append(errs, fmt.Errorf("summary configuration requires observer_type: summary"))
+				errs = multierr.Append(errs, errors.New("summary configuration requires observer_type: summary"))
 			}
 		}
 	}
 
 	if TimerHistogramMappingMissingObjectName {
-		errs = multierr.Append(errs, fmt.Errorf("must specify object id for all TimerHistogramMappings"))
+		errs = multierr.Append(errs, errors.New("must specify object id for all TimerHistogramMappings"))
 	}
 
 	return errs

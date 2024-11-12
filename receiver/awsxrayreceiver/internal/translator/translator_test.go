@@ -677,8 +677,7 @@ func TestTranslation(t *testing.T) {
 				actualSeg *awsxray.Segment,
 				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err,
-					fmt.Sprintf("unexpected namespace: %s",
-						*actualSeg.Subsegments[0].Subsegments[0].Namespace),
+					"unexpected namespace: "+*actualSeg.Subsegments[0].Subsegments[0].Namespace,
 					testCase+": translation should've failed")
 			},
 		},
@@ -845,10 +844,7 @@ func TestTranslation(t *testing.T) {
 				actualSeg *awsxray.Segment,
 				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err,
-					fmt.Sprintf(
-						"failed to parse out the database name in the \"sql.url\" field, rawUrl: %s",
-						*actualSeg.SQL.URL,
-					),
+					"failed to parse out the database name in the \"sql.url\" field, rawUrl: "+*actualSeg.SQL.URL,
 					testCase+": translation should've failed")
 			},
 		},

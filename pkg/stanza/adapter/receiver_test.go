@@ -466,7 +466,6 @@ func (t *testInputOperator) Start(_ operator.Persister) error {
 				return
 			}
 		}
-
 	}()
 	return nil
 }

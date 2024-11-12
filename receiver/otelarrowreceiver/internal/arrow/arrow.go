@@ -6,7 +6,6 @@ package arrow // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"runtime"
 	"strings"
@@ -50,10 +49,10 @@ const (
 )
 
 var (
-	ErrNoMetricsConsumer   = fmt.Errorf("no metrics consumer")
-	ErrNoLogsConsumer      = fmt.Errorf("no logs consumer")
-	ErrNoTracesConsumer    = fmt.Errorf("no traces consumer")
-	ErrUnrecognizedPayload = consumererror.NewPermanent(fmt.Errorf("unrecognized OTel-Arrow payload"))
+	ErrNoMetricsConsumer   = errors.New("no metrics consumer")
+	ErrNoLogsConsumer      = errors.New("no logs consumer")
+	ErrNoTracesConsumer    = errors.New("no traces consumer")
+	ErrUnrecognizedPayload = consumererror.NewPermanent(errors.New("unrecognized OTel-Arrow payload"))
 )
 
 type Consumers interface {

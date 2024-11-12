@@ -294,7 +294,6 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 // TestSpanProcessor_Separator ensures naming a span with a single key and separator will only contain the value from
 // the single key.
 func TestSpanProcessor_Separator(t *testing.T) {
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -323,7 +322,6 @@ func TestSpanProcessor_Separator(t *testing.T) {
 
 // TestSpanProcessor_NoSeparatorMultipleKeys tests naming a span using multiple keys and no separator.
 func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -353,7 +351,6 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 
 // TestSpanProcessor_SeparatorMultipleKeys tests naming a span with multiple keys and a separator.
 func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -388,7 +385,6 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 
 // TestSpanProcessor_NilName tests naming a span when the input span had no name.
 func TestSpanProcessor_NilName(t *testing.T) {
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
@@ -417,7 +413,6 @@ func TestSpanProcessor_NilName(t *testing.T) {
 
 // TestSpanProcessor_ToAttributes
 func TestSpanProcessor_ToAttributes(t *testing.T) {
-
 	testCases := []struct {
 		rules           []string
 		breakAfterMatch bool

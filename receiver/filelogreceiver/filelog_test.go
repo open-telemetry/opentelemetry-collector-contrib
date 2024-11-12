@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -297,7 +299,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 		},
 		InputConfig: func() file.Config {
 			c := file.NewConfig()
-			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
+			c.Include = []string{tempDir + "/*"}
 			c.StartAt = "beginning"
 			c.PollInterval = 10 * time.Millisecond
 			c.IncludeFileName = false
@@ -360,7 +362,7 @@ func (g *fileLogGenerator) Stop() {
 }
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
-	id := receivertest.UniqueIDAttrVal(fmt.Sprintf("%d", atomic.AddInt64(&g.sequenceNum, 1)))
+	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
 	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id,
 		receivertest.UniqueIDAttrName, id)
 	_, err := g.tmpFile.WriteString(logLine + "\n")

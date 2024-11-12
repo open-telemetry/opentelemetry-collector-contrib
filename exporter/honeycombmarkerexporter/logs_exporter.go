@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
@@ -34,7 +33,7 @@ const (
 
 type marker struct {
 	Marker
-	logBoolExpr expr.BoolExpr[ottllog.TransformContext]
+	logBoolExpr *ottl.ConditionSequence[ottllog.TransformContext]
 }
 
 type honeycombLogsExporter struct {
