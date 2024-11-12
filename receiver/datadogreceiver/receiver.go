@@ -423,7 +423,7 @@ func (ddr *datadogReceiver) handleIntake(w http.ResponseWriter, req *http.Reques
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("intake endpoint not implemented")
+	err = errors.New("intake endpoint not implemented")
 	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
 }
@@ -437,7 +437,7 @@ func (ddr *datadogReceiver) handleDistributionPoints(w http.ResponseWriter, req 
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("distribution points endpoint not implemented")
+	err = errors.New("distribution points endpoint not implemented")
 	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
 	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
 }

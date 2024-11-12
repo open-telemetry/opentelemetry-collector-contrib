@@ -505,7 +505,6 @@ func TestExporterLogs(t *testing.T) {
 			)
 			tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
 			mustSendLogs(t, exporter, logs)
-			rec.WaitItems(1)
 
 			expected := []itemRequest{
 				{
@@ -514,7 +513,7 @@ func TestExporterLogs(t *testing.T) {
 				},
 			}
 
-			assertItemsEqual(t, expected, rec.Items(), false)
+			assertRecordedItems(t, expected, rec, false)
 		}
 
 	})
@@ -889,8 +888,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(8)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
@@ -926,7 +923,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("publish histogram", func(t *testing.T) {
@@ -959,8 +956,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -972,7 +967,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("publish exponential histogram", func(t *testing.T) {
@@ -1005,8 +1000,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -1014,7 +1007,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("publish histogram cumulative temporality", func(t *testing.T) {
@@ -1113,8 +1106,6 @@ func TestExporterMetrics(t *testing.T) {
 		err := exporter.ConsumeMetrics(context.Background(), metrics)
 		assert.NoError(t, err)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -1126,7 +1117,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode", func(t *testing.T) {
@@ -1176,8 +1167,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
@@ -1197,7 +1186,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode attribute array value", func(t *testing.T) {
@@ -1259,7 +1248,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
@@ -1267,7 +1255,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
@@ -1310,7 +1298,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
@@ -1322,7 +1309,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode metric name conflict", func(t *testing.T) {
@@ -1354,7 +1341,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
@@ -1362,7 +1348,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
@@ -1422,8 +1408,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -1435,7 +1419,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 }
 
@@ -1644,8 +1628,6 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, traces)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
@@ -1657,7 +1639,7 @@ func TestExporterTraces(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode attribute array value", func(t *testing.T) {

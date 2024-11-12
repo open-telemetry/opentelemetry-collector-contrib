@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
@@ -677,8 +677,7 @@ func TestTranslation(t *testing.T) {
 				actualSeg *awsxray.Segment,
 				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err,
-					fmt.Sprintf("unexpected namespace: %s",
-						*actualSeg.Subsegments[0].Subsegments[0].Namespace),
+					"unexpected namespace: "+*actualSeg.Subsegments[0].Subsegments[0].Namespace,
 					testCase+": translation should've failed")
 			},
 		},
@@ -845,10 +844,7 @@ func TestTranslation(t *testing.T) {
 				actualSeg *awsxray.Segment,
 				_ ptrace.ResourceSpans, _ ptrace.Traces, err error) {
 				assert.EqualError(t, err,
-					fmt.Sprintf(
-						"failed to parse out the database name in the \"sql.url\" field, rawUrl: %s",
-						*actualSeg.SQL.URL,
-					),
+					"failed to parse out the database name in the \"sql.url\" field, rawUrl: "+*actualSeg.SQL.URL,
 					testCase+": translation should've failed")
 			},
 		},
@@ -1122,5 +1118,4 @@ func TestDecodeXRaySpanID(t *testing.T) {
 	// null point
 	_, err = decodeXRaySpanID(nil)
 	assert.Error(t, err)
-
 }
