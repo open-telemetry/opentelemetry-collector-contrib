@@ -82,7 +82,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			Admission: AdmissionConfig{
 				RequestLimitMiB: 80,
-				WaiterLimit:     100,
+				WaitingLimitMiB: 100,
 			},
 		}, cfg)
 }
@@ -106,7 +106,6 @@ func TestValidateDeprecatedConfig(t *testing.T) {
 			Admission: AdmissionConfig{
 				// cfg.Validate should now set these fields.
 				RequestLimitMiB: 80,
-				WaiterLimit:     100,
 			},
 		}, cfg)
 }
@@ -133,7 +132,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 			},
 			Admission: AdmissionConfig{
 				RequestLimitMiB: defaultRequestLimitMiB,
-				WaiterLimit:     defaultWaiterLimit,
+				WaitingLimitMiB: defaultWaitingLimitMiB,
 			},
 		}, cfg)
 }
