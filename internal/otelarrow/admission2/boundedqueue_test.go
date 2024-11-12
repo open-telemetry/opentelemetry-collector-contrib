@@ -26,9 +26,11 @@ type bqTest struct {
 var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
 func newBQTest(t *testing.T, maxAdmit, maxWait uint64) bqTest {
+	bq, err := NewBoundedQueue(noopTelemetry, maxAdmit, maxWait)
+	require.NoError(t, err)
 	return bqTest{
 		t:            t,
-		BoundedQueue: NewBoundedQueue(noopTelemetry, maxAdmit, maxWait).(*BoundedQueue),
+		BoundedQueue: bq.(*BoundedQueue),
 	}
 }
 
