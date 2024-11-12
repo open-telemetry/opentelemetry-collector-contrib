@@ -22,13 +22,13 @@ type Receiver struct {
 	pmetricotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Metrics
 	obsrecv      *receiverhelper.ObsReport
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission.Queue
 	sizer        *pmetric.ProtoMarshaler
 	logger       *zap.Logger
 }
 
 // New creates a new Receiver reference.
-func New(logger *zap.Logger, nextConsumer consumer.Metrics, obsrecv *receiverhelper.ObsReport, bq *admission.BoundedQueue) *Receiver {
+func New(logger *zap.Logger, nextConsumer consumer.Metrics, obsrecv *receiverhelper.ObsReport, bq admission.Queue) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
@@ -48,18 +48,16 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 
 	ctx = r.obsrecv.StartMetricsOp(ctx)
 
+	var err error
 	sizeBytes := int64(r.sizer.MetricsSize(req.Metrics()))
-	err := r.boundedQueue.Acquire(ctx, sizeBytes)
-	if err != nil {
-		return pmetricotlp.NewExportResponse(), err
+	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
+		err = r.nextConsumer.ConsumeMetrics(ctx, md)
+		// Release() is not checked, see #36074.
+		_ = r.boundedQueue.Release(sizeBytes) // immediate release
+	} else {
+		err = acqErr
 	}
-	defer func() {
-		if releaseErr := r.boundedQueue.Release(sizeBytes); releaseErr != nil {
-			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
-		}
-	}()
 
-	err = r.nextConsumer.ConsumeMetrics(ctx, md)
 	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
 
 	return pmetricotlp.NewExportResponse(), err
