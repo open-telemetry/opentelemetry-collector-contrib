@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
 
-go 1.22.0
+go 1.22.7
+
+toolchain go1.22.8
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.113.0

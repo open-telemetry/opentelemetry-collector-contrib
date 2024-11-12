@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
 
-go 1.22.0
+go 1.22.7
+
+toolchain go1.22.8
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
@@ -80,7 +82,7 @@ require (
 	golang.org/x/net v0.30.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
-	google.golang.org/grpc v1.67.1 // indirect
+	google.golang.org/grpc v1.68.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
