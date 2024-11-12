@@ -451,7 +451,6 @@ func TestExtractRawAttributes(t *testing.T) {
 			assert.Equal(t, tt.expected, extractRawAttributes(tt.log))
 		})
 	}
-
 }
 
 func TestUnmarshalLogs(t *testing.T) {

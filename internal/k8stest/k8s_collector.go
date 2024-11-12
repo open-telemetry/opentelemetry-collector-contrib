@@ -103,7 +103,6 @@ func WaitForCollectorToStart(t *testing.T, client *K8sClient, podNamespace strin
 			return true
 		}
 		return false
-
 	}, time.Duration(podTimeoutMinutes)*time.Minute, 2*time.Second,
 		"collector pods were not ready within %d minutes", podTimeoutMinutes)
 }

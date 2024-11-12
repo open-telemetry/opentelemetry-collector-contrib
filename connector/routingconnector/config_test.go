@@ -219,6 +219,38 @@ func TestValidateConfig(t *testing.T) {
 			error: "invalid context: invalid",
 		},
 		{
+			name: "span context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "span",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"span" context is not supported with "match_once: false"`,
+		},
+		{
+			name: "metric context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "metric",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"metric" context is not supported with "match_once: false"`,
+		},
+		{
 			name: "log context with match_once false",
 			config: &Config{
 				MatchOnce: false,
@@ -232,7 +264,37 @@ func TestValidateConfig(t *testing.T) {
 					},
 				},
 			},
-			error: "log context is not supported with match_once: false",
+			error: `"log" context is not supported with "match_once: false"`,
+		},
+		{
+			name: "request context with statement",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "request",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"request" context requires a 'condition'`,
+		},
+		{
+			name: "request context with invalid condition",
+			config: &Config{
+				Table: []RoutingTableItem{
+					{
+						Context:   "request",
+						Condition: `attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `condition must have format 'request["<name>"] <comparator> <value>'`,
 		},
 	}
 
@@ -245,4 +307,32 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+type testConfigOption func(*Config)
+
+func withRoute(context, condition string, pipelines ...pipeline.ID) testConfigOption {
+	return func(cfg *Config) {
+		cfg.Table = append(cfg.Table,
+			RoutingTableItem{
+				Context:   context,
+				Condition: condition,
+				Pipelines: pipelines,
+			})
+	}
+}
+
+func withDefault(pipelines ...pipeline.ID) testConfigOption {
+	return func(cfg *Config) {
+		cfg.DefaultPipelines = pipelines
+	}
+}
+
+func testConfig(opts ...testConfigOption) *Config {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MatchOnce = true
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return cfg
 }

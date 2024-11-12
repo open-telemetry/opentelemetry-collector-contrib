@@ -80,7 +80,7 @@ func TestAlertsReceiver(t *testing.T) {
 			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName+".json"))
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%s", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)
@@ -151,7 +151,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			payload, err := os.ReadFile(filepath.Join("testdata", "alerts", "sample-payloads", payloadName+".json"))
 			require.NoError(t, err)
 
-			req, err := http.NewRequest("POST", fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
+			req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://localhost:%s", testPort), bytes.NewBuffer(payload))
 			require.NoError(t, err)
 
 			b64HMAC, err := calculateHMACb64(testSecret, payload)

@@ -22,14 +22,11 @@ const (
 	TypeStr = "filesystem"
 )
 
-var (
-	// scraperType is the component type used for the built scraper.
-	scraperType component.Type = component.MustNewType(TypeStr)
-)
+// scraperType is the component type used for the built scraper.
+var scraperType component.Type = component.MustNewType(TypeStr)
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // Type gets the type of the scraper config created by this Factory.
 func (f *Factory) Type() string {

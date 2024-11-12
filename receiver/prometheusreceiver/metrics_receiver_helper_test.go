@@ -77,7 +77,7 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	defer mp.mu.Unlock()
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	index := int(iptr.Load())
@@ -87,7 +87,7 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if index == len(pages) {
 			mp.wg.Done()
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	switch {
@@ -185,7 +185,6 @@ func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.M
 					// only count target pages that are not 404, matching mock ServerHTTP func response logic
 					want++
 				}
-
 			}
 			if len(scrapes) < want {
 				// If we don't have enough scrapes yet lets return false and wait for another tick
@@ -385,6 +384,7 @@ func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	}
 	return false
 }
+
 func isExtraScrapeMetrics(m pmetric.Metric) bool {
 	switch m.Name() {
 	case "scrape_body_size_bytes", "scrape_sample_limit", "scrape_timeout_seconds":
@@ -394,11 +394,13 @@ func isExtraScrapeMetrics(m pmetric.Metric) bool {
 	}
 }
 
-type metricTypeComparator func(*testing.T, pmetric.Metric)
-type numberPointComparator func(*testing.T, pmetric.NumberDataPoint)
-type histogramPointComparator func(*testing.T, pmetric.HistogramDataPoint)
-type summaryPointComparator func(*testing.T, pmetric.SummaryDataPoint)
-type exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
+type (
+	metricTypeComparator           func(*testing.T, pmetric.Metric)
+	numberPointComparator          func(*testing.T, pmetric.NumberDataPoint)
+	histogramPointComparator       func(*testing.T, pmetric.HistogramDataPoint)
+	summaryPointComparator         func(*testing.T, pmetric.SummaryDataPoint)
+	exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
+)
 
 type dataPointExpectation struct {
 	numberPointComparator          []numberPointComparator

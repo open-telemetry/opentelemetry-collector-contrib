@@ -39,5 +39,4 @@ func TestUserAgent(t *testing.T) {
 	assert.Contains(t, req.HTTPRequest.UserAgent(), "xray-otel-exporter/")
 	assert.Contains(t, req.HTTPRequest.UserAgent(), "exec-env/")
 	assert.Contains(t, req.HTTPRequest.UserAgent(), "OS/")
-
 }

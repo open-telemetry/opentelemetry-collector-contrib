@@ -79,7 +79,6 @@ func (d *deduplicator) evictPendingCreate() {
 			req.cancel()
 			d.pendingCreates.Remove(elem)
 			delete(d.pendingCreateKeys, *req.Correlation)
-
 		}
 	}
 }
