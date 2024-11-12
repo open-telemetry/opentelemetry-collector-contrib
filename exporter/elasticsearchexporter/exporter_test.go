@@ -299,8 +299,8 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish with configured mapping mode header", func(t *testing.T) {
-		expectedECS := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","message":"hello world","service":{"name":"myservice"}}`
-		expectedOtel := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"application":"myapp","service.name":"myservice"},"body":{"text":"hello world"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0}`
+		expectedECS := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"message":"hello world"}`
+		expectedOtel := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","body":{"text":"hello world"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0}`
 		tests := []struct {
 			name     string
 			cfgMode  string
@@ -348,14 +348,7 @@ func TestExporterLogs(t *testing.T) {
 					cfg.Mapping.Mode = tt.cfgMode // this should be overridden by the header
 				})
 
-				logs := newLogsWithAttributes(
-					map[string]any{
-						"application":  "myapp",
-						"service.name": "myservice",
-					},
-					nil,
-					nil,
-				)
+				logs := newLogsWithAttributes(nil, nil, nil)
 				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
 
 				// Set the mapping mode via the header
@@ -364,7 +357,7 @@ func TestExporterLogs(t *testing.T) {
 				cl.Metadata = client.NewMetadata(map[string][]string{HeaderXElasticMappingMode: {tt.header}})
 				ctx = client.NewContext(ctx, cl)
 
-				mustSendLogsCtx(t, ctx, exporter, logs)
+				mustSendLogsCtx(ctx, t, exporter, logs)
 
 				// // Send logs again without the header this time.
 				mustSendLogs(t, exporter, logs)
@@ -1923,7 +1916,7 @@ func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	require.NoError(t, err)
 }
 
-func mustSendLogsCtx(t *testing.T, ctx context.Context, exporter exporter.Logs, logs plog.Logs) {
+func mustSendLogsCtx(ctx context.Context, t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	err := exporter.ConsumeLogs(ctx, logs)
 	require.NoError(t, err)
 }
