@@ -1,11 +1,11 @@
 github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel h1:nBejGNIU6Jk7bPBxz2bAO+f+kahAXWBXPecebY3R+Zo=
 github.com/DataDog/datadog-agent/pkg/proto v0.52.0-devel/go.mod h1:wjr5YlVvGip6VmAGzHrdBaGUu1LaA9B6gHvInm5kHiY=
-github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.58.2 h1:6K5hY8+RkBr3bGOPMNqLiB/e98v6xBqyabtpEzs9wm4=
-github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.58.2/go.mod h1:EntF6izA/+wVZqtJ3wNN9oW779woh+mGNbw1JPHRTT0=
-github.com/DataDog/datadog-agent/pkg/util/log v0.58.2 h1:FpHsAq8T72sDriGEQb4K67QUin+zlpAK758wFyLLjqM=
-github.com/DataDog/datadog-agent/pkg/util/log v0.58.2/go.mod h1:ujRpFtgxzdCkNLdxOPZ6mw77yQ0XRmt+8a6YQuWiexk=
-github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.2 h1:bcM7pEvU1LPjAEGXNPePDh2zrmK92QXSyToRm+/nSYQ=
-github.com/DataDog/datadog-agent/pkg/util/scrubber v0.58.2/go.mod h1:krOxbYZc4KKE7bdEDu10lLSQBjdeSFS/XDSclsaSf1Y=
+github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.59.0 h1:8qlROMBQixtDVQwjvttGSM8hTmN3tnFQugOyh614ACc=
+github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.59.0/go.mod h1:4EPWYAplHgdaLZsP/NuLEfh21NuvF+JdVtwttTqQlUY=
+github.com/DataDog/datadog-agent/pkg/util/log v0.59.0 h1:0JwuSc9Pr/kHAYIEzbdeYKLxgDViNlA6e/bB+7IvFtE=
+github.com/DataDog/datadog-agent/pkg/util/log v0.59.0/go.mod h1:pH5Vs7I0fwUU4dUtiQ/oEC//+xzPAgUlhH5+MG5eseg=
+github.com/DataDog/datadog-agent/pkg/util/scrubber v0.59.0 h1:p4uZow1IE/ve590aKqTsS+/5P7fPi+abHN9TWFi+bhE=
+github.com/DataDog/datadog-agent/pkg/util/scrubber v0.59.0/go.mod h1:krOxbYZc4KKE7bdEDu10lLSQBjdeSFS/XDSclsaSf1Y=
 github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.21.0 h1:VS4NTqwczwezMVvI6A7xYR3ugPmMUJ4FcdFrsdnZI2I=
 github.com/DataDog/opentelemetry-mapping-go/pkg/internal/sketchtest v0.21.0/go.mod h1:66XlN7QpQKqIvw8e2UbCXV5X8wGnEw851nT9BjJ75dY=
 github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.21.0 h1:hgbTFS6SkqbzOiWSfP58dZ/Jpjlmv6dpD4+V4LDHm2Q=
