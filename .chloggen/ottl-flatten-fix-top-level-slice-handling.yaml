@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix handling of slice values in `flatten` function by considering `depth` option
+note: Respect the `depth` option when flattening slices using `flatten`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36161]
@@ -15,7 +15,7 @@ issues: [36161]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: The `depth` option is also now required to be at least `1`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
