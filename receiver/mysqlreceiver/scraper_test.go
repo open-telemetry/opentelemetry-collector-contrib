@@ -139,7 +139,7 @@ type mockClient struct {
 }
 
 func readFile(fname string) (map[string]string, error) {
-	var stats = map[string]string{}
+	stats := map[string]string{}
 	file, err := os.Open(filepath.Join("testdata", "scraper", fname+".txt"))
 	if err != nil {
 		return nil, err

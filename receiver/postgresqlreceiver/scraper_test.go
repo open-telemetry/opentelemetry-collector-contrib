@@ -296,8 +296,10 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	runTest(false, "exclude.yaml")
 }
 
-type mockClientFactory struct{ mock.Mock }
-type mockClient struct{ mock.Mock }
+type (
+	mockClientFactory struct{ mock.Mock }
+	mockClient        struct{ mock.Mock }
+)
 
 var _ client = &mockClient{}
 

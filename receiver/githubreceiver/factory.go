@@ -96,7 +96,6 @@ func createAddScraperOpts(
 
 	for key, cfg := range cfg.Scrapers {
 		githubScraper, err := createGitHubScraper(ctx, params, key, cfg, factories)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}

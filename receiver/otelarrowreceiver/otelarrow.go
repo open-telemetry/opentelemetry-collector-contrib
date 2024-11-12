@@ -143,7 +143,6 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.boundedQueue, r.netReporter)
-
 	if err != nil {
 		return err
 	}

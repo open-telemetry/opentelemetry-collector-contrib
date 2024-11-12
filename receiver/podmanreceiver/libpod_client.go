@@ -17,9 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	errNoStatsFound = errors.New("No stats found")
-)
+var errNoStatsFound = errors.New("No stats found")
 
 type libpodClient struct {
 	conn     *http.Client

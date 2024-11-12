@@ -122,7 +122,6 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Scrap
 		scraper, err := scraperhelper.NewScraper(metadata.Type, sqlScraper.Scrape,
 			scraperhelper.WithStart(sqlScraper.Start),
 			scraperhelper.WithShutdown(sqlScraper.Shutdown))
-
 		if err != nil {
 			return nil, err
 		}
