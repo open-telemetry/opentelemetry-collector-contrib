@@ -1,34 +1,44 @@
 resourceMetrics:
-  - schemaUrl: https://test-res-schema.com/schema
-    resource:
+  - resource:
       attributes:
         - key: asdf
           value:
             stringValue: foo
+    schemaUrl: https://test-res-schema.com/schema
     scopeMetrics:
-      - schemaUrl: https://test-scope-schema.com/schema
-        scope:
-          name: MyTestInstrument
-          version: "1.2.3"
+      - scope:
           attributes:
             - key: foo
               value:
                 stringValue: bar
+          name: MyTestInstrument
+          version: 1.2.3
+        schemaUrl: https://test-scope-schema.com/schema
         metrics:
-          - name: cumulative.exphistogram.test
-            histogram:
+          - exponentialHistogram:
               aggregationTemporality: 2
               dataPoints:
-                - timeUnixNano: 80
-                  scale: 4
-                  zeroCount: 5
-                  positive:
-                    offset: 2
-                    bucketCounts: [9, 12, 17, 8, 34]
-                  negative:
-                    offset: 6
-                    bucketCounts: [6, 21, 9, 19, 7]
-                  attributes:
+                - attributes:
                     - key: aaa
                       value:
                         stringValue: bbb
+                  negative:
+                    bucketCounts:
+                      - 6
+                      - 21
+                      - 9
+                      - 19
+                      - 7
+                    offset: 6
+                  positive:
+                    bucketCounts:
+                      - 9
+                      - 12
+                      - 17
+                      - 8
+                      - 34
+                    offset: 2
+                  scale: 4
+                  timeUnixNano: 80
+                  zeroCount: 5
+            name: cumulative.exphistogram.test
