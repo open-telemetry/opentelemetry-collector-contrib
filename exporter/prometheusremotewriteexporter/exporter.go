@@ -138,6 +138,8 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		batchTimeSeriesState: newBatchTimeSericesState(),
 	}
 
+	prwe.settings.Logger.Info("Running with prometheus remote write proto message", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
+
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
 	return prwe, nil
 }
