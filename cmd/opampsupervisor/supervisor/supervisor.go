@@ -394,7 +394,7 @@ func (s *Supervisor) startOpAMPClient() error {
 	case "http", "https":
 		s.opampClient = client.NewHTTP(newLoggerFromZap(s.logger))
 	default:
-		return fmt.Errorf("unsupported scheme in server endpoint: %s", parsedURL.Scheme)
+		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
 	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
