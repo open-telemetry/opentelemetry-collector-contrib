@@ -60,7 +60,7 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 	// Create 2 policies which do not match any trace
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 200, 300, false)
-	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100}, {n2, 100}}, FakeTimeProvider{})
+	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, false)
 
 	trace := createTrace()
 
@@ -77,7 +77,7 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
-	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100}, {n2, 100}}, FakeTimeProvider{})
+	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, false)
 
 	trace := createTrace()
 
@@ -89,13 +89,35 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 	assert.Equal(t, expected, decision)
 }
 
+func TestCompositeEvaluatorSampled_RecordSubPolicy(t *testing.T) {
+
+	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
+	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
+	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
+	c := NewComposite(zap.NewNop(), 1000, []SubPolicyEvalParams{{n1, 100, "eval-1"}, {n2, 100, "eval-2"}}, FakeTimeProvider{}, true)
+
+	trace := newTraceWithKV(traceID, "test-key", 0)
+
+	decision, err := c.Evaluate(context.Background(), traceID, trace)
+	require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+	// The second policy is AlwaysSample, so the decision should be Sampled.
+	expected := Sampled
+	assert.Equal(t, expected, decision)
+	val, ok := trace.ReceivedBatches.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.composite_policy")
+	if !ok {
+		assert.FailNow(t, "Did not find expected key")
+	}
+	assert.Equal(t, "eval-2", val.AsString())
+}
+
 func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 	timeProvider := &FakeTimeProvider{second: 0}
 
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
-	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1}, {n2, 1}}, timeProvider)
+	c := NewComposite(zap.NewNop(), 3, []SubPolicyEvalParams{{n1, 1, "eval-1"}, {n2, 1, "eval-2"}}, timeProvider, false)
 
 	trace := newTraceWithKV(traceID, "tag", int64(10))
 
@@ -128,7 +150,7 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
-	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20, "eval-1"}, {n2, 20, "eval-2"}}, FakeTimeProvider{}, false)
 
 	for i := 1; i <= 10; i++ {
 		trace := createTrace()
@@ -146,7 +168,7 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 	// The first policy does not match, the second matches through invert
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
 	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
-	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20, "eval-1"}, {n2, 20, "eval-2"}}, FakeTimeProvider{}, false)
 
 	for i := 1; i <= 10; i++ {
 		trace := createTrace()
@@ -160,12 +182,36 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 	}
 }
 
+func TestCompositeEvaluatorInverseSampled_AlwaysSampled_RecordSubPolicy(t *testing.T) {
+
+	// The first policy does not match, the second matches through invert
+	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
+	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20, "eval-1"}, {n2, 20, "eval-2"}}, FakeTimeProvider{}, true)
+
+	for i := 1; i <= 10; i++ {
+		trace := newTraceWithKV(traceID, "test-key", 0)
+
+		decision, err := c.Evaluate(context.Background(), traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+		// The second policy is AlwaysSample, so the decision should be Sampled.
+		expected := Sampled
+		assert.Equal(t, expected, decision)
+		val, ok := trace.ReceivedBatches.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.composite_policy")
+		if !ok {
+			assert.FailNow(t, "Did not find expected key")
+		}
+		assert.Equal(t, "eval-2", val.AsString())
+	}
+}
+
 func TestCompositeEvaluatorThrottling(t *testing.T) {
 	// Create only one subpolicy, with 100% Sampled policy.
 	n1 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}
 	const totalSPS = 10
-	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS}}, timeProvider)
+	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS, "eval-1"}}, timeProvider, false)
 
 	trace := createTrace()
 
@@ -205,7 +251,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}
 	const totalSPS = 10
-	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS / 2}, {n2, totalSPS / 2}}, timeProvider)
+	c := NewComposite(zap.NewNop(), totalSPS, []SubPolicyEvalParams{{n1, totalSPS / 2, "eval-1"}, {n2, totalSPS / 2, "eval-2"}}, timeProvider, false)
 
 	trace := createTrace()
 
