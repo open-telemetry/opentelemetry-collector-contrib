@@ -172,7 +172,6 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 					}
 				}
-
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))

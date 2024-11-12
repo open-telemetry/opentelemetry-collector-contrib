@@ -794,7 +794,6 @@ func TestFilterLogProcessorTelemetry(t *testing.T) {
 	}
 
 	tel.assertMetrics(t, want)
-
 }
 
 func constructLogs() plog.Logs {
@@ -825,7 +824,6 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "A|B|C")
-
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -836,5 +834,4 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "C|D")
-
 }
