@@ -75,7 +75,6 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 			return &headersPerRPC{headers: headers}, nil
 		}),
 	), nil
-
 }
 
 // headersPerRPC is a gRPC credentials.PerRPCCredentials implementation sets
@@ -89,7 +88,6 @@ func (h *headersPerRPC) GetRequestMetadata(
 	ctx context.Context,
 	_ ...string,
 ) (map[string]string, error) {
-
 	metadata := make(map[string]string, len(h.headers))
 	for _, header := range h.headers {
 		value, err := header.source.Get(ctx)

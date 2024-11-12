@@ -195,7 +195,6 @@ func TestDirectoryCreateConfig(t *testing.T) {
 				cfg.CreateDirectory = false
 				cfg.DirectoryPermissions = "07771"
 				return cfg
-
 			},
 			err: nil,
 		},
