@@ -561,14 +561,16 @@ generate-gh-issue-templates:
 
 .PHONY: checks
 checks:
+	$(MAKE) gomoddownload
+	$(MAKE) install-tools
+	$(MAKE) genotelcontribcol
+	$(MAKE) genoteltestbedcol
 	$(MAKE) checkdoc
 	$(MAKE) checkmetadata
 	$(MAKE) checkapi
 	$(MAKE) -j4 goporto
 	$(MAKE) crosslink
 	$(MAKE) -j4 gotidy
-	$(MAKE) genotelcontribcol
-	$(MAKE) genoteltestbedcol
 	$(MAKE) gendistributions
 	$(MAKE) -j4 generate
 	$(MAKE) multimod-verify
