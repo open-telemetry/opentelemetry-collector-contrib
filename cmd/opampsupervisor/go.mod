@@ -9,7 +9,7 @@ require (
 	github.com/knadh/koanf/parsers/yaml v0.1.0
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/providers/rawbytes v0.1.0
-	github.com/knadh/koanf/v2 v2.1.1
+	github.com/knadh/koanf/v2 v2.1.2
 	github.com/open-telemetry/opamp-go v0.15.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configopaque v1.19.0
@@ -25,7 +25,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
