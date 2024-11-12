@@ -88,6 +88,10 @@ In the `admission` configuration block the following settings are available:
 
 `request_limit_mib` and `waiter_limit` are arguments supplied to [admission.BoundedQueue](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/otelarrow/admission). This custom semaphore is meant to be used within receivers to help limit memory within the collector pipeline.
 
+[The admission controller is instrumented using UpDownCounters to
+report the number of in-flight requests, items, and bytes (as measured
+in the OTLP encoding).](#receiver-metrics).
+
 ### Arrow-specific Configuration
 
 In the `arrow` configuration block, the following settings are available:
@@ -173,15 +177,21 @@ exporters:
 
 In addition to the the standard
 [obsreport](https://pkg.go.dev/go.opentelemetry.io/collector/obsreport)
-metrics, this component provides network-level measurement instruments
-which we anticipate will become part of `obsreport` in the future.  At
-the `normal` level of metrics detail:
+metrics, this component provides network-level measurements at the
+`normal` level of metrics detail:
 
 - `otelcol_receiver_recv`: uncompressed bytes received, prior to compression
 - `otelcol_receiver_recv_wire`: compressed bytes received, on the wire.
 
 Arrow's compression performance can be derived by dividing the average
 `otelcol_receiver_recv` value by the average `otelcol_receiver_recv_wire` value.
+
+The admission controller is instrumented at the `normal` level of
+metrics detail:
+
+- `otelcol_otelarrow_receiver_in_flight_requests`: Number of admitted requests.
+- `otelcol_otelarrow_receiver_in_flight_items`: Number of admitted items (i.e., spans, data points, records).
+- `otelcol_otelarrow_receiver_in_flight_bytes`: Number of admitted bytes in the OTLP encoding.
 
 At the `detailed` metrics detail level, information about the stream
 of data being returned from the receiver will be instrumented:
