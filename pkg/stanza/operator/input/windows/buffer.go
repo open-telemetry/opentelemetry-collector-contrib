@@ -75,8 +75,8 @@ func (b *Buffer) FirstByte() *byte {
 }
 
 // NewBuffer creates a new buffer with the default buffer size
-func NewBuffer() Buffer {
-	return Buffer{
+func NewBuffer() *Buffer {
+	return &Buffer{
 		buffer: make([]byte, defaultBufferSize),
 	}
 }

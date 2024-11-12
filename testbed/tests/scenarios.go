@@ -44,7 +44,6 @@ func createConfigYaml(
 	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
 ) string {
-
 	// Create a config. Note that our DataSender is used to generate a config for Collector's
 	// receiver and our DataReceiver is used to generate a config for Collector's exporter.
 	// This is because our DataSender sends to Collector's receiver and our DataReceiver
@@ -271,7 +270,6 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 		test := tests[i]
 
 		t.Run(fmt.Sprintf("%d*%dbytes", test.attrCount, test.attrSizeByte), func(t *testing.T) {
-
 			options := constructLoadOptions(test)
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))

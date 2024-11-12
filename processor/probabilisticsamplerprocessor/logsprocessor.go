@@ -268,7 +268,6 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sa
 				// The record has supplied a valid alternative sampling probability
 				return th
 			}
-
 		}
 	}
 	return sampling.NeverSampleThreshold
