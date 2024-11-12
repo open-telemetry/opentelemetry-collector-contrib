@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	rand "math/rand/v2"
 	"testing"
 	"time"
 
@@ -389,4 +390,21 @@ func configWithMultipleAttributes(metric metricType, qty int) *Config {
 		NumMetrics: qty,
 		MetricType: metric,
 	}
+}
+
+func TestGenerateHistogramBuckets(t *testing.T) {
+	randomPCG := rand.NewPCG(0, 0)
+	randomgenerator := rand.New(randomPCG)
+	for i := uint64(0); i < 5; i++ {
+		_, buckets := generateHistogramBuckets[int64](i, randomgenerator)
+		assert.Equal(t, sumofArray(buckets), i)
+	}
+}
+
+func sumofArray[T int64 | float64 | uint64](array []T) T {
+	var sum T
+	for _, num := range array {
+		sum += num
+	}
+	return sum
 }
