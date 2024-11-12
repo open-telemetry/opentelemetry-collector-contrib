@@ -9,7 +9,7 @@
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
-[development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
