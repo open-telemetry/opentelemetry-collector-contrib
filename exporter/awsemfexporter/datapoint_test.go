@@ -1347,6 +1347,51 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSliceWithSplitDat
 				},
 			},
 		},
+		{
+			name: "Exponential histogram with more than 100 buckets, including positive, negative and zero buckets with zero counts",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				posBucketCounts := make([]uint64, 60)
+				for i := range posBucketCounts {
+					posBucketCounts[i] = uint64(i % 5)
+				}
+				histogramDP.Positive().BucketCounts().FromRaw(posBucketCounts)
+				histogramDP.SetZeroCount(2)
+				negBucketCounts := make([]uint64, 60)
+				for i := range negBucketCounts {
+					negBucketCounts[i] = uint64(i % 5)
+				}
+				histogramDP.Negative().BucketCounts().FromRaw(negBucketCounts)
+				histogramDP.SetSum(1000)
+				histogramDP.SetMin(-9e+17)
+				histogramDP.SetMax(9e+17)
+				histogramDP.SetCount(uint64(3662))
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			expectedDatapoints: []dataPoint{
+				{
+					name: "foo",
+					value: &cWMetricHistogram{
+						Values: []float64{8.646911284551352e+17, 4.323455642275676e+17, 2.161727821137838e+17, 1.080863910568919e+17, 2.7021597764222976e+16,
+							1.3510798882111488e+16, 6.755399441055744e+15, 3.377699720527872e+15, 8.44424930131968e+14, 4.22212465065984e+14, 2.11106232532992e+14,
+							1.05553116266496e+14, 2.6388279066624e+13, 1.3194139533312e+13, 6.597069766656e+12, 3.298534883328e+12, 8.24633720832e+11, 4.12316860416e+11,
+							2.06158430208e+11, 1.03079215104e+11, 2.5769803776e+10, 1.2884901888e+10, 6.442450944e+09, 3.221225472e+09, 8.05306368e+08, 4.02653184e+08,
+							2.01326592e+08, 1.00663296e+08, 2.5165824e+07, 1.2582912e+07, 6.291456e+06, 3.145728e+06, 786432, 393216, 196608, 98304, 24576, 12288, 6144, 3072,
+							768, 384, 192, 96, 24, 12, 6, 3, 0, -3, -6, -12, -24, -96, -192, -384, -768, -3072, -6144, -12288, -24576, -98304, -196608, -393216, -786432,
+							-3.145728e+06, -6.291456e+06, -1.2582912e+07, -2.5165824e+07, -1.00663296e+08, -2.01326592e+08, -4.02653184e+08, -8.05306368e+08, -3.221225472e+09,
+							-6.442450944e+09, -1.2884901888e+10, -2.5769803776e+10, -1.03079215104e+11, -2.06158430208e+11, -4.12316860416e+11, -8.24633720832e+11, -3.298534883328e+12,
+							-6.597069766656e+12, -1.3194139533312e+13, -2.6388279066624e+13, -1.05553116266496e+14, -2.11106232532992e+14, -4.22212465065984e+14, -8.44424930131968e+14,
+							-3.377699720527872e+15, -6.755399441055744e+15, -1.3510798882111488e+16, -2.7021597764222976e+16, -1.080863910568919e+17, -2.161727821137838e+17,
+							-4.323455642275676e+17, -8.646911284551352e+17},
+						Counts: []float64{4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3, 2, 1, 4, 3,
+							2, 1, 2, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4},
+						Sum: 1000, Count: 242, Min: -9e+17, Max: 9e+17},
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
