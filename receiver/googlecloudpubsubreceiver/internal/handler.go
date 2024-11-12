@@ -213,7 +213,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 				time.Sleep(time.Second * 60)
 				activeStreaming = false
 			default:
-				handler.logger.Warn(fmt.Sprintf("response stream breaking on gRPC s %s", s.Message()),
+				handler.logger.Warn("response stream breaking on gRPC s "+s.Message(),
 					zap.String("s", s.Message()),
 					zap.Error(err))
 				activeStreaming = false
