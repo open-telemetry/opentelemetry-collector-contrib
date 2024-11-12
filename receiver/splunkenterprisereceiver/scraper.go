@@ -1732,6 +1732,5 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			}
 			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint)
 		}
-
 	}
 }
