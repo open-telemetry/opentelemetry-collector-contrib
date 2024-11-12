@@ -9,7 +9,7 @@ resourceMetrics:
       - schemaUrl: https://test-scope-schema.com/schema
         scope:
           name: MyTestInstrument
-          version: 1.2.3
+          version: "1.2.3"
           attributes:
             - key: foo
               value:
@@ -22,13 +22,13 @@ resourceMetrics:
                 - timeUnixNano: 80
                   scale: 4
                   zeroCount: 5
-                  attributes:
-                    - key: aaa
-                      value:
-                        stringValue: bbb
                   positive:
                     bucketCounts: [9, 12, 17, 8, 34]
                     offset: 2
                   negative:
                     bucketCounts: [6, 21, 9, 19, 7]
                     offset: 6
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
