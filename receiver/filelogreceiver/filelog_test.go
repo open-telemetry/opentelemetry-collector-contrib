@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
