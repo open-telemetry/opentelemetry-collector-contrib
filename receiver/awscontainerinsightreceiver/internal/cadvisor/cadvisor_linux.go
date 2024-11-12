@@ -62,7 +62,8 @@ type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.Hous
 // a better way to mock the cadvisor related part in the future.
 var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
 	includedMetricsSet cadvisormetrics.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
-	perfEventsFile string) (cadvisorManager, error) {
+	perfEventsFile string,
+) (cadvisorManager, error) {
 	return manager.New(memoryCache, sysfs, housekeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
 }
 

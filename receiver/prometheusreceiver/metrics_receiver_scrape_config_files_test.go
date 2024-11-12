@@ -43,7 +43,7 @@ func TestScrapeConfigFiles(t *testing.T) {
 		tmpDir := t.TempDir()
 		cfgFileName := tmpDir + "/test-scrape-config.yaml"
 		scrapeConfigFileContent := "scrape_configs:\n" + string(marshalledScrapeConfigs)
-		err = os.WriteFile(cfgFileName, []byte(scrapeConfigFileContent), 0400)
+		err = os.WriteFile(cfgFileName, []byte(scrapeConfigFileContent), 0o400)
 		require.NoError(t, err)
 		cfg.PrometheusConfig.ScrapeConfigs = []*config.ScrapeConfig{}
 		cfg.PrometheusConfig.ScrapeConfigFiles = []string{cfgFileName}

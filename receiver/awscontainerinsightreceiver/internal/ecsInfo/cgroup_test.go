@@ -159,7 +159,7 @@ func TestGetCGroupMountPoint(t *testing.T) {
 }
 
 func TestGetCPUReservedInTask(t *testing.T) {
-	var ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	taskinfo := &MockTaskInfo{
 		tasks: []ECSTask{},
@@ -215,7 +215,7 @@ func TestGetCPUReservedInTask(t *testing.T) {
 }
 
 func TestGetMEMReservedInTask(t *testing.T) {
-	var ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	taskinfo := &MockTaskInfo{
 		tasks: []ECSTask{},
@@ -269,7 +269,7 @@ func TestGetMEMReservedInTask(t *testing.T) {
 }
 
 func TestGetCPUReservedAndMemReserved(t *testing.T) {
-	var ctx, cancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 	var tasks []ECSTask
 	var containers []ECSContainer
 

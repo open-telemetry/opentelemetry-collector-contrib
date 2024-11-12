@@ -181,7 +181,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
-	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0o600)
 	defer func() {
 		require.NoError(t, file.Close())
 	}()
@@ -199,7 +199,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 					return errors.Is(removeErr, os.ErrNotExist)
 				}, 5*time.Second, 100*time.Millisecond)
 
-				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0600)
+				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, openErr)
 
 				// Copy the current file to the backup file
@@ -217,7 +217,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 			} else {
 				require.NoError(t, file.Close())
 				require.NoError(t, os.Rename(fileName, backupFileName))
-				file, err = os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+				file, err = os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, err)
 			}
 		}

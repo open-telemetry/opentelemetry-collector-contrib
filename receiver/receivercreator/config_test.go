@@ -200,7 +200,8 @@ func (*nopWithEndpointFactory) CreateLogs(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
 	return &nopWithEndpointReceiver{
 		Logs:     nextConsumer,
 		Settings: rcs,
@@ -212,7 +213,8 @@ func (*nopWithEndpointFactory) CreateMetrics(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
+	nextConsumer consumer.Metrics,
+) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
 		Metrics:  nextConsumer,
 		Settings: rcs,
@@ -224,7 +226,8 @@ func (*nopWithEndpointFactory) CreateTraces(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	nextConsumer consumer.Traces,
+) (rcvr.Traces, error) {
 	return &nopWithEndpointReceiver{
 		Traces:   nextConsumer,
 		Settings: rcs,
@@ -260,7 +263,8 @@ func (*nopWithoutEndpointFactory) CreateLogs(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
 	return &nopWithoutEndpointReceiver{
 		Logs:     nextConsumer,
 		Settings: rcs,
@@ -272,7 +276,8 @@ func (*nopWithoutEndpointFactory) CreateMetrics(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
+	nextConsumer consumer.Metrics,
+) (rcvr.Metrics, error) {
 	return &nopWithoutEndpointReceiver{
 		Metrics:  nextConsumer,
 		Settings: rcs,
@@ -284,7 +289,8 @@ func (*nopWithoutEndpointFactory) CreateTraces(
 	_ context.Context,
 	rcs rcvr.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	nextConsumer consumer.Traces,
+) (rcvr.Traces, error) {
 	return &nopWithoutEndpointReceiver{
 		Traces:   nextConsumer,
 		Settings: rcs,

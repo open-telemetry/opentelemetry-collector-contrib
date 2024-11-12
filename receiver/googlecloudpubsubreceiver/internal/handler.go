@@ -56,7 +56,8 @@ func NewHandler(
 	client *pubsub.SubscriberClient,
 	clientID string,
 	subscription string,
-	callback func(ctx context.Context, message *pubsubpb.ReceivedMessage) error) (*StreamHandler, error) {
+	callback func(ctx context.Context, message *pubsubpb.ReceivedMessage) error,
+) (*StreamHandler, error) {
 	handler := StreamHandler{
 		logger:       logger,
 		client:       client,
@@ -197,7 +198,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 				}
 			}
 		} else {
-			var s, grpcStatus = status.FromError(err)
+			s, grpcStatus := status.FromError(err)
 			switch {
 			case errors.Is(err, io.EOF):
 				activeStreaming = false

@@ -50,7 +50,8 @@ func newSQLServerScraper(id component.ID,
 	telemetry sqlquery.TelemetryConfig,
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
-	mb *metadata.MetricsBuilder) *sqlServerScraperHelper {
+	mb *metadata.MetricsBuilder,
+) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
 		id:                 id,
 		sqlQuery:           query,
@@ -183,7 +184,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const userConnCount = "User Connections"
 
 	rows, err := s.client.QueryRows(ctx)
-
 	if err != nil {
 		if errors.Is(err, sqlquery.ErrNullValueWarning) {
 			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
@@ -272,7 +272,6 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbOffline = "db_offline"
 
 	rows, err := s.client.QueryRows(ctx)
-
 	if err != nil {
 		if errors.Is(err, sqlquery.ErrNullValueWarning) {
 			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))

@@ -384,6 +384,7 @@ func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	}
 	return false
 }
+
 func isExtraScrapeMetrics(m pmetric.Metric) bool {
 	switch m.Name() {
 	case "scrape_body_size_bytes", "scrape_sample_limit", "scrape_timeout_seconds":
@@ -393,11 +394,13 @@ func isExtraScrapeMetrics(m pmetric.Metric) bool {
 	}
 }
 
-type metricTypeComparator func(*testing.T, pmetric.Metric)
-type numberPointComparator func(*testing.T, pmetric.NumberDataPoint)
-type histogramPointComparator func(*testing.T, pmetric.HistogramDataPoint)
-type summaryPointComparator func(*testing.T, pmetric.SummaryDataPoint)
-type exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
+type (
+	metricTypeComparator           func(*testing.T, pmetric.Metric)
+	numberPointComparator          func(*testing.T, pmetric.NumberDataPoint)
+	histogramPointComparator       func(*testing.T, pmetric.HistogramDataPoint)
+	summaryPointComparator         func(*testing.T, pmetric.SummaryDataPoint)
+	exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
+)
 
 type dataPointExpectation struct {
 	numberPointComparator          []numberPointComparator

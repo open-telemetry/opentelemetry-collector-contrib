@@ -102,8 +102,10 @@ type firehoseCommonAttributes struct {
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
-var _ receiver.Metrics = (*firehoseReceiver)(nil)
-var _ http.Handler = (*firehoseReceiver)(nil)
+var (
+	_ receiver.Metrics = (*firehoseReceiver)(nil)
+	_ http.Handler     = (*firehoseReceiver)(nil)
+)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.

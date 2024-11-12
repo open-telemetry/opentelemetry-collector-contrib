@@ -133,7 +133,7 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 			}
 			dimensions.resourceAttrs.PutStr(k, v)
 		}
-		dimensions.resourceAttrs.PutStr("source", serie.SourceTypeName) //TODO: check if this is correct handling of SourceTypeName field
+		dimensions.resourceAttrs.PutStr("source", serie.SourceTypeName) // TODO: check if this is correct handling of SourceTypeName field
 		metric, metricID := bt.Lookup(dimensions)
 
 		switch serie.Type {
@@ -144,7 +144,7 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 		case gogen.MetricPayload_GAUGE:
 			dps = metric.Gauge().DataPoints()
 		case gogen.MetricPayload_RATE:
-			metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta) //TODO: verify that this is always the case
+			metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta) // TODO: verify that this is always the case
 			dps = metric.Sum().DataPoints()
 		case gogen.MetricPayload_UNSPECIFIED:
 			// Type is unset/unspecified

@@ -196,9 +196,13 @@ func (c *Config) validateJar(supportedJarDetails map[string]supportedJar, jar st
 	return nil
 }
 
-var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
-var validTargetSystems = map[string]struct{}{"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
-	"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
+var (
+	validLogLevels     = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
+	validTargetSystems = map[string]struct{}{
+		"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
+		"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {},
+	}
+)
 var AdditionalTargetSystems = "n/a"
 
 // Separated into two functions for tests

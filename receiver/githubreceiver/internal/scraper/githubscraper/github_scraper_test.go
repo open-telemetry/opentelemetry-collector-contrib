@@ -134,7 +134,6 @@ func TestScrape(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Now().AddDate(0, 0, -1),
 										Additions:     10,
 										Deletions:     9,

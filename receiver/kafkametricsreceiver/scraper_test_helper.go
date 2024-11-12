@@ -25,13 +25,17 @@ const (
 	testLogRetentionHours = 168
 )
 
-var newSaramaClient = sarama.NewClient
-var newClusterAdmin = sarama.NewClusterAdmin
+var (
+	newSaramaClient = sarama.NewClient
+	newClusterAdmin = sarama.NewClusterAdmin
+)
 
-var testTopics = []string{testTopic}
-var testPartitions = []int32{1}
-var testReplicas = []int32{1}
-var testBrokers = make([]*sarama.Broker, 1)
+var (
+	testTopics     = []string{testTopic}
+	testPartitions = []int32{1}
+	testReplicas   = []int32{1}
+	testBrokers    = make([]*sarama.Broker, 1)
+)
 
 func mockNewSaramaClient([]string, *sarama.Config) (sarama.Client, error) {
 	return newMockClient(), nil

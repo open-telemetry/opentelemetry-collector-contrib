@@ -96,9 +96,11 @@ func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) erro
 	}
 	return nil
 }
+
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 	return v.client.Disconnect(ctx)
 }
+
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
 		v.client = newVcenterClient(v.logger, v.config)

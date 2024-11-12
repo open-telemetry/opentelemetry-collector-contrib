@@ -25,9 +25,7 @@ import (
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
-var (
-	skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
-)
+var skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
 
 var traceJSON = []byte(`
 	[{

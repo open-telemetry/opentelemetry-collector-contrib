@@ -797,7 +797,6 @@ func TestEvalCommits(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 										Additions:     10,
 										Deletions:     9,
@@ -831,7 +830,6 @@ func TestEvalCommits(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 										Additions:     10,
 										Deletions:     9,
@@ -843,7 +841,6 @@ func TestEvalCommits(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 										Additions:     1,
 										Deletions:     1,

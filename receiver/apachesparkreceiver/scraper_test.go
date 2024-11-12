@@ -67,9 +67,10 @@ func TestScraper(t *testing.T) {
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
-			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
-				CollectionInterval: defaultCollectionInterval,
-			},
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: defaultCollectionInterval,
+				},
 				ApplicationNames:     []string{"local-123", "local-987"},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -212,9 +213,10 @@ func TestScraper(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
-				CollectionInterval: defaultCollectionInterval,
-			},
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: defaultCollectionInterval,
+				},
 				ApplicationNames:     []string{"streaming-example"},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

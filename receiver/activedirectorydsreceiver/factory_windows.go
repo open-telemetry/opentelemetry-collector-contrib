@@ -37,7 +37,6 @@ func createMetricsReceiver(
 		scraperhelper.WithStart(adds.start),
 		scraperhelper.WithShutdown(adds.shutdown),
 	)
-
 	if err != nil {
 		return nil, err
 	}

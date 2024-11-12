@@ -222,8 +222,10 @@ func (m *mockConfig) SetRootPath(_ string) {}
 
 func (m *mockConfig) SetEnvMap(_ common.EnvMap) {}
 
-type mockFactory struct{ mock.Mock }
-type mockScraper struct{ mock.Mock }
+type (
+	mockFactory struct{ mock.Mock }
+	mockScraper struct{ mock.Mock }
+)
 
 func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
 func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.Settings, internal.Config) (scraperhelper.Scraper, error) {

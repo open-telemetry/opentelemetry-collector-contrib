@@ -157,7 +157,6 @@ func TestList(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedContainer := container{
-
 		AutoRemove: false,
 		Command:    []string{"nginx", "-g", "daemon off;"},
 		Created:    "2022-05-28T11:25:35.999277074+02:00",

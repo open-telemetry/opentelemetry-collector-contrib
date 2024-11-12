@@ -55,9 +55,11 @@ func defaultBQ() admission.Queue {
 	return admission.NewBoundedQueue(noopTelemetry, 100000, 10)
 }
 
-type compareJSONTraces struct{ ptrace.Traces }
-type compareJSONMetrics struct{ pmetric.Metrics }
-type compareJSONLogs struct{ plog.Logs }
+type (
+	compareJSONTraces  struct{ ptrace.Traces }
+	compareJSONMetrics struct{ pmetric.Metrics }
+	compareJSONLogs    struct{ plog.Logs }
+)
 
 func (c compareJSONTraces) MarshalJSON() ([]byte, error) {
 	var m ptrace.JSONMarshaler
@@ -255,6 +257,7 @@ func (m mockConsumers) Traces() consumer.Traces {
 func (m mockConsumers) Logs() consumer.Logs {
 	return m.logs
 }
+
 func (m mockConsumers) Metrics() consumer.Metrics {
 	return m.metrics
 }

@@ -91,8 +91,7 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	require.EqualError(t, err, "Test Error for Metrics Consumer")
 }
 
-type invalidFakeClient struct {
-}
+type invalidFakeClient struct{}
 
 func (f invalidFakeClient) GetResponse(_ string) ([]byte, error) {
 	return nil, errors.New("intentional error")

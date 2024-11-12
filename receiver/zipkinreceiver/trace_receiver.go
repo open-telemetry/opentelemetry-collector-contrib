@@ -33,8 +33,10 @@ const (
 	receiverTransportV2PROTO  = "http_v2_proto"
 )
 
-var errNextConsumerRespBody = []byte(`"Internal Server Error"`)
-var errBadRequestRespBody = []byte(`"Bad Request"`)
+var (
+	errNextConsumerRespBody = []byte(`"Internal Server Error"`)
+	errBadRequestRespBody   = []byte(`"Bad Request"`)
+)
 
 // zipkinReceiver type is used to handle spans received in the Zipkin format.
 type zipkinReceiver struct {

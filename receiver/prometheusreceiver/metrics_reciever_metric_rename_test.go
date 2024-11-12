@@ -339,8 +339,10 @@ func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.Res
 					numberPointComparator: []numberPointComparator{
 						compareTimestamp(ts1),
 						compareDoubleValue(120),
-						compareAttributes(map[string]string{"address": "localhost:9090/metrics",
-							"contentType": "application/json", "id": "metrics", "foo": "bar"}),
+						compareAttributes(map[string]string{
+							"address":     "localhost:9090/metrics",
+							"contentType": "application/json", "id": "metrics", "foo": "bar",
+						}),
 					},
 				},
 			}),

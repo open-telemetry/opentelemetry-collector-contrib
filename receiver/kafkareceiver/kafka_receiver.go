@@ -101,9 +101,11 @@ type kafkaLogsConsumer struct {
 	maxFetchSize      int32
 }
 
-var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
-var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
-var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
+var (
+	_ receiver.Traces  = (*kafkaTracesConsumer)(nil)
+	_ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
+	_ receiver.Logs    = (*kafkaLogsConsumer)(nil)
+)
 
 func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -515,9 +517,11 @@ type logsConsumerGroupHandler struct {
 	headerExtractor   HeaderExtractor
 }
 
-var _ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
-var _ sarama.ConsumerGroupHandler = (*metricsConsumerGroupHandler)(nil)
-var _ sarama.ConsumerGroupHandler = (*logsConsumerGroupHandler)(nil)
+var (
+	_ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
+	_ sarama.ConsumerGroupHandler = (*metricsConsumerGroupHandler)(nil)
+	_ sarama.ConsumerGroupHandler = (*logsConsumerGroupHandler)(nil)
+)
 
 func (c *tracesConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
 	c.readyCloser.Do(func() {

@@ -19,9 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
-var (
-	errEmptyEndpoint = errors.New("empty endpoint")
-)
+var errEmptyEndpoint = errors.New("empty endpoint")
 
 // carbonreceiver implements a receiver.Metrics for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.

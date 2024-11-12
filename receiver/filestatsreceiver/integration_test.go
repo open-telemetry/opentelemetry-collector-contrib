@@ -22,9 +22,9 @@ import (
 func Test_Integration(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
 	tempDir := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "foo.txt"), []byte("foo"), 0600))
-	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "bar.txt"), []byte("bar"), 0600))
-	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "foobar.txt"), []byte("foobar"), 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "foo.txt"), []byte("foo"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "bar.txt"), []byte("bar"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "foobar.txt"), []byte("foobar"), 0o600))
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithCustomConfig(

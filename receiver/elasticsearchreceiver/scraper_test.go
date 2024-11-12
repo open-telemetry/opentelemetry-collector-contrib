@@ -23,10 +23,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
-const fullLinuxExpectedMetricsPath = "./testdata/expected_metrics/full_linux.yaml"
-const fullOtherExpectedMetricsPath = "./testdata/expected_metrics/full_other.yaml"
-const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.yaml"
-const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.yaml"
+const (
+	fullLinuxExpectedMetricsPath   = "./testdata/expected_metrics/full_linux.yaml"
+	fullOtherExpectedMetricsPath   = "./testdata/expected_metrics/full_other.yaml"
+	skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.yaml"
+	noNodesExpectedMetricsPath     = "./testdata/expected_metrics/noNodes.yaml"
+)
 
 func TestScraper(t *testing.T) {
 	t.Parallel()

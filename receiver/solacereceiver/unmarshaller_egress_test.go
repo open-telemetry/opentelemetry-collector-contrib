@@ -283,7 +283,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 			},
 		},
 	}
-	var i = 1
+	i := 1
 	for _, dataRef := range validEgressSpans {
 		name := "valid span " + strconv.Itoa(i)
 		i++

@@ -18,9 +18,11 @@ type FakehostInfo struct{}
 func (hi *FakehostInfo) GetInstanceIP() string {
 	return "host-ip-address"
 }
+
 func (hi *FakehostInfo) GetClusterName() string {
 	return ""
 }
+
 func (hi *FakehostInfo) GetInstanceIPReadyC() chan bool {
 	readyC := make(chan bool)
 	close(readyC)
@@ -35,6 +37,7 @@ type MockInstanceInfo struct {
 func (ii *MockInstanceInfo) GetClusterName() string {
 	return ii.clusterName
 }
+
 func (ii *MockInstanceInfo) GetContainerInstanceID() string {
 	return ii.instanceID
 }
@@ -47,6 +50,7 @@ type MockTaskInfo struct {
 func (ii *MockTaskInfo) getRunningTaskCount() int64 {
 	return ii.runningTaskCount
 }
+
 func (ii *MockTaskInfo) getRunningTasksInfo() []ECSTask {
 	return ii.tasks
 }
@@ -85,7 +89,8 @@ func TestNewECSInfo(t *testing.T) {
 
 	taskinfoCreatorOpt := func(ei *EcsInfo) {
 		ei.ecsTaskInfoCreator = func(context.Context, hostIPProvider, time.Duration, *zap.Logger, doer,
-			chan bool) ecsTaskInfoProvider {
+			chan bool,
+		) ecsTaskInfoProvider {
 			var tasks []ECSTask
 			return &MockTaskInfo{
 				tasks:            tasks,
@@ -96,7 +101,8 @@ func TestNewECSInfo(t *testing.T) {
 
 	cgroupScannerCreatorOpt := func(ei *EcsInfo) {
 		ei.cgroupScannerCreator = func(context.Context, *zap.Logger, ecsTaskInfoProvider, containerInstanceInfoProvider,
-			time.Duration) cgroupScannerProvider {
+			time.Duration,
+		) cgroupScannerProvider {
 			return &MockCgroupScanner{
 				cpuReserved: int64(20),
 				memReserved: int64(1024),

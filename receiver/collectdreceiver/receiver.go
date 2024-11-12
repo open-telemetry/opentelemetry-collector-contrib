@@ -41,7 +41,8 @@ func newCollectdReceiver(
 	cfg *Config,
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics,
-	createSettings receiver.Settings) (receiver.Metrics, error) {
+	createSettings receiver.Settings,
+) (receiver.Metrics, error) {
 	r := &collectdReceiver{
 		logger:             logger,
 		nextConsumer:       nextConsumer,

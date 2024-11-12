@@ -60,5 +60,4 @@ func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadat
 
 	command := &commandMetadata{command: cmdline, commandLine: cmdline}
 	return command, nil
-
 }
