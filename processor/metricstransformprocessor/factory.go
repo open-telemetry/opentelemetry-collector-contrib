@@ -127,7 +127,6 @@ func validateConfiguration(config *Config) error {
 func buildHelperConfig(config *Config, version string) ([]internalTransform, error) {
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
-
 		if t.MetricIncludeFilter.MatchType == "" {
 			t.MetricIncludeFilter.MatchType = strictMatchType
 		}

@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	errNoStatsFound = fmt.Errorf("No stats found")
+	errNoStatsFound = errors.New("No stats found")
 )
 
 type libpodClient struct {

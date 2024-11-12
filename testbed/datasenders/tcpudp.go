@@ -115,7 +115,6 @@ func (f *TCPUDPWriter) SendCheck() error {
 		if err != nil {
 			return nil
 		}
-
 	}
 	return nil
 }

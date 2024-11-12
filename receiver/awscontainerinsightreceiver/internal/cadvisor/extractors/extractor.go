@@ -164,10 +164,10 @@ func getMetricKey(metric *CAdvisorMetric) string {
 	switch metricType {
 	case ci.TypeInstance:
 		// merge cpu, memory, net metric for type Instance
-		metricKey = fmt.Sprintf("metricType:%s", ci.TypeInstance)
+		metricKey = "metricType:" + ci.TypeInstance
 	case ci.TypeNode:
 		// merge cpu, memory, net metric for type Node
-		metricKey = fmt.Sprintf("metricType:%s", ci.TypeNode)
+		metricKey = "metricType:" + ci.TypeNode
 	case ci.TypePod:
 		// merge cpu, memory, net metric for type Pod
 		metricKey = fmt.Sprintf("metricType:%s,podId:%s", ci.TypePod, metric.GetTags()[ci.PodIDKey])

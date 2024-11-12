@@ -4,6 +4,7 @@
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -90,7 +91,7 @@ func (c *Config) Validate() error {
 		}
 
 		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
-			return fmt.Errorf("the Exclude config can only be used with watch mode")
+			return errors.New("the Exclude config can only be used with watch mode")
 		}
 
 		object.gvr = gvr

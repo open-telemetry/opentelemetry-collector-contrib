@@ -8,7 +8,6 @@ package podmanreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -60,7 +59,7 @@ func TestStats(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -116,7 +115,7 @@ func TestStatsError(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -150,7 +149,7 @@ func TestList(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -221,7 +220,7 @@ func TestEvents(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)

@@ -173,7 +173,7 @@ var _ agent.Agent = (*agentHandler)(nil)
 var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 var _ configmanager.ClientConfigManager = (*notImplementedConfigManager)(nil)
 
-var errNotImplemented = fmt.Errorf("not implemented")
+var errNotImplemented = errors.New("not implemented")
 
 type notImplementedConfigManager struct{}
 
