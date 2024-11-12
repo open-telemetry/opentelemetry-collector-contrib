@@ -42,3 +42,57 @@ func NewTraces(resourceIDs, scopeIDs, spanIDs, spanEventIDs string) ptrace.Trace
 	}
 	return td
 }
+
+type Resource struct {
+	id     byte
+	scopes []Scope
+}
+
+type Scope struct {
+	id    byte
+	spans []Span
+}
+
+type Span struct {
+	id         byte
+	spanEvents string
+}
+
+func WithResource(id byte, scopes ...Scope) Resource {
+	r := Resource{id: id}
+	r.scopes = append(r.scopes, scopes...)
+	return r
+}
+
+func WithScope(id byte, spans ...Span) Scope {
+	s := Scope{id: id}
+	s.spans = append(s.spans, spans...)
+	return s
+}
+
+func WithSpan(id byte, spanEvents string) Span {
+	return Span{id: id, spanEvents: spanEvents}
+}
+
+// NewTracesFromOpts creates a ptrace.Traces with the specified resources, scopes, metrics,
+// and data points. The general idea is the same as NewMetrics, but this function allows for
+// more flexibility in creating non-uniform structures.
+func NewTracesFromOpts(resources ...Resource) ptrace.Traces {
+	td := ptrace.NewTraces()
+	for _, resource := range resources {
+		r := td.ResourceSpans().AppendEmpty()
+		r.Resource().Attributes().PutStr("resourceName", "resource"+string(resource.id))
+		for _, scope := range resource.scopes {
+			ss := r.ScopeSpans().AppendEmpty()
+			ss.Scope().SetName("scope" + string(scope.id))
+			for _, span := range scope.spans {
+				s := ss.Spans().AppendEmpty()
+				s.SetName("span" + string(span.id))
+				for i := 0; i < len(span.spanEvents); i++ {
+					s.Events().AppendEmpty().Attributes().PutStr("spanEventName", "spanEvent"+string(span.spanEvents[i]))
+				}
+			}
+		}
+	}
+	return td
+}

@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 type tracesConnector struct {
@@ -84,6 +85,15 @@ func (c *tracesConnector) switchTraces(ctx context.Context, td ptrace.Traces) er
 				func(rs ptrace.ResourceSpans) bool {
 					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
+		case "span":
+			ptraceutil.MoveSpansWithContextIf(td, matchedSpans,
+				func(rs ptrace.ResourceSpans, ss ptrace.ScopeSpans, s ptrace.Span) bool {
+					mtx := ottlspan.NewTransformContext(s, ss.Scope(), rs.Resource(), ss, rs)
+					_, isMatch, err := route.spanStatement.Execute(ctx, mtx)
 					errs = errors.Join(errs, err)
 					return isMatch
 				},
