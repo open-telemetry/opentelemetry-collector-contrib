@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -31,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -757,8 +757,9 @@ func Test_PushMetrics(t *testing.T) {
 
 					if tt.enableSendingRW2 {
 						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV2
-						err := featuregate.GlobalRegistry().Set("exporter.prometheusremotewritexporter.enableSendingRW2", true)
-						assert.NoError(t, err)
+						oldValue := enableSendingRW2FeatureGate.IsEnabled()
+						testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, tt.enableSendingRW2)
+						defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
 					} else {
 						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 					}
