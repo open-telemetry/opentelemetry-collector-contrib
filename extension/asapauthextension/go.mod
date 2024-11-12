@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.113.0
 	go.opentelemetry.io/collector/extension/auth v0.113.0
 	go.uber.org/multierr v1.11.0
-	google.golang.org/grpc v1.67.1
+	google.golang.org/grpc v1.68.0
 )
 
 require (
