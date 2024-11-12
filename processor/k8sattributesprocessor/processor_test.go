@@ -321,7 +321,6 @@ func (strAddr) Network() string {
 }
 
 func TestIPDetectionFromContext(t *testing.T) {
-
 	addresses := []net.Addr{
 		&net.IPAddr{
 			IP: net.IPv4(1, 1, 1, 1),
@@ -357,7 +356,6 @@ func TestIPDetectionFromContext(t *testing.T) {
 			assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
 		})
 	}
-
 }
 
 func TestNilBatch(t *testing.T) {
@@ -1352,7 +1350,6 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
@@ -1435,7 +1432,6 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestPassthroughStart(t *testing.T) {
