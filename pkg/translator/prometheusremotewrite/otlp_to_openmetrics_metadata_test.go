@@ -226,7 +226,6 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				assert.Equal(t, tt.want[i].MetricFamilyName, metaData[i].MetricFamilyName)
 				assert.Equal(t, tt.want[i].Help, metaData[i].Help)
 			}
-
 		})
 	}
 }

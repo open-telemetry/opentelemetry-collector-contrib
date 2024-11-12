@@ -145,7 +145,6 @@ func (s *protoGRPCSender) pushTraces(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
-
 	batches := jaeger.ProtoFromTraces(td)
 
 	if s.metadata.Len() > 0 {

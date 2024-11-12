@@ -101,7 +101,7 @@ func (c *Config) parseProperties(logger *zap.Logger) []string {
 		logLevel = getZapLoggerLevelEquivalent(logger)
 	}
 
-	parsed = append(parsed, fmt.Sprintf("-Dorg.slf4j.simpleLogger.defaultLogLevel=%s", logLevel))
+	parsed = append(parsed, "-Dorg.slf4j.simpleLogger.defaultLogLevel="+logLevel)
 	// Sorted for testing and reproducibility
 	sort.Strings(parsed)
 	return parsed

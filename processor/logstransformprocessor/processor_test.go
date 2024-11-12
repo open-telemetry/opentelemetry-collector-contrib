@@ -205,7 +205,6 @@ type laggyOperator struct {
 }
 
 func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {
-
 	// Wait for a large amount of time every 100 logs
 	if t.logsCount%100 == 0 {
 		time.Sleep(100 * time.Millisecond)

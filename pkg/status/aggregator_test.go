@@ -127,7 +127,6 @@ func TestAggregateStatusVerbose(t *testing.T) {
 			st.ComponentStatusMap[tracesKey].ComponentStatusMap[toComponentKey(traces.ExporterID)],
 		)
 	})
-
 }
 
 func TestAggregateStatusPriorityRecoverable(t *testing.T) {

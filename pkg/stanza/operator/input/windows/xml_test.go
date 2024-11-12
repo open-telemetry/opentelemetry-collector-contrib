@@ -422,7 +422,6 @@ func TestParseEventData(t *testing.T) {
 func TestInvalidUnmarshal(t *testing.T) {
 	_, err := unmarshalEventXML([]byte("Test \n Invalid \t Unmarshal"))
 	require.Error(t, err)
-
 }
 func TestUnmarshalWithEventData(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
