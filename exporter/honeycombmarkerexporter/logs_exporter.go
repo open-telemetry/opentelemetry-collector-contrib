@@ -95,7 +95,6 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 						}
 					}
 				}
-
 			}
 		}
 	}
