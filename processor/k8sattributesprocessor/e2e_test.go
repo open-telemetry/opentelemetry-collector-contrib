@@ -21,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
 
@@ -80,7 +82,8 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	tracesConsumer := new(consumertest.TracesSink)
 	logsConsumer := new(consumertest.LogsSink)
-	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer)
+	profilesConsumer := new(consumertest.ProfilesSink)
+	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 	defer shutdownSinks()
 
 	testID := uuid.NewString()[:8]
@@ -89,7 +92,10 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, testNs),
-		DataTypes:    []string{"metrics", "logs", "traces"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
@@ -102,8 +108,8 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
-	wantEntries := 128 // Minimal number of metrics/traces/logs to wait for.
-	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
+	wantEntries := 128 // Minimal number of metrics/traces/logs/profiles to wait for.
+	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 
 	tcs := []struct {
 		name     string
@@ -414,6 +420,107 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
 			},
 		},
+		{
+			name:     "profiles-job",
+			dataType: pipelineprofiles.SignalProfiles,
+			service:  "test-profiles-job",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-job-[a-z0-9]*"),
+				"k8s.pod.ip":                   newExpectedValue(exist, ""),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, testNs),
+				"k8s.job.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-job"),
+				"k8s.job.uid":                  newExpectedValue(exist, ""),
+				"k8s.annotations.workload":     newExpectedValue(equal, "job"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-job"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+			},
+		},
+		{
+			name:     "profiles-statefulset",
+			dataType: pipelineprofiles.SignalProfiles,
+			service:  "test-profiles-statefulset",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-statefulset-0"),
+				"k8s.pod.ip":                   newExpectedValue(exist, ""),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, testNs),
+				"k8s.statefulset.name":         newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-statefulset"),
+				"k8s.statefulset.uid":          newExpectedValue(exist, ""),
+				"k8s.annotations.workload":     newExpectedValue(equal, "statefulset"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-statefulset"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+			},
+		},
+		{
+			name:     "profiles-deployment",
+			dataType: pipelineprofiles.SignalProfiles,
+			service:  "test-profiles-deployment",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.ip":                   newExpectedValue(exist, ""),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, testNs),
+				"k8s.deployment.name":          newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.deployment.uid":           newExpectedValue(exist, ""),
+				"k8s.replicaset.name":          newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*"),
+				"k8s.replicaset.uid":           newExpectedValue(exist, ""),
+				"k8s.annotations.workload":     newExpectedValue(equal, "deployment"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+			},
+		},
+		{
+			name:     "profiles-daemonset",
+			dataType: pipelineprofiles.SignalProfiles,
+			service:  "test-profiles-daemonset",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-daemonset-[a-z0-9]*"),
+				"k8s.pod.ip":                   newExpectedValue(exist, ""),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, testNs),
+				"k8s.daemonset.name":           newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-daemonset"),
+				"k8s.daemonset.uid":            newExpectedValue(exist, ""),
+				"k8s.annotations.workload":     newExpectedValue(equal, "daemonset"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-daemonset"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+			},
+		},
 	}
 
 	for _, tc := range tcs {
@@ -425,6 +532,8 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
+			case pipelineprofiles.SignalProfiles:
+				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
 			}
@@ -453,7 +562,8 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	tracesConsumer := new(consumertest.TracesSink)
 	logsConsumer := new(consumertest.LogsSink)
-	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer)
+	profilesConsumer := new(consumertest.ProfilesSink)
+	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 	defer shutdownSinks()
 
 	testID := uuid.NewString()[:8]
@@ -462,7 +572,10 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, nsName),
-		DataTypes:    []string{"metrics", "logs", "traces"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
@@ -475,8 +588,8 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
-	wantEntries := 20 // Minimal number of metrics/traces/logs to wait for.
-	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
+	wantEntries := 20 // Minimal number of metrics/traces/logs/profiles to wait for.
+	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 
 	tcs := []struct {
 		name     string
@@ -556,6 +669,30 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
+		{
+			name:     "profiles-deployment",
+			dataType: pipelineprofiles.SignalProfiles,
+			service:  "test-profiles-deployment",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.ip":                   newExpectedValue(exist, ""),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, startTimeRe),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, nsName),
+				"k8s.deployment.name":          newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.deployment.uid":           newExpectedValue(regex, uidRe),
+				"k8s.replicaset.name":          newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*"),
+				"k8s.replicaset.uid":           newExpectedValue(regex, uidRe),
+				"k8s.annotations.workload":     newExpectedValue(equal, "deployment"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+			},
+		},
 	}
 
 	for _, tc := range tcs {
@@ -567,6 +704,8 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
+			case pipelineprofiles.SignalProfiles:
+				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
 			}
@@ -586,7 +725,8 @@ func TestE2E_MixRBAC(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	tracesConsumer := new(consumertest.TracesSink)
 	logsConsumer := new(consumertest.LogsSink)
-	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer)
+	profilesConsumer := new(consumertest.ProfilesSink)
+	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 	defer shutdownSinks()
 
 	var workloadNs, otelNs string
@@ -619,7 +759,10 @@ func TestE2E_MixRBAC(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, otelNs),
-		DataTypes:    []string{"metrics", "logs", "traces"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
@@ -633,8 +776,8 @@ func TestE2E_MixRBAC(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
-	wantEntries := 20 // Minimal number of metrics/traces/logs to wait for.
-	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
+	wantEntries := 20 // Minimal number of metrics/traces/logs/profiles to wait for.
+	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 
 	tcs := []struct {
 		name     string
@@ -723,6 +866,33 @@ func TestE2E_MixRBAC(t *testing.T) {
 				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
 			},
 		},
+		{
+			name:     "profiles-deployment",
+			dataType: pipelineprofiles.SignalProfiles,
+			service:  "test-profiles-deployment",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.ip":                   newExpectedValue(exist, ""),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, ""),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, workloadNs),
+				"k8s.deployment.name":          newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.deployment.uid":           newExpectedValue(regex, uidRe),
+				"k8s.replicaset.name":          newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*"),
+				"k8s.replicaset.uid":           newExpectedValue(regex, uidRe),
+				"k8s.annotations.workload":     newExpectedValue(equal, "deployment"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+				"k8s.namespace.labels.foons":   newExpectedValue(equal, "barns"),
+				"k8s.node.labels.foo":          newExpectedValue(equal, "too"),
+				"k8s.cluster.uid":              newExpectedValue(regex, uidRe),
+			},
+		},
 	}
 
 	for _, tc := range tcs {
@@ -734,6 +904,8 @@ func TestE2E_MixRBAC(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
+			case pipelineprofiles.SignalProfiles:
+				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
 			}
@@ -765,7 +937,8 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	tracesConsumer := new(consumertest.TracesSink)
 	logsConsumer := new(consumertest.LogsSink)
-	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer)
+	profilesConsumer := new(consumertest.ProfilesSink)
+	shutdownSinks := startUpSinks(t, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 	defer shutdownSinks()
 
 	testID := uuid.NewString()[:8]
@@ -774,7 +947,10 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 		ManifestsDir: filepath.Join(testDir, "telemetrygen"),
 		TestID:       testID,
 		OtlpEndpoint: fmt.Sprintf("otelcol-%s.%s:4317", testID, nsName),
-		DataTypes:    []string{"metrics", "logs", "traces"},
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: add "profiles" to DataTypes once #36127 is resolved
+		DataTypes: []string{"metrics", "logs", "traces"},
 	}
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, k8sClient, createTeleOpts)
 	defer func() {
@@ -787,8 +963,8 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, k8sClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
-	wantEntries := 20 // Minimal number of metrics/traces/logs to wait for.
-	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
+	wantEntries := 20 // Minimal number of metrics/traces/logs/profiles to wait for.
+	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer, profilesConsumer)
 
 	tcs := []struct {
 		name     string
@@ -868,6 +1044,30 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
+		{
+			name:     "profiles-deployment",
+			dataType: pipelineprofiles.SignalProfiles,
+			service:  "test-profiles-deployment",
+			attrs: map[string]*expectedValue{
+				"k8s.pod.name":                 newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*-[a-z0-9]*"),
+				"k8s.pod.ip":                   newExpectedValue(shouldnotexist, ""),
+				"k8s.pod.uid":                  newExpectedValue(regex, uidRe),
+				"k8s.pod.start_time":           newExpectedValue(exist, startTimeRe),
+				"k8s.node.name":                newExpectedValue(exist, ""),
+				"k8s.namespace.name":           newExpectedValue(equal, nsName),
+				"k8s.deployment.name":          newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.deployment.uid":           newExpectedValue(regex, uidRe),
+				"k8s.replicaset.name":          newExpectedValue(regex, "telemetrygen-"+testID+"-profiles-deployment-[a-z0-9]*"),
+				"k8s.replicaset.uid":           newExpectedValue(regex, uidRe),
+				"k8s.annotations.workload":     newExpectedValue(equal, "deployment"),
+				"k8s.labels.app":               newExpectedValue(equal, "telemetrygen-"+testID+"-profiles-deployment"),
+				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
+				"container.image.repo_digests": newExpectedValue(shouldnotexist, ""),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
+				"container.id":                 newExpectedValue(exist, ""),
+			},
+		},
 	}
 
 	for _, tc := range tcs {
@@ -879,6 +1079,8 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 				scanMetricsForAttributes(t, metricsConsumer, tc.service, tc.attrs)
 			case pipeline.SignalLogs:
 				scanLogsForAttributes(t, logsConsumer, tc.service, tc.attrs)
+			case pipelineprofiles.SignalProfiles:
+				scanProfilesForAttributes(t, profilesConsumer, tc.service, tc.attrs)
 			default:
 				t.Fatalf("unknown data type %s", tc.dataType)
 			}
@@ -949,6 +1151,33 @@ func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedServ
 	t.Fatalf("no logs found for service %s", expectedService)
 }
 
+func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expectedService string,
+	kvs map[string]*expectedValue) {
+
+	// `telemetrygen` doesn't support profiles
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+	// TODO: Remove `t.Skip()` once #36127 is resolved
+	t.Skip("Skip profiles test")
+
+	// Iterate over the received set of profiles starting from the most recent entries due to a bug in the processor:
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
+	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
+	for i := len(ps.AllProfiles()) - 1; i >= 0; i-- {
+		profiles := ps.AllProfiles()[i]
+		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
+			resource := profiles.ResourceProfiles().At(i).Resource()
+			service, exist := resource.Attributes().Get("service.name")
+			assert.True(t, exist, "profile do not has 'service.name' attribute in resource")
+			if service.AsString() != expectedService {
+				continue
+			}
+			assert.NoError(t, resourceHasAttributes(resource, kvs))
+			return
+		}
+	}
+	t.Fatalf("no profiles found for service %s", expectedService)
+}
+
 func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedValue) error {
 	foundAttrs := make(map[string]bool)
 	shouldNotFoundAttrs := make(map[string]bool)
@@ -998,7 +1227,7 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 	return err
 }
 
-func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) func() {
+func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink, pc *consumertest.ProfilesSink) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.HTTP = nil
@@ -1008,19 +1237,24 @@ func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.T
 	require.NoError(t, err, "failed creating metrics receiver")
 	_, err = f.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, tc)
 	require.NoError(t, err, "failed creating traces receiver")
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, lc)
+	_, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, lc)
 	require.NoError(t, err, "failed creating logs receiver")
+	rcvr, err := f.(receiverprofiles.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, pc)
+	require.NoError(t, err, "failed creating profiles receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	return func() {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}
 }
 
-func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) {
+func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink, pc *consumertest.ProfilesSink) {
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
+		// `telemetrygen` doesn't support profiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
+		// TODO: assert `len(pc.AllProfiles()) > entriesNum` once #36127 is resolved
 		return len(mc.AllMetrics()) > entriesNum && len(tc.AllTraces()) > entriesNum && len(lc.AllLogs()) > entriesNum
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
-		"failed to receive %d entries,  received %d metrics, %d traces, %d logs in %d minutes", entriesNum,
-		len(mc.AllMetrics()), len(tc.AllTraces()), len(lc.AllLogs()), timeoutMinutes)
+		"failed to receive %d entries,  received %d metrics, %d traces, %d logs, %d profiles in %d minutes", entriesNum,
+		len(mc.AllMetrics()), len(tc.AllTraces()), len(lc.AllLogs()), len(pc.AllProfiles()), timeoutMinutes)
 }
