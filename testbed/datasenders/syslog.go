@@ -88,6 +88,7 @@ func (f *SyslogWriter) GenConfigYAMLStr() string {
       listen_address: "%s"
 `, f.network, f.GetEndpoint())
 }
+
 func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 	ts := time.Unix(int64(lr.Timestamp()/1_000_000_000), int64(lr.Timestamp()%1_000_000_000)).Format(time.RFC3339Nano)
 	sdid := strings.Builder{}

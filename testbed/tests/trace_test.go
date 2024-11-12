@@ -193,7 +193,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 
 	noLimitProcessors := []ProcessorNameAndConfigBody{}
 
-	var processorsConfig = []processorConfig{
+	processorsConfig := []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,

@@ -22,9 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-var (
-	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
-)
+var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
 
 type ProcessorNameAndConfigBody struct {
 	Name string
