@@ -385,7 +385,6 @@ func TestLogsSamplingState(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
-
 			sink := new(consumertest.LogsSink)
 			cfg := &Config{}
 			if tt.cfg != nil {
@@ -473,7 +472,6 @@ func TestLogsMissingRandomness(t *testing.T) {
 			{100, traceIDAttributeSource, false, true},
 		} {
 			t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed, "_", mode), func(t *testing.T) {
-
 				ctx := context.Background()
 				logs := plog.NewLogs()
 				record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()

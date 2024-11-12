@@ -1318,7 +1318,6 @@ func TestLogFieldsConversionLogs(t *testing.T) {
 				attribute4, found := outputLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("traceid")
 				assert.True(t, found)
 				assert.Equal(t, "01010101010101010101010101010101", attribute4.Str())
-
 			},
 		},
 	}

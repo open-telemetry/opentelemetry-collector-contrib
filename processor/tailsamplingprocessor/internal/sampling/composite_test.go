@@ -57,7 +57,6 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 }
 
 func TestCompositeEvaluatorNotSampled(t *testing.T) {
-
 	// Create 2 policies which do not match any trace
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 200, 300, false)
@@ -75,7 +74,6 @@ func TestCompositeEvaluatorNotSampled(t *testing.T) {
 }
 
 func TestCompositeEvaluatorSampled(t *testing.T) {
-
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
@@ -92,7 +90,6 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 }
 
 func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
-
 	timeProvider := &FakeTimeProvider{second: 0}
 
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
@@ -128,7 +125,6 @@ func TestCompositeEvaluator_OverflowAlwaysSampled(t *testing.T) {
 }
 
 func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
-
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
@@ -147,7 +143,6 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 }
 
 func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
-
 	// The first policy does not match, the second matches through invert
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
 	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
@@ -166,7 +161,6 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 }
 
 func TestCompositeEvaluatorThrottling(t *testing.T) {
-
 	// Create only one subpolicy, with 100% Sampled policy.
 	n1 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}
@@ -207,7 +201,6 @@ func TestCompositeEvaluatorThrottling(t *testing.T) {
 }
 
 func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
-
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
 	timeProvider := &FakeTimeProvider{second: 0}

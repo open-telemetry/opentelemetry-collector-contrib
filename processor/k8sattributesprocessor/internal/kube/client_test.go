@@ -88,7 +88,6 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, "2.2.2.2", got.Address)
 	assert.Equal(t, "podC", got.Name)
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.PodUID)
-
 }
 
 func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
@@ -290,7 +289,6 @@ func TestReplicaSetHandler(t *testing.T) {
 		Obj: replicaset,
 	})
 	assert.Empty(t, c.ReplicaSets)
-
 }
 
 func TestPodHostNetwork(t *testing.T) {
@@ -1373,7 +1371,6 @@ func TestFilters(t *testing.T) {
 			assert.Equal(t, tc.fields, inf.fieldSelector.String())
 		})
 	}
-
 }
 
 func TestPodIgnorePatterns(t *testing.T) {

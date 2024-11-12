@@ -538,7 +538,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 // This function removes all data from the Pod except what is required by extraction rules and pod association
 func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Pod {
-
 	// name, namespace, uid, start time and ip are needed for identifying Pods
 	// there's room to optimize this further, it's kept this way for simplicity
 	transformedPod := api_v1.Pod{

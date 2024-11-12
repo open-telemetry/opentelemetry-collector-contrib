@@ -117,7 +117,6 @@ func TestExpoAdd(t *testing.T) {
 		}
 		t.Run(cs.name, run(cs.dp, cs.in))
 	}
-
 }
 
 func rawbs(data []uint64, offset int32) expo.Buckets {

@@ -16,7 +16,6 @@ import (
 )
 
 func TestNumericTagFilter(t *testing.T) {
-
 	var empty = map[string]any{}
 	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", math.MinInt32, math.MaxInt32, false)
 
@@ -86,7 +85,6 @@ func TestNumericTagFilter(t *testing.T) {
 }
 
 func TestNumericTagFilterInverted(t *testing.T) {
-
 	var empty = map[string]any{}
 	filter := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", math.MinInt32, math.MaxInt32, true)
 

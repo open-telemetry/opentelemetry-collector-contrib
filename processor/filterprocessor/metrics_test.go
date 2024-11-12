@@ -943,7 +943,6 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructMetrics()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
