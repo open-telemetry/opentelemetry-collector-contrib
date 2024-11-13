@@ -7,6 +7,7 @@ import (
 	sdk "go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
+// Metrics returns the [sdk.Metrics] defined by this [Spec]
 func Metrics(spec Spec) []sdk.Metrics {
 	md := make([]sdk.Metrics, 0, len(spec))
 	for _, spec := range spec {
@@ -49,6 +50,9 @@ func (spec Metric) Into() sdk.Metrics {
 	return m
 }
 
+// Flatten turns the nested [sdk.ResourceMetrics] structure into a flat
+// [sdk.Metrics] slice. If a metric is present multiple time in different scopes
+// / resources, the last occurrence is used.
 func Flatten(rm sdk.ResourceMetrics) []sdk.Metrics {
 	set := make(map[string]sdk.Metrics)
 	for _, sm := range rm.ScopeMetrics {

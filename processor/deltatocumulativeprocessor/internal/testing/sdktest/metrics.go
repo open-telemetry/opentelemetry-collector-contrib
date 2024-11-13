@@ -12,10 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Spec is the partial metric specification.
-//
-// It only contains those fields required for testing.
-// Other fields such as Time or Description are taken from the test output.
+// Spec is the partial metric specification. To be used with [Compare]
 type Spec = map[string]Metric
 
 type Type string
