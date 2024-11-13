@@ -13,7 +13,7 @@ import (
 )
 
 func OpenFile(tb testing.TB, path string) *os.File {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	require.NoError(tb, err)
 	tb.Cleanup(func() { _ = file.Close() })
 	return file

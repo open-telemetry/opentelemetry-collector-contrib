@@ -414,7 +414,8 @@ func TestParseEventData(t *testing.T) {
 	expectedSlice := map[string]any{
 		"data": []any{
 			map[string]any{"name": "value"},
-			map[string]any{"": "no_name"}},
+			map[string]any{"": "no_name"},
+		},
 	}
 	require.Equal(t, expectedSlice, parsed["event_data"])
 }
@@ -423,6 +424,7 @@ func TestInvalidUnmarshal(t *testing.T) {
 	_, err := unmarshalEventXML([]byte("Test \n Invalid \t Unmarshal"))
 	require.Error(t, err)
 }
+
 func TestUnmarshalWithEventData(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
 	require.NoError(t, err)
@@ -455,7 +457,8 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		EventData: EventData{
 			Data: []Data{
 				{Name: "Time", Value: "2022-04-28T19:48:52Z"},
-				{Name: "Source", Value: "RulesEngine"}},
+				{Name: "Source", Value: "RulesEngine"},
+			},
 		},
 		Keywords: []string{"0x80000000000000"},
 		Original: string(data),

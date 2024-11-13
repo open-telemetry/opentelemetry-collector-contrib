@@ -31,7 +31,7 @@ type Output struct {
 // Start will open the output file.
 func (o *Output) Start(_ operator.Persister) error {
 	var err error
-	o.file, err = os.OpenFile(o.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0600)
+	o.file, err = os.OpenFile(o.path, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0o600)
 	if err != nil {
 		return err
 	}

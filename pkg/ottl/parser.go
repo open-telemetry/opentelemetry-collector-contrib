@@ -224,12 +224,13 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 	return insertContextIntoStatementOffsets(context, statement, missingContextOffsets)
 }
 
-var parser = newParser[parsedStatement]()
-var conditionParser = newParser[booleanExpression]()
+var (
+	parser          = newParser[parsedStatement]()
+	conditionParser = newParser[booleanExpression]()
+)
 
 func parseStatement(raw string) (*parsedStatement, error) {
 	parsed, err := parser.ParseString("", raw)
-
 	if err != nil {
 		return nil, fmt.Errorf("statement has invalid syntax: %w", err)
 	}
@@ -243,7 +244,6 @@ func parseStatement(raw string) (*parsedStatement, error) {
 
 func parseCondition(raw string) (*booleanExpression, error) {
 	parsed, err := conditionParser.ParseString("", raw)
-
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
