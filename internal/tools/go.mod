@@ -11,11 +11,11 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	go.opentelemetry.io/build-tools/checkfile v0.14.0
-	go.opentelemetry.io/build-tools/chloggen v0.14.0
-	go.opentelemetry.io/build-tools/crosslink v0.14.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.14.0
-	go.opentelemetry.io/build-tools/multimod v0.14.0
+	go.opentelemetry.io/build-tools/checkfile v0.15.0
+	go.opentelemetry.io/build-tools/chloggen v0.15.0
+	go.opentelemetry.io/build-tools/crosslink v0.15.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.15.0
+	go.opentelemetry.io/build-tools/multimod v0.15.0
 	go.opentelemetry.io/collector/cmd/builder v0.113.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.113.0
 	go.uber.org/goleak v1.3.0
@@ -225,7 +225,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.12.2 // indirect
 	go-simpler.org/sloglint v0.7.1 // indirect
-	go.opentelemetry.io/build-tools v0.14.0 // indirect
+	go.opentelemetry.io/build-tools v0.15.0 // indirect
 	go.opentelemetry.io/collector/component v0.113.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.19.0 // indirect
@@ -243,7 +243,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/oauth2 v0.22.0 // indirect
+	golang.org/x/oauth2 v0.23.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
