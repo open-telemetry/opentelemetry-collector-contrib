@@ -212,11 +212,29 @@ func Test_flatten_bad_target(t *testing.T) {
 }
 
 func Test_flatten_bad_depth(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
+	tests := []struct {
+		name  string
+		depth ottl.Optional[int64]
+	}{
+		{
+			name:  "negative depth",
+			depth: ottl.NewTestingOptional[int64](-1),
+		},
+		{
+			name:  "zero depth",
+			depth: ottl.NewTestingOptional[int64](0),
 		},
 	}
-	_, err := flatten[any](target, ottl.Optional[string]{}, ottl.NewTestingOptional[int64](-1))
-	assert.Error(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			target := &ottl.StandardPMapGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewMap(), nil
+				},
+			}
+			_, err := flatten[any](target, ottl.Optional[string]{}, tt.depth)
+			assert.Error(t, err)
+		})
+	}
 }
