@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/assert"
@@ -88,7 +89,17 @@ func TestScrape(t *testing.T) {
 			if test.mutateMetricsConfig != nil {
 				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
-			scraper, err := newProcessScraper(receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
+			cfg := &Config{MetricsBuilderConfig: metricsBuilderConfig}
+			cfg.EnvMap = common.EnvMap{
+				common.HostProcEnvKey:    "/proc",
+				common.HostSysEnvKey:     "/sys",
+				common.HostEtcEnvKey:     "/etc",
+				common.HostVarEnvKey:     "/var",
+				common.HostRunEnvKey:     "/run",
+				common.HostDevEnvKey:     "/dev",
+				common.HostProcMountinfo: "",
+			}
+			scraper, err := newProcessScraper(receivertest.NewNopSettings(), cfg)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -98,7 +109,6 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			md, err := scraper.scrape(context.Background())
-
 			// may receive some partial errors as a result of attempting to:
 			// a) read native system processes on Windows (e.g. Registry process)
 			// b) read info on processes that have just terminated
@@ -261,7 +271,8 @@ func assertMetricMissing(t *testing.T, resourceMetrics pmetric.ResourceMetricsSl
 }
 
 func assertDiskIoMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
-	startTime pcommon.Timestamp) {
+	startTime pcommon.Timestamp,
+) {
 	diskIoMetric := getMetric(t, "process.disk.io", resourceMetrics)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIoMetric, startTime)
@@ -1307,5 +1318,4 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 		})
 	}
-
 }

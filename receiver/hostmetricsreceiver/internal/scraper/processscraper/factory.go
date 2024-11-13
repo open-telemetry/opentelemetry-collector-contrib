@@ -8,12 +8,12 @@ import (
 	"errors"
 	"runtime"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -23,6 +23,9 @@ const (
 	// TypeStr the value of "type" key in configuration.
 	TypeStr = "process"
 )
+
+// scraperType is the component type used for the built scraper.
+var scraperType component.Type = component.MustNewType(TypeStr)
 
 var (
 	bootTimeCacheFeaturegateID = "hostmetrics.process.bootTimeCache"
@@ -36,8 +39,7 @@ var (
 )
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -62,7 +64,7 @@ func (f *Factory) CreateMetricsScraper(
 	}
 
 	return scraperhelper.NewScraper(
-		hostmeta.Type,
+		scraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

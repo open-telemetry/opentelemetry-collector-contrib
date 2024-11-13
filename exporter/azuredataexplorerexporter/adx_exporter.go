@@ -12,6 +12,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	kustoerrors "github.com/Azure/azure-kusto-go/kusto/data/errors"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
+	"github.com/Azure/azure-kusto-go/kusto/ingest/ingestoptions"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -60,7 +61,6 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 }
 
 func (e *adxDataProducer) ingestData(b []string) error {
-
 	ingestReader := strings.NewReader(strings.Join(b, nextline))
 
 	if _, err := e.ingestor.FromReader(context.Background(), ingestReader, e.ingestOptions...); err != nil {
@@ -127,7 +127,6 @@ func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.T
 }
 
 func (e *adxDataProducer) Close(context.Context) error {
-
 	var err error
 
 	err = e.ingestor.Close()
@@ -160,6 +159,7 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 
 	var ingestOptions []ingest.FileOption
 	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
+	ingestOptions = append(ingestOptions, ingest.CompressionType(ingestoptions.GZIP))
 	// Expect that this mapping is already existent
 	if refOption := getMappingRef(config, telemetryDataType); refOption != nil {
 		ingestOptions = append(ingestOptions, refOption)
@@ -216,6 +216,8 @@ func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {
+	case config.UseAzureAuth:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithDefaultAzureCredential()
 	case !isManagedIdentity:
 		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
 	case isManagedIdentity && isSystemManagedIdentity:

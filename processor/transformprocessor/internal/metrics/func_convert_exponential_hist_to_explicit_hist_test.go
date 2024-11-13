@@ -4,7 +4,6 @@
 package metrics
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -92,7 +91,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{1.0, 2.0, 3.0, 4.0, 5.0},
 			distribution: "upper",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("response_time")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -110,7 +108,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
-
 			},
 		},
 		{
@@ -121,7 +118,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{1000.0, 2000.0, 3000.0, 4000.0, 5000.0},
 			distribution: "upper",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("response_time")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -139,7 +135,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
-
 			},
 		},
 		{
@@ -149,7 +144,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{160.0, 170.0, 180.0, 190.0, 200.0},
 			distribution: "upper",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("response_time")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -167,7 +161,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
-
 			},
 		},
 		{
@@ -176,7 +169,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{160.0, 170.0, 180.0, 190.0, 200.0},
 			distribution: "upper",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("response_time")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -194,7 +186,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
-
 			},
 		},
 		{
@@ -329,7 +320,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
-
 			},
 		},
 		{
@@ -340,7 +330,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{1000.0, 2000.0, 3000.0, 4000.0, 5000.0},
 			distribution: "midpoint",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -358,7 +347,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
-
 			},
 		},
 		{
@@ -368,7 +356,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
 			distribution: "midpoint",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -386,7 +373,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
-
 			},
 		},
 		{
@@ -400,7 +386,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
 			distribution: "midpoint",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -418,7 +403,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
-
 			},
 		},
 		{
@@ -520,7 +504,6 @@ func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
-
 			},
 		},
 		{
@@ -531,7 +514,6 @@ func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{1000.0, 2000.0, 3000.0, 4000.0, 5000.0},
 			distribution: "uniform",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -549,7 +531,6 @@ func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
-
 			},
 		},
 		{
@@ -559,7 +540,6 @@ func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
 			distribution: "uniform",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -577,7 +557,6 @@ func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0)
-
 			},
 		},
 	}
@@ -655,7 +634,6 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
-
 			},
 		},
 		{
@@ -666,7 +644,6 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{1000.0, 2000.0, 3000.0, 4000.0, 5000.0},
 			distribution: "random",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -684,7 +661,6 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 
 				// set explictbounds
 				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
-
 			},
 		},
 		{
@@ -694,7 +670,6 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			arg:          []float64{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
 			distribution: "random",
 			want: func(metric pmetric.Metric) {
-
 				metric.SetName("test-metric")
 				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 				metric.Histogram().SetAggregationTemporality(1)
@@ -782,7 +757,7 @@ func Test_convertExponentialHistToExplicitHist_validate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := convertExponentialHistToExplicitHist("random", tt.sliceExplicitBoundsArgs)
 			assert.Error(t, err)
-			assert.True(t, strings.Contains(err.Error(), "explicit bounds cannot be empty"))
+			assert.Contains(t, err.Error(), "explicit bounds cannot be empty")
 		})
 	}
 }

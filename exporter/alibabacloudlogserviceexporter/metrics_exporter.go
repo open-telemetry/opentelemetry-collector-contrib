@@ -15,7 +15,6 @@ import (
 
 // newMetricsExporter return a new LogSerice metrics exporter.
 func newMetricsExporter(set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
-
 	l := &logServiceMetricsSender{
 		logger: set.Logger,
 	}
@@ -25,7 +24,7 @@ func newMetricsExporter(set exporter.Settings, cfg component.Config) (exporter.M
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		context.TODO(),
 		set,
 		cfg,

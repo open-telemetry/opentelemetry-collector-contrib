@@ -169,7 +169,6 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test_mapToAdxMetric(t *testing.T) {

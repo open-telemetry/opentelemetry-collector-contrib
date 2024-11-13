@@ -111,7 +111,7 @@ func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (export
 		clientSettings:            &cfg.ClientConfig,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
@@ -145,7 +145,6 @@ func (s *protoGRPCSender) pushTraces(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
-
 	batches := jaeger.ProtoFromTraces(td)
 
 	if s.metadata.Len() > 0 {
@@ -156,7 +155,6 @@ func (s *protoGRPCSender) pushTraces(
 		_, err := s.client.PostSpans(
 			ctx,
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
-
 		if err != nil {
 			s.settings.Logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
 			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)

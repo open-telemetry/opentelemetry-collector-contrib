@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -322,7 +321,6 @@ func TestOnAddForTraces(t *testing.T) {
 				t.Fatalf("unexpected startedComponent: %T", v)
 			}
 			require.Equal(t, test.expectedReceiverConfig, actualConfig)
-
 		})
 	}
 }
@@ -466,11 +464,6 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (m *mockHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
-	m.t.Fatal("GetExporters")
-	return nil
-}
-
 func newMockRunner(t *testing.T) *mockRunner {
 	cs := receivertest.NewNopSettings()
 	return &mockRunner{
@@ -512,15 +505,7 @@ type reportingHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *reportingHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *reportingHost) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
 	return nil
 }
 

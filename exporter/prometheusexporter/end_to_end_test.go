@@ -66,7 +66,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 	exporterFactory := NewFactory()
 	set := exportertest.NewNopSettings()
-	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
+	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +174,6 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if len(prometheusExporterScrape) != 0 {
 		t.Fatalf("Left-over unmatched Prometheus scrape content: %q\n", prometheusExporterScrape)
 	}
-
 }
 
 // the following triggers G101: Potential hardcoded credentials

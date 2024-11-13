@@ -19,9 +19,7 @@ const (
 	defaultEndpoint           = "http://localhost:4040"
 )
 
-var (
-	errInvalidEndpoint = errors.New("'endpoint' must be in the form of <scheme>://<hostname>:<port>")
-)
+var errInvalidEndpoint = errors.New("'endpoint' must be in the form of <scheme>://<hostname>:<port>")
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {

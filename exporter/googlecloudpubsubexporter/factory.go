@@ -85,11 +85,10 @@ func createTracesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
-
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -107,10 +106,9 @@ func createMetricsExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
-
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -128,11 +126,10 @@ func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config) (exporter.Logs, error) {
-
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,

@@ -6,11 +6,11 @@ package processesscraper // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
@@ -21,9 +21,11 @@ const (
 	TypeStr = "processes"
 )
 
+// scraperType is the component type used for the built scraper.
+var scraperType component.Type = component.MustNewType(TypeStr)
+
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -42,7 +44,7 @@ func (f *Factory) CreateMetricsScraper(
 	s := newProcessesScraper(ctx, settings, cfg)
 
 	return scraperhelper.NewScraper(
-		hostmeta.Type,
+		scraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
