@@ -203,7 +203,6 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	default:
 
 		// If feature flag not enabled support only RW1
-		// TODO remove when feature flag removed
 		if !prwe.enableSendingRW2 {
 			return prwe.pushMetricsV1(ctx, md)
 		}
