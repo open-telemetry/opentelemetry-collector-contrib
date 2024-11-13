@@ -344,7 +344,10 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {Body: conf},
+				"": {
+					Body:        conf,
+					ContentType: "text/yaml",
+				},
 			},
 		},
 	}
