@@ -217,7 +217,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 			return prwe.pushMetricsV2(ctx, md)
 
 		default:
-			return errors.New("unexpected remote-write protobuf message")
+			return fmt.Errorf("unsupported remote-write protobuf message: %v", prwe.RemoteWriteProtoMsg)
 		}
 
 	}
