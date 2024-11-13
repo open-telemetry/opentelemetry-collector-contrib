@@ -334,7 +334,6 @@ func (prwe *prwExporter) execute(ctx context.Context, data []byte) error {
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 		// If feature flag not enabled support only RW1
-		// TODO remove when feature flag removed
 		if !prwe.enableSendingRW2 {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
