@@ -126,7 +126,6 @@ func BenchmarkFromPdataConverter(b *testing.B) {
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-
 				converter := NewFromPdataConverter(componenttest.NewNopTelemetrySettings(), wc)
 				converter.Start()
 				defer converter.Stop()

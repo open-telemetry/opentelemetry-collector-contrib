@@ -46,7 +46,6 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 
 	if _, ok := distributionFnMap[args.DistributionFn]; !ok {
 		return nil, fmt.Errorf("invalid conversion function: %s, must be one of [upper, midpoint, random, uniform]", args.DistributionFn)
-
 	}
 
 	return convertExponentialHistToExplicitHist(args.DistributionFn, args.ExplicitBounds)
@@ -54,7 +53,6 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 
 // convertExponentialHistToExplicitHist converts an exponential histogram to a bucketed histogram
 func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds []float64) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-
 	if len(explicitBounds) == 0 {
 		return nil, fmt.Errorf("explicit bounds cannot be empty: %v", explicitBounds)
 	}

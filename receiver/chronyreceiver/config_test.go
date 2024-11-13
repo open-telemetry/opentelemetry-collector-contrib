@@ -4,7 +4,6 @@
 package chronyreceiver
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -90,7 +89,7 @@ func TestValidate(t *testing.T) {
 		{
 			scenario: "Valid unix path",
 			conf: Config{
-				Endpoint: fmt.Sprintf("unix://%s", t.TempDir()),
+				Endpoint: "unix://" + t.TempDir(),
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: time.Minute,
 					InitialDelay:       time.Second,

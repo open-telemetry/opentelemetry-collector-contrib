@@ -27,7 +27,7 @@ import (
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zap.NewNop()
-	emitter := helper.NewLogEmitter(set)
+
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
@@ -48,15 +48,18 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 		return nil, err
 	}
 
-	return &receiver{
-		set:       set,
-		id:        component.MustNewID("testReceiver"),
-		pipe:      pipe,
-		emitter:   emitter,
-		consumer:  nextConsumer,
-		converter: NewConverter(componenttest.NewNopTelemetrySettings()),
-		obsrecv:   obsrecv,
-	}, nil
+	rcv := &receiver{
+		set:      set,
+		id:       component.MustNewID("testReceiver"),
+		pipe:     pipe,
+		consumer: nextConsumer,
+		obsrecv:  obsrecv,
+	}
+
+	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+
+	rcv.emitter = emitter
+	return rcv, nil
 }
 
 // BenchmarkEmitterToConsumer serves as a benchmark for entries going from the emitter to consumer,

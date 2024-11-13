@@ -72,7 +72,6 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 			Labels:    exemplarLabels,
 			Timestamp: e.Timestamp().AsTime(),
 		}
-
 	}
 	return result
 }

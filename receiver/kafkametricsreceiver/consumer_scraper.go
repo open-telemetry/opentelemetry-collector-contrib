@@ -164,7 +164,8 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings) (scraperhelper.Scraper, error) {
+	settings receiver.Settings,
+) (scraperhelper.Scraper, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)

@@ -107,7 +107,6 @@ func observe(heartbeatsSent, heartbeatsFailed metric.Int64Counter, attrs attribu
 	} else {
 		heartbeatsFailed.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
 	}
-
 }
 
 func generateHeartbeatLog(hecToOtelAttrs splunk.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {

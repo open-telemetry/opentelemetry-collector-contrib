@@ -148,7 +148,7 @@ type recallLogger struct {
 
 func newRecallLogger(t *testing.T, tempDir string) *recallLogger {
 	path := filepath.Join(tempDir, "test.log")
-	logFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	logFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	require.NoError(t, err)
 
 	return &recallLogger{
@@ -174,7 +174,6 @@ func (l *recallLogger) close() error {
 
 func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 	return func() bool {
-
 		if sink.LogRecordCount() != len(expected) {
 			return false
 		}

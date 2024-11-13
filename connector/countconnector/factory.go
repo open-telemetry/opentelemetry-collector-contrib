@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
@@ -156,7 +155,7 @@ func createLogsToMetrics(
 }
 
 type metricDef[K any] struct {
-	condition expr.BoolExpr[K]
+	condition *ottl.ConditionSequence[K]
 	desc      string
 	attrs     []AttributeConfig
 }

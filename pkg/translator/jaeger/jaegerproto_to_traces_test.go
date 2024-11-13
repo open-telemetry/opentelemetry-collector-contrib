@@ -178,7 +178,6 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 }
 
 func TestProtoToTraces(t *testing.T) {
-
 	tests := []struct {
 		name string
 		jb   []*model.Batch
@@ -379,7 +378,6 @@ func TestProtoBatchToInternalTracesWithTwoLibraries(t *testing.T) {
 }
 
 func TestSetInternalSpanStatus(t *testing.T) {
-
 	emptyStatus := ptrace.NewStatus()
 
 	okStatus := ptrace.NewStatus()
