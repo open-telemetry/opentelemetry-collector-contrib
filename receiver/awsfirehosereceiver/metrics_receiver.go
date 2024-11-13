@@ -5,6 +5,7 @@ package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -43,7 +44,7 @@ func newMetricsReceiver(
 	}
 	configuredUnmarshaler := unmarshalers[recordType]
 	if configuredUnmarshaler == nil {
-		return nil, errUnrecognizedRecordType
+		return nil, fmt.Errorf("%w: recordType = %s", errUnrecognizedRecordType, recordType)
 	}
 
 	mc := &metricsConsumer{

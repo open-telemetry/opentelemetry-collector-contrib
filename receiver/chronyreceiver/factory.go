@@ -28,7 +28,8 @@ func newMetricsReceiver(
 	ctx context.Context,
 	set receiver.Settings,
 	rCfg component.Config,
-	consumer consumer.Metrics) (receiver.Metrics, error) {
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	cfg, ok := rCfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("wrong config provided: %w", errInvalidValue)

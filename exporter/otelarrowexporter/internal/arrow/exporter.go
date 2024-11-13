@@ -362,7 +362,6 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 		err := writer.sendAndWait(ctx, errCh, wri)
 		if err != nil && errors.Is(err, ErrStreamRestarting) {
 			continue // an internal retry
-
 		}
 		// result from arrow server (may be nil, may be
 		// permanent, etc.)

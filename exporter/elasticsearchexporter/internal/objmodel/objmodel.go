@@ -372,7 +372,6 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 
 		// increase object level up to current field
 		for {
-
 			// Otel mode serialization
 			if otel {
 				// Check the prefix

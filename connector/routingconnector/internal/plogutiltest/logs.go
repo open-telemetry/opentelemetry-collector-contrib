@@ -20,17 +20,17 @@ import "go.opentelemetry.io/collector/pdata/plog"
 //	        each with log1, log2, log3, log4
 //
 // Each byte in the input string is a unique ID for the corresponding element.
-func NewLogs(rIDs, sIDs, lIDs string) plog.Logs {
+func NewLogs(resourceIDs, scopeIDs, logRecordIDs string) plog.Logs {
 	ld := plog.NewLogs()
-	for ri := 0; ri < len(rIDs); ri++ {
-		r := ld.ResourceLogs().AppendEmpty()
-		r.Resource().Attributes().PutStr("resourceName", "resource"+string(rIDs[ri]))
-		for si := 0; si < len(sIDs); si++ {
-			s := r.ScopeLogs().AppendEmpty()
-			s.Scope().SetName("scope" + string(sIDs[si]))
-			for li := 0; li < len(lIDs); li++ {
-				m := s.LogRecords().AppendEmpty()
-				m.Body().SetStr("log" + string(lIDs[li]))
+	for resourceN := 0; resourceN < len(resourceIDs); resourceN++ {
+		rl := ld.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr("resourceName", "resource"+string(resourceIDs[resourceN]))
+		for scopeN := 0; scopeN < len(scopeIDs); scopeN++ {
+			sl := rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName("scope" + string(scopeIDs[scopeN]))
+			for logRecordN := 0; logRecordN < len(logRecordIDs); logRecordN++ {
+				lr := sl.LogRecords().AppendEmpty()
+				lr.Body().SetStr("log" + string(logRecordIDs[logRecordN]))
 			}
 		}
 	}

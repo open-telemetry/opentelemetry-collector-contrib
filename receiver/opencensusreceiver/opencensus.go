@@ -189,7 +189,6 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 
 // Shutdown is a method to turn off receiving.
 func (ocr *ocReceiver) Shutdown(context.Context) error {
-
 	if ocr.cancel != nil {
 		ocr.cancel()
 	}

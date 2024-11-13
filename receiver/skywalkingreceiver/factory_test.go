@@ -57,7 +57,6 @@ func TestCreateReceiver(t *testing.T) {
 	mReceiver, err := factory.CreateMetrics(context.Background(), set, cfg, metricSink)
 	assert.NoError(t, err, "metric receiver creation failed")
 	assert.NotNil(t, mReceiver, "metric receiver creation failed")
-
 }
 
 func TestCreateReceiverGeneralConfig(t *testing.T) {

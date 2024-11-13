@@ -73,7 +73,6 @@ func (config *Config) Validate() error {
 		return retErr
 	}
 	return cwlogs.ValidateTagsInput(config.Tags)
-
 }
 
 // TODO(jbd): Add ARN role to config.
