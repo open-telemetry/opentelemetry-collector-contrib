@@ -240,22 +240,6 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 		totalBucketLen++
 	}
 
-	if totalBucketLen == 0 {
-		return []dataPoint{{
-			name: dps.metricName,
-			value: &cWMetricHistogram{
-				Values: []float64{},
-				Counts: []float64{},
-				Count:  metric.Count(),
-				Sum:    metric.Sum(),
-				Max:    metric.Max(),
-				Min:    metric.Min(),
-			},
-			labels:      createLabels(metric.Attributes(), instrumentationScopeName),
-			timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
-		}}, true
-	}
-
 	for currentBucketIndex < totalBucketLen {
 		// Create a new dataPointSplit with a capacity of up to splitThreshold buckets
 		capacity := splitThreshold
@@ -289,13 +273,32 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 		// Set collect values from negative buckets and save into split.
 		currentBucketIndex, currentNegativeIndex = collectDatapointsWithNegativeBuckets(&split, metric, currentBucketIndex, currentNegativeIndex)
 
-		// Add the current split to the datapoints list
-		datapoints = append(datapoints, dataPoint{
-			name:        dps.metricName,
-			value:       split.cWMetricHistogram,
+		if split.length > 0 {
+			// Add the current split to the datapoints list
+			datapoints = append(datapoints, dataPoint{
+				name:        dps.metricName,
+				value:       split.cWMetricHistogram,
+				labels:      createLabels(metric.Attributes(), instrumentationScopeName),
+				timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
+			})
+
+		}
+	}
+
+	if len(datapoints) == 0 {
+		return []dataPoint{{
+			name: dps.metricName,
+			value: &cWMetricHistogram{
+				Values: []float64{},
+				Counts: []float64{},
+				Count:  metric.Count(),
+				Sum:    metric.Sum(),
+				Max:    metric.Max(),
+				Min:    metric.Min(),
+			},
 			labels:      createLabels(metric.Attributes(), instrumentationScopeName),
 			timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
-		})
+		}}, true
 	}
 
 	// Override the min and max values of the first and last splits with the raw data of the metric.
