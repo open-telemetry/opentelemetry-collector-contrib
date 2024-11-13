@@ -23,7 +23,173 @@ func TestCompareProfiles(t *testing.T) {
 		compareOptions []CompareProfilesOption
 		withoutOptions error
 		withOptions    error
-	}{}
+	}{
+		{
+			name: "empty",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				return p
+			}(),
+		},
+		{
+			name: "equal",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				l.Attributes().PutStr("scope-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				l.Attributes().PutStr("scope-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
+				return p
+			}(),
+		},
+		{
+			name: "resource order",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				l.Attributes().PutStr("scope-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
+				rl2 := p.ResourceProfiles().AppendEmpty()
+				rl2.Resource().Attributes().PutStr("key2", "value2")
+				l2 := rl2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				l2.Attributes().PutStr("scope-attr2", "value2")
+				l2.SetProfileID(pprofile.NewProfileIDEmpty())
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl2 := p.ResourceProfiles().AppendEmpty()
+				rl2.Resource().Attributes().PutStr("key2", "value2")
+				l2 := rl2.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				l2.Attributes().PutStr("scope-attr2", "value2")
+				l2.SetProfileID(pprofile.NewProfileIDEmpty())
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+				l.Attributes().PutStr("scope-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
+				return p
+			}(),
+			withoutOptions: multierr.Combine(
+				errors.New(`resources are out of order: resource "map[key1:value1]" expected at index 0, found at index 1`),
+				errors.New(`resources are out of order: resource "map[key2:value2]" expected at index 1, found at index 0`),
+			),
+			compareOptions: []CompareProfilesOption{
+				IgnoreResourceProfilesOrder()},
+		},
+		{
+			name: "resource masked attribute",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value2")
+				return p
+			}(),
+			withoutOptions: multierr.Combine(
+				errors.New(`missing expected resource: map[key1:value1]`),
+				errors.New(`unexpected resource: map[key1:value2]`),
+			),
+			compareOptions: []CompareProfilesOption{
+				IgnoreResourceAttributeValue("key1")},
+		},
+		{
+			name: "resource scope order",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty().Scope()
+				l.SetName("scope1")
+				l.Attributes().PutStr("scope-attr1", "value1")
+				l2 := rl.ScopeProfiles().AppendEmpty().Scope()
+				l2.Attributes().PutStr("scope-attr2", "value2")
+				l2.SetName("scope2")
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l2 := rl.ScopeProfiles().AppendEmpty().Scope()
+				l2.Attributes().PutStr("scope-attr2", "value2")
+				l2.SetName("scope2")
+				l := rl.ScopeProfiles().AppendEmpty().Scope()
+				l.Attributes().PutStr("scope-attr1", "value1")
+				l.SetName("scope1")
+				return p
+			}(),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scopes are out of order: scope scope1 expected at index 0, found at index 1; resource "map[key1:value1]": scopes are out of order: scope scope2 expected at index 1, found at index 0`),
+			compareOptions: []CompareProfilesOption{
+				IgnoreScopeProfilesOrder()},
+		},
+		{
+			name: "mask scope attribute",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty().Scope()
+				l.SetName("scope1")
+				l.Attributes().PutStr("scope-attr1", "value1")
+				l2 := rl.ScopeProfiles().AppendEmpty().Scope()
+				l2.Attributes().PutStr("scope-attr2", "value2")
+				l2.SetName("scope2")
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty().Scope()
+				l.Attributes().PutStr("scope-attr1", "value12")
+				l.SetName("scope1")
+				l2 := rl.ScopeProfiles().AppendEmpty().Scope()
+				l2.Attributes().PutStr("scope-attr2", "value22")
+				l2.SetName("scope2")
+				return p
+			}(),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": attributes don't match expected: map[scope-attr1:value1], actual: map[scope-attr1:value12]; resource "map[key1:value1]": scope "scope2": attributes don't match expected: map[scope-attr2:value2], actual: map[scope-attr2:value22]`),
+			compareOptions: []CompareProfilesOption{
+				IgnoreScopeAttributeValue("scope-attr2"),
+				IgnoreScopeAttributeValue("scope-attr1"),
+			},
+		},
+
+		// TODO
+		// ignore scope attribute value
+		// ignore container order
+
+		// ignore profilecontainer attribute value
+		// ignore profilecontainer attribute order
+		// ignore profilecontainer timestamp value
+
+		// ignore profile attribute value
+		// ignore profile attribute order
+		// ignore profile timestamp value
+
+	}
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
@@ -31,7 +197,7 @@ func TestCompareProfiles(t *testing.T) {
 			if tc.withoutOptions == nil {
 				assert.NoError(t, err)
 			} else {
-				require.EqualError(t, tc.withoutOptions, err.Error())
+				require.EqualError(t, err, tc.withoutOptions.Error())
 			}
 
 			if tc.compareOptions == nil {
@@ -61,7 +227,7 @@ func TestCompareResourceProfiles(t *testing.T) {
 				rl := pprofile.NewResourceProfiles()
 				rl.Resource().Attributes().PutStr("key1", "value1")
 				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr1", "value1")
+				l.Attributes().PutStr("scope-attr1", "value1")
 				l.SetProfileID(pprofile.NewProfileIDEmpty())
 				return rl
 			}(),
@@ -69,7 +235,7 @@ func TestCompareResourceProfiles(t *testing.T) {
 				rl := pprofile.NewResourceProfiles()
 				rl.Resource().Attributes().PutStr("key1", "value1")
 				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr1", "value1")
+				l.Attributes().PutStr("scope-attr1", "value1")
 				l.SetProfileID(pprofile.NewProfileIDEmpty())
 				return rl
 			}(),
@@ -139,7 +305,7 @@ func TestCompareScopeProfiles(t *testing.T) {
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetName("scope-name")
 				l := sl.Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr1", "value1")
+				l.Attributes().PutStr("scope-attr1", "value1")
 				l.SetProfileID(pprofile.NewProfileIDEmpty())
 				return sl
 			}(),
@@ -147,7 +313,7 @@ func TestCompareScopeProfiles(t *testing.T) {
 				sl := pprofile.NewScopeProfiles()
 				sl.Scope().SetName("scope-name")
 				l := sl.Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr1", "value1")
+				l.Attributes().PutStr("scope-attr1", "value1")
 				l.SetProfileID(pprofile.NewProfileIDEmpty())
 				return sl
 			}(),
@@ -234,26 +400,26 @@ func TestCompareScopeProfiles(t *testing.T) {
 			expected: func() pprofile.ScopeProfiles {
 				sl := pprofile.NewScopeProfiles()
 				l := sl.Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr1", "value1")
+				l.Attributes().PutStr("scope-attr1", "value1")
 				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
 				l = sl.Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr2", "value2")
+				l.Attributes().PutStr("scope-attr2", "value2")
 				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
 				return sl
 			}(),
 			actual: func() pprofile.ScopeProfiles {
 				sl := pprofile.NewScopeProfiles()
 				l := sl.Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr2", "value2")
+				l.Attributes().PutStr("scope-attr2", "value2")
 				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
 				l = sl.Profiles().AppendEmpty()
-				l.Attributes().PutStr("profile-attr1", "value1")
+				l.Attributes().PutStr("scope-attr1", "value1")
 				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111113")))
 				return sl
 			}(),
 			err: multierr.Combine(
-				errors.New(`profile containers are out of order: profile container "map[profile-attr1:value1]" expected at index 0, found at index 1`),
-				errors.New(`profile containers are out of order: profile container "map[profile-attr2:value2]" expected at index 1, found at index 0`),
+				errors.New(`profile containers are out of order: profile container "map[scope-attr1:value1]" expected at index 0, found at index 1`),
+				errors.New(`profile containers are out of order: profile container "map[scope-attr2:value2]" expected at index 1, found at index 0`),
 			),
 		},
 	}
