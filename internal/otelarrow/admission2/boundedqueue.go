@@ -54,24 +54,28 @@ func NewBoundedQueue(ts component.TelemetrySettings, maxLimitAdmit, maxLimitWait
 		tracer:        ts.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
 	}
 	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(ts,
-		internalmetadata.WithOtelarrowAdmissionInFlightBytesCallback(func() int64 {
-			// Note, see https://github.com/open-telemetry/otel-arrow/issues/270
-			bq.lock.Lock()
-			defer bq.lock.Unlock()
-			return int64(bq.currentAdmitted)
-		}),
-		internalmetadata.WithOtelarrowAdmissionWaitingBytesCallback(func() int64 {
-			// Note, see https://github.com/open-telemetry/otel-arrow/issues/270
-			bq.lock.Lock()
-			defer bq.lock.Unlock()
-			return int64(bq.currentWaiting)
-		}),
+		internalmetadata.WithOtelarrowAdmissionInFlightBytesCallback(bq.inFlightCB),
+		internalmetadata.WithOtelarrowAdmissionWaitingBytesCallback(bq.waitingCB),
 	)
 	if err != nil {
 		return nil, err
 	}
 	bq.telemetryBuilder = telemetryBuilder
 	return bq, nil
+}
+
+func (bq *BoundedQueue) inFlightCB() int64 {
+	// Note, see https://github.com/open-telemetry/otel-arrow/issues/270
+	bq.lock.Lock()
+	defer bq.lock.Unlock()
+	return int64(bq.currentAdmitted)
+}
+
+func (bq *BoundedQueue) waitingCB() int64 {
+	// Note, see https://github.com/open-telemetry/otel-arrow/issues/270
+	bq.lock.Lock()
+	defer bq.lock.Unlock()
+	return int64(bq.currentWaiting)
 }
 
 // acquireOrGetWaiter returns with three distinct conditions depending
