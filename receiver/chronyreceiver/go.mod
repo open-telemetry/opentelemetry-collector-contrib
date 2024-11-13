@@ -7,13 +7,13 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.113.0
+	go.opentelemetry.io/collector/component v0.113.1-0.20241113205527-54adb32b4964
 	go.opentelemetry.io/collector/confmap v1.19.1-0.20241113201924-75a77b73690d
-	go.opentelemetry.io/collector/consumer v0.113.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
+	go.opentelemetry.io/collector/consumer v0.113.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/consumer/consumertest v0.113.1-0.20241113205527-54adb32b4964
 	go.opentelemetry.io/collector/pdata v1.19.1-0.20241113205527-54adb32b4964
-	go.opentelemetry.io/collector/receiver v0.113.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
+	go.opentelemetry.io/collector/receiver v0.113.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/receiver/receivertest v0.113.1-0.20241113205527-54adb32b4964
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -37,12 +37,12 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.113.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.113.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.113.0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.113.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/pipeline v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.113.1-0.20241113205527-54adb32b4964 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.31.0 // indirect

@@ -4,15 +4,15 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.113.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.113.0
+	go.opentelemetry.io/collector/component v0.113.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/config/configtelemetry v0.113.1-0.20241113205527-54adb32b4964
 	go.opentelemetry.io/collector/confmap v1.19.1-0.20241113201924-75a77b73690d
-	go.opentelemetry.io/collector/connector v0.113.0
-	go.opentelemetry.io/collector/connector/connectortest v0.113.0
-	go.opentelemetry.io/collector/consumer v0.113.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
+	go.opentelemetry.io/collector/connector v0.113.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/connector/connectortest v0.113.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/consumer v0.113.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/consumer/consumertest v0.113.1-0.20241113205527-54adb32b4964
 	go.opentelemetry.io/collector/pdata v1.19.1-0.20241113205527-54adb32b4964
-	go.opentelemetry.io/collector/pipeline v0.113.0
+	go.opentelemetry.io/collector/pipeline v0.113.1-0.20241113205527-54adb32b4964
 	go.opentelemetry.io/otel/metric v1.32.0
 	go.opentelemetry.io/otel/sdk/metric v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
@@ -39,11 +39,11 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/connector/connectorprofiles v0.113.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 // indirect
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.113.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
-	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.113.0 // indirect
+	go.opentelemetry.io/collector/connector/connectorprofiles v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.113.1-0.20241113201924-75a77b73690d // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.113.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/pipeline/pipelineprofiles v0.113.1-0.20241113205527-54adb32b4964 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
