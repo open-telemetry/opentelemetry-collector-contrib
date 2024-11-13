@@ -685,7 +685,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 	}{
 		{
 			name:          "summary with start time",
-			isGateEnabled: true,
+			isGateEnabled: false,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -731,7 +731,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 		},
 		{
 			name:          "summary without start time",
-			isGateEnabled: true,
+			isGateEnabled: false,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -766,8 +766,8 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name:          "summary with exportCreatedMetricGate disabled",
-			isGateEnabled: false,
+			name:          "summary with exportCreatedMetricGate enabled",
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_summary")
@@ -837,7 +837,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 	}{
 		{
 			name:          "histogram with start time",
-			isGateEnabled: true,
+			isGateEnabled: false,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -884,7 +884,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 		},
 		{
 			name:          "histogram without start time",
-			isGateEnabled: true,
+			isGateEnabled: false,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
@@ -920,8 +920,8 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name:          "histogram with exportCreatedMetricGate disabled",
-			isGateEnabled: false,
+			name:          "histogram with exportCreatedMetricGate enabled",
+			isGateEnabled: true,
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_hist")
