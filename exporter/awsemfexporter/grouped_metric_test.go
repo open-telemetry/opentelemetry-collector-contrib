@@ -442,7 +442,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 			idx++
 		}
 	})
-
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {

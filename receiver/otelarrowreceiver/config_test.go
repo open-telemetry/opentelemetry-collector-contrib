@@ -85,7 +85,6 @@ func TestUnmarshalConfig(t *testing.T) {
 				WaiterLimit:     100,
 			},
 		}, cfg)
-
 }
 
 // Tests that a deprecated config validation sets RequestLimitMiB and WaiterLimit in the correct config block.

@@ -22,7 +22,7 @@ type Protocols struct {
 type AdmissionConfig struct {
 	// RequestLimitMiB limits the number of requests that are received by the stream based on
 	// uncompressed request size. Request size is used to control how much traffic we admit
-	// for processing.
+	// for processing.  When this field is zero, admission control is disabled.
 	RequestLimitMiB uint64 `mapstructure:"request_limit_mib"`
 
 	// WaiterLimit is the limit on the number of waiters waiting to be processed and consumed.
@@ -56,8 +56,10 @@ type Config struct {
 	Admission AdmissionConfig `mapstructure:"admission"`
 }
 
-var _ component.Config = (*Config)(nil)
-var _ component.ConfigValidator = (*ArrowConfig)(nil)
+var (
+	_ component.Config          = (*Config)(nil)
+	_ component.ConfigValidator = (*ArrowConfig)(nil)
+)
 
 func (cfg *ArrowConfig) Validate() error {
 	if err := cfg.Zstd.Validate(); err != nil {

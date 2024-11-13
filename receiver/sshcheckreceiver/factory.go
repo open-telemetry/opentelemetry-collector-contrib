@@ -38,7 +38,6 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotSSHCheck

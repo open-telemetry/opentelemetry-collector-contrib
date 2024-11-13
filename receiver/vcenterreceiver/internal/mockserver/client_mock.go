@@ -53,7 +53,7 @@ func MockServer(t *testing.T, useTLS bool) *httptest.Server {
 
 		body, err := routeBody(t, requestType, sr.Envelope.Body)
 		if errors.Is(err, errNotFound) {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -96,7 +96,7 @@ func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
 
-	var objectSetArray = false
+	objectSetArray := false
 	objectSet, ok := specSet["objectSet"].(map[string]any)
 	if !ok {
 		objectSetArray = true

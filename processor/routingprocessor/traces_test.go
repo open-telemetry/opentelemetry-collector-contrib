@@ -497,7 +497,6 @@ func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	// verify
 	assert.Len(t, defaultExp.AllTraces(), 1)
 	assert.Empty(t, firstExp.AllTraces())
-
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {
