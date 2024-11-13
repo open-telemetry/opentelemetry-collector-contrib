@@ -346,13 +346,13 @@ func CompareProfileValueTypeSlice(expected, actual pprofile.ValueTypeSlice) erro
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected valueType "unit: %d, type: %d, aggregationTemporality: %d`, elr.Unit(), elr.Type(), elr.AggregationTemporality()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected valueType "unit: %d, type: %d, aggregationTemporality: %d"`, elr.Unit(), elr.Type(), elr.AggregationTemporality()))
 		}
 	}
 
 	for i := 0; i < numValueTypes; i++ {
 		if _, ok := matchingValueTypes[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf(`unexpected valueType "unit: %d, type: %d, aggregationTemporality: %d`,
+			errs = multierr.Append(errs, fmt.Errorf(`unexpected valueType "unit: %d, type: %d, aggregationTemporality: %d"`,
 				actual.At(i).Unit(), actual.At(i).Type(), actual.At(i).AggregationTemporality()))
 		}
 	}
@@ -407,20 +407,20 @@ func CompareProfileSampleSlice(expected, actual pprofile.SampleSlice) error {
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`samples are out of order: sample "%v" expected at index %d, found at index %d`,
+						fmt.Errorf(`samples are out of order: sample "attributes: %v" expected at index %d, found at index %d`,
 							elr.Attributes().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected sample: %v`, elr.Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected sample "attributes: %v"`, elr.Attributes().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numSlice; i++ {
 		if _, ok := matchingItems[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected sample: %v",
+			errs = multierr.Append(errs, fmt.Errorf(`unexpected sample "attributes: %v"`,
 				actual.At(i).Attributes().AsRaw()))
 		}
 	}
@@ -433,7 +433,7 @@ func CompareProfileSampleSlice(expected, actual pprofile.SampleSlice) error {
 	}
 
 	for alr, elr := range matchingItems {
-		errPrefix := fmt.Sprintf(`sample "%v"`, elr.Attributes().AsRaw())
+		errPrefix := fmt.Sprintf(`sample "attributes: %v"`, elr.Attributes().AsRaw())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileSample(elr, alr)))
 	}
 
@@ -717,7 +717,7 @@ func CompareProfileLocationSlice(expected, actual pprofile.LocationSlice) error 
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`location is out of order: location "attributes: %v, id: %d" expected at index %d, found at index %d`,
+						fmt.Errorf(`locations are out of order: location "attributes: %v, id: %d" expected at index %d, found at index %d`,
 							elr.Attributes().AsRaw(), elr.ID(), e, a))
 				}
 				break

@@ -62,6 +62,7 @@ func TestCompareResourceProfiles(t *testing.T) {
 				rl.Resource().Attributes().PutStr("key1", "value1")
 				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 				l.Attributes().PutStr("profile-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
 				return rl
 			}(),
 			actual: func() pprofile.ResourceProfiles {
@@ -69,6 +70,7 @@ func TestCompareResourceProfiles(t *testing.T) {
 				rl.Resource().Attributes().PutStr("key1", "value1")
 				l := rl.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 				l.Attributes().PutStr("profile-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
 				return rl
 			}(),
 		},
@@ -130,7 +132,131 @@ func TestCompareScopeProfiles(t *testing.T) {
 		expected pprofile.ScopeProfiles
 		actual   pprofile.ScopeProfiles
 		err      error
-	}{}
+	}{
+		{
+			name: "equal",
+			expected: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().SetName("scope-name")
+				l := sl.Profiles().AppendEmpty()
+				l.Attributes().PutStr("profile-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
+				return sl
+			}(),
+			actual: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().SetName("scope-name")
+				l := sl.Profiles().AppendEmpty()
+				l.Attributes().PutStr("profile-attr1", "value1")
+				l.SetProfileID(pprofile.NewProfileIDEmpty())
+				return sl
+			}(),
+		},
+		{
+			name: "scope-name-mismatch",
+			expected: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().SetName("scope-name")
+				return sl
+			}(),
+			actual: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().SetName("scope-name-2")
+				return sl
+			}(),
+			err: errors.New("name doesn't match expected: scope-name, actual: scope-name-2"),
+		},
+		{
+			name: "scope-version-mismatch",
+			expected: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().SetVersion("scope-version")
+				return sl
+			}(),
+			actual: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().SetVersion("scope-version-2")
+				return sl
+			}(),
+			err: errors.New("version doesn't match expected: scope-version, actual: scope-version-2"),
+		},
+		{
+			name: "scope-attributes-mismatch",
+			expected: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
+				sl.Scope().Attributes().PutStr("scope-attr2", "value2")
+				return sl
+			}(),
+			actual: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Scope().Attributes().PutStr("scope-attr1", "value1")
+				sl.Scope().SetDroppedAttributesCount(1)
+				return sl
+			}(),
+			err: multierr.Combine(
+				errors.New("attributes don't match expected: map[scope-attr1:value1 scope-attr2:value2], "+
+					"actual: map[scope-attr1:value1]"),
+				errors.New("dropped attributes count doesn't match expected: 0, actual: 1"),
+			),
+		},
+		{
+			name: "scope-schema-url-mismatch",
+			expected: func() pprofile.ScopeProfiles {
+				rl := pprofile.NewScopeProfiles()
+				rl.SetSchemaUrl("schema-url")
+				return rl
+			}(),
+			actual: func() pprofile.ScopeProfiles {
+				rl := pprofile.NewScopeProfiles()
+				rl.SetSchemaUrl("schema-url-2")
+				return rl
+			}(),
+			err: errors.New("schema url doesn't match expected: schema-url, actual: schema-url-2"),
+		},
+		{
+			name: "profiles-number-mismatch",
+			expected: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Profiles().AppendEmpty()
+				sl.Profiles().AppendEmpty()
+				return sl
+			}(),
+			actual: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				sl.Profiles().AppendEmpty()
+				return sl
+			}(),
+			err: errors.New("number of profile containers doesn't match expected: 2, actual: 1"),
+		},
+		{
+			name: "profile-records-order-mismatch",
+			expected: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				l := sl.Profiles().AppendEmpty()
+				l.Attributes().PutStr("profile-attr1", "value1")
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				l = sl.Profiles().AppendEmpty()
+				l.Attributes().PutStr("profile-attr2", "value2")
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				return sl
+			}(),
+			actual: func() pprofile.ScopeProfiles {
+				sl := pprofile.NewScopeProfiles()
+				l := sl.Profiles().AppendEmpty()
+				l.Attributes().PutStr("profile-attr2", "value2")
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				l = sl.Profiles().AppendEmpty()
+				l.Attributes().PutStr("profile-attr1", "value1")
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111113")))
+				return sl
+			}(),
+			err: multierr.Combine(
+				errors.New(`profile containers are out of order: profile container "map[profile-attr1:value1]" expected at index 0, found at index 1`),
+				errors.New(`profile containers are out of order: profile container "map[profile-attr2:value2]" expected at index 1, found at index 0`),
+			),
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.err, CompareScopeProfiles(test.expected, test.actual))
@@ -172,7 +298,164 @@ func TestCompareProfileValueTypeSlice(t *testing.T) {
 		expected pprofile.ValueTypeSlice
 		actual   pprofile.ValueTypeSlice
 		err      error
-	}{}
+	}{
+		{
+			name: "empty",
+			expected: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				return l
+			}(),
+			actual: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				return l
+			}(),
+		},
+		{
+			name: "equal",
+			expected: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(1)
+				return l
+			}(),
+			actual: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(1)
+				return l
+			}(),
+		},
+		{
+			name: "equal wrong order",
+			expected: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(1)
+				return l
+			}(),
+			actual: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(1)
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`valueTypes are out of order: valueType "unit: 1, type: 1, aggregationTemporality: 1" expected at index 0, found at index 1`),
+				errors.New(`valueTypes are out of order: valueType "unit: 2, type: 2, aggregationTemporality: 1" expected at index 1, found at index 0`),
+			),
+		},
+		{
+			name: "wrong length",
+			expected: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				return l
+			}(),
+			actual: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(1)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`number of valueTypes doesn't match expected: 1, actual: 2`),
+			),
+		},
+		{
+			name: "not equal - does not match expected",
+			expected: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(1)
+				return l
+			}(),
+			actual: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(2)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`expected valueType "unit: 2, type: 2, aggregationTemporality: 1",got "unit: 2, type: 2, aggregationTemporality: 2"`),
+			),
+		},
+		{
+			name: "not equal - missing",
+			expected: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(2)
+				i2.SetUnit(2)
+				i2.SetAggregationTemporality(1)
+				return l
+			}(),
+			actual: func() pprofile.ValueTypeSlice {
+				l := pprofile.NewValueTypeSlice()
+				i1 := l.AppendEmpty()
+				i1.SetType(1)
+				i1.SetUnit(1)
+				i1.SetAggregationTemporality(1)
+				i2 := l.AppendEmpty()
+				i2.SetType(3)
+				i2.SetUnit(3)
+				i2.SetAggregationTemporality(1)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`missing expected valueType "unit: 2, type: 2, aggregationTemporality: 1"`),
+				errors.New(`unexpected valueType "unit: 3, type: 3, aggregationTemporality: 1"`),
+			),
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.err, CompareProfileValueTypeSlice(test.expected, test.actual))
@@ -186,7 +469,165 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 		expected pprofile.SampleSlice
 		actual   pprofile.SampleSlice
 		err      error
-	}{}
+	}{
+		{
+			name: "empty",
+			expected: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				return l
+			}(),
+			actual: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				return l
+			}(),
+		},
+		{
+			name: "equal",
+			expected: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(2)
+				i2.SetLocationsLength(2)
+				return l
+			}(),
+			actual: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(2)
+				i2.SetLocationsLength(2)
+				return l
+			}(),
+		},
+		{
+			name: "equal wrong order",
+			expected: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(2)
+				i2.SetLocationsLength(2)
+				return l
+			}(),
+			actual: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(2)
+				i2.SetLocationsLength(2)
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`samples are out of order: sample "attributes: [1 2]" expected at index 0, found at index 1`),
+				errors.New(`samples are out of order: sample "attributes: [1 2 3]" expected at index 1, found at index 0`),
+			),
+		},
+		{
+			name: "wrong length",
+			expected: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				return l
+			}(),
+			actual: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(2)
+				i2.SetLocationsLength(2)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`number of samples doesn't match expected: 1, actual: 2`),
+			),
+		},
+		{
+			name: "not equal - does not match expected",
+			expected: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(2)
+				i2.SetLocationsLength(2)
+				return l
+			}(),
+			actual: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(3)
+				i2.SetLocationsLength(3)
+				return l
+			}(),
+			err: multierr.Combine(
+				fmt.Errorf(`sample "attributes: [1 2 3]": %w`, fmt.Errorf(`expected locationLenght '2', got '3'`)),
+				fmt.Errorf(`sample "attributes: [1 2 3]": %w`, fmt.Errorf(`expected link '2', got '3'`)),
+			),
+		},
+		{
+			name: "not equal - missing",
+			expected: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3)
+				i2.SetLink(2)
+				i2.SetLocationsLength(2)
+				return l
+			}(),
+			actual: func() pprofile.SampleSlice {
+				l := pprofile.NewSampleSlice()
+				i1 := l.AppendEmpty()
+				i1.SetLink(1)
+				i1.SetLocationsLength(1)
+				i1.Attributes().Append(1, 2)
+				i2 := l.AppendEmpty()
+				i2.Attributes().Append(1, 2, 3, 5)
+				i2.SetLink(3)
+				i2.SetLocationsLength(3)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`missing expected sample "attributes: [1 2 3]"`),
+				errors.New(`unexpected sample "attributes: [1 2 3 5]"`),
+			),
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.err, CompareProfileSampleSlice(test.expected, test.actual))
@@ -200,7 +641,73 @@ func TestCompareProfileSample(t *testing.T) {
 		expected pprofile.Sample
 		actual   pprofile.Sample
 		err      error
-	}{}
+	}{
+		{
+			name: "empty",
+			expected: func() pprofile.Sample {
+				l := pprofile.NewSample()
+				return l
+			}(),
+			actual: func() pprofile.Sample {
+				l := pprofile.NewSample()
+				return l
+			}(),
+		},
+		{
+			name: "equal",
+			expected: func() pprofile.Sample {
+				l := pprofile.NewSample()
+				l.SetLocationsStartIndex(1)
+				l.SetLocationsLength(1)
+				l.SetStacktraceIdIndex(1)
+				l.LocationIndex().Append(1, 2)
+				l.Attributes().Append(1, 2)
+				l.Label().AppendEmpty().SetKey(1)
+				return l
+			}(),
+			actual: func() pprofile.Sample {
+				l := pprofile.NewSample()
+				l.SetLocationsStartIndex(1)
+				l.SetLocationsLength(1)
+				l.SetStacktraceIdIndex(1)
+				l.LocationIndex().Append(1, 2)
+				l.Attributes().Append(1, 2)
+				l.Label().AppendEmpty().SetKey(1)
+				return l
+			}(),
+		},
+		{
+			name: "not equal",
+			expected: func() pprofile.Sample {
+				l := pprofile.NewSample()
+				l.SetLocationsStartIndex(1)
+				l.SetLocationsLength(1)
+				l.SetStacktraceIdIndex(1)
+				l.LocationIndex().Append(1, 2)
+				l.Attributes().Append(1, 2)
+				l.Label().AppendEmpty().SetKey(1)
+				return l
+			}(),
+			actual: func() pprofile.Sample {
+				l := pprofile.NewSample()
+				l.SetLocationsStartIndex(2)
+				l.SetLocationsLength(3)
+				l.SetStacktraceIdIndex(3)
+				l.LocationIndex().Append(1, 2)
+				l.Attributes().Append(1, 2, 3)
+				l.Label().AppendEmpty().SetKey(2)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`expected locationStartIndex '1', got '2'`),
+				errors.New(`expected locationLenght '1', got '3'`),
+				errors.New(`expected stacktraceIdIndex '1', got '3'`),
+				errors.New(`expected attributes '[1 2]', got '[1 2 3]'`),
+				fmt.Errorf(`labelSlice of sample with attributes "[1 2]": %w`, fmt.Errorf(`missing expected label "key: 1"`)),
+				fmt.Errorf(`labelSlice of sample with attributes "[1 2]": %w`, fmt.Errorf(`unexpected label "key: 2"`)),
+			),
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.err, CompareProfileSample(test.expected, test.actual))
@@ -773,8 +1280,8 @@ func TestCompareProfileLocationSlice(t *testing.T) {
 				return l
 			}(),
 			err: multierr.Combine(
-				errors.New(`location is out of order: location "attributes: [1 2], id: 1" expected at index 0, found at index 1`),
-				errors.New(`location is out of order: location "attributes: [1 2 3], id: 2" expected at index 1, found at index 0`),
+				errors.New(`locations are out of order: location "attributes: [1 2], id: 1" expected at index 0, found at index 1`),
+				errors.New(`locations are out of order: location "attributes: [1 2 3], id: 2" expected at index 1, found at index 0`),
 			),
 		},
 		{
