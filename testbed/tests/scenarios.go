@@ -563,7 +563,6 @@ func ScenarioMemoryLimiterHit(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	fmt.Println(configStr)
 	configCleanup, err := agentProc.PrepareConfig(configStr)
 	require.NoError(t, err)
 	defer configCleanup()
