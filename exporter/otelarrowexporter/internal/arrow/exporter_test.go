@@ -579,7 +579,6 @@ func TestArrowExporterStreaming(t *testing.T) {
 func TestArrowExporterHeaders(t *testing.T) {
 	for _, withDeadline := range []bool{true, false} {
 		t.Run(fmt.Sprint("with_deadline=", withDeadline), func(t *testing.T) {
-
 			tc := newSingleStreamMetadataTestCase(t)
 			channel := newHealthyTestChannel()
 
