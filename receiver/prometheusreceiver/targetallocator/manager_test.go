@@ -305,34 +305,42 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 					},
 					"/jobs/job2/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 					},
 				},
@@ -360,11 +368,13 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"__meta_prometheus_job": "node",
 						},
 					},
-					"job2": {Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+					"job2": {
+						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "alertmanager",
-						}},
+						},
+					},
 				},
 			},
 		},
@@ -398,34 +408,42 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
+							{
+								Targets: []string{"localhost:9090", "10.0.10.3:9100", "10.0.10.4:9100", "10.0.10.5:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
 									"test":                  "aTest",
-								}},
+								},
+							},
 						}},
 					},
 					"/jobs/job2/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter": "london",
-								}},
+								},
+							},
 						}},
 					},
 				},
@@ -449,10 +467,12 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"test":                  "aTest",
 						},
 					},
-					"job2": {Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
+					"job2": {
+						Targets: []string{"10.0.40.2:9100", "10.0.40.3:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter": "london",
-						}},
+						},
+					},
 				},
 			},
 		},
@@ -511,34 +531,42 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 					},
 					"/jobs/job3/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"10.0.40.3:9100"},
+							{
+								Targets: []string{"10.0.40.3:9100"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "alertmanager",
-								}},
+								},
+							},
 						}},
 					},
 				},
@@ -561,11 +589,13 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							"__meta_prometheus_job": "node",
 						},
 					},
-					"job3": {Targets: []string{"10.0.40.3:9100"},
+					"job3": {
+						Targets: []string{"10.0.40.3:9100"},
 						Labels: map[model.LabelName]model.LabelValue{
 							"__meta_datacenter":     "london",
 							"__meta_prometheus_job": "alertmanager",
-						}},
+						},
+					},
 				},
 			},
 		},
@@ -640,18 +670,22 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					},
 					"/jobs/job1/targets": {
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: []hTTPSDResponse{
-							{Targets: []string{"localhost:9090"},
+							{
+								Targets: []string{"localhost:9090"},
 								Labels: map[model.LabelName]model.LabelValue{
 									"__meta_datacenter":     "london",
 									"__meta_prometheus_job": "node",
-								}},
+								},
+							},
 						}},
 					},
 				},

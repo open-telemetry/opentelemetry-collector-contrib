@@ -25,9 +25,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const expectedFile = "./testdata/e2e/expected.yaml"
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
-const testObjectsDir = "./testdata/e2e/testobjects/"
+const (
+	expectedFile   = "./testdata/e2e/expected.yaml"
+	testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+	testObjectsDir = "./testdata/e2e/testobjects/"
+)
 
 // TestE2E tests the k8s cluster receiver with a real k8s cluster.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
@@ -37,7 +39,6 @@ const testObjectsDir = "./testdata/e2e/testobjects/"
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E(t *testing.T) {
-
 	var expected pmetric.Metrics
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
