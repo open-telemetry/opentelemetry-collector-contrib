@@ -21,7 +21,7 @@ const (
 
 	defaultMemoryLimitMiB  = 128
 	defaultRequestLimitMiB = 128
-	defaultWaitingLimitMiB = 1000
+	defaultWaitingLimitMiB = 32
 )
 
 // NewFactory creates a new OTel-Arrow receiver factory.
