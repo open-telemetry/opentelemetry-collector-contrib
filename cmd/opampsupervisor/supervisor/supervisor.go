@@ -878,7 +878,6 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 			s.logger.Error("Could not setup own metrics", zap.Error(err))
 			return
 		}
-
 	}
 	s.agentConfigOwnMetricsSection.Store(cfg.String())
 
@@ -1274,7 +1273,6 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
-
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))

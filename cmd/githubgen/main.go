@@ -112,7 +112,6 @@ func loadMetadata(filePath string) (metadata, error) {
 }
 
 func run(folder string, allowlistFilePath string, generators []generator) error {
-
 	components := map[string]metadata{}
 	var foldersList []string
 	maxLength := 0

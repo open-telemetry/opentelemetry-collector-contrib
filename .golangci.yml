@@ -166,6 +166,7 @@ linters:
     - unused
     - usestdlibvars
     - wastedassign
+    - whitespace
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
