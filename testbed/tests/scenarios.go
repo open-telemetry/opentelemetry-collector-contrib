@@ -590,7 +590,7 @@ func ScenarioMemoryLimiterHit(
 
 	var timer *time.Timer
 
-	// check for "Memory usage is above hard limit"
+	// check for "Memory usage is above soft limit"
 	tc.WaitForN(func() bool {
 		logFound := tc.AgentLogsContains("Memory usage is above soft limit. Refusing data.")
 		if !logFound {
