@@ -216,7 +216,6 @@ func parseGlobalExpr[K any](
 	conditions []string,
 	pc parserCollection,
 	standardFuncs map[string]ottl.Factory[K]) (expr.BoolExpr[K], error) {
-
 	if len(conditions) > 0 {
 		return boolExprFunc(conditions, standardFuncs, pc.errorMode, pc.settings)
 	}

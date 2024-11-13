@@ -167,12 +167,13 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				intPt.SetTimestamp(pcommon.Timestamp(nanos))
 				return metrics
 			}(),
-			hecConfig: &Config{HecToOtelAttrs: splunk.HecToOtelAttrs{
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Host:       "myhost",
-			},
+			hecConfig: &Config{
+				HecToOtelAttrs: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
+				},
 			},
 		},
 		{

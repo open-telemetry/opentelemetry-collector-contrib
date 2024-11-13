@@ -569,8 +569,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	assert.Empty(t, kubernetesBlob)
 }
 
-type mockPodClient struct {
-}
+type mockPodClient struct{}
 
 func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
 	pod := getBaseTestPodInfo()

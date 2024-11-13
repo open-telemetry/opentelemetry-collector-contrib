@@ -358,7 +358,6 @@ func (p *connectorImp) resetState() {
 				}
 			}
 		})
-
 	}
 }
 
@@ -410,7 +409,6 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					h := histograms.GetOrCreate(key, attributes)
 					p.addExemplar(span, duration, h)
 					h.Observe(duration)
-
 				}
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)

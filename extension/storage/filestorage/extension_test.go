@@ -69,7 +69,6 @@ func TestExtensionIntegrity(t *testing.T) {
 
 		// Repeatedly thrash client
 		for j := 0; j < 100; j++ {
-
 			// Make sure my values are still mine
 			for i := 0; i < len(keys); i++ {
 				v, err := c.Get(ctx, keys[i])
@@ -143,7 +142,6 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 	data, err = client.Get(ctx, "key")
 	require.NoError(t, err)
 	require.Nil(t, data)
-
 }
 
 func TestTwoClientsWithDifferentNames(t *testing.T) {

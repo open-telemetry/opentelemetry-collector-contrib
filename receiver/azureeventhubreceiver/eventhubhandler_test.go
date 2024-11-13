@@ -22,8 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-type mockHubWrapper struct {
-}
+type mockHubWrapper struct{}
 
 func (m mockHubWrapper) GetRuntimeInformation(_ context.Context) (*eventhub.HubRuntimeInformation, error) {
 	return &eventhub.HubRuntimeInformation{

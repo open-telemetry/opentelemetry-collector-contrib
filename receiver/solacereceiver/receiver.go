@@ -6,7 +6,6 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -283,7 +282,7 @@ flowControlLoop:
 				case <-ctx.Done():
 					s.settings.Logger.Info("Context was cancelled while attempting redelivery, exiting")
 					disposition = nil // do not make any network requests, we are shutting down
-					return fmt.Errorf("delayed retry interrupted by shutdown request")
+					return errors.New("delayed retry interrupted by shutdown request")
 				}
 			} else { // error is permanent, we want to accept the message and increment the number of dropped messages
 				s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))

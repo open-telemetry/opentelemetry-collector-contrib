@@ -46,7 +46,6 @@ func convertIngressToEndpoints(idNamespace string, ingress *v1.Ingress) []observ
 				})
 			}
 		}
-
 	}
 
 	return endpoints
