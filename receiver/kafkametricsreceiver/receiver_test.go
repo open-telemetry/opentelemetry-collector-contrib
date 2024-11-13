@@ -32,7 +32,9 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
 	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
-		return nil, nil
+		return scraperhelper.NewScraper(brokersScraperType, func(context.Context) (pmetric.Metrics, error) {
+			return pmetric.Metrics{}, nil
+		})
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
