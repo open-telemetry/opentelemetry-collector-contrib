@@ -10,9 +10,9 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.113.0
 	go.opentelemetry.io/collector/config/configgrpc v0.113.0
 	go.opentelemetry.io/collector/config/confighttp v0.113.0
-	go.opentelemetry.io/collector/config/confignet v1.19.0
-	go.opentelemetry.io/collector/config/configtls v1.19.0
-	go.opentelemetry.io/collector/confmap v1.19.0
+	go.opentelemetry.io/collector/config/confignet v1.19.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/config/configtls v1.19.1-0.20241113205527-54adb32b4964
+	go.opentelemetry.io/collector/confmap v1.19.1-0.20241113201924-75a77b73690d
 	go.opentelemetry.io/collector/extension v0.113.0
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.113.0
 	go.uber.org/goleak v1.3.0
@@ -42,15 +42,15 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	go.opentelemetry.io/collector/client v1.19.0 // indirect
+	go.opentelemetry.io/collector/client v1.19.1-0.20241113205527-54adb32b4964 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.113.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.19.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.19.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.19.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.19.1-0.20241113205527-54adb32b4964 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.113.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.113.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.19.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.19.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.19.1-0.20241113205527-54adb32b4964 // indirect
+	go.opentelemetry.io/collector/pdata v1.19.1-0.20241113205527-54adb32b4964 // indirect
 	go.opentelemetry.io/collector/pipeline v0.113.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.56.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
