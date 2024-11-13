@@ -91,7 +91,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
 				Data: metricdata.Histogram[int64]{
-					Temporality: metricdata.DeltaTemporality,
+					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.HistogramDataPoint[int64]{
 						{
 							StartTime:  time.Now().Add(-1 * time.Second),
