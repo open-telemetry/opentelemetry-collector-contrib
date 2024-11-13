@@ -109,7 +109,6 @@ func Test_ParseJSON(t *testing.T) {
 				},
 			},
 			wantSlice: func(expectedSlice pcommon.Slice) {
-
 				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
 				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
 			},
@@ -186,7 +185,6 @@ func Test_ParseJSON(t *testing.T) {
 				tt.wantSlice(expected)
 				assert.Equal(t, expected, resultSlice)
 			}
-
 		})
 	}
 }

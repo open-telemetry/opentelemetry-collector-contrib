@@ -86,7 +86,6 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 
 	if eventType == blobCreatedEventType {
 		blobData, err := p.blobClient.readBlob(ctx, containerName, blobName)
-
 		if err != nil {
 			return err
 		}

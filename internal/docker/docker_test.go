@@ -132,7 +132,6 @@ func TestFetchingTimeouts(t *testing.T) {
 		t, time.Now().UnixNano(), shouldHaveTaken,
 		"Client timeouts don't appear to have been exercised.",
 	)
-
 }
 
 func TestToStatsJSONErrorHandling(t *testing.T) {

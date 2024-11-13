@@ -182,7 +182,7 @@ func (m *Manager) applyCfg() error {
 }
 
 func getScrapeConfigsResponse(httpClient *http.Client, baseURL string) (map[string]*promconfig.ScrapeConfig, error) {
-	scrapeConfigsURL := fmt.Sprintf("%s/scrape_configs", baseURL)
+	scrapeConfigsURL := baseURL + "/scrape_configs"
 	_, err := url.Parse(scrapeConfigsURL) // check if valid
 	if err != nil {
 		return nil, err

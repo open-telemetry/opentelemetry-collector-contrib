@@ -179,7 +179,6 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	require.NoError(t, err)
 
 	return testCon, exporter, receiver
-
 }
 
 func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfgf CfgFunc, mkgen MkGen, errf ConsumerErrFunc, endf EndFunc) {
@@ -294,7 +293,6 @@ func bulkyGenFunc() MkGen {
 			return tracesGen.Generate(1000, time.Minute)
 		}
 	}
-
 }
 
 func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -601,7 +599,6 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	var params = testParams{
 		threadCount: 10,
 		requestWhileTrue: func(test *testConsumer) bool {
-
 			cnt := 0
 			for _, span := range test.expSpans.GetSpans() {
 				if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {

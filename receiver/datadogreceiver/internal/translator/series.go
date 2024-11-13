@@ -4,6 +4,7 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
@@ -27,7 +28,6 @@ type SeriesList struct {
 	Series []datadogV1.Series `json:"series"`
 }
 
-// TODO: add handling for JSON format in additional to protobuf?
 func (mt *MetricsTranslator) HandleSeriesV2Payload(req *http.Request) (mp []*gogen.MetricPayload_MetricSeries, err error) {
 	buf := GetBuffer()
 	defer PutBuffer(buf)
@@ -35,11 +35,20 @@ func (mt *MetricsTranslator) HandleSeriesV2Payload(req *http.Request) (mp []*gog
 		return mp, err
 	}
 
-	pl := new(gogen.MetricPayload)
-	if err := pl.Unmarshal(buf.Bytes()); err != nil {
-		return mp, err
-	}
+	contentType := req.Header.Get("Content-Type")
 
+	pl := new(gogen.MetricPayload)
+
+	// handle json messages if set, otherwise handle protobuf
+	if contentType == "application/json" {
+		if err := json.Unmarshal(buf.Bytes(), &pl); err != nil {
+			return mp, err
+		}
+	} else {
+		if err := pl.Unmarshal(buf.Bytes()); err != nil {
+			return mp, err
+		}
+	}
 	return pl.GetSeries(), nil
 }
 
@@ -124,7 +133,7 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 			}
 			dimensions.resourceAttrs.PutStr(k, v)
 		}
-		dimensions.resourceAttrs.PutStr("source", serie.SourceTypeName) //TODO: check if this is correct handling of SourceTypeName field
+		dimensions.resourceAttrs.PutStr("source", serie.SourceTypeName) // TODO: check if this is correct handling of SourceTypeName field
 		metric, metricID := bt.Lookup(dimensions)
 
 		switch serie.Type {
@@ -135,7 +144,7 @@ func (mt *MetricsTranslator) TranslateSeriesV2(series []*gogen.MetricPayload_Met
 		case gogen.MetricPayload_GAUGE:
 			dps = metric.Gauge().DataPoints()
 		case gogen.MetricPayload_RATE:
-			metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta) //TODO: verify that this is always the case
+			metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta) // TODO: verify that this is always the case
 			dps = metric.Sum().DataPoints()
 		case gogen.MetricPayload_UNSPECIFIED:
 			// Type is unset/unspecified

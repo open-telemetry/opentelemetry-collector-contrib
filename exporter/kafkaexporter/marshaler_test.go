@@ -456,7 +456,6 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	}
 
 	for _, test := range tests {
-
 		marshaler, err := createTracesMarshaler(Config{
 			Encoding:            test.encoding,
 			PartitionTracesByID: test.partitionTracesByID,
