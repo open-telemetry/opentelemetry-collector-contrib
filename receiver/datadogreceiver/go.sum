@@ -12,8 +12,8 @@ github.com/DataDog/datadog-agent/pkg/util/log v0.59.0 h1:0JwuSc9Pr/kHAYIEzbdeYKL
 github.com/DataDog/datadog-agent/pkg/util/log v0.59.0/go.mod h1:pH5Vs7I0fwUU4dUtiQ/oEC//+xzPAgUlhH5+MG5eseg=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.59.0 h1:p4uZow1IE/ve590aKqTsS+/5P7fPi+abHN9TWFi+bhE=
 github.com/DataDog/datadog-agent/pkg/util/scrubber v0.59.0/go.mod h1:krOxbYZc4KKE7bdEDu10lLSQBjdeSFS/XDSclsaSf1Y=
-github.com/DataDog/datadog-api-client-go/v2 v2.32.0 h1:9k6iYm/d5ycCMYainCfTOixnwgrO87b2iTmgU/12GOk=
-github.com/DataDog/datadog-api-client-go/v2 v2.32.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
+github.com/DataDog/datadog-api-client-go/v2 v2.31.0 h1:JfJhYlHfLzvauI8u6h23smTooWYe6quNhhg9gpTszWY=
+github.com/DataDog/datadog-api-client-go/v2 v2.31.0/go.mod h1:d3tOEgUd2kfsr9uuHQdY+nXrWp4uikgTgVCPdKNK30U=
 github.com/DataDog/datadog-go/v5 v5.5.0 h1:G5KHeB8pWBNXT4Jtw0zAkhdxEAWSpWH00geHI6LDrKU=
 github.com/DataDog/datadog-go/v5 v5.5.0/go.mod h1:K9kcYBlxkcPP8tvvjZZKs/m1edNAUFzBbdpTUKfCsuw=
 github.com/DataDog/go-sqllexer v0.0.15 h1:rUUu52dP8EQhJLnUw0MIAxZp0BQx2fOTuMztr3vtHUU=

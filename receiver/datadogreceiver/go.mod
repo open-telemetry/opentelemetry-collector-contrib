@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.59.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.59.0
 	github.com/DataDog/datadog-agent/pkg/trace v0.59.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.32.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.31.0
 	github.com/DataDog/sketches-go v1.4.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.113.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.113.0
