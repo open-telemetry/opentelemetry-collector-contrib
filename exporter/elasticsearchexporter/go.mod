@@ -14,6 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.113.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.18.0
+	go.opentelemetry.io/collector/client v1.19.0
 	go.opentelemetry.io/collector/component v0.113.0
 	go.opentelemetry.io/collector/config/configauth v0.113.0
 	go.opentelemetry.io/collector/config/configcompression v1.19.0
@@ -63,7 +64,6 @@ require (
 	go.elastic.co/apm/module/apmzap/v2 v2.6.0 // indirect
 	go.elastic.co/apm/v2 v2.6.0 // indirect
 	go.elastic.co/fastjson v1.3.0 // indirect
-	go.opentelemetry.io/collector/client v1.19.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.19.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.19.0 // indirect

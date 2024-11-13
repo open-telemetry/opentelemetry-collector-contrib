@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -295,6 +296,74 @@ func TestExporterLogs(t *testing.T) {
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
+	})
+
+	t.Run("publish with configured mapping mode header", func(t *testing.T) {
+		expectedECS := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"message":"hello world"}`
+		expectedOtel := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","body":{"text":"hello world"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0}`
+		tests := []struct {
+			name     string
+			cfgMode  string
+			header   string
+			expected string
+		}{
+			{
+				name:     "mapping mode in header",
+				cfgMode:  "ecs",
+				header:   "otel",
+				expected: expectedOtel,
+			},
+			{
+				name:     "invalid mapping mode in header",
+				cfgMode:  "ecs",
+				header:   "invalid",
+				expected: expectedECS,
+			},
+			{
+				name:     "empty mapping mode in header",
+				cfgMode:  "ecs",
+				header:   "",
+				expected: expectedECS,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+
+					actual := string(docs[0].Document)
+					assert.Equal(t, tt.expected, actual)
+
+					// Second client call does not include a header so it
+					// should use the default mapping mode.
+					actual = string(docs[1].Document)
+					assert.Equal(t, expectedECS, actual)
+
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = tt.cfgMode // this should be overridden by the header
+				})
+
+				logs := newLogsWithAttributes(nil, nil, nil)
+				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+
+				// Set the mapping mode via the header
+				ctx := context.Background()
+				cl := client.FromContext(ctx)
+				cl.Metadata = client.NewMetadata(map[string][]string{HeaderXElasticMappingMode: {tt.header}})
+				ctx = client.NewContext(ctx, cl)
+
+				mustSendLogsCtx(ctx, t, exporter, logs)
+
+				// // Send logs again without the header this time.
+				mustSendLogs(t, exporter, logs)
+				rec.WaitItems(2)
+			})
+		}
 	})
 
 	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
@@ -1840,6 +1909,11 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	err := exporter.ConsumeLogs(context.Background(), logs)
+	require.NoError(t, err)
+}
+
+func mustSendLogsCtx(ctx context.Context, t *testing.T, exporter exporter.Logs, logs plog.Logs) {
+	err := exporter.ConsumeLogs(ctx, logs)
 	require.NoError(t, err)
 }
 
