@@ -50,7 +50,7 @@ func TestConvertInvalidDataType(t *testing.T) {
 			pcommon.NewMap(),
 		},
 		logger:         zap.NewNop(),
-		metricFamilies: make(map[string]*io_prometheus_client.MetricFamily),
+		metricFamilies: make(map[string]metricFamily),
 	}
 
 	_, err := c.convertMetric(metric, pcommon.NewMap())
@@ -74,35 +74,37 @@ func TestConvertMetric(t *testing.T) {
 		description string
 		mName       string
 		mType       pmetric.MetricType
-		mfs         map[string]*io_prometheus_client.MetricFamily
+		mfs         map[string]metricFamily
 		err         bool
 	}{
 		{
 			description: "invalid histogram metric",
 			mType:       pmetric.MetricTypeHistogram,
-			mfs:         make(map[string]*io_prometheus_client.MetricFamily),
+			mfs:         make(map[string]metricFamily),
 			err:         true,
 		},
 		{
 			description: "invalid sum metric",
 			mType:       pmetric.MetricTypeSum,
-			mfs:         make(map[string]*io_prometheus_client.MetricFamily),
+			mfs:         make(map[string]metricFamily),
 			err:         true,
 		},
 		{
 			description: "invalid gauge metric",
 			mType:       pmetric.MetricTypeGauge,
-			mfs:         make(map[string]*io_prometheus_client.MetricFamily),
+			mfs:         make(map[string]metricFamily),
 			err:         true,
 		},
 		{
 			description: "metric type conflict",
 			mName:       "testgauge",
 			mType:       pmetric.MetricTypeGauge,
-			mfs: map[string]*io_prometheus_client.MetricFamily{
+			mfs: map[string]metricFamily{
 				"testgauge": {
-					Name: proto.String("testgauge"),
-					Type: dto.MetricType_COUNTER.Enum(),
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("testgauge"),
+						Type: dto.MetricType_COUNTER.Enum(),
+					},
 				},
 			},
 			err: true,
@@ -111,11 +113,13 @@ func TestConvertMetric(t *testing.T) {
 			description: "metric description conflict",
 			mName:       "testgauge",
 			mType:       pmetric.MetricTypeGauge,
-			mfs: map[string]*io_prometheus_client.MetricFamily{
+			mfs: map[string]metricFamily{
 				"testgauge": {
-					Name: proto.String("testgauge"),
-					Type: dto.MetricType_GAUGE.Enum(),
-					Help: proto.String("test help value"),
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("testgauge"),
+						Type: dto.MetricType_GAUGE.Enum(),
+						Help: proto.String("test help value"),
+					},
 				},
 			},
 			err: false,
@@ -224,7 +228,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 			resourceAttributes: pMap,
 		},
 		logger:         zap.NewNop(),
-		metricFamilies: make(map[string]*io_prometheus_client.MetricFamily),
+		metricFamilies: make(map[string]metricFamily),
 	}
 
 	pbMetric, _ := c.convertDoubleHistogram(metric, pMap)
@@ -267,7 +271,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 			resourceAttributes: pMap,
 		},
 		logger:         zap.NewNop(),
-		metricFamilies: make(map[string]*io_prometheus_client.MetricFamily),
+		metricFamilies: make(map[string]metricFamily),
 	}
 
 	promMetric, _ := c.convertSum(metric, pMap)
@@ -322,7 +326,7 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 		},
 		sendTimestamps: false,
 		logger:         zap.New(&loggerCore),
-		metricFamilies: make(map[string]*io_prometheus_client.MetricFamily),
+		metricFamilies: make(map[string]metricFamily),
 	}
 
 	ch := make(chan prometheus.Metric, 1)
@@ -531,7 +535,7 @@ func TestCollectMetrics(t *testing.T) {
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
-					metricFamilies: make(map[string]*io_prometheus_client.MetricFamily),
+					metricFamilies: make(map[string]metricFamily),
 				}
 
 				ch := make(chan prometheus.Metric, 1)
@@ -655,7 +659,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
-					metricFamilies: make(map[string]*io_prometheus_client.MetricFamily),
+					metricFamilies: make(map[string]metricFamily),
 				}
 
 				ch := make(chan prometheus.Metric, 1)
@@ -766,7 +770,7 @@ func TestAccumulateSummary(t *testing.T) {
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
-					metricFamilies: make(map[string]*io_prometheus_client.MetricFamily),
+					metricFamilies: make(map[string]metricFamily),
 				}
 
 				ch := make(chan prometheus.Metric, 1)

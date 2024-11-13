@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -32,7 +33,13 @@ type collector struct {
 	addMetricSuffixes bool
 	namespace         string
 	constLabels       prometheus.Labels
-	metricFamilies    map[string]*dto.MetricFamily
+	metricFamilies    map[string]metricFamily
+	metricExpiration  time.Duration
+}
+
+type metricFamily struct {
+	lastSeen time.Time
+	mf       *dto.MetricFamily
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
@@ -43,7 +50,8 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
-		metricFamilies:    make(map[string]*dto.MetricFamily),
+		metricFamilies:    make(map[string]metricFamily),
+		metricExpiration:  config.MetricExpiration,
 	}
 }
 
@@ -420,28 +428,45 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
 	}
+	c.cleanupMetricFamilies()
 }
 
 func (c *collector) validateMetrics(name, description string, metricType *dto.MetricType) (help string, err error) {
+	now := time.Now()
 	emf, exist := c.metricFamilies[name]
 	if !exist {
-		c.metricFamilies[name] = &dto.MetricFamily{
-			Name: proto.String(name),
-			Help: proto.String(description),
-			Type: metricType,
+		c.metricFamilies[name] = metricFamily{
+			lastSeen: now,
+			mf: &dto.MetricFamily{
+				Name: proto.String(name),
+				Help: proto.String(description),
+				Type: metricType,
+			},
 		}
 		return description, nil
 	}
-	if emf.GetType() != *metricType {
-		return "", fmt.Errorf("instrument type conflict, using existing type definition. instrument: %s, existing: %s, dropped: %s", name, emf.GetType(), *metricType)
+	if emf.mf.GetType() != *metricType {
+		return "", fmt.Errorf("instrument type conflict, using existing type definition. instrument: %s, existing: %s, dropped: %s", name, emf.mf.GetType(), *metricType)
 	}
-	if emf.GetHelp() != description {
+	emf.lastSeen = now
+	c.metricFamilies[name] = emf
+	if emf.mf.GetHelp() != description {
 		c.logger.Info(
 			"Instrument description conflict, using existing",
 			zap.String("instrument", name),
-			zap.String("existing", emf.GetHelp()),
+			zap.String("existing", emf.mf.GetHelp()),
 			zap.String("dropped", description),
 		)
 	}
-	return emf.GetHelp(), nil
+	return emf.mf.GetHelp(), nil
+}
+
+func (c *collector) cleanupMetricFamilies() {
+	expirationTime := time.Now().Add(-c.metricExpiration)
+	for k, v := range c.metricFamilies {
+		if expirationTime.After(v.lastSeen) {
+			c.logger.Debug(fmt.Sprintf("metric expired: %s", k))
+			delete(c.metricFamilies, k)
+		}
+	}
 }
