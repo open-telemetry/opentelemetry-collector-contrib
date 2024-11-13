@@ -717,178 +717,197 @@ func TestExtractionRules(t *testing.T) {
 		name       string
 		rules      ExtractionRules
 		attributes map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "deployment",
-		rules: ExtractionRules{
-			DeploymentName: true,
-			DeploymentUID:  true,
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
 		},
-		attributes: map[string]string{
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-		},
-	}, {
-		name: "replicasetId",
-		rules: ExtractionRules{
-			ReplicaSetID: true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	}, {
-		name: "replicasetName",
-		rules: ExtractionRules{
-			ReplicaSetName: true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.name": "auth-service-66f5996c7c",
-		},
-	}, {
-		name: "daemonsetUID",
-		rules: ExtractionRules{
-			DaemonSetUID: true,
-		},
-		attributes: map[string]string{
-			"k8s.daemonset.uid": "c94d3814-2253-427a-ab13-2cf609e4dafa",
-		},
-	}, {
-		name: "daemonsetName",
-		rules: ExtractionRules{
-			DaemonSetName: true,
-		},
-		attributes: map[string]string{
-			"k8s.daemonset.name": "auth-daemonset",
-		},
-	}, {
-		name: "jobUID",
-		rules: ExtractionRules{
-			JobUID: true,
-		},
-		attributes: map[string]string{
-			"k8s.job.uid": "59f27ac1-5c71-42e5-abe9-2c499d603706",
-		},
-	}, {
-		name: "jobName",
-		rules: ExtractionRules{
-			JobName: true,
-		},
-		attributes: map[string]string{
-			"k8s.job.name": "auth-cronjob-27667920",
-		},
-	}, {
-		name: "cronJob",
-		rules: ExtractionRules{
-			CronJobName: true,
-		},
-		attributes: map[string]string{
-			"k8s.cronjob.name": "auth-cronjob",
-		},
-	}, {
-		name: "statefulsetUID",
-		rules: ExtractionRules{
-			StatefulSetUID: true,
-		},
-		attributes: map[string]string{
-			"k8s.statefulset.uid": "03755eb1-6175-47d5-afd5-05cfc30244d7",
-		},
-	}, {
-		name: "jobName",
-		rules: ExtractionRules{
-			StatefulSetName: true,
-		},
-		attributes: map[string]string{
-			"k8s.statefulset.name": "pi-statefulset",
-		},
-	}, {
-		name: "metadata",
-		rules: ExtractionRules{
-			DeploymentName: true,
-			DeploymentUID:  true,
-			Namespace:      true,
-			PodName:        true,
-			PodUID:         true,
-			PodHostName:    true,
-			PodIP:          true,
-			Node:           true,
-			StartTime:      true,
-		},
-		attributes: map[string]string{
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-			"k8s.namespace.name":  "ns1",
-			"k8s.node.name":       "node1",
-			"k8s.pod.name":        "auth-service-abc12-xyz3",
-			"k8s.pod.hostname":    "host1",
-			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			"k8s.pod.ip":          "1.1.1.1",
-			"k8s.pod.start_time": func() string {
-				b, err := pod.GetCreationTimestamp().MarshalText()
-				require.NoError(t, err)
-				return string(b)
-			}(),
-		},
-	}, {
-		name: "labels",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromPod,
+		{
+			name: "deployment",
+			rules: ExtractionRules{
+				DeploymentName: true,
+				DeploymentUID:  true,
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromPod,
-			}, {
-				Name:  "l2",
-				Key:   "label2",
-				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
-				From:  MetadataFromPod,
-			},
+			attributes: map[string]string{
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"l2": "v5",
-			"a1": "av1",
-		},
-	}, {
-		// By default if the From field is not set for labels and annotations we want to extract them from pod
-		name: "labels-annotations-default-pod",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
+		{
+			name: "replicasetId",
+			rules: ExtractionRules{
+				ReplicaSetID: true,
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-			}, {
-				Name:  "l2",
-				Key:   "label2",
-				Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
-			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"l2": "v5",
-			"a1": "av1",
+		{
+			name: "replicasetName",
+			rules: ExtractionRules{
+				ReplicaSetName: true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.name": "auth-service-66f5996c7c",
+			},
 		},
-	},
+		{
+			name: "daemonsetUID",
+			rules: ExtractionRules{
+				DaemonSetUID: true,
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.uid": "c94d3814-2253-427a-ab13-2cf609e4dafa",
+			},
+		},
+		{
+			name: "daemonsetName",
+			rules: ExtractionRules{
+				DaemonSetName: true,
+			},
+			attributes: map[string]string{
+				"k8s.daemonset.name": "auth-daemonset",
+			},
+		},
+		{
+			name: "jobUID",
+			rules: ExtractionRules{
+				JobUID: true,
+			},
+			attributes: map[string]string{
+				"k8s.job.uid": "59f27ac1-5c71-42e5-abe9-2c499d603706",
+			},
+		},
+		{
+			name: "jobName",
+			rules: ExtractionRules{
+				JobName: true,
+			},
+			attributes: map[string]string{
+				"k8s.job.name": "auth-cronjob-27667920",
+			},
+		},
+		{
+			name: "cronJob",
+			rules: ExtractionRules{
+				CronJobName: true,
+			},
+			attributes: map[string]string{
+				"k8s.cronjob.name": "auth-cronjob",
+			},
+		},
+		{
+			name: "statefulsetUID",
+			rules: ExtractionRules{
+				StatefulSetUID: true,
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.uid": "03755eb1-6175-47d5-afd5-05cfc30244d7",
+			},
+		},
+		{
+			name: "jobName",
+			rules: ExtractionRules{
+				StatefulSetName: true,
+			},
+			attributes: map[string]string{
+				"k8s.statefulset.name": "pi-statefulset",
+			},
+		},
+		{
+			name: "metadata",
+			rules: ExtractionRules{
+				DeploymentName: true,
+				DeploymentUID:  true,
+				Namespace:      true,
+				PodName:        true,
+				PodUID:         true,
+				PodHostName:    true,
+				PodIP:          true,
+				Node:           true,
+				StartTime:      true,
+			},
+			attributes: map[string]string{
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+				"k8s.namespace.name":  "ns1",
+				"k8s.node.name":       "node1",
+				"k8s.pod.name":        "auth-service-abc12-xyz3",
+				"k8s.pod.hostname":    "host1",
+				"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+				"k8s.pod.ip":          "1.1.1.1",
+				"k8s.pod.start_time": func() string {
+					b, err := pod.GetCreationTimestamp().MarshalText()
+					require.NoError(t, err)
+					return string(b)
+				}(),
+			},
+		},
+		{
+			name: "labels",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					}, {
+						Name:  "l2",
+						Key:   "label2",
+						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+						From:  MetadataFromPod,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"l2": "v5",
+				"a1": "av1",
+			},
+		},
+		{
+			// By default if the From field is not set for labels and annotations we want to extract them from pod
+			name: "labels-annotations-default-pod",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+					}, {
+						Name:  "l2",
+						Key:   "label2",
+						Regex: regexp.MustCompile(`k5=(?P<value>[^\s]+)`),
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"l2": "v5",
+				"a1": "av1",
+			},
+		},
 		{
 			name: "all-labels",
 			rules: ExtractionRules{
-				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
-					From:     MetadataFromPod,
-				},
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -899,10 +918,11 @@ func TestExtractionRules(t *testing.T) {
 		{
 			name: "all-annotations",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
-					From:     MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -912,10 +932,11 @@ func TestExtractionRules(t *testing.T) {
 		{
 			name: "all-annotations-not-match",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an*)$"),
-					From:     MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an*)$"),
+						From:     MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{},
@@ -923,12 +944,13 @@ func TestExtractionRules(t *testing.T) {
 		{
 			name: "captured-groups",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					Name:                 "$1",
-					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
-					HasKeyRegexReference: true,
-					From:                 MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						Name:                 "$1",
+						KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -938,12 +960,13 @@ func TestExtractionRules(t *testing.T) {
 		{
 			name: "captured-groups-$0",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					Name:                 "prefix-$0",
-					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
-					HasKeyRegexReference: true,
-					From:                 MetadataFromPod,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						Name:                 "prefix-$0",
+						KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
+						HasKeyRegexReference: true,
+						From:                 MetadataFromPod,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -1024,86 +1047,87 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 		rules           ExtractionRules
 		ownerReferences []meta_v1.OwnerReference
 		attributes      map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "one_deployment_is_controller",
-		ownerReferences: []meta_v1.OwnerReference{
-			{
-				Name:       "auth-service",
-				Kind:       "Deployment",
-				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isController,
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		}, {
+			name: "one_deployment_is_controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{
+					Name:       "auth-service",
+					Kind:       "Deployment",
+					UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isController,
+				},
+			},
+			rules: ExtractionRules{
+				DeploymentName: true,
+				DeploymentUID:  true,
+				ReplicaSetID:   true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+			},
+		}, {
+			name: "one_deployment_is_controller_another_deployment_is_not_controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{
+					Name:       "auth-service",
+					Kind:       "Deployment",
+					UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isController,
+				},
+				{
+					Name:       "auth-service-not-controller",
+					Kind:       "Deployment",
+					UID:        "kkkk-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isNotController,
+				},
+			},
+			rules: ExtractionRules{
+				ReplicaSetID:   true,
+				DeploymentName: true,
+				DeploymentUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
+				"k8s.deployment.name": "auth-service",
+				"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+			},
+		}, {
+			name: "one_deployment_is_not_controller",
+			ownerReferences: []meta_v1.OwnerReference{
+				{
+					Name:       "auth-service",
+					Kind:       "Deployment",
+					UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
+					Controller: &isNotController,
+				},
+			},
+			rules: ExtractionRules{
+				ReplicaSetID:   true,
+				DeploymentName: true,
+				DeploymentUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
+			},
+		}, {
+			name:            "no_deployment",
+			ownerReferences: []meta_v1.OwnerReference{},
+			rules: ExtractionRules{
+				ReplicaSetID:   true,
+				DeploymentName: true,
+				DeploymentUID:  true,
+			},
+			attributes: map[string]string{
+				"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
 			},
 		},
-		rules: ExtractionRules{
-			DeploymentName: true,
-			DeploymentUID:  true,
-			ReplicaSetID:   true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-		},
-	}, {
-		name: "one_deployment_is_controller_another_deployment_is_not_controller",
-		ownerReferences: []meta_v1.OwnerReference{
-			{
-				Name:       "auth-service",
-				Kind:       "Deployment",
-				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isController,
-			},
-			{
-				Name:       "auth-service-not-controller",
-				Kind:       "Deployment",
-				UID:        "kkkk-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isNotController,
-			},
-		},
-		rules: ExtractionRules{
-			ReplicaSetID:   true,
-			DeploymentName: true,
-			DeploymentUID:  true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid":  "207ea729-c779-401d-8347-008ecbc137e3",
-			"k8s.deployment.name": "auth-service",
-			"k8s.deployment.uid":  "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-		},
-	}, {
-		name: "one_deployment_is_not_controller",
-		ownerReferences: []meta_v1.OwnerReference{
-			{
-				Name:       "auth-service",
-				Kind:       "Deployment",
-				UID:        "ffff-gggg-hhhh-iiii-eeeeeeeeeeee",
-				Controller: &isNotController,
-			},
-		},
-		rules: ExtractionRules{
-			ReplicaSetID:   true,
-			DeploymentName: true,
-			DeploymentUID:  true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	}, {
-		name:            "no_deployment",
-		ownerReferences: []meta_v1.OwnerReference{},
-		rules: ExtractionRules{
-			ReplicaSetID:   true,
-			DeploymentName: true,
-			DeploymentUID:  true,
-		},
-		attributes: map[string]string{
-			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
-		},
-	},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1150,38 +1174,43 @@ func TestNamespaceExtractionRules(t *testing.T) {
 		name       string
 		rules      ExtractionRules
 		attributes map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "labels",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromNamespace,
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromNamespace,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromNamespace,
+					},
+				},
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromNamespace,
-			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"a1": "av1",
-		},
-	},
 		{
 			name: "all-labels",
 			rules: ExtractionRules{
-				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
-					From:     MetadataFromNamespace,
-				},
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNamespace,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -1191,10 +1220,11 @@ func TestNamespaceExtractionRules(t *testing.T) {
 		{
 			name: "all-annotations",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
-					From:     MetadataFromNamespace,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNamespace,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -1240,38 +1270,43 @@ func TestNodeExtractionRules(t *testing.T) {
 		name       string
 		rules      ExtractionRules
 		attributes map[string]string
-	}{{
-		name:       "no-rules",
-		rules:      ExtractionRules{},
-		attributes: nil,
-	}, {
-		name: "labels",
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromNode,
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromNode,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromNode,
+					},
+				},
 			},
-			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromNode,
-			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
 			},
 		},
-		attributes: map[string]string{
-			"l1": "lv1",
-			"a1": "av1",
-		},
-	},
 		{
 			name: "all-labels",
 			rules: ExtractionRules{
-				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
-					From:     MetadataFromNode,
-				},
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromNode,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -1281,10 +1316,11 @@ func TestNodeExtractionRules(t *testing.T) {
 		{
 			name: "all-annotations",
 			rules: ExtractionRules{
-				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
-					From:     MetadataFromNode,
-				},
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromNode,
+					},
 				},
 			},
 			attributes: map[string]string{
@@ -1315,51 +1351,52 @@ func TestFilters(t *testing.T) {
 		filters Filters
 		labels  string
 		fields  string
-	}{{
-		name:    "no-filters",
-		filters: Filters{},
-	}, {
-		name: "namespace",
-		filters: Filters{
-			Namespace: "default",
-		},
-	}, {
-		name: "node",
-		filters: Filters{
-			Node: "ec2-test",
-		},
-		fields: "spec.nodeName=ec2-test",
-	}, {
-		name: "labels-and-fields",
-		filters: Filters{
-			Labels: []FieldFilter{
-				{
-					Key:   "k1",
-					Value: "v1",
-					Op:    selection.Equals,
+	}{
+		{
+			name:    "no-filters",
+			filters: Filters{},
+		}, {
+			name: "namespace",
+			filters: Filters{
+				Namespace: "default",
+			},
+		}, {
+			name: "node",
+			filters: Filters{
+				Node: "ec2-test",
+			},
+			fields: "spec.nodeName=ec2-test",
+		}, {
+			name: "labels-and-fields",
+			filters: Filters{
+				Labels: []FieldFilter{
+					{
+						Key:   "k1",
+						Value: "v1",
+						Op:    selection.Equals,
+					},
+					{
+						Key:   "k2",
+						Value: "v2",
+						Op:    selection.NotEquals,
+					},
 				},
-				{
-					Key:   "k2",
-					Value: "v2",
-					Op:    selection.NotEquals,
+				Fields: []FieldFilter{
+					{
+						Key:   "k1",
+						Value: "v1",
+						Op:    selection.Equals,
+					},
+					{
+						Key:   "k2",
+						Value: "v2",
+						Op:    selection.NotEquals,
+					},
 				},
 			},
-			Fields: []FieldFilter{
-				{
-					Key:   "k1",
-					Value: "v1",
-					Op:    selection.Equals,
-				},
-				{
-					Key:   "k2",
-					Value: "v2",
-					Op:    selection.NotEquals,
-				},
-			},
+			labels: "k1=v1,k2!=v2",
+			fields: "k1=v1,k2!=v2",
 		},
-		labels: "k1=v1,k2!=v2",
-		fields: "k1=v1,k2!=v2",
-	},
 	}
 
 	for _, tc := range testCases {
@@ -1377,81 +1414,82 @@ func TestPodIgnorePatterns(t *testing.T) {
 	testCases := []struct {
 		ignore bool
 		pod    *api_v1.Pod
-	}{{
-		ignore: false,
-		pod:    &api_v1.Pod{},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			Spec: api_v1.PodSpec{
-				HostNetwork: true,
+	}{
+		{
+			ignore: false,
+			pod:    &api_v1.Pod{},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				Spec: api_v1.PodSpec{
+					HostNetwork: true,
+				},
 			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "True ",
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "True ",
+					},
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "true",
+					},
+				},
+			},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "false",
+					},
+				},
+			},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Annotations: map[string]string{
+						"opentelemetry.io/k8s-processor/ignore": "",
+					},
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "jaeger-agent",
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "jaeger-collector",
+				},
+			},
+		}, {
+			ignore: true,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "jaeger-agent-b2zdv",
+				},
+			},
+		}, {
+			ignore: false,
+			pod: &api_v1.Pod{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name: "test-pod-name",
 				},
 			},
 		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "true",
-				},
-			},
-		},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "false",
-				},
-			},
-		},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Annotations: map[string]string{
-					"opentelemetry.io/k8s-processor/ignore": "",
-				},
-			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "jaeger-agent",
-			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "jaeger-collector",
-			},
-		},
-	}, {
-		ignore: true,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "jaeger-agent-b2zdv",
-			},
-		},
-	}, {
-		ignore: false,
-		pod: &api_v1.Pod{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: "test-pod-name",
-			},
-		},
-	},
 	}
 
 	c, _ := newTestClient(t)
@@ -1800,50 +1838,55 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 		name                   string
 		shouldExtractNamespace bool
 		rules                  ExtractionRules
-	}{{
-		name:                   "empty-rules",
-		shouldExtractNamespace: false,
-		rules:                  ExtractionRules{},
-	}, {
-		name:                   "pod-rules",
-		shouldExtractNamespace: false,
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromPod,
+	}{
+		{
+			name:                   "empty-rules",
+			shouldExtractNamespace: false,
+			rules:                  ExtractionRules{},
+		}, {
+			name:                   "pod-rules",
+			shouldExtractNamespace: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
 			},
+		}, {
+			name:                   "namespace-rules-only-annotations",
+			shouldExtractNamespace: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromNamespace,
+					},
+				},
 			},
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromPod,
-			},
+		}, {
+			name:                   "namespace-rules-only-labels",
+			shouldExtractNamespace: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromNamespace,
+					},
+				},
 			},
 		},
-	}, {
-		name:                   "namespace-rules-only-annotations",
-		shouldExtractNamespace: true,
-		rules: ExtractionRules{
-			Annotations: []FieldExtractionRule{{
-				Name: "a1",
-				Key:  "annotation1",
-				From: MetadataFromNamespace,
-			},
-			},
-		},
-	}, {
-		name:                   "namespace-rules-only-labels",
-		shouldExtractNamespace: true,
-		rules: ExtractionRules{
-			Labels: []FieldExtractionRule{{
-				Name: "l1",
-				Key:  "label1",
-				From: MetadataFromNamespace,
-			},
-			},
-		},
-	},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -163,6 +163,7 @@ func NewNoOpInformer(
 func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	return f.AddEventHandlerWithResyncPeriod(handler, time.Second)
 }
+
 func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
 	return nil, nil
 }
@@ -193,9 +194,11 @@ func (c *NoOpController) Run(stopCh <-chan struct{}) {
 		c.hasStopped = true
 	}()
 }
+
 func (c *NoOpController) IsStopped() bool {
 	return c.hasStopped
 }
+
 func (c *NoOpController) HasSynced() bool {
 	return true
 }

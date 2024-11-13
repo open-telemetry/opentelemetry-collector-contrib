@@ -443,8 +443,10 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 		},
 
 		{
-			rules: []string{`^\/api\/.*\/document\/(?P<documentId>.*)\/update\/3$`,
-				`^\/api\/(?P<version>.*)\/document\/.*\/update\/3$`},
+			rules: []string{
+				`^\/api\/.*\/document\/(?P<documentId>.*)\/update\/3$`,
+				`^\/api\/(?P<version>.*)\/document\/.*\/update\/3$`,
+			},
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/3",
 				outputName: "/api/{version}/document/{documentId}/update/3",
@@ -457,8 +459,10 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 		},
 
 		{
-			rules: []string{`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/4$`,
-				`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update\/4$`},
+			rules: []string{
+				`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/4$`,
+				`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update\/4$`,
+			},
 			testCase: testCase{
 				inputName:  "/api/v1/document/321083210/update/4",
 				outputName: "/api/v1/document/{documentId}/update/4",

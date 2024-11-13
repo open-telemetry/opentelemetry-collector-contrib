@@ -1299,9 +1299,9 @@ func TestLogFieldsConversionLogs(t *testing.T) {
 				log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 				log.SetSeverityNumber(plog.SeverityNumberInfo)
 				log.SetSeverityText("severity")
-				var spanIDBytes = [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
+				spanIDBytes := [8]byte{1, 1, 1, 1, 1, 1, 1, 1}
 				log.SetSpanID(spanIDBytes)
-				var traceIDBytes = [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+				traceIDBytes := [16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 				log.SetTraceID(traceIDBytes)
 				return logs
 			},
