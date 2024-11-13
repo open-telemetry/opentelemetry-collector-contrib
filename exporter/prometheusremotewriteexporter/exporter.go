@@ -67,7 +67,6 @@ type prwExporter struct {
 	settings             component.TelemetrySettings
 	retrySettings        configretry.BackOffConfig
 	retryOnHTTP429       bool
-	enableSendingRW2     bool
 	wal                  *prweWAL
 	exporterSettings     prometheusremotewrite.Settings
 	telemetry            prwTelemetry
@@ -124,7 +123,6 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		settings:            set.TelemetrySettings,
 		retrySettings:       cfg.BackOffConfig,
 		retryOnHTTP429:      retryOn429FeatureGate.IsEnabled(),
-		enableSendingRW2:    enableSendingRW2FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
@@ -203,7 +201,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	default:
 
 		// If feature flag not enabled support only RW1
-		if !prwe.enableSendingRW2 {
+		if !enableSendingRW2FeatureGate.IsEnabled() {
 			return prwe.pushMetricsV1(ctx, md)
 		}
 
@@ -334,7 +332,7 @@ func (prwe *prwExporter) execute(ctx context.Context, data []byte) error {
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 		// If feature flag not enabled support only RW1
-		if !prwe.enableSendingRW2 {
+		if !enableSendingRW2FeatureGate.IsEnabled() {
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 		} else {
