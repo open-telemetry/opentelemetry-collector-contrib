@@ -206,7 +206,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) (net.Addr, *tracet
 		ReceiverCreateSettings: set,
 	})
 	require.NoError(t, err)
-	bq, err := admission2.NewBoundedQueue(telset, maxBytes, 0)
+	bq, err := admission2.NewBoundedQueue(set.ID, telset, maxBytes, 0)
 	require.NoError(t, err)
 	r := New(zap.NewNop(), lc, obsrecv, bq)
 	// Now run it as a gRPC server

@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"google.golang.org/grpc/codes"
 	grpccodes "google.golang.org/grpc/codes"
@@ -26,7 +27,7 @@ type bqTest struct {
 var noopTelemetry = componenttest.NewNopTelemetrySettings()
 
 func newBQTest(t *testing.T, maxAdmit, maxWait uint64) bqTest {
-	bq, err := NewBoundedQueue(noopTelemetry, maxAdmit, maxWait)
+	bq, err := NewBoundedQueue(component.MustNewID("testing"), noopTelemetry, maxAdmit, maxWait)
 	require.NoError(t, err)
 	return bqTest{
 		t:            t,
