@@ -14,7 +14,6 @@ import (
 )
 
 func TestNewTraces(t *testing.T) {
-
 	t.Run("empty", func(t *testing.T) {
 		expected := ptrace.NewTraces()
 		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTraces("", "", "", "")))
