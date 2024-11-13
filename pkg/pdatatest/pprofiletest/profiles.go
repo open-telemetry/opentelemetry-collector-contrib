@@ -513,13 +513,13 @@ func CompareProfileLabelSlice(expected, actual pprofile.LabelSlice) error {
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected label "key: %d`, elr.Key()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected label "key: %d"`, elr.Key()))
 		}
 	}
 
 	for i := 0; i < numLabels; i++ {
 		if _, ok := matchingLabels[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf(`unexpected label "key: %d`,
+			errs = multierr.Append(errs, fmt.Errorf(`unexpected label "key: %d"`,
 				actual.At(i).Key()))
 		}
 	}
@@ -533,7 +533,7 @@ func CompareProfileLabelSlice(expected, actual pprofile.LabelSlice) error {
 
 	for alr, elr := range matchingLabels {
 		if !isLabelEqual(elr, alr) {
-			errs = multierr.Append(errs, fmt.Errorf(`label with "key: %d" does not match expected,`, alr.Key()))
+			errs = multierr.Append(errs, fmt.Errorf(`label with "key: %d" does not match expected`, alr.Key()))
 		}
 	}
 
