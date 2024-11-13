@@ -142,7 +142,7 @@ func generateHistogramBuckets[T int64 | float64](count uint64, randomgenerator *
 		sample := randomgenerator.IntN(5)
 		// See bounds above
 		sum += T(sample)
-		bucketCounts[sample] += 1
+		bucketCounts[sample]++
 	}
 	return
 }
