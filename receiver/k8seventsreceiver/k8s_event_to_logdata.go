@@ -29,7 +29,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.
-func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
+func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, attributes []KeyValue) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -74,6 +74,8 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	attrs := lr.Attributes()
 	attrs.EnsureCapacity(totalLogAttributes)
 
+	attrs.PutStr("k8s.event.type", ev.Type)
+	attrs.PutStr("k8s.event.sourceComponent", ev.Source.Component)
 	attrs.PutStr("k8s.event.reason", ev.Reason)
 	attrs.PutStr("k8s.event.action", ev.Action)
 	attrs.PutStr("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
@@ -85,6 +87,15 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	// not present in the collected event from k8s.
 	if ev.Count != 0 {
 		attrs.PutInt("k8s.event.count", int64(ev.Count))
+	}
+
+	for _, kv := range attributes {
+		val := pcommon.NewValueEmpty()
+		err := val.FromRaw(kv.Value)
+		if err != nil {
+			continue
+		}
+		val.CopyTo(attrs.PutEmpty(kv.Key))
 	}
 
 	return ld
