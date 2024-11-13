@@ -32,6 +32,7 @@ func (databaseID *DatabaseID) InstanceID() string {
 func (databaseID *DatabaseID) DatabaseName() string {
 	return databaseID.databaseName
 }
+
 func (databaseID *DatabaseID) ID() string {
 	return databaseID.id
 }

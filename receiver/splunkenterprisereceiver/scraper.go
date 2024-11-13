@@ -24,9 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
-var (
-	errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
-)
+var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 
 type splunkScraper struct {
 	splunkClient *splunkEntClient
@@ -116,7 +114,8 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			fn func(ctx context.Context, now pcommon.Timestamp, errs chan error),
 			ctx context.Context,
 			now pcommon.Timestamp,
-			errs chan error) {
+			errs chan error,
+		) {
 			// actual function body
 			defer wg.Done()
 			fn(ctx, now, errs)

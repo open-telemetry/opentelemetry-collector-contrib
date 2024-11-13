@@ -604,7 +604,6 @@ func TestBuildEventFromLog(t *testing.T) {
 			assert.Equal(t, expected, was)
 		})
 	}
-
 }
 
 func TestBuildEventFromLogExportResources(t *testing.T) {
@@ -1090,7 +1089,6 @@ func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextInvalidVal
 
 	ld = makeLogRecordWithSeverityNumberAndSeverityText(100, "")
 	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
-
 }
 
 func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetTraceLogLevel(t *testing.T) {

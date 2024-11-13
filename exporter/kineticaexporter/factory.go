@@ -75,7 +75,6 @@ func createLogsExporter(
 func createTracesExporter(ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
-
 	cf := cfg.(*Config)
 	exporter := newTracesExporter(set.Logger, cf)
 
@@ -99,7 +98,6 @@ func createTracesExporter(ctx context.Context,
 func createMetricsExporter(ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config) (exporter.Metrics, error) {
-
 	cf := cfg.(*Config)
 	exporter := newMetricsExporter(set.Logger, cf)
 	return exporterhelper.NewMetrics(

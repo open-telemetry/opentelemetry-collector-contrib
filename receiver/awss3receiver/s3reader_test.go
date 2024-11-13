@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var testTime = time.Date(2021, 02, 01, 17, 32, 00, 00, time.UTC)
+var testTime = time.Date(2021, 0o2, 0o1, 17, 32, 0o0, 0o0, time.UTC)
 
 func Test_getTimeKeyPartitionHour(t *testing.T) {
 	result := getTimeKeyPartitionHour(testTime)
@@ -324,9 +324,11 @@ type mockNotifier struct {
 func (m *mockNotifier) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
+
 func (m *mockNotifier) Shutdown(_ context.Context) error {
 	return nil
 }
+
 func (m *mockNotifier) SendStatus(_ context.Context, notification statusNotification) {
 	m.messages = append(m.messages, notification)
 }
