@@ -270,7 +270,62 @@ func TestCompareProfileContainer(t *testing.T) {
 		expected pprofile.ProfileContainer
 		actual   pprofile.ProfileContainer
 		err      error
-	}{}
+	}{
+		{
+			name: "empty",
+			expected: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				return l
+			}(),
+			actual: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				return l
+			}(),
+		},
+		{
+			name: "equal",
+			expected: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				l.SetDroppedAttributesCount(2)
+				p := l.Profile()
+				p.SetKeepFrames(1)
+				return l
+			}(),
+			actual: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				l.SetDroppedAttributesCount(2)
+				p := l.Profile()
+				p.SetKeepFrames(1)
+				return l
+			}(),
+		},
+		{
+			name: "not equal",
+			expected: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				l.SetDroppedAttributesCount(2)
+				p := l.Profile()
+				p.SetKeepFrames(1)
+				return l
+			}(),
+			actual: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				l.SetDroppedAttributesCount(3)
+				p := l.Profile()
+				p.SetKeepFrames(3)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`dropped attributes count doesn't match expected: 2, actual: 3`),
+				errors.New(`profileID does not match expected '70726f66696c65696431313131313131', actual '70726f66696c65696431313131313132'`),
+				fmt.Errorf(`profile "map[]": %w`, fmt.Errorf(`keepFrames does not match expected '1', actual '3'`)),
+			),
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.err, CompareProfileContainer(test.expected, test.actual))
@@ -284,7 +339,86 @@ func TestCompareProfile(t *testing.T) {
 		expected pprofile.Profile
 		actual   pprofile.Profile
 		err      error
-	}{}
+	}{
+		{
+			name: "empty",
+			expected: func() pprofile.Profile {
+				l := pprofile.NewProfile()
+				return l
+			}(),
+			actual: func() pprofile.Profile {
+				l := pprofile.NewProfile()
+				return l
+			}(),
+		},
+		{
+			name: "equal",
+			expected: func() pprofile.Profile {
+				l := pprofile.NewProfile()
+				l.SetKeepFrames(1)
+				l.AttributeTable().PutStr("key", "val")
+				l.SetPeriod(1)
+				s := l.SampleType().AppendEmpty()
+				s.SetType(1)
+				s.SetUnit(1)
+				a := l.AttributeUnits().AppendEmpty()
+				a.SetAttributeKey(1)
+				a.SetUnit(1)
+				return l
+			}(),
+			actual: func() pprofile.Profile {
+				l := pprofile.NewProfile()
+				l.SetKeepFrames(1)
+				l.AttributeTable().PutStr("key", "val")
+				l.SetPeriod(1)
+				s := l.SampleType().AppendEmpty()
+				s.SetType(1)
+				s.SetUnit(1)
+				a := l.AttributeUnits().AppendEmpty()
+				a.SetAttributeKey(1)
+				a.SetUnit(1)
+				return l
+			}(),
+		},
+		{
+			name: "not equal",
+			expected: func() pprofile.Profile {
+				l := pprofile.NewProfile()
+				l.SetKeepFrames(1)
+				l.AttributeTable().PutStr("key", "val")
+				l.SetPeriod(1)
+				s := l.SampleType().AppendEmpty()
+				s.SetType(1)
+				s.SetUnit(1)
+				a := l.AttributeUnits().AppendEmpty()
+				a.SetAttributeKey(1)
+				a.SetUnit(1)
+				return l
+			}(),
+			actual: func() pprofile.Profile {
+				l := pprofile.NewProfile()
+				l.SetKeepFrames(2)
+				l.AttributeTable().PutStr("key1", "val1")
+				l.SetPeriod(2)
+				s := l.SampleType().AppendEmpty()
+				s.SetType(2)
+				s.SetUnit(2)
+				a := l.AttributeUnits().AppendEmpty()
+				a.SetAttributeKey(2)
+				a.SetUnit(2)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),
+				errors.New(`keepFrames does not match expected '1', actual '2'`),
+				errors.New(`period does not match expected '1', actual '2'`),
+				fmt.Errorf(`sampleType: %w`, fmt.Errorf(`missing expected valueType "unit: 1, type: 1, aggregationTemporality: 0"`)),
+				fmt.Errorf(`sampleType: %w`, fmt.Errorf(`unexpected valueType "unit: 2, type: 2, aggregationTemporality: 0"`)),
+				fmt.Errorf(`attributeUnits: %w`, fmt.Errorf(`missing expected attributeUnit "attributeKey: 1"`)),
+				fmt.Errorf(`attributeUnits: %w`, fmt.Errorf(`unexpected profile attributeUnit "attributeKey: 2"`)),
+			),
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			require.Equal(t, test.err, CompareProfile(test.expected, test.actual))
