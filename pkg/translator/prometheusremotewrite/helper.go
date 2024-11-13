@@ -97,7 +97,8 @@ var seps = []byte{'\xff'}
 // Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen and
 // if logOnOverwrite is true, the overwrite is logged. Resulting label names are sanitized.
 func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string,
-	ignoreAttrs []string, logOnOverwrite bool, extras ...string) []prompb.Label {
+	ignoreAttrs []string, logOnOverwrite bool, extras ...string,
+) []prompb.Label {
 	resourceAttrs := resource.Attributes()
 	serviceName, haveServiceName := resourceAttrs.Get(conventions.AttributeServiceName)
 	instance, haveInstanceID := resourceAttrs.Get(conventions.AttributeServiceInstanceID)
@@ -130,7 +131,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	sort.Stable(ByLabelName(labels))
 
 	for _, label := range labels {
-		var finalKey = prometheustranslator.NormalizeLabel(label.Name)
+		finalKey := prometheustranslator.NormalizeLabel(label.Name)
 		if existingValue, alreadyExists := l[finalKey]; alreadyExists {
 			l[finalKey] = existingValue + ";" + label.Value
 		} else {
@@ -201,7 +202,8 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 }
 
 func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string) {
+	resource pcommon.Resource, settings Settings, baseName string,
+) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
@@ -383,7 +385,8 @@ func maxTimestamp(a, b pcommon.Timestamp) pcommon.Timestamp {
 }
 
 func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
-	settings Settings, baseName string) {
+	settings Settings, baseName string,
+) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
