@@ -19,9 +19,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-var kubeClientProvider = kube.ClientProvider(nil)
-var consumerCapabilities = consumer.Capabilities{MutatesData: true}
-var defaultExcludes = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
+var (
+	kubeClientProvider   = kube.ClientProvider(nil)
+	consumerCapabilities = consumer.Capabilities{MutatesData: true}
+	defaultExcludes      = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
+)
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() processor.Factory {
@@ -167,7 +169,8 @@ func createKubernetesProcessor(
 	cfg component.Config,
 	options ...option,
 ) *kubernetesprocessor {
-	kp := &kubernetesprocessor{logger: params.Logger,
+	kp := &kubernetesprocessor{
+		logger:            params.Logger,
 		cfg:               cfg,
 		options:           options,
 		telemetrySettings: params.TelemetrySettings,

@@ -138,7 +138,6 @@ func TestUpper_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-
 			name:         "convert exponential histogram to explicit history",
 			input:        defaultTestMetric,
 			arg:          []float64{160.0, 170.0, 180.0, 190.0, 200.0},
@@ -350,7 +349,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-
 			name:         "convert exponential histogram to explicit hist",
 			input:        defaultTestMetric,
 			arg:          []float64{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
@@ -376,7 +374,6 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-
 			name: "convert exponential histogram to explicit hist with zero count",
 			input: func() pmetric.Metric {
 				m := defaultTestMetric()
@@ -534,7 +531,6 @@ func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-
 			name:         "convert exponential histogram to explicit hist",
 			input:        defaultTestMetric,
 			arg:          []float64{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
@@ -664,7 +660,6 @@ func TestRandom_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 			},
 		},
 		{
-
 			name:         "convert exponential histogram to explicit hist",
 			input:        defaultTestMetric,
 			arg:          []float64{10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0},
