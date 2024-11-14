@@ -76,7 +76,6 @@ func (opt ignoreScopeAttributeValue) maskProfilesScopeAttributeValue(profiles pp
 			if exists {
 				val.SetEmptyBytes()
 			}
-
 		}
 	}
 }
