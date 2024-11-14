@@ -300,18 +300,18 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 					if !ok {
 						return
 					}
-					
-          buf := bufferPool.Get().(*buffer)
-          buf.protobuf.Reset()
-          defer bufferPool.Put(buf)
 
-          // Uses proto.Marshal to convert the WriteRequest into bytes array
-          errMarshal := buf.protobuf.Marshal(request)
-          if errMarshal != nil {
-            multierr.Append(errs, consumererror.NewPermanent(errMarshal))
-            return
-          }
-          
+					buf := bufferPool.Get().(*buffer)
+					buf.protobuf.Reset()
+					defer bufferPool.Put(buf)
+
+					// Uses proto.Marshal to convert the WriteRequest into bytes array
+					errMarshal := buf.protobuf.Marshal(request)
+					if errMarshal != nil {
+						multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						return
+					}
+
 					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
 						mu.Lock()
 						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))

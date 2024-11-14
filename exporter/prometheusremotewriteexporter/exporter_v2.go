@@ -8,7 +8,6 @@ import (
 	"math"
 	"sync"
 
-	"github.com/gogo/protobuf/proto"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -61,13 +60,18 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 						return
 					}
 
+					buf := bufferPool.Get().(*buffer)
+					buf.protobuf.Reset()
+					defer bufferPool.Put(buf)
+
 					// Uses proto.Marshal to convert the WriteRequest into bytes array
-					data, errMarshal := proto.Marshal(request)
+					errMarshal := buf.protobuf.Marshal(request)
 					if errMarshal != nil {
-						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						return
 					}
 
-					if errExecute := prwe.execute(ctx, data); errExecute != nil {
+					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
 						mu.Lock()
 						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 						mu.Unlock()

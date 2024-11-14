@@ -1207,8 +1207,18 @@ func TestRetries(t *testing.T) {
 					Enabled: true,
 				},
 			}
-			data, _ := proto.Marshal(&prompb.WriteRequest{})
-			err = exporter.execute(tt.ctx, data)
+			buf := bufferPool.Get().(*buffer)
+			buf.protobuf.Reset()
+			defer bufferPool.Put(buf)
+
+			// Uses proto.Marshal to convert the WriteRequest into bytes array
+			errMarshal := buf.protobuf.Marshal(&prompb.WriteRequest{})
+			if errMarshal != nil {
+				require.NoError(t, errMarshal)
+				return
+			}
+
+			err = exporter.execute(tt.ctx, buf)
 			tt.assertError(t, err)
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
@@ -1302,7 +1312,17 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for _, req := range reqs {
-		err := exporter.execute(ctx, req)
+		buf := bufferPool.Get().(*buffer)
+		buf.protobuf.Reset()
+		defer bufferPool.Put(buf)
+
+		// Uses proto.Marshal to convert the WriteRequest into bytes array
+		errMarshal := buf.protobuf.Marshal(req)
+		if errMarshal != nil {
+			require.NoError(b, errMarshal)
+			return
+		}
+		err := exporter.execute(ctx, buf)
 		require.NoError(b, err)
 	}
 }
