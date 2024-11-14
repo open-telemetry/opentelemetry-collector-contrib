@@ -13,11 +13,15 @@ func HTTPError(w http.ResponseWriter, err error) {
 	if err == nil {
 		return
 	}
+	http.Error(w, err.Error(), GetHTTPStatusCodeFromError(err))
+}
+
+func GetHTTPStatusCodeFromError(err error) int {
 	// non-retryable status
 	status := http.StatusBadRequest
 	if !consumererror.IsPermanent(err) {
 		// retryable status
 		status = http.StatusServiceUnavailable
 	}
-	http.Error(w, err.Error(), status)
+	return status
 }
