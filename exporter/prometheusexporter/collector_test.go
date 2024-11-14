@@ -49,8 +49,7 @@ func TestConvertInvalidDataType(t *testing.T) {
 			[]pmetric.Metric{metric},
 			pcommon.NewMap(),
 		},
-		logger:         zap.NewNop(),
-		metricFamilies: make(map[string]metricFamily),
+		logger: zap.NewNop(),
 	}
 
 	_, err := c.convertMetric(metric, pcommon.NewMap())
@@ -74,32 +73,29 @@ func TestConvertMetric(t *testing.T) {
 		description string
 		mName       string
 		mType       pmetric.MetricType
-		mfs         map[string]metricFamily
+		mapVals     map[string]metricFamily
 		err         bool
 	}{
 		{
 			description: "invalid histogram metric",
 			mType:       pmetric.MetricTypeHistogram,
-			mfs:         make(map[string]metricFamily),
 			err:         true,
 		},
 		{
 			description: "invalid sum metric",
 			mType:       pmetric.MetricTypeSum,
-			mfs:         make(map[string]metricFamily),
 			err:         true,
 		},
 		{
 			description: "invalid gauge metric",
 			mType:       pmetric.MetricTypeGauge,
-			mfs:         make(map[string]metricFamily),
 			err:         true,
 		},
 		{
 			description: "metric type conflict",
 			mName:       "testgauge",
 			mType:       pmetric.MetricTypeGauge,
-			mfs: map[string]metricFamily{
+			mapVals: map[string]metricFamily{
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
 						Name: proto.String("testgauge"),
@@ -113,7 +109,7 @@ func TestConvertMetric(t *testing.T) {
 			description: "metric description conflict",
 			mName:       "testgauge",
 			mType:       pmetric.MetricTypeGauge,
-			mfs: map[string]metricFamily{
+			mapVals: map[string]metricFamily{
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
 						Name: proto.String("testgauge"),
@@ -138,8 +134,10 @@ func TestConvertMetric(t *testing.T) {
 				metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 			}
 			c := collector{
-				logger:         zap.NewNop(),
-				metricFamilies: tt.mfs,
+				logger: zap.NewNop(),
+			}
+			for k, v := range tt.mapVals {
+				c.metricFamilies.Store(k, v)
 			}
 
 			_, err := c.convertMetric(metric, pcommon.NewMap())
@@ -227,8 +225,7 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 			metrics:            []pmetric.Metric{metric},
 			resourceAttributes: pMap,
 		},
-		logger:         zap.NewNop(),
-		metricFamilies: make(map[string]metricFamily),
+		logger: zap.NewNop(),
 	}
 
 	pbMetric, _ := c.convertDoubleHistogram(metric, pMap)
@@ -270,8 +267,7 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 			metrics:            []pmetric.Metric{metric},
 			resourceAttributes: pMap,
 		},
-		logger:         zap.NewNop(),
-		metricFamilies: make(map[string]metricFamily),
+		logger: zap.NewNop(),
 	}
 
 	promMetric, _ := c.convertSum(metric, pMap)
@@ -326,7 +322,6 @@ func TestCollectMetricsLabelSanitize(t *testing.T) {
 		},
 		sendTimestamps: false,
 		logger:         zap.New(&loggerCore),
-		metricFamilies: make(map[string]metricFamily),
 	}
 
 	ch := make(chan prometheus.Metric, 1)
@@ -535,7 +530,6 @@ func TestCollectMetrics(t *testing.T) {
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
-					metricFamilies: make(map[string]metricFamily),
 				}
 
 				ch := make(chan prometheus.Metric, 1)
@@ -659,7 +653,6 @@ func TestAccumulateHistograms(t *testing.T) {
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
-					metricFamilies: make(map[string]metricFamily),
 				}
 
 				ch := make(chan prometheus.Metric, 1)
@@ -770,7 +763,6 @@ func TestAccumulateSummary(t *testing.T) {
 					},
 					sendTimestamps: sendTimestamp,
 					logger:         zap.NewNop(),
-					metricFamilies: make(map[string]metricFamily),
 				}
 
 				ch := make(chan prometheus.Metric, 1)

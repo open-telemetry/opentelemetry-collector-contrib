@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,7 +34,7 @@ type collector struct {
 	addMetricSuffixes bool
 	namespace         string
 	constLabels       prometheus.Labels
-	metricFamilies    map[string]metricFamily
+	metricFamilies    sync.Map
 	metricExpiration  time.Duration
 }
 
@@ -50,7 +51,6 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
-		metricFamilies:    make(map[string]metricFamily),
 		metricExpiration:  config.MetricExpiration,
 	}
 }
@@ -433,23 +433,24 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 func (c *collector) validateMetrics(name, description string, metricType *dto.MetricType) (help string, err error) {
 	now := time.Now()
-	emf, exist := c.metricFamilies[name]
+	v, exist := c.metricFamilies.Load(name)
 	if !exist {
-		c.metricFamilies[name] = metricFamily{
+		c.metricFamilies.Store(name, metricFamily{
 			lastSeen: now,
 			mf: &dto.MetricFamily{
 				Name: proto.String(name),
 				Help: proto.String(description),
 				Type: metricType,
 			},
-		}
+		})
 		return description, nil
 	}
+	emf := v.(metricFamily)
 	if emf.mf.GetType() != *metricType {
 		return "", fmt.Errorf("instrument type conflict, using existing type definition. instrument: %s, existing: %s, dropped: %s", name, emf.mf.GetType(), *metricType)
 	}
 	emf.lastSeen = now
-	c.metricFamilies[name] = emf
+	c.metricFamilies.Store(name, emf)
 	if emf.mf.GetHelp() != description {
 		c.logger.Info(
 			"Instrument description conflict, using existing",
@@ -463,10 +464,14 @@ func (c *collector) validateMetrics(name, description string, metricType *dto.Me
 
 func (c *collector) cleanupMetricFamilies() {
 	expirationTime := time.Now().Add(-c.metricExpiration)
-	for k, v := range c.metricFamilies {
+
+	c.metricFamilies.Range(func(key, value any) bool {
+		v := value.(metricFamily)
 		if expirationTime.After(v.lastSeen) {
-			c.logger.Debug(fmt.Sprintf("metric expired: %s", k))
-			delete(c.metricFamilies, k)
+			c.logger.Debug(fmt.Sprintf("metric expired: %s", key))
+			c.metricFamilies.Delete(key)
+			return true
 		}
-	}
+		return true
+	})
 }
