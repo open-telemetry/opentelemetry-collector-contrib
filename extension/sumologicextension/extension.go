@@ -604,7 +604,6 @@ func (se *SumologicExtension) heartbeatLoop() {
 						zap.String(collectorNameField, colCreds.Credentials.CollectorName),
 						zap.String(collectorIDField, colCreds.Credentials.CollectorID),
 					)
-
 				} else {
 					se.logger.Error("Heartbeat error", zap.Error(err))
 				}
@@ -618,7 +617,6 @@ func (se *SumologicExtension) heartbeatLoop() {
 				timer.Reset(se.conf.HeartBeatInterval)
 			case <-se.closeChan:
 			}
-
 		}
 	}
 }

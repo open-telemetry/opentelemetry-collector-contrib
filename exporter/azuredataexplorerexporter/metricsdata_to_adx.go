@@ -183,7 +183,6 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				}
 				return metricValue
 			}, "", "", pmetric.MetricTypeSum)
-
 		}
 		return adxMetrics
 	case pmetric.MetricTypeSummary:
@@ -208,7 +207,6 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					fmt.Sprintf("%s_%s", md.Name(), countsuffix),
 					fmt.Sprintf("%s%s", md.Description(), countdescription),
 					pmetric.MetricTypeSummary))
-
 			}
 			// now create values for each quantile.
 			for bi := 0; bi < dataPoint.QuantileValues().Len(); bi++ {

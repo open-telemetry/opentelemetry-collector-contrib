@@ -140,7 +140,6 @@ func (c *metricsConnector) matchAllMetrics(ctx context.Context, md pmetric.Metri
 				noRoutesMatch = false
 				groupMetrics(groups, route.consumer, rmetrics)
 			}
-
 		}
 		if noRoutesMatch {
 			// no route conditions are matched, add resource metrics to default exporters group

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -54,9 +55,11 @@ func defaultBQ() admission.Queue {
 	return admission.NewBoundedQueue(noopTelemetry, 100000, 10)
 }
 
-type compareJSONTraces struct{ ptrace.Traces }
-type compareJSONMetrics struct{ pmetric.Metrics }
-type compareJSONLogs struct{ plog.Logs }
+type (
+	compareJSONTraces  struct{ ptrace.Traces }
+	compareJSONMetrics struct{ pmetric.Metrics }
+	compareJSONLogs    struct{ plog.Logs }
+)
 
 func (c compareJSONTraces) MarshalJSON() ([]byte, error) {
 	var m ptrace.JSONMarshaler
@@ -254,6 +257,7 @@ func (m mockConsumers) Traces() consumer.Traces {
 func (m mockConsumers) Logs() consumer.Logs {
 	return m.logs
 }
+
 func (m mockConsumers) Metrics() consumer.Metrics {
 	return m.metrics
 }
@@ -340,9 +344,9 @@ func (ctc *commonTestCase) newErrorConsumer() arrowRecord.ConsumerAPI {
 	mock := arrowRecordMock.NewMockConsumerAPI(ctc.ctrl)
 
 	mock.EXPECT().Close().Times(1).Return(nil)
-	mock.EXPECT().TracesFrom(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("test invalid error"))
-	mock.EXPECT().MetricsFrom(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("test invalid error"))
-	mock.EXPECT().LogsFrom(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf("test invalid error"))
+	mock.EXPECT().TracesFrom(gomock.Any()).AnyTimes().Return(nil, errors.New("test invalid error"))
+	mock.EXPECT().MetricsFrom(gomock.Any()).AnyTimes().Return(nil, errors.New("test invalid error"))
+	mock.EXPECT().LogsFrom(gomock.Any()).AnyTimes().Return(nil, errors.New("test invalid error"))
 
 	return mock
 }
@@ -549,7 +553,7 @@ func TestReceiverRecvError(t *testing.T) {
 
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 
-	ctc.putBatch(nil, fmt.Errorf("test recv error"))
+	ctc.putBatch(nil, errors.New("test recv error"))
 
 	err := ctc.wait()
 	require.ErrorContains(t, err, "test recv error")
@@ -1259,7 +1263,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 				Metadata: client.NewMetadata(newmd),
 			}), nil
 		}
-		return ctx, fmt.Errorf("not authorized")
+		return ctx, errors.New("not authorized")
 	})
 
 	go func() {
@@ -1275,7 +1279,6 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			batch = copyBatch(batch)
 
 			if len(md) != 0 {
-
 				hpb.Reset()
 				for key, vals := range md {
 					for _, val := range vals {

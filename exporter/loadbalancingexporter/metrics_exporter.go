@@ -71,7 +71,6 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
 	}
 	return &metricExporter, nil
-
 }
 
 func (e *metricExporterImp) Capabilities() consumer.Capabilities {

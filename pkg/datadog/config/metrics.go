@@ -7,7 +7,12 @@ import (
 	"encoding"
 	"fmt"
 
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -205,4 +210,58 @@ type MetricsExporterConfig struct {
 	// InstrumentationScopeMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation scope that created a metric to the metric tags
 	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
+}
+
+var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricremappingdisabled",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use."),
+	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
+)
+
+// isMetricRemappingDisabled returns true if the datadogexporter should generate Datadog-compliant metrics from OpenTelemetry metrics
+func isMetricRemappingDisabled() bool {
+	return metricRemappingDisableddFeatureGate.IsEnabled()
+}
+
+// TranslatorFromConfig creates a new metrics translator from the exporter
+func TranslatorFromConfig(set component.TelemetrySettings, mcfg MetricsConfig, attrsTranslator *attributes.Translator, sourceProvider source.Provider, statsOut chan []byte) (*otlpmetrics.Translator, error) {
+	options := []otlpmetrics.TranslatorOption{
+		otlpmetrics.WithDeltaTTL(mcfg.DeltaTTL),
+		otlpmetrics.WithFallbackSourceProvider(sourceProvider),
+	}
+
+	if isMetricRemappingDisabled() {
+		set.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
+	} else {
+		options = append(options, otlpmetrics.WithRemapping())
+	}
+
+	if mcfg.HistConfig.SendAggregations {
+		options = append(options, otlpmetrics.WithHistogramAggregations())
+	}
+
+	if mcfg.SummaryConfig.Mode == SummaryModeGauges {
+		options = append(options, otlpmetrics.WithQuantiles())
+	}
+
+	if mcfg.ExporterConfig.InstrumentationScopeMetadataAsTags {
+		options = append(options, otlpmetrics.WithInstrumentationScopeMetadataAsTags())
+	}
+
+	options = append(options, otlpmetrics.WithHistogramMode(otlpmetrics.HistogramMode(mcfg.HistConfig.Mode)))
+
+	var numberMode otlpmetrics.NumberMode
+	switch mcfg.SumConfig.CumulativeMonotonicMode {
+	case CumulativeMonotonicSumModeRawValue:
+		numberMode = otlpmetrics.NumberModeRawValue
+	case CumulativeMonotonicSumModeToDelta:
+		numberMode = otlpmetrics.NumberModeCumulativeToDelta
+	}
+	options = append(options, otlpmetrics.WithNumberMode(numberMode))
+	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
+		otlpmetrics.InitialCumulMonoValueMode(mcfg.SumConfig.InitialCumulativeMonotonicMode)))
+
+	options = append(options, otlpmetrics.WithStatsOut(statsOut))
+	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }

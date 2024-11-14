@@ -1176,7 +1176,6 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.", false, true)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
-
 }
 
 func TestInvalidNumberOfDimensions(t *testing.T) {
