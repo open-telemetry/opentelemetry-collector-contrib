@@ -82,11 +82,11 @@ Several common configuration structures provide additional capabilities automati
 
 In the `admission` configuration block the following settings are available:
 
-- `request_limit_mib` (default: 128): limits the number of requests that are received by the stream in terms of *uncompressed request size*. This should not be confused with `arrow.memory_limit_mib` which limits allocations made by the consumer when translating arrow records into pdata objects. i.e. request size is used to control how much traffic we admit, but does not control how much memory is used during request processing.  When this field is set to zero, admission control is disabled.
+- `request_limit_mib` (default: 128): limits the number of requests that are received by the stream in terms of *uncompressed request size*. This should not be confused with `arrow.memory_limit_mib`, which limits allocations made by the consumer when translating arrow records into pdata objects. The `request_limit_mib` value is used to control how much traffic we admit, but does not control how much memory is used during request processing.
 
-- `waiter_limit` (default: 1000): limits the number of requests waiting on admission once `admission_limit_mib` is reached. This is another dimension of memory limiting that ensures waiters are not holding onto a significant amount of memory while waiting to be processed.
+- `waiting_limit_mib` (default: 32): limits the number of requests waiting on admission after `request_limit_mib` is reached. This is another dimension of memory limiting that ensures waiters are not holding onto a significant amount of memory while waiting to be processed.
 
-`request_limit_mib` and `waiter_limit` are arguments supplied to [admission.BoundedQueue](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/otelarrow/admission). This custom semaphore is meant to be used within receivers to help limit memory within the collector pipeline.
+`request_limit_mib` and `waiting_limit_mib` are arguments supplied to [admission.BoundedQueue](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/otelarrow/admission2). This custom semaphore is meant to be used within receivers to help limit memory within the collector pipeline.
 
 ### Arrow-specific Configuration
 

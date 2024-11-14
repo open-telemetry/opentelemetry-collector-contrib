@@ -38,7 +38,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
@@ -76,7 +76,7 @@ type Receiver struct {
 	newConsumer      func() arrowRecord.ConsumerAPI
 	netReporter      netstats.Interface
 	telemetryBuilder *internalmetadata.TelemetryBuilder
-	boundedQueue     admission.Queue
+	boundedQueue     admission2.Queue
 }
 
 // receiverStream holds the inFlightWG for a single stream.
@@ -93,7 +93,7 @@ func New(
 	gsettings configgrpc.ServerConfig,
 	authServer auth.Server,
 	newConsumer func() arrowRecord.ConsumerAPI,
-	bq admission.Queue,
+	bq admission2.Queue,
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
 	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")
@@ -452,6 +452,7 @@ type inFlightData struct {
 
 	numItems   int   // how many items
 	uncompSize int64 // uncompressed data size == how many bytes held in the semaphore
+	releaser   admission2.ReleaseFunc
 }
 
 func (id *inFlightData) recvDone(ctx context.Context, recvErrPtr *error) {
@@ -500,10 +501,8 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 
 	id.span.End()
 
-	if id.uncompSize != 0 {
-		if err := id.boundedQueue.Release(id.uncompSize); err != nil {
-			id.telemetry.Logger.Error("release error", zap.Error(err))
-		}
+	if id.releaser != nil {
+		id.releaser()
 	}
 
 	if id.uncompSize != 0 {
@@ -631,12 +630,13 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// immediately if there are too many waiters, or will
 	// otherwise block until timeout or enough memory becomes
 	// available.
-	acquireErr := r.boundedQueue.Acquire(inflightCtx, uncompSize)
+	releaser, acquireErr := r.boundedQueue.Acquire(inflightCtx, uint64(uncompSize))
 	if acquireErr != nil {
 		return acquireErr
 	}
 	flight.uncompSize = uncompSize
 	flight.numItems = numItems
+	flight.releaser = releaser
 
 	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
 	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))

@@ -711,12 +711,7 @@ func TestIntegrationAdmissionLimited(t *testing.T) {
 
 			testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
 				rcfg.Admission.RequestLimitMiB = admitLimit
-
-				// Note: #36074 will change WaiterLimit to WaitingLimitMiB
-				// measured in bytes, not request count.  This test is designed
-				// to work either way by virtue of having requests that are
-				// just shy of 1MiB.
-				rcfg.Admission.WaiterLimit = int64(waitingLimit)
+				rcfg.Admission.WaitingLimitMiB = waitingLimit
 
 				ecfg.Arrow.NumStreams = 10
 
