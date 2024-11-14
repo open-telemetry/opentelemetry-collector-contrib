@@ -1572,3 +1572,64 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 func (nh *nopHost) Report(event *componentstatus.Event) {
 	nh.reportFunc(event)
 }
+
+func Test_setResourceAttribute(t *testing.T) {
+	tests := []struct {
+		name       string
+		attributes func() pcommon.Map
+		key        string
+		val        string
+		wantAttrs  func() pcommon.Map
+	}{
+		{
+			name: "attribute not present - add value",
+			attributes: func() pcommon.Map {
+				return pcommon.NewMap()
+			},
+			key: "foo",
+			val: "bar",
+			wantAttrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+		},
+		{
+			name: "attribute present - do not overwrite value",
+			attributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+			key: "foo",
+			val: "baz",
+			wantAttrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+		},
+		{
+			name: "attribute present with empty value - set value",
+			attributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "")
+				return m
+			},
+			key: "foo",
+			val: "bar",
+			wantAttrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo", "bar")
+				return m
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			attrs := tt.attributes()
+			setResourceAttribute(attrs, tt.key, tt.val)
+			require.Equal(t, tt.wantAttrs(), attrs)
+		})
+	}
+}

@@ -124,9 +124,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
-			if _, found := resource.Attributes().Get(kube.K8sIPLabelName); !found {
-				resource.Attributes().PutStr(kube.K8sIPLabelName, podIdentifierValue[i].Value)
-			}
+			setResourceAttribute(resource.Attributes(), kube.K8sIPLabelName, podIdentifierValue[i].Value)
 			break
 		}
 	}
@@ -141,9 +139,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
 
 			for key, val := range pod.Attributes {
-				if _, found := resource.Attributes().Get(key); !found {
-					resource.Attributes().PutStr(key, val)
-				}
+				setResourceAttribute(resource.Attributes(), key, val)
 			}
 			kp.addContainerAttributes(resource.Attributes(), pod)
 		}
@@ -153,9 +149,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	if namespace != "" {
 		attrsToAdd := kp.getAttributesForPodsNamespace(namespace)
 		for key, val := range attrsToAdd {
-			if _, found := resource.Attributes().Get(key); !found {
-				resource.Attributes().PutStr(key, val)
-			}
+			setResourceAttribute(resource.Attributes(), key, val)
 		}
 	}
 
@@ -163,16 +157,19 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 	if nodeName != "" {
 		attrsToAdd := kp.getAttributesForPodsNode(nodeName)
 		for key, val := range attrsToAdd {
-			if _, found := resource.Attributes().Get(key); !found {
-				resource.Attributes().PutStr(key, val)
-			}
+			setResourceAttribute(resource.Attributes(), key, val)
 		}
 		nodeUID := kp.getUIDForPodsNode(nodeName)
 		if nodeUID != "" {
-			if _, found := resource.Attributes().Get(conventions.AttributeK8SNodeUID); !found {
-				resource.Attributes().PutStr(conventions.AttributeK8SNodeUID, nodeUID)
-			}
+			setResourceAttribute(resource.Attributes(), conventions.AttributeK8SNodeUID, nodeUID)
 		}
+	}
+}
+
+func setResourceAttribute(attributes pcommon.Map, key string, val string) {
+	attr, found := attributes.Get(key)
+	if !found || attr.AsString() == "" {
+		attributes.PutStr(key, val)
 	}
 }
 
@@ -213,19 +210,13 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 		return
 	}
 	if containerSpec.Name != "" {
-		if _, found := attrs.Get(conventions.AttributeK8SContainerName); !found {
-			attrs.PutStr(conventions.AttributeK8SContainerName, containerSpec.Name)
-		}
+		setResourceAttribute(attrs, conventions.AttributeK8SContainerName, containerSpec.Name)
 	}
 	if containerSpec.ImageName != "" {
-		if _, found := attrs.Get(conventions.AttributeContainerImageName); !found {
-			attrs.PutStr(conventions.AttributeContainerImageName, containerSpec.ImageName)
-		}
+		setResourceAttribute(attrs, conventions.AttributeContainerImageName, containerSpec.ImageName)
 	}
 	if containerSpec.ImageTag != "" {
-		if _, found := attrs.Get(conventions.AttributeContainerImageTag); !found {
-			attrs.PutStr(conventions.AttributeContainerImageTag, containerSpec.ImageTag)
-		}
+		setResourceAttribute(attrs, conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 	}
 	// attempt to get container ID from restart count
 	runID := -1
