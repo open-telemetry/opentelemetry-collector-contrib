@@ -1,0 +1,5 @@
+{"status":"destroy","id":"def456789","from":"","Type":"volume","Action":"destroy","Actor":{"ID":"def456789"},"time":1699483578,"timeNano":1699483578123456000}
+{"status":"start","id":"","from":"","Type":"daemon","Action":"start","Actor":{"ID":"","Attributes":{"name":"docker-daemon"}},"time":1699483579,"timeNano":1699483579123456000,"scope":"local"}
+not json (shouldn't error, just cause retries)
+test retry
+again
