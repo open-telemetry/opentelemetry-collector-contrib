@@ -235,7 +235,7 @@ func TestEvaluate_RangeOfSpans(t *testing.T) {
 }
 
 func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
-	var totalNumberSpans = int32(0)
+	totalNumberSpans := int32(0)
 
 	// For each resource, going to create the number of spans defined in the array
 	traces := ptrace.NewTraces()

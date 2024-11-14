@@ -44,7 +44,8 @@ func createTracesReceiver(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
-	consumer consumer.Traces) (receiver.Traces, error) {
+	consumer consumer.Traces,
+) (receiver.Traces, error) {
 	rcfg := cfg.(*Config)
 	return newReceiver(rcfg, consumer, params)
 }

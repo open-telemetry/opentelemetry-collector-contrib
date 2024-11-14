@@ -56,8 +56,10 @@ type Config struct {
 	Admission AdmissionConfig `mapstructure:"admission"`
 }
 
-var _ component.Config = (*Config)(nil)
-var _ component.ConfigValidator = (*ArrowConfig)(nil)
+var (
+	_ component.Config          = (*Config)(nil)
+	_ component.ConfigValidator = (*ArrowConfig)(nil)
+)
 
 func (cfg *ArrowConfig) Validate() error {
 	if err := cfg.Zstd.Validate(); err != nil {

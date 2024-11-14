@@ -77,7 +77,6 @@ func newK8sResolver(clt kubernetes.Interface,
 	timeout time.Duration,
 	tb *metadata.TelemetryBuilder,
 ) (*k8sResolver, error) {
-
 	if len(service) == 0 {
 		return nil, errNoSvc
 	}

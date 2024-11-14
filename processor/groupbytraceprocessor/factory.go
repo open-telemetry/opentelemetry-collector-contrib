@@ -54,7 +54,8 @@ func createTracesProcessor(
 	_ context.Context,
 	params processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (processor.Traces, error) {
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
 	var st storage

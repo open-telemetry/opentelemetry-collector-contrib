@@ -218,7 +218,6 @@ func TestAccumulateMetrics(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			ts1 := time.Now().Add(-3 * time.Second)
 			ts2 := time.Now().Add(-2 * time.Second)
 			ts3 := time.Now().Add(-1 * time.Second)
@@ -327,7 +326,6 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			ts1 := time.Now().Add(-3 * time.Second)
 			ts2 := time.Now().Add(-2 * time.Second)
 			ts3 := time.Now().Add(-1 * time.Second)

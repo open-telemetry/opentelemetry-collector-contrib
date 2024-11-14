@@ -14,7 +14,6 @@ import (
 )
 
 func TestNewMetrics(t *testing.T) {
-
 	t.Run("empty", func(t *testing.T) {
 		expected := pmetric.NewMetrics()
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("", "", "", "")))

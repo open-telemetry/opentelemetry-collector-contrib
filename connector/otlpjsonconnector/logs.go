@@ -72,7 +72,6 @@ func (c *connectorLogs) ConsumeLogs(ctx context.Context, pl plog.Logs) error {
 					// If no regex matches, log the invalid payload
 					c.logger.Error("Invalid otlp payload")
 				}
-
 			}
 		}
 	}
