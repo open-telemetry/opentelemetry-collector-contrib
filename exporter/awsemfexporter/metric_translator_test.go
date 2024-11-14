@@ -283,6 +283,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	gpuMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsDCGMExporterScraper")
 	neuronMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
 	neuronMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsNeuronMonitorScraper")
+	kueueMetric := createTestResourceMetricsHelper(defaultNumberOfTestMetrics + 1)
+	kueueMetric.Resource().Attributes().PutStr(conventions.AttributeServiceName, "containerInsightsKueueMetricsScraper")
 
 	counterSumMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -385,6 +387,19 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName": "testSpan",
 			},
 			"myServiceNS/containerInsightsNeuronMonitorScraper",
+			containerInsightsReceiver,
+		},
+		{
+			"kueue receiver",
+			kueueMetric,
+			map[string]string{
+				"isItAnError": "false",
+				"spanName":    "testSpan",
+			},
+			map[string]string{
+				"spanName": "testSpan",
+			},
+			"myServiceNS/containerInsightsKueueMetricsScraper",
 			containerInsightsReceiver,
 		},
 	}
