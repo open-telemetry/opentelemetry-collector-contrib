@@ -62,7 +62,6 @@ func newExpectedValue(mode int, value string) *expectedValue {
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E_ClusterRBAC(t *testing.T) {
-
 	testDir := filepath.Join("testdata", "e2e", "clusterrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
@@ -543,7 +542,6 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 
 // Test with `filter::namespace` set and only role binding to collector's SA. We can't get node and namespace labels/annotations.
 func TestE2E_NamespacedRBAC(t *testing.T) {
-
 	testDir := filepath.Join("testdata", "e2e", "namespacedrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
@@ -716,7 +714,6 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 // Test with `filter::namespace` set, role binding for namespace-scoped objects (pod, replicaset) and clusterrole
 // binding for node and namespace objects.
 func TestE2E_MixRBAC(t *testing.T) {
-
 	testDir := filepath.Join("testdata", "e2e", "mixrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
@@ -1089,7 +1086,8 @@ func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
 }
 
 func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expectedService string,
-	kvs map[string]*expectedValue) {
+	kvs map[string]*expectedValue,
+) {
 	// Iterate over the received set of traces starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
@@ -1110,7 +1108,8 @@ func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expected
 }
 
 func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expectedService string,
-	kvs map[string]*expectedValue) {
+	kvs map[string]*expectedValue,
+) {
 	// Iterate over the received set of metrics starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
@@ -1131,7 +1130,8 @@ func scanMetricsForAttributes(t *testing.T, ms *consumertest.MetricsSink, expect
 }
 
 func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedService string,
-	kvs map[string]*expectedValue) {
+	kvs map[string]*expectedValue,
+) {
 	// Iterate over the received set of logs starting from the most recent entries due to a bug in the processor:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18892
 	// TODO: Remove the reverse loop once it's fixed. All the metrics should be properly annotated.
@@ -1152,8 +1152,8 @@ func scanLogsForAttributes(t *testing.T, ls *consumertest.LogsSink, expectedServ
 }
 
 func scanProfilesForAttributes(t *testing.T, ps *consumertest.ProfilesSink, expectedService string,
-	kvs map[string]*expectedValue) {
-
+	kvs map[string]*expectedValue,
+) {
 	// `telemetrygen` doesn't support profiles
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36127
 	// TODO: Remove `t.Skip()` once #36127 is resolved
@@ -1207,7 +1207,6 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 				case shouldnotexist:
 					shouldNotFoundAttrs[k] = true
 				}
-
 			}
 			return true
 		},

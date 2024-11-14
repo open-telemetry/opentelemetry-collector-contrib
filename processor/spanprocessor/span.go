@@ -187,7 +187,7 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		var sb strings.Builder
 
 		// Index in the oldName until which we traversed.
-		var oldNameIndex = 0
+		oldNameIndex := 0
 
 		attrs := span.Attributes()
 
