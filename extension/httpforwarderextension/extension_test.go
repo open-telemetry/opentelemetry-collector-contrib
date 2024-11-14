@@ -266,7 +266,7 @@ func readBody(body io.ReadCloser) []byte {
 }
 
 func getParsedURL(t *testing.T, rawURL string) *url.URL {
-	var url, err = url.Parse(rawURL)
+	url, err := url.Parse(rawURL)
 	require.NoError(t, err)
 	return url
 }
