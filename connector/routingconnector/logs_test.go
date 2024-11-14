@@ -811,7 +811,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			input:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			expectSink0: plogutiltest.NewLogs("B", "D", "EF"),
 			expectSink1: plog.Logs{},
-			expectSinkD: plogutiltest.New(
+			expectSinkD: plogutiltest.NewLogsFromOpts(
 				plogutiltest.Resource("A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
