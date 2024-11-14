@@ -441,7 +441,6 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		caseStr  string
 		duration float64
 	}{
-
 		{
 			caseStr:  "index 0 latency",
 			duration: 0,
