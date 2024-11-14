@@ -119,7 +119,7 @@ The prometheus receiver also supports additional top-level options:
 - **trim_metric_suffixes**: [**Experimental**] When set to true, this enables trimming unit and some counter type suffixes from metric names. For example, it would cause `singing_duration_seconds_total` to be trimmed to `singing_duration`. This can be useful when trying to restore the original metric names used in OpenTelemetry instrumentation. Defaults to false.
 - **use_start_time_metric**: When set to true, this enables retrieving the start time of all counter metrics from the process_start_time_seconds metric. This is only correct if all counters on that endpoint started after the process start time, and the process is the only actor exporting the metric after the process started. It should not be used in "exporters" which export counters that may have started before the process itself. Use only if you know what you are doing, as this may result in incorrect rate calculations. Defaults to false.
 - **start_time_metric_regex**: The regular expression for the start time metric, and is only applied when use_start_time_metric is enabled.  Defaults to process_start_time_seconds.
-
+- **use_collector_start_time_fallback**: When set to true, this option enables using the collector start time as the metric start time if the process_start_time_seconds metric yields no result (for example if targets expose no process_start_time_seconds metric). This is useful when the collector start time is a good approximation of the process start time - for example in serverless workloads when the collector is deployed as a sidecar. This is only applied when use_start_time_metric is enabled. Defaults to false.
 For example,
 
 ```yaml
@@ -128,6 +128,7 @@ receivers:
       trim_metric_suffixes: true
       use_start_time_metric: true
       start_time_metric_regex: foo_bar_.*
+      use_collector_start_time_fallback: true
       config:
         scrape_configs:
           - job_name: 'otel-collector'
