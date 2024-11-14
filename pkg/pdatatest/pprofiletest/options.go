@@ -207,54 +207,6 @@ func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles ppro
 	}
 }
 
-// IgnoreProfileContainerAttributesOrder is a CompareprofilesOption that ignores the order of profile container attributes.
-func IgnoreProfileContainerAttributesOrder() CompareProfilesOption {
-	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
-		orderProfileContainerAttributes(expected)
-		orderProfileContainerAttributes(actual)
-	})
-}
-
-func orderProfileContainerAttributes(metrics pprofile.Profiles) {
-	rms := metrics.ResourceProfiles()
-	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).ScopeProfiles()
-		for j := 0; j < ilms.Len(); j++ {
-			msl := ilms.At(j).Profiles()
-			for g := 0; g < msl.Len(); g++ {
-				for k := 0; k < msl.At(g).Attributes().Len(); k++ {
-					rawOrdered := internal.OrderMapByKey(msl.At(g).Attributes().AsRaw())
-					_ = msl.At(g).Attributes().FromRaw(rawOrdered)
-				}
-			}
-		}
-	}
-}
-
-// IgnoreProfileAttributesOrder is a CompareprofilesOption that ignores the order of profile attributes.
-func IgnoreProfileAttributesOrder() CompareProfilesOption {
-	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
-		orderProfileAttributes(expected)
-		orderProfileAttributes(actual)
-	})
-}
-
-func orderProfileAttributes(metrics pprofile.Profiles) {
-	rms := metrics.ResourceProfiles()
-	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).ScopeProfiles()
-		for j := 0; j < ilms.Len(); j++ {
-			msl := ilms.At(j).Profiles()
-			for g := 0; g < msl.Len(); g++ {
-				for k := 0; k < msl.At(g).Profile().AttributeTable().Len(); k++ {
-					rawOrdered := internal.OrderMapByKey(msl.At(g).Profile().AttributeTable().AsRaw())
-					_ = msl.At(g).Profile().AttributeTable().FromRaw(rawOrdered)
-				}
-			}
-		}
-	}
-}
-
 // IgnoreResourceProfilesOrder is a CompareProfilesOption that ignores the order of resource traces/metrics/profiles.
 func IgnoreResourceProfilesOrder() CompareProfilesOption {
 	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {

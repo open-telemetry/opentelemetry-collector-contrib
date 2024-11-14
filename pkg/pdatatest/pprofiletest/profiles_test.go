@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,6 +17,8 @@ import (
 )
 
 func TestCompareProfiles(t *testing.T) {
+	timestamp1 := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	timestamp2 := timestamp1.Add(5 * time.Second)
 	tcs := []struct {
 		name           string
 		expected       pprofile.Profiles
@@ -176,19 +179,220 @@ func TestCompareProfiles(t *testing.T) {
 				IgnoreScopeAttributeValue("scope-attr1"),
 			},
 		},
-
-		// TODO
-		// ignore scope attribute value
-		// ignore container order
-
-		// ignore profilecontainer attribute value
-		// ignore profilecontainer attribute order
-		// ignore profilecontainer timestamp value
-
-		// ignore profile attribute value
-		// ignore profile attribute order
-		// ignore profile timestamp value
-
+		{
+			name: "ignore profile container order",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("continer-attr1", "value1")
+				pc2 := l.Profiles().AppendEmpty()
+				pc2.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				pc2.Attributes().PutStr("continer-attr2", "value2")
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc2 := l.Profiles().AppendEmpty()
+				pc2.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				pc2.Attributes().PutStr("continer-attr2", "value2")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("continer-attr1", "value1")
+				return p
+			}(),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile containers are out of order: profile container "map[continer-attr1:value1]" expected at index 0, found at index 1; resource "map[key1:value1]": scope "scope1": profile containers are out of order: profile container "map[continer-attr2:value2]" expected at index 1, found at index 0`),
+			compareOptions: []CompareProfilesOption{
+				IgnoreProfileContainersOrder(),
+			},
+		},
+		{
+			name: "ignore profile container attribute value",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value1")
+				pc2 := l.Profiles().AppendEmpty()
+				pc2.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				pc2.Attributes().PutStr("container-attr2", "value2")
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value3")
+				pc2 := l.Profiles().AppendEmpty()
+				pc2.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				pc2.Attributes().PutStr("container-attr2", "value4")
+				return p
+			}(),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": missing expected profile container: map[container-attr1:value1]; resource "map[key1:value1]": scope "scope1": missing expected profile container: map[container-attr2:value2]; resource "map[key1:value1]": scope "scope1": unexpected profile container: map[container-attr1:value3]; resource "map[key1:value1]": scope "scope1": unexpected profile container: map[container-attr2:value4]`),
+			compareOptions: []CompareProfilesOption{
+				IgnoreProfileContainerAttributeValue("container-attr2"),
+				IgnoreProfileContainerAttributeValue("container-attr1"),
+			},
+		},
+		{
+			name: "ignore profile container timestamp values",
+			expected: func(timestamp time.Time) pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value1")
+				pc.SetStartTime(pcommon.NewTimestampFromTime(timestamp))
+				pc.SetEndTime(pcommon.NewTimestampFromTime(timestamp.Add(5 * time.Second)))
+				return p
+			}(timestamp1),
+			actual: func(timestamp time.Time) pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value1")
+				pc.SetStartTime(pcommon.NewTimestampFromTime(timestamp))
+				pc.SetEndTime(pcommon.NewTimestampFromTime(timestamp.Add(5 * time.Second)))
+				return p
+			}(timestamp2),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile container "map[container-attr1:value1]": start timestamp doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile container "map[container-attr1:value1]": end timestamp doesn't match expected: 1577836805000000000, actual: 1577836810000000000`),
+			compareOptions: []CompareProfilesOption{
+				IgnoreProfileContainerTimestampValues(),
+			},
+		},
+		{
+			name: "ignore profile attribute value",
+			expected: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pp := pc.Profile()
+				pp.AttributeTable().PutStr("attr1", "value1")
+				pc2 := l.Profiles().AppendEmpty()
+				pc2.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				pp2 := pc.Profile()
+				pp2.AttributeTable().PutStr("attr2", "value2")
+				return p
+			}(),
+			actual: func() pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pp := pc.Profile()
+				pp.AttributeTable().PutStr("attr1", "value1")
+				pc2 := l.Profiles().AppendEmpty()
+				pc2.SetProfileID(pprofile.ProfileID([]byte("profileid1111112")))
+				pp2 := pc.Profile()
+				pp2.AttributeTable().PutStr("attr2", "value3")
+				return p
+			}(),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile container "map[]": profile "map[]": attributes don't match expected: map[attr1:value1 attr2:value2], actual: map[attr1:value1 attr2:value3]`),
+			compareOptions: []CompareProfilesOption{
+				IgnoreProfileAttributeValue("attr2"),
+			},
+		},
+		{
+			name: "ignore profile timestamp values",
+			expected: func(timestamp time.Time) pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value1")
+				pp := pc.Profile()
+				pp.AttributeTable().PutStr("attr1", "value1")
+				pp.SetStartTime(pcommon.NewTimestampFromTime(timestamp))
+				pp.SetDuration(pcommon.NewTimestampFromTime(timestamp.Add(5 * time.Second)))
+				return p
+			}(timestamp1),
+			actual: func(timestamp time.Time) pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value1")
+				pp := pc.Profile()
+				pp.AttributeTable().PutStr("attr1", "value1")
+				pp.SetStartTime(pcommon.NewTimestampFromTime(timestamp))
+				pp.SetDuration(pcommon.NewTimestampFromTime(timestamp.Add(5 * time.Second)))
+				return p
+			}(timestamp2),
+			withoutOptions: errors.New(`resource "map[key1:value1]": scope "scope1": profile container "map[container-attr1:value1]": profile "map[container-attr1:value1]": startTime doesn't match expected: 1577836800000000000, actual: 1577836805000000000; resource "map[key1:value1]": scope "scope1": profile container "map[container-attr1:value1]": profile "map[container-attr1:value1]": duration doesn't match expected: 1577836805000000000, actual: 1577836810000000000`),
+			compareOptions: []CompareProfilesOption{
+				IgnoreProfileTimestampValues(),
+			},
+		},
+		{
+			name: "not equal without options",
+			expected: func(timestamp time.Time) pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value1")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value1")
+				pp := pc.Profile()
+				pp.AttributeTable().PutStr("attr1", "value1")
+				pp.SetStartTime(pcommon.NewTimestampFromTime(timestamp))
+				pp.SetDuration(pcommon.NewTimestampFromTime(timestamp.Add(5 * time.Second)))
+				return p
+			}(timestamp1),
+			actual: func(timestamp time.Time) pprofile.Profiles {
+				p := pprofile.NewProfiles()
+				rl := p.ResourceProfiles().AppendEmpty()
+				rl.Resource().Attributes().PutStr("key1", "value2")
+				l := rl.ScopeProfiles().AppendEmpty()
+				l.Scope().SetName("scope1")
+				pc := l.Profiles().AppendEmpty()
+				pc.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				pc.Attributes().PutStr("container-attr1", "value2")
+				pp := pc.Profile()
+				pp.AttributeTable().PutStr("attr1", "value2")
+				pp.SetStartTime(pcommon.NewTimestampFromTime(timestamp))
+				pp.SetDuration(pcommon.NewTimestampFromTime(timestamp.Add(5 * time.Second)))
+				return p
+			}(timestamp2),
+			withoutOptions: errors.New(`missing expected resource: map[key1:value1]; unexpected resource: map[key1:value2]`),
+		},
 	}
 
 	for _, tc := range tcs {
@@ -489,6 +693,30 @@ func TestCompareProfileContainer(t *testing.T) {
 				errors.New(`dropped attributes count doesn't match expected: 2, actual: 3`),
 				errors.New(`profileID does not match expected '70726f66696c65696431313131313131', actual '70726f66696c65696431313131313132'`),
 				fmt.Errorf(`profile "map[]": %w`, fmt.Errorf(`keepFrames does not match expected '1', actual '3'`)),
+			),
+		},
+		{
+			name: "not equal attributes",
+			expected: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				l.SetDroppedAttributesCount(2)
+				l.Attributes().PutStr("attr1", "va2")
+				p := l.Profile()
+				p.SetKeepFrames(1)
+				return l
+			}(),
+			actual: func() pprofile.ProfileContainer {
+				l := pprofile.NewProfileContainer()
+				l.SetProfileID(pprofile.ProfileID([]byte("profileid1111111")))
+				l.SetDroppedAttributesCount(2)
+				l.Attributes().PutStr("attr1", "va1")
+				p := l.Profile()
+				p.SetKeepFrames(1)
+				return l
+			}(),
+			err: multierr.Combine(
+				errors.New(`attributes don't match expected: map[attr1:va2], actual: map[attr1:va1]`),
 			),
 		},
 	}
