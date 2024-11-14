@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -190,7 +191,7 @@ func TestFirehoseRequest(t *testing.T) {
 
 			request := httptest.NewRequest(http.MethodPost, "/", requestBody)
 			request.Header.Set(headerContentType, "application/json")
-			request.Header.Set(headerContentLength, fmt.Sprintf("%d", requestBody.Len()))
+			request.Header.Set(headerContentLength, strconv.Itoa(requestBody.Len()))
 			request.Header.Set(headerFirehoseRequestID, testFirehoseRequestID)
 			request.Header.Set(headerFirehoseAccessKey, testFirehoseAccessKey)
 			if testCase.headers != nil {

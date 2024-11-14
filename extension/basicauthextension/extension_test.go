@@ -273,7 +273,6 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 }
 
 func TestBasicAuth_ClientInvalid(t *testing.T) {
-
 	t.Run("invalid username format", func(t *testing.T) {
 		ext := newClientAuthExtension(&Config{
 			ClientAuth: &ClientAuthSettings{

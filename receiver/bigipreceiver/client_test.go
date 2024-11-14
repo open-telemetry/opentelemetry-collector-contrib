@@ -543,7 +543,8 @@ func TestGetPoolMembers(t *testing.T) {
 				require.EqualError(t, err, errors.New("non 200 code returned 401").Error())
 				require.Equal(t, expected, poolMembers)
 			},
-		}, {
+		},
+		{
 			desc: "Successful call empty body for some",
 			testFunc: func(t *testing.T) {
 				// Setup test server

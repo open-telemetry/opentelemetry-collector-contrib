@@ -14,7 +14,6 @@ import (
 )
 
 func TestNewLogs(t *testing.T) {
-
 	t.Run("empty", func(t *testing.T) {
 		expected := plog.NewLogs()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("", "", "")))

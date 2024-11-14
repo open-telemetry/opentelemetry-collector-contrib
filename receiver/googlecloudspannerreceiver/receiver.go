@@ -110,7 +110,8 @@ func (r *googleCloudSpannerReceiver) initialize(ctx context.Context) error {
 }
 
 func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Context,
-	parsedMetadata []*metadata.MetricsMetadata) error {
+	parsedMetadata []*metadata.MetricsMetadata,
+) error {
 	readerConfig := statsreader.ReaderConfig{
 		BackfillEnabled:                   r.config.BackfillEnabled,
 		TopMetricsQueryMaxRows:            r.config.TopMetricsQueryMaxRows,
@@ -163,7 +164,8 @@ func (r *googleCloudSpannerReceiver) initializeMetricsBuilder(parsedMetadata []*
 }
 
 func newProjectReader(ctx context.Context, logger *zap.Logger, project Project, parsedMetadata []*metadata.MetricsMetadata,
-	readerConfig statsreader.ReaderConfig) (*statsreader.ProjectReader, error) {
+	readerConfig statsreader.ReaderConfig,
+) (*statsreader.ProjectReader, error) {
 	logger.Debug("Constructing project reader for project", zap.String("project id", project.ID))
 
 	databaseReadersCount := 0
