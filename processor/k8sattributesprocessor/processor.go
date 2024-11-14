@@ -59,6 +59,7 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 
 	for _, opt := range allOptions {
 		if err := opt(kp); err != nil {
+			kp.logger.Error("Could not apply option", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return nil
 		}
@@ -68,6 +69,7 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 	if kp.kc == nil {
 		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
 		if err != nil {
+			kp.logger.Error("Could not initialise kube client", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			return nil
 		}
