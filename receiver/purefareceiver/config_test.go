@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewID(metadata.Type),
 			expected: &Config{
-				ClientConfig: clientConfig, 
+				ClientConfig: clientConfig,
 				ArrayName:    "foobar.example.com",
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
