@@ -55,7 +55,6 @@ func TestStreamLoadUrl(t *testing.T) {
 
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
-
 	if err != nil {
 		return 0, err
 	}
@@ -63,7 +62,6 @@ func findRandomPort() (int, error) {
 	port := l.Addr().(*net.TCPAddr).Port
 
 	err = l.Close()
-
 	if err != nil {
 		return 0, err
 	}

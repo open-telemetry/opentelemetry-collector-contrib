@@ -45,7 +45,7 @@ type loadBalancer struct {
 func newLoadBalancer(logger *zap.Logger, cfg component.Config, factory componentFactory, telemetry *metadata.TelemetryBuilder) (*loadBalancer, error) {
 	oCfg := cfg.(*Config)
 
-	var count = 0
+	count := 0
 	if oCfg.Resolver.DNS != nil {
 		count++
 	}

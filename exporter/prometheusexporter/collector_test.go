@@ -158,7 +158,6 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	pMap := pcommon.NewMap()
 
 	c := collector{
-
 		accumulator: &mockAccumulator{
 			metrics:            []pmetric.Metric{metric},
 			resourceAttributes: pMap,
@@ -200,7 +199,6 @@ func TestConvertMonotonicSumExemplar(t *testing.T) {
 	pMap := pcommon.NewMap()
 
 	c := collector{
-
 		accumulator: &mockAccumulator{
 			metrics:            []pmetric.Metric{metric},
 			resourceAttributes: pMap,
@@ -233,6 +231,7 @@ func (c *errorCheckCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zap
 	}
 	return ce
 }
+
 func (c *errorCheckCore) Write(ent zapcore.Entry, _ []zapcore.Field) error {
 	if ent.Level == zapcore.ErrorLevel {
 		c.errorMessages = append(c.errorMessages, ent.Message)
