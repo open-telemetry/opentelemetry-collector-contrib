@@ -67,7 +67,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 					// Uses proto.Marshal to convert the WriteRequest into bytes array
 					errMarshal := buf.protobuf.Marshal(request)
 					if errMarshal != nil {
-						multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
 						return
 					}
 

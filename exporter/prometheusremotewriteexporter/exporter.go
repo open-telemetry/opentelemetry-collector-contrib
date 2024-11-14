@@ -232,7 +232,6 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		default:
 			return fmt.Errorf("unsupported remote-write protobuf message: %v", prwe.RemoteWriteProtoMsg)
 		}
-
 	}
 }
 
@@ -308,7 +307,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 					// Uses proto.Marshal to convert the WriteRequest into bytes array
 					errMarshal := buf.protobuf.Marshal(request)
 					if errMarshal != nil {
-						multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
 						return
 					}
 
