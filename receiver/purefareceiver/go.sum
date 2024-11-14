@@ -609,8 +609,8 @@ go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 h1:RftAcQUY5UOf
 go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0/go.mod h1:ZuHrQ4pWguh6dw0DgTfcUtdY/T+cnOJJNP6LMbm5Y5A=
 go.opentelemetry.io/collector/consumer/consumertest v0.113.0 h1:ua2AjNx3DUA8qElXNkggB4w3VDL/rBKBvryOQkhumH8=
 go.opentelemetry.io/collector/consumer/consumertest v0.113.0/go.mod h1:vK8o4ZTZSiG3rVyqxZcCNmT/cvEfx34ig7V65L9+6Rg=
-go.opentelemetry.io/collector/exporter v0.113.0 h1:lDZJ6xfuhyLsT/7lqLhIN/ftA6G+9fuYFtubPFvNDxo=
-go.opentelemetry.io/collector/exporter v0.113.0/go.mod h1:0W4NBf5NjWYxR8oJodmOybgN4O0MLazdJwwHevirvXg=
+go.opentelemetry.io/collector/exporter v0.113.1-0.20241113205527-54adb32b4964 h1:B8tT9VKkLQOlIqNBzZ5BpwKOrnNuLu34GzbePf5EKUg=
+go.opentelemetry.io/collector/exporter v0.113.1-0.20241113205527-54adb32b4964/go.mod h1:oiX4487Hn/uNknZWVHucYvNVWDvjwU2fShE0cKsZJqg=
 go.opentelemetry.io/collector/exporter/exporterprofiles v0.113.0 h1:8bsk3wYYNr+WAM5nZkFjiLYSTH9MsY2tm7nUpMWt3qc=
 go.opentelemetry.io/collector/exporter/exporterprofiles v0.113.0/go.mod h1:/HFWF846XePYL/qKDtcEAFgkiGSkLUTaC59A5F48axM=
 go.opentelemetry.io/collector/exporter/exportertest v0.113.0 h1:U6cRxjJS7td8iNriUI2QfEdH+Yj60ytyvpmnmKTw0+8=

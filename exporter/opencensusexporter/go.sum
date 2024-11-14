@@ -144,8 +144,8 @@ go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 h1:RftAcQUY5UOf
 go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0/go.mod h1:ZuHrQ4pWguh6dw0DgTfcUtdY/T+cnOJJNP6LMbm5Y5A=
 go.opentelemetry.io/collector/consumer/consumertest v0.113.0 h1:ua2AjNx3DUA8qElXNkggB4w3VDL/rBKBvryOQkhumH8=
 go.opentelemetry.io/collector/consumer/consumertest v0.113.0/go.mod h1:vK8o4ZTZSiG3rVyqxZcCNmT/cvEfx34ig7V65L9+6Rg=
-go.opentelemetry.io/collector/exporter v0.113.0 h1:lDZJ6xfuhyLsT/7lqLhIN/ftA6G+9fuYFtubPFvNDxo=
-go.opentelemetry.io/collector/exporter v0.113.0/go.mod h1:0W4NBf5NjWYxR8oJodmOybgN4O0MLazdJwwHevirvXg=
+go.opentelemetry.io/collector/exporter v0.113.1-0.20241113205527-54adb32b4964 h1:B8tT9VKkLQOlIqNBzZ5BpwKOrnNuLu34GzbePf5EKUg=
+go.opentelemetry.io/collector/exporter v0.113.1-0.20241113205527-54adb32b4964/go.mod h1:oiX4487Hn/uNknZWVHucYvNVWDvjwU2fShE0cKsZJqg=
 go.opentelemetry.io/collector/exporter/exporterprofiles v0.113.0 h1:8bsk3wYYNr+WAM5nZkFjiLYSTH9MsY2tm7nUpMWt3qc=
 go.opentelemetry.io/collector/exporter/exporterprofiles v0.113.0/go.mod h1:/HFWF846XePYL/qKDtcEAFgkiGSkLUTaC59A5F48axM=
 go.opentelemetry.io/collector/exporter/exportertest v0.113.0 h1:U6cRxjJS7td8iNriUI2QfEdH+Yj60ytyvpmnmKTw0+8=
@@ -182,8 +182,8 @@ go.opentelemetry.io/otel/metric v1.32.0 h1:xV2umtmNcThh2/a/aCP+h64Xx5wsj8qqnkYZk
 go.opentelemetry.io/otel/metric v1.32.0/go.mod h1:jH7CIbbK6SH2V2wE16W05BHCtIDzauciCRLoc/SyMv8=
 go.opentelemetry.io/otel/sdk v1.32.0 h1:RNxepc9vK59A8XsgZQouW8ue8Gkb4jpWtJm9ge5lEG4=
 go.opentelemetry.io/otel/sdk v1.32.0/go.mod h1:LqgegDBjKMmb2GC6/PrTnteJG39I8/vJCAP9LlJXEjU=
-go.opentelemetry.io/otel/sdk/metric v1.31.0 h1:i9hxxLJF/9kkvfHppyLL55aW7iIJz4JjxTeYusH7zMc=
-go.opentelemetry.io/otel/sdk/metric v1.31.0/go.mod h1:CRInTMVvNhUKgSAMbKyTMxqOBC0zgyxzW55lZzX43Y8=
+go.opentelemetry.io/otel/sdk/metric v1.32.0 h1:rZvFnvmvawYb0alrYkjraqJq0Z4ZUJAiyYCU9snn1CU=
+go.opentelemetry.io/otel/sdk/metric v1.32.0/go.mod h1:PWeZlq0zt9YkYAp3gjKZ0eicRYvOh1Gd+X99x6GHpCQ=
 go.opentelemetry.io/otel/trace v1.32.0 h1:WIC9mYrXf8TmY/EXuULKc8hR17vE+Hjv2cssQDe03fM=
 go.opentelemetry.io/otel/trace v1.32.0/go.mod h1:+i4rkvCraA+tG6AzwloGaCtkx53Fa+L+V8e9a7YvhT8=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=

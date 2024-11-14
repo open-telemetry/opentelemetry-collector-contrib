@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.19.0
 	go.opentelemetry.io/collector/confmap v1.19.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.113.0
-	go.opentelemetry.io/collector/exporter v0.113.0
+	go.opentelemetry.io/collector/exporter v0.113.1-0.20241113205527-54adb32b4964
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
 	go.opentelemetry.io/collector/pdata v1.19.0
 	go.opentelemetry.io/collector/pipeline v0.113.0

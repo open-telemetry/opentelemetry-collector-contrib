@@ -76,7 +76,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.19.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.113.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.113.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.113.1-0.20241113205527-54adb32b4964 // indirect
 	go.opentelemetry.io/collector/extension v0.113.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.113.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.113.0 // indirect

@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.19.0
 	go.opentelemetry.io/collector/consumer v0.113.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
-	go.opentelemetry.io/collector/exporter v0.113.0
+	go.opentelemetry.io/collector/exporter v0.113.1-0.20241113205527-54adb32b4964
 	go.opentelemetry.io/collector/featuregate v1.19.0
 	go.opentelemetry.io/collector/otelcol v0.113.0
 	go.opentelemetry.io/collector/pdata v1.19.0
