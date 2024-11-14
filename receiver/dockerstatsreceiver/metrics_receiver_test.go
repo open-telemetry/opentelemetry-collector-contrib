@@ -30,8 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-var mockFolder = filepath.Join("testdata", "mock")
-
 var (
 	metricEnabled     = metadata.MetricConfig{Enabled: true}
 	allMetricsEnabled = metadata.MetricsConfig{
@@ -120,7 +118,7 @@ var (
 	}
 )
 
-func TestNewReceiver(t *testing.T) {
+func TestNewMetricsReceiver(t *testing.T) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 1 * time.Second,
@@ -134,7 +132,7 @@ func TestNewReceiver(t *testing.T) {
 	assert.NotNil(t, mr)
 }
 
-func TestErrorsInStart(t *testing.T) {
+func TestErrorsInStartMetrics(t *testing.T) {
 	unreachable := "unix:///not/a/thing.sock"
 	cfg := &Config{
 		ControllerConfig: scraperhelper.ControllerConfig{
