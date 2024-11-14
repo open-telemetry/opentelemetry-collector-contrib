@@ -18,7 +18,6 @@ func TestNewLogs(t *testing.T) {
 		expected := plog.NewLogs()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("", "", "")))
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New()))
-		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New()))
 	})
 
 	t.Run("simple", func(t *testing.T) {
