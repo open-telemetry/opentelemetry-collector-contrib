@@ -27,8 +27,7 @@ type MetricConfig struct {
 	Sum         SumMetric   `mapstructure:"sum"`
 }
 
-type GaugeMetric struct {
-}
+type GaugeMetric struct{}
 
 type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`

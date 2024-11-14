@@ -87,7 +87,6 @@ func (p *PipelineSelector) setToNextPriorityPipeline(idx int) {
 
 // RetryHighPriorityPipelines responsible for single iteration through all higher priority pipelines
 func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retryGap time.Duration) {
-
 	ticker := time.NewTicker(retryGap)
 
 	defer ticker.Stop()

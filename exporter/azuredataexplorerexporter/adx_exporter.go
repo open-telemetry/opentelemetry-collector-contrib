@@ -61,7 +61,6 @@ func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric
 }
 
 func (e *adxDataProducer) ingestData(b []string) error {
-
 	ingestReader := strings.NewReader(strings.Join(b, nextline))
 
 	if _, err := e.ingestor.FromReader(context.Background(), ingestReader, e.ingestOptions...); err != nil {
@@ -128,7 +127,6 @@ func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.T
 }
 
 func (e *adxDataProducer) Close(context.Context) error {
-
 	var err error
 
 	err = e.ingestor.Close()

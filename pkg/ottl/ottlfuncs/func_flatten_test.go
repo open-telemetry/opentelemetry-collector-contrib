@@ -165,6 +165,7 @@ func Test_flatten(t *testing.T) {
 		})
 	}
 }
+
 func Test_flatten_bad_target(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {

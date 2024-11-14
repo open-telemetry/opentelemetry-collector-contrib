@@ -32,9 +32,7 @@ const (
 	kubeProxy          = "kube-proxy"
 )
 
-var (
-	re = regexp.MustCompile(splitRegexStr)
-)
+var re = regexp.MustCompile(splitRegexStr)
 
 type cachedEntry struct {
 	pod      corev1.Pod
@@ -283,7 +281,8 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 
 		p.setCachedEntry(podKey, &cachedEntry{
 			pod:      pod,
-			creation: now})
+			creation: now,
+		})
 	}
 
 	p.nodeInfo.setNodeStats(nodeStats{podCnt: podCount, containerCnt: containerCount, memReq: memRequest, cpuReq: cpuRequest})

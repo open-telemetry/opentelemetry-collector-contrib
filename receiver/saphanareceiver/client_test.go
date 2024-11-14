@@ -137,7 +137,8 @@ func TestSimpleQueryOutput(t *testing.T) {
 			{
 				key: "value",
 				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
-					map[string]string) error {
+					map[string]string,
+				) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},
@@ -145,7 +146,8 @@ func TestSimpleQueryOutput(t *testing.T) {
 			{
 				key: "rate",
 				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
-					map[string]string) error {
+					map[string]string,
+				) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},
@@ -193,7 +195,8 @@ func TestNullOutput(t *testing.T) {
 			{
 				key: "value",
 				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
-					map[string]string) error {
+					map[string]string,
+				) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},
@@ -201,7 +204,8 @@ func TestNullOutput(t *testing.T) {
 			{
 				key: "rate",
 				addMetricFunction: func(*metadata.MetricsBuilder, pcommon.Timestamp, string,
-					map[string]string) error {
+					map[string]string,
+				) error {
 					// Function is a no-op as it's not required for this test
 					return nil
 				},

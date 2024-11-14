@@ -19,7 +19,7 @@ import (
 
 func TestScrape(t *testing.T) {
 	ctx := context.Background()
-	fakeDate := time.Date(2006, 01, 02, 03, 04, 05, 0, time.UTC)
+	fakeDate := time.Date(2006, 0o1, 0o2, 0o3, 0o4, 0o5, 0, time.UTC)
 
 	s := newUptimeScraper(ctx, receivertest.NewNopSettings(), &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

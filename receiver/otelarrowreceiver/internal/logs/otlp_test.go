@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
 
@@ -206,7 +206,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) (net.Addr, *tracet
 		ReceiverCreateSettings: set,
 	})
 	require.NoError(t, err)
-	bq := admission.NewBoundedQueue(telset, maxBytes, 0)
+	bq := admission2.NewBoundedQueue(telset, maxBytes, 0)
 	r := New(zap.NewNop(), lc, obsrecv, bq)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
