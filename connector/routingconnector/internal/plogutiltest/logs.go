@@ -5,7 +5,7 @@ package plogutiltest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import "go.opentelemetry.io/collector/pdata/plog"
 
-// TestLogs returns a plog.Logs with a uniform structure where resources, scopes, and
+// NewLogs returns a plog.Logs with a uniform structure where resources, scopes, and
 // log records are identical across all instances, except for one identifying field.
 //
 // Identifying fields:
@@ -13,7 +13,7 @@ import "go.opentelemetry.io/collector/pdata/plog"
 // - Scopes have a name with a value of "scopeN".
 // - LogRecords have a body with a value of "logN".
 //
-// Example: TestLogs("AB", "XYZ", "1234") returns:
+// Example: NewLogs("AB", "XYZ", "1234") returns:
 //
 //	resourceA, resourceB
 //	    each with scopeX, scopeY, scopeZ
@@ -37,42 +37,34 @@ func NewLogs(resourceIDs, scopeIDs, logRecordIDs string) plog.Logs {
 	return ld
 }
 
-type Resource struct {
-	id     byte
-	scopes []Scope
-}
-
-type Scope struct {
-	id   byte
-	logs string
-}
-
-func WithResource(id byte, scopes ...Scope) Resource {
-	r := Resource{id: id}
-	r.scopes = append(r.scopes, scopes...)
-	return r
-}
-
-func WithScope(id byte, logs string) Scope {
-	return Scope{id: id, logs: logs}
-}
-
-// NewLogsFromOpts creates a plog.Logs with the specified resources, scopes, and logs.
-// The general idea is the same as NewLogs, but this function allows for more flexibility
-// in creating non-uniform structures.
-func NewLogsFromOpts(resources ...Resource) plog.Logs {
+func New(resources ...plog.ResourceLogs) plog.Logs {
 	ld := plog.NewLogs()
 	for _, resource := range resources {
-		r := ld.ResourceLogs().AppendEmpty()
-		r.Resource().Attributes().PutStr("resourceName", "resource"+string(resource.id))
-		for _, scope := range resource.scopes {
-			s := r.ScopeLogs().AppendEmpty()
-			s.Scope().SetName("scope" + string(scope.id))
-			for i := 0; i < len(scope.logs); i++ {
-				l := s.LogRecords().AppendEmpty()
-				l.Body().SetStr("log" + string(scope.logs[i]))
-			}
-		}
+		resource.CopyTo(ld.ResourceLogs().AppendEmpty())
 	}
 	return ld
+}
+
+func Resource(id string, scopes ...plog.ScopeLogs) plog.ResourceLogs {
+	rl := plog.NewResourceLogs()
+	rl.Resource().Attributes().PutStr("resourceName", "resource"+id)
+	for _, scope := range scopes {
+		scope.CopyTo(rl.ScopeLogs().AppendEmpty())
+	}
+	return rl
+}
+
+func Scope(id string, logs ...plog.LogRecord) plog.ScopeLogs {
+	s := plog.NewScopeLogs()
+	s.Scope().SetName("scope" + id)
+	for _, log := range logs {
+		log.CopyTo(s.LogRecords().AppendEmpty())
+	}
+	return s
+}
+
+func LogRecord(id string) plog.LogRecord {
+	lr := plog.NewLogRecord()
+	lr.Body().SetStr("log" + id)
+	return lr
 }
