@@ -21,7 +21,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 )
 
 const (
@@ -232,7 +231,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]any{
+					mergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -241,7 +240,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]any{
+					mergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -295,7 +294,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]any{
+					mergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -304,7 +303,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]any{
+					mergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -338,7 +337,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(map[string]any{
+					mergeRawMaps(map[string]any{
 						"k_n0": "vn0",
 						"k_n1": "vn1",
 						"k_r0": "vr0",
@@ -372,7 +371,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]any{
+					mergeRawMaps(labelMap, map[string]any{
 						"cloud_account_id": "efgh",
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_region":     "us-east",
@@ -405,7 +404,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]any{
+					mergeRawMaps(labelMap, map[string]any{
 						"cloud_provider":   conventions.AttributeCloudProviderAWS,
 						"cloud_account_id": "efgh",
 						"cloud_region":     "us-east",
@@ -438,7 +437,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]any{
+					mergeRawMaps(labelMap, map[string]any{
 						"host_id":        "abcd",
 						"cloud_provider": conventions.AttributeCloudProviderGCP,
 						"k_r0":           "vr0",
@@ -469,7 +468,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeRawMaps(labelMap, map[string]any{
+					mergeRawMaps(labelMap, map[string]any{
 						"gcp_id":           "efgh_abcd",
 						"k_r0":             "vr0",
 						"k_r1":             "vr1",
@@ -1363,4 +1362,17 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 			}
 		})
 	}
+}
+
+// mergeRawMaps merges n maps with a later map's keys overriding earlier maps.
+func mergeRawMaps(maps ...map[string]any) map[string]any {
+	ret := map[string]any{}
+
+	for _, m := range maps {
+		for k, v := range m {
+			ret[k] = v
+		}
+	}
+
+	return ret
 }

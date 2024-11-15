@@ -5,12 +5,12 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 )
@@ -50,7 +50,7 @@ func TransformObjectMeta(om v1.ObjectMeta) v1.ObjectMeta {
 // live on v1.ObjectMeta.
 func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetadata {
 	rType := strings.ToLower(resourceType)
-	metadata := maps.MergeStringMaps(map[string]string{}, om.Labels)
+	metadata := maps.Clone(om.Labels)
 
 	metadata[constants.K8sKeyWorkLoadKind] = resourceType
 	metadata[constants.K8sKeyWorkLoadName] = om.Name
