@@ -42,13 +42,12 @@ func newAMQPMessagingServiceFactory(cfg *Config, logger *zap.Logger) (messagingS
 		return nil, err
 	}
 
-	broker := cfg.Broker[0]
 	// If the TLS config is nil, insecure is true and we should use amqp rather than amqps
 	scheme := "amqp"
 	if loadedTLSConfig != nil {
 		scheme = "amqps"
 	}
-	amqpHostAddress := fmt.Sprintf("%s://%s", scheme, broker)
+	amqpHostAddress := fmt.Sprintf("%s://%s", scheme, cfg.Broker)
 
 	connectConfig := &amqpConnectConfig{
 		addr:       amqpHostAddress,

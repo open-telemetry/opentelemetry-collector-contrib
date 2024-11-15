@@ -28,8 +28,8 @@ var (
 
 // Config defines configuration for Solace receiver.
 type Config struct {
-	// The list of solace brokers (default localhost:5671)
-	Broker []string `mapstructure:"broker"`
+	// The solace broker (default localhost:5671)
+	Broker string `mapstructure:"broker"`
 
 	// The name of the solace queue to consume from, it is required parameter
 	Queue string `mapstructure:"queue"`

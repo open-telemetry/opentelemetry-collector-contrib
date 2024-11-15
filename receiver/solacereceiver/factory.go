@@ -35,7 +35,7 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Broker:     []string{defaultHost},
+		Broker:     defaultHost,
 		MaxUnacked: defaultMaxUnaked,
 		Auth:       Authentication{},
 		TLS: configtls.ClientConfig{

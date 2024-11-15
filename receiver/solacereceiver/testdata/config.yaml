@@ -1,5 +1,5 @@
 solace/primary:
-  broker: [ myHost:5671 ]
+  broker: myHost:5671
   auth:
     sasl_plain:
       username: otel
@@ -20,12 +20,12 @@ solace/backup:
     insecure: true
 
 solace/noqueue:
-  broker: [ myHost:5671 ]
+  broker: myHost:5671
   auth:
     sasl_plain:
       username: otel
       password: otel01
 
 solace/noauth:
-  broker: [ myHost:5671 ]
+  broker: myHost:5671
   queue: queue://#trace-profile123
