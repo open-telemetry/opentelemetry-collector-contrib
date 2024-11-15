@@ -46,7 +46,17 @@ type Config struct {
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Auth.PlainText == nil && cfg.Auth.External == nil && cfg.Auth.XAuth2 == nil {
+	authMethod := 0
+	if cfg.Auth.PlainText != nil {
+		authMethod++
+	}
+	if cfg.Auth.External != nil {
+		authMethod++
+	}
+	if cfg.Auth.XAuth2 != nil {
+		authMethod++
+	}
+	if authMethod != 1 {
 		return errMissingAuthDetails
 	}
 	if len(strings.TrimSpace(cfg.Queue)) == 0 {
