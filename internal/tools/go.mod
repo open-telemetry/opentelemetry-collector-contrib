@@ -16,8 +16,8 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.15.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.15.0
 	go.opentelemetry.io/build-tools/multimod v0.15.0
-	go.opentelemetry.io/collector/cmd/builder v0.113.0
-	go.opentelemetry.io/collector/cmd/mdatagen v0.113.0
+	go.opentelemetry.io/collector/cmd/builder v0.113.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/cmd/mdatagen v0.113.1-0.20241115165626-8b99b8023ca3
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.26.0
 	golang.org/x/vuln v1.1.3
@@ -134,7 +134,7 @@ require (
 	github.com/knadh/koanf/providers/env v1.0.0 // indirect
 	github.com/knadh/koanf/providers/file v1.1.2 // indirect
 	github.com/knadh/koanf/providers/fs v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.1 // indirect
+	github.com/knadh/koanf/v2 v2.1.2 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.10 // indirect
 	github.com/kyoh86/exportloopref v0.1.11 // indirect
@@ -226,11 +226,11 @@ require (
 	go-simpler.org/musttag v0.12.2 // indirect
 	go-simpler.org/sloglint v0.7.1 // indirect
 	go.opentelemetry.io/build-tools v0.15.0 // indirect
-	go.opentelemetry.io/collector/component v0.113.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.113.0 // indirect
+	go.opentelemetry.io/collector/component v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/collector/confmap v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
-	go.opentelemetry.io/collector/filter v0.113.0 // indirect
+	go.opentelemetry.io/collector/filter v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/collector/pdata v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/metric v1.31.0 // indirect
