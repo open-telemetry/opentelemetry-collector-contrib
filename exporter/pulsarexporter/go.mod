@@ -11,14 +11,14 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.113.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.113.0
-	go.opentelemetry.io/collector/config/configopaque v1.19.0
-	go.opentelemetry.io/collector/config/configretry v1.19.0
-	go.opentelemetry.io/collector/confmap v1.19.0
+	go.opentelemetry.io/collector/config/configopaque v1.19.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/config/configretry v1.19.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/confmap v1.19.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/consumer v0.113.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.113.0
 	go.opentelemetry.io/collector/exporter v0.113.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.113.0
-	go.opentelemetry.io/collector/pdata v1.19.0
+	go.opentelemetry.io/collector/pdata v1.19.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/semconv v0.113.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

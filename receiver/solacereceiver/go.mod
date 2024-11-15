@@ -9,14 +9,14 @@ require (
 	github.com/Azure/go-amqp v1.2.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.113.0
-	go.opentelemetry.io/collector/config/configopaque v1.19.0
+	go.opentelemetry.io/collector/config/configopaque v1.19.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/config/configtelemetry v0.113.0
-	go.opentelemetry.io/collector/config/configtls v1.19.0
-	go.opentelemetry.io/collector/confmap v1.19.0
+	go.opentelemetry.io/collector/config/configtls v1.19.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/confmap v1.19.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/consumer v0.113.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.113.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.0
-	go.opentelemetry.io/collector/pdata v1.19.0
+	go.opentelemetry.io/collector/pdata v1.19.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/pipeline v0.113.0
 	go.opentelemetry.io/collector/receiver v0.113.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.113.0
