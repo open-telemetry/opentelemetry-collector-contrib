@@ -10,6 +10,18 @@ solace/primary:
     delayed_retry:
       delay: 1s
 
+solace/brokerString:
+  broker: myHost:5671
+  auth:
+    sasl_plain:
+      username: otel
+      password: otel01$
+  queue: queue://#trace-profile123
+  max_unacknowledged: 1234
+  flow_control:
+    delayed_retry:
+      delay: 1s
+
 solace/backup:
   auth:
     sasl_xauth2:
