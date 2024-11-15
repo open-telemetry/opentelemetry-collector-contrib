@@ -179,7 +179,8 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterValue winperfcounters.CounterValue,
-	attributes map[string]string) {
+	attributes map[string]string,
+) {
 	var dps pmetric.NumberDataPointSlice
 
 	if metric.Type() == pmetric.MetricTypeGauge {

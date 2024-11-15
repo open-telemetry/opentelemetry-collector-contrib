@@ -303,7 +303,6 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 }
 
 func TestStartListenerClosed(t *testing.T) {
-
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
@@ -502,8 +501,8 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	exportBidiFn := func(
 		t *testing.T,
 		cc *grpc.ClientConn,
-		msg *agenttracepb.ExportTraceServiceRequest) error {
-
+		msg *agenttracepb.ExportTraceServiceRequest,
+	) error {
 		acc := agenttracepb.NewTraceServiceClient(cc)
 		stream, err := acc.Export(context.Background())
 		require.NoError(t, err)
@@ -660,8 +659,8 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	exportBidiFn := func(
 		t *testing.T,
 		cc *grpc.ClientConn,
-		msg *agentmetricspb.ExportMetricsServiceRequest) error {
-
+		msg *agentmetricspb.ExportMetricsServiceRequest,
+	) error {
 		acc := agentmetricspb.NewMetricsServiceClient(cc)
 		stream, err := acc.Export(context.Background())
 		require.NoError(t, err)

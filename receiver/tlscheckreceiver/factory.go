@@ -17,9 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
 
-var (
-	errConfigNotTLSCheck = errors.New(`invalid config`)
-)
+var errConfigNotTLSCheck = errors.New(`invalid config`)
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(

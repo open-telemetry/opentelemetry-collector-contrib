@@ -466,7 +466,6 @@ func handleShowTable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
 		return
 	}
-
 }
 
 func getShowTableResponse(requestBody string) []byte {
@@ -486,7 +485,6 @@ func getShowTableResponse(requestBody string) []byte {
 	default:
 		return []byte("")
 	}
-
 }
 
 // setupTestMain function (runs before tests start)

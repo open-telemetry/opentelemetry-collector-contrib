@@ -28,7 +28,8 @@ type Record struct {
 func main() {
 	dynamo = dynamodb.New(session.Must(session.NewSession(
 		&aws.Config{
-			Region: aws.String("us-west-2")},
+			Region: aws.String("us-west-2"),
+		},
 	)))
 	xray.AWS(dynamo.Client)
 
