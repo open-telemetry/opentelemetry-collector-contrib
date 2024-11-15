@@ -606,6 +606,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, set.Shutdown(context.Background()))
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
