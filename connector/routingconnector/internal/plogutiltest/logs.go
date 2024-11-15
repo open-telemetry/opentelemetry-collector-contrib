@@ -37,7 +37,7 @@ func NewLogs(resourceIDs, scopeIDs, logRecordIDs string) plog.Logs {
 	return ld
 }
 
-func New(resources ...plog.ResourceLogs) plog.Logs {
+func NewLogsFromOpts(resources ...plog.ResourceLogs) plog.Logs {
 	ld := plog.NewLogs()
 	for _, resource := range resources {
 		resource.CopyTo(ld.ResourceLogs().AppendEmpty())
