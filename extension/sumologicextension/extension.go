@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -790,7 +791,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			Environment: se.conf.CollectorEnvironment,
 		},
 		CollectorDetails: api.OpenMetadataCollectorDetails{
-			RunningVersion: se.buildVersion,
+			RunningVersion: cleanupBuildVersion(se.buildVersion),
 		},
 		NetworkDetails: api.OpenMetadataNetworkDetails{
 			HostIPAddress: ip,
@@ -1049,4 +1050,21 @@ func getHostname(logger *zap.Logger) (string, error) {
 	logger.Debug("failed to get fqdn", zap.Error(err))
 
 	return os.Hostname()
+}
+
+// cleanupBuildVersion adds a leading 'v' and removes the tailing build hash to make sure the
+// backend understand the build number. Note that only version strings with the following format will be
+// cleaned up. All other version formats will remain the same.
+// Cleaned up format: 0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113
+func cleanupBuildVersion(version string) string {
+	pattern := "(^[0-9]+\\.[0-9]+\\.[0-9]+-sumo-[0-9]+)-[0-9a-f]{40}$"
+	re := regexp.MustCompile(pattern)
+
+	sm := re.FindAllStringSubmatch(version, 1)
+	if len(sm) == 1 {
+		ver := sm[0][1]
+		return "v" + ver
+	}
+
+	return version
 }
