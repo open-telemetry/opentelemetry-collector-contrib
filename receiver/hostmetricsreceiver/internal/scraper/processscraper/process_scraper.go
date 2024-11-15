@@ -187,6 +187,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	if s.config.MuteProcessAllErrors {
+		return s.mb.Emit(), nil
+	}
+
 	return s.mb.Emit(), errs.Combine()
 }
 
@@ -397,7 +401,6 @@ func (s *scraper) scrapeAndAppendContextSwitchMetrics(ctx context.Context, now p
 	}
 
 	contextSwitches, err := handle.NumCtxSwitchesWithContext(ctx)
-
 	if err != nil {
 		return err
 	}
@@ -414,7 +417,6 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Context, 
 	}
 
 	fds, err := handle.NumFDsWithContext(ctx)
-
 	if err != nil {
 		return err
 	}

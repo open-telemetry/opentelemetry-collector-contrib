@@ -7,11 +7,11 @@ import (
 	"context"
 	"os"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
@@ -22,9 +22,11 @@ const (
 	TypeStr = "filesystem"
 )
 
+// scraperType is the component type used for the built scraper.
+var scraperType component.Type = component.MustNewType(TypeStr)
+
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // Type gets the type of the scraper config created by this Factory.
 func (f *Factory) Type() string {
@@ -69,6 +71,6 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperWithComponentType(
-		hostmeta.Type, s.scrape, scraperhelper.WithStart(s.start))
+	return scraperhelper.NewScraper(
+		scraperType, s.scrape, scraperhelper.WithStart(s.start))
 }

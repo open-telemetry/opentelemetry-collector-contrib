@@ -1,12 +1,4 @@
 Caleb-Hurshman
-MaxKsyunz
-MitchellGale
-YANG-DB
-asaharn
-emreyalvac
-shaochengwang
-yiyang5055
-am-kinetica
 cheempz
 jerrytfleung
 driverpt
@@ -18,8 +10,13 @@ zpzhuSplunk
 thmshmm
 galrose
 cemdk
-tomasmota
 m1rp
 jriguera
 abhishek-at-cloudwerx
 joker-star-l
+michael-burt
+Hemansh31
+shazlehu
+dsimil
+KiranmayiB
+harishbohara11

@@ -63,17 +63,16 @@ type Config struct {
 
 // createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
-	return confighttp.ClientConfig{
-		Timeout:     defaultTimeout,
-		Compression: DefaultCompressEncoding,
-		Auth: &configauth.Authentication{
-			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
-		},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultTimeout
+	clientConfig.Compression = DefaultCompressEncoding
+	clientConfig.Auth = &configauth.Authentication{
+		AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 	}
+	return clientConfig
 }
 
 func (cfg *Config) Validate() error {
-
 	if cfg.CompressEncoding != nil {
 		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
 	}

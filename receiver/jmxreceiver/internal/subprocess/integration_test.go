@@ -46,7 +46,7 @@ func (suite *SubprocessIntegrationSuite) SetupSuite() {
 
 	_, err = scriptFile.Write([]byte(scriptContents))
 	require.NoError(t, err)
-	require.NoError(t, scriptFile.Chmod(0700))
+	require.NoError(t, scriptFile.Chmod(0o700))
 	scriptFile.Close()
 
 	suite.scriptPath = scriptFile.Name()
@@ -87,7 +87,7 @@ func (suite *SubprocessIntegrationSuite) prepareSubprocess(conf *Config) (*Subpr
 			return false
 		}
 		require.NoError(t, err)
-		require.True(t, strings.HasPrefix(cmdline, expectedExecutable), fmt.Sprintf("%v doesn't have prefix %v", cmdline, expectedExecutable))
+		require.Truef(t, strings.HasPrefix(cmdline, expectedExecutable), "%v doesn't have prefix %v", cmdline, expectedExecutable)
 		procInfo = proc
 		return true
 	}

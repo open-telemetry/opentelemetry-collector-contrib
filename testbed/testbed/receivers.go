@@ -55,6 +55,7 @@ type BaseOTLPDataReceiver struct {
 	compression     string
 	retry           string
 	sendingQueue    string
+	timeout         string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
@@ -69,13 +70,13 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 	}
 	var err error
 	set := receivertest.NewNopSettings()
-	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
+	if bor.traceReceiver, err = factory.CreateTraces(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
-	if bor.metricsReceiver, err = factory.CreateMetricsReceiver(context.Background(), set, cfg, mc); err != nil {
+	if bor.metricsReceiver, err = factory.CreateMetrics(context.Background(), set, cfg, mc); err != nil {
 		return err
 	}
-	if bor.logReceiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc); err != nil {
+	if bor.logReceiver, err = factory.CreateLogs(context.Background(), set, cfg, lc); err != nil {
 		return err
 	}
 
@@ -95,6 +96,11 @@ func (bor *BaseOTLPDataReceiver) WithRetry(retry string) *BaseOTLPDataReceiver {
 
 func (bor *BaseOTLPDataReceiver) WithQueue(sendingQueue string) *BaseOTLPDataReceiver {
 	bor.sendingQueue = sendingQueue
+	return bor
+}
+
+func (bor *BaseOTLPDataReceiver) WithTimeout(timeout string) *BaseOTLPDataReceiver {
+	bor.timeout = timeout
 	return bor
 }
 
@@ -118,8 +124,9 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
     endpoint: "%s"
     %s
     %s
+    %s
     tls:
-      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue)
+      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue, bor.timeout)
 	comp := "none"
 	if bor.compression != "" {
 		comp = bor.compression

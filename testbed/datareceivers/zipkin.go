@@ -35,8 +35,7 @@ func (zr *zipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 
 	set := receivertest.NewNopSettings()
 	var err error
-	zr.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
-
+	zr.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err
 	}

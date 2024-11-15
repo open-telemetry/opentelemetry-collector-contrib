@@ -6,11 +6,11 @@ package memoryscraper // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
 )
 
@@ -21,9 +21,11 @@ const (
 	TypeStr = "memory"
 )
 
+// scraperType is the component type used for the built scraper.
+var scraperType component.Type = component.MustNewType(TypeStr)
+
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -41,6 +43,6 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newMemoryScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraperWithComponentType(
-		hostmeta.Type, s.scrape, scraperhelper.WithStart(s.start))
+	return scraperhelper.NewScraper(
+		scraperType, s.scrape, scraperhelper.WithStart(s.start))
 }

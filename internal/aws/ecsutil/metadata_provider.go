@@ -42,7 +42,7 @@ func NewDetectedTaskMetadataProvider(set component.TelemetrySettings) (MetadataP
 		return nil, fmt.Errorf("unable to detect task metadata endpoint")
 	}
 
-	clientSettings := confighttp.ClientConfig{}
+	clientSettings := confighttp.NewDefaultClientConfig()
 	client, err := NewRestClient(*endpoint, clientSettings, set)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,6 @@ func (md *ecsMetadataProviderImpl) FetchTaskMetadata() (*TaskMetadata, error) {
 	taskMetadata := &TaskMetadata{}
 
 	err = json.NewDecoder(bytes.NewReader(resp)).Decode(taskMetadata)
-
 	if err != nil {
 		return nil, fmt.Errorf("encountered unexpected error reading response from ECS Task Metadata Endpoint: %w", err)
 	}
@@ -82,7 +81,6 @@ func (md *ecsMetadataProviderImpl) FetchContainerMetadata() (*ContainerMetadata,
 	containerMetadata := &ContainerMetadata{}
 
 	err = json.NewDecoder(bytes.NewReader(resp)).Decode(containerMetadata)
-
 	if err != nil {
 		return nil, fmt.Errorf("encountered unexpected error reading response from ECS Container Metadata Endpoint: %w", err)
 	}

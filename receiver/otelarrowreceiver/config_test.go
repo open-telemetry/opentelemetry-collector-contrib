@@ -77,13 +77,37 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 				},
 				Arrow: ArrowConfig{
-					MemoryLimitMiB:    123,
-					AdmissionLimitMiB: 80,
-					WaiterLimit:       100,
+					MemoryLimitMiB: 123,
 				},
 			},
+			Admission: AdmissionConfig{
+				RequestLimitMiB: 80,
+				WaitingLimitMiB: 100,
+			},
 		}, cfg)
+}
 
+// Tests that a deprecated config validation sets RequestLimitMiB and WaiterLimit in the correct config block.
+func TestValidateDeprecatedConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "deprecated.yaml"))
+	require.NoError(t, err)
+	cfg := &Config{}
+	assert.NoError(t, cm.Unmarshal(cfg))
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t,
+		&Config{
+			Protocols: Protocols{
+				Arrow: ArrowConfig{
+					MemoryLimitMiB:              123,
+					DeprecatedAdmissionLimitMiB: 80,
+					DeprecatedWaiterLimit:       100,
+				},
+			},
+			Admission: AdmissionConfig{
+				// cfg.Validate should now set these fields.
+				RequestLimitMiB: 80,
+			},
+		}, cfg)
 }
 
 func TestUnmarshalConfigUnix(t *testing.T) {
@@ -103,10 +127,12 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					ReadBufferSize: 512 * 1024,
 				},
 				Arrow: ArrowConfig{
-					MemoryLimitMiB:    defaultMemoryLimitMiB,
-					AdmissionLimitMiB: defaultAdmissionLimitMiB,
-					WaiterLimit:       defaultWaiterLimit,
+					MemoryLimitMiB: defaultMemoryLimitMiB,
 				},
+			},
+			Admission: AdmissionConfig{
+				RequestLimitMiB: defaultRequestLimitMiB,
+				WaitingLimitMiB: defaultWaitingLimitMiB,
 			},
 		}, cfg)
 }

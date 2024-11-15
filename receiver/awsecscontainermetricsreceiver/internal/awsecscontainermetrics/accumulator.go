@@ -20,13 +20,11 @@ type metricDataAccumulator struct {
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
 func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*ContainerStats, metadata ecsutil.TaskMetadata, logger *zap.Logger) {
-
 	taskMetrics := ECSMetrics{}
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
-
 		containerResource := containerResource(containerMetadata, logger)
 		taskResource.Attributes().Range(func(k string, av pcommon.Value) bool {
 			av.CopyTo(containerResource.Attributes().PutEmpty(k))
@@ -36,21 +34,16 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 		stats, ok := containerStatsMap[containerMetadata.DockerID]
 
 		if ok && !isEmptyStats(stats) {
-
 			containerMetrics := convertContainerMetrics(stats, logger, containerMetadata)
 			acc.accumulate(convertToOTLPMetrics(containerPrefix, containerMetrics, containerResource, timestamp))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
-
 		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
-
 			duration, err := calculateDuration(containerMetadata.StartedAt, containerMetadata.FinishedAt)
-
 			if err != nil {
 				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
 			}
 
 			acc.accumulate(convertStoppedContainerDataToOTMetrics(containerPrefix, containerResource, timestamp, duration))
-
 		}
 	}
 	overrideWithTaskLevelLimit(&taskMetrics, metadata)

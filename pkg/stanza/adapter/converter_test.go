@@ -895,7 +895,8 @@ func TestConvertTrace(t *testing.T) {
 		},
 		TraceFlags: []byte{
 			0x01,
-		}})
+		},
+	})
 
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{
@@ -916,7 +917,8 @@ func TestConvertTraceEmptyFlags(t *testing.T) {
 		SpanID: []byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},
-		TraceFlags: []byte{}})
+		TraceFlags: []byte{},
+	})
 
 	require.Equal(t, pcommon.TraceID(
 		[16]byte{

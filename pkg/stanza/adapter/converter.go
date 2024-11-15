@@ -155,44 +155,46 @@ func (c *Converter) workerLoop() {
 	defer c.wg.Done()
 
 	for entries := range c.workerChan {
+		// Send plogs directly to flushChan
+		c.flushChan <- ConvertEntries(entries)
+	}
+}
 
-		resourceHashToIdx := make(map[uint64]int)
-		scopeIdxByResource := make(map[uint64]map[string]int)
+func ConvertEntries(entries []*entry.Entry) plog.Logs {
+	resourceHashToIdx := make(map[uint64]int)
+	scopeIdxByResource := make(map[uint64]map[string]int)
 
-		pLogs := plog.NewLogs()
-		var sl plog.ScopeLogs
+	pLogs := plog.NewLogs()
+	var sl plog.ScopeLogs
 
-		for _, e := range entries {
-			resourceID := HashResource(e.Resource)
-			var rl plog.ResourceLogs
+	for _, e := range entries {
+		resourceID := HashResource(e.Resource)
+		var rl plog.ResourceLogs
 
-			resourceIdx, ok := resourceHashToIdx[resourceID]
+		resourceIdx, ok := resourceHashToIdx[resourceID]
+		if !ok {
+			resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
+
+			rl = pLogs.ResourceLogs().AppendEmpty()
+			upsertToMap(e.Resource, rl.Resource().Attributes())
+
+			scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
+			sl = rl.ScopeLogs().AppendEmpty()
+			sl.Scope().SetName(e.ScopeName)
+		} else {
+			rl = pLogs.ResourceLogs().At(resourceIdx)
+			scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
 			if !ok {
-				resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
-
-				rl = pLogs.ResourceLogs().AppendEmpty()
-				upsertToMap(e.Resource, rl.Resource().Attributes())
-
-				scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
+				scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
 				sl = rl.ScopeLogs().AppendEmpty()
 				sl.Scope().SetName(e.ScopeName)
 			} else {
-				rl = pLogs.ResourceLogs().At(resourceIdx)
-				scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
-				if !ok {
-					scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
-					sl = rl.ScopeLogs().AppendEmpty()
-					sl.Scope().SetName(e.ScopeName)
-				} else {
-					sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
-				}
+				sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
 			}
-			convertInto(e, sl.LogRecords().AppendEmpty())
 		}
-
-		// Send plogs directly to flushChan
-		c.flushChan <- pLogs
+		convertInto(e, sl.LogRecords().AppendEmpty())
 	}
+	return pLogs
 }
 
 func (c *Converter) flushLoop() {

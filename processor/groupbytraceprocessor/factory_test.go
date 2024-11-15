@@ -57,7 +57,7 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 			errDiskStorageNotSupported,
 		},
 	} {
-		p, err := f.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.config, consumertest.NewNop())
+		p, err := f.CreateTraces(context.Background(), processortest.NewNopSettings(), tt.config, consumertest.NewNop())
 
 		// verify
 		assert.ErrorIs(t, tt.expectedErr, err)

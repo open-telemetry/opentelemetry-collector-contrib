@@ -48,7 +48,6 @@ func newLogsReceiver(
 	createClient sqlquery.ClientProviderFunc,
 	nextConsumer consumer.Logs,
 ) (*logsReceiver, error) {
-
 	obsr, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		ReceiverCreateSettings: settings,
@@ -268,7 +267,6 @@ func (queryReceiver *logsQueryReceiver) retrieveTrackingValue(ctx context.Contex
 	}
 
 	return string(storedTrackingValueBytes)
-
 }
 
 func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {
@@ -316,16 +314,23 @@ func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, 
 }
 
 func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.LogRecord) error {
-	logRecord.Body().SetStr(row[config.BodyColumn])
+	var errs []error
+	value, found := row[config.BodyColumn]
+	if !found {
+		errs = append(errs, fmt.Errorf("rowToLog: body_column '%s' not found in result set", config.BodyColumn))
+	} else {
+		logRecord.Body().SetStr(value)
+	}
 	attrs := logRecord.Attributes()
+
 	for _, columnName := range config.AttributeColumns {
 		if attrVal, found := row[columnName]; found {
 			attrs.PutStr(columnName, attrVal)
 		} else {
-			return fmt.Errorf("rowToLog: attribute_column not found: '%s'", columnName)
+			errs = append(errs, fmt.Errorf("rowToLog: attribute_column '%s' not found in result set", columnName))
 		}
 	}
-	return nil
+	return errors.Join(errs...)
 }
 
 func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {

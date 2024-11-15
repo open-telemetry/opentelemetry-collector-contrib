@@ -122,8 +122,7 @@ func TestConfigValidate(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := tc.cfg.Validate()
 			if tc.err != nil {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tc.err.Error())
+				assert.ErrorContains(t, err, tc.err.Error())
 			} else {
 				require.NoError(t, err)
 			}

@@ -219,7 +219,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic) receive")
+				span.SetName("someTopic receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 				spanAttrs := span.Attributes()
 				populateAttributes(t, spanAttrs, map[string]any{
@@ -252,11 +252,11 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"messaging.solace.user_properties.special_key":            true,
 				})
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
-					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.destination.type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "session_timeout", 123456789, map[string]any{
@@ -327,8 +327,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder, metricAttr)
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.err.Error())
+				assert.ErrorContains(t, err, tt.err.Error())
 			} else {
 				assert.NoError(t, err)
 			}

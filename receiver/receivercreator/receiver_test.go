@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
@@ -34,8 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-type mockObserver struct {
-}
+type mockObserver struct{}
 
 func (m *mockObserver) Start(_ context.Context, _ component.Host) error {
 	return nil
@@ -78,7 +77,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	params := receivertest.NewNopSettings()
 	mockConsumer := new(consumertest.MetricsSink)
 
-	rcvr, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, mockConsumer)
+	rcvr, err := factory.CreateMetrics(context.Background(), params, cfg, mockConsumer)
 	require.NoError(t, err)
 	sc := rcvr.(*sharedcomponent.SharedComponent)
 	dyn := sc.Component.(*receiverCreator)

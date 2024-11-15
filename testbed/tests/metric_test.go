@@ -12,7 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
@@ -91,7 +91,6 @@ func TestMetric10kDPS(t *testing.T) {
 			)
 		})
 	}
-
 }
 
 func TestMetricsFromFile(t *testing.T) {
@@ -101,7 +100,7 @@ func TestMetricsFromFile(t *testing.T) {
 	resultDir, err := filepath.Abs(filepath.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.yaml", component.DataTypeMetrics)
+	dataProvider, err := testbed.NewFileDataProvider("testdata/k8s-metrics.yaml", pipeline.SignalMetrics)
 	assert.NoError(t, err)
 
 	options := testbed.LoadOptions{

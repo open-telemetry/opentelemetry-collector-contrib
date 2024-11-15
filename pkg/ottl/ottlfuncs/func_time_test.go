@@ -24,6 +24,7 @@ func Test_Time(t *testing.T) {
 		format   string
 		expected time.Time
 		location string
+		locale   string
 	}{
 		{
 			name: "simple short form",
@@ -73,7 +74,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%b %d %Y %H:%M:%S",
-			expected: time.Date(2023, 3, 14, 17, 02, 59, 0, time.Local),
+			expected: time.Date(2023, 3, 14, 17, 0o2, 59, 0, time.Local),
 		},
 		{
 			name: "day of the week long form",
@@ -133,7 +134,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S%z %Z",
-			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.FixedZone("EST", 0)),
+			expected: time.Date(2012, 11, 0o1, 22, 8, 41, 0, time.FixedZone("EST", 0)),
 		},
 		{
 			name: "RFC 3339 in custom format before 2000",
@@ -143,7 +144,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
 		},
 		{
 			name: "no location",
@@ -153,7 +154,7 @@ func Test_Time(t *testing.T) {
 				},
 			},
 			format:   "%Y/%m/%d",
-			expected: time.Date(2022, 01, 01, 0, 0, 0, 0, time.Local),
+			expected: time.Date(2022, 0o1, 0o1, 0, 0, 0, 0, time.Local),
 		},
 		{
 			name: "with location - America",
@@ -186,16 +187,54 @@ func Test_Time(t *testing.T) {
 			},
 			location: "Asia/Shanghai",
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
+		},
+		{
+			name: "with locale",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "Febrero 25 lunes, 2002, 02:03:04 p.m.", nil
+				},
+			},
+			format:   "%B %d %A, %Y, %r",
+			locale:   "es-ES",
+			expected: time.Date(2002, 2, 25, 14, 0o3, 0o4, 0, time.Local),
+		},
+		{
+			name: "with locale - date only",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "mercoledì set 4 2024", nil
+				},
+			},
+			format:   "%A %h %e %Y",
+			locale:   "it",
+			expected: time.Date(2024, 9, 4, 0, 0, 0, 0, time.Local),
+		},
+		{
+			name: "with locale and location",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "Febrero 25 lunes, 2002, 02:03:04 p.m.", nil
+				},
+			},
+			format:   "%B %d %A, %Y, %r",
+			location: "America/New_York",
+			locale:   "es-ES",
+			expected: time.Date(2002, 2, 25, 14, 0o3, 0o4, 0, locationAmericaNewYork),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
+			var locationOptional ottl.Optional[string]
 			if tt.location != "" {
-				locOptional = ottl.NewTestingOptional(tt.location)
+				locationOptional = ottl.NewTestingOptional(tt.location)
 			}
-			exprFunc, err := Time(tt.time, tt.format, locOptional)
+			var localeOptional ottl.Optional[string]
+			if tt.locale != "" {
+				localeOptional = ottl.NewTestingOptional(tt.locale)
+			}
+			exprFunc, err := Time(tt.time, tt.format, locationOptional, localeOptional)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -234,8 +273,9 @@ func Test_TimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
-			exprFunc, err := Time[any](tt.time, tt.format, locOptional)
+			var locationOptional ottl.Optional[string]
+			var localeOptional ottl.Optional[string]
+			exprFunc, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
 			require.NoError(t, err)
 			_, err = exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -250,6 +290,7 @@ func Test_TimeFormatError(t *testing.T) {
 		format        string
 		expectedError string
 		location      string
+		locale        string
 	}{
 		{
 			name: "invalid short with no format",
@@ -272,14 +313,29 @@ func Test_TimeFormatError(t *testing.T) {
 			location:      "Jupiter/Ganymede",
 			expectedError: "unknown time zone Jupiter/Ganymede",
 		},
+		{
+			name: "with unsupported locale",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:        "%Y-%m-%d %H:%M:%S",
+			locale:        "foo-bar",
+			expectedError: "unsupported locale 'foo-bar'",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[string]
+			var locationOptional ottl.Optional[string]
 			if tt.location != "" {
-				locOptional = ottl.NewTestingOptional(tt.location)
+				locationOptional = ottl.NewTestingOptional(tt.location)
 			}
-			_, err := Time[any](tt.time, tt.format, locOptional)
+			var localeOptional ottl.Optional[string]
+			if tt.locale != "" {
+				localeOptional = ottl.NewTestingOptional(tt.locale)
+			}
+			_, err := Time[any](tt.time, tt.format, locationOptional, localeOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}
@@ -344,7 +400,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%b %d %Y %H:%M:%S",
-			expected: time.Date(2023, 3, 14, 17, 02, 59, 0, time.Local),
+			expected: time.Date(2023, 3, 14, 17, 0o2, 59, 0, time.Local),
 		},
 		{
 			name: "day of the week long form",
@@ -404,7 +460,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S%z %Z",
-			expected: time.Date(2012, 11, 01, 22, 8, 41, 0, time.FixedZone("EST", 0)),
+			expected: time.Date(2012, 11, 0o1, 22, 8, 41, 0, time.FixedZone("EST", 0)),
 		},
 		{
 			name: "RFC 3339 in custom format before 2000",
@@ -414,7 +470,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
 		},
 		{
 			name: "no location",
@@ -424,7 +480,7 @@ func Benchmark_Time(t *testing.B) {
 				},
 			},
 			format:   "%Y/%m/%d",
-			expected: time.Date(2022, 01, 01, 0, 0, 0, 0, time.Local),
+			expected: time.Date(2022, 0o1, 0o1, 0, 0, 0, 0, time.Local),
 		},
 		{
 			name: "with location - America",
@@ -457,7 +513,7 @@ func Benchmark_Time(t *testing.B) {
 			},
 			location: "Asia/Shanghai",
 			format:   "%Y-%m-%dT%H:%M:%S %Z",
-			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+			expected: time.Date(1986, 10, 0o1, 0o0, 17, 33, 0o0, time.FixedZone("MST", -7*60*60)),
 		},
 	}
 	for _, tt := range tests {
@@ -465,7 +521,7 @@ func Benchmark_Time(t *testing.B) {
 		if tt.location != "" {
 			locOptional = ottl.NewTestingOptional(tt.location)
 		}
-		exprFunc, err := Time(tt.time, tt.format, locOptional)
+		exprFunc, err := Time(tt.time, tt.format, locOptional, ottl.Optional[string]{})
 		assert.NoError(t, err)
 
 		t.Run(tt.name, func(t *testing.B) {

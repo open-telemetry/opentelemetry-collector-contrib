@@ -46,7 +46,6 @@ func newReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	if config.NetAddr.Endpoint == "" {
 		config.NetAddr.Endpoint = "localhost:8125"
 	}
@@ -107,6 +106,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		r.config.EnableMetricType,
 		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
+		r.config.EnableIPOnlyAggregation,
 		r.config.TimerHistogramMapping,
 	)
 	if err != nil {

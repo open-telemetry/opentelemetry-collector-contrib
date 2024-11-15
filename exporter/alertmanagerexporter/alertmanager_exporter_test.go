@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -41,7 +41,7 @@ func createTracesAndSpan() (ptrace.Traces, ptrace.Span) {
 	attrs.PutInt("attr2", 40)
 	attrs.PutDouble("attr3", 3.14)
 
-	// add  a span
+	// add a span
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 	spans.EnsureCapacity(1)
 	span := spans.AppendEmpty()
@@ -190,7 +190,6 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 
 	ls = model.LabelSet{"event_name": "unittest-event", "severity": "info"}
 	assert.Equal(t, ls, alerts[1].Labels)
-
 }
 
 func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
@@ -221,7 +220,6 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 
 	ls := model.LabelSet{"event_name": "unittest-event", "severity": "info"}
 	assert.Equal(t, ls, alerts[0].Labels)
-
 }
 
 func TestAlertManagerExporterAlertPayload(t *testing.T) {
@@ -267,7 +265,6 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	assert.Equal(t, expect.Labels, got[0].Labels)
 	assert.Equal(t, expect.Annotations, got[0].Annotations)
 	assert.Equal(t, expect.GeneratorURL, got[0].GeneratorURL)
-
 }
 
 func TestAlertManagerTracesExporterNoErrors(t *testing.T) {

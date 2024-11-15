@@ -38,6 +38,7 @@ func (fc *fakeClient) Disconnect(ctx context.Context) error {
 	args := fc.Called(ctx)
 	return args.Error(0)
 }
+
 func (fc *fakeClient) Connect(ctx context.Context) error {
 	args := fc.Called(ctx)
 	return args.Error(0)
@@ -92,7 +93,6 @@ func TestListDatabaseNames(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, "admin", dbNames[0])
 	})
-
 }
 
 type commandString = string
@@ -229,11 +229,9 @@ func TestGetVersionFailures(t *testing.T) {
 			}
 
 			_, err := client.GetVersion(context.TODO())
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.partialError)
+			require.ErrorContains(t, err, tc.partialError)
 		})
 	}
-
 }
 
 func loadDBStats() (bson.D, error) {

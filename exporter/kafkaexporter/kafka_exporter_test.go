@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 )
 
 func TestNewExporter_err_version(t *testing.T) {
@@ -130,19 +131,15 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 	texp := newTracesExporter(c, exportertest.NewNopSettings())
 	require.NotNil(t, texp)
 	err := texp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
 	require.NotNil(t, mexp)
 	err = mexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	lexp := newLogsExporter(c, exportertest.NewNopSettings())
 	require.NotNil(t, lexp)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
-
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewExporter_err_compression(t *testing.T) {
@@ -156,7 +153,7 @@ func TestNewExporter_err_compression(t *testing.T) {
 	require.NotNil(t, texp)
 	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+	assert.ErrorContains(t, err, "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
 }
 
 func TestTracesExporter_encoding_extension(t *testing.T) {
@@ -205,6 +202,22 @@ func TestTracesPusher_attr(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestTracesPusher_ctx(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaTracesProducer{
+		producer:  producer,
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.tracesPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
+	require.NoError(t, err)
+}
+
 func TestTracesPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -232,8 +245,7 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 	}
 	td := testdata.GenerateTraces(2)
 	err := p.tracesPusher(context.Background(), td)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 func TestMetricsDataPusher(t *testing.T) {
@@ -271,6 +283,22 @@ func TestMetricsDataPusher_attr(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestMetricsDataPusher_ctx(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		producer:  producer,
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.metricsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
+	require.NoError(t, err)
+}
+
 func TestMetricsDataPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -298,8 +326,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 	}
 	md := testdata.GenerateMetrics(2)
 	err := p.metricsDataPusher(context.Background(), md)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 func TestLogsDataPusher(t *testing.T) {
@@ -337,6 +364,22 @@ func TestLogsDataPusher_attr(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestLogsDataPusher_ctx(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.logsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
+	require.NoError(t, err)
+}
+
 func TestLogsDataPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -364,8 +407,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 	}
 	ld := testdata.GenerateLogs(1)
 	err := p.logsDataPusher(context.Background(), ld)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 type tracesErrorMarshaler struct {
@@ -410,6 +452,7 @@ func Test_GetTopic(t *testing.T) {
 	tests := []struct {
 		name      string
 		cfg       Config
+		ctx       context.Context
 		resource  any
 		wantTopic string
 	}{
@@ -419,6 +462,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -428,6 +472,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -437,6 +482,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -446,14 +492,58 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
+			ctx:       context.Background(),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+
+		{
+			name: "Valid metric context, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "context-topic",
+		},
+		{
+			name: "Valid trace context, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
+			resource:  testdata.GenerateTraces(1).ResourceSpans(),
+			wantTopic: "context-topic",
+		},
+		{
+			name: "Valid log context, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
+			resource:  testdata.GenerateLogs(1).ResourceLogs(),
+			wantTopic: "context-topic",
+		},
+
+		{
+			name: "Attribute not found",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 		{
-			name: "TopicFromAttribute not set, return default topic",
+			name: "TopicFromAttribute, return default topic",
 			cfg: Config{
 				Topic: "defaultTopic",
 			},
+			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
@@ -464,11 +554,11 @@ func Test_GetTopic(t *testing.T) {
 			topic := ""
 			switch r := tests[i].resource.(type) {
 			case pmetric.ResourceMetricsSlice:
-				topic = getTopic(&tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
 			case ptrace.ResourceSpansSlice:
-				topic = getTopic(&tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
 			case plog.ResourceLogsSlice:
-				topic = getTopic(&tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
 			}
 			assert.Equal(t, tests[i].wantTopic, topic)
 		})

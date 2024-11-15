@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 const targetExternalLabels = `
@@ -722,7 +722,6 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 				},
 			},
 		})(t, rms[0])
-
 }
 
 const targetResourceAttsInTargetInfo = `

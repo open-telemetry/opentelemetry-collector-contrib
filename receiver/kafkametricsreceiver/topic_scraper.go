@@ -65,7 +65,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -180,7 +180,7 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		saramaConfig: saramaConfig,
 		config:       cfg,
 	}
-	return scraperhelper.NewScraperWithComponentType(
+	return scraperhelper.NewScraper(
 		topicsScraperType,
 		s.scrape,
 		scraperhelper.WithStart(s.start),

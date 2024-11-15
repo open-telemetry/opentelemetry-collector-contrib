@@ -41,10 +41,12 @@ type awss3Receiver struct {
 	telemetryType   string
 	dataProcessor   receiverProcessor
 	extensions      encodingExtensions
+	notifier        statusNotifier
 }
 
 func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, settings receiver.Settings, processor receiverProcessor) (*awss3Receiver, error) {
-	reader, err := newS3Reader(ctx, settings.Logger, cfg)
+	notifier := newNotifier(cfg, settings.Logger)
+	reader, err := newS3Reader(ctx, notifier, settings.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -65,25 +67,36 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 		obsrecv:         obsrecv,
 		dataProcessor:   processor,
 		encodingsConfig: cfg.Encodings,
+		notifier:        notifier,
 	}, nil
 }
 
-func (r *awss3Receiver) Start(_ context.Context, host component.Host) error {
+func (r *awss3Receiver) Start(ctx context.Context, host component.Host) error {
 	var err error
+	if r.notifier != nil {
+		if err = r.notifier.Start(ctx, host); err != nil {
+			return err
+		}
+	}
 	r.extensions, err = newEncodingExtensions(r.encodingsConfig, host)
 	if err != nil {
 		return err
 	}
 
-	var ctx context.Context
-	ctx, r.cancel = context.WithCancel(context.Background())
+	var cancelCtx context.Context
+	cancelCtx, r.cancel = context.WithCancel(context.Background())
 	go func() {
-		_ = r.s3Reader.readAll(ctx, r.telemetryType, r.receiveBytes)
+		_ = r.s3Reader.readAll(cancelCtx, r.telemetryType, r.receiveBytes)
 	}()
 	return nil
 }
 
-func (r *awss3Receiver) Shutdown(_ context.Context) error {
+func (r *awss3Receiver) Shutdown(ctx context.Context) error {
+	if r.notifier != nil {
+		if err := r.notifier.Shutdown(ctx); err != nil {
+			return err
+		}
+	}
 	if r.cancel != nil {
 		r.cancel()
 	}

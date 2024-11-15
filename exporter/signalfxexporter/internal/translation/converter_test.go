@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -1176,7 +1176,6 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.", false, true)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
-
 }
 
 func TestInvalidNumberOfDimensions(t *testing.T) {

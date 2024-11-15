@@ -43,7 +43,8 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
-	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error)) {
+	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
+) {
 	f1 = getEC2Region
 	f2 = newAWSSession
 	m := mock{sn: sess}
@@ -255,8 +256,7 @@ func TestLoadEnvConfigCreds(t *testing.T) {
 	assert.Equal(t, cases.Val, value, "Expect the credentials value to match")
 
 	_, err = newAWSSession("ROLEARN", "TEST", zap.NewNop())
-	assert.Error(t, err, "expected error")
-	assert.Contains(t, err.Error(), "unable to handle AWS error", "expected error message")
+	assert.ErrorContains(t, err, "unable to handle AWS error", "expected error message")
 }
 
 func TestGetProxyUrlProxyAddressNotValid(t *testing.T) {
@@ -339,8 +339,7 @@ func TestProxyServerTransportInvalidProxyAddr(t *testing.T) {
 	_, err := proxyServerTransport(&Config{
 		ProxyAddress: "invalid\n",
 	})
-	assert.Error(t, err, "expected error")
-	assert.Contains(t, err.Error(), "invalid control character in URL")
+	assert.ErrorContains(t, err, "invalid control character in URL")
 }
 
 func TestProxyServerTransportHappyCase(t *testing.T) {
@@ -401,8 +400,7 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 		"expected error message")
 }
 
-type mockAWSErr struct {
-}
+type mockAWSErr struct{}
 
 func (m *mockAWSErr) Error() string {
 	return "mockAWSErr"
@@ -435,6 +433,7 @@ func (m *mockProvider) Retrieve() (credentials.Value, error) {
 func (m *mockProvider) IsExpired() bool {
 	return true
 }
+
 func TestSTSRegionalEndpointDisabled(t *testing.T) {
 	logger, recordedLogs := logSetup()
 

@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -40,8 +40,7 @@ func TestLogsExporter_New(t *testing.T) {
 
 	failWithMsg := func(msg string) validate {
 		return func(t *testing.T, _ *logsExporter, err error) {
-			require.Error(t, err)
-			require.Contains(t, err.Error(), msg)
+			require.ErrorContains(t, err, msg)
 		}
 	}
 
@@ -57,7 +56,6 @@ func TestLogsExporter_New(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			var err error
 			exporter, err := newLogsExporter(zap.NewNop(), test.config)
 			err = errors.Join(err, err)

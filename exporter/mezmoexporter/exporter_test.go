@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -268,5 +268,5 @@ func Test404IngestError(t *testing.T) {
 
 	responseField := logLine.Context[0]
 	assert.Equal(t, "response", responseField.Key)
-	assert.Equal(t, `{"foo":"bar"}`, responseField.String)
+	assert.JSONEq(t, `{"foo":"bar"}`, responseField.String)
 }

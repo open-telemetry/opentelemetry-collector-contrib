@@ -156,7 +156,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 				// Metric assertions
 				assert.Equal(t, expectedMetric.MetricName, actualMetrics[i].MetricName)
 				assert.Equal(t, expectedMetric.MetricType, actualMetrics[i].MetricType)
-				assert.Equal(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, fmt.Sprintf("Mismatch for value for test %s", tt.name))
+				assert.Equalf(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, "Mismatch for value for test %s", tt.name)
 				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
 				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
 				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)
@@ -169,7 +169,6 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func Test_mapToAdxMetric(t *testing.T) {
@@ -556,7 +555,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				// Metric assertions
 				assert.Equal(t, expectedMetric.MetricName, actualMetrics[i].MetricName)
 				assert.Equal(t, expectedMetric.MetricType, actualMetrics[i].MetricType)
-				assert.Equal(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, fmt.Sprintf("Mismatch for value for test %s", tt.name))
+				assert.Equalf(t, expectedMetric.MetricValue, actualMetrics[i].MetricValue, "Mismatch for value for test %s", tt.name)
 				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
 				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
 				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)
