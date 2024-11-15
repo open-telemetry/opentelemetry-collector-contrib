@@ -5,7 +5,7 @@ package pmetricutiltest // import "github.com/open-telemetry/opentelemetry-colle
 
 import "go.opentelemetry.io/collector/pdata/pmetric"
 
-// TestMetrics returns a pmetric.Metrics with a uniform structure where resources, scopes, metrics,
+// NewMetrics returns a pmetric.Metrics with a uniform structure where resources, scopes, metrics,
 // and datapoints are identical across all instances, except for one identifying field.
 //
 // Identifying fields:
@@ -14,7 +14,7 @@ import "go.opentelemetry.io/collector/pdata/pmetric"
 // - Metrics have a name with a value of "metricN" and a single time series of data points.
 // - DataPoints have an attribute "dpName" with a value of "dpN".
 //
-// Example: TestMetrics("AB", "XYZ", "MN", "1234") returns:
+// Example: NewMetrics("AB", "XYZ", "MN", "1234") returns:
 //
 //	resourceA, resourceB
 //	    each with scopeX, scopeY, scopeZ
