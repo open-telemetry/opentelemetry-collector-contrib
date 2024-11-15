@@ -15,7 +15,7 @@
 
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
 | ------------------------ | ------------------------ | ----------------- |
-| traces | metrics | [alpha] |
+| metrics | traces | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
