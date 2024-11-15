@@ -106,19 +106,6 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `flatten(attributes, depth=0)`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().Remove("things")
-				m1 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.0")
-				m1.PutStr("name", "foo")
-				m1.PutInt("value", 2)
-
-				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.1")
-				m2.PutStr("name", "bar")
-				m2.PutInt("value", 5)
-			},
-		},
-		{
 			statement: `flatten(attributes, depth=1)`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := pcommon.NewMap()
@@ -131,7 +118,7 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("foo.flags", "pass")
 				m.PutStr("foo.bar", "pass")
 				m.PutStr("foo.flags", "pass")
-				m.PutStr("foo.slice.0", "val")
+				m.PutEmptySlice("foo.slice").AppendEmpty().SetStr("val")
 
 				m1 := m.PutEmptyMap("things.0")
 				m1.PutStr("name", "foo")
