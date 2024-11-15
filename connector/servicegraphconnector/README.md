@@ -14,8 +14,8 @@
 ## Supported Pipeline Types
 
 | [Exporter Pipeline Type] | [Receiver Pipeline Type] | [Stability Level] |
-|--------------------------|--------------------------| ----------------- |
-| metrics                  | traces                   | [alpha] |
+| ------------------------ | ------------------------ | ----------------- |
+| traces | metrics | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
