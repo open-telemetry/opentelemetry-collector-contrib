@@ -94,6 +94,10 @@ func createDefaultConfig() component.Config {
 				MaxSizeItems: 10000,
 			},
 		},
+		Flush: FlushSettings{
+			Bytes:    5e+6,
+			Interval: 30 * time.Second,
+		},
 	}
 }
 
