@@ -28,9 +28,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-const certPath = "./testdata/testcert.crt"
-const keyFile = "./testdata/testkey.key"
-const errSignedByUnknownCA = "tls: failed to verify certificate: x509: certificate signed by unknown authority"
+const (
+	certPath             = "./testdata/testcert.crt"
+	keyFile              = "./testdata/testkey.key"
+	errSignedByUnknownCA = "tls: failed to verify certificate: x509: certificate signed by unknown authority"
+)
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}

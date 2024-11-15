@@ -78,13 +78,15 @@ type testConsumer struct {
 
 var _ consumer.Traces = &testConsumer{}
 
-type ExpConfig = otelarrowexporter.Config
-type RecvConfig = otelarrowreceiver.Config
-type CfgFunc func(*ExpConfig, *RecvConfig)
-type GenFunc func(int) ptrace.Traces
-type MkGen func() GenFunc
-type EndFunc func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int)
-type ConsumerErrFunc func(t *testing.T, err error)
+type (
+	ExpConfig       = otelarrowexporter.Config
+	RecvConfig      = otelarrowreceiver.Config
+	CfgFunc         func(*ExpConfig, *RecvConfig)
+	GenFunc         func(int) ptrace.Traces
+	MkGen           func() GenFunc
+	EndFunc         func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int)
+	ConsumerErrFunc func(t *testing.T, err error)
+)
 
 func (*testConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
@@ -462,7 +464,7 @@ func TestIntegrationTracesSimple(t *testing.T) {
 			defer cancel()
 
 			// until 10 threads can write 1000 spans
-			var params = testParams{
+			params := testParams{
 				threadCount: 10,
 				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1000
@@ -483,7 +485,7 @@ func TestIntegrationDeadlinePropagation(t *testing.T) {
 			defer cancel()
 
 			// Until at least one span is written.
-			var params = testParams{
+			params := testParams{
 				threadCount: 1,
 				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1
@@ -596,7 +598,7 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	defer cancel()
 
 	// until 2 Arrow stream spans are received from self instrumentation
-	var params = testParams{
+	params := testParams{
 		threadCount: 10,
 		requestWhileTrue: func(test *testConsumer) bool {
 			cnt := 0

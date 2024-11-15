@@ -378,17 +378,18 @@ func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 		Client: NewDbClient(db, "", logger, TelemetryConfig{}),
 		Logger: logger,
 		Query: Query{
-			Metrics: []MetricCfg{{
-				MetricName:  "my.col.0",
-				ValueColumn: "col_0",
-				Description: "my description 0",
-				Unit:        "my-unit-0",
-			}, {
-				MetricName:  "my.col.1",
-				ValueColumn: "col_1",
-				Description: "my description 1",
-				Unit:        "my-unit-1",
-			},
+			Metrics: []MetricCfg{
+				{
+					MetricName:  "my.col.0",
+					ValueColumn: "col_0",
+					Description: "my description 0",
+					Unit:        "my-unit-0",
+				}, {
+					MetricName:  "my.col.1",
+					ValueColumn: "col_1",
+					Description: "my description 1",
+					Unit:        "my-unit-1",
+				},
 			},
 		},
 	}
