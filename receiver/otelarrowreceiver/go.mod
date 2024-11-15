@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/client v1.19.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/component v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/component/componentstatus v0.113.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/config/configauth v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/config/configgrpc v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/config/confignet v1.19.1-0.20241115165626-8b99b8023ca3

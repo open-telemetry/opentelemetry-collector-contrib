@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/receiver/receivertest v0.113.1-0.20241115165626-8b99b8023ca3
 )

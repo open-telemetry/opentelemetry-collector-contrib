@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
 	golang.org/x/net v0.29.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/grpc v1.67.1 // indirect

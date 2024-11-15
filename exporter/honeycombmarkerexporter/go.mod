@@ -20,7 +20,10 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-require go.opentelemetry.io/collector/exporter/exportertest v0.113.1-0.20241115165626-8b99b8023ca3
+require (
+	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241112045949-9c4c007a12b4
+	go.opentelemetry.io/collector/exporter/exportertest v0.113.1-0.20241115165626-8b99b8023ca3
+)
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
@@ -80,13 +83,13 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.31.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	golang.org/x/net v0.30.0 // indirect
-	golang.org/x/sys v0.26.0 // indirect
-	golang.org/x/text v0.19.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
 	google.golang.org/grpc v1.67.1 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect

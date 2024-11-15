@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.113.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.113.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/config/configgrpc v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/config/configopaque v1.19.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/config/configretry v1.19.1-0.20241115165626-8b99b8023ca3
@@ -78,7 +79,7 @@ require (
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.31.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
