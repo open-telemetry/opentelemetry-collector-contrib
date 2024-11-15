@@ -122,6 +122,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			config: Config{
 				NumWorkers: 1,
 				Mapping:    MappingsSettings{Mode: MappingECS.String()},
+				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: false,
 		},
@@ -130,6 +131,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			config: Config{
 				NumWorkers: 1,
 				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
+				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: true,
 		},
@@ -252,6 +254,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "none"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
 		{
@@ -259,6 +262,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
 	}
