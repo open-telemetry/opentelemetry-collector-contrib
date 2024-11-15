@@ -44,58 +44,44 @@ func NewMetrics(resourceIDs, scopeIDs, metricIDs, dataPointIDs string) pmetric.M
 	return md
 }
 
-type Resource struct {
-	id     byte
-	scopes []Scope
+func NewMetricsFromOpts(resources ...pmetric.ResourceMetrics) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	for _, resource := range resources {
+		resource.CopyTo(md.ResourceMetrics().AppendEmpty())
+	}
+	return md
 }
 
-type Scope struct {
-	id      byte
-	metrics []Metric
+func Resource(id string, scopes ...pmetric.ScopeMetrics) pmetric.ResourceMetrics {
+	rm := pmetric.NewResourceMetrics()
+	rm.Resource().Attributes().PutStr("resourceName", "resource"+id)
+	for _, scope := range scopes {
+		scope.CopyTo(rm.ScopeMetrics().AppendEmpty())
+	}
+	return rm
 }
 
-type Metric struct {
-	id         byte
-	dataPoints string
-}
-
-func WithResource(id byte, scopes ...Scope) Resource {
-	r := Resource{id: id}
-	r.scopes = append(r.scopes, scopes...)
-	return r
-}
-
-func WithScope(id byte, metrics ...Metric) Scope {
-	s := Scope{id: id}
-	s.metrics = append(s.metrics, metrics...)
+func Scope(id string, metrics ...pmetric.Metric) pmetric.ScopeMetrics {
+	s := pmetric.NewScopeMetrics()
+	s.Scope().SetName("scope" + id)
+	for _, metric := range metrics {
+		metric.CopyTo(s.Metrics().AppendEmpty())
+	}
 	return s
 }
 
-func WithMetric(id byte, dataPoints string) Metric {
-	return Metric{id: id, dataPoints: dataPoints}
+func Metric(id string, dps ...pmetric.NumberDataPoint) pmetric.Metric {
+	m := pmetric.NewMetric()
+	m.SetName("metric" + id)
+	g := m.SetEmptyGauge()
+	for _, dp := range dps {
+		dp.CopyTo(g.DataPoints().AppendEmpty())
+	}
+	return m
 }
 
-// NewMetricsFromOpts creates a pmetric.Metrics with the specified resources, scopes, metrics,
-// and data points. The general idea is the same as NewMetrics, but this function allows for
-// more flexibility in creating non-uniform structures.
-func NewMetricsFromOpts(resources ...Resource) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	for _, resource := range resources {
-		r := md.ResourceMetrics().AppendEmpty()
-		r.Resource().Attributes().PutStr("resourceName", "resource"+string(resource.id))
-		for _, scope := range resource.scopes {
-			s := r.ScopeMetrics().AppendEmpty()
-			s.Scope().SetName("scope" + string(scope.id))
-			for _, metric := range scope.metrics {
-				m := s.Metrics().AppendEmpty()
-				m.SetName("metric" + string(metric.id))
-				dps := m.SetEmptyGauge().DataPoints()
-				for i := 0; i < len(metric.dataPoints); i++ {
-					dp := dps.AppendEmpty()
-					dp.Attributes().PutStr("dpName", "dp"+string(metric.dataPoints[i]))
-				}
-			}
-		}
-	}
-	return md
+func NumberDataPoint(id string) pmetric.NumberDataPoint {
+	dp := pmetric.NewNumberDataPoint()
+	dp.Attributes().PutStr("dpName", "dp"+id)
+	return dp
 }

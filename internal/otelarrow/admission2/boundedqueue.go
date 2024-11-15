@@ -15,8 +15,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var ErrTooMuchWaiting = status.Error(grpccodes.ResourceExhausted, "rejecting request, too much pending data")
-var ErrRequestTooLarge = status.Errorf(grpccodes.InvalidArgument, "rejecting request, request is too large")
+var (
+	ErrTooMuchWaiting  = status.Error(grpccodes.ResourceExhausted, "rejecting request, too much pending data")
+	ErrRequestTooLarge = status.Errorf(grpccodes.InvalidArgument, "rejecting request, request is too large")
+)
 
 // BoundedQueue is a LIFO-oriented admission-controlled Queue.
 type BoundedQueue struct {
