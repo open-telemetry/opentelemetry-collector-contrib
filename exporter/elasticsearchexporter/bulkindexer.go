@@ -131,7 +131,7 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, document
 	if err != nil {
 		return err
 	}
-	if s.bi.Len() > s.s.flushBytes {
+	if s.bi.Len() >= s.s.flushBytes {
 		return s.Flush(ctx)
 	}
 	return nil
