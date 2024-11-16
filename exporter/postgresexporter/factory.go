@@ -16,6 +16,7 @@ func NewFactory() exporter.Factory {
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 
@@ -77,16 +78,16 @@ func createTracesExporter(
 	set exporter.Settings,
 	config component.Config) (exporter.Traces, error) {
 
-	set.Logger.Info("createLogsExporter called")
+	set.Logger.Info("createTracesExporter called")
 
 	cfg := config.(*Config)
 	s, err := newTracesExporter(set.Logger, cfg)
 	if err != nil {
-		set.Logger.Error("Failed to create new logs exporter", zap.Error(err))
+		set.Logger.Error("Failed to create new traces exporter", zap.Error(err))
 		return nil, err
 	}
 
-	set.Logger.Info("newLogsExporter created successfully")
+	set.Logger.Info("newTracesExporter created successfully")
 
 	exporter, err := exporterhelper.NewTracesExporter(
 		ctx,
@@ -106,5 +107,42 @@ func createTracesExporter(
 	}
 
 	set.Logger.Info("Traces exporter created successfully")
+	return exporter, nil
+}
+
+func createMetricsExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	config component.Config) (exporter.Metrics, error) {
+
+	set.Logger.Info("createMetricExporters called")
+
+	cfg := config.(*Config)
+	s, err := newMetricsExporter(set.Logger, cfg)
+	if err != nil {
+		set.Logger.Error("Failed to create new metrics exporter", zap.Error(err))
+		return nil, err
+	}
+
+	set.Logger.Info("newMetricExporter created successfully")
+
+	exporter, err := exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		s.pushMetricData,
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithStart(s.start),
+		exporterhelper.WithShutdown(s.shutdown),
+		exporterhelper.WithTimeout(s.cfg.TimeoutSettings),
+	)
+
+	if err != nil {
+		set.Logger.Error("Failed to create metrics exporter", zap.Error(err))
+		return nil, err
+	}
+
+	set.Logger.Info("Metrics exporter created successfully")
 	return exporter, nil
 }
