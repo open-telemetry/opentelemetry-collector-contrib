@@ -69,6 +69,44 @@ func basicSliceString() (ExprFunc[any], error) {
 	}, nil
 }
 
+func basicSliceBool() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]bool{
+				true,
+			},
+		}, nil
+	}, nil
+}
+
+func basicSliceInteger() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]int64{
+				1,
+			},
+		}, nil
+	}, nil
+}
+
+func basicSliceFloat() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]float64{
+				1,
+			},
+		}, nil
+	}, nil
+}
+
+func basicSliceBytes() (ExprFunc[any], error) {
+	return func(_ context.Context, _ any) (any, error) {
+		return []any{
+			[]byte("pass"),
+		}, nil
+	}, nil
+}
+
 func Test_newGetter(t *testing.T) {
 	tests := []struct {
 		name string
@@ -265,6 +303,86 @@ func Test_newGetter(t *testing.T) {
 				},
 			},
 			want: "pass",
+		},
+		{
+			name: "function call nested SliceBool",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceBool",
+						Keys: []key{
+							{
+								// note for review: not sure if this is correct
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "function call nested SliceInteger",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceInteger",
+						Keys: []key{
+							{
+								// note for review: not sure if this is correct
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: 1,
+		},
+		{
+			name: "function call nested SliceFloat",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceFloat",
+						Keys: []key{
+							{
+								// note for review: not sure if this is correct
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: 1.0,
+		},
+		{
+			name: "function call nested SliceBytes",
+			val: value{
+				Literal: &mathExprLiteral{
+					Converter: &converter{
+						Function: "SliceBytes",
+						Keys: []key{
+							{
+								// note for review: not sure if this is correct
+								Int: ottltest.Intp(0),
+							},
+							{
+								Int: ottltest.Intp(0),
+							},
+						},
+					},
+				},
+			},
+			want: []byte("pass"),
 		},
 		{
 			name: "enum",
@@ -562,6 +680,10 @@ func Test_newGetter(t *testing.T) {
 		createFactory("PSlice", &struct{}{}, pslice),
 		createFactory("Slice", &struct{}{}, basicSlice),
 		createFactory("SliceString", &struct{}{}, basicSliceString),
+		createFactory("SliceBool", &struct{}{}, basicSliceBool),
+		createFactory("SliceInteger", &struct{}{}, basicSliceInteger),
+		createFactory("SliceFloat", &struct{}{}, basicSliceFloat),
+		createFactory("SliceBytes", &struct{}{}, basicSliceBytes),
 	)
 
 	p, _ := NewParser[any](
