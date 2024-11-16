@@ -102,7 +102,9 @@ func basicSliceFloat() (ExprFunc[any], error) {
 func basicSliceBytes() (ExprFunc[any], error) {
 	return func(_ context.Context, _ any) (any, error) {
 		return []any{
-			[]byte("pass"),
+			[][]byte{
+				[]byte("pass"),
+			},
 		}, nil
 	}, nil
 }
