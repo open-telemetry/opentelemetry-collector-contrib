@@ -14,9 +14,10 @@ import (
 
 func Test_trim(t *testing.T) {
 	tests := []struct {
-		name     string
-		target   ottl.StringGetter[any]
-		expected any
+		name        string
+		target      ottl.StringGetter[any]
+		replacement ottl.Optional[string]
+		expected    any
 	}{
 		{
 			name: "trim string",
@@ -25,7 +26,8 @@ func Test_trim(t *testing.T) {
 					return " this is a test ", nil
 				},
 			},
-			expected: "this is a test",
+			replacement: ottl.NewTestingOptional[string](" "),
+			expected:    "this is a test",
 		},
 		{
 			name: "trim empty string",
@@ -34,12 +36,23 @@ func Test_trim(t *testing.T) {
 					return "", nil
 				},
 			},
-			expected: "",
+			replacement: ottl.NewTestingOptional[string](" "),
+			expected:    "",
+		},
+		{
+			name: "trim empty replacement string",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return " this is a test ", nil
+				},
+			},
+			replacement: ottl.Optional[string]{},
+			expected:    "this is a test",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := trim(tt.target)
+			exprFunc := trim(tt.target, tt.replacement)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)

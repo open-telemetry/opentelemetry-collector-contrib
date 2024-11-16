@@ -12,7 +12,8 @@ import (
 )
 
 type TrimArguments[K any] struct {
-	Target ottl.StringGetter[K]
+	Target      ottl.StringGetter[K]
+	Replacement ottl.Optional[string]
 }
 
 func NewTrimFactory[K any]() ottl.Factory[K] {
@@ -26,15 +27,19 @@ func createTrimFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 		return nil, fmt.Errorf("TrimFactory args must be of type *TrimArguments[K]")
 	}
 
-	return trim(args.Target), nil
+	return trim(args.Target, args.Replacement), nil
 }
 
-func trim[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func trim[K any](target ottl.StringGetter[K], replacement ottl.Optional[string]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
+		replacementString := replacement.Get()
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		return strings.Trim(val, " "), nil
+		if replacementString == "" {
+			return strings.Trim(val, " "), nil
+		}
+		return strings.Trim(val, replacementString), nil
 	}
 }

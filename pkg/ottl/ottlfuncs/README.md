@@ -1782,17 +1782,19 @@ If the `target` is not a string or does not exist, the `Split` Converter will re
 
 ### Trim
 
-```Trim(target)```
+```Trim(target, replacement)```
 
-The `Trim` Converter removes the leading and trailing whitespace.
+The `Trim` Converter removes the leading and trailing character (default: whitespace).
 
 If the `target` is not a string or does not exist, the `Trim` Converter will return an error.
 
 `target` is a string.
+`replacement` is an optional string representing the character to replace with.
 
 Examples:
 
-- `Trim(" this is a test ")`
+- `Trim(" this is a test ", " ")`
+- `Trim("!!this is a test!!", "!!")`
 
 ### String
 
