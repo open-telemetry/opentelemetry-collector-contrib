@@ -39,6 +39,12 @@ attributes:
   splunk.searchartifacts.cache.type:
     description: The search artifacts cache type
     type: string
+  splunk.feature:
+    description: The Feature name from the Splunk Health Introspection Endpoint
+    type: string
+  splunk.feature.health:
+    description: The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint
+    type: string
 
 metrics:
   splunk.license.index.usage:
@@ -345,6 +351,14 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     attributes: [splunk.host]
+  #`services/server/health/splunkd/details`
+  splunk.health:
+    enabled: True
+    description: The status (color) of the Splunk server.
+    unit: "{status}"
+    gauge:
+      value_type: int
+    attributes: [splunk.feature, splunk.feature.health]
 
 tests:
   config:

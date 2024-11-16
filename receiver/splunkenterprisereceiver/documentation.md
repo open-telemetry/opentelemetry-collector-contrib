@@ -41,6 +41,21 @@ Gauge tracking the number of buckets and their searchable status. *Note:** Searc
 | splunk.host | The name of the splunk host | Any Str |
 | splunk.indexer.searchable | The searchability status reported for a specific object | Any Str |
 
+### splunk.health
+
+The status (color) of the Splunk server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.feature | The Feature name from the Splunk Health Introspection Endpoint | Any Str |
+| splunk.feature.health | The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint | Any Str |
+
 ### splunk.indexer.avg.rate
 
 Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
