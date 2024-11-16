@@ -6,7 +6,6 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -52,7 +51,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 	ge, ok := host.(getExporters)
 	if !ok {
-		return fmt.Errorf("unable to get exporters")
+		return errors.New("unable to get exporters")
 	}
 	exporters := ge.GetExporters()
 

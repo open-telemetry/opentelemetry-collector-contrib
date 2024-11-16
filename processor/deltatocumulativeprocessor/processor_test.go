@@ -72,7 +72,6 @@ func TestProcessor(t *testing.T) {
 				}
 			}
 		})
-
 	}
 }
 

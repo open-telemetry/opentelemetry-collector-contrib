@@ -7,7 +7,6 @@ package podmanreceiver
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -69,7 +68,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	defer os.Remove(addr)
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},
@@ -121,7 +120,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 
 	observed, logs := observer.New(zapcore.WarnLevel)
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			Timeout: 50 * time.Millisecond,
 		},

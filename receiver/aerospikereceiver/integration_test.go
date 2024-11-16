@@ -120,8 +120,10 @@ type recordsCheckable interface {
 	Results() <-chan *as.Result
 }
 
-type aeroDoneFunc func() (doneCheckable, as.Error)
-type aeroRecordsFunc func() (recordsCheckable, as.Error)
+type (
+	aeroDoneFunc    func() (doneCheckable, as.Error)
+	aeroRecordsFunc func() (recordsCheckable, as.Error)
+)
 
 func doneWaitAndCheck(f aeroDoneFunc) error {
 	chk, err := f()

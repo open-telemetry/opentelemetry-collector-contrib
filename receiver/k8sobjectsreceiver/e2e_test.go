@@ -27,9 +27,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
-const testObjectsDir = "./testdata/e2e/testobjects/"
-const expectedDir = "./testdata/e2e/expected/"
+const (
+	testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+	testObjectsDir = "./testdata/e2e/testobjects/"
+	expectedDir    = "./testdata/e2e/expected/"
+)
 
 type objAction int
 
@@ -40,7 +42,6 @@ const (
 )
 
 func TestE2E(t *testing.T) {
-
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 

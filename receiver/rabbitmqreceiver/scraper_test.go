@@ -101,7 +101,6 @@ func TestScaperScrape(t *testing.T) {
 				return &mockClient
 			},
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
-
 				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("some api error"),

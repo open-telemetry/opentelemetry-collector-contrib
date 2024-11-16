@@ -273,7 +273,6 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructTraces()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)

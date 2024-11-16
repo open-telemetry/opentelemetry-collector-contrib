@@ -37,7 +37,8 @@ func createLogsProcessor(
 	_ context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Logs) (processor.Logs, error) {
+	nextConsumer consumer.Logs,
+) (processor.Logs, error) {
 	pCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("could not initialize logs transform processor")

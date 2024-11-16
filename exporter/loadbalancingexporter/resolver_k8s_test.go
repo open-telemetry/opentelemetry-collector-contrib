@@ -100,7 +100,6 @@ func TestK8sResolve(t *testing.T) {
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
-
 			},
 			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
@@ -138,7 +137,6 @@ func TestK8sResolve(t *testing.T) {
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
-
 			},
 			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {

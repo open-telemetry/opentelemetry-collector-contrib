@@ -451,7 +451,6 @@ func TestExtractRawAttributes(t *testing.T) {
 			assert.Equal(t, tt.expected, extractRawAttributes(tt.log))
 		})
 	}
-
 }
 
 func TestUnmarshalLogs(t *testing.T) {
@@ -565,7 +564,6 @@ func loadJSONLogsAndApplySemanticConventions(filename string) (plog.Logs, error)
 	}
 
 	logs, err := sut.UnmarshalLogs(data)
-
 	if err != nil {
 		return l, err
 	}
