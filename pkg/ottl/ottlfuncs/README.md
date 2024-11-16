@@ -1780,9 +1780,19 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
 
+### Trim
+
+```Trim(target)```
+
+The `Trim` Converter removes the leading and trailing whitespace.
+
+If the `target` is not a string or does not exist, the `Trim` Converter will return an error.
+
+`target` is a string.
+
 Examples:
 
-- `Split("A|B|C", "|")`
+- `Trim(" this is a test ")`
 
 ### String
 
