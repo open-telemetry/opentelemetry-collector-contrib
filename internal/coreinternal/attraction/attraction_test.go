@@ -400,7 +400,6 @@ func TestAttributes_Extract(t *testing.T) {
 
 	cfg := &Settings{
 		Actions: []ActionKeyValue{
-
 			{Key: "user_key", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<new_user_key>.*)\\/update\\/(?P<version>.*)$", Action: EXTRACT},
 		},
 	}
@@ -853,7 +852,8 @@ func TestInvalidConfig(t *testing.T) {
 			},
 			errorString: "error creating AttrProc due to missing required field \"pattern\" for action \"extract\" at the 0-th action",
 		},
-		{name: "set value for extract",
+		{
+			name: "set value for extract",
 			actionLists: []ActionKeyValue{
 				{Key: "Key", RegexPattern: "(?P<operation_website>.*?)$", Value: "value", Action: EXTRACT},
 			},
@@ -915,7 +915,8 @@ func TestValidConfiguration(t *testing.T) {
 	compiledRegex := regexp.MustCompile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
-		{Key: "two", Action: INSERT,
+		{
+			Key: "two", Action: INSERT,
 			AttributeValue: &av,
 		},
 		{Key: "three", FromAttribute: "two", Action: UPDATE},

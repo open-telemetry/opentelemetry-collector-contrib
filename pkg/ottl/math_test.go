@@ -621,7 +621,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	tenHoursetc, err := time.ParseDuration("10h47m48s11ns")
 	require.NoError(t, err)
 
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		mathExpr *mathExpression
 		expected any
