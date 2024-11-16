@@ -50,9 +50,11 @@ import (
 )
 
 var noopTelemetry = componenttest.NewNopTelemetrySettings()
+var testingID = component.MustNewID("testing")
 
 func defaultBQ() admission2.Queue {
-	return admission2.NewBoundedQueue(noopTelemetry, 100000, 10)
+	bq, _ := admission2.NewBoundedQueue(testingID, noopTelemetry, 100000, 10)
+	return bq
 }
 
 type (
@@ -462,11 +464,12 @@ func TestBoundedQueueLimits(t *testing.T) {
 			// internal/otelarrow/test/e2e_test.go.
 			if tt.expectErr {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
-				bq = admission2.NewBoundedQueue(noopTelemetry, uint64(sizer.TracesSize(td)-100), 0)
+				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(sizer.TracesSize(td)-100), 0)
 			} else {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
-				bq = admission2.NewBoundedQueue(noopTelemetry, uint64(tt.admitLimit), 0)
+				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(tt.admitLimit), 0)
 			}
+			require.NoError(t, err)
 
 			ctc.start(ctc.newRealConsumer, bq)
 			ctc.putBatch(batch, nil)

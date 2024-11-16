@@ -10,9 +10,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 var (
@@ -22,9 +26,10 @@ var (
 
 // BoundedQueue is a LIFO-oriented admission-controlled Queue.
 type BoundedQueue struct {
-	maxLimitAdmit uint64
-	maxLimitWait  uint64
-	tracer        trace.Tracer
+	maxLimitAdmit    uint64
+	maxLimitWait     uint64
+	tracer           trace.Tracer
+	telemetryBuilder *internalmetadata.TelemetryBuilder
 
 	// lock protects currentAdmitted, currentWaiting, and waiters
 
@@ -45,13 +50,37 @@ type waiter struct {
 // NewBoundedQueue returns a LIFO-oriented Queue implementation which
 // admits `maxLimitAdmit` bytes concurrently and allows up to
 // `maxLimitWait` bytes to wait for admission.
-func NewBoundedQueue(ts component.TelemetrySettings, maxLimitAdmit, maxLimitWait uint64) Queue {
-	return &BoundedQueue{
+func NewBoundedQueue(id component.ID, ts component.TelemetrySettings, maxLimitAdmit, maxLimitWait uint64) (Queue, error) {
+	bq := &BoundedQueue{
 		maxLimitAdmit: maxLimitAdmit,
 		maxLimitWait:  maxLimitWait,
 		waiters:       list.New(),
 		tracer:        ts.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"),
 	}
+	attr := metric.WithAttributes(attribute.String(netstats.ReceiverKey, id.String()))
+	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(ts,
+		internalmetadata.WithOtelarrowAdmissionInFlightBytesCallback(bq.inFlightCB, attr),
+		internalmetadata.WithOtelarrowAdmissionWaitingBytesCallback(bq.waitingCB, attr),
+	)
+	if err != nil {
+		return nil, err
+	}
+	bq.telemetryBuilder = telemetryBuilder
+	return bq, nil
+}
+
+func (bq *BoundedQueue) inFlightCB() int64 {
+	// Note, see https://github.com/open-telemetry/otel-arrow/issues/270
+	bq.lock.Lock()
+	defer bq.lock.Unlock()
+	return int64(bq.currentAdmitted)
+}
+
+func (bq *BoundedQueue) waitingCB() int64 {
+	// Note, see https://github.com/open-telemetry/otel-arrow/issues/270
+	bq.lock.Lock()
+	defer bq.lock.Unlock()
+	return int64(bq.currentWaiting)
 }
 
 // acquireOrGetWaiter returns with three distinct conditions depending

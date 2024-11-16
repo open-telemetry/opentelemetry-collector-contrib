@@ -40,7 +40,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
-	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
@@ -68,15 +67,14 @@ type Receiver struct {
 	arrowpb.UnsafeArrowLogsServiceServer
 	arrowpb.UnsafeArrowMetricsServiceServer
 
-	telemetry        component.TelemetrySettings
-	tracer           trace.Tracer
-	obsrecv          *receiverhelper.ObsReport
-	gsettings        configgrpc.ServerConfig
-	authServer       auth.Server
-	newConsumer      func() arrowRecord.ConsumerAPI
-	netReporter      netstats.Interface
-	telemetryBuilder *internalmetadata.TelemetryBuilder
-	boundedQueue     admission2.Queue
+	telemetry    component.TelemetrySettings
+	tracer       trace.Tracer
+	obsrecv      *receiverhelper.ObsReport
+	gsettings    configgrpc.ServerConfig
+	authServer   auth.Server
+	newConsumer  func() arrowRecord.ConsumerAPI
+	netReporter  netstats.Interface
+	boundedQueue admission2.Queue
 }
 
 // receiverStream holds the inFlightWG for a single stream.
@@ -97,21 +95,16 @@ func New(
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
 	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")
-	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
 	return &Receiver{
-		Consumers:        cs,
-		obsrecv:          obsrecv,
-		telemetry:        set.TelemetrySettings,
-		tracer:           tracer,
-		authServer:       authServer,
-		newConsumer:      newConsumer,
-		gsettings:        gsettings,
-		netReporter:      netReporter,
-		boundedQueue:     bq,
-		telemetryBuilder: telemetryBuilder,
+		Consumers:    cs,
+		obsrecv:      obsrecv,
+		telemetry:    set.TelemetrySettings,
+		tracer:       tracer,
+		authServer:   authServer,
+		newConsumer:  newConsumer,
+		gsettings:    gsettings,
+		netReporter:  netReporter,
+		boundedQueue: bq,
 	}, nil
 }
 
@@ -423,7 +416,6 @@ func (r *receiverStream) newInFlightData(ctx context.Context, method string, bat
 	_, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
 
 	r.inFlightWG.Add(1)
-	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, 1)
 	id := &inFlightData{
 		receiverStream: r,
 		method:         method,
@@ -505,13 +497,6 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 		id.releaser()
 	}
 
-	if id.uncompSize != 0 {
-		id.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(ctx, -id.uncompSize)
-	}
-	if id.numItems != 0 {
-		id.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(ctx, int64(-id.numItems))
-	}
-
 	// The netstats code knows that uncompressed size is
 	// unreliable for arrow transport, so we instrument it
 	// directly here.  Only the primary direction of transport
@@ -521,7 +506,6 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 	sized.Length = id.uncompSize
 	id.netReporter.CountReceive(ctx, sized)
 
-	id.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, -1)
 	id.inFlightWG.Done()
 }
 
@@ -637,9 +621,6 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	flight.uncompSize = uncompSize
 	flight.numItems = numItems
 	flight.releaser = releaser
-
-	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
-	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
 
 	// Recognize that the request is still in-flight via consumeAndRespond()
 	flight.refs.Add(1)

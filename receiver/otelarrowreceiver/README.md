@@ -173,9 +173,8 @@ exporters:
 
 In addition to the the standard
 [obsreport](https://pkg.go.dev/go.opentelemetry.io/collector/obsreport)
-metrics, this component provides network-level measurement instruments
-which we anticipate will become part of `obsreport` in the future.  At
-the `normal` level of metrics detail:
+metrics, this component provides network-level measurement instruments 
+measuring bytes transported.  At the `normal` level of metrics detail:
 
 - `otelcol_receiver_recv`: uncompressed bytes received, prior to compression
 - `otelcol_receiver_recv_wire`: compressed bytes received, on the wire.
@@ -188,6 +187,12 @@ of data being returned from the receiver will be instrumented:
 
 - `otelcol_receiver_sent`: uncompressed bytes sent, prior to compression
 - `otelcol_receiver_sent_wire`: compressed bytes sent, on the wire.
+
+Metric instruments expose the state of the admission controller at the
+`normal` level of detail:
+
+- `otelcol_otelarrow_admission_in_flight_bytes`: number of uncompressed bytes admitted into the pipeline
+- `otelcol_otelarrow_admission_waiting_bytes`: number of uncompressed bytes waiting for admission
 
 There several OpenTelemetry Protocol with Apache Arrow-consumer
 related metrics available to help diagnose internal performance.
