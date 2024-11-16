@@ -63,7 +63,7 @@ func TestMoveResourcesIf(t *testing.T) {
 			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:         plogutiltest.NewLogs("1", "2", "3"),
 			expectFrom: plogutiltest.NewLogs("A", "CD", "EF"),
-			expectTo: plogutiltest.New(
+			expectTo: plogutiltest.NewLogsFromOpts(
 				plogutiltest.Resource("1",
 					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
 				),
@@ -132,7 +132,7 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			},
 			from: plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:   plog.NewLogs(),
-			expectFrom: plogutiltest.New(
+			expectFrom: plogutiltest.NewLogsFromOpts(
 				plogutiltest.Resource("A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
@@ -161,7 +161,7 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			},
 			from: plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:   plog.NewLogs(),
-			expectFrom: plogutiltest.New(
+			expectFrom: plogutiltest.NewLogsFromOpts(
 				plogutiltest.Resource("A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E")),
@@ -191,7 +191,7 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			},
 			from: plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:   plog.NewLogs(),
-			expectFrom: plogutiltest.New(
+			expectFrom: plogutiltest.NewLogsFromOpts(
 				plogutiltest.Resource("A",
 					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
 					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
@@ -211,7 +211,7 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
 			to:         plogutiltest.NewLogs("1", "2", "3"),
 			expectFrom: plogutiltest.NewLogs("AB", "C", "EF"),
-			expectTo: plogutiltest.New(
+			expectTo: plogutiltest.NewLogsFromOpts(
 				plogutiltest.Resource("1",
 					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
 				),
