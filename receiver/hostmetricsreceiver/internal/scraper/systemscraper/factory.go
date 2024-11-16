@@ -48,8 +48,7 @@ func (f *Factory) CreateMetricsScraper(
 
 	uptimeScraper := newUptimeScraper(ctx, settings, cfg.(*Config))
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraperhelper.NewScraperWithoutType(
 		uptimeScraper.scrape,
 		scraperhelper.WithStart(uptimeScraper.start),
 	)

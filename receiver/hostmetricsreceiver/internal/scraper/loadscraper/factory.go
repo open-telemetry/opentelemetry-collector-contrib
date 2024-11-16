@@ -43,8 +43,7 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newLoadScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),

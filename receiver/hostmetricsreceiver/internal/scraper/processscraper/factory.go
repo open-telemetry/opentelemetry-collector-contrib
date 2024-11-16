@@ -63,8 +63,7 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
