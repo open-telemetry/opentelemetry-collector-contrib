@@ -5,12 +5,12 @@ package logzioexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
-	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 // Config contains Logz.io specific configuration such as Account TracesToken, Region, etc.

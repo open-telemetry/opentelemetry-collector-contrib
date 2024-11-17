@@ -10,13 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
-	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-	"google.golang.org/genproto/googleapis/rpc/status"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/proto"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -32,9 +25,16 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
+	"google.golang.org/genproto/googleapis/rpc/status"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -69,19 +69,6 @@ func fillLogOne(log plog.LogRecord) {
 	attNestedMap := attMap.PutEmptyMap("nested")
 	attNestedMap.PutStr("string", "v1")
 	attNestedMap.PutDouble("number", 499)
-}
-
-func fillLogTwo(log plog.LogRecord) {
-	log.SetTimestamp(TestLogTimestamp)
-	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberInfo)
-	log.SetSeverityText("Info")
-	attrs := log.Attributes()
-	attrs.PutStr("customer", "acme")
-	attrs.PutDouble("number", 64)
-	attrs.PutBool("bool", true)
-	attrs.PutStr("env", "dev")
-	log.Body().SetStr("something happened")
 }
 
 func fillLogNoTimestamp(log plog.LogRecord) {
@@ -499,6 +486,6 @@ func TestReadResponseBody(t *testing.T) {
 
 type errorReader struct{}
 
-func (e *errorReader) Read(p []byte) (n int, err error) {
+func (e *errorReader) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("read error")
 }
