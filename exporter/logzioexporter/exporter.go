@@ -77,7 +77,11 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.ClientConfig.Endpoint, err = generateTracesEndpoint(config)
+	endpoint, err := generateTracesEndpoint(config)
+	if err != nil {
+		return nil, err
+	}
+	exporter.config.ClientConfig.Endpoint = endpoint
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
 	userAgent := fmt.Sprintf("otel-collector-logzio-traces-exporter-%s-%s-%s", set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 	exporter.config.ClientConfig.Headers = map[string]configopaque.String{
@@ -96,12 +100,17 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 		exporterhelper.WithRetry(config.BackOffConfig),
 	)
 }
+
 func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.ClientConfig.Endpoint, err = generateLogsEndpoint(config)
+	endpoint, err := generateLogsEndpoint(config)
+	if err != nil {
+		return nil, err
+	}
+	exporter.config.ClientConfig.Endpoint = endpoint
 	userAgent := fmt.Sprintf("otel-collector-logzio-logs-exporter-%s-%s-%s", set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 	exporter.config.ClientConfig.Headers = map[string]configopaque.String{
 		"Authorization": "Bearer " + config.Token,
