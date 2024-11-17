@@ -6,6 +6,7 @@ package cwlogs
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -652,7 +653,7 @@ func TestUserAgent(t *testing.T) {
 			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
-				HTTPMethod: "GET",
+				HTTPMethod: http.MethodGet,
 				HTTPPath:   "/",
 			}, nil, nil)
 

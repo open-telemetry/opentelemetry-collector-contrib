@@ -47,7 +47,7 @@ var traceJSON = []byte(`
 		"startTime": 1588664577013,
 		"tags": [{
 			"key": "http.method",
-			"value": "GET"
+			"value": http.MethodGet
 		}, {
 			"key": "http.params",
 			"value": "http://localhost/ingress"
