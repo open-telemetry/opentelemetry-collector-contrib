@@ -5,6 +5,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -39,18 +40,20 @@ var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                  sync.RWMutex
-	deleteMut          sync.Mutex
-	logger             *zap.Logger
-	kc                 kubernetes.Interface
-	informer           cache.SharedInformer
-	namespaceInformer  cache.SharedInformer
-	nodeInformer       cache.SharedInformer
-	replicasetInformer cache.SharedInformer
-	replicasetRegex    *regexp.Regexp
-	cronJobRegex       *regexp.Regexp
-	deleteQueue        []deleteRequest
-	stopCh             chan struct{}
+	m                      sync.RWMutex
+	deleteMut              sync.Mutex
+	logger                 *zap.Logger
+	kc                     kubernetes.Interface
+	informer               cache.SharedInformer
+	namespaceInformer      cache.SharedInformer
+	nodeInformer           cache.SharedInformer
+	replicasetInformer     cache.SharedInformer
+	replicasetRegex        *regexp.Regexp
+	cronJobRegex           *regexp.Regexp
+	deleteQueue            []deleteRequest
+	stopCh                 chan struct{}
+	waitForMetadata        bool
+	waitForMetadataTimeout time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -84,21 +87,36 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(
+	set component.TelemetrySettings,
+	apiCfg k8sconfig.APIConfig,
+	rules ExtractionRules,
+	filters Filters,
+	associations []Association,
+	exclude Excludes,
+	newClientSet APIClientsetProvider,
+	newInformer InformerProvider,
+	newNamespaceInformer InformerProviderNamespace,
+	newReplicaSetInformer InformerProviderReplicaSet,
+	waitForMetadata bool,
+	waitForMetadataTimeout time.Duration,
+) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
 	}
 	c := &WatchClient{
-		logger:           set.Logger,
-		Rules:            rules,
-		Filters:          filters,
-		Associations:     associations,
-		Exclude:          exclude,
-		replicasetRegex:  rRegex,
-		cronJobRegex:     cronJobRegex,
-		stopCh:           make(chan struct{}),
-		telemetryBuilder: telemetryBuilder,
+		logger:                 set.Logger,
+		Rules:                  rules,
+		Filters:                filters,
+		Associations:           associations,
+		Exclude:                exclude,
+		replicasetRegex:        rRegex,
+		cronJobRegex:           cronJobRegex,
+		stopCh:                 make(chan struct{}),
+		telemetryBuilder:       telemetryBuilder,
+		waitForMetadata:        waitForMetadata,
+		waitForMetadataTimeout: waitForMetadataTimeout,
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -189,50 +207,67 @@ func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules Extr
 }
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
-func (c *WatchClient) Start() {
-	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+func (c *WatchClient) Start() error {
+	synced := make([]cache.InformerSynced, 0)
+	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
 	if err != nil {
-		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+		return err
 	}
+	synced = append(synced, reg.HasSynced)
 	go c.informer.Run(c.stopCh)
 
-	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
 	if err != nil {
-		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
+		return err
 	}
+	synced = append(synced, reg.HasSynced)
 	go c.namespaceInformer.Run(c.stopCh)
 
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		_, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
 		})
 		if err != nil {
-			c.logger.Error("error adding event handler to replicaset informer", zap.Error(err))
+			return err
 		}
+		synced = append(synced, reg.HasSynced)
 		go c.replicasetInformer.Run(c.stopCh)
 	}
 
 	if c.nodeInformer != nil {
-		_, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
 			DeleteFunc: c.handleNodeDelete,
 		})
 		if err != nil {
-			c.logger.Error("error adding event handler to node informer", zap.Error(err))
+			return err
 		}
+		synced = append(synced, reg.HasSynced)
 		go c.nodeInformer.Run(c.stopCh)
 	}
+
+	if c.waitForMetadata {
+		timeoutCh := make(chan struct{})
+		t := time.AfterFunc(c.waitForMetadataTimeout, func() {
+			close(timeoutCh)
+		})
+		defer t.Stop()
+		if !cache.WaitForCacheSync(timeoutCh, synced...) {
+			return errors.New("failed to wait for caches to sync")
+		}
+	}
+	return nil
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
