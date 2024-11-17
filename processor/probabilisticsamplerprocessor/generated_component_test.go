@@ -39,14 +39,14 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateLogsProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 
 		{
 			name: "traces",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateTracesProcessor(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}
