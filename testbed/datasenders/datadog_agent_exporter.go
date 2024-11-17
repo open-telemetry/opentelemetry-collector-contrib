@@ -42,7 +42,6 @@ func (dd *datadogDataSender) Start() error {
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTraces(context.Background(), params, cfg)
-
 	if err != nil {
 		return err
 	}

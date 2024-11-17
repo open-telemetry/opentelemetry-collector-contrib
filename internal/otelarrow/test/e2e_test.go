@@ -78,13 +78,15 @@ type testConsumer struct {
 
 var _ consumer.Traces = &testConsumer{}
 
-type ExpConfig = otelarrowexporter.Config
-type RecvConfig = otelarrowreceiver.Config
-type CfgFunc func(*ExpConfig, *RecvConfig)
-type GenFunc func(int) ptrace.Traces
-type MkGen func() GenFunc
-type EndFunc func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int)
-type ConsumerErrFunc func(t *testing.T, err error)
+type (
+	ExpConfig       = otelarrowexporter.Config
+	RecvConfig      = otelarrowreceiver.Config
+	CfgFunc         func(*ExpConfig, *RecvConfig)
+	GenFunc         func(int) ptrace.Traces
+	MkGen           func() GenFunc
+	EndFunc         func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int)
+	ConsumerErrFunc func(t *testing.T, err error)
+)
 
 func (*testConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
@@ -179,7 +181,6 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	require.NoError(t, err)
 
 	return testCon, exporter, receiver
-
 }
 
 func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfgf CfgFunc, mkgen MkGen, errf ConsumerErrFunc, endf EndFunc) {
@@ -294,7 +295,6 @@ func bulkyGenFunc() MkGen {
 			return tracesGen.Generate(1000, time.Minute)
 		}
 	}
-
 }
 
 func standardEnding(t *testing.T, params testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int) {
@@ -464,7 +464,7 @@ func TestIntegrationTracesSimple(t *testing.T) {
 			defer cancel()
 
 			// until 10 threads can write 1000 spans
-			var params = testParams{
+			params := testParams{
 				threadCount: 10,
 				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1000
@@ -485,7 +485,7 @@ func TestIntegrationDeadlinePropagation(t *testing.T) {
 			defer cancel()
 
 			// Until at least one span is written.
-			var params = testParams{
+			params := testParams{
 				threadCount: 1,
 				requestWhileTrue: func(test *testConsumer) bool {
 					return test.sink.SpanCount() < 1
@@ -598,10 +598,9 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	defer cancel()
 
 	// until 2 Arrow stream spans are received from self instrumentation
-	var params = testParams{
+	params := testParams{
 		threadCount: 10,
 		requestWhileTrue: func(test *testConsumer) bool {
-
 			cnt := 0
 			for _, span := range test.expSpans.GetSpans() {
 				if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
@@ -714,12 +713,7 @@ func TestIntegrationAdmissionLimited(t *testing.T) {
 
 			testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
 				rcfg.Admission.RequestLimitMiB = admitLimit
-
-				// Note: #36074 will change WaiterLimit to WaitingLimitMiB
-				// measured in bytes, not request count.  This test is designed
-				// to work either way by virtue of having requests that are
-				// just shy of 1MiB.
-				rcfg.Admission.WaiterLimit = int64(waitingLimit)
+				rcfg.Admission.WaitingLimitMiB = waitingLimit
 
 				ecfg.Arrow.NumStreams = 10
 

@@ -64,7 +64,6 @@ func (itg issueTemplatesGenerator) generate(data *githubData) error {
 				return err
 			}
 		}
-
 	}
 	return nil
 }

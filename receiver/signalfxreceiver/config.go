@@ -11,9 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-var (
-	errEmptyEndpoint = errors.New("empty endpoint")
-)
+var errEmptyEndpoint = errors.New("empty endpoint")
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {

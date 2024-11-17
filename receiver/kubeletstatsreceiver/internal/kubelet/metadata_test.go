@@ -390,7 +390,6 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 
 // Test happy paths for volume type metadata.
 func TestCpuAndMemoryGetters(t *testing.T) {
-
 	tests := []struct {
 		name                       string
 		metadata                   Metadata
