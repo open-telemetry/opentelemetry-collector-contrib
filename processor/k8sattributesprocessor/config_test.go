@@ -6,6 +6,7 @@ package k8sattributesprocessor
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,6 +35,7 @@ func TestLoadConfig(t *testing.T) {
 				Extract: ExtractConfig{
 					Metadata: enabledAttributes(),
 				},
+				WaitForMetadataTimeout: 10 * time.Second,
 			},
 		},
 		{
@@ -105,6 +107,7 @@ func TestLoadConfig(t *testing.T) {
 						{Name: "jaeger-collector"},
 					},
 				},
+				WaitForMetadataTimeout: 10 * time.Second,
 			},
 		},
 		{
@@ -127,6 +130,7 @@ func TestLoadConfig(t *testing.T) {
 						{Name: "jaeger-collector"},
 					},
 				},
+				WaitForMetadataTimeout: 10 * time.Second,
 			},
 		},
 		{
@@ -149,6 +153,7 @@ func TestLoadConfig(t *testing.T) {
 						{Name: "jaeger-collector"},
 					},
 				},
+				WaitForMetadataTimeout: 10 * time.Second,
 			},
 		},
 		{

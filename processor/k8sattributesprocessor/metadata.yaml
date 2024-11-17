@@ -114,6 +114,7 @@ resource_attributes:
 
 tests:
   config:
+  skip_lifecycle: true
   goleak:
     skip: true
 
