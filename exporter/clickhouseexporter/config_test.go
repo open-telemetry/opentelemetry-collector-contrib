@@ -506,7 +506,6 @@ func TestConfig_buildDSN(t *testing.T) {
 				}
 				assert.Equalf(t, tt.want, dsn, "buildDSN()")
 			}
-
 		})
 	}
 }

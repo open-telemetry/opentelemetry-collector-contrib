@@ -37,12 +37,18 @@ type MetricConfig struct {
 	ClientConfig    collector.ClientConfig         `mapstructure:",squash"`
 	Config          googlemanagedprometheus.Config `mapstructure:",squash"`
 	ResourceFilters []collector.ResourceFilter     `mapstructure:"resource_filters"`
+	// CumulativeNormalization normalizes cumulative metrics without start times or with
+	// explicit reset points by subtracting subsequent points from the initial point.
+	// It is enabled by default. Since it caches starting points, it may result in
+	// increased memory usage.
+	CumulativeNormalization bool `mapstructure:"cumulative_normalization"`
 }
 
 func (c *GMPConfig) toCollectorConfig() collector.Config {
 	// start with whatever the default collector config is.
 	cfg := collector.DefaultConfig()
 	cfg.MetricConfig.Prefix = c.MetricConfig.Prefix
+	cfg.MetricConfig.CumulativeNormalization = c.MetricConfig.CumulativeNormalization
 	if c.MetricConfig.Prefix == "" {
 		cfg.MetricConfig.Prefix = "prometheus.googleapis.com"
 	}

@@ -212,7 +212,6 @@ func TestExportErrors(tester *testing.T) {
 		server.Close()
 		require.Error(tester, err)
 	}
-
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {

@@ -14,7 +14,6 @@ import (
 )
 
 func Test_MergeMaps(t *testing.T) {
-
 	input := pcommon.NewMap()
 	input.PutStr("attr1", "value1")
 

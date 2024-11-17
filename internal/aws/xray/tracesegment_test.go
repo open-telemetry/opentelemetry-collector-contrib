@@ -598,7 +598,6 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 						ExceptionID: String("abcdefghijklmnop"),
 					},
 				}, actualSeg, testCase+": unmarshalled segment is different from the expected")
-
 			},
 		},
 		{

@@ -430,7 +430,6 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 						for _, d := range dp.Dimensions {
 							if k, ok := tr.CopyDimensions[d.Key]; ok {
 								dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{Key: k, Value: d.Value})
-
 							}
 						}
 					}

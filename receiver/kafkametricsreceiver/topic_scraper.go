@@ -65,7 +65,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
