@@ -742,14 +742,14 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					tel := setupTestTelemetry()
 					set := tel.NewSettings()
-					mp := set.LeveledMeterProvider(configtelemetry.LevelBasic)
+					// detailed level enables otelhttp client instrumentation which we dont want to test here
+					set.MetricsLevel = configtelemetry.LevelBasic
+					// TODO: Remove this after upgrade to latest released confighttp.
 					set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
-						// detailed level enables otelhttp client instrumentation which we
-						// dont want to test here
 						if level == configtelemetry.LevelDetailed {
 							return noop.MeterProvider{}
 						}
-						return mp
+						return set.MeterProvider
 					}
 					set.BuildInfo = buildInfo
 
