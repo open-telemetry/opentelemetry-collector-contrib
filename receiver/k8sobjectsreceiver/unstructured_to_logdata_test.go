@@ -106,7 +106,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 					"kind":       "Event",
 					"apiVersion": "v1",
 					"metadata": map[string]any{
-						"name": "generic-name",
+						"name":      "generic-name",
+						"namespace": "my-namespace",
 					},
 				},
 			},
@@ -119,7 +120,11 @@ func TestUnstructuredListToLogData(t *testing.T) {
 
 		resourceLogs := logs.ResourceLogs()
 		assert.Equal(t, 1, resourceLogs.Len())
+
 		rl := resourceLogs.At(0)
+		namespaceAttr, ok := rl.Resource().Attributes().Get(semconv.AttributeK8SNamespaceName)
+		assert.True(t, ok)
+		assert.Equal(t, "my-namespace", namespaceAttr.Str())
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
 		assert.Equal(t, 1, rl.ScopeLogs().Len())
 		assert.Equal(t, 1, logRecords.Len())
@@ -128,6 +133,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		eventName, ok := attrs.Get("event.name")
 		require.True(t, ok)
 		assert.EqualValues(t, "generic-name", eventName.AsRaw())
+
+		eventType, ok := attrs.Get("event.type")
+		require.True(t, ok)
+		assert.Equal(t, string(watch.Added), eventType.AsString())
 	})
 
 	t.Run("Test event observed timestamp is present", func(t *testing.T) {
@@ -165,5 +174,52 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, 1, logRecords.Len())
 		assert.Positive(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix())
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
+	})
+
+	t.Run("Test pull and watch objects result in the same log entry body", func(t *testing.T) {
+		observedTimestamp := time.Now()
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
+		}
+		watchedEvent := &watch.Event{
+			Type: watch.Added,
+			Object: &unstructured.Unstructured{
+				Object: map[string]any{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]any{
+						"name": "generic-name",
+					},
+				},
+			},
+		}
+
+		pulledEvent := &unstructured.UnstructuredList{
+			Items: []unstructured.Unstructured{{
+				Object: map[string]any{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]any{
+						"name": "generic-name",
+					},
+				},
+			}},
+		}
+
+		logEntryFromWatchEvent, err := watchObjectsToLogData(watchedEvent, observedTimestamp, config)
+		assert.Nil(t, err)
+		assert.NotNil(t, logEntryFromWatchEvent)
+
+		logEntryFromPulledEvent := unstructuredListToLogData(pulledEvent, observedTimestamp, config)
+		assert.NotNil(t, logEntryFromPulledEvent)
+
+		assert.Equal(t,
+			logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body(),
+			logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body(),
+		)
 	})
 }

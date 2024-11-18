@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -24,10 +24,7 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 
 	ul := unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{{
-			Object: map[string]any{
-				"type":   string(event.Type),
-				"object": udata.Object,
-			},
+			Object: udata.Object,
 		}},
 	}
 
@@ -37,6 +34,7 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 		if name != "" {
 			attrs.PutStr("event.domain", "k8s")
 			attrs.PutStr("event.name", name)
+			attrs.PutStr("event.type", string(event.Type))
 		}
 	}), nil
 }
