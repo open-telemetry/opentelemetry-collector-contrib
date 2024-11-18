@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,6 +18,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
@@ -66,25 +68,85 @@ func TestConvertInvalidDataType(t *testing.T) {
 	}
 }
 
-func TestConvertInvalidMetric(t *testing.T) {
-	for _, mType := range []pmetric.MetricType{
-		pmetric.MetricTypeHistogram,
-		pmetric.MetricTypeSum,
-		pmetric.MetricTypeGauge,
-	} {
-		metric := pmetric.NewMetric()
-		switch mType {
-		case pmetric.MetricTypeGauge:
-			metric.SetEmptyGauge().DataPoints().AppendEmpty()
-		case pmetric.MetricTypeSum:
-			metric.SetEmptySum().DataPoints().AppendEmpty()
-		case pmetric.MetricTypeHistogram:
-			metric.SetEmptyHistogram().DataPoints().AppendEmpty()
-		}
-		c := collector{}
+func TestConvertMetric(t *testing.T) {
+	tests := []struct {
+		description string
+		mName       string
+		mType       pmetric.MetricType
+		mapVals     map[string]metricFamily
+		err         bool
+	}{
+		{
+			description: "invalid histogram metric",
+			mType:       pmetric.MetricTypeHistogram,
+			err:         true,
+		},
+		{
+			description: "invalid sum metric",
+			mType:       pmetric.MetricTypeSum,
+			err:         true,
+		},
+		{
+			description: "invalid gauge metric",
+			mType:       pmetric.MetricTypeGauge,
+			err:         true,
+		},
+		{
+			description: "metric type conflict",
+			mName:       "testgauge",
+			mType:       pmetric.MetricTypeGauge,
+			mapVals: map[string]metricFamily{
+				"testgauge": {
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("testgauge"),
+						Type: dto.MetricType_COUNTER.Enum(),
+					},
+				},
+			},
+			err: true,
+		},
+		{
+			description: "metric description conflict",
+			mName:       "testgauge",
+			mType:       pmetric.MetricTypeGauge,
+			mapVals: map[string]metricFamily{
+				"testgauge": {
+					mf: &io_prometheus_client.MetricFamily{
+						Name: proto.String("testgauge"),
+						Type: dto.MetricType_GAUGE.Enum(),
+						Help: proto.String("test help value"),
+					},
+				},
+			},
+			err: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.description, func(t *testing.T) {
+			metric := pmetric.NewMetric()
+			metric.SetName(tt.mName)
+			switch tt.mType {
+			case pmetric.MetricTypeGauge:
+				metric.SetEmptyGauge().DataPoints().AppendEmpty()
+			case pmetric.MetricTypeSum:
+				metric.SetEmptySum().DataPoints().AppendEmpty()
+			case pmetric.MetricTypeHistogram:
+				metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+			}
+			c := collector{
+				logger: zap.NewNop(),
+			}
+			for k, v := range tt.mapVals {
+				c.metricFamilies.Store(k, v)
+			}
 
-		_, err := c.convertMetric(metric, pcommon.NewMap())
-		require.Error(t, err)
+			_, err := c.convertMetric(metric, pcommon.NewMap())
+			if tt.err {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
 	}
 }
 
