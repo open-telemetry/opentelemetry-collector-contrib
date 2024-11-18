@@ -93,7 +93,7 @@ func TestConfigValidateMultipleAuth(t *testing.T) {
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
 	cfg.Auth.XAuth2 = &SaslXAuth2Config{"Username", "Bearer"}
 	err := component.ValidateConfig(cfg)
-	assert.Equal(t, errMissingAuthDetails, err)
+	assert.Equal(t, errTooManyAuthDetails, err)
 }
 
 func TestConfigValidateMissingQueue(t *testing.T) {

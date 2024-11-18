@@ -19,6 +19,7 @@ const (
 
 var (
 	errMissingAuthDetails       = errors.New("authentication details are required, either for plain user name password or XOAUTH2 or client certificate")
+	errTooManyAuthDetails       = errors.New("only one authentication method must be used")
 	errMissingQueueName         = errors.New("queue definition is required, queue definition has format queue://<queuename>")
 	errMissingPlainTextParams   = errors.New("missing plain text auth params: Username, Password")
 	errMissingXauth2Params      = errors.New("missing xauth2 text auth params: Username, Bearer")
@@ -56,8 +57,11 @@ func (cfg *Config) Validate() error {
 	if cfg.Auth.XAuth2 != nil {
 		authMethod++
 	}
-	if authMethod != 1 {
+	if authMethod == 0 {
 		return errMissingAuthDetails
+	}
+	if authMethod > 1 {
+		return errTooManyAuthDetails
 	}
 	if len(strings.TrimSpace(cfg.Queue)) == 0 {
 		return errMissingQueueName
