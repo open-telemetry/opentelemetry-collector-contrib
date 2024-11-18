@@ -11,12 +11,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// Safeguard to statically ensure the Parser.ParseStatements method can be reflectively
+// invoked by the ottlParserWrapper.parseStatements
 var _ interface {
 	ParseStatements(statements []string) ([]*Statement[any], error)
 } = (*Parser[any])(nil)
 
-var _ ParsedStatementConverter[any, StatementsGetter, any] = func(
-	_ *ParserCollection[StatementsGetter, any],
+// Safeguard to statically ensure any ParsedStatementConverter method can be reflectively
+// invoked by the statementsConverterWrapper.call
+var _ ParsedStatementConverter[any, any] = func(
+	_ *ParserCollection[any],
 	_ *Parser[any],
 	_ string,
 	_ StatementsGetter,
@@ -30,21 +34,32 @@ type StatementsGetter interface {
 	GetStatements() []string
 }
 
+type defaultStatementsGetter []string
+
+func (d defaultStatementsGetter) GetStatements() []string {
+	return d
+}
+
+// NewStatementsGetter creates a new StatementsGetter
+func NewStatementsGetter(statements []string) StatementsGetter {
+	return defaultStatementsGetter(statements)
+}
+
 // ottlParserWrapper wraps an ottl.Parser using reflection, so it can invoke exported
 // methods without knowing its generic type (transform context).
-type ottlParserWrapper[S StatementsGetter] struct {
+type ottlParserWrapper struct {
 	parser                         reflect.Value
 	prependContextToStatementPaths func(context string, statement string) (string, error)
 }
 
-func newParserWrapper[K any, S StatementsGetter](parser *Parser[K]) *ottlParserWrapper[S] {
-	return &ottlParserWrapper[S]{
+func newParserWrapper[K any](parser *Parser[K]) *ottlParserWrapper {
+	return &ottlParserWrapper{
 		parser:                         reflect.ValueOf(parser),
 		prependContextToStatementPaths: parser.prependContextToStatementPaths,
 	}
 }
 
-func (g *ottlParserWrapper[S]) parseStatements(statements []string) (reflect.Value, error) {
+func (g *ottlParserWrapper) parseStatements(statements []string) (reflect.Value, error) {
 	method := g.parser.MethodByName("ParseStatements")
 	parseStatementsRes := method.Call([]reflect.Value{reflect.ValueOf(statements)})
 	err := parseStatementsRes[1]
@@ -54,7 +69,7 @@ func (g *ottlParserWrapper[S]) parseStatements(statements []string) (reflect.Val
 	return parseStatementsRes[0], nil
 }
 
-func (g *ottlParserWrapper[S]) prependContextToStatementsPaths(context string, statements []string) ([]string, error) {
+func (g *ottlParserWrapper) prependContextToStatementsPaths(context string, statements []string) ([]string, error) {
 	result := make([]string, 0, len(statements))
 	for _, s := range statements {
 		prependedStatement, err := g.prependContextToStatementPaths(context, s)
@@ -66,19 +81,19 @@ func (g *ottlParserWrapper[S]) prependContextToStatementsPaths(context string, s
 	return result, nil
 }
 
-// statementsConverterWrapper is reflection-based wrapper to the ParsedStatementConverter function,
+// statementsConverterWrapper is a reflection-based wrapper to the ParsedStatementConverter function,
 // which does not require knowing all generic parameters to be called.
-type statementsConverterWrapper[S StatementsGetter] reflect.Value
+type statementsConverterWrapper reflect.Value
 
-func newStatementsConverterWrapper[K any, S StatementsGetter, R any](converter ParsedStatementConverter[K, S, R]) statementsConverterWrapper[S] {
-	return statementsConverterWrapper[S](reflect.ValueOf(converter))
+func newStatementsConverterWrapper[K any, R any](converter ParsedStatementConverter[K, R]) statementsConverterWrapper {
+	return statementsConverterWrapper(reflect.ValueOf(converter))
 }
 
-func (s statementsConverterWrapper[S]) call(
+func (s statementsConverterWrapper) call(
 	parserCollection reflect.Value,
-	ottlParser *ottlParserWrapper[S],
+	ottlParser *ottlParserWrapper,
 	context string,
-	statements S,
+	statements StatementsGetter,
 	parsedStatements reflect.Value,
 ) (reflect.Value, error) {
 	result := reflect.Value(s).Call([]reflect.Value{
@@ -100,30 +115,30 @@ func (s statementsConverterWrapper[S]) call(
 
 // parserCollectionParser holds an ottlParserWrapper and its respectively
 // statementsConverter function.
-type parserCollectionParser[S StatementsGetter] struct {
-	ottlParser          *ottlParserWrapper[S]
-	statementsConverter statementsConverterWrapper[S]
+type parserCollectionParser struct {
+	ottlParser          *ottlParserWrapper
+	statementsConverter statementsConverterWrapper
 }
 
 // ParserCollection is a configurable set of ottl.Parser that can handle multiple OTTL contexts
 // parsings, inferring the context and choosing the right parser for the given statements.
-type ParserCollection[S StatementsGetter, R any] struct {
-	contextParsers           map[string]*parserCollectionParser[S]
+type ParserCollection[R any] struct {
+	contextParsers           map[string]*parserCollectionParser
 	contextInferrer          contextInferrer
 	modifiedStatementLogging bool
 	Settings                 component.TelemetrySettings
 	ErrorMode                ErrorMode
 }
 
-type ParserCollectionOption[S StatementsGetter, R any] func(*ParserCollection[S, R]) error
+type ParserCollectionOption[R any] func(*ParserCollection[R]) error
 
-func NewParserCollection[S StatementsGetter, R any](
+func NewParserCollection[R any](
 	settings component.TelemetrySettings,
-	options ...ParserCollectionOption[S, R]) (*ParserCollection[S, R], error) {
+	options ...ParserCollectionOption[R]) (*ParserCollection[R], error) {
 
-	pc := &ParserCollection[S, R]{
+	pc := &ParserCollection[R]{
 		Settings:        settings,
-		contextParsers:  map[string]*parserCollectionParser[S]{},
+		contextParsers:  map[string]*parserCollectionParser{},
 		contextInferrer: defaultPriorityContextInferrer(),
 	}
 
@@ -142,21 +157,21 @@ func NewParserCollection[S StatementsGetter, R any](
 // Given each parser has its own transform context type, they must agree on a common type [R]
 // so is can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
 // functions.
-type ParsedStatementConverter[T any, S StatementsGetter, R any] func(
-	collection *ParserCollection[S, R],
-	parser *Parser[T],
+type ParsedStatementConverter[K any, R any] func(
+	collection *ParserCollection[R],
+	parser *Parser[K],
 	context string,
-	statements S,
-	parsedStatements []*Statement[T],
+	statements StatementsGetter,
+	parsedStatements []*Statement[K],
 ) (R, error)
 
-func newNopParsedStatementConverter[T any, S StatementsGetter]() ParsedStatementConverter[T, S, any] {
+func newNopParsedStatementConverter[K any]() ParsedStatementConverter[K, any] {
 	return func(
-		_ *ParserCollection[S, any],
-		_ *Parser[T],
+		_ *ParserCollection[any],
+		_ *Parser[K],
 		_ string,
-		_ S,
-		parsedStatements []*Statement[T]) (any, error) {
+		_ StatementsGetter,
+		parsedStatements []*Statement[K]) (any, error) {
 		return parsedStatements, nil
 	}
 }
@@ -164,17 +179,17 @@ func newNopParsedStatementConverter[T any, S StatementsGetter]() ParsedStatement
 // WithParserCollectionContext configures an ottl.Parser for the given context.
 // The provided ottl.Parser must be configured to support the provided context using
 // the ottl.WithPathContextNames option.
-func WithParserCollectionContext[K any, S StatementsGetter, R any](
+func WithParserCollectionContext[K any, R any](
 	context string,
 	parser *Parser[K],
-	converter ParsedStatementConverter[K, S, R],
-) ParserCollectionOption[S, R] {
-	return func(mp *ParserCollection[S, R]) error {
+	converter ParsedStatementConverter[K, R],
+) ParserCollectionOption[R] {
+	return func(mp *ParserCollection[R]) error {
 		if _, ok := parser.pathContextNames[context]; !ok {
 			return fmt.Errorf(`context "%s" must be a valid "%T" path context name`, context, parser)
 		}
-		mp.contextParsers[context] = &parserCollectionParser[S]{
-			ottlParser:          newParserWrapper[K, S](parser),
+		mp.contextParsers[context] = &parserCollectionParser{
+			ottlParser:          newParserWrapper[K](parser),
 			statementsConverter: newStatementsConverterWrapper(converter),
 		}
 		return nil
@@ -183,8 +198,8 @@ func WithParserCollectionContext[K any, S StatementsGetter, R any](
 
 // WithParserCollectionErrorMode has no effect on the ParserCollection, but might be used
 // by the ParsedStatementConverter functions to handle/create StatementSequence.
-func WithParserCollectionErrorMode[S StatementsGetter, R any](errorMode ErrorMode) ParserCollectionOption[S, R] {
-	return func(tp *ParserCollection[S, R]) error {
+func WithParserCollectionErrorMode[R any](errorMode ErrorMode) ParserCollectionOption[R] {
+	return func(tp *ParserCollection[R]) error {
 		tp.ErrorMode = errorMode
 		return nil
 	}
@@ -193,8 +208,8 @@ func WithParserCollectionErrorMode[S StatementsGetter, R any](errorMode ErrorMod
 // EnableParserCollectionModifiedStatementLogging controls the statements modification logs.
 // When enabled, it logs any statements modifications performed by the parsing operations,
 // instructing users to rewrite the statements accordingly.
-func EnableParserCollectionModifiedStatementLogging[S StatementsGetter, R any](enabled bool) ParserCollectionOption[S, R] {
-	return func(tp *ParserCollection[S, R]) error {
+func EnableParserCollectionModifiedStatementLogging[R any](enabled bool) ParserCollectionOption[R] {
+	return func(tp *ParserCollection[R]) error {
 		tp.modifiedStatementLogging = enabled
 		return nil
 	}
@@ -207,7 +222,7 @@ func EnableParserCollectionModifiedStatementLogging[S StatementsGetter, R any](e
 // If no contexts are present in the statements, or if the inferred value is not supported by
 // the [ParserCollection], it returns an error.
 // If parsing the statements fails, it returns the underline [ottl.Parser.ParseStatements] error.
-func (pc *ParserCollection[S, R]) ParseStatements(statements S) (R, error) {
+func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, error) {
 	statementsValues := statements.GetStatements()
 	inferredContext, err := pc.contextInferrer.infer(statementsValues)
 	if err != nil {
@@ -230,7 +245,7 @@ func (pc *ParserCollection[S, R]) ParseStatements(statements S) (R, error) {
 // argument should be set to true, so it rewrites the statements prepending the missing paths
 // contexts.
 // If parsing the statements fails, it returns the underline [ottl.Parser.ParseStatements] error.
-func (pc *ParserCollection[S, R]) ParseStatementsWithContext(context string, statements S, prependPathsContext bool) (R, error) {
+func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
 		return *new(R), fmt.Errorf(`unknown context "%s" for stataments: %v`, context, statements.GetStatements())
@@ -271,7 +286,7 @@ func (pc *ParserCollection[S, R]) ParseStatementsWithContext(context string, sta
 	return convertedStatements.Interface().(R), nil
 }
 
-func (pc *ParserCollection[S, R]) logModifiedStatements(originalStatements, modifiedStatements []string) {
+func (pc *ParserCollection[R]) logModifiedStatements(originalStatements, modifiedStatements []string) {
 	var fields []zap.Field
 	for i, original := range originalStatements {
 		if modifiedStatements[i] != original {
