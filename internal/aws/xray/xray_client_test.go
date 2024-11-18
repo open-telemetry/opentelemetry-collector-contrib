@@ -4,6 +4,7 @@
 package awsxray
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -30,7 +31,7 @@ func TestUserAgent(t *testing.T) {
 	x := xray.xRay
 
 	req := request.New(aws.Config{}, metadata.ClientInfo{}, x.Handlers, nil, &request.Operation{
-		HTTPMethod: "GET",
+		HTTPMethod: http.MethodGet,
 		HTTPPath:   "/",
 	}, nil, nil)
 
