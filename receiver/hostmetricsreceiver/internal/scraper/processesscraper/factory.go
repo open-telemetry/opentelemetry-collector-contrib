@@ -6,7 +6,6 @@ package processesscraper // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -20,9 +19,6 @@ const (
 	// TypeStr the value of "type" key in configuration.
 	TypeStr = "processes"
 )
-
-// scraperType is the component type used for the built scraper.
-var scraperType component.Type = component.MustNewType(TypeStr)
 
 // Factory is the Factory for scraper.
 type Factory struct{}
