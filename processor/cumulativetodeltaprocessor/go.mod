@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumul
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.113.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.113.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.114.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.114.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
