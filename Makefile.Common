@@ -83,29 +83,29 @@ TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subte
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
-ALL_PKG_DIRS = $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | $(NORMALIZE_DIRS))
+ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | $(NORMALIZE_DIRS))
 
-ALL_SRC = $(shell find $(ALL_PKG_DIRS) -name '*.go' \
+ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/third_party/*' \
                                 -not -path '*/local/*' \
                                 -type f | sort)
 
-ALL_SRC_AND_SHELL = find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
+ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC_CMD = find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
+ALL_SRC_AND_DOC_CMD := find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
 ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
 	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	MISSPELL_CMD = $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
-	MISSPELL_CORRECTION_CMD = $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
+	MISSPELL_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
+	MISSPELL_CORRECTION_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
 else
-	ALL_SRC_AND_DOC = $(shell $(ALL_SRC_AND_DOC_CMD))
-	MISSPELL_CMD = $(MISSPELL) $(ALL_SRC_AND_DOC)
-	MISSPELL_CORRECTION_CMD = $(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
+	ALL_SRC_AND_DOC := $(shell $(ALL_SRC_AND_DOC_CMD))
+	MISSPELL_CMD := $(MISSPELL) $(ALL_SRC_AND_DOC)
+	MISSPELL_CORRECTION_CMD := $(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
 endif
 
 # ALL_PKGS is used with 'go cover'
-ALL_PKGS = $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
+ALL_PKGS := $(shell $(GOCMD) list $(sort $(dir $(ALL_SRC))))
 
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 
