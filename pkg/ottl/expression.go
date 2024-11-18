@@ -135,7 +135,7 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 				if err != nil {
 					return nil, err
 				}
-			case [][]byte:
+			case []byte:
 				result, err = getElementByIndex(r, k.Int)
 				if err != nil {
 					return nil, err
