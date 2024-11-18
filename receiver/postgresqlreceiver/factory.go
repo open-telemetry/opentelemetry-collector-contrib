@@ -58,13 +58,13 @@ func createMetricsReceiver(
 	}
 
 	ns := newPostgreSQLScraper(params, cfg, clientFactory)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithShutdown(ns.shutdown))
+	scraper, err := scraperhelper.NewScraperWithoutType(ns.scrape, scraperhelper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraperWithType(metadata.Type, scraper),
 	)
 }

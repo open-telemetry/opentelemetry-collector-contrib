@@ -125,7 +125,7 @@ func createAddScraperOptions(
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(hostMetricsScraper))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraperWithType(metadata.Type, hostMetricsScraper))
 			continue
 		}
 

@@ -100,7 +100,7 @@ func createAddScraperOpts(
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(githubScraper))
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraperWithType(metadata.Type, githubScraper))
 	}
 
 	return scraperControllerOptions, nil

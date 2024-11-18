@@ -31,8 +31,7 @@ func createMetricsReceiver(
 	}
 
 	adds := newActiveDirectoryDSScraper(c.MetricsBuilderConfig, params)
-	scraper, err := scraperhelper.NewScraper(
-		metadata.Type,
+	scraper, err := scraperhelper.NewScraperWithoutType(
 		adds.scrape,
 		scraperhelper.WithStart(adds.start),
 		scraperhelper.WithShutdown(adds.shutdown),
@@ -45,6 +44,6 @@ func createMetricsReceiver(
 		&c.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraperWithType(metadata.Type, scraper),
 	)
 }

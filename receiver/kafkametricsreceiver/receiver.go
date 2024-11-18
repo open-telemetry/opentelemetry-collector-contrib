@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error)
@@ -57,7 +58,7 @@ var newMetricsReceiver = func(
 			if err != nil {
 				return nil, err
 			}
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(s))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraperWithType(metadata.Type, s))
 			continue
 		}
 		return nil, fmt.Errorf("no scraper found for key: %s", scraper)

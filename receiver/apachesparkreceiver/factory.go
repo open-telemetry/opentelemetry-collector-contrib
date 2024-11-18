@@ -52,12 +52,12 @@ func createMetricsReceiver(
 	}
 
 	sparkScraper := newSparkScraper(params.Logger, sparkConfig, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, sparkScraper.scrape,
+	scraper, err := scraperhelper.NewScraperWithoutType(sparkScraper.scrape,
 		scraperhelper.WithStart(sparkScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(&sparkConfig.ControllerConfig, params,
-		consumer, scraperhelper.AddScraper(scraper))
+		consumer, scraperhelper.AddScraperWithType(metadata.Type, scraper))
 }
