@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.15.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.15.0
 	go.opentelemetry.io/build-tools/multimod v0.15.0
-	go.opentelemetry.io/collector/cmd/builder v0.113.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/cmd/builder v0.114.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.114.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.26.0
