@@ -21,10 +21,8 @@ require (
 require (
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
 	go.opentelemetry.io/collector/config/confighttp v0.114.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.114.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.114.0
 	go.opentelemetry.io/collector/semconv v0.114.0
-	go.opentelemetry.io/otel/metric v1.32.0
 )
 
 require (
@@ -53,6 +51,7 @@ require (
 	go.opentelemetry.io/collector/client v1.20.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.114.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.114.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.20.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.114.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.114.0 // indirect
@@ -70,6 +69,7 @@ require (
 	go.opentelemetry.io/collector/receiver/receivertest v0.114.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
+	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect

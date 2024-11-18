@@ -34,8 +34,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -744,13 +742,6 @@ func Test_PushMetrics(t *testing.T) {
 					set := tel.NewSettings()
 					// detailed level enables otelhttp client instrumentation which we dont want to test here
 					set.MetricsLevel = configtelemetry.LevelBasic
-					// TODO: Remove this after upgrade to latest released confighttp.
-					set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
-						if level == configtelemetry.LevelDetailed {
-							return noop.MeterProvider{}
-						}
-						return set.MeterProvider
-					}
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
