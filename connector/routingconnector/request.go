@@ -18,9 +18,11 @@ import (
 // future if needed. For now, it expects the condition to be in exactly the format:
 // 'request["<name>"] <comparator> <value>' where <comparator> is either '==' or '!='.
 
-var requestFieldRegex = regexp.MustCompile(`request\[".*"\]`)
-var valueFieldRegex = regexp.MustCompile(`".*"`)
-var comparatorRegex = regexp.MustCompile(`==|!=`)
+var (
+	requestFieldRegex = regexp.MustCompile(`request\[".*"\]`)
+	valueFieldRegex   = regexp.MustCompile(`".*"`)
+	comparatorRegex   = regexp.MustCompile(`==|!=`)
+)
 
 type requestCondition struct {
 	attributeName string
