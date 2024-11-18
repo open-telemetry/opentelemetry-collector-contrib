@@ -163,13 +163,13 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	consumeDone := make(chan struct{})
 
 	// imitate a slow exporter
-	te := &mockTracesExporter{Component: mockComponent{}}
-	te.ConsumeTracesFn = func(_ context.Context, _ ptrace.Traces) error {
-		close(consumeStarted)
-		time.Sleep(50 * time.Millisecond)
-		return te.consumeErr
-	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, _ ptrace.Traces) error {
+			close(consumeStarted)
+			time.Sleep(50 * time.Millisecond)
+			return te.consumeErr
+		}
 		return te, nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
