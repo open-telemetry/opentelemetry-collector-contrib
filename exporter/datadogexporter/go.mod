@@ -10,7 +10,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.59.0
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.59.0
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.59.0
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.61.0-devel.0.20241113154145-0dd36f320496
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.61.0-devel.0.20241118141418-5b899217c342
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.59.0
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.57.0-devel.0.20240718200853-81bf3b2e412d
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.59.0
