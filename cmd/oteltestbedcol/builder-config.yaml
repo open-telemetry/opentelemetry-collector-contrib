@@ -7,17 +7,17 @@ dist:
   module: github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   name: oteltestbedcol
   description: OpenTelemetry Collector binary for testbed only tests.
-  version: 0.113.0-dev
+  version: 0.114.0-dev
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.113.1-0.20241115165626-8b99b8023ca3
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.113.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.113.1-0.20241115165626-8b99b8023ca3
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.113.1-0.20241115165626-8b99b8023ca3
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.113.1-0.20241115165626-8b99b8023ca3
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.114.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.114.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.113.0
@@ -29,13 +29,13 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.113.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.113.1-0.20241115165626-8b99b8023ca3
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.113.1-0.20241115165626-8b99b8023ca3
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.114.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.113.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.113.1-0.20241115165626-8b99b8023ca3
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.113.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.113.0
@@ -51,11 +51,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.113.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.19.1-0.20241115165626-8b99b8023ca3
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.19.1-0.20241115165626-8b99b8023ca3
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.19.1-0.20241115165626-8b99b8023ca3
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.19.1-0.20241115165626-8b99b8023ca3
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.19.1-0.20241115165626-8b99b8023ca3
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.20.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.20.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.20.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.20.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.20.0
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
