@@ -103,6 +103,7 @@ components:
         - apachespark
         - awscloudwatch
         - awscontainerinsightreceiver
+        - awscontainerinsightskueuereceiver
         - awsecscontainermetrics
         - awsfirehose
         - awsxray
