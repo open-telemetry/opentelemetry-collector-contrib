@@ -18,6 +18,8 @@ import (
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -143,29 +145,18 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil, false, 10*time.Second)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 	assert.Nil(t, c)
 
-	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil)
+	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil, false, 10*time.Second)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
 
 func TestBadFilters(t *testing.T) {
-	c, err := New(
-		componenttest.NewNopTelemetrySettings(),
-		k8sconfig.APIConfig{},
-		ExtractionRules{},
-		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
-		[]Association{},
-		Excludes{},
-		newFakeAPIClientset,
-		NewFakeInformer,
-		NewFakeNamespaceInformer,
-		NewFakeReplicaSetInformer,
-	)
+	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer, false, 10*time.Second)
 	assert.Error(t, err)
 	assert.Nil(t, c)
 }
@@ -180,7 +171,7 @@ func TestClientStartStop(t *testing.T) {
 	done := make(chan struct{})
 	assert.False(t, fctr.HasStopped())
 	go func() {
-		c.Start()
+		assert.NoError(t, c.Start())
 		close(done)
 	}()
 	c.Stop()
@@ -201,7 +192,7 @@ func TestConstructorErrors(t *testing.T) {
 			gotAPIConfig = c
 			return nil, fmt.Errorf("error creating k8s client")
 		}
-		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil)
+		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil, false, 10*time.Second)
 		assert.Nil(t, c)
 		assert.Error(t, err)
 		assert.Equal(t, "error creating k8s client", err.Error())
@@ -1923,11 +1914,63 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 			},
 		},
 	}
-	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer)
+	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer, false, 10*time.Second)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
 	return newTestClientWithRulesAndFilters(t, Filters{})
+}
+
+type neverSyncedFakeClient struct {
+	cache.SharedInformer
+}
+
+type neverSyncedResourceEventHandlerRegistration struct {
+	cache.ResourceEventHandlerRegistration
+}
+
+func (n *neverSyncedResourceEventHandlerRegistration) HasSynced() bool {
+	return false
+}
+
+func (n *neverSyncedFakeClient) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
+	delegate, err := n.SharedInformer.AddEventHandler(handler)
+	if err != nil {
+		return nil, err
+	}
+	return &neverSyncedResourceEventHandlerRegistration{ResourceEventHandlerRegistration: delegate}, nil
+}
+
+func TestWaitForMetadata(t *testing.T) {
+	testCases := []struct {
+		name             string
+		informerProvider InformerProvider
+		err              bool
+	}{{
+		name:             "no wait",
+		informerProvider: NewFakeInformer,
+		err:              false,
+	}, {
+		name: "wait but never synced",
+		informerProvider: func(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector) cache.SharedInformer {
+			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector)}
+		},
+		err: true,
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, tc.informerProvider, nil, nil, true, 1*time.Second)
+			require.NoError(t, err)
+
+			err = c.Start()
+			if tc.err {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
