@@ -6,6 +6,7 @@ package translator
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,7 +67,7 @@ func BenchmarkWithPool(b *testing.B) {
 
 func constructWriterPoolSpan() ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPStatusCode] = 200

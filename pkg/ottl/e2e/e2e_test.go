@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -349,7 +350,7 @@ func Test_e2e_converters(t *testing.T) {
 		{
 			statement: `set(attributes["test"], ConvertCase(attributes["http.method"], "upper"))`,
 			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "GET")
+				tCtx.GetLogRecord().Attributes().PutStr("test", http.MethodGet)
 			},
 		},
 		{

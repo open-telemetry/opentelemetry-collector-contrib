@@ -5,6 +5,7 @@ package azuremonitorexporter
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -29,7 +30,7 @@ const (
 	defaultServiceInstance                  = "112345"
 	defaultScopeName                        = "myinstrumentationlib"
 	defaultScopeVersion                     = "1.0"
-	defaultHTTPMethod                       = "GET"
+	defaultHTTPMethod                       = http.MethodGet
 	defaultHTTPServerSpanName               = "/bar"
 	defaultHTTPClientSpanName               = defaultHTTPMethod
 	defaultHTTPStatusCode                   = 200
