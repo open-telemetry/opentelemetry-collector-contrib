@@ -135,7 +135,6 @@ type ParserCollectionOption[R any] func(*ParserCollection[R]) error
 func NewParserCollection[R any](
 	settings component.TelemetrySettings,
 	options ...ParserCollectionOption[R]) (*ParserCollection[R], error) {
-
 	pc := &ParserCollection[R]{
 		Settings:        settings,
 		contextParsers:  map[string]*parserCollectionParser{},
