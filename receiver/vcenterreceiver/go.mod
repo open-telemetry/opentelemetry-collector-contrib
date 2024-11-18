@@ -12,14 +12,14 @@ require (
 	github.com/vmware/govmomi v0.46.0
 	go.opentelemetry.io/collector/component v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/component/componenttest v0.0.0-20241112045949-9c4c007a12b4
-	go.opentelemetry.io/collector/config/configopaque v1.19.1-0.20241115165626-8b99b8023ca3
-	go.opentelemetry.io/collector/config/configtls v1.19.1-0.20241115165626-8b99b8023ca3
-	go.opentelemetry.io/collector/confmap v1.19.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/config/configopaque v1.20.0
+	go.opentelemetry.io/collector/config/configtls v1.20.0
+	go.opentelemetry.io/collector/confmap v1.20.0
 	go.opentelemetry.io/collector/consumer v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.1-0.20241115165626-8b99b8023ca3
-	go.opentelemetry.io/collector/featuregate v1.19.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/featuregate v1.20.0
 	go.opentelemetry.io/collector/filter v0.113.1-0.20241115165626-8b99b8023ca3
-	go.opentelemetry.io/collector/pdata v1.19.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/receiver v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/receiver/receivertest v0.113.1-0.20241115165626-8b99b8023ca3
 	go.uber.org/goleak v1.3.0

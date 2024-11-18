@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/consumer/consumertest v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/exporter v0.113.1-0.20241115165626-8b99b8023ca3
-	go.opentelemetry.io/collector/pdata v1.19.1-0.20241115165626-8b99b8023ca3
+	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/pdata/testdata v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/collector/receiver v0.113.1-0.20241115165626-8b99b8023ca3
 	go.opentelemetry.io/otel v1.32.0
@@ -65,16 +65,16 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector/client v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
+	go.opentelemetry.io/collector/client v1.20.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
-	go.opentelemetry.io/collector/config/confignet v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/confignet v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.20.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
-	go.opentelemetry.io/collector/confmap v1.19.1-0.20241115165626-8b99b8023ca3 // indirect
+	go.opentelemetry.io/collector/confmap v1.20.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/collector/extension v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.113.1-0.20241115165626-8b99b8023ca3 // indirect
