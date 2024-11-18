@@ -27,7 +27,8 @@ func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *Cli
 
 	svc.On("PutLogEvents", mock.Anything).Return(
 		&cloudwatchlogs.PutLogEventsOutput{
-			NextSequenceToken: &expectedNextSequenceToken},
+			NextSequenceToken: &expectedNextSequenceToken,
+		},
 		nil).Run(putLogEventsFunc)
 
 	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
@@ -36,7 +37,8 @@ func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *Cli
 
 	svc.On("DescribeLogStreams", mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogStreamsOutput{
-			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}}},
+			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}},
+		},
 		nil)
 	return newCloudWatchLogClient(svc, 0, nil, logger)
 }
@@ -77,11 +79,13 @@ func (svc *mockCloudWatchLogsClient) TagResource(input *cloudwatchlogs.TagResour
 }
 
 // Tests
-var previousSequenceToken = "0000"
-var expectedNextSequenceToken = "1111"
-var logGroup = "logGroup"
-var logStreamName = "logStream"
-var emptySequenceToken = ""
+var (
+	previousSequenceToken     = "0000"
+	expectedNextSequenceToken = "1111"
+	logGroup                  = "logGroup"
+	logStreamName             = "logStream"
+	emptySequenceToken        = ""
+)
 
 func TestPutLogEvents_HappyCase(t *testing.T) {
 	logger := zap.NewNop()
@@ -92,7 +96,8 @@ func TestPutLogEvents_HappyCase(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
 
@@ -114,7 +119,8 @@ func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
 	rejectedLogEventsInfo := &cloudwatchlogs.RejectedLogEventsInfo{
 		ExpiredLogEventEndIndex:  aws.Int64(1),
 		TooNewLogEventStartIndex: aws.Int64(2),
-		TooOldLogEventEndIndex:   aws.Int64(3)}
+		TooOldLogEventEndIndex:   aws.Int64(3),
+	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken:     &expectedNextSequenceToken,
 		RejectedLogEventsInfo: rejectedLogEventsInfo,
@@ -138,7 +144,8 @@ func TestPutLogEvents_NonAWSError(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, errors.New("some random error")).Once()
 
@@ -158,7 +165,8 @@ func TestPutLogEvents_InvalidParameterException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	invalidParameterException := &cloudwatchlogs.InvalidParameterException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, invalidParameterException).Once()
@@ -179,7 +187,8 @@ func TestPutLogEvents_OperationAbortedException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	operationAbortedException := &cloudwatchlogs.OperationAbortedException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, operationAbortedException).Once()
@@ -200,7 +209,8 @@ func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	serviceUnavailableException := &cloudwatchlogs.ServiceUnavailableException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, serviceUnavailableException).Once()
@@ -221,7 +231,8 @@ func TestPutLogEvents_UnknownException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	unknownException := awserr.New("unknownException", "", nil)
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, unknownException).Once()
@@ -242,7 +253,8 @@ func TestPutLogEvents_ThrottlingException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	throttlingException := awserr.New(errCodeThrottlingException, "", nil)
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, throttlingException).Once()
@@ -264,7 +276,8 @@ func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -291,7 +304,8 @@ func TestLogRetention_NeverExpire(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -326,7 +340,8 @@ func TestLogRetention_RetentionDaysInputted(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -362,7 +377,8 @@ func TestSetTags_NotCalled(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -397,7 +413,8 @@ func TestSetTags_Called(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	avalue := "avalue"
@@ -433,7 +450,8 @@ func TestPutLogEvents_AllRetriesFail(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: nil}
+		NextSequenceToken: nil,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Twice()

@@ -564,7 +564,6 @@ func loadJSONLogsAndApplySemanticConventions(filename string) (plog.Logs, error)
 	}
 
 	logs, err := sut.UnmarshalLogs(data)
-
 	if err != nil {
 		return l, err
 	}

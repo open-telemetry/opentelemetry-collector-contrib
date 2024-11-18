@@ -5,6 +5,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -19,9 +20,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-var kubeClientProvider = kube.ClientProvider(nil)
-var consumerCapabilities = consumer.Capabilities{MutatesData: true}
-var defaultExcludes = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
+var (
+	kubeClientProvider   = kube.ClientProvider(nil)
+	consumerCapabilities = consumer.Capabilities{MutatesData: true}
+	defaultExcludes      = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
+)
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() processor.Factory {
@@ -42,6 +45,7 @@ func createDefaultConfig() component.Config {
 		Extract: ExtractConfig{
 			Metadata: enabledAttributes(),
 		},
+		WaitForMetadataTimeout: 10 * time.Second,
 	}
 }
 
@@ -167,7 +171,8 @@ func createKubernetesProcessor(
 	cfg component.Config,
 	options ...option,
 ) *kubernetesprocessor {
-	kp := &kubernetesprocessor{logger: params.Logger,
+	kp := &kubernetesprocessor{
+		logger:            params.Logger,
 		cfg:               cfg,
 		options:           options,
 		telemetrySettings: params.TelemetrySettings,
@@ -198,6 +203,11 @@ func createProcessorOpts(cfg component.Config) []option {
 	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
 
 	opts = append(opts, withExcludes(oCfg.Exclude))
+
+	opts = append(opts, withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout))
+	if oCfg.WaitForMetadata {
+		opts = append(opts, withWaitForMetadata(true))
+	}
 
 	return opts
 }
