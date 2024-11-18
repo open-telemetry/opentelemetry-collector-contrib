@@ -468,7 +468,7 @@ func (c *collector) cleanupMetricFamilies() {
 	c.metricFamilies.Range(func(key, value any) bool {
 		v := value.(metricFamily)
 		if expirationTime.After(v.lastSeen) {
-			c.logger.Debug(fmt.Sprintf("metric expired"), zap.String("instrument", key.(string)))
+			c.logger.Debug("metric expired", zap.String("instrument", key.(string)))
 			c.metricFamilies.Delete(key)
 			return true
 		}
