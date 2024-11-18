@@ -119,14 +119,14 @@ func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.Scrap
 
 	var opts []scraperhelper.ScraperControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
-		scraper, err := scraperhelper.NewScraper(metadata.Type, sqlScraper.Scrape,
+		scraper, err := scraperhelper.NewScraperWithoutType(sqlScraper.Scrape,
 			scraperhelper.WithStart(sqlScraper.Start),
 			scraperhelper.WithShutdown(sqlScraper.Shutdown))
 		if err != nil {
 			return nil, err
 		}
 
-		opt := scraperhelper.AddScraper(scraper)
+		opt := scraperhelper.AddScraperWithType(metadata.Type, scraper)
 		opts = append(opts, opt)
 	}
 
