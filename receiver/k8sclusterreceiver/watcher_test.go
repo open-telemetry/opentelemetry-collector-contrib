@@ -22,7 +22,6 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -550,8 +549,10 @@ func TestObjMetadata(t *testing.T) {
 	}
 }
 
-var allPodMetadata = func(metadata map[string]string) map[string]string {
-	out := maps.MergeStringMaps(metadata, commonPodMetadata)
+var allPodMetadata = func(out map[string]string) map[string]string {
+	for k, v := range commonPodMetadata {
+		out[k] = v
+	}
 	return out
 }
 

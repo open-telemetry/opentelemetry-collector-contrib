@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 )
 
 const (
@@ -215,7 +213,7 @@ func Test_FromMetrics(t *testing.T) {
 				doubleSFxDataPoint(
 					"gauge_double_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{
+					mergeStringMaps(map[string]string{
 						"k_n0": "v_n0",
 						"k_n1": "v_n1",
 						"k_r0": "v_r0",
@@ -225,7 +223,7 @@ func Test_FromMetrics(t *testing.T) {
 				int64SFxDataPoint(
 					"gauge_int_with_dims",
 					&sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{
+					mergeStringMaps(map[string]string{
 						"k_n0": "v_n0",
 						"k_n1": "v_n1",
 						"k_r0": "v_r0",
@@ -251,13 +249,13 @@ func Test_FromMetrics(t *testing.T) {
 				doubleSFxDataPoint("histogram_min", &sfxMetricTypeGauge, labelMap, 0.1),
 				doubleSFxDataPoint("histogram_max", &sfxMetricTypeGauge, labelMap, 11.11),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "2"}, labelMap), 6),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "2"}, labelMap), 6),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
 			},
 		},
 		{
@@ -274,13 +272,13 @@ func Test_FromMetrics(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("histogram_count", &sfxMetricTypeCumulativeCounter, labelMap, 16),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "2"}, labelMap), 6),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "2"}, labelMap), 6),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
 			},
 		},
 		{
@@ -300,13 +298,13 @@ func Test_FromMetrics(t *testing.T) {
 				doubleSFxDataPoint("delta_histogram_min", &sfxMetricTypeGauge, labelMap, 0.1),
 				doubleSFxDataPoint("delta_histogram_max", &sfxMetricTypeGauge, labelMap, 11.11),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "2"}, labelMap), 6),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "2"}, labelMap), 6),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
+					mergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
 			},
 		},
 		{
@@ -352,13 +350,13 @@ func Test_FromMetrics(t *testing.T) {
 				int64SFxDataPoint("summary_count", &sfxMetricTypeCumulativeCounter, labelMap, 111),
 				doubleSFxDataPoint("summary_sum", &sfxMetricTypeCumulativeCounter, labelMap, 123.4),
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.25"}, labelMap), 0),
+					mergeStringMaps(map[string]string{quantileDimensionKey: "0.25"}, labelMap), 0),
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.5"}, labelMap), 1),
+					mergeStringMaps(map[string]string{quantileDimensionKey: "0.5"}, labelMap), 1),
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.75"}, labelMap), 2),
+					mergeStringMaps(map[string]string{quantileDimensionKey: "0.75"}, labelMap), 2),
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "1"}, labelMap), 3),
+					mergeStringMaps(map[string]string{quantileDimensionKey: "1"}, labelMap), 3),
 			},
 		},
 		{
@@ -569,4 +567,16 @@ func sfxDimensions(m map[string]string) []*sfxpb.Dimension {
 	}
 
 	return sfxDims
+}
+
+func mergeStringMaps(maps ...map[string]string) map[string]string {
+	ret := map[string]string{}
+
+	for _, m := range maps {
+		for k, v := range m {
+			ret[k] = v
+		}
+	}
+
+	return ret
 }

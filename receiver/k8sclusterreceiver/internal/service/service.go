@@ -25,16 +25,12 @@ func Transform(service *corev1.Service) *corev1.Service {
 }
 
 // GetPodServiceTags returns a set of services associated with the pod.
-func GetPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string {
-	properties := map[string]string{}
-
+func GetPodServiceTags(dest map[string]string, pod *corev1.Pod, services cache.Store) {
 	for _, ser := range services.List() {
 		serObj := ser.(*corev1.Service)
 		if serObj.Namespace == pod.Namespace &&
 			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
-			properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
+			dest[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
 		}
 	}
-
-	return properties
 }
