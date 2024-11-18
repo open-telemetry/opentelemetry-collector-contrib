@@ -41,6 +41,13 @@ var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterFromVersion("v0.105.0"),
 )
 
+var operationAndResourceNameV2FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.EnableOperationAndResourceNameV2",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, datadogexporter uses improved logic to compute operation name and resource name."),
+	featuregate.WithRegisterFromVersion("v0.105.0"),
+)
+
 type traceExporter struct {
 	params           exporter.Settings
 	cfg              *Config
@@ -225,6 +232,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 		acfg.HTTPClientFunc = func() *http.Client {
 			return clientutil.NewHTTPClient(cfg.ClientConfig)
 		}
+	}
+	if operationAndResourceNameV2FeatureGate.IsEnabled() {
+		acfg.Features["enable_operation_and_resource_name_logic_v2"] = struct{}{}
 	}
 	if v := cfg.Traces.GetFlushInterval(); v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v

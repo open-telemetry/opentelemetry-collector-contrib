@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go.opentelemetry.io/collector/featuregate"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -381,20 +382,70 @@ func TestPushTraceData_NewEnvConvention(t *testing.T) {
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
 }
 
+func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.EnableOperationAndResourceNameV2", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
+	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
+	defer server.Close()
+	cfg := &Config{
+		API: APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "test-host",
+		},
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+		Traces: TracesConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+	}
+	cfg.Traces.SetFlushInterval(0.1)
+
+	params := exportertest.NewNopSettings()
+	f := NewFactory()
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	assert.NoError(t, err)
+
+	err = exp.ConsumeTraces(context.Background(), simpleTracesWithAttributesAndKind(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, ptrace.SpanKindServer))
+	assert.NoError(t, err)
+
+	reqBytes := <-tracesRec.ReqChan
+	buf := bytes.NewBuffer(reqBytes)
+	reader, err := gzip.NewReader(buf)
+	require.NoError(t, err)
+	slurp, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	var traces pb.AgentPayload
+	require.NoError(t, proto.Unmarshal(slurp, &traces))
+	assert.Len(t, traces.TracerPayloads, 1)
+	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
+	assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+}
+
 func simpleTraces() ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil, ptrace.SpanKindInternal)
 }
 
 func simpleTracesWithAttributes(attrs map[string]any) ptrace.Traces {
-	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs, ptrace.SpanKindInternal)
 }
 
-func genTraces(traceID pcommon.TraceID, attrs map[string]any) ptrace.Traces {
+func simpleTracesWithAttributesAndKind(attrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs, kind)
+}
+
+func genTraces(traceID pcommon.TraceID, attrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
+	span.SetKind(kind)
 	if attrs == nil {
 		return traces
 	}

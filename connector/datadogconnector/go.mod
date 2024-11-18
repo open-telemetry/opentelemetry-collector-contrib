@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.59.0
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.59.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.59.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.59.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.61.0-devel.0.20241118194800-f3526c9fc512
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.21.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.21.0
@@ -102,7 +102,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/version v0.59.0 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.31.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240816154533-f7f9beb53a42 // indirect
-	github.com/DataDog/go-sqllexer v0.0.15 // indirect
+	github.com/DataDog/go-sqllexer v0.0.16 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.21.0 // indirect
@@ -300,7 +300,7 @@ require (
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/term v0.26.0 // indirect
 	golang.org/x/text v0.20.0 // indirect
-	golang.org/x/time v0.6.0 // indirect
+	golang.org/x/time v0.8.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
