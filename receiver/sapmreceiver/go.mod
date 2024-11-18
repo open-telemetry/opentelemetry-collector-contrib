@@ -6,9 +6,9 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jaegertracing/jaeger v1.62.0
 	github.com/klauspost/compress v1.17.11
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.113.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.113.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.113.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.114.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.114.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.114.0
 	github.com/signalfx/sapm-proto v0.16.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.114.0
