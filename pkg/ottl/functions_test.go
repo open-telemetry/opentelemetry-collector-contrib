@@ -2457,7 +2457,8 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 							},
 						},
 					},
-				}}
+				},
+			}
 
 			np, err := ps.newPath(gp)
 			if tt.expectedError != "" {

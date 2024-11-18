@@ -27,12 +27,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const expectedFileClusterScoped = "./testdata/e2e/cluster-scoped/expected.yaml"
-const expectedFileNamespaceScoped = "./testdata/e2e/namespace-scoped/expected.yaml"
+const (
+  expectedFileClusterScoped   = "./testdata/e2e/cluster-scoped/expected.yaml"
+  expectedFileNamespaceScoped = "./testdata/e2e/namespace-scoped/expected.yaml"
 
-const testObjectsDirClusterScoped = "./testdata/e2e/cluster-scoped/testobjects"
-const testObjectsDirNamespaceScoped = "./testdata/e2e/namespace-scoped/testobjects"
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+  testObjectsDirClusterScoped   = "./testdata/e2e/cluster-scoped/testobjects"
+  testObjectsDirNamespaceScoped = "./testdata/e2e/namespace-scoped/testobjects"
+  testKubeConfig                = "/tmp/kube-config-otelcol-e2e-testing"
+)
 
 // TestE2EClusterScoped tests the k8s cluster receiver with a real k8s cluster.
 // The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in

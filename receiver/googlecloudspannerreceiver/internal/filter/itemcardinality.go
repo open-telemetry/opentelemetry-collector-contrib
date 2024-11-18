@@ -52,7 +52,8 @@ func (f *currentLimitByTimestamp) get() int {
 }
 
 func NewItemCardinalityFilter(metricName string, totalLimit int, limitByTimestamp int,
-	itemActivityPeriod time.Duration, logger *zap.Logger) (ItemFilter, error) {
+	itemActivityPeriod time.Duration, logger *zap.Logger,
+) (ItemFilter, error) {
 	if limitByTimestamp > totalLimit {
 		return nil, fmt.Errorf("total limit %q is lower or equal to limit by timestamp %q", totalLimit, limitByTimestamp)
 	}

@@ -92,7 +92,6 @@ func createMetricsProcessor(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
-
 	oCfg := cfg.(*Config)
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {

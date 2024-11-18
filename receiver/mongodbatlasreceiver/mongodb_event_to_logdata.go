@@ -25,8 +25,10 @@ const (
 )
 
 // jsonTimestampLayout for the timestamp format in the plog.Logs structure
-const jsonTimestampLayout = "2006-01-02T15:04:05.000-07:00"
-const consoleTimestampLayout = "2006-01-02T15:04:05.000-0700"
+const (
+	jsonTimestampLayout    = "2006-01-02T15:04:05.000-07:00"
+	consoleTimestampLayout = "2006-01-02T15:04:05.000-0700"
+)
 
 // Severity mapping of the mongodb atlas logs
 var severityMap = map[string]plog.SeverityNumber{

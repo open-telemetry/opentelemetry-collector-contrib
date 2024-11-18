@@ -321,7 +321,6 @@ func TestOnAddForTraces(t *testing.T) {
 				t.Fatalf("unexpected startedComponent: %T", v)
 			}
 			require.Equal(t, test.expectedReceiverConfig, actualConfig)
-
 		})
 	}
 }

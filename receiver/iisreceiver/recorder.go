@@ -46,7 +46,8 @@ var sitePerfCounterRecorders = []perfCounterRecorderConf{
 				mb.RecordIisNetworkIoDataPoint(ts, int64(val), metadata.AttributeDirectionSent)
 			},
 			"Total Connection Attempts (all instances)": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp,
-				val float64) {
+				val float64,
+			) {
 				mb.RecordIisConnectionAttemptCountDataPoint(ts, int64(val))
 			},
 			"Total Delete Requests": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {

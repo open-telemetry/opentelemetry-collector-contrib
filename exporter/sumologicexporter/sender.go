@@ -485,7 +485,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 			previousFields := newFields(rms.At(i - 1).Resource().Attributes())
 			previousSourceHeaders := getSourcesHeaders(previousFields)
 			if !reflect.DeepEqual(previousSourceHeaders, currentSourceHeaders) && body.Len() > 0 {
-
 				if err := s.send(ctx, MetricsPipeline, body.toCountingReader(), previousFields); err != nil {
 					errs = append(errs, err)
 					for _, resource := range currentResources {
@@ -537,7 +536,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 		}
 
 		currentResources = append(currentResources, rm)
-
 	}
 
 	if body.Len() > 0 {
@@ -580,7 +578,6 @@ func (s *sender) appendAndMaybeSend(
 	body *bodyBuilder,
 	flds fields,
 ) (sent bool, err error) {
-
 	linesTotalLength := 0
 	for _, line := range lines {
 		linesTotalLength += len(line) + 1 // count the newline as well

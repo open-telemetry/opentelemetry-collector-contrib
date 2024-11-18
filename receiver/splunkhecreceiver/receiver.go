@@ -94,8 +94,10 @@ type splunkReceiver struct {
 	ackExt          ackextension.AckExtension
 }
 
-var _ receiver.Metrics = (*splunkReceiver)(nil)
-var _ receiver.Logs = (*splunkReceiver)(nil)
+var (
+	_ receiver.Metrics = (*splunkReceiver)(nil)
+	_ receiver.Logs    = (*splunkReceiver)(nil)
+)
 
 // newReceiver creates the Splunk HEC receiver with the given configuration.
 func newReceiver(settings receiver.Settings, config Config) (*splunkReceiver, error) {
@@ -290,7 +292,6 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	if encoding == gzipEncoding {
 		reader := r.gzipReaderPool.Get().(*gzip.Reader)
 		err := reader.Reset(bodyReader)
-
 		if err != nil {
 			r.failRequest(resp, http.StatusBadRequest, errGzipReaderRespBody, err)
 			_, _ = io.ReadAll(req.Body)
@@ -455,7 +456,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			}
 			events = append(events, &msg)
 		}
-
 	}
 	resourceCustomizer := r.createResourceCustomizer(req)
 	if r.logsConsumer != nil && len(events) > 0 {

@@ -26,7 +26,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraces(t *testing.T) {
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()

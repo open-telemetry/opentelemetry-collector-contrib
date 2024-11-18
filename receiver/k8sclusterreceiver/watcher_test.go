@@ -65,9 +65,10 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
-			args{exporters: map[component.ID]component.Component{
-				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
-			},
+			args{
+				exporters: map[component.ID]component.Component{
+					component.MustNewID("nop"): mockExporterWithK8sMetadata{},
+				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
 			false,
@@ -77,9 +78,10 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{},
 			},
-			args{exporters: map[component.ID]component.Component{
-				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
-			},
+			args{
+				exporters: map[component.ID]component.Component{
+					component.MustNewID("nop"): mockExporterWithK8sMetadata{},
+				},
 				metadataExportersFromConfig: []string{"nop/1"},
 			},
 			true,
@@ -100,7 +102,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 }
 
 func TestIsKindSupported(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		client   *fake.Clientset
 		gvk      schema.GroupVersionKind
@@ -133,7 +135,7 @@ func TestIsKindSupported(t *testing.T) {
 }
 
 func TestPrepareSharedInformerFactory(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name   string
 		client *fake.Clientset
 	}{
