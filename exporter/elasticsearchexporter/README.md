@@ -211,7 +211,7 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
 
 > [!NOTE]
-> The `flush` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
+> The `flush::interval` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
 
 ### Elasticsearch node discovery
 
