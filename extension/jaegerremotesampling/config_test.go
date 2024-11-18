@@ -72,7 +72,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidate(t *testing.T) {
-
 	testCases := []struct {
 		desc     string
 		cfg      Config

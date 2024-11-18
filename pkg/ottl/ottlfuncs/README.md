@@ -456,6 +456,7 @@ Available Converters:
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SHA512](#sha512)
+- [SliceToMap](#slicetomap)
 - [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
@@ -1667,6 +1668,67 @@ Examples:
 - `SHA512(attributes["device.name"])`
 
 - `SHA512("name")`
+
+### SliceToMap
+
+`SliceToMap(target, keyPath, Optional[valuePath])`
+
+The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
+
+- `target`: A list of maps containing the entries to be converted.
+- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
+the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
+to a map entry.
+- `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
+`valuePath` is defined, the value of the map entry will be the same as the original slice item.
+
+Examples:
+
+The examples below will convert the following input: 
+
+```yaml
+attributes:
+  hello: world
+  things:
+    - name: foo
+      value: 2
+    - name: bar
+      value: 5
+```
+
+- `SliceToMap(attributes["things"], ["name"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo:
+      name: foo
+      value: 2
+    bar:
+      name: bar
+      value: 5
+```
+
+- `SliceToMap(attributes["things"], ["name"], ["value"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo: 2
+    bar: 5
+```
+
+Once the `SliceToMap` function has been applied to a value, the converted entries are addressable via their keys:
+
+- `set(attributes["thingsMap"], SliceToMap(attributes["things"], ["name"]))`
+- `set(attributes["element_1"], attributes["thingsMap"]["foo'])`
+- `set(attributes["element_2"], attributes["thingsMap"]["bar'])`
 
 ### Sort
 

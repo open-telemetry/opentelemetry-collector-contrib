@@ -310,7 +310,6 @@ func createLogsData() plog.Logs {
 	log.SetSeverityNumber(plog.SeverityNumberDebug)
 	log.SetSeverityText("DEBUG")
 	return logs
-
 }
 
 func createTracesData() ptrace.Traces {
