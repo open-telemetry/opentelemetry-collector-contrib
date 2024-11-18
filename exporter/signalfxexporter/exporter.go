@@ -184,7 +184,6 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 		logger:            createSettings.Logger,
 		telemetrySettings: createSettings.TelemetrySettings,
 	}, nil
-
 }
 
 func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) error {

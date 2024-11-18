@@ -160,7 +160,6 @@ func TestNewHTTPClient(t *testing.T) {
 }
 
 func TestUserAgent(t *testing.T) {
-
 	assert.Equal(t, "otelcontribcol/1.0", UserAgent(buildInfo))
 }
 
@@ -170,5 +169,4 @@ func TestDDHeaders(t *testing.T) {
 	SetDDHeaders(header, buildInfo, apiKey)
 	assert.Equal(t, header.Get("DD-Api-Key"), apiKey)
 	assert.Equal(t, "otelcontribcol/1.0", header.Get("USer-Agent"))
-
 }

@@ -268,7 +268,6 @@ func TestNewAttributeChangeSetSliceApplyRollback(t *testing.T) {
 			),
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("application.service.version", "v0.0.1")
-
 			}),
 			expect: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service_version", "v0.0.1")

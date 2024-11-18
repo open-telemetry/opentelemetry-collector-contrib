@@ -176,7 +176,6 @@ func expandExeFileName(exeName string) string {
 // the process to.
 // cmdArgs is the command line arguments to pass to the process.
 func (cp *childProcessCollector) Start(params StartParams) error {
-
 	cp.name = params.Name
 	cp.doneSignal = make(chan struct{})
 	cp.resourceSpec = params.resourceSpec
@@ -249,7 +248,6 @@ func (cp *childProcessCollector) Stop() (stopped bool, err error) {
 		return false, nil
 	}
 	cp.stopOnce.Do(func() {
-
 		if !cp.isStarted {
 			// Process wasn't started, nothing to stop.
 			return

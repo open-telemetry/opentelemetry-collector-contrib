@@ -25,7 +25,6 @@ type remoteObserverExtension struct {
 }
 
 func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host) error {
-
 	htmlContent, err := fs.Sub(httpFS, "html")
 	if err != nil {
 		return err

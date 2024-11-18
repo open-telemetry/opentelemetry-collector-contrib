@@ -490,7 +490,6 @@ func TestWithFilterLabels(t *testing.T) {
 }
 
 func TestWithFilterFields(t *testing.T) {
-
 	tests := []struct {
 		name  string
 		args  []FieldFilterConfig
