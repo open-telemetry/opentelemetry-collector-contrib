@@ -1037,6 +1037,8 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 	return msgChan, nil
 }
 
+func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
 }
