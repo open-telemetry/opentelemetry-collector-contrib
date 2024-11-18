@@ -7,7 +7,7 @@ change_type: enhancement
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Make sync bulk indexer respect `flush::bytes`
+note: Respect `flush::bytes` in sync bulk indexer
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36163]
@@ -16,8 +16,8 @@ issues: [36163]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext:
-  Make sync bulk indexer respect flush::bytes to roughly limit the bulk request size.
-  Sync bulk indexer is used when batcher::enabled is either true or false. In order words, sync bulk indexer is not used when batcher config is undefined.
+  Limit the bulk request size to roughly `flush::bytes` for sync bulk indexer.
+  Sync bulk indexer is used when `batcher::enabled` is either true or false. In order words, sync bulk indexer is not used when batcher config is undefined.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
