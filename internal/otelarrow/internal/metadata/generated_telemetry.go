@@ -7,17 +7,18 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-// Deprecated: [v0.108.0] use LeveledMeter instead.
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow")
 }
 
+// Deprecated: [v0.114.0] use Meter instead.
 func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
 	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow")
 }
@@ -34,7 +35,6 @@ type TelemetryBuilder struct {
 	observeOtelarrowAdmissionInFlightBytes func(context.Context, metric.Observer) error
 	OtelarrowAdmissionWaitingBytes         metric.Int64ObservableUpDownCounter
 	observeOtelarrowAdmissionWaitingBytes  func(context.Context, metric.Observer) error
-	meters                                 map[configtelemetry.Level]metric.Meter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -71,27 +71,34 @@ func WithOtelarrowAdmissionWaitingBytesCallback(cb func() int64, opts ...metric.
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{meters: map[configtelemetry.Level]metric.Meter{}}
+	builder := TelemetryBuilder{}
 	for _, op := range options {
 		op.apply(&builder)
 	}
-	builder.meters[configtelemetry.LevelBasic] = LeveledMeter(settings, configtelemetry.LevelBasic)
+	builder.meter = Meter(settings)
 	var err, errs error
-	builder.OtelarrowAdmissionInFlightBytes, err = builder.meters[configtelemetry.LevelBasic].Int64ObservableUpDownCounter(
+	builder.OtelarrowAdmissionInFlightBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_in_flight_bytes",
 		metric.WithDescription("Number of bytes that have started processing but are not finished."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeOtelarrowAdmissionInFlightBytes, builder.OtelarrowAdmissionInFlightBytes)
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeOtelarrowAdmissionInFlightBytes, builder.OtelarrowAdmissionInFlightBytes)
 	errs = errors.Join(errs, err)
-	builder.OtelarrowAdmissionWaitingBytes, err = builder.meters[configtelemetry.LevelBasic].Int64ObservableUpDownCounter(
+	builder.OtelarrowAdmissionWaitingBytes, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64ObservableUpDownCounter(
 		"otelcol_otelarrow_admission_waiting_bytes",
 		metric.WithDescription("Number of items waiting to start processing."),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	_, err = builder.meters[configtelemetry.LevelBasic].RegisterCallback(builder.observeOtelarrowAdmissionWaitingBytes, builder.OtelarrowAdmissionWaitingBytes)
+	_, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).RegisterCallback(builder.observeOtelarrowAdmissionWaitingBytes, builder.OtelarrowAdmissionWaitingBytes)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
+	if cfgLevel <= srvLevel {
+		return meter
+	}
+	return noop.Meter{}
 }
