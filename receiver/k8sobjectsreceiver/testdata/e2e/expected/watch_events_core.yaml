@@ -22,12 +22,9 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
-                  - key: type
+                  - key: action
                     value:
-                      stringValue: Warning
-                  - key: reportingComponent
-                    value:
-                      stringValue: e2etest-events-core
+                      stringValue: test
                   - key: metadata
                     value:
                       kvlistValue:
@@ -53,15 +50,6 @@ resourceLogs:
                                 values:
                                   - kvlistValue:
                                       values:
-                                        - key: operation
-                                          value:
-                                            stringValue: Update
-                                        - key: apiVersion
-                                          value:
-                                            stringValue: events.k8s.io/v1
-                                        - key: time
-                                          value:
-                                            stringValue: "2000-01-01T00:00:00Z"
                                         - key: fieldsType
                                           value:
                                             stringValue: FieldsV1
@@ -69,6 +57,9 @@ resourceLogs:
                                           value:
                                             kvlistValue:
                                               values:
+                                                - key: f:reportingInstance
+                                                  value:
+                                                    kvlistValue: {}
                                                 - key: f:type
                                                   value:
                                                     kvlistValue: {}
@@ -90,41 +81,25 @@ resourceLogs:
                                                 - key: f:reportingController
                                                   value:
                                                     kvlistValue: {}
-                                                - key: f:reportingInstance
-                                                  value:
-                                                    kvlistValue: {}
                                         - key: manager
                                           value:
-                                            stringValue: ___TestE2E_watch_events_in_core_v1_version_in_github_com_open_telemetry_opentelemetry_collector_contrib_receiver_k8sobjectsrecei
-                  - key: reason
-                    value:
-                      stringValue: TestEvent
-                  - key: firstTimestamp
-                    value: {}
-                  - key: action
-                    value:
-                      stringValue: test
-                  - key: reportingInstance
-                    value:
-                      stringValue: k8sobjectsreceiver
-                  - key: apiVersion
-                    value:
-                      stringValue: v1
-                  - key: source
-                    value:
-                      kvlistValue: {}
-                  - key: eventTime
-                    value:
-                      stringValue: "2023-01-01T00:00:00.000000Z"
-                  - key: lastTimestamp
-                    value: {}
-                  - key: kind
-                    value:
-                      stringValue: Event
+                                            stringValue: ""
+                                        - key: operation
+                                          value:
+                                            stringValue: Update
+                                        - key: apiVersion
+                                          value:
+                                            stringValue: events.k8s.io/v1
+                                        - key: time
+                                          value:
+                                            stringValue: "2000-01-01T00:00:00Z"
                   - key: involvedObject
                     value:
                       kvlistValue:
                         values:
+                          - key: uid
+                            value:
+                              stringValue: 035355e1-07a3-4e86-95d0-d7a2bec7d6f0
                           - key: kind
                             value:
                               stringValue: customresource
@@ -134,13 +109,38 @@ resourceLogs:
                           - key: name
                             value:
                               stringValue: test-k8sobjects-receiver-events-core
-                          - key: uid
-                            value:
-                              stringValue: 035355e1-07a3-4e86-95d0-d7a2bec7d6f0
+                  - key: eventTime
+                    value:
+                      stringValue: "2023-01-01T00:00:00.000000Z"
+                  - key: reportingComponent
+                    value:
+                      stringValue: e2etest-events-core
+                  - key: reportingInstance
+                    value:
+                      stringValue: k8sobjectsreceiver
+                  - key: kind
+                    value:
+                      stringValue: Event
+                  - key: apiVersion
+                    value:
+                      stringValue: v1
+                  - key: type
+                    value:
+                      stringValue: Warning
+                  - key: source
+                    value:
+                      kvlistValue: {}
+                  - key: lastTimestamp
+                    value: {}
+                  - key: reason
+                    value:
+                      stringValue: TestEvent
                   - key: message
                     value:
                       stringValue: test event of type warning
-            observedTimeUnixNano: "1731922149787488558"
+                  - key: firstTimestamp
+                    value: {}
+            observedTimeUnixNano: "1731933099394925655"
             spanId: ""
             traceId: ""
         scope: {}

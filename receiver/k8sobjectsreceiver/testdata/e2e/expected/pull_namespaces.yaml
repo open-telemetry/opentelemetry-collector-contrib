@@ -1,28 +1,21 @@
 resourceLogs:
   - resource: {}
     scopeLogs:
-      - scope: {}
-        logRecords:
-          - observedTimeUnixNano: "1696581884428417795"
+      - logRecords:
+          - attributes:
+              - key: k8s.resource.name
+                value:
+                  stringValue: namespaces
+              - key: k8s.namespace.name
+                value:
+                  stringValue: default
             body:
               kvlistValue:
                 values:
-                  - key: kind
-                    value:
-                      stringValue: Namespace
-                  - key: apiVersion
-                    value:
-                      stringValue: v1
                   - key: metadata
                     value:
                       kvlistValue:
                         values:
-                          - key: uid
-                            value:
-                              stringValue: "12345"
-                          - key: resourceVersion
-                            value:
-                              stringValue: "12345"
                           - key: creationTimestamp
                             value:
                               stringValue: "2000-01-01T00:00:00Z"
@@ -39,15 +32,6 @@ resourceLogs:
                                 values:
                                   - kvlistValue:
                                       values:
-                                        - key: apiVersion
-                                          value:
-                                            stringValue: v1
-                                        - key: time
-                                          value:
-                                            stringValue: "2000-01-01T00:00:00Z"
-                                        - key: fieldsType
-                                          value:
-                                            stringValue: FieldsV1
                                         - key: fieldsV1
                                           value:
                                             kvlistValue:
@@ -60,21 +44,36 @@ resourceLogs:
                                                           value:
                                                             kvlistValue:
                                                               values:
-                                                                - key: .
+                                                                - key: f:kubernetes.io/metadata.name
                                                                   value:
                                                                     kvlistValue: {}
-                                                                - key: f:kubernetes.io/metadata.name
+                                                                - key: .
                                                                   value:
                                                                     kvlistValue: {}
                                         - key: manager
                                           value:
-                                            stringValue: kube-apiserver
+                                            stringValue: ""
                                         - key: operation
                                           value:
                                             stringValue: Update
+                                        - key: apiVersion
+                                          value:
+                                            stringValue: v1
+                                        - key: time
+                                          value:
+                                            stringValue: "2000-01-01T00:00:00Z"
+                                        - key: fieldsType
+                                          value:
+                                            stringValue: FieldsV1
                           - key: name
                             value:
                               stringValue: default
+                          - key: uid
+                            value:
+                              stringValue: "12345"
+                          - key: resourceVersion
+                            value:
+                              stringValue: "12345"
                   - key: spec
                     value:
                       kvlistValue:
@@ -91,26 +90,35 @@ resourceLogs:
                           - key: phase
                             value:
                               stringValue: Active
-            attributes:
+                  - key: kind
+                    value:
+                      stringValue: Namespace
+                  - key: apiVersion
+                    value:
+                      stringValue: v1
+            observedTimeUnixNano: "1731933830384334229"
+            spanId: ""
+            traceId: ""
+          - attributes:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
               - key: k8s.namespace.name
                 value:
-                  stringValue: default
-            traceId: ""
-            spanId: ""
-          - observedTimeUnixNano: "1696581884428417795"
+                  stringValue: kube-node-lease
             body:
               kvlistValue:
                 values:
+                  - key: kind
+                    value:
+                      stringValue: Namespace
+                  - key: apiVersion
+                    value:
+                      stringValue: v1
                   - key: metadata
                     value:
                       kvlistValue:
                         values:
-                          - key: resourceVersion
-                            value:
-                              stringValue: "12345"
                           - key: creationTimestamp
                             value:
                               stringValue: "2000-01-01T00:00:00Z"
@@ -153,7 +161,7 @@ resourceLogs:
                                                                     kvlistValue: {}
                                         - key: manager
                                           value:
-                                            stringValue: kube-apiserver
+                                            stringValue: ""
                                         - key: operation
                                           value:
                                             stringValue: Update
@@ -166,6 +174,38 @@ resourceLogs:
                           - key: uid
                             value:
                               stringValue: "12345"
+                          - key: resourceVersion
+                            value:
+                              stringValue: "12345"
+                  - key: spec
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: finalizers
+                            value:
+                              arrayValue:
+                                values:
+                                  - stringValue: kubernetes
+                  - key: status
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: phase
+                            value:
+                              stringValue: Active
+            observedTimeUnixNano: "1731933830384334229"
+            spanId: ""
+            traceId: ""
+          - attributes:
+              - key: k8s.resource.name
+                value:
+                  stringValue: namespaces
+              - key: k8s.namespace.name
+                value:
+                  stringValue: kube-public
+            body:
+              kvlistValue:
+                values:
                   - key: spec
                     value:
                       kvlistValue:
@@ -188,19 +228,6 @@ resourceLogs:
                   - key: apiVersion
                     value:
                       stringValue: v1
-            attributes:
-              - key: k8s.resource.name
-                value:
-                  stringValue: namespaces
-              - key: k8s.namespace.name
-                value:
-                  stringValue: kube-node-lease
-            traceId: ""
-            spanId: ""
-          - observedTimeUnixNano: "1696581884428417795"
-            body:
-              kvlistValue:
-                values:
                   - key: metadata
                     value:
                       kvlistValue:
@@ -250,7 +277,7 @@ resourceLogs:
                                                                     kvlistValue: {}
                                         - key: manager
                                           value:
-                                            stringValue: kube-apiserver
+                                            stringValue: ""
                                         - key: operation
                                           value:
                                             stringValue: Update
@@ -263,60 +290,19 @@ resourceLogs:
                                         - key: fieldsType
                                           value:
                                             stringValue: FieldsV1
-                  - key: spec
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: finalizers
-                            value:
-                              arrayValue:
-                                values:
-                                  - stringValue: kubernetes
-                  - key: status
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: phase
-                            value:
-                              stringValue: Active
-                  - key: kind
-                    value:
-                      stringValue: Namespace
-                  - key: apiVersion
-                    value:
-                      stringValue: v1
-            attributes:
+            observedTimeUnixNano: "1731933830384334229"
+            spanId: ""
+            traceId: ""
+          - attributes:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
               - key: k8s.namespace.name
                 value:
-                  stringValue: kube-public
-            traceId: ""
-            spanId: ""
-          - observedTimeUnixNano: "1696581884428417795"
+                  stringValue: kube-system
             body:
               kvlistValue:
                 values:
-                  - key: spec
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: finalizers
-                            value:
-                              arrayValue:
-                                values:
-                                  - stringValue: kubernetes
-                  - key: status
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: phase
-                            value:
-                              stringValue: Active
-                  - key: kind
-                    value:
-                      stringValue: Namespace
                   - key: apiVersion
                     value:
                       stringValue: v1
@@ -324,9 +310,6 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: name
-                            value:
-                              stringValue: kube-system
                           - key: uid
                             value:
                               stringValue: "12345"
@@ -349,6 +332,12 @@ resourceLogs:
                                 values:
                                   - kvlistValue:
                                       values:
+                                        - key: time
+                                          value:
+                                            stringValue: "2000-01-01T00:00:00Z"
+                                        - key: fieldsType
+                                          value:
+                                            stringValue: FieldsV1
                                         - key: fieldsV1
                                           value:
                                             kvlistValue:
@@ -361,37 +350,53 @@ resourceLogs:
                                                           value:
                                                             kvlistValue:
                                                               values:
-                                                                - key: f:kubernetes.io/metadata.name
+                                                                - key: .
                                                                   value:
                                                                     kvlistValue: {}
-                                                                - key: .
+                                                                - key: f:kubernetes.io/metadata.name
                                                                   value:
                                                                     kvlistValue: {}
                                         - key: manager
                                           value:
-                                            stringValue: kube-apiserver
+                                            stringValue: ""
                                         - key: operation
                                           value:
                                             stringValue: Update
                                         - key: apiVersion
                                           value:
                                             stringValue: v1
-                                        - key: time
-                                          value:
-                                            stringValue: "2000-01-01T00:00:00Z"
-                                        - key: fieldsType
-                                          value:
-                                            stringValue: FieldsV1
-            attributes:
+                          - key: name
+                            value:
+                              stringValue: kube-system
+                  - key: spec
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: finalizers
+                            value:
+                              arrayValue:
+                                values:
+                                  - stringValue: kubernetes
+                  - key: status
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: phase
+                            value:
+                              stringValue: Active
+                  - key: kind
+                    value:
+                      stringValue: Namespace
+            observedTimeUnixNano: "1731933830384334229"
+            spanId: ""
+            traceId: ""
+          - attributes:
               - key: k8s.resource.name
                 value:
                   stringValue: namespaces
               - key: k8s.namespace.name
                 value:
-                  stringValue: kube-system
-            traceId: ""
-            spanId: ""
-          - observedTimeUnixNano: "1696581884428417795"
+                  stringValue: local-path-storage
             body:
               kvlistValue:
                 values:
@@ -399,6 +404,12 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
+                          - key: name
+                            value:
+                              stringValue: local-path-storage
+                          - key: uid
+                            value:
+                              stringValue: "12345"
                           - key: resourceVersion
                             value:
                               stringValue: "12345"
@@ -428,7 +439,7 @@ resourceLogs:
                                       values:
                                         - key: manager
                                           value:
-                                            stringValue: kubectl-client-side-apply
+                                            stringValue: ""
                                         - key: operation
                                           value:
                                             stringValue: Update
@@ -453,10 +464,10 @@ resourceLogs:
                                                           value:
                                                             kvlistValue:
                                                               values:
-                                                                - key: .
+                                                                - key: f:kubectl.kubernetes.io/last-applied-configuration
                                                                   value:
                                                                     kvlistValue: {}
-                                                                - key: f:kubectl.kubernetes.io/last-applied-configuration
+                                                                - key: .
                                                                   value:
                                                                     kvlistValue: {}
                                                         - key: f:labels
@@ -469,12 +480,6 @@ resourceLogs:
                                                                 - key: f:kubernetes.io/metadata.name
                                                                   value:
                                                                     kvlistValue: {}
-                          - key: name
-                            value:
-                              stringValue: local-path-storage
-                          - key: uid
-                            value:
-                              stringValue: "12345"
                   - key: spec
                     value:
                       kvlistValue:
@@ -497,12 +502,7 @@ resourceLogs:
                   - key: apiVersion
                     value:
                       stringValue: v1
-            attributes:
-              - key: k8s.resource.name
-                value:
-                  stringValue: namespaces
-              - key: k8s.namespace.name
-                value:
-                  stringValue: local-path-storage
-            traceId: ""
+            observedTimeUnixNano: "1731933830384334229"
             spanId: ""
+            traceId: ""
+        scope: {}

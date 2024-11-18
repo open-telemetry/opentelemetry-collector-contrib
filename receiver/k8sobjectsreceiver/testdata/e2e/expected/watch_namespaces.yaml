@@ -21,6 +21,22 @@ resourceLogs:
             body:
               kvlistValue:
                 values:
+                  - key: spec
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: finalizers
+                            value:
+                              arrayValue:
+                                values:
+                                  - stringValue: kubernetes
+                  - key: status
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: phase
+                            value:
+                              stringValue: Active
                   - key: kind
                     value:
                       stringValue: Namespace
@@ -61,7 +77,7 @@ resourceLogs:
                                       values:
                                         - key: manager
                                           value:
-                                            stringValue: ___1TestE2E_watch_object_in_github_com_open_telemetry_opentelemetry_collector_contrib_receiver_k8sobjectsreceiver.test
+                                            stringValue: ""
                                         - key: operation
                                           value:
                                             stringValue: Update
@@ -86,32 +102,16 @@ resourceLogs:
                                                           value:
                                                             kvlistValue:
                                                               values:
-                                                                - key: .
-                                                                  value:
-                                                                    kvlistValue: {}
                                                                 - key: f:e2etest
                                                                   value:
                                                                     kvlistValue: {}
                                                                 - key: f:kubernetes.io/metadata.name
                                                                   value:
                                                                     kvlistValue: {}
-                  - key: spec
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: finalizers
-                            value:
-                              arrayValue:
-                                values:
-                                  - stringValue: kubernetes
-                  - key: status
-                    value:
-                      kvlistValue:
-                        values:
-                          - key: phase
-                            value:
-                              stringValue: Active
-            observedTimeUnixNano: "1731922502068761150"
+                                                                - key: .
+                                                                  value:
+                                                                    kvlistValue: {}
+            observedTimeUnixNano: "1731933150584657904"
             spanId: ""
             traceId: ""
         scope: {}
