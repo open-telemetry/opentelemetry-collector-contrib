@@ -76,9 +76,6 @@ func (builder *k8sHintsBuilder) createReceiverTemplateFromHints(env observer.End
 		if err != nil {
 			return nil, fmt.Errorf("could not extract endpoint's pod: %v", zap.Any("endpointPod", pod))
 		}
-		if len(pod.Annotations) == 0 {
-			return nil, nil
-		}
 	} else {
 		return nil, nil
 	}
@@ -105,8 +102,8 @@ func (builder *k8sHintsBuilder) createScraper(
 		return nil, nil
 	}
 
-	subreceiverKey := getHintAnnotation(annotations, otelMetricsHints, scraperHint, fmt.Sprint(port))
-	if subreceiverKey == "" {
+	subreceiverKey, found := getHintAnnotation(annotations, otelMetricsHints, scraperHint, fmt.Sprint(port))
+	if !found || subreceiverKey == "" {
 		// no scraper hint detected
 		return nil, nil
 	}
@@ -132,8 +129,8 @@ func getScraperConfFromAnnotations(
 	conf := userConfigMap{}
 	conf[endpointConfigKey] = defaultEndpoint
 
-	configStr := getHintAnnotation(annotations, otelMetricsHints, configHint, scopeSuffix)
-	if configStr == "" {
+	configStr, found := getHintAnnotation(annotations, otelMetricsHints, configHint, scopeSuffix)
+	if !found || configStr == "" {
 		return conf
 	}
 	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
@@ -155,22 +152,25 @@ func getScraperConfFromAnnotations(
 	return conf
 }
 
-func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) string {
+func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) (string, bool) {
 	// try to scope the hint more on container level by suffixing
 	// with .<port> in case of Port event or # TODO: .<container_name> in case of Pod Container event
-	containerLevelHint := annotations[fmt.Sprintf("%s.%s/%s", hintBase, suffix, hintKey)]
-	if containerLevelHint != "" {
-		return containerLevelHint
+	containerLevelHint, ok := annotations[fmt.Sprintf("%s.%s/%s", hintBase, suffix, hintKey)]
+	if ok {
+		return containerLevelHint, ok
 	}
 
 	// if there is no container level hint defined try to use the Pod level hint
-	podHintKey := fmt.Sprintf("%s/%s", hintBase, hintKey)
-	return annotations[podHintKey]
+	podLevelHint, ok := annotations[fmt.Sprintf("%s/%s", hintBase, hintKey)]
+	return podLevelHint, ok
 }
 
 func discoveryMetricsEnabled(annotations map[string]string, hintBase string, scopeSuffix string) bool {
-	hintVal := getHintAnnotation(annotations, hintBase, discoveryEnabledHint, scopeSuffix)
-	return hintVal == "true" || hintVal == ""
+	enabledHint, found := getHintAnnotation(annotations, hintBase, discoveryEnabledHint, scopeSuffix)
+	if !found {
+		return false
+	}
+	return enabledHint == "true"
 }
 
 func getStringEnv(env observer.EndpointEnv, key string) string {

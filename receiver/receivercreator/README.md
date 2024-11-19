@@ -464,9 +464,7 @@ Find bellow the supported annotations that user can define to automatically enab
 
 #### Enable/disable discovery
 
-`io.opentelemetry.discovery.metrics/enabled` (example: `"true"`)
-
-By default `"true"`.
+`io.opentelemetry.discovery.metrics/enabled` (Required. `"true"` or `"false"`)
 
 #### Define scraper
 
@@ -589,12 +587,14 @@ spec:
         app: redis
       annotations:
         # redis container port metrics hints
+        io.opentelemetry.discovery.metrics.6379/enabled: "true"
         io.opentelemetry.discovery.metrics.6379/scraper: redis
         io.opentelemetry.discovery.metrics.6379/config: |
           collection_interval: "20s"
           timeout: "10s"
 
         # nginx container port metrics hints
+        io.opentelemetry.discovery.metrics.80/enabled: "true"
         io.opentelemetry.discovery.metrics.80/scraper: nginx
         io.opentelemetry.discovery.metrics.80/config: |
           endpoint: "http://`endpoint`/nginx_status"

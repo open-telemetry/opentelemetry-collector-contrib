@@ -50,6 +50,7 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
+							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
 							otelMetricsHints + "/config":  config,
 						}},
@@ -74,6 +75,7 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
+							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
 							otelMetricsHints + "/config":  config,
 						}},
@@ -93,6 +95,7 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
+							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
 						}},
 					Port: 6379},
@@ -116,6 +119,7 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
+							otelMetricsHints + ".6379/enabled": "true",
 							otelMetricsHints + ".6379/scraper": "redis",
 							otelMetricsHints + ".6379/config":  config,
 						}},
@@ -140,6 +144,7 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
+							otelMetricsHints + ".6379/enabled": "true",
 							otelMetricsHints + ".6379/scraper": "redis",
 							otelMetricsHints + "/config":       config,
 							otelMetricsHints + ".6379/config":  configRedis,
@@ -165,6 +170,7 @@ password: "changeme"`
 						UID:       "pod-2-UID",
 						Labels:    map[string]string{"env": "prod"},
 						Annotations: map[string]string{
+							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
 							otelMetricsHints + "/config":  config,
 						}}},
@@ -218,7 +224,8 @@ nested_example:
 		scopeSuffix     string
 	}{"simple_annotation_case": {
 		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics/config": config,
+			"io.opentelemetry.discovery.metrics/enabled": "true",
+			"io.opentelemetry.discovery.metrics/config":  config,
 		}, expectedConf: userConfigMap{
 			"collection_interval": "20s",
 			"endpoint":            "0.0.0.0:8080",
@@ -229,7 +236,8 @@ nested_example:
 		scopeSuffix: "",
 	}, "simple_annotation_case_default_endpoint": {
 		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics/config": configNoEndpoint,
+			"io.opentelemetry.discovery.metrics/enabled": "true",
+			"io.opentelemetry.discovery.metrics/config":  configNoEndpoint,
 		}, expectedConf: userConfigMap{
 			"collection_interval": "20s",
 			"endpoint":            "1.1.1.1:8080",
@@ -240,7 +248,8 @@ nested_example:
 		scopeSuffix: "",
 	}, "simple_annotation_case_scoped": {
 		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics.8080/config": config,
+			"io.opentelemetry.discovery.metrics.8080/enabled": "true",
+			"io.opentelemetry.discovery.metrics.8080/config":  config,
 		}, expectedConf: userConfigMap{
 			"collection_interval": "20s",
 			"endpoint":            "0.0.0.0:8080",
@@ -251,7 +260,8 @@ nested_example:
 		scopeSuffix: "8080",
 	}, "simple_annotation_case_with_invalid_endpoint": {
 		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics/config": config,
+			"io.opentelemetry.discovery.metrics/enabled": "true",
+			"io.opentelemetry.discovery.metrics/config":  config,
 		}, expectedConf: userConfigMap{},
 		defaultEndpoint: "1.2.3.4:8080",
 		scopeSuffix:     "",
@@ -291,19 +301,13 @@ endpoint: "0.0.0.0:8080"`
 			},
 			expected:    false,
 			scopeSuffix: "",
-		}, "test_default": {
-			hintsAnn: map[string]string{
-				"io.opentelemetry.discovery.metrics/config": config,
-			},
-			expected:    true,
-			scopeSuffix: "",
 		}, "test_enabled_scope": {
 			hintsAnn: map[string]string{
-				"io.opentelemetry.discovery.metrics/config":      config,
-				"io.opentelemetry.discovery.metrics8080/enabled": "true",
+				"io.opentelemetry.discovery.metrics/config":       config,
+				"io.opentelemetry.discovery.metrics.8080/enabled": "true",
 			},
 			expected:    true,
-			scopeSuffix: "some",
+			scopeSuffix: "8080",
 		}, "test_disabled_scoped": {
 			hintsAnn: map[string]string{
 				"io.opentelemetry.discovery.metrics/config":       config,

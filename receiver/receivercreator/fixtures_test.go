@@ -69,6 +69,7 @@ var portEndpointWithHints = observer.Endpoint{
 			UID:       "pod-2-UID",
 			Labels:    map[string]string{"env": "prod"},
 			Annotations: map[string]string{
+				otelMetricsHints + "/enabled": "true",
 				otelMetricsHints + "/scraper": "with_endpoint",
 				otelMetricsHints + "/config":  config,
 			}},
