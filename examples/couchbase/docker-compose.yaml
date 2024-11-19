@@ -17,7 +17,7 @@ services:
     depends_on:
       - couchbase
   prometheus:
-    image: prom/prometheus:v2.55.1
+    image: prom/prometheus:v3.0.0
     volumes:
       - ./prometheus-config.yaml:/etc/prometheus/prometheus.yml
     ports:
