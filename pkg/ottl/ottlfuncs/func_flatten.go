@@ -83,9 +83,9 @@ func flattenValue(k string, v pcommon.Value, currentDepth int64, maxDepth int64,
 	case v.Type() == pcommon.ValueTypeSlice && currentDepth < maxDepth:
 		for i := 0; i < v.Slice().Len(); i++ {
 			switch {
-			case v.Slice().At(i).Type() == pcommon.ValueTypeMap:
+			case v.Slice().At(i).Type() == pcommon.ValueTypeMap && currentDepth+1 < maxDepth:
 				flattenMap(v.Slice().At(i).Map(), result, fmt.Sprintf("%v.%v", prefix+k, i), currentDepth+2, maxDepth)
-			case v.Slice().At(i).Type() == pcommon.ValueTypeSlice:
+			case v.Slice().At(i).Type() == pcommon.ValueTypeSlice && currentDepth+1 < maxDepth:
 				flattenSlice(v.Slice().At(i).Slice(), result, fmt.Sprintf("%v.%v", prefix+k, i), currentDepth+2, maxDepth)
 			default:
 				v.Slice().At(i).CopyTo(result.PutEmpty(fmt.Sprintf("%v.%v", prefix+k, i)))
