@@ -66,8 +66,8 @@ github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU
 github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
 github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
 github.com/rs/cors v1.11.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=
-github.com/signalfx/sapm-proto v0.16.0 h1:E8W+awZBl3nmpDTdbPK8Uwla9FdSCWpZChR3p+7bzw0=
-github.com/signalfx/sapm-proto v0.16.0/go.mod h1:7VTAIoYIgkAK+j6w3l4Aici+EYySGAmXCK0rfD2OZkU=
+github.com/signalfx/sapm-proto v0.17.0 h1:KY+9zm/yDOq6uzaguI1RmrJcWxzbkGv0zE6GplA3ytc=
+github.com/signalfx/sapm-proto v0.17.0/go.mod h1:c8fGx9DjGP7Hqif7g6Zy6E+BCMXK/dERFU2b3faA0gk=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
