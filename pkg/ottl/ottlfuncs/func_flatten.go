@@ -37,8 +37,8 @@ func flatten[K any](target ottl.PMapGetter[K], p ottl.Optional[string], d ottl.O
 	depth := int64(math.MaxInt64)
 	if !d.IsEmpty() {
 		depth = d.Get()
-		if depth < 0 {
-			return nil, fmt.Errorf("invalid depth for flatten function, %d cannot be negative", depth)
+		if depth < 1 {
+			return nil, fmt.Errorf("invalid depth '%d' for flatten function, must be greater than 0", depth)
 		}
 	}
 
@@ -80,7 +80,7 @@ func flattenValue(k string, v pcommon.Value, currentDepth int64, maxDepth int64,
 	switch {
 	case v.Type() == pcommon.ValueTypeMap && currentDepth < maxDepth:
 		flattenMap(v.Map(), result, prefix+k, currentDepth+1, maxDepth)
-	case v.Type() == pcommon.ValueTypeSlice:
+	case v.Type() == pcommon.ValueTypeSlice && currentDepth < maxDepth:
 		for i := 0; i < v.Slice().Len(); i++ {
 			switch {
 			case v.Slice().At(i).Type() == pcommon.ValueTypeMap:

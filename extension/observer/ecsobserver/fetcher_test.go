@@ -263,7 +263,6 @@ func TestFetcher_AttachService(t *testing.T) {
 		deployID := i % nServices
 		task.TaskDefinitionArn = aws.String(fmt.Sprintf("def%d:1", deployID))
 		task.StartedBy = aws.String(fmt.Sprintf("deploy%d", deployID))
-
 	}))
 
 	ctx := context.Background()

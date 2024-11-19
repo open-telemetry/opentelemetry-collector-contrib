@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -101,19 +102,6 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `flatten(attributes, depth=0)`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().Remove("things")
-				m1 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.0")
-				m1.PutStr("name", "foo")
-				m1.PutInt("value", 2)
-
-				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("things.1")
-				m2.PutStr("name", "bar")
-				m2.PutInt("value", 5)
-			},
-		},
-		{
 			statement: `flatten(attributes, depth=1)`,
 			want: func(tCtx ottllog.TransformContext) {
 				m := pcommon.NewMap()
@@ -126,7 +114,7 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("foo.flags", "pass")
 				m.PutStr("foo.bar", "pass")
 				m.PutStr("foo.flags", "pass")
-				m.PutStr("foo.slice.0", "val")
+				m.PutEmptySlice("foo.slice").AppendEmpty().SetStr("val")
 
 				m1 := m.PutEmptyMap("things.0")
 				m1.PutStr("name", "foo")
@@ -280,7 +268,6 @@ func Test_e2e_editors(t *testing.T) {
 				sv, _ := v.Map().Get("slice")
 				s := sv.Slice()
 				s.AppendEmpty().SetStr("sample_value")
-
 			},
 		},
 		{
@@ -290,7 +277,6 @@ func Test_e2e_editors(t *testing.T) {
 				s := v.Map().PutEmptySlice("flags")
 				s.AppendEmpty().SetStr("pass")
 				s.AppendEmpty().SetStr("sample_value")
-
 			},
 		},
 		{
@@ -359,7 +345,7 @@ func Test_e2e_converters(t *testing.T) {
 		{
 			statement: `set(attributes["test"], ConvertCase(attributes["http.method"], "upper"))`,
 			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "GET")
+				tCtx.GetLogRecord().Attributes().PutStr("test", http.MethodGet)
 			},
 		},
 		{
@@ -966,7 +952,6 @@ func Test_e2e_converters(t *testing.T) {
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
 				m.PutInt("foo", 2)
 				m.PutInt("bar", 5)
-
 			},
 		},
 	}

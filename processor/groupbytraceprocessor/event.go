@@ -48,11 +48,13 @@ var (
 	}
 )
 
-type eventType int
-type event struct {
-	typ     eventType
-	payload any
-}
+type (
+	eventType int
+	event     struct {
+		typ     eventType
+		payload any
+	}
+)
 
 type tracesWithID struct {
 	id pcommon.TraceID

@@ -521,5 +521,4 @@ func Test_mergeValue(t *testing.T) {
 			assert.Equal(t, tt.expected, fields)
 		})
 	}
-
 }

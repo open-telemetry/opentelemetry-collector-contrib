@@ -199,7 +199,6 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 
 			ips = append(ips, ip)
 		}
-
 	}
 	return ips, err
 }

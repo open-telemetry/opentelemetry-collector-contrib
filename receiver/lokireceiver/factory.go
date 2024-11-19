@@ -56,7 +56,6 @@ func createLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
-
 	rCfg := cfg.(*Config)
 	return newLokiReceiver(rCfg, consumer, settings)
 }
