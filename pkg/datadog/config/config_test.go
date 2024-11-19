@@ -39,10 +39,10 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			name: "no api::key",
-			cfg:  &Config{
+			cfg: &Config{
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
-			err:  ErrUnsetAPIKey.Error(),
+			err: ErrUnsetAPIKey.Error(),
 		},
 		{
 			name: "invalid hostname",
