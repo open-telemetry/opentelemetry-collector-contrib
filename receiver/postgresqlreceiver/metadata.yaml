@@ -310,6 +310,13 @@ metrics:
       value_type: double
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
-  
+  postgresql.tup_updated:
+    enabled: true
+    description: Number of rows updated by queries in the database.
+    unit: "{tup_updated}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
 tests:
   config:

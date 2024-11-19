@@ -214,6 +214,14 @@ Number of times a table has manually been vacuumed.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {vacuums} | Sum | Int | Cumulative | true |
 
+### postgresql.tup_updated
+
+Number of rows updated by queries in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_updated} | Sum | Int | Cumulative | true |
+
 ### postgresql.wal.age
 
 Age of the oldest WAL file.

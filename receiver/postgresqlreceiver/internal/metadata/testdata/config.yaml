@@ -49,6 +49,8 @@ all_set:
       enabled: true
     postgresql.temp_files:
       enabled: true
+    postgresql.tup_updated:
+      enabled: true
     postgresql.wal.age:
       enabled: true
     postgresql.wal.delay:
@@ -113,6 +115,8 @@ none_set:
     postgresql.table.vacuum.count:
       enabled: false
     postgresql.temp_files:
+      enabled: false
+    postgresql.tup_updated:
       enabled: false
     postgresql.wal.age:
       enabled: false
