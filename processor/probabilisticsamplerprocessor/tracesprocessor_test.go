@@ -222,7 +222,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpanCount())
 				sink.Reset()
 			}
-
 		})
 	}
 }
@@ -246,7 +245,6 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 		{100, false, true},
 	} {
 		t.Run(fmt.Sprint(tt.pct, "_", tt.failClosed), func(t *testing.T) {
-
 			ctx := context.Background()
 			traces := ptrace.NewTraces()
 			span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -388,7 +386,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, mode := range AllModes {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 
 				cfg := &Config{}
@@ -504,11 +501,11 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
-	var defaultTID = mustParseTID("fefefefefefefefefe80000000000000")
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 
 	// improbableTraceID will sample at all supported probabilities.  In
 	// hex, the leading 18 digits do not matter, the trailing 14 are all `f`.
-	var improbableTraceID = mustParseTID("111111111111111111ffffffffffffff")
+	improbableTraceID := mustParseTID("111111111111111111ffffffffffffff")
 
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
 	tests := []struct {
@@ -846,7 +843,6 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	for _, tt := range tests {
 		for _, mode := range []SamplerMode{Equalizing, Proportional} {
 			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
 				if tt.cfg != nil {
@@ -1013,7 +1009,6 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 				expectMessage := ""
 				if tt.sf != nil {
 					expectMessage = tt.sf(mode)
-
 				}
 
 				tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
@@ -1254,7 +1249,7 @@ func TestHashingFunction(t *testing.T) {
 		sampled bool
 	}
 
-	var expect50PctData = []expect50PctHashed{
+	expect50PctData := []expect50PctHashed{
 		{653, "474a03c76d75951a4b4c537ced8f1122", true},
 		{563, "53a518291e91307e43cd8467bb06f986", true},
 		{142, "a56a02f843b9bc6ee0b13889249e90e6", true},

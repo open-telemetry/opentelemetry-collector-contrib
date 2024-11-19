@@ -130,7 +130,6 @@ func prepareExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *expor
 		srv: testServer,
 		exp: exp,
 	}
-
 }
 
 func createTestConfig() *Config {
@@ -187,7 +186,6 @@ func TestSyslogExportFail(t *testing.T) {
 }
 
 func TestTLSConfig(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		network     string
@@ -218,7 +216,6 @@ func TestTLSConfig(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-
 			exporter, err := initExporter(
 				&Config{Endpoint: "test.com",
 					Network:    testInstance.network,
@@ -233,7 +230,6 @@ func TestTLSConfig(t *testing.T) {
 			} else {
 				assert.Nil(t, exporter.tlsConfig)
 			}
-
 		})
 	}
 }

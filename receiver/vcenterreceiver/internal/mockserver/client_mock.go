@@ -96,7 +96,7 @@ func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
 
-	var objectSetArray = false
+	objectSetArray := false
 	objectSet, ok := specSet["objectSet"].(map[string]any)
 	if !ok {
 		objectSetArray = true

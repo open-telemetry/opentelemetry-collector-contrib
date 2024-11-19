@@ -101,7 +101,6 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 		}
 		authConf, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			loadingRules, configOverrides).ClientConfig()
-
 		if err != nil {
 			return nil, fmt.Errorf("error connecting to k8s with auth_type=%s: %w", AuthTypeKubeConfig, err)
 		}

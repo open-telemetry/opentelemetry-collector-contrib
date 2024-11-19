@@ -62,7 +62,6 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(cfg.BearerToken)))
-
 }
 
 func TestBearerAuthenticator(t *testing.T) {

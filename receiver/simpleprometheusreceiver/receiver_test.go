@@ -221,7 +221,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 										Targets: []model.LabelSet{
 											{
 												model.AddressLabel:     model.LabelValue("localhost:1234"),
-												model.LabelName("key"): model.LabelValue("value")},
+												model.LabelName("key"): model.LabelValue("value"),
+											},
 										},
 									},
 								},

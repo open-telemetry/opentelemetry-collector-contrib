@@ -601,6 +601,7 @@ func Test_newGetter(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
 func Test_exprGetter_Get_Invalid(t *testing.T) {
 	tests := []struct {
 		name string

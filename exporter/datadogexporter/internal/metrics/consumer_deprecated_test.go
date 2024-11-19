@@ -53,7 +53,6 @@ func TestZorkianRunningMetrics(t *testing.T) {
 		runningHostnames,
 		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
-
 }
 
 func TestZorkianTagsMetrics(t *testing.T) {

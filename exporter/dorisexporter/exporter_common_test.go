@@ -9,26 +9,18 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
-
-var testTelemetrySettings = component.TelemetrySettings{
-	LeveledMeterProvider: func(_ configtelemetry.Level) metric.MeterProvider {
-		return nil
-	},
-}
 
 func TestNewCommonExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	exporter := newExporter(nil, cfg, testTelemetrySettings)
+	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, exporter)
 }
 
 func TestCommonExporter_FormatTime(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	exporter := newExporter(nil, cfg, testTelemetrySettings)
+	exporter := newExporter(nil, cfg, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, exporter)
 
 	now := time.Date(2024, 1, 1, 0, 0, 0, 1000, time.Local)
