@@ -47,8 +47,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid hostname",
 			cfg: &Config{
-				API:        APIConfig{Key: "notnull"},
-				TagsConfig: TagsConfig{Hostname: "invalid_host"},
+				API:          APIConfig{Key: "notnull"},
+				TagsConfig:   TagsConfig{Hostname: "invalid_host"},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "hostname field is invalid: invalid_host is not RFC1123 compliant",
@@ -65,16 +65,16 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping valid",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}},
+				API:          APIConfig{Key: "notnull"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 		{
 			name: "span name remapping empty val",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}},
+				API:          APIConfig{Key: "notnull"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "'' is not valid value for span name remapping",
@@ -82,26 +82,25 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping empty key",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}}},
+				API:          APIConfig{Key: "notnull"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
-				
 			},
 			err: "'' is not valid key for span name remapping",
 		},
 		{
 			name: "ignore resources valid",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123]"}}},
+				API:          APIConfig{Key: "notnull"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123]"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
 		{
 			name: "ignore resources missing bracket",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123"}}},
+				API:          APIConfig{Key: "notnull"},
+				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 			err: "'[123' is not valid resource filter regular expression",
@@ -135,8 +134,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With trace_buffer",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
-				Traces: TracesExporterConfig{TraceBuffer: 10},
+				API:          APIConfig{Key: "notnull"},
+				Traces:       TracesExporterConfig{TraceBuffer: 10},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
 		},
@@ -190,7 +189,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid reporter_period",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "notnull"},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 0},
 			},
 			err: "reporter_period must be a positive duration",
