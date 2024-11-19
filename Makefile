@@ -307,7 +307,7 @@ docker-telemetrygen:
 
 .PHONY: generate
 generate: install-tools
-	PATH="$$PWD/.tools:$$PATH" $(MAKE) $(FOR_GROUP_TARGET) TARGET="modgenerate"
+	PATH="$$PWD/.tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 
 .PHONY: githubgen-install
