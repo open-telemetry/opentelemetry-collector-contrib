@@ -106,6 +106,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordMongodbFlowcontrolLagTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordMongodbGlobalLockTimeDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -337,6 +341,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.flowcontrol.lag.time":
+					assert.False(t, validatedMetrics["mongodb.flowcontrol.lag.time"], "Found a duplicate in the metrics slice: mongodb.flowcontrol.lag.time")
+					validatedMetrics["mongodb.flowcontrol.lag.time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "the amount of time flow control has spent being engaged since the last restart.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

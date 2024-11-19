@@ -102,6 +102,14 @@ The number of extents.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {extents} | Sum | Int | Cumulative | false |
 
+### mongodb.flowcontrol.lag.time
+
+the amount of time flow control has spent being engaged since the last restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
 ### mongodb.global_lock.time
 
 The time the global lock has been held.

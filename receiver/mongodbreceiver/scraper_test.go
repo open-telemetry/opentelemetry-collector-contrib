@@ -69,6 +69,7 @@ var (
 				"failed to collect metric mongodb.collection.count with attribute(s) fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.data.size with attribute(s) fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.extent.count with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.flowcontrol.lag.time with attribute(s) fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.index.size with attribute(s) fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.index.count with attribute(s) fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.object.count with attribute(s) fakedatabase: could not find key for metric",

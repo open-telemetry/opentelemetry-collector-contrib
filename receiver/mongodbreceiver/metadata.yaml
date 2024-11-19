@@ -133,6 +133,13 @@ metrics:
       value_type: int
       monotonic: false
     attributes: []
+  mongodb.flowcontrol.lag.time:
+    description: the amount of time flow control has spent being engaged since the last restart.
+    unit: "ms"
+    enabled: true
+    gauge:
+      value_type: int
+    attributes: []
   mongodb.global_lock.time:
     description: The time the global lock has been held.
     unit: ms

@@ -715,6 +715,55 @@ func newMetricMongodbExtentCount(cfg MetricConfig) metricMongodbExtentCount {
 	return m
 }
 
+type metricMongodbFlowcontrolLagTime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.flowcontrol.lag.time metric with initial data.
+func (m *metricMongodbFlowcontrolLagTime) init() {
+	m.data.SetName("mongodb.flowcontrol.lag.time")
+	m.data.SetDescription("the amount of time flow control has spent being engaged since the last restart.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbFlowcontrolLagTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbFlowcontrolLagTime) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbFlowcontrolLagTime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbFlowcontrolLagTime(cfg MetricConfig) metricMongodbFlowcontrolLagTime {
+	m := metricMongodbFlowcontrolLagTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbGlobalLockTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1825,6 +1874,7 @@ type MetricsBuilder struct {
 	metricMongodbDatabaseCount          metricMongodbDatabaseCount
 	metricMongodbDocumentOperationCount metricMongodbDocumentOperationCount
 	metricMongodbExtentCount            metricMongodbExtentCount
+	metricMongodbFlowcontrolLagTime     metricMongodbFlowcontrolLagTime
 	metricMongodbGlobalLockTime         metricMongodbGlobalLockTime
 	metricMongodbHealth                 metricMongodbHealth
 	metricMongodbIndexAccessCount       metricMongodbIndexAccessCount
@@ -1881,6 +1931,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(mbc.Metrics.MongodbDatabaseCount),
 		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(mbc.Metrics.MongodbDocumentOperationCount),
 		metricMongodbExtentCount:            newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
+		metricMongodbFlowcontrolLagTime:     newMetricMongodbFlowcontrolLagTime(mbc.Metrics.MongodbFlowcontrolLagTime),
 		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
 		metricMongodbHealth:                 newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
 		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(mbc.Metrics.MongodbIndexAccessCount),
@@ -2001,6 +2052,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbDatabaseCount.emit(ils.Metrics())
 	mb.metricMongodbDocumentOperationCount.emit(ils.Metrics())
 	mb.metricMongodbExtentCount.emit(ils.Metrics())
+	mb.metricMongodbFlowcontrolLagTime.emit(ils.Metrics())
 	mb.metricMongodbGlobalLockTime.emit(ils.Metrics())
 	mb.metricMongodbHealth.emit(ils.Metrics())
 	mb.metricMongodbIndexAccessCount.emit(ils.Metrics())
@@ -2096,6 +2148,11 @@ func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommo
 // RecordMongodbExtentCountDataPoint adds a data point to mongodb.extent.count metric.
 func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbFlowcontrolLagTimeDataPoint adds a data point to mongodb.flowcontrol.lag.time metric.
+func (mb *MetricsBuilder) RecordMongodbFlowcontrolLagTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricMongodbFlowcontrolLagTime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbGlobalLockTimeDataPoint adds a data point to mongodb.global_lock.time metric.

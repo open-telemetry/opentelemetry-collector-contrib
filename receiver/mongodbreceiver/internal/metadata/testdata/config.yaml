@@ -19,6 +19,8 @@ all_set:
       enabled: true
     mongodb.extent.count:
       enabled: true
+    mongodb.flowcontrol.lag.time:
+      enabled: true
     mongodb.global_lock.time:
       enabled: true
     mongodb.health:
@@ -87,6 +89,8 @@ none_set:
     mongodb.document.operation.count:
       enabled: false
     mongodb.extent.count:
+      enabled: false
+    mongodb.flowcontrol.lag.time:
       enabled: false
     mongodb.global_lock.time:
       enabled: false
