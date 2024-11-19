@@ -86,11 +86,8 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 		ClientConfig:   clientConfig,
 	}
 	params := exportertest.NewNopSettings()
-	logger := hclog2ZapLogger{
-		Zap:  params.Logger,
-		name: loggerName,
-	}
-	actualCfg.checkAndWarnDeprecatedOptions(&logger)
+	logger := params.Logger
+	actualCfg.checkAndWarnDeprecatedOptions(logger)
 
 	clientConfigEndpoint := confighttp.NewDefaultClientConfig()
 	clientConfigEndpoint.Timeout = 10 * time.Second

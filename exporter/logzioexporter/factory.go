@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func getListenerURL(region string) string {
+func getTracesListenerURL(region string) string {
 	var url string
 	lowerCaseRegion := strings.ToLower(region)
 	switch lowerCaseRegion {
@@ -71,18 +71,48 @@ func getListenerURL(region string) string {
 	return url
 }
 
-func generateEndpoint(cfg *Config) (string, error) {
-	defaultURL := fmt.Sprintf("%s/?token=%s", getListenerURL(""), string(cfg.Token))
-	switch {
-	case cfg.ClientConfig.Endpoint != "":
-		return cfg.ClientConfig.Endpoint, nil
-	case cfg.Region != "":
-		return fmt.Sprintf("%s/?token=%s", getListenerURL(cfg.Region), string(cfg.Token)), nil
-	case cfg.ClientConfig.Endpoint == "" && cfg.Region == "":
-		return defaultURL, errors.New("failed to generate endpoint, Endpoint or Region must be set")
+func getLogsListenerURL(region string) string {
+	var url string
+	lowerCaseRegion := strings.ToLower(region)
+	switch lowerCaseRegion {
+	case "us":
+		url = "https://otlp-listener.logz.io/v1/logs"
+	case "ca":
+		url = "https://otlp-listener-ca.logz.io/v1/logs"
+	case "eu":
+		url = "https://otlp-listener-eu.logz.io/v1/logs"
+	case "uk":
+		url = "https://otlp-listener-uk.logz.io/v1/logs"
+	case "au":
+		url = "https://otlp-listener-au.logz.io/v1/logs"
+	case "nl":
+		url = "https://otlp-listener-nl.logz.io/v1/logs"
+	case "wa":
+		url = "https://otlp-listener-wa.logz.io/v1/logs"
 	default:
-		return defaultURL, nil
+		url = "https://otlp-listener.logz.io/v1/logs"
 	}
+	return url
+}
+
+func generateTracesEndpoint(cfg *Config) (string, error) {
+	if cfg.ClientConfig.Endpoint != "" {
+		return cfg.ClientConfig.Endpoint, nil
+	}
+	if cfg.Region != "" {
+		return fmt.Sprintf("%s/?token=%s", getTracesListenerURL(cfg.Region), string(cfg.Token)), nil
+	}
+	return fmt.Sprintf("%s/?token=%s", getTracesListenerURL(""), string(cfg.Token)), errors.New("failed to generate endpoint, Endpoint or Region must be set")
+}
+
+func generateLogsEndpoint(cfg *Config) (string, error) {
+	if cfg.ClientConfig.Endpoint != "" {
+		return cfg.ClientConfig.Endpoint, nil
+	}
+	if cfg.Region != "" {
+		return getLogsListenerURL(cfg.Region), nil
+	}
+	return getLogsListenerURL(""), errors.New("failed to generate endpoint, Endpoint or Region must be set")
 }
 
 func createTracesExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
