@@ -45,7 +45,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.135 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.136 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.59.0 // indirect
