@@ -5,7 +5,6 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"testing"
 	"time"
 
@@ -15,6 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestUnstructuredListToLogData(t *testing.T) {
