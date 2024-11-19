@@ -131,6 +131,8 @@ func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, document
 	if err != nil {
 		return err
 	}
+	// flush bytes should operate on uncompressed length
+	// as Elasticsearch http.max_content_length measures uncompressed length.
 	if s.bi.UncompressedLen() >= s.s.flushBytes {
 		return s.Flush(ctx)
 	}
