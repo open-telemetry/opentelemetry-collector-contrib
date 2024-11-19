@@ -133,6 +133,10 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	if (c.HostMetadata.ReporterPeriod <= 0) {
+		return errors.New("reporter_period must be a positive duration")
+	}
+
 	return nil
 }
 
@@ -340,6 +344,7 @@ func CreateDefaultConfig() component.Config {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 }
