@@ -1472,6 +1472,213 @@ func newMetricPostgresqlTempFiles(cfg MetricConfig) metricPostgresqlTempFiles {
 	return m
 }
 
+<<<<<<< HEAD
+=======
+type metricPostgresqlTupDeleted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.tup_deleted metric with initial data.
+func (m *metricPostgresqlTupDeleted) init() {
+	m.data.SetName("postgresql.tup_deleted")
+	m.data.SetDescription("Number of rows deleted by queries in the database.")
+	m.data.SetUnit("{tup_deleted}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTupDeleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTupDeleted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTupDeleted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTupDeleted(cfg MetricConfig) metricPostgresqlTupDeleted {
+	m := metricPostgresqlTupDeleted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTupFetched struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.tup_fetched metric with initial data.
+func (m *metricPostgresqlTupFetched) init() {
+	m.data.SetName("postgresql.tup_fetched")
+	m.data.SetDescription("Number of rows fetched by queries in the database.")
+	m.data.SetUnit("{tup_fetched}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTupFetched) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTupFetched) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTupFetched) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTupFetched(cfg MetricConfig) metricPostgresqlTupFetched {
+	m := metricPostgresqlTupFetched{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTupInserted struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.tup_inserted metric with initial data.
+func (m *metricPostgresqlTupInserted) init() {
+	m.data.SetName("postgresql.tup_inserted")
+	m.data.SetDescription("Number of rows inserted by queries in the database.")
+	m.data.SetUnit("{tup_inserted}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTupInserted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTupInserted) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTupInserted) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTupInserted(cfg MetricConfig) metricPostgresqlTupInserted {
+	m := metricPostgresqlTupInserted{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTupReturned struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.tup_returned metric with initial data.
+func (m *metricPostgresqlTupReturned) init() {
+	m.data.SetName("postgresql.tup_returned")
+	m.data.SetDescription("Number of rows returned by queries in the database.")
+	m.data.SetUnit("{tup_returned}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTupReturned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTupReturned) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTupReturned) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTupReturned(cfg MetricConfig) metricPostgresqlTupReturned {
+	m := metricPostgresqlTupReturned{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 type metricPostgresqlTupUpdated struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1710,6 +1917,13 @@ type MetricsBuilder struct {
 	metricPostgresqlTableSize                metricPostgresqlTableSize
 	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
 	metricPostgresqlTempFiles                metricPostgresqlTempFiles
+<<<<<<< HEAD
+=======
+	metricPostgresqlTupDeleted               metricPostgresqlTupDeleted
+	metricPostgresqlTupFetched               metricPostgresqlTupFetched
+	metricPostgresqlTupInserted              metricPostgresqlTupInserted
+	metricPostgresqlTupReturned              metricPostgresqlTupReturned
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 	metricPostgresqlTupUpdated               metricPostgresqlTupUpdated
 	metricPostgresqlWalAge                   metricPostgresqlWalAge
 	metricPostgresqlWalDelay                 metricPostgresqlWalDelay
@@ -1764,6 +1978,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
 		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
 		metricPostgresqlTempFiles:                newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
+<<<<<<< HEAD
+=======
+		metricPostgresqlTupDeleted:               newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
+		metricPostgresqlTupFetched:               newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
+		metricPostgresqlTupInserted:              newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
+		metricPostgresqlTupReturned:              newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 		metricPostgresqlTupUpdated:               newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
 		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
 		metricPostgresqlWalDelay:                 newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
@@ -1888,6 +2109,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlTableSize.emit(ils.Metrics())
 	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
 	mb.metricPostgresqlTempFiles.emit(ils.Metrics())
+<<<<<<< HEAD
+=======
+	mb.metricPostgresqlTupDeleted.emit(ils.Metrics())
+	mb.metricPostgresqlTupFetched.emit(ils.Metrics())
+	mb.metricPostgresqlTupInserted.emit(ils.Metrics())
+	mb.metricPostgresqlTupReturned.emit(ils.Metrics())
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 	mb.metricPostgresqlTupUpdated.emit(ils.Metrics())
 	mb.metricPostgresqlWalAge.emit(ils.Metrics())
 	mb.metricPostgresqlWalDelay.emit(ils.Metrics())
@@ -2043,6 +2271,29 @@ func (mb *MetricsBuilder) RecordPostgresqlTempFilesDataPoint(ts pcommon.Timestam
 	mb.metricPostgresqlTempFiles.recordDataPoint(mb.startTime, ts, val)
 }
 
+<<<<<<< HEAD
+=======
+// RecordPostgresqlTupDeletedDataPoint adds a data point to postgresql.tup_deleted metric.
+func (mb *MetricsBuilder) RecordPostgresqlTupDeletedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTupDeleted.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlTupFetchedDataPoint adds a data point to postgresql.tup_fetched metric.
+func (mb *MetricsBuilder) RecordPostgresqlTupFetchedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTupFetched.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlTupInsertedDataPoint adds a data point to postgresql.tup_inserted metric.
+func (mb *MetricsBuilder) RecordPostgresqlTupInsertedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTupInserted.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlTupReturnedDataPoint adds a data point to postgresql.tup_returned metric.
+func (mb *MetricsBuilder) RecordPostgresqlTupReturnedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTupReturned.recordDataPoint(mb.startTime, ts, val)
+}
+
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 // RecordPostgresqlTupUpdatedDataPoint adds a data point to postgresql.tup_updated metric.
 func (mb *MetricsBuilder) RecordPostgresqlTupUpdatedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlTupUpdated.recordDataPoint(mb.startTime, ts, val)

@@ -318,5 +318,37 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative  
+  postgresql.tup_returned:
+    enabled: true
+    description: Number of rows returned by queries in the database.
+    unit: "{tup_returned}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
+  postgresql.tup_fetched:
+    enabled: true
+    description: Number of rows fetched by queries in the database.
+    unit: "{tup_fetched}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
+  postgresql.tup_inserted:
+    enabled: true
+    description: Number of rows inserted by queries in the database.
+    unit: "{tup_inserted}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative  
+  postgresql.tup_deleted:
+    enabled: true
+    description: Number of rows deleted by queries in the database.
+    unit: "{tup_deleted}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative                          
 tests:
   config:

@@ -202,6 +202,10 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
 		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
 		p.mb.RecordPostgresqlTupUpdatedDataPoint(now, stats.tupUpdated)
+		p.mb.RecordPostgresqlTupReturnedDataPoint(now, stats.tupUpdated)
+		p.mb.RecordPostgresqlTupFetchedDataPoint(now, stats.tupUpdated)
+		p.mb.RecordPostgresqlTupInsertedDataPoint(now, stats.tupUpdated)
+		p.mb.RecordPostgresqlTupDeletedDataPoint(now, stats.tupUpdated)
 	}
 	rb := p.mb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName(db)

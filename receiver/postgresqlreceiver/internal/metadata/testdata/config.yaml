@@ -49,6 +49,17 @@ all_set:
       enabled: true
     postgresql.temp_files:
       enabled: true
+<<<<<<< HEAD
+=======
+    postgresql.tup_deleted:
+      enabled: true
+    postgresql.tup_fetched:
+      enabled: true
+    postgresql.tup_inserted:
+      enabled: true
+    postgresql.tup_returned:
+      enabled: true
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
     postgresql.tup_updated:
       enabled: true
     postgresql.wal.age:
@@ -116,6 +127,17 @@ none_set:
       enabled: false
     postgresql.temp_files:
       enabled: false
+<<<<<<< HEAD
+=======
+    postgresql.tup_deleted:
+      enabled: false
+    postgresql.tup_fetched:
+      enabled: false
+    postgresql.tup_inserted:
+      enabled: false
+    postgresql.tup_returned:
+      enabled: false
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
     postgresql.tup_updated:
       enabled: false
     postgresql.wal.age:

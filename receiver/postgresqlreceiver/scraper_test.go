@@ -46,6 +46,10 @@ func TestScraper(t *testing.T) {
 		cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 
@@ -84,6 +88,14 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 		cfg.Metrics.PostgresqlTempFiles.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlTupUpdated.Enabled)
 		cfg.Metrics.PostgresqlTupUpdated.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupReturned.Enabled)
+		cfg.Metrics.PostgresqlTupReturned.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupFetched.Enabled)
+		cfg.Metrics.PostgresqlTupFetched.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupInserted.Enabled)
+		cfg.Metrics.PostgresqlTupInserted.Enabled = true
+		require.False(t, cfg.Metrics.PostgresqlTupDeleted.Enabled)
+		cfg.Metrics.PostgresqlTupDeleted.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlSequentialScans.Enabled)
 		cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 		require.False(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled)

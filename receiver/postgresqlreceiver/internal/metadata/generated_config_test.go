@@ -49,6 +49,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableSize:                MetricConfig{Enabled: true},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
 					PostgresqlTempFiles:                MetricConfig{Enabled: true},
+<<<<<<< HEAD
+=======
+					PostgresqlTupDeleted:               MetricConfig{Enabled: true},
+					PostgresqlTupFetched:               MetricConfig{Enabled: true},
+					PostgresqlTupInserted:              MetricConfig{Enabled: true},
+					PostgresqlTupReturned:              MetricConfig{Enabled: true},
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 					PostgresqlTupUpdated:               MetricConfig{Enabled: true},
 					PostgresqlWalAge:                   MetricConfig{Enabled: true},
 					PostgresqlWalDelay:                 MetricConfig{Enabled: true},
@@ -90,6 +97,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableSize:                MetricConfig{Enabled: false},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
 					PostgresqlTempFiles:                MetricConfig{Enabled: false},
+<<<<<<< HEAD
+=======
+					PostgresqlTupDeleted:               MetricConfig{Enabled: false},
+					PostgresqlTupFetched:               MetricConfig{Enabled: false},
+					PostgresqlTupInserted:              MetricConfig{Enabled: false},
+					PostgresqlTupReturned:              MetricConfig{Enabled: false},
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 					PostgresqlTupUpdated:               MetricConfig{Enabled: false},
 					PostgresqlWalAge:                   MetricConfig{Enabled: false},
 					PostgresqlWalDelay:                 MetricConfig{Enabled: false},

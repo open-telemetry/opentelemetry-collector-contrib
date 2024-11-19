@@ -52,6 +52,13 @@ type MetricsConfig struct {
 	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
 	PostgresqlTempFiles                MetricConfig `mapstructure:"postgresql.temp_files"`
+<<<<<<< HEAD
+=======
+	PostgresqlTupDeleted               MetricConfig `mapstructure:"postgresql.tup_deleted"`
+	PostgresqlTupFetched               MetricConfig `mapstructure:"postgresql.tup_fetched"`
+	PostgresqlTupInserted              MetricConfig `mapstructure:"postgresql.tup_inserted"`
+	PostgresqlTupReturned              MetricConfig `mapstructure:"postgresql.tup_returned"`
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 	PostgresqlTupUpdated               MetricConfig `mapstructure:"postgresql.tup_updated"`
 	PostgresqlWalAge                   MetricConfig `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 MetricConfig `mapstructure:"postgresql.wal.delay"`
@@ -132,6 +139,21 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlTempFiles: MetricConfig{
 			Enabled: false,
 		},
+<<<<<<< HEAD
+=======
+		PostgresqlTupDeleted: MetricConfig{
+			Enabled: true,
+		},
+		PostgresqlTupFetched: MetricConfig{
+			Enabled: true,
+		},
+		PostgresqlTupInserted: MetricConfig{
+			Enabled: true,
+		},
+		PostgresqlTupReturned: MetricConfig{
+			Enabled: true,
+		},
+>>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 		PostgresqlTupUpdated: MetricConfig{
 			Enabled: true,
 		},

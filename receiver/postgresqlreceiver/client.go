@@ -135,12 +135,15 @@ type databaseStats struct {
 	deadlocks            int64
 	tempFiles            int64
 	tupUpdated           int64
+	tupReturned          int64
+	tupFetched           int64
+	tupInserted          int64
+	tupDeleted           int64
 }
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
-	// Modified query to include tup_updated from pg_stat_database
 	query := filterQueryByDatabases(
-		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, tup_updated FROM pg_stat_database",
+		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted FROM pg_stat_database",
 		databases,
 		false,
 	)
@@ -155,8 +158,8 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback, deadlocks, tempFiles, tupUpdated int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tupUpdated)
+		var transactionCommitted, transactionRollback, deadlocks, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -167,7 +170,11 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 				transactionRollback:  transactionRollback,
 				deadlocks:            deadlocks,
 				tempFiles:            tempFiles,
-				tupUpdated:           tupUpdated, // Added field
+				tupUpdated:           tupUpdated,
+				tupReturned:          tupReturned,
+				tupFetched:           tupFetched,
+				tupInserted:          tupInserted,
+				tupDeleted:           tupDeleted,
 			}
 		}
 	}

@@ -263,7 +263,47 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{tup_updated}'             
+            unit: '{tup_updated}'
+          - description: Number of rows returned by queries in the database.
+            name: postgresql.tup_returned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_returned}'
+          - description: Number of rows fetched by queries in the database.
+            name: postgresql.tup_fetched
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_fetched}'
+          - description: Number of rows inserted by queries in the database.
+            name: postgresql.tup_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_inserted}'
+          - description: Number of rows deleted by queries in the database.
+            name: postgresql.tup_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{tup_deleted}'                         
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
           version: latest
