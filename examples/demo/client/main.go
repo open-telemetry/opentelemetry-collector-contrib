@@ -174,7 +174,6 @@ func main() {
 }
 
 func makeRequest(ctx context.Context) {
-
 	demoServerAddr, ok := os.LookupEnv("DEMO_SERVER_ENDPOINT")
 	if !ok {
 		demoServerAddr = "http://0.0.0.0:7080/hello"

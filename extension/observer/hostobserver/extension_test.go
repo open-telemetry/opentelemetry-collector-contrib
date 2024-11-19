@@ -111,7 +111,6 @@ func TestHostObserver(t *testing.T) {
 				assert.Equal(t, filepath.Base(exe), details.ProcessName)
 				assert.Equal(t, tt.protocol, details.Transport)
 				assert.Equal(t, isIPv6, details.IsIPv6)
-
 			}
 		})
 	}
