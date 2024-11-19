@@ -16,7 +16,7 @@
 //	err := Read(data, &into)
 //
 // See [Read] and [Parser] for examples.
-package testar // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testar"
+package testar // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar"
 
 import (
 	"fmt"
@@ -98,8 +98,10 @@ type Format struct {
 	parse func(file []byte, into any) error
 }
 
-func Parser(name string, fn func(data []byte, into any) error) Format {
-	return Format{name: name, parse: fn}
+func Parser[T any](name string, fn func([]byte, *T) error) Format {
+	return Format{name: name, parse: func(file []byte, ptr any) error {
+		return fn(file, ptr.(*T))
+	}}
 }
 
 // LiteralParser sets data unaltered into a []byte or string

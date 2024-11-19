@@ -16,12 +16,13 @@ import (
 )
 
 func New(set component.TelemetrySettings) (Metrics, error) {
+	zero := func() int { return -1 }
 	m := Metrics{
-		tracked: func() int { return 0 },
+		tracked: &zero,
 	}
 
 	trackedCb := metadata.WithDeltatocumulativeStreamsTrackedLinearCallback(func() int64 {
-		return int64(m.tracked())
+		return int64((*m.tracked)())
 	})
 
 	telb, err := metadata.NewTelemetryBuilder(set, trackedCb)
@@ -36,7 +37,7 @@ func New(set component.TelemetrySettings) (Metrics, error) {
 type Metrics struct {
 	metadata.TelemetryBuilder
 
-	tracked func() int
+	tracked *func() int
 }
 
 func (m Metrics) Datapoints() Counter {
@@ -44,7 +45,7 @@ func (m Metrics) Datapoints() Counter {
 }
 
 func (m *Metrics) WithTracked(streams func() int) {
-	m.tracked = streams
+	*m.tracked = streams
 }
 
 func Error(msg string) attribute.KeyValue {
