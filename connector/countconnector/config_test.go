@@ -279,7 +279,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Metrics: map[string]MetricInfo{
 					"my.metric.count": {
-						Description: "My metric count."},
+						Description: "My metric count.",
+					},
 					"limited.metric.count": {
 						Description: "Limited metric count.",
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},

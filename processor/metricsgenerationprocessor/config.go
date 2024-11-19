@@ -30,7 +30,6 @@ const (
 
 // Config defines the configuration for the processor.
 type Config struct {
-
 	// Set of rules for generating new metrics
 	Rules []Rule `mapstructure:"rules"`
 }
