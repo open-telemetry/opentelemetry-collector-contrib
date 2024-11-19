@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"testing"
 	"time"
 
@@ -214,12 +215,53 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, logEntryFromWatchEvent)
 
+		// verify the event.type, event.domain and k8s.resource.name attributes have been added
+
+		watchEventAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+		eventType, ok := watchEventAttrs.Get("event.type")
+		assert.True(t, ok)
+		assert.Equal(
+			t,
+			"ADDED",
+			eventType.AsString(),
+		)
+
+		eventDomain, ok := watchEventAttrs.Get("event.domain")
+		assert.True(t, ok)
+		assert.Equal(
+			t,
+			"k8s",
+			eventDomain.AsString(),
+		)
+
+		k8sResourceName, ok := watchEventAttrs.Get("k8s.resource.name")
+		assert.True(t, ok)
+		assert.Equal(
+			t,
+			"events",
+			k8sResourceName.AsString(),
+		)
+
 		logEntryFromPulledEvent := unstructuredListToLogData(pulledEvent, observedTimestamp, config)
 		assert.NotNil(t, logEntryFromPulledEvent)
 
-		assert.Equal(t,
-			logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body(),
-			logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body(),
+		pullEventAttrs := logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+		k8sResourceName, ok = pullEventAttrs.Get("k8s.resource.name")
+		assert.True(t, ok)
+		assert.Equal(
+			t,
+			"events",
+			k8sResourceName.AsString(),
 		)
+
+		// clean the attributes as they have been verified before, and we just want to compare the log record bodies
+		logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+		logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+
+		assert.NoError(t, plogtest.CompareLogRecord(
+			logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0),
+			logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0),
+		))
 	})
 }
