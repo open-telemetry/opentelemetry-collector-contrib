@@ -7,7 +7,7 @@ change_type: breaking
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Change signature of `emit.Callback` function in `pkg/stanza/fileconsumer/emit` package to emit multiple tokens. Each token's body and attributes are encapsulated in a new `emit.Token` struct.
+note: Change signature of `emit.Callback` function in `pkg/stanza/fileconsumer/emit` package to emit multiple tokens.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36260]
