@@ -23,10 +23,6 @@ func SCConnect() (*Manager, error) {
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	return &Manager{
 		Handle: h,
 	}, nil
@@ -36,8 +32,15 @@ func (m *Manager) Disconnect() error {
 	return windows.CloseServiceHandle(m.Handle)
 }
 
-func (m *Manager) OpenService(sName string) (*mgr.Service, error) {
-	ptr, err := syscall.UTF16PtrFromString(sName)
+func (m *Manager) ListServices() ([]string, error) {
+	// TODO: implement ListServices with lowered permissions to return a list of services from service control manager db
+	var s []string
+
+	return s, nil
+}
+
+func (m *Manager) OpenService(name string) (*mgr.Service, error) {
+	ptr, err := syscall.UTF16PtrFromString(name)
 	if err != nil {
 		return nil, err
 	}
@@ -47,5 +50,5 @@ func (m *Manager) OpenService(sName string) (*mgr.Service, error) {
 		return nil, err
 	}
 
-	return &mgr.Service{Name: sName, Handle: h}, nil
+	return &mgr.Service{Name: name, Handle: h}, nil
 }
