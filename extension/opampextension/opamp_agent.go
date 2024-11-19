@@ -425,7 +425,6 @@ func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 
 func (o *opampAgent) setHealth(ch *protobufs.ComponentHealth) {
 	if o.capabilities.ReportsHealth && o.opampClient != nil {
-
 		if ch.Healthy && o.startTimeUnixNano == 0 {
 			ch.StartTimeUnixNano = ch.StatusTimeUnixNano
 		} else {
