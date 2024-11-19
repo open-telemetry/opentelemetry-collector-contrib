@@ -445,7 +445,8 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan ptrace.Span, recdSpan
 }
 
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
-	sentAttrs pcommon.Map, recdAttrs pcommon.Map, fmtStr string) {
+	sentAttrs pcommon.Map, recdAttrs pcommon.Map, fmtStr string,
+) {
 	sentAttrs.Range(func(sentKey string, sentVal pcommon.Value) bool {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {
@@ -470,7 +471,8 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 }
 
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pcommon.Value, recdVal pcommon.Value,
-	fmtStr string, attrKey string) {
+	fmtStr string, attrKey string,
+) {
 	if reflect.DeepEqual(sentVal.AsRaw(), recdVal.AsRaw()) {
 		sentStr := sentVal.AsString()
 		recdStr := recdVal.AsString()
@@ -488,7 +490,8 @@ func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal 
 }
 
 func (v *CorrectnessTestValidator) compareKeyValueList(
-	spanName string, sentVal pcommon.Value, recdVal pcommon.Value, fmtStr string, attrKey string) {
+	spanName string, sentVal pcommon.Value, recdVal pcommon.Value, fmtStr string, attrKey string,
+) {
 	switch recdVal.Type() {
 	case pcommon.ValueTypeMap:
 		v.diffAttributeMap(spanName, sentVal.Map(), recdVal.Map(), fmtStr)

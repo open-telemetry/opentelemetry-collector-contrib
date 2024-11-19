@@ -5,6 +5,7 @@ package spanmetricsconnector
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 )
 
 func TestNewConnector(t *testing.T) {
-	defaultMethod := "GET"
+	defaultMethod := http.MethodGet
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
 		name                         string

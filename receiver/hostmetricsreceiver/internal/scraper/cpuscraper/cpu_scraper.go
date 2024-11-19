@@ -21,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/ucal"
 )
 
-const metricsLen = 2
-const hzInAMHz = 1_000_000
+const (
+	metricsLen = 2
+	hzInAMHz   = 1_000_000
+)
 
 // scraper for CPU Metrics
 type scraper struct {

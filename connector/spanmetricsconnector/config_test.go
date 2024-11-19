@@ -5,6 +5,7 @@ package spanmetricsconnector
 
 import (
 	"errors"
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -25,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultMethod := "GET"
+	defaultMethod := http.MethodGet
 	defaultMaxPerDatapoint := 5
 	customTimestampCacheSize := 123
 	tests := []struct {
@@ -67,7 +68,8 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-			}},
+			},
+		},
 		{
 			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
 			expected: &Config{

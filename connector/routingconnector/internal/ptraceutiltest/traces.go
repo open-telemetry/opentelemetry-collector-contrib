@@ -42,3 +42,44 @@ func NewTraces(resourceIDs, scopeIDs, spanIDs, spanEventIDs string) ptrace.Trace
 	}
 	return td
 }
+
+func NewTracesFromOpts(resources ...ptrace.ResourceSpans) ptrace.Traces {
+	md := ptrace.NewTraces()
+	for _, resource := range resources {
+		resource.CopyTo(md.ResourceSpans().AppendEmpty())
+	}
+	return md
+}
+
+func Resource(id string, scopes ...ptrace.ScopeSpans) ptrace.ResourceSpans {
+	rm := ptrace.NewResourceSpans()
+	rm.Resource().Attributes().PutStr("resourceName", "resource"+id)
+	for _, scope := range scopes {
+		scope.CopyTo(rm.ScopeSpans().AppendEmpty())
+	}
+	return rm
+}
+
+func Scope(id string, spans ...ptrace.Span) ptrace.ScopeSpans {
+	s := ptrace.NewScopeSpans()
+	s.Scope().SetName("scope" + id)
+	for _, span := range spans {
+		span.CopyTo(s.Spans().AppendEmpty())
+	}
+	return s
+}
+
+func Span(id string, ses ...ptrace.SpanEvent) ptrace.Span {
+	m := ptrace.NewSpan()
+	m.SetName("span" + id)
+	for _, se := range ses {
+		se.CopyTo(m.Events().AppendEmpty())
+	}
+	return m
+}
+
+func SpanEvent(id string) ptrace.SpanEvent {
+	dp := ptrace.NewSpanEvent()
+	dp.Attributes().PutStr("spanEventName", "spanEvent"+id)
+	return dp
+}

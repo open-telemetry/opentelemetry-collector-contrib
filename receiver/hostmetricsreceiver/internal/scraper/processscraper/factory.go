@@ -8,7 +8,6 @@ import (
 	"errors"
 	"runtime"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -25,11 +24,6 @@ const (
 )
 
 var (
-	// scraperType is the component type used for the built scraper.
-	scraperType component.Type = component.MustNewType(TypeStr)
-)
-
-var (
 	bootTimeCacheFeaturegateID = "hostmetrics.process.bootTimeCache"
 	bootTimeCacheFeaturegate   = featuregate.GlobalRegistry().MustRegister(
 		bootTimeCacheFeaturegateID,
@@ -41,8 +35,7 @@ var (
 )
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -66,8 +59,7 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)
