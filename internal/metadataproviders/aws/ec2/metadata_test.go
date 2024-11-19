@@ -39,8 +39,7 @@ func TestMetadataProviderGetError(t *testing.T) {
 }
 
 func TestMetadataProvider_available(t *testing.T) {
-	type fields struct {
-	}
+	type fields struct{}
 	type args struct {
 		ctx  context.Context
 		sess *session.Session

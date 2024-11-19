@@ -197,7 +197,6 @@ func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
 	for _, stat := range stats.Stats {
 		if stat.ContainerID != "" {
 			if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
-
 				tagList := tags.(*sync.Map)
 				for _, tag := range stat.Tags {
 					tagList.Store(tag, struct{}{})

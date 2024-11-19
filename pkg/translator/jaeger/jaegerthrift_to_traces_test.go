@@ -65,7 +65,6 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 }
 
 func TestThriftBatchToInternalTraces(t *testing.T) {
-
 	tests := []struct {
 		name string
 		jb   *jaeger.Batch
@@ -326,6 +325,7 @@ func generateThriftTwoParentsSpan() *jaeger.Span {
 		},
 	}
 }
+
 func unixNanoToMicroseconds(ns pcommon.Timestamp) int64 {
 	return int64(ns / 1000)
 }

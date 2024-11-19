@@ -429,7 +429,6 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	}
 
 	rows, err := c.client.Query(query)
-
 	if err != nil {
 		return nil, err
 	}
@@ -663,7 +662,6 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			}
 		}
 		err := rows.Scan(dest...)
-
 		if err != nil {
 			return nil, err
 		}

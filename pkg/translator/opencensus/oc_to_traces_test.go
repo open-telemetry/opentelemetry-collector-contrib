@@ -128,7 +128,8 @@ func TestOcSpanKindToInternal(t *testing.T) {
 			ocAttrs: &octrace.Span_Attributes{
 				AttributeMap: map[string]*octrace.AttributeValue{
 					"span.kind": {Value: &octrace.AttributeValue_StringValue{
-						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
+						StringValue: &octrace.TruncatableString{Value: "consumer"},
+					}},
 				},
 			},
 			otlpKind: ptrace.SpanKindConsumer,
@@ -138,7 +139,8 @@ func TestOcSpanKindToInternal(t *testing.T) {
 			ocAttrs: &octrace.Span_Attributes{
 				AttributeMap: map[string]*octrace.AttributeValue{
 					"span.kind": {Value: &octrace.AttributeValue_StringValue{
-						StringValue: &octrace.TruncatableString{Value: "producer"}}},
+						StringValue: &octrace.TruncatableString{Value: "producer"},
+					}},
 				},
 			},
 			otlpKind: ptrace.SpanKindProducer,
@@ -148,7 +150,8 @@ func TestOcSpanKindToInternal(t *testing.T) {
 			ocAttrs: &octrace.Span_Attributes{
 				AttributeMap: map[string]*octrace.AttributeValue{
 					"span.kind": {Value: &octrace.AttributeValue_IntValue{
-						IntValue: 123}},
+						IntValue: 123,
+					}},
 				},
 			},
 			otlpKind: ptrace.SpanKindUnspecified,
@@ -158,7 +161,8 @@ func TestOcSpanKindToInternal(t *testing.T) {
 			ocAttrs: &octrace.Span_Attributes{
 				AttributeMap: map[string]*octrace.AttributeValue{
 					"span.kind": {Value: &octrace.AttributeValue_StringValue{
-						StringValue: &octrace.TruncatableString{Value: "consumer"}}},
+						StringValue: &octrace.TruncatableString{Value: "consumer"},
+					}},
 				},
 			},
 			otlpKind: ptrace.SpanKindClient,
@@ -168,7 +172,8 @@ func TestOcSpanKindToInternal(t *testing.T) {
 			ocAttrs: &octrace.Span_Attributes{
 				AttributeMap: map[string]*octrace.AttributeValue{
 					"span.kind": {Value: &octrace.AttributeValue_StringValue{
-						StringValue: &octrace.TruncatableString{Value: "internal"}}},
+						StringValue: &octrace.TruncatableString{Value: "internal"},
+					}},
 				},
 			},
 			otlpKind: ptrace.SpanKindInternal,
