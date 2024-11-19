@@ -794,6 +794,7 @@ func TestFilterLogProcessorTelemetry(t *testing.T) {
 	}
 
 	tel.assertMetrics(t, want)
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructLogs() plog.Logs {

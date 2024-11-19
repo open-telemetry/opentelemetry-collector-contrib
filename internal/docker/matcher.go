@@ -56,7 +56,6 @@ func newStringMatcher(items []string) (*stringMatcher, error) {
 			// by definition this must lead and end with '/' chars
 			reText := item[1 : len(item)-1]
 			re, err = regexp.Compile(reText)
-
 			if err != nil {
 				return nil, fmt.Errorf("invalid regex item: %w", err)
 			}

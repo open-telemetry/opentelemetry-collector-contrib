@@ -41,5 +41,6 @@ func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 	return &K8sClient{
-		DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper}, nil
+		DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper,
+	}, nil
 }

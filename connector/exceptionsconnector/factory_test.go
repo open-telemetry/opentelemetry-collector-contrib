@@ -5,6 +5,7 @@ package exceptionsconnector
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 )
 
 func TestNewConnector(t *testing.T) {
-	defaultMethod := "GET"
+	defaultMethod := http.MethodGet
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
 		name           string

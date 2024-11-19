@@ -110,7 +110,7 @@ func TestIsKindSupported(t *testing.T) {
 	}{
 		{
 			name:     "nothing_supported",
-			client:   fake.NewSimpleClientset(),
+			client:   fake.NewClientset(),
 			gvk:      gvk.Pod,
 			expected: false,
 		},
@@ -146,7 +146,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 		{
 			name: "old_server_version", // With no batch/v1.CronJob support.
 			client: func() *fake.Clientset {
-				client := fake.NewSimpleClientset()
+				client := fake.NewClientset()
 				client.Resources = []*metav1.APIResourceList{
 					{
 						GroupVersion: "v1",

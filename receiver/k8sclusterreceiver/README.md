@@ -62,6 +62,7 @@ The following allocatable resource types are available.
   - storage
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
+- `namespace`: Allows to observe resources for a particular namespace only. If this option is set to a non-empty string, `Nodes`, `Namespaces` and `ClusterResourceQuotas` will not be observed. 
 
 Example:
 
@@ -270,6 +271,97 @@ subjects:
 - kind: ServiceAccount
   name: otelcontribcol
   namespace: default
+EOF
+```
+
+As an alternative to setting up a `ClusterRole`/`ClusterRoleBinding`, it is also possible to limit the observed resources to a
+particular namespace by setting the `namespace` option of the receiver. This allows the collector to only rely on `Roles`/`RoleBindings`, 
+instead of granting the collector cluster-wide read access to resources.
+Note however, that in this case the following resources will not be observed by the `k8sclusterreceiver`:
+
+- `Nodes`
+- `Namespaces`
+- `ClusterResourceQuotas`
+
+To use this approach, use the commands below to create the required `Role` and `RoleBinding`:
+
+```bash
+<<EOF | kubectl apply -f -
+metadata:
+  name: otelcontribcol
+  labels:
+    app: otelcontribcol
+  namespace: default
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+      - pods
+      - pods/status
+      - replicationcontrollers
+      - replicationcontrollers/status
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+      - statefulsets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - daemonsets
+      - deployments
+      - replicasets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+      - cronjobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - get
+      - list
+      - watch
+EOF
+```
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otelcontribcol
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: otelcontribcol
+subjects:
+  - kind: ServiceAccount
+    name: otelcontribcol
+    namespace: default
 EOF
 ```
 

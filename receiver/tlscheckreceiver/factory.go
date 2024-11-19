@@ -45,11 +45,11 @@ func newReceiver(
 	}
 
 	mp := newScraper(tlsCheckConfig, settings)
-	s, err := scraperhelper.NewScraper(metadata.Type, mp.scrape)
+	s, err := scraperhelper.NewScraperWithoutType(mp.scrape)
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(s)
+	opt := scraperhelper.AddScraperWithType(metadata.Type, s)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&tlsCheckConfig.ControllerConfig,

@@ -156,7 +156,7 @@ func (r *splunkReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	mx.NewRoute().Path(r.config.HealthPath).HandlerFunc(r.handleHealthReq)
-	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods("GET")
+	mx.NewRoute().Path(r.config.HealthPath + "/1.0").HandlerFunc(r.handleHealthReq).Methods(http.MethodGet)
 	if r.logsConsumer != nil {
 		mx.NewRoute().Path(r.config.RawPath).HandlerFunc(r.handleRawReq)
 	}

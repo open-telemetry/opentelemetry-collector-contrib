@@ -57,7 +57,7 @@ func TestExtension(t *testing.T) {
 				"header": "value",
 			},
 			clientRequestArgs: clientRequestArgs{
-				method: "GET",
+				method: http.MethodGet,
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
 				headers: map[string]string{
 					"client_header": "val1",
@@ -83,7 +83,7 @@ func TestExtension(t *testing.T) {
 				"header": "value",
 			},
 			clientRequestArgs: clientRequestArgs{
-				method: "PUT",
+				method: http.MethodPut,
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
 			},
 		},
@@ -123,7 +123,7 @@ func TestExtension(t *testing.T) {
 			expectedBackendResponseBody: []byte("\n"),
 			requestErrorAtForwarder:     true,
 			clientRequestArgs: clientRequestArgs{
-				method: "GET",
+				method: http.MethodGet,
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
 			},
 		},

@@ -58,8 +58,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := scraperhelper.NewScraper(
-		metadata.Type,
+	scrp, err := scraperhelper.NewScraperWithoutType(
 		zms.scrape,
 		scraperhelper.WithShutdown(zms.shutdown),
 	)
@@ -71,6 +70,6 @@ func createMetricsReceiver(
 		&rConfig.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(scrp),
+		scraperhelper.AddScraperWithType(metadata.Type, scrp),
 	)
 }

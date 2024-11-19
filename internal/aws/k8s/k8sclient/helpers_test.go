@@ -10,11 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type mockReflectorSyncChecker struct {
-}
+type mockReflectorSyncChecker struct{}
 
 func (m *mockReflectorSyncChecker) Check(_ cacheReflector, _ string) {
-
 }
 
 var kubeConfigPath string
@@ -54,7 +52,7 @@ users:
 	if err != nil {
 		t.Error(err)
 	}
-	if err := os.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
+	if err := os.WriteFile(tmpfile.Name(), []byte(content), 0o600); err != nil {
 		t.Error(err)
 	}
 	// overwrite the default kube config path

@@ -1544,6 +1544,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 		})
 	}
 }
+
 func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 	tests := []struct {
 		name            string

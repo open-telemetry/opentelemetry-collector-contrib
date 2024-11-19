@@ -220,6 +220,10 @@ func endpointFound(endpoint string, endpoints []string) bool {
 func (lb *loadBalancer) Shutdown(ctx context.Context) error {
 	err := lb.res.shutdown(ctx)
 	lb.stopped = true
+
+	for _, e := range lb.exporters {
+		err = errors.Join(err, e.Shutdown(ctx))
+	}
 	return err
 }
 

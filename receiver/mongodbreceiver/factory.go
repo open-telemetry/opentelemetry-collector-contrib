@@ -53,7 +53,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 	ms := newMongodbScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape,
+	scraper, err := scraperhelper.NewScraperWithoutType(ms.scrape,
 		scraperhelper.WithStart(ms.start),
 		scraperhelper.WithShutdown(ms.shutdown))
 	if err != nil {
@@ -62,6 +62,6 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraperWithType(metadata.Type, scraper),
 	)
 }

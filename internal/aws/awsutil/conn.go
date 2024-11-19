@@ -45,7 +45,8 @@ const (
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
-	proxyAddress string) (*http.Client, error) {
+	proxyAddress string,
+) (*http.Client, error) {
 	logger.Debug("Using proxy address: ",
 		zap.String("proxyAddr", proxyAddress),
 	)
@@ -206,7 +207,6 @@ func (c *Conn) newAWSSession(logger *zap.Logger, roleArn string, region string) 
 		s, err = session.NewSession(&aws.Config{
 			Credentials: stsCreds,
 		})
-
 		if err != nil {
 			logger.Error("Error in creating session object : ", zap.Error(err))
 			return s, err
@@ -245,7 +245,8 @@ func getSTSCreds(logger *zap.Logger, region string, roleArn string) (*credential
 // AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
 // Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
 func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, region string,
-	roleArn string) *credentials.Credentials {
+	roleArn string,
+) *credentials.Credentials {
 	regionalEndpoint := getSTSRegionalEndpoint(region)
 	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
 	// for other opt-in regions, region value will create STS regional endpoint.
@@ -259,7 +260,8 @@ func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, re
 // getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in
 // the respective partition.
 func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session, roleArn string,
-	region string) *credentials.Credentials {
+	region string,
+) *credentials.Credentials {
 	logger.Info("Credentials for provided RoleARN being fetched from STS primary region endpoint.")
 	partitionID := getPartition(region)
 	switch partitionID {
