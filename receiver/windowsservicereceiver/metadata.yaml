@@ -23,6 +23,7 @@ metrics:
     description: Gauge value containing service status as an integer value.
     extended_documentation: >
       Gauge values map to service status as follows:
+      0 - Failed to retrieve service status,
       1 - Stopped,
       2 - Start Pending,
       3 - Stop Pending,

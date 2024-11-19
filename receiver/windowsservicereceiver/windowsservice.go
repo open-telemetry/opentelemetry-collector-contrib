@@ -15,17 +15,12 @@ type ServiceStatus struct {
 	service       *mgr.Service
 }
 
-func GetService(sname string) (*ServiceStatus, error) {
-	m, err := SCConnect()
-	defer m.Disconnect()
+func GetService(mgr *Manager, sname string) (*ServiceStatus, error) {
+	service, err := mgr.OpenService(sname)
 	if err != nil {
 		return nil, err
 	}
-
-	service, err := m.OpenService(sname)
-	if err != nil {
-		return nil, err
-	}
+	defer service.Close()
 
 	s := ServiceStatus{
 		service: service,
