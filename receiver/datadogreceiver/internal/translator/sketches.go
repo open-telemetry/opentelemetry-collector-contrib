@@ -140,8 +140,8 @@ func sketchToDatapoint(sketch gogen.SketchPayload_Sketch_Dogsketch, dp pmetric.E
 func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint32) (map[int]uint64, map[int]uint64, uint64, error) {
 	var zeroCount uint64
 
-	var positiveBuckets = make(map[int]uint64)
-	var negativeBuckets = make(map[int]uint64)
+	positiveBuckets := make(map[int]uint64)
+	negativeBuckets := make(map[int]uint64)
 
 	// The data format for the sketch received from the sketch payload does not have separate positive and negative buckets,
 	// and instead just uses a single list of sketch keys that are in order by increasing bucket index, starting with negative indices,
@@ -173,7 +173,7 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 		targetBucketCount := uint64(sketchCounts[i])
 		var currentAssignedCount uint64
 
-		//TODO: look into better algorithms for applying fractional counts
+		// TODO: look into better algorithms for applying fractional counts
 		for outIndex := histogramKey; histogramLowerBound(outIndex) < sketchUpperBound; outIndex++ {
 			histogramLowerBound, histogramUpperBound := getHistogramBounds(outIndex)
 			lowerIntersection := math.Max(histogramLowerBound, sketchLowerBound)

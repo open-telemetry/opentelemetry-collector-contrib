@@ -38,6 +38,7 @@ func (fc *fakeClient) Disconnect(ctx context.Context) error {
 	args := fc.Called(ctx)
 	return args.Error(0)
 }
+
 func (fc *fakeClient) Connect(ctx context.Context) error {
 	args := fc.Called(ctx)
 	return args.Error(0)

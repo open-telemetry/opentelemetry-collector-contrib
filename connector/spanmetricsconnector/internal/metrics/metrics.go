@@ -139,7 +139,6 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Ma
 			maxExemplarCount: m.maxExemplarCount,
 		}
 		m.metrics[key] = h
-
 	}
 
 	return h

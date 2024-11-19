@@ -151,7 +151,6 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 				})
 		}
 	}
-
 }
 
 var negativeDenominatorError = "A counter with a negative denominator value was detected.\r\n"

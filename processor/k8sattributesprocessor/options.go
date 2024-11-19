@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -378,6 +379,22 @@ func withExcludes(podExclude ExcludeConfig) option {
 			ignoredNames.Pods = append(ignoredNames.Pods, kube.ExcludePods{Name: regexp.MustCompile(name.Name)})
 		}
 		p.podIgnore = ignoredNames
+		return nil
+	}
+}
+
+// withWaitForMetadata allows specifying whether to wait for pod metadata to be synced.
+func withWaitForMetadata(wait bool) option {
+	return func(p *kubernetesprocessor) error {
+		p.waitForMetadata = wait
+		return nil
+	}
+}
+
+// withWaitForMetadataTimeout allows specifying the timeout for waiting for pod metadata to be synced.
+func withWaitForMetadataTimeout(timeout time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.waitForMetadataTimeout = timeout
 		return nil
 	}
 }

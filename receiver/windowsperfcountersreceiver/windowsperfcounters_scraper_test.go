@@ -531,7 +531,6 @@ func TestScrape(t *testing.T) {
 
 			curMetricsNum := 0
 			for _, pc := range test.cfg.PerfCounters {
-
 				for counterIdx, counterCfg := range pc.Counters {
 					counterValues := test.mockPerfCounters[counterIdx].counterValues
 					scrapeErr := test.mockPerfCounters[counterIdx].scrapeErr

@@ -140,7 +140,6 @@ func TestCreateAgentDescription(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			cfg := createDefaultConfig().(*Config)
 			tc.cfg(cfg)
 
@@ -196,6 +195,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	ec = o.composeEffectiveConfig()
 	assert.NotNil(t, ec)
 	assert.YAMLEq(t, string(expected), string(ec.ConfigMap.ConfigMap[""].Body))
+	assert.Equal(t, "text/yaml", ec.ConfigMap.ConfigMap[""].ContentType)
 }
 
 func TestShutdown(t *testing.T) {
