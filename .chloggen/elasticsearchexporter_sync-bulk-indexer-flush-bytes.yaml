@@ -1,13 +1,13 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Respect `flush::bytes` in sync bulk indexer
+note: Respect `flush::bytes` in sync bulk indexer, `flush::bytes` measures uncompressed size, change default `batcher::max_size_items` to `0`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36163]
@@ -18,6 +18,8 @@ issues: [36163]
 subtext:
   Limit the bulk request size to roughly `flush::bytes` for sync bulk indexer.
   Sync bulk indexer is used when `batcher::enabled` is either true or false. In order words, sync bulk indexer is not used when batcher config is undefined.
+  Change `flush::bytes` to always measure in uncompressed bytes.
+  Change default `batcher::max_size_items` to `0` as bulk request size limit is now more effectively enforced by `flush::bytes`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

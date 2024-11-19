@@ -118,7 +118,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -190,7 +190,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -262,7 +262,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},

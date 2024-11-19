@@ -91,7 +91,7 @@ func createDefaultConfig() component.Config {
 				MinSizeItems: 5000,
 			},
 			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-				MaxSizeItems: 10000,
+				MaxSizeItems: 0,
 			},
 		},
 		Flush: FlushSettings{
