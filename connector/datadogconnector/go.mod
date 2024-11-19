@@ -100,7 +100,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.59.0 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.33.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.31.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240816154533-f7f9beb53a42 // indirect
 	github.com/DataDog/go-sqllexer v0.0.15 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
@@ -388,4 +388,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../pkg/datadog
 
 // pin github.com/DataDog/datadog-api-client-go/v2 version, it will be removed soon
-replace github.com/DataDog/datadog-api-client-go/v2 => github.com/DataDog/datadog-api-client-go/v2 v2.33.0
+replace github.com/DataDog/datadog-api-client-go/v2 => github.com/DataDog/datadog-api-client-go/v2 v2.31.0
