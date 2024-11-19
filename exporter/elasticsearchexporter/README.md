@@ -98,7 +98,7 @@ By default, the exporter will perform its own buffering and batching, as configu
 `flush` config, and `batcher` will be unused. By setting `batcher::enabled` to either `true` or
 `false`, the exporter will not perform any of its own buffering or batching, and the `flush` config
 will be ignored, except `flush::bytes`.
-`flush::bytes` can be used to limit the size of a bulk request, compressed or not, but the actual request body size may overshoot the limit.
+`flush::bytes` can be used to limit the size of a bulk request, but the actual request body size may overshoot the limit.
 In a future release when the `batcher` config is stable, and has feature parity
 with the exporter's existing `flush` config, it will be enabled by default.
 
@@ -200,7 +200,7 @@ The behaviour of this bulk indexing can be configured with the following setting
 
 - `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently.
 - `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (default=5000000): Write buffer flush size limit. A bulk request will be sent immediately when its buffer exceeds this limit. This value should be much lower than [Elasticsearch `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
+  - `bytes` (default=5000000): Write buffer flush size limit before compression. A bulk request will be sent immediately when its buffer exceeds this limit. This value should be much lower than [Elasticsearch `http.max_content_length`](https://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html#http-settings) config to avoid HTTP 413 Entity Too Large error. It is recommended to keep this value under 5MB.
   - `interval` (default=30s): Write buffer flush time limit.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
