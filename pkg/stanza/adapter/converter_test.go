@@ -398,7 +398,6 @@ func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 				require.Equal(t, sl.Scope().Name(), fmt.Sprintf("scope-%d", i%tc.numberOFScopes))
 				require.Equal(t, sl.LogRecords().Len(), tc.logsPerScope)
 			}
-
 		})
 	}
 }
@@ -800,7 +799,6 @@ func BenchmarkConverter(b *testing.B) {
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-
 				b.ReportAllocs()
 
 				for from := 0; from < entryCount; from += int(batchSize) {
