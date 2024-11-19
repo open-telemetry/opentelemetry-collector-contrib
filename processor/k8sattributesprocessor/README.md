@@ -198,6 +198,21 @@ the processor associates the received trace to the pod, based on the connection 
 }
 ```
 
+By default, the processor will be ready as soon as it starts, even if no metadata has been fetched yet.
+If data is sent to this processor before the metadata is synced, there will be no metadata to enrich the data with.
+
+To wait for the metadata to be synced before the processor is ready, set the `wait_for_metadata` option to `true`.
+Then the processor will not be ready until the metadata is fully synced. As a result, the start-up of the Collector will be blocked. If the metadata cannot be synced, the Collector will ultimately fail to start.
+If a timeout is reached, the processor will fail to start and return an error, which will cause the collector to exit.
+The timeout defaults to 10s and can be configured with the `metadata_sync_timeout` option.
+
+example for setting the processor to wait for metadata to be synced before it is ready:
+
+```yaml
+wait_for_metadata: true
+wait_for_metadata_timeout: 10s
+```
+
 ## Extracting attributes from pod labels and annotations
 
 The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces and nodes.
