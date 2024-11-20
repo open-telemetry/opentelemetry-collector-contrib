@@ -15,9 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-var (
-	defaultConfig = createDefaultConfig().(*Config)
-)
+var defaultConfig = createDefaultConfig().(*Config)
 
 // Tests the export onTraceData callback with no Spans
 func TestExporterTraceDataCallbackNoSpans(t *testing.T) {

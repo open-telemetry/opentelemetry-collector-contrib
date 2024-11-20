@@ -484,8 +484,7 @@ func tempFileName(t testing.TB) string {
 }
 
 // errorWriter is an io.Writer that will return an error all ways
-type errorWriter struct {
-}
+type errorWriter struct{}
 
 func (e errorWriter) Write([]byte) (n int, err error) {
 	return 0, errors.New("all ways return error")
