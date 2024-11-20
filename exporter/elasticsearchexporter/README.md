@@ -89,16 +89,15 @@ The Elasticsearch exporter supports the common [`sending_queue` settings][export
 The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterbatcher/config.go).
 
 - `batcher`:
-  - `enabled` (default=unset): Enable batching of requests into a single bulk request.
-  - `min_size_items` (default=5000): Minimum number of log records / spans in the buffer to trigger a flush immediately.
-  - `max_size_items` (default=0): Maximum number of log records / spans in a request.
-  - `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the buffer, aka "max age of buffer". A flush will happen regardless of the size of content in buffer.
+  - `enabled` (default=unset): Enable batching of requests into 1 or more bulk requests. On a batcher flush, it is possible for a batched request to be translated to more than 1 bulk request due to `flush::bytes`.
+  - `min_size_items` (default=5000): Minimum number of log records / spans / data points in the batched request to immediately trigger a batcher flush.
+  - `max_size_items` (default=0): Maximum number of log records / spans / data points in a batched request. To limit bulk request size, configure `flush::bytes` instead. :warning: It is recommended to keep `max_size_items` as 0 as a non-zero value may lead to broken metrics grouping and indexing rejections.
+  - `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the batcher buffer, aka "max age of batcher buffer". A batcher flush will happen regardless of the size of content in batcher buffer.
 
 By default, the exporter will perform its own buffering and batching, as configured through the
 `flush` config, and `batcher` will be unused. By setting `batcher::enabled` to either `true` or
-`false`, the exporter will not perform any of its own buffering or batching, and the `flush` config
-will be ignored, except `flush::bytes`.
-`flush::bytes` can be used to limit the size of a bulk request, but the actual request body size may overshoot the limit.
+`false`, the exporter will not perform any of its own buffering or batching, and the `flush::interval` config
+will be ignored.
 In a future release when the `batcher` config is stable, and has feature parity
 with the exporter's existing `flush` config, it will be enabled by default.
 
