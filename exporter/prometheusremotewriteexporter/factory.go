@@ -35,15 +35,11 @@ func NewFactory() exporter.Factory {
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings,
-	cfg component.Config) (exporter.Metrics, error) {
-
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	prwCfg, ok := cfg.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration")
-	}
-
-	if prwCfg.RemoteWriteQueue.NumConsumers != 0 {
-		set.Logger.Warn("Currently, remote_write_queue.num_consumers doesn't have any effect due to incompatibility with Prometheus remote write API. The value will be ignored. Please see https://github.com/open-telemetry/opentelemetry-collector/issues/2949 for more information.")
 	}
 
 	prwe, err := newPRWExporter(prwCfg, set)
@@ -57,7 +53,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	// order for each timeseries. If we shard the incoming metrics
 	// without considering this limitation, we experience
 	// "out of order samples" errors.
-	exporter, err := exporterhelper.NewMetricsExporter(
+	exporter, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

@@ -10,9 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:(?P<sha256>\d+))?$`)
-)
+var extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:(?P<sha256>\d+))?$`)
 
 type ImageRef struct {
 	Repository string

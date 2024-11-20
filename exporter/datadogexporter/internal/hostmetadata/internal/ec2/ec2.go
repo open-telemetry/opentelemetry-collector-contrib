@@ -21,9 +21,7 @@ import (
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 )
 
-var (
-	defaultPrefixes = [3]string{"ip-", "domu", "ec2amaz-"}
-)
+var defaultPrefixes = [3]string{"ip-", "domu", "ec2amaz-"}
 
 type HostInfo struct {
 	InstanceID  string
@@ -82,8 +80,10 @@ func (hi *HostInfo) GetHostname(_ *zap.Logger) string {
 	return hi.EC2Hostname
 }
 
-var _ source.Provider = (*Provider)(nil)
-var _ provider.ClusterNameProvider = (*Provider)(nil)
+var (
+	_ source.Provider              = (*Provider)(nil)
+	_ provider.ClusterNameProvider = (*Provider)(nil)
+)
 
 type Provider struct {
 	once     sync.Once

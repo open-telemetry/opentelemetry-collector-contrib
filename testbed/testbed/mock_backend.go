@@ -22,8 +22,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var errNonPermanent = errors.New("non permanent error")
-var errPermanent = errors.New("permanent error")
+var (
+	errNonPermanent = errors.New("non permanent error")
+	errPermanent    = errors.New("permanent error")
+)
 
 type decisionFunc func() error
 
@@ -218,7 +220,6 @@ func (tc *MockTraceConsumer) ConsumeTraces(_ context.Context, td ptrace.Traces) 
 				// Ignore the seqnums for now. We will use them later.
 				_ = spanSeqnum
 				_ = traceSeqnum
-
 			}
 		}
 	}

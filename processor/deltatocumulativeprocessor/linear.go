@@ -110,12 +110,11 @@ func (p *Linear) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 			acc, err := func() (data.Number, error) {
 				if !ok {
 					// new stream: there is no existing aggregation, so start new with current dp
-					return dp, nil
+					return dp.Clone(), nil
 				}
 				// tracked stream: add incoming delta dp to existing cumulative aggregation
 				return acc, delta.AccumulateInto(acc, dp)
 			}()
-
 			// aggregation failed, record as metric and drop datapoint
 			if err != nil {
 				p.tel.Datapoints().Inc(ctx, telemetry.Cause(err))

@@ -111,10 +111,35 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 				}
 				result = ottlcommon.GetValue(r.At(int(*k.Int)))
 			case []any:
-				if int(*k.Int) >= len(r) || int(*k.Int) < 0 {
-					return nil, fmt.Errorf("index %v out of bounds", *k.Int)
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
 				}
-				result = r[*k.Int]
+			case []string:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []bool:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []float64:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []int64:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
+			case []byte:
+				result, err = getElementByIndex(r, k.Int)
+				if err != nil {
+					return nil, err
+				}
 			default:
 				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
 			}
@@ -123,6 +148,13 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		}
 	}
 	return result, nil
+}
+
+func getElementByIndex[T any](r []T, idx *int64) (any, error) {
+	if int(*idx) >= len(r) || int(*idx) < 0 {
+		return nil, fmt.Errorf("index %v out of bounds", *idx)
+	}
+	return r[*idx], nil
 }
 
 type listGetter[K any] struct {
@@ -160,7 +192,6 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		default:
 			evaluated[k] = t
 		}
-
 	}
 	result := pcommon.NewMap()
 	if err := result.FromRaw(evaluated); err != nil {

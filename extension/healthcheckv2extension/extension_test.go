@@ -131,5 +131,5 @@ func TestNotifyConfig(t *testing.T) {
 
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
-	assert.Equal(t, confJSON, body)
+	assert.JSONEq(t, string(confJSON), string(body))
 }

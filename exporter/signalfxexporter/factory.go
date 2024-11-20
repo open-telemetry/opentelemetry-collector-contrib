@@ -101,7 +101,7 @@ func createTracesExporter(
 	set.Logger.Info("Correlation tracking enabled", zap.String("endpoint", corrCfg.ClientConfig.Endpoint))
 	tracker := correlation.NewTracker(corrCfg, cfg.AccessToken, set)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -122,7 +122,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	me, err := exporterhelper.NewMetricsExporter(
+	me, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -133,7 +133,6 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.shutdown))
-
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +164,7 @@ func createLogsExporter(
 		return nil, err
 	}
 
-	le, err := exporterhelper.NewLogsExporter(
+	le, err := exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -175,7 +174,6 @@ func createLogsExporter(
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.startLogs))
-
 	if err != nil {
 		return nil, err
 	}

@@ -4,10 +4,10 @@ status:
   class: processor
   stability:
     alpha: [logs]
-  distributions: []
+  distributions: [contrib, k8s]
   warnings: []
   codeowners:
-    active: [BinaryFissionGames, MikeGoldsmith, djaglowski]
+    active: [MikeGoldsmith, djaglowski]
 
 tests:
   config:

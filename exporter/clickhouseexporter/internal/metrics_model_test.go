@@ -50,7 +50,6 @@ func Test_convertExemplars(t *testing.T) {
 		require.Equal(t, expectValues, values)
 		require.Equal(t, expectTraceIDs, traceIDs)
 		require.Equal(t, expectSpanIDs, spanIDs)
-
 	})
 	t.Run("one exemplar with only FilteredAttributes", func(t *testing.T) {
 		exemplars := pmetric.NewExemplarSlice()
@@ -200,7 +199,6 @@ func Test_convertValueAtQuantile(t *testing.T) {
 		require.Equal(t, clickhouse.ArraySet{1.0, 2.0}, quantiles)
 		require.Equal(t, clickhouse.ArraySet{1.0, 2.0}, values)
 	})
-
 }
 
 func Test_getValue(t *testing.T) {

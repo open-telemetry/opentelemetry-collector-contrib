@@ -132,7 +132,7 @@ func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs
 }
 
 func repeat(what int, times int) []int {
-	var result = make([]int, times)
+	result := make([]int, times)
 	for i := range result {
 		result[i] = what
 	}
@@ -234,7 +234,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -287,7 +287,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -347,7 +347,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	}()
 
 	params := exportertest.NewNopSettings()
-	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
+	exporter, err := NewFactory().CreateLogs(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -397,10 +397,12 @@ func TestReceiveTracesBatches(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"start_time":1`,
+					{
+						`"start_time":1`,
 						`"start_time":2`,
 						`start_time":3`,
-						`start_time":4`},
+						`start_time":4`,
+					},
 				},
 				numBatches: 1,
 			},
@@ -570,10 +572,12 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"otel.log.name":"0_0_0"`,
+					{
+						`"otel.log.name":"0_0_0"`,
 						`"otel.log.name":"0_0_1"`,
 						`otel.log.name":"0_0_2`,
-						`otel.log.name":"0_0_3`},
+						`otel.log.name":"0_0_3`,
+					},
 				},
 				numBatches: 1,
 			},
@@ -1211,7 +1215,6 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		}
 		t.Run(test.name, testFn(false))
 		t.Run(test.name+"_MultiMetric", testFn(true))
-
 	}
 }
 
@@ -1303,7 +1306,7 @@ func TestErrorReceived(t *testing.T) {
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1351,7 +1354,7 @@ func TestInvalidURL(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1392,7 +1395,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
@@ -1431,7 +1434,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	cfg.Heartbeat.Startup = false
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
@@ -1466,7 +1469,7 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	cfg.Heartbeat.Startup = true
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, exporter.Shutdown(context.Background()))
@@ -1541,7 +1544,6 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
@@ -1751,7 +1753,7 @@ func benchPushLogData(b *testing.B, numResources int, numRecords int, bufSize ui
 	config.DisableCompression = !compressionEnabled
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushLogData)
 	require.NoError(b, err)
 	exp = &baseLogsExporter{
@@ -1901,7 +1903,7 @@ func benchPushMetricData(b *testing.B, numResources int, numRecords int, bufSize
 	config.UseMultiMetricFormat = useMultiMetricFormat
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{}
-	exp, err := exporterhelper.NewMetricsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewMetrics(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushMetricsData)
 	require.NoError(b, err)
 
@@ -1922,7 +1924,7 @@ func BenchmarkConsumeLogsRejected(b *testing.B) {
 	c := newLogsClient(exportertest.NewNopSettings(), config)
 	c.hecWorker = &mockHecWorker{failSend: true}
 
-	exp, err := exporterhelper.NewLogsExporter(context.Background(), exportertest.NewNopSettings(), config,
+	exp, err := exporterhelper.NewLogs(context.Background(), exportertest.NewNopSettings(), config,
 		c.pushLogData)
 	require.NoError(b, err)
 
@@ -2105,5 +2107,4 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	for _, e := range expected {
 		assert.Contains(t, string(p), e)
 	}
-
 }

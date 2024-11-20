@@ -5,7 +5,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -66,7 +66,7 @@ func TestBrokerScraperStart(t *testing.T) {
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("new client failed")
+		return nil, errors.New("new client failed")
 	}
 	sc := sarama.NewConfig()
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
@@ -78,7 +78,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 
 func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("new client failed")
+		return nil, errors.New("new client failed")
 	}
 	sc := sarama.NewConfig()
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
