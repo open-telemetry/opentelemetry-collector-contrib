@@ -333,6 +333,7 @@ func generateOtelTestMetrics(generatedOtelMetrics ...pmetric.Metrics) pmetric.Me
 	}
 	return finalOtelMetrics
 }
+
 func generateDeltaMetricMetadata(adjustToDelta bool, metricName string, retainInitialValueForDelta bool) deltaMetricMetadata {
 	return deltaMetricMetadata{
 		adjustToDelta:              adjustToDelta,
