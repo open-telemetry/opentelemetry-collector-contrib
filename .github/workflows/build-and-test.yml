@@ -337,7 +337,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@5c47607acb93fed5485fdbf7232e8a31425f672a # 5.0.2
+        uses: codecov/codecov-action@05f5a9cfad807516dbbef9929c4a42df3eb78766 # 5.0.3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
