@@ -36,7 +36,6 @@ func addToGroupedMetric(
 	config *Config,
 	calculators *emfCalculators,
 ) error {
-
 	dps := getDataPoints(pmd, metadata, config.logger)
 	if dps == nil || dps.Len() == 0 {
 		return nil
@@ -107,7 +106,6 @@ func addToGroupedMetric(
 				}
 			}
 		}
-
 	}
 	return nil
 }

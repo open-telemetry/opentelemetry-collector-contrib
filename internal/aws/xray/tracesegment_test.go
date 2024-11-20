@@ -6,6 +6,7 @@ package awsxray
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -501,7 +502,7 @@ var rawExpectedSegmentForInstrumentedServer = Segment{
 	EndTime:   aws.Float64(1596648396.6401389),
 	HTTP: &HTTPData{
 		Request: &RequestData{
-			Method:        String("GET"),
+			Method:        String(http.MethodGet),
 			URL:           String("http://localhost:8000/"),
 			ClientIP:      String("127.0.0.1"),
 			UserAgent:     String("Go-http-client/1.1"),
