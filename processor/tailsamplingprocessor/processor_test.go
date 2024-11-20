@@ -33,16 +33,18 @@ const (
 	defaultNumTraces        = 100
 )
 
-var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
-var testLatencyPolicy = []PolicyCfg{
-	{
-		sharedPolicyCfg: sharedPolicyCfg{
-			Name:       "test-policy",
-			Type:       Latency,
-			LatencyCfg: LatencyCfg{ThresholdMs: 1},
+var (
+	testPolicy        = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
+	testLatencyPolicy = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name:       "test-policy",
+				Type:       Latency,
+				LatencyCfg: LatencyCfg{ThresholdMs: 1},
+			},
 		},
-	},
-}
+	}
+)
 
 type TestPolicyEvaluator struct {
 	Started       chan struct{}

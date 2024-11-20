@@ -37,11 +37,11 @@ func createDefaultConfig() component.Config {
 func createMetricsReceiver(_ context.Context, settings receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 	mp := newScraper(rCfg, settings)
-	s, err := scraperhelper.NewScraper(metadata.Type, mp.scrape)
+	s, err := scraperhelper.NewScraperWithoutType(mp.scrape)
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(s)
+	opt := scraperhelper.AddScraperWithType(metadata.Type, s)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&rCfg.ControllerConfig,

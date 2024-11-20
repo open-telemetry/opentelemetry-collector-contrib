@@ -31,7 +31,6 @@ import (
 func setupTestMain(m *testing.M) {
 	// Enable the feature gates before all tests to avoid flaky tests.
 	err := featuregate.GlobalRegistry().Set(updateCollectorMetadataID, true)
-
 	if err != nil {
 		panic("unable to set feature gates")
 	}
@@ -236,7 +235,7 @@ func TestStoreCredentials(t *testing.T) {
 		cfg.CollectorCredentialsDirectory = dir
 
 		// Ensure the directory has 600 permissions
-		require.NoError(t, os.Chmod(dir, 0600))
+		require.NoError(t, os.Chmod(dir, 0o600))
 
 		se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
@@ -261,7 +260,7 @@ func TestStoreCredentials(t *testing.T) {
 		cfg.CollectorCredentialsDirectory = dir
 
 		// Ensure the directory has 700 permissions
-		require.NoError(t, os.Chmod(dir, 0700))
+		require.NoError(t, os.Chmod(dir, 0o700))
 
 		se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)

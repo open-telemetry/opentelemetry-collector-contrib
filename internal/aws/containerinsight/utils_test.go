@@ -132,7 +132,8 @@ func convertToFloat64(value any) float64 {
 }
 
 func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string]any, tags map[string]string,
-	expectedUnits map[string]string) {
+	expectedUnits map[string]string,
+) {
 	rms := md.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
 

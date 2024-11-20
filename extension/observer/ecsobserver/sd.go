@@ -83,7 +83,7 @@ func (s *serviceDiscovery) runAndWriteFile(ctx context.Context) error {
 				return err
 			}
 			// NOTE: We assume the folder already exists and does NOT try to create one.
-			if err := os.WriteFile(s.cfg.ResultFile, b, 0600); err != nil {
+			if err := os.WriteFile(s.cfg.ResultFile, b, 0o600); err != nil {
 				return err
 			}
 		}

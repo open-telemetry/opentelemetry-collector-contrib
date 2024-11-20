@@ -54,7 +54,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
 
 	// Setup k8s resources.
 	numPods := 2
@@ -93,6 +93,57 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 }
 
+func TestNamespacedReceiver(t *testing.T) {
+	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
+	sink := new(consumertest.MetricsSink)
+
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test")
+
+	// Setup k8s resources.
+	numPods := 2
+	numNodes := 1
+	numQuotas := 2
+
+	createPods(t, client, numPods)
+	createNodes(t, client, numNodes)
+	createClusterQuota(t, osQuotaClient, numQuotas)
+
+	ctx := context.Background()
+	require.NoError(t, r.Start(ctx, newNopHost()))
+
+	// Expects metric data from pods  only, where each metric data
+	// struct corresponds to one resource.
+	// Nodes and ClusterResourceQuotas should not be observed as these are non-namespaced resources
+	expectedNumMetrics := numPods
+	var initialDataPointCount int
+	require.Eventually(t, func() bool {
+		initialDataPointCount = sink.DataPointCount()
+		return initialDataPointCount == expectedNumMetrics
+	}, 10*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+
+	numPodsToDelete := 1
+	deletePods(t, client, numPodsToDelete)
+
+	// Expects metric data from a node, since other resources were deleted.
+	expectedNumMetrics = numPods - numPodsToDelete
+	var metricsCountDelta int
+	require.Eventually(t, func() bool {
+		metricsCountDelta = sink.DataPointCount() - initialDataPointCount
+		return metricsCountDelta == expectedNumMetrics
+	}, 10*time.Second, 100*time.Millisecond,
+		"updated metrics not collected")
+
+	require.NoError(t, r.Shutdown(ctx))
+}
+
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
@@ -102,7 +153,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt)
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "")
 
 	createPods(t, client, 1)
 
@@ -125,7 +176,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
 
 	numPods := 1000
 	numQuotas := 2
@@ -167,7 +218,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 
 	logsConsumer := new(consumertest.LogsSink)
 
-	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt)
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "")
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -228,7 +279,7 @@ func setupReceiver(
 	logsConsumer consumer.Logs,
 	initialSyncTimeout time.Duration,
 	tt componenttest.TestTelemetry,
-) *kubernetesReceiver {
+	namespace string) *kubernetesReceiver {
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift
@@ -240,6 +291,7 @@ func setupReceiver(
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
+		Namespace:                  namespace,
 	}
 
 	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)
@@ -257,7 +309,7 @@ func setupReceiver(
 }
 
 func newFakeClientWithAllResources() *fake.Clientset {
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.Resources = []*v1.APIResourceList{
 		{
 			GroupVersion: "v1",
