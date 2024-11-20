@@ -255,25 +255,22 @@ func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration, useCr
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
-	// By contract metrics will have at least 1 data point, so for sure will have at least one ResourceMetrics.
-
-	job, found := metrics.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeServiceName)
-	if !found {
-		return errors.New("adjusting metrics without job")
-	}
-
-	instance, found := metrics.ResourceMetrics().At(0).Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
-	if !found {
-		return errors.New("adjusting metrics without instance")
-	}
-	tsm := a.jobsMap.get(job.Str(), instance.Str())
-
-	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
-	// nothing else can modify the data used for adjustment.
-	tsm.Lock()
-	defer tsm.Unlock()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
+		job, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
+		if !found {
+			return errors.New("adjusting metrics without job")
+		}
+
+		instance, found := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		if !found {
+			return errors.New("adjusting metrics without instance")
+		}
+		tsm := a.jobsMap.get(job.Str(), instance.Str())
+
+		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
+		// nothing else can modify the data used for adjustment.
+		tsm.Lock()
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
@@ -303,6 +300,7 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 				}
 			}
 		}
+		tsm.Unlock()
 	}
 	return nil
 }
