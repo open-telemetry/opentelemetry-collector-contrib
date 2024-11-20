@@ -21,8 +21,8 @@ import (
 
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
-	ps "github.com/mitchellh/go-ps"
 	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -711,16 +711,20 @@ var sumoAppProcesses = map[string]string{
 	"kafka-server-start.sh": "kafka", // Need to test this, most common shell wrapper.
 }
 
-func filteredProcessList() ([]string, error) {
+func filteredProcessList(ctx context.Context) ([]string, error) {
 	var pl []string
 
-	p, err := ps.Processes()
+	p, err := process.Processes()
 	if err != nil {
-		return pl, err
+		return nil, fmt.Errorf("error performing process discovery: %s", err)
 	}
 
 	for _, v := range p {
-		e := strings.ToLower(v.Executable())
+		execName, err := v.ExeWithContext(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("error performing process discovery: %s", err)
+		}
+		e := strings.ToLower(execName)
 		if a, i := sumoAppProcesses[e]; i {
 			pl = append(pl, a)
 		}
@@ -729,12 +733,12 @@ func filteredProcessList() ([]string, error) {
 	return pl, nil
 }
 
-func discoverTags() (map[string]any, error) {
+func discoverTags(ctx context.Context) (map[string]any, error) {
 	t := map[string]any{
 		"sumo.disco.enabled": "true",
 	}
 
-	pl, err := filteredProcessList()
+	pl, err := filteredProcessList(ctx)
 	if err != nil {
 		return t, err
 	}
@@ -770,7 +774,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	td := map[string]any{}
 
 	if se.conf.DiscoverCollectorTags {
-		td, err = discoverTags()
+		td, err = discoverTags(ctx)
 		if err != nil {
 			return err
 		}
