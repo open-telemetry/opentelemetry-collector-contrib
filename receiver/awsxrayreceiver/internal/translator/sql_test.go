@@ -21,6 +21,7 @@ func TestSQLURL(t *testing.T) {
 		"ebdb",
 		dbName, "expected db name to be the same")
 }
+
 func TestSQLURLQueryParameter(t *testing.T) {
 	raw := "jdbc:postgresql://aawijb5u25wdoy.cpamxznpdoq8.us-west-2.rds.amazonaws.com:5432/ebdb?myInterceptor=foo"
 	url, dbName, err := splitSQLURL(raw)

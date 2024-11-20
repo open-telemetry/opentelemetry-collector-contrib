@@ -241,7 +241,8 @@ func TestRedactSummaryInfo(t *testing.T) {
 		AllowedKeys:   []string{"id", "name", "group"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
 		IgnoredKeys:   []string{"safe_attribute"},
-		Summary:       "info"}
+		Summary:       "info",
+	}
 	allowed := map[string]pcommon.Value{
 		"id": pcommon.NewValueInt(5),
 	}
@@ -305,9 +306,11 @@ func TestRedactSummaryInfo(t *testing.T) {
 // TestRedactSummarySilent validates that the processor does not create the
 // summary attributes when set to silent
 func TestRedactSummarySilent(t *testing.T) {
-	config := &Config{AllowedKeys: []string{"id", "name", "group"},
+	config := &Config{
+		AllowedKeys:   []string{"id", "name", "group"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
-		Summary:       "silent"}
+		Summary:       "silent",
+	}
 	allowed := map[string]pcommon.Value{
 		"id": pcommon.NewValueInt(5),
 	}
@@ -403,9 +406,11 @@ func TestRedactSummaryDefault(t *testing.T) {
 // TestMultipleBlockValues validates that the processor can block multiple
 // patterns
 func TestMultipleBlockValues(t *testing.T) {
-	config := &Config{AllowedKeys: []string{"id", "name", "mystery"},
+	config := &Config{
+		AllowedKeys:   []string{"id", "name", "mystery"},
 		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?", "(5[1-5][0-9]{3})"},
-		Summary:       "debug"}
+		Summary:       "debug",
+	}
 	allowed := map[string]pcommon.Value{
 		"id":      pcommon.NewValueInt(5),
 		"mystery": pcommon.NewValueStr("mystery 52000"),
