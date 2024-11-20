@@ -95,7 +95,6 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		batch.WithMaxRecordsPerBatch(conf.MaxRecordsPerBatch),
 		batch.WithCompressionType(conf.Compression),
 	)
-
 	if err != nil {
 		return nil, err
 	}

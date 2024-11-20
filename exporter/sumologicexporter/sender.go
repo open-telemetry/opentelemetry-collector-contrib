@@ -354,7 +354,6 @@ func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 	enc := json.NewEncoder(nextLine)
 	enc.SetEscapeHTML(false)
 	err := enc.Encode(recordCopy.Attributes().AsRaw())
-
 	if err != nil {
 		return "", err
 	}
@@ -700,6 +699,7 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 	}
 	return nil
 }
+
 func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
 	statusCode := 0
 

@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
@@ -39,6 +40,13 @@ const (
 	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
 	maxExemplarRunes = 128
 	infoType         = "info"
+)
+
+var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
 )
 
 type bucketBoundsData struct {
@@ -275,7 +283,7 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 		c.addExemplars(pt, bucketBounds)
 
 		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 {
+		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
 			labels := createLabels(baseName+createdSuffix, baseLabels)
 			c.addTimeSeriesIfNeeded(labels, startTimestamp, pt.Timestamp())
 		}
@@ -431,7 +439,7 @@ func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 		}
 
 		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 {
+		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
 			createdLabels := createLabels(baseName+createdSuffix, baseLabels)
 			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
 		}
