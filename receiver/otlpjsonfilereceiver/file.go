@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
 
@@ -82,10 +83,10 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
-		l, err = logsUnmarshaler.UnmarshalLogs(token)
+		l, err = logsUnmarshaler.UnmarshalLogs(token.Body)
 		if err != nil {
 			obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
@@ -119,10 +120,10 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
-		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
+		m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
 		if err != nil {
 			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
@@ -155,10 +156,10 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
-		t, err = tracesUnmarshaler.UnmarshalTraces(token)
+		t, err = tracesUnmarshaler.UnmarshalTraces(token.Body)
 		if err != nil {
 			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
 		} else {
@@ -183,8 +184,8 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
-		p, _ := profilesUnmarshaler.UnmarshalProfiles(token)
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
+		p, _ := profilesUnmarshaler.UnmarshalProfiles(token.Body)
 		if p.ResourceProfiles().Len() != 0 {
 			_ = profiles.ConsumeProfiles(ctx, p)
 		}

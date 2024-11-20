@@ -109,5 +109,4 @@ func SetConfigVariable(key string, value string) {
 	}
 
 	fmt.Println("Host value updated successfully!")
-
 }

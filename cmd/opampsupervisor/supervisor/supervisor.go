@@ -653,11 +653,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		newServerConfig.Headers = s.getHeadersFromSettings(settings.Headers)
 	}
 	if settings.Certificate != nil {
-		if len(settings.Certificate.CaPublicKey) != 0 {
-			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaPublicKey)
+		if len(settings.Certificate.CaCert) != 0 {
+			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaCert)
 		}
-		if len(settings.Certificate.PublicKey) != 0 {
-			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.PublicKey)
+		if len(settings.Certificate.Cert) != 0 {
+			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.Cert)
 		}
 		if len(settings.Certificate.PrivateKey) != 0 {
 			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
@@ -881,7 +881,6 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 			s.logger.Error("Could not setup own metrics", zap.Error(err))
 			return
 		}
-
 	}
 	s.agentConfigOwnMetricsSection.Store(cfg.String())
 
@@ -1277,7 +1276,6 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
-
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
