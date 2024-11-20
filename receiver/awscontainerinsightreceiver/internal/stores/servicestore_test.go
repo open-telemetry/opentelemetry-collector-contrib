@@ -14,8 +14,7 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
-type mockEndpoint struct {
-}
+type mockEndpoint struct{}
 
 func (m *mockEndpoint) PodKeyToServiceNames() map[string][]string {
 	return map[string][]string{

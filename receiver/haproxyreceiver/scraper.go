@@ -27,9 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
-var (
-	showStatsCommand = []byte("show stat\n")
-)
+var showStatsCommand = []byte("show stat\n")
 
 type scraper struct {
 	cfg               *Config

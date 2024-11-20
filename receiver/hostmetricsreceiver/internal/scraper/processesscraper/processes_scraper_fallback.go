@@ -5,8 +5,10 @@
 
 package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
-const enableProcessesCount = false
-const enableProcessesCreated = false
+const (
+	enableProcessesCount   = false
+	enableProcessesCreated = false
+)
 
 func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
 	return processesMetadata{}, nil

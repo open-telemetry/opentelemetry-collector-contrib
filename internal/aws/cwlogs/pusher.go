@@ -29,9 +29,7 @@ const (
 	evenTimestampLimitInFuture = -2 * time.Hour      // None of the log events in the batch can be more than 2 hours in the future.
 )
 
-var (
-	maxEventPayloadBytes = defaultMaxEventPayloadBytes
-)
+var maxEventPayloadBytes = defaultMaxEventPayloadBytes
 
 // Event struct to present a log event.
 type Event struct {
@@ -48,7 +46,8 @@ func NewEvent(timestampMs int64, message string) *Event {
 	event := &Event{
 		InputLogEvent: &cloudwatchlogs.InputLogEvent{
 			Timestamp: aws.Int64(timestampMs),
-			Message:   aws.String(message)},
+			Message:   aws.String(message),
+		},
 	}
 	return event
 }
@@ -115,7 +114,8 @@ func newEventBatch(key StreamKey) *eventBatch {
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  aws.String(key.LogGroupName),
 			LogStreamName: aws.String(key.LogStreamName),
-			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, maxRequestEventCount)},
+			LogEvents:     make([]*cloudwatchlogs.InputLogEvent, 0, maxRequestEventCount),
+		},
 	}
 }
 
@@ -194,7 +194,8 @@ type logPusher struct {
 
 // NewPusher creates a logPusher instance
 func NewPusher(streamKey StreamKey, retryCnt int,
-	svcStructuredLog Client, logger *zap.Logger) Pusher {
+	svcStructuredLog Client, logger *zap.Logger,
+) Pusher {
 	pusher := newLogPusher(streamKey, svcStructuredLog, logger)
 
 	pusher.retryCnt = defaultRetryCount
@@ -207,7 +208,8 @@ func NewPusher(streamKey StreamKey, retryCnt int,
 
 // Only create a logPusher, but not start the instance.
 func newLogPusher(streamKey StreamKey,
-	svcStructuredLog Client, logger *zap.Logger) *logPusher {
+	svcStructuredLog Client, logger *zap.Logger,
+) *logPusher {
 	pusher := &logPusher{
 		logGroupName:     aws.String(streamKey.LogGroupName),
 		logStreamName:    aws.String(streamKey.LogStreamName),
@@ -260,7 +262,6 @@ func (p *logPusher) pushEventBatch(req any) error {
 	startTime := time.Now()
 
 	err := p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
-
 	if err != nil {
 		return err
 	}

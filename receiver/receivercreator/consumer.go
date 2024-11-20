@@ -17,9 +17,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-var _ consumer.Logs = (*enhancingConsumer)(nil)
-var _ consumer.Metrics = (*enhancingConsumer)(nil)
-var _ consumer.Traces = (*enhancingConsumer)(nil)
+var (
+	_ consumer.Logs    = (*enhancingConsumer)(nil)
+	_ consumer.Metrics = (*enhancingConsumer)(nil)
+	_ consumer.Traces  = (*enhancingConsumer)(nil)
+)
 
 // enhancingConsumer adds additional resource attributes from the given endpoint environment before passing the
 // telemetry to its next consumers. The added attributes vary based on the type of the endpoint.

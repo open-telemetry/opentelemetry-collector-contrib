@@ -45,7 +45,6 @@ func newTracesConnector(
 		cfg.DefaultPipelines,
 		tr.Consumer,
 		set.TelemetrySettings)
-
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +138,6 @@ func (c *tracesConnector) matchAllTraces(ctx context.Context, td ptrace.Traces) 
 				noRoutesMatch = false
 				groupTraces(groups, route.consumer, rspans)
 			}
-
 		}
 		if noRoutesMatch {
 			// no route conditions are matched, add resource spans to default pipelines group

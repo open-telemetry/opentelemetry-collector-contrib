@@ -78,12 +78,10 @@ func newElasticsearchClient(ctx context.Context, settings component.TelemetrySet
 	return &esClient, nil
 }
 
-var (
-	es7_9 = func() *version.Version {
-		v, _ := version.NewVersion("7.9")
-		return v
-	}()
-)
+var es7_9 = func() *version.Version {
+	v, _ := version.NewVersion("7.9")
+	return v
+}()
 
 const (
 	// A comma separated list of metrics that will be gathered from NodeStats.
