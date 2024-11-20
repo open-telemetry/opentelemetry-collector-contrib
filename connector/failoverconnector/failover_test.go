@@ -214,12 +214,10 @@ func TestFailoverRecovery_MaxRetries(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return consumeTracesAndCheckStable(failoverConnector, 1, tr)
 	}, 3*time.Second, 5*time.Millisecond)
-
 }
 
 func resetConsumers(conn *tracesFailover, consumers ...consumer.Traces) {
 	for i, sink := range consumers {
-
 		conn.failover.ModifyConsumerAtIndex(i, sink)
 	}
 	conn.failover.pS.TestSetStableIndex(0)

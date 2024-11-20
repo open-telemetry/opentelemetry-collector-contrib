@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -22,13 +22,13 @@ type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Logs
 	obsrecv      *receiverhelper.ObsReport
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission2.Queue
 	sizer        *plog.ProtoMarshaler
 	logger       *zap.Logger
 }
 
 // New creates a new Receiver reference.
-func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq *admission.BoundedQueue) *Receiver {
+func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport, bq admission2.Queue) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
@@ -41,26 +41,23 @@ func New(logger *zap.Logger, nextConsumer consumer.Logs, obsrecv *receiverhelper
 // Export implements the service Export logs func.
 func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	ld := req.Logs()
-	numSpans := ld.LogRecordCount()
-	if numSpans == 0 {
+	numRecords := ld.LogRecordCount()
+	if numRecords == 0 {
 		return plogotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsrecv.StartLogsOp(ctx)
 
-	sizeBytes := int64(r.sizer.LogsSize(req.Logs()))
-	err := r.boundedQueue.Acquire(ctx, sizeBytes)
-	if err != nil {
-		return plogotlp.NewExportResponse(), err
+	var err error
+	sizeBytes := uint64(r.sizer.LogsSize(req.Logs()))
+	if releaser, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
+		err = r.nextConsumer.ConsumeLogs(ctx, ld)
+		releaser() // immediate release
+	} else {
+		err = acqErr
 	}
-	defer func() {
-		if releaseErr := r.boundedQueue.Release(sizeBytes); releaseErr != nil {
-			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
-		}
-	}()
 
-	err = r.nextConsumer.ConsumeLogs(ctx, ld)
-	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numRecords, err)
 
 	return plogotlp.NewExportResponse(), err
 }

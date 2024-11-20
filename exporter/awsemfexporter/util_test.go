@@ -341,5 +341,4 @@ func TestGetLogInfo(t *testing.T) {
 			})
 		}
 	}
-
 }

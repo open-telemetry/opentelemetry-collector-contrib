@@ -9,7 +9,6 @@ import (
 
 // Config defines the configuration options for servicegraphprocessor.
 type Config struct {
-
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
 	//
 	// Deprecated: The exporter is defined as part of the pipeline and this option is currently noop.

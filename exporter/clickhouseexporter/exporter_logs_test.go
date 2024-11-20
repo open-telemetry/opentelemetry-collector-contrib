@@ -56,7 +56,6 @@ func TestLogsExporter_New(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			var err error
 			exporter, err := newLogsExporter(zap.NewNop(), test.config)
 			err = errors.Join(err, err)
@@ -284,8 +283,7 @@ func (t *testClickhouseDriverStmt) Query(_ []driver.Value) (driver.Rows, error) 
 	return nil, nil
 }
 
-type testClickhouseDriverTx struct {
-}
+type testClickhouseDriverTx struct{}
 
 func (*testClickhouseDriverTx) Commit() error {
 	return nil

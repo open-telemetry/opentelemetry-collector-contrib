@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				CollectionInterval: 30 * time.Second,
 				MetricsPath:        "/v2/metrics",
+				JobName:            "job123",
 				Params:             url.Values{"columns": []string{"name", "messages"}, "key": []string{"foo", "bar"}},
 				UseServiceAccount:  true,
 			},

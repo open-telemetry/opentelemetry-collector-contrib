@@ -391,5 +391,4 @@ func configWithMultipleAttributes(qty int, statusCode string) *Config {
 		NumTraces:  qty,
 		StatusCode: statusCode,
 	}
-
 }
