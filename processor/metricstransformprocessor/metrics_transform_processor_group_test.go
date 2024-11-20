@@ -25,35 +25,33 @@ type metricsGroupingTest struct {
 	transforms []internalTransform
 }
 
-var (
-	groupingTests = []metricsGroupingTest{
-		{
-			name: "metric_group_by_strict_name",
-			transforms: []internalTransform{
-				{
-					MetricIncludeFilter: internalFilterStrict{include: "foo/metric"},
-					Action:              Group,
-					GroupResourceLabels: map[string]string{"resource.type": "foo"},
-				},
+var groupingTests = []metricsGroupingTest{
+	{
+		name: "metric_group_by_strict_name",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterStrict{include: "foo/metric"},
+				Action:              Group,
+				GroupResourceLabels: map[string]string{"resource.type": "foo"},
 			},
 		},
-		{
-			name: "metric_group_regex_multiple_empty_resource",
-			transforms: []internalTransform{
-				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^container.(.*)$")},
-					Action:              Group,
-					GroupResourceLabels: map[string]string{"resource.type": "container"},
-				},
-				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^k8s.pod.(.*)$")},
-					Action:              Group,
-					GroupResourceLabels: map[string]string{"resource.type": "k8s.pod"},
-				},
+	},
+	{
+		name: "metric_group_regex_multiple_empty_resource",
+		transforms: []internalTransform{
+			{
+				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^container.(.*)$")},
+				Action:              Group,
+				GroupResourceLabels: map[string]string{"resource.type": "container"},
+			},
+			{
+				MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^k8s.pod.(.*)$")},
+				Action:              Group,
+				GroupResourceLabels: map[string]string{"resource.type": "k8s.pod"},
 			},
 		},
-	}
-)
+	},
+}
 
 func TestMetricsGrouping(t *testing.T) {
 	for _, useOTLP := range []bool{false, true} {

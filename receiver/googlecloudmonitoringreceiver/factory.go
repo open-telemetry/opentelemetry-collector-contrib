@@ -40,12 +40,12 @@ func createMetricsReceiver(
 	rCfg := baseCfg.(*Config)
 	r := newGoogleCloudMonitoringReceiver(rCfg, settings.Logger)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, r.Scrape, scraperhelper.WithStart(r.Start),
+	scraper, err := scraperhelper.NewScraperWithoutType(r.Scrape, scraperhelper.WithStart(r.Start),
 		scraperhelper.WithShutdown(r.Shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(&rCfg.ControllerConfig, settings, consumer,
-		scraperhelper.AddScraper(scraper))
+		scraperhelper.AddScraperWithType(metadata.Type, scraper))
 }

@@ -1607,7 +1607,7 @@ type metricSplunkServerSearchartifactsAdhoc struct {
 // init fills splunk.server.searchartifacts.adhoc metric with initial data.
 func (m *metricSplunkServerSearchartifactsAdhoc) init() {
 	m.data.SetName("splunk.server.searchartifacts.adhoc")
-	m.data.SetDescription("Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.")
+	m.data.SetDescription("Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1658,7 +1658,7 @@ type metricSplunkServerSearchartifactsCompleted struct {
 // init fills splunk.server.searchartifacts.completed metric with initial data.
 func (m *metricSplunkServerSearchartifactsCompleted) init() {
 	m.data.SetName("splunk.server.searchartifacts.completed")
-	m.data.SetDescription("Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.")
+	m.data.SetDescription("Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1709,7 +1709,7 @@ type metricSplunkServerSearchartifactsIncomplete struct {
 // init fills splunk.server.searchartifacts.incomplete metric with initial data.
 func (m *metricSplunkServerSearchartifactsIncomplete) init() {
 	m.data.SetName("splunk.server.searchartifacts.incomplete")
-	m.data.SetDescription("Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.")
+	m.data.SetDescription("Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1760,7 +1760,7 @@ type metricSplunkServerSearchartifactsInvalid struct {
 // init fills splunk.server.searchartifacts.invalid metric with initial data.
 func (m *metricSplunkServerSearchartifactsInvalid) init() {
 	m.data.SetName("splunk.server.searchartifacts.invalid")
-	m.data.SetDescription("Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.")
+	m.data.SetDescription("Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1802,6 +1802,109 @@ func newMetricSplunkServerSearchartifactsInvalid(cfg MetricConfig) metricSplunkS
 	return m
 }
 
+type metricSplunkServerSearchartifactsJobCacheCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searchartifacts.job.cache.count metric with initial data.
+func (m *metricSplunkServerSearchartifactsJobCacheCount) init() {
+	m.data.SetName("splunk.server.searchartifacts.job.cache.count")
+	m.data.SetDescription("Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.")
+	m.data.SetUnit("{search_artifacts}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchartifactsJobCacheCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchartifactsJobCacheCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchartifactsJobCacheCount(cfg MetricConfig) metricSplunkServerSearchartifactsJobCacheCount {
+	m := metricSplunkServerSearchartifactsJobCacheCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkServerSearchartifactsJobCacheSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.searchartifacts.job.cache.size metric with initial data.
+func (m *metricSplunkServerSearchartifactsJobCacheSize) init() {
+	m.data.SetName("splunk.server.searchartifacts.job.cache.size")
+	m.data.SetDescription("Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.")
+	m.data.SetUnit("{mb}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerSearchartifactsJobCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.searchartifacts.cache.type", splunkSearchartifactsCacheTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerSearchartifactsJobCacheSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerSearchartifactsJobCacheSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerSearchartifactsJobCacheSize(cfg MetricConfig) metricSplunkServerSearchartifactsJobCacheSize {
+	m := metricSplunkServerSearchartifactsJobCacheSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkServerSearchartifactsSavedsearches struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1811,7 +1914,7 @@ type metricSplunkServerSearchartifactsSavedsearches struct {
 // init fills splunk.server.searchartifacts.savedsearches metric with initial data.
 func (m *metricSplunkServerSearchartifactsSavedsearches) init() {
 	m.data.SetName("splunk.server.searchartifacts.savedsearches")
-	m.data.SetDescription("Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.")
+	m.data.SetDescription("Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1862,7 +1965,7 @@ type metricSplunkServerSearchartifactsScheduled struct {
 // init fills splunk.server.searchartifacts.scheduled metric with initial data.
 func (m *metricSplunkServerSearchartifactsScheduled) init() {
 	m.data.SetName("splunk.server.searchartifacts.scheduled")
-	m.data.SetDescription("Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head.")
+	m.data.SetDescription("Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.")
 	m.data.SetUnit("{search_artifacts}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1998,6 +2101,8 @@ type MetricsBuilder struct {
 	metricSplunkServerSearchartifactsCompleted        metricSplunkServerSearchartifactsCompleted
 	metricSplunkServerSearchartifactsIncomplete       metricSplunkServerSearchartifactsIncomplete
 	metricSplunkServerSearchartifactsInvalid          metricSplunkServerSearchartifactsInvalid
+	metricSplunkServerSearchartifactsJobCacheCount    metricSplunkServerSearchartifactsJobCacheCount
+	metricSplunkServerSearchartifactsJobCacheSize     metricSplunkServerSearchartifactsJobCacheSize
 	metricSplunkServerSearchartifactsSavedsearches    metricSplunkServerSearchartifactsSavedsearches
 	metricSplunkServerSearchartifactsScheduled        metricSplunkServerSearchartifactsScheduled
 	metricSplunkTypingQueueRatio                      metricSplunkTypingQueueRatio
@@ -2062,6 +2167,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkServerSearchartifactsCompleted:        newMetricSplunkServerSearchartifactsCompleted(mbc.Metrics.SplunkServerSearchartifactsCompleted),
 		metricSplunkServerSearchartifactsIncomplete:       newMetricSplunkServerSearchartifactsIncomplete(mbc.Metrics.SplunkServerSearchartifactsIncomplete),
 		metricSplunkServerSearchartifactsInvalid:          newMetricSplunkServerSearchartifactsInvalid(mbc.Metrics.SplunkServerSearchartifactsInvalid),
+		metricSplunkServerSearchartifactsJobCacheCount:    newMetricSplunkServerSearchartifactsJobCacheCount(mbc.Metrics.SplunkServerSearchartifactsJobCacheCount),
+		metricSplunkServerSearchartifactsJobCacheSize:     newMetricSplunkServerSearchartifactsJobCacheSize(mbc.Metrics.SplunkServerSearchartifactsJobCacheSize),
 		metricSplunkServerSearchartifactsSavedsearches:    newMetricSplunkServerSearchartifactsSavedsearches(mbc.Metrics.SplunkServerSearchartifactsSavedsearches),
 		metricSplunkServerSearchartifactsScheduled:        newMetricSplunkServerSearchartifactsScheduled(mbc.Metrics.SplunkServerSearchartifactsScheduled),
 		metricSplunkTypingQueueRatio:                      newMetricSplunkTypingQueueRatio(mbc.Metrics.SplunkTypingQueueRatio),
@@ -2165,6 +2272,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkServerSearchartifactsCompleted.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsIncomplete.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsInvalid.emit(ils.Metrics())
+	mb.metricSplunkServerSearchartifactsJobCacheCount.emit(ils.Metrics())
+	mb.metricSplunkServerSearchartifactsJobCacheSize.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsSavedsearches.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsScheduled.emit(ils.Metrics())
 	mb.metricSplunkTypingQueueRatio.emit(ils.Metrics())
@@ -2362,6 +2471,16 @@ func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsIncompleteDataPoint(t
 // RecordSplunkServerSearchartifactsInvalidDataPoint adds a data point to splunk.server.searchartifacts.invalid metric.
 func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsInvalidDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
 	mb.metricSplunkServerSearchartifactsInvalid.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerSearchartifactsJobCacheCountDataPoint adds a data point to splunk.server.searchartifacts.job.cache.count metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsJobCacheCount.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkServerSearchartifactsJobCacheSizeDataPoint adds a data point to splunk.server.searchartifacts.job.cache.size metric.
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsJobCacheSize.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSearchartifactsCacheTypeAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsSavedsearchesDataPoint adds a data point to splunk.server.searchartifacts.savedsearches metric.

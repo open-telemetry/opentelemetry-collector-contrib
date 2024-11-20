@@ -26,6 +26,7 @@ func TestGetAvailableLocalAddress(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, ln1)
 }
+
 func TestGetAvailableLocalUDPAddress(t *testing.T) {
 	addr := GetAvailableLocalNetworkAddress(t, "udp")
 	// Endpoint should be free.

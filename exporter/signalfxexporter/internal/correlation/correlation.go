@@ -68,7 +68,6 @@ func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configop
 		AccessToken: string(accessToken),
 		URL:         corrURL,
 	})
-
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create correlation client: %w", err)

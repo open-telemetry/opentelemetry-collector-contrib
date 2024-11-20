@@ -54,8 +54,7 @@ func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 
 	metadata[constants.K8sKeyWorkLoadKind] = resourceType
 	metadata[constants.K8sKeyWorkLoadName] = om.Name
-	metadata[fmt.Sprintf("%s.creation_timestamp",
-		rType)] = om.GetCreationTimestamp().Format(time.RFC3339)
+	metadata[rType+".creation_timestamp"] = om.GetCreationTimestamp().Format(time.RFC3339)
 
 	for _, or := range om.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
@@ -80,7 +79,7 @@ func GetOTelNameFromKind(kind string) string {
 }
 
 func getOTelEntityTypeFromKind(kind string) string {
-	return fmt.Sprintf("k8s.%s", kind)
+	return "k8s." + kind
 }
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to

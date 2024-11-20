@@ -70,7 +70,7 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	r.benchmarkResults = []*benchmarkResult{}
 
 	// Create resultsSummary file
-	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
+	if err := os.MkdirAll(resultsDir, os.FileMode(0o755)); err != nil {
 		log.Fatal(err)
 	}
 	var err error
@@ -160,7 +160,7 @@ func (r *PerformanceResults) Add(_ string, result any) {
 func (r *PerformanceResults) saveBenchmarks() {
 	path := path.Join(r.resultsDir, "benchmarks.json")
 	j, _ := json.MarshalIndent(r.benchmarkResults, "", "  ")
-	_ = os.WriteFile(path, j, 0600)
+	_ = os.WriteFile(path, j, 0o600)
 }
 
 // CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
@@ -202,7 +202,7 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 	r.perTestResults = []*CorrectnessTestResult{}
 
 	// Create resultsSummary file
-	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
+	if err := os.MkdirAll(resultsDir, os.FileMode(0o755)); err != nil {
 		log.Fatal(err)
 	}
 	var err error

@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
@@ -40,6 +41,13 @@ const (
 	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
 	maxExemplarRunes = 128
 	infoType         = "info"
+)
+
+var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
 )
 
 type bucketBoundsData struct {
@@ -98,7 +106,8 @@ var seps = []byte{'\xff'}
 // Unpaired string values are ignored. String pairs overwrite OTLP labels if collisions happen and
 // if logOnOverwrite is true, the overwrite is logged. Resulting label names are sanitized.
 func (c *PrometheusConverter) createAttributes(resource pcommon.Resource, attributes pcommon.Map, externalLabels map[string]string,
-	ignoreAttrs []string, logOnOverwrite bool, extras ...string) []prompb.Label {
+	ignoreAttrs []string, logOnOverwrite bool, extras ...string,
+) []prompb.Label {
 	resourceAttrs := resource.Attributes()
 	serviceName, haveServiceName := resourceAttrs.Get(conventions.AttributeServiceName)
 	instance, haveInstanceID := resourceAttrs.Get(conventions.AttributeServiceInstanceID)
@@ -115,7 +124,7 @@ func (c *PrometheusConverter) createAttributes(resource pcommon.Resource, attrib
 	// (as they get mapped to other Prometheus labels)?
 	attributes.Range(func(key string, value pcommon.Value) bool {
 		if !slices.Contains(ignoreAttrs, key) {
-			var finalKey = prometheustranslator.NormalizeLabel(key)
+			finalKey := prometheustranslator.NormalizeLabel(key)
 			if _, alreadyExists := l[finalKey]; alreadyExists {
 				collisions[finalKey] = append(collisions[finalKey], value.AsString())
 			} else {
@@ -196,7 +205,8 @@ func isValidAggregationTemporality(metric pmetric.Metric) bool {
 }
 
 func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.HistogramDataPointSlice,
-	resource pcommon.Resource, settings Settings, baseName string) {
+	resource pcommon.Resource, settings Settings, baseName string,
+) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
@@ -216,7 +226,6 @@ func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 
 			sumlabels := createLabels(baseName+sumStr, baseLabels)
 			c.addSample(sum, sumlabels)
-
 		}
 
 		// treat count as a sample in an individual TimeSeries
@@ -269,7 +278,7 @@ func (c *PrometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 		c.addExemplars(pt, bucketBounds)
 
 		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 {
+		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
 			labels := createLabels(baseName+createdSuffix, baseLabels)
 			c.addTimeSeriesIfNeeded(labels, startTimestamp, pt.Timestamp())
 		}
@@ -379,7 +388,8 @@ func maxTimestamp(a, b pcommon.Timestamp) pcommon.Timestamp {
 }
 
 func (c *PrometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDataPointSlice, resource pcommon.Resource,
-	settings Settings, baseName string) {
+	settings Settings, baseName string,
+) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		timestamp := convertTimeStamp(pt.Timestamp())
@@ -424,7 +434,7 @@ func (c *PrometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 		}
 
 		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 {
+		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
 			createdLabels := createLabels(baseName+createdSuffix, baseLabels)
 			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
 		}

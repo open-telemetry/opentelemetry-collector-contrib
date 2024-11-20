@@ -42,7 +42,6 @@ func (_m *MockClient) Close() error {
 
 // Connect provides a mock function with given fields:
 func (_m *MockClient) Connect() error {
-
 	ret := _m.Called()
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -101,7 +100,6 @@ func TestStart(t *testing.T) {
 		{
 			desc: "Valid Config",
 			testFunc: func(t *testing.T) {
-
 				scraper := &snmpScraper{
 					cfg:      createDefaultConfig().(*Config),
 					settings: receivertest.NewNopSettings(),

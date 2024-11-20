@@ -64,9 +64,11 @@ type opampAgent struct {
 	customCapabilityRegistry *customCapabilityRegistry
 }
 
-var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
-var _ extensioncapabilities.Dependent = (*opampAgent)(nil)
-var _ extensioncapabilities.ConfigWatcher = (*opampAgent)(nil)
+var (
+	_ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
+	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
+)
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
@@ -344,7 +346,10 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 	return &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
-				"": {Body: conf},
+				"": {
+					Body:        conf,
+					ContentType: "text/yaml",
+				},
 			},
 		},
 	}

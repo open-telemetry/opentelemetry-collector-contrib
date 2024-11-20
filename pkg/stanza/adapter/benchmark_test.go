@@ -86,7 +86,6 @@ const (
 )
 
 func BenchmarkEndToEnd(b *testing.B) {
-
 	// These values may have meaningful performance implications, so benchmarks
 	// should cover a variety of values in order to highlight impacts.
 	var (
