@@ -27,8 +27,7 @@ type ReplicaSetClient interface {
 	ReplicaSetToDeployment() map[string]string
 }
 
-type noOpReplicaSetClient struct {
-}
+type noOpReplicaSetClient struct{}
 
 func (nc *noOpReplicaSetClient) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}

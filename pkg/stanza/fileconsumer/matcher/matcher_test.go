@@ -753,7 +753,8 @@ func TestMatcher(t *testing.T) {
 			expected: []string{
 				filepath.Join("a", "1.log"),
 			},
-		}}
+		},
+	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -764,8 +765,8 @@ func TestMatcher(t *testing.T) {
 				require.NoError(t, os.Chdir(cwd))
 			}()
 			for _, f := range tc.files {
-				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
-				file, fErr := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
+				file, fErr := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, fErr)
 
 				_, fErr = file.WriteString(filepath.Base(f))

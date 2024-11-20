@@ -27,9 +27,7 @@ const (
 	spanLinkDataFormat  = "%s|%s|%s|%s|%d"
 )
 
-var (
-	sampled = true
-)
+var sampled = true
 
 // FromTranslator converts from pdata to Zipkin data model.
 type FromTranslator struct{}

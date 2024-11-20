@@ -98,7 +98,7 @@ func TestCollectDServer(t *testing.T) {
 
 	testInvalidHTTPMethodCase := testCase{
 		Name:         "invalid-http-method",
-		HTTPMethod:   "GET",
+		HTTPMethod:   http.MethodGet,
 		RequestBody:  `invalid-body`,
 		ResponseCode: 400,
 		WantData:     []pmetric.Metrics{},
@@ -106,7 +106,7 @@ func TestCollectDServer(t *testing.T) {
 
 	testValidRequestBodyCase := testCase{
 		Name:        "valid-request-body",
-		HTTPMethod:  "POST",
+		HTTPMethod:  http.MethodPost,
 		QueryParams: "dap_attr1=attr1val",
 		RequestBody: `[
     	{
@@ -134,7 +134,7 @@ func TestCollectDServer(t *testing.T) {
 
 	testInValidRequestBodyCase := testCase{
 		Name:         "invalid-request-body",
-		HTTPMethod:   "POST",
+		HTTPMethod:   http.MethodPost,
 		RequestBody:  `invalid-body`,
 		ResponseCode: 400,
 		WantData:     []pmetric.Metrics{},

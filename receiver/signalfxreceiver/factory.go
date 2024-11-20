@@ -114,5 +114,7 @@ func createLogsReceiver(
 	return r, nil
 }
 
-var receiverLock sync.Mutex
-var receivers = map[*Config]*sfxReceiver{}
+var (
+	receiverLock sync.Mutex
+	receivers    = map[*Config]*sfxReceiver{}
+)

@@ -22,15 +22,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
-var (
-	cfg = &Config{
-		AttributesActions: []attraction.ActionKeyValue{
-			{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
-			{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
-			{Key: "redundant-attribute", Action: attraction.DELETE},
-		},
-	}
-)
+var cfg = &Config{
+	AttributesActions: []attraction.ActionKeyValue{
+		{Key: "cloud.availability_zone", Value: "zone-1", Action: attraction.UPSERT},
+		{Key: "k8s.cluster.name", FromAttribute: "k8s-cluster", Action: attraction.INSERT},
+		{Key: "redundant-attribute", Action: attraction.DELETE},
+	},
+}
 
 func TestResourceProcessorAttributesUpsert(t *testing.T) {
 	tests := []struct {

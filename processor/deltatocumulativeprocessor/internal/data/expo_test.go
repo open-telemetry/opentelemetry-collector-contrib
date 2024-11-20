@@ -20,7 +20,7 @@ const ø = math.MaxUint64
 func TestExpoAdd(t *testing.T) {
 	type expdp = expotest.Histogram
 	type bins = expotest.Bins
-	var obs0 = expotest.Observe0
+	obs0 := expotest.Observe0
 
 	cases := []struct {
 		name   string

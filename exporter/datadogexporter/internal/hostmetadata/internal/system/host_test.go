@@ -42,5 +42,4 @@ func TestGetHostname(t *testing.T) {
 		OS: "os",
 	}
 	assert.Equal(t, "os", hostInfoMissingFQDN.GetHostname(logger))
-
 }

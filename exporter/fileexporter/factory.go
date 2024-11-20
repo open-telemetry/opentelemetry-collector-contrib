@@ -143,7 +143,6 @@ func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
 		conf:   conf,
 		logger: logger,
 	}
-
 }
 
 func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
