@@ -41,7 +41,6 @@ func TestFilterClusters(t *testing.T) {
 	ic, err := filterClusters(clusters, includeProject)
 	require.NoError(t, err)
 	require.Equal(t, []mongodbatlas.Cluster{{Name: "cluster1", ID: "1"}, {Name: "cluster3", ID: "3"}}, ic)
-
 }
 
 func TestDefaultLoggingConfig(t *testing.T) {

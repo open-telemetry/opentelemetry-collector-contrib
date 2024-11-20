@@ -41,7 +41,7 @@ func (u *brokerTraceEgressUnmarshallerV1) unmarshal(message *inboundMessage) (pt
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
 func (u *brokerTraceEgressUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*egress_v1.SpanData, error) {
-	var data = message.GetData()
+	data := message.GetData()
 	if len(data) == 0 {
 		return nil, errEmptyPayload
 	}

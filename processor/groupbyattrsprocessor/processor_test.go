@@ -22,9 +22,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-var (
-	attrMap = prepareAttributeMap()
-)
+var attrMap = prepareAttributeMap()
 
 func prepareAttributeMap() pcommon.Map {
 	am := pcommon.NewMap()
@@ -845,7 +843,6 @@ func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCo
 }
 
 func TestMetricAdvancedGrouping(t *testing.T) {
-
 	// Input:
 	//
 	// Resource {host.name="localhost"}

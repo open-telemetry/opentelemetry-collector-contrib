@@ -58,7 +58,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 
 	ts := time.Now()
 
-	var cases = []Case{
+	cases := []Case{
 		{
 			"RFC3164SkipPriAbsent",
 			func() *Config {

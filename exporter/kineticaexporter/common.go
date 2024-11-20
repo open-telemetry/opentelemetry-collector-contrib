@@ -733,7 +733,6 @@ func getAttributeValue(vtPair ValueTypePair) (*AttributeValue, error) {
 	}
 
 	return av, nil
-
 }
 
 // chunkBySize - Splits a slice into multiple slices of the given size
