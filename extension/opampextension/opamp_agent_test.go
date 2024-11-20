@@ -6,6 +6,7 @@ package opampextension
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/extension"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -43,6 +44,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.True(t, o.capabilities.ReportsHealth)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
+	assert.NoError(t, o.Shutdown(context.TODO()))
 }
 
 func TestNewOpampAgentAttributes(t *testing.T) {
@@ -57,6 +59,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	assert.Equal(t, "otelcol-distro", o.agentType)
 	assert.Equal(t, "distro.0", o.agentVersion)
 	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.instanceID.String())
+	assert.NoError(t, o.Shutdown(context.TODO()))
 }
 
 func TestCreateAgentDescription(t *testing.T) {
@@ -155,6 +158,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			err = o.createAgentDescription()
 			assert.NoError(t, err)
 			require.Equal(t, tc.expected, o.agentDescription)
+			assert.NoError(t, o.Shutdown(context.TODO()))
 		})
 	}
 }
@@ -173,6 +177,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 
 	o.updateAgentIdentity(uid)
 	assert.Equal(t, o.instanceID, uid)
+	assert.NoError(t, o.Shutdown(context.TODO()))
 }
 
 func TestComposeEffectiveConfig(t *testing.T) {
@@ -196,6 +201,8 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	assert.NotNil(t, ec)
 	assert.YAMLEq(t, string(expected), string(ec.ConfigMap.ConfigMap[""].Body))
 	assert.Equal(t, "text/yaml", ec.ConfigMap.ConfigMap[""].ContentType)
+
+	assert.NoError(t, o.Shutdown(context.TODO()))
 }
 
 func TestShutdown(t *testing.T) {
@@ -219,16 +226,10 @@ func TestStart(t *testing.T) {
 }
 
 func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	set := extensiontest.NewNopSettings()
-	o, err := newOpampAgent(cfg.(*Config), set)
-	assert.NoError(t, err)
 
 	statusUpdateChannel := make(chan *status.AggregateStatus)
-	sa := &mockStatusAggregator{
-		statusChan: statusUpdateChannel,
-	}
-	o.statusAggregator = sa
 
 	mtx := &sync.RWMutex{}
 	now := time.Now()
@@ -266,7 +267,7 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	}
 	receivedHealthUpdates := 0
 
-	o.opampClient = &mockOpAMPClient{
+	mockOpampClient := &mockOpAMPClient{
 		setHealthFunc: func(health *protobufs.ComponentHealth) error {
 			mtx.Lock()
 			defer mtx.Unlock()
@@ -275,6 +276,14 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 			return nil
 		},
 	}
+
+	sa := &mockStatusAggregator{
+		statusChan: statusUpdateChannel,
+	}
+
+	o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
+
+	o.initHealthReporting()
 
 	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
 
@@ -325,17 +334,25 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 }
 
 func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	set := extensiontest.NewNopSettings()
-	o, err := newOpampAgent(cfg.(*Config), set)
-	assert.NoError(t, err)
 
 	mtx := &sync.RWMutex{}
 
 	sa := &mockStatusAggregator{
 		mtx: mtx,
 	}
-	o.statusAggregator = sa
+
+	o := newTestOpampAgent(
+		cfg,
+		set,
+		&mockOpAMPClient{
+			setHealthFunc: func(_ *protobufs.ComponentHealth) error {
+				return nil
+			},
+		}, sa)
+
+	o.initHealthReporting()
 
 	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
 
@@ -365,7 +382,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 	// clean the received events of the mocked status aggregator
 	sa.receivedEvents = nil
 
-	err = o.Ready()
+	err := o.Ready()
 	require.NoError(t, err)
 
 	// verify we have received the StatusOK events that have been queued while the agent has not been ready
@@ -402,16 +419,13 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 }
 
 func TestHealthReportingExitsOnClosedContext(t *testing.T) {
-	cfg := createDefaultConfig()
+	cfg := createDefaultConfig().(*Config)
 	set := extensiontest.NewNopSettings()
-	o, err := newOpampAgent(cfg.(*Config), set)
-	assert.NoError(t, err)
 
 	statusUpdateChannel := make(chan *status.AggregateStatus)
 	sa := &mockStatusAggregator{
 		statusChan: statusUpdateChannel,
 	}
-	o.statusAggregator = sa
 
 	mtx := &sync.RWMutex{}
 	now := time.Now()
@@ -435,7 +449,7 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	}
 	receivedHealthUpdates := 0
 
-	o.opampClient = &mockOpAMPClient{
+	mockOpampClient := &mockOpAMPClient{
 		setHealthFunc: func(health *protobufs.ComponentHealth) error {
 			mtx.Lock()
 			defer mtx.Unlock()
@@ -444,6 +458,10 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 			return nil
 		},
 	}
+
+	o := newTestOpampAgent(cfg, set, mockOpampClient, sa)
+
+	o.initHealthReporting()
 
 	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
 
@@ -656,4 +674,25 @@ func (m mockStatusEvent) Err() error {
 
 func (m mockStatusEvent) Timestamp() time.Time {
 	return m.timestamp
+}
+
+func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *mockOpAMPClient, sa *mockStatusAggregator) *opampAgent {
+	uid := uuid.New()
+	o := &opampAgent{
+		cfg:                      cfg,
+		logger:                   set.Logger,
+		agentType:                set.BuildInfo.Command,
+		agentVersion:             set.BuildInfo.Version,
+		instanceID:               uid,
+		capabilities:             cfg.Capabilities,
+		opampClient:              mockOpampClient,
+		statusSubscriptionWg:     &sync.WaitGroup{},
+		componentHealthWg:        &sync.WaitGroup{},
+		readyCh:                  make(chan struct{}),
+		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, mockOpampClient),
+		statusAggregator:         sa,
+	}
+
+	o.lifetimeCtx, o.lifetimeCtxCancel = context.WithCancel(context.Background())
+	return o
 }

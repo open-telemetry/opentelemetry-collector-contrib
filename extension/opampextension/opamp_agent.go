@@ -142,8 +142,6 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	o.initHealthReporting()
-
 	o.logger.Debug("Starting OpAMP client...")
 
 	if err := o.opampClient.Start(context.Background(), settings); err != nil {
@@ -296,13 +294,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 	agent.lifetimeCtx, agent.lifetimeCtxCancel = context.WithCancel(context.Background())
 
 	if agent.capabilities.ReportsHealth {
-		agent.statusAggregator = status.NewAggregator(status.PriorityPermanent)
-
-		// Start processing events in the background so that our status watcher doesn't
-		// block others before the extension starts.
-		agent.componentStatusCh = make(chan *eventSourcePair)
-		agent.componentHealthWg.Add(1)
-		go agent.componentHealthEventLoop()
+		agent.initHealthReporting()
 	}
 
 	return agent, nil
@@ -460,9 +452,18 @@ func (o *opampAgent) initHealthReporting() {
 	}
 	o.setHealth(&protobufs.ComponentHealth{Healthy: false})
 
+	if o.statusAggregator == nil {
+		o.statusAggregator = status.NewAggregator(status.PriorityPermanent)
+	}
 	statusChan, unsubscribeFunc := o.statusAggregator.Subscribe(status.ScopeAll, status.Verbose)
 	o.statusSubscriptionWg.Add(1)
 	go o.statusAggregatorEventLoop(unsubscribeFunc, statusChan)
+
+	// Start processing events in the background so that our status watcher doesn't
+	// block others before the extension starts.
+	o.componentStatusCh = make(chan *eventSourcePair)
+	o.componentHealthWg.Add(1)
+	go o.componentHealthEventLoop()
 }
 
 func (o *opampAgent) componentHealthEventLoop() {
@@ -523,7 +524,7 @@ func (o *opampAgent) statusAggregatorEventLoop(unsubscribeFunc status.Unsubscrib
 				return
 			}
 
-			if statusUpdate == nil {
+			if statusUpdate == nil || statusUpdate.Status() == componentstatus.StatusNone {
 				continue
 			}
 
