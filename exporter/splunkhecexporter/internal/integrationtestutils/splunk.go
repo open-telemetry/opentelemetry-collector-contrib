@@ -115,6 +115,7 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 	logger.Printf("Is Splunk Search completed [isDone flag]: %v\n", isDone)
 	return isDone
 }
+
 func postSearchRequest(user string, password string, baseURL string, searchQuery string, startTime string, endTime string) string {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	searchURL := fmt.Sprintf("%s/services/search/jobs?output_mode=json", baseURL)

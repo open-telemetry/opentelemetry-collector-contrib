@@ -25,7 +25,8 @@ import (
 
 func TestNewExporter(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	c := Config{ClusterURI: "https://CLUSTER.kusto.windows.net",
+	c := Config{
+		ClusterURI:         "https://CLUSTER.kusto.windows.net",
 		ApplicationID:      "unknown",
 		ApplicationKey:     "unknown",
 		TenantID:           "unknown",
