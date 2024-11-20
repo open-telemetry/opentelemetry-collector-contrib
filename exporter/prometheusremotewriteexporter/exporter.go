@@ -56,6 +56,7 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 var converterPool = sync.Pool{
 	New: func() any {
 		return prometheusremotewrite.NewPrometheusConverter()
+	},
 }
 
 type buffer struct {
