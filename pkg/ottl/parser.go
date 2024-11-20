@@ -31,7 +31,9 @@ type Statement[K any] struct {
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
 	defer func() {
-		s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+		if s.telemetrySettings.Logger != nil {
+			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+		}
 	}()
 	if err != nil {
 		return nil, false, err
