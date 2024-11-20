@@ -14,9 +14,9 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configopaque v1.20.0
 	go.opentelemetry.io/collector/config/configtls v1.20.0
-	go.opentelemetry.io/collector/confmap v1.19.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.19.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.19.0
+	go.opentelemetry.io/collector/confmap v1.20.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.20.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.20.0
 	go.opentelemetry.io/collector/semconv v0.114.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
