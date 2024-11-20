@@ -807,13 +807,13 @@ func Test_PushMetrics(t *testing.T) {
 func Test_PushMetricsConcurrent(t *testing.T) {
 	n := 1000
 	ms := make([]pmetric.Metrics, n)
-	testIdKey := "test_id"
+	testIDKey := "test_id"
 	for i := 0; i < n; i++ {
 		m := testdata.GenerateMetricsOneMetric()
 		dps := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints()
 		for j := 0; j < dps.Len(); j++ {
 			dp := dps.At(j)
-			dp.Attributes().PutInt(testIdKey, int64(i))
+			dp.Attributes().PutInt(testIDKey, int64(i))
 		}
 		ms[i] = m
 	}
@@ -825,25 +825,25 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		require.NotNil(t, body)
+		assert.NotNil(t, body)
 		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		var unzipped []byte
 
 		dest, err := snappy.Decode(unzipped, body)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 
 		wr := &prompb.WriteRequest{}
 		ok := proto.Unmarshal(dest, wr)
-		require.NoError(t, ok)
+		assert.NoError(t, ok)
 		assert.Len(t, wr.Timeseries, 2)
 		ts := wr.Timeseries[0]
 		foundLabel := false
 		for _, label := range ts.Labels {
-			if label.Name == testIdKey {
+			if label.Name == testIDKey {
 				id, err := strconv.Atoi(label.Value)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 				mu.Lock()
 				_, ok := received[id]
 				assert.False(t, ok) // fail if we already saw it
@@ -854,6 +854,7 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 			}
 		}
 		assert.True(t, foundLabel)
+		w.WriteHeader(http.StatusOK)
 	}))
 
 	defer server.Close()
@@ -901,7 +902,8 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	wg.Add(n)
 	for _, m := range ms {
 		go func() {
-			prwe.PushMetrics(ctx, m)
+			err := prwe.PushMetrics(ctx, m)
+			assert.NoError(t, err)
 			wg.Done()
 		}()
 	}
