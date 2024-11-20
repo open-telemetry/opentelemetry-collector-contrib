@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 //go:build !race
 // +build !race
 
@@ -12,9 +15,6 @@
 //       exporter.go:217 +0x70f
 //   github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter.Test_PushMetricsConcurrent.func3()
 //       exporter_test.go:905 +0x78
-
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewriteexporter
 
