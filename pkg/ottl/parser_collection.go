@@ -28,7 +28,9 @@ var _ ParsedStatementConverter[any, any] = func(
 	return nil, nil
 }
 
-// StatementsGetter represents a set of statements to be parsed
+// StatementsGetter represents a set of statements to be parsed.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 type StatementsGetter interface {
 	// GetStatements retrieves the OTTL statements to be parsed
 	GetStatements() []string
@@ -40,7 +42,9 @@ func (d defaultStatementsGetter) GetStatements() []string {
 	return d
 }
 
-// NewStatementsGetter creates a new StatementsGetter
+// NewStatementsGetter creates a new StatementsGetter.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewStatementsGetter(statements []string) StatementsGetter {
 	return defaultStatementsGetter(statements)
 }
@@ -121,7 +125,10 @@ type parserCollectionParser struct {
 }
 
 // ParserCollection is a configurable set of ottl.Parser that can handle multiple OTTL contexts
-// parsings, inferring the context and choosing the right parser for the given statements.
+// parsings, inferring the context, choosing the right parser for the given statements, and
+// transforming the parsed ottl.Statement[K] slice into a common result of type R.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 type ParserCollection[R any] struct {
 	contextParsers           map[string]*parserCollectionParser
 	contextInferrer          contextInferrer
@@ -130,8 +137,14 @@ type ParserCollection[R any] struct {
 	ErrorMode                ErrorMode
 }
 
+// ParserCollectionOption is a configurable ParserCollection option.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 type ParserCollectionOption[R any] func(*ParserCollection[R]) error
 
+// NewParserCollection creates a new ParserCollection.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewParserCollection[R any](
 	settings component.TelemetrySettings,
 	options ...ParserCollectionOption[R]) (*ParserCollection[R], error) {
@@ -156,6 +169,8 @@ func NewParserCollection[R any](
 // Given each parser has its own transform context type, they must agree on a common type [R]
 // so is can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
 // functions.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 type ParsedStatementConverter[K any, R any] func(
 	collection *ParserCollection[R],
 	parser *Parser[K],
@@ -178,6 +193,8 @@ func newNopParsedStatementConverter[K any]() ParsedStatementConverter[K, any] {
 // WithParserCollectionContext configures an ottl.Parser for the given context.
 // The provided ottl.Parser must be configured to support the provided context using
 // the ottl.WithPathContextNames option.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithParserCollectionContext[K any, R any](
 	context string,
 	parser *Parser[K],
@@ -197,6 +214,8 @@ func WithParserCollectionContext[K any, R any](
 
 // WithParserCollectionErrorMode has no effect on the ParserCollection, but might be used
 // by the ParsedStatementConverter functions to handle/create StatementSequence.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithParserCollectionErrorMode[R any](errorMode ErrorMode) ParserCollectionOption[R] {
 	return func(tp *ParserCollection[R]) error {
 		tp.ErrorMode = errorMode
@@ -207,6 +226,8 @@ func WithParserCollectionErrorMode[R any](errorMode ErrorMode) ParserCollectionO
 // EnableParserCollectionModifiedStatementLogging controls the statements modification logs.
 // When enabled, it logs any statements modifications performed by the parsing operations,
 // instructing users to rewrite the statements accordingly.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func EnableParserCollectionModifiedStatementLogging[R any](enabled bool) ParserCollectionOption[R] {
 	return func(tp *ParserCollection[R]) error {
 		tp.modifiedStatementLogging = enabled
@@ -221,6 +242,8 @@ func EnableParserCollectionModifiedStatementLogging[R any](enabled bool) ParserC
 // If no contexts are present in the statements, or if the inferred value is not supported by
 // the [ParserCollection], it returns an error.
 // If parsing the statements fails, it returns the underline [ottl.Parser.ParseStatements] error.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, error) {
 	statementsValues := statements.GetStatements()
 	inferredContext, err := pc.contextInferrer.infer(statementsValues)
@@ -244,6 +267,8 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, 
 // argument should be set to true, so it rewrites the statements prepending the missing paths
 // contexts.
 // If parsing the statements fails, it returns the underline [ottl.Parser.ParseStatements] error.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
 func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
