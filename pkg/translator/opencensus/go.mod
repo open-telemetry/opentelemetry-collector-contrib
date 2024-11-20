@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/semconv v0.114.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.35.2
 )
 
 require (

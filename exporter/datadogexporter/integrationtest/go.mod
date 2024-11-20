@@ -31,7 +31,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/sdk/log v0.8.0
 	go.opentelemetry.io/otel/trace v1.32.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.35.2
 )
 
 require (
@@ -45,7 +45,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.135 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.136 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.59.0 // indirect
