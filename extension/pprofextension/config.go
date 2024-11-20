@@ -11,7 +11,6 @@ import (
 // Config has the configuration for the extension enabling the golang
 // net/http/pprof (Performance Profiler) extension.
 type Config struct {
-
 	// TCPAddr is the address and port in which the pprof will be listening to.
 	// Use localhost:<port> to make it available only locally, or ":<port>" to
 	// make it available on all network interfaces.

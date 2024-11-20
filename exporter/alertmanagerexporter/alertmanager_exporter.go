@@ -167,7 +167,6 @@ func (s *alertmanagerExporter) pushTraces(ctx context.Context, td ptrace.Traces)
 
 	alert := s.convertEventsToAlertPayload(events)
 	err := s.postAlert(ctx, alert)
-
 	if err != nil {
 		return err
 	}
