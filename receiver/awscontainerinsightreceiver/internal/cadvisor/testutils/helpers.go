@@ -34,8 +34,7 @@ func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
 	return result
 }
 
-type MockCPUMemInfo struct {
-}
+type MockCPUMemInfo struct{}
 
 func (m MockCPUMemInfo) GetNumCores() int64 {
 	return 2

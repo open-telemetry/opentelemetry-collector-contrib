@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package admission // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+package admission2 // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 
 import (
 	"context"
@@ -23,8 +23,8 @@ type Queue interface {
 	//       controller decides to reject this caller without
 	//       admitting it.
 	//
-	// In case (1), the return value will be a non-nil error. The
-	// caller must invoke Release(weight) after it is finished
+	// In case (1), the return value will be a non-nil
+	// ReleaseFunc. The caller must invoke it after it is finished
 	// with the resource being guarded by the admission
 	// controller.
 	//
@@ -33,11 +33,11 @@ type Queue interface {
 	//
 	// In case (3), the return value will be a ResourceExhausted
 	// error.
-	Acquire(ctx context.Context, weight int64) error
-
-	// Release will be eliminated as part of issue #36074.
-	Release(weight int64) error
+	Acquire(ctx context.Context, weight uint64) (ReleaseFunc, error)
 }
+
+// ReleaseFunc is returned by Acquire when the Acquire() was admitted.
+type ReleaseFunc func()
 
 type noopController struct{}
 
@@ -48,12 +48,9 @@ func NewUnboundedQueue() Queue {
 	return noopController{}
 }
 
-// Acquire implements Queue.
-func (noopController) Acquire(_ context.Context, _ int64) error {
-	return nil
-}
+func noopRelease() {}
 
 // Acquire implements Queue.
-func (noopController) Release(_ int64) error {
-	return nil
+func (noopController) Acquire(_ context.Context, _ uint64) (ReleaseFunc, error) {
+	return noopRelease, nil
 }

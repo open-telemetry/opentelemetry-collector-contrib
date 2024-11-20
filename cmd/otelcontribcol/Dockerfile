@@ -4,7 +4,8 @@ RUN apk --update add ca-certificates
 FROM scratch
 
 ARG USER_UID=10001
-USER ${USER_UID}
+ARG USER_GID=10001
+USER ${USER_UID}:${USER_GID}
 
 COPY --from=prep /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY otelcontribcol /

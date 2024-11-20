@@ -20,9 +20,11 @@ import (
 )
 
 // Constant prefixes used to identify information in user-agent
-const agentPrefix = "xray-otel-exporter/"
-const execEnvPrefix = " exec-env/"
-const osPrefix = " OS/"
+const (
+	agentPrefix   = "xray-otel-exporter/"
+	execEnvPrefix = " exec-env/"
+	osPrefix      = " OS/"
+)
 
 // XRayClient represents X-Ray client.
 type XRayClient interface {
