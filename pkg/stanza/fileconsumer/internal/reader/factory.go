@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	DefaultMaxLogSize  = 1024 * 1024
-	DefaultFlushPeriod = 500 * time.Millisecond
+	DefaultMaxLogSize   = 1024 * 1024
+	DefaultFlushPeriod  = 500 * time.Millisecond
+	DefaultMaxBatchSize = 100
 )
 
 type Factory struct {
@@ -77,6 +78,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		includeFileRecordNum: f.IncludeFileRecordNumber,
 		compression:          f.Compression,
 		acquireFSLock:        f.AcquireFSLock,
+		maxBatchSize:         DefaultMaxBatchSize,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 

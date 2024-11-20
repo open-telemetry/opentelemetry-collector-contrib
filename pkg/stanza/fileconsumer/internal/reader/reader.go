@@ -52,6 +52,7 @@ type Reader struct {
 	includeFileRecordNum   bool
 	compression            string
 	acquireFSLock          bool
+	maxBatchSize           int
 }
 
 // ReadToEnd will read until the end of the file
@@ -179,6 +180,8 @@ func (r *Reader) readContents(ctx context.Context) {
 	// Create the scanner to read the contents of the file.
 	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.contentSplitFunc)
 
+	tokens := make([]emit.Token, 0, r.maxBatchSize)
+
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -194,7 +197,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			} else if r.deleteAtEOF {
 				r.delete()
 			}
-			return
+			break
 		}
 
 		token, err := r.decoder.Decode(s.Bytes())
@@ -209,13 +212,49 @@ func (r *Reader) readContents(ctx context.Context) {
 			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		err = r.emitFunc(ctx, emit.NewToken(token, r.FileAttributes))
-		if err != nil {
-			r.set.Logger.Error("failed to process token", zap.Error(err))
-		}
+		tokens = append(tokens, emit.NewToken(copyBody(token), copyAttributes(r.FileAttributes)))
 
+		if r.maxBatchSize > 0 && len(tokens) >= r.maxBatchSize {
+			for _, t := range tokens {
+				err := r.emitFunc(ctx, t)
+				if err != nil {
+					r.set.Logger.Error("failed to emit token", zap.Error(err))
+				}
+			}
+			tokens = tokens[:0]
+			r.Offset = s.Pos()
+		}
+	}
+
+	if len(tokens) > 0 {
+		for _, t := range tokens {
+			err := r.emitFunc(ctx, t)
+			if err != nil {
+				r.set.Logger.Error("failed to emit token", zap.Error(err))
+			}
+		}
 		r.Offset = s.Pos()
 	}
+}
+
+func copyBody(body []byte) []byte {
+	if body == nil {
+		return nil
+	}
+	copied := make([]byte, len(body))
+	copy(copied, body)
+	return copied
+}
+
+func copyAttributes(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	copied := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		copied[k] = v
+	}
+	return copied
 }
 
 // Delete will close and delete the file
