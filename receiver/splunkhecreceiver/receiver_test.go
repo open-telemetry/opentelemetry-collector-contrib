@@ -1071,6 +1071,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 		})
 	}
 }
+
 func Test_splunkhecReceiver_Start(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1111,6 +1112,7 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 		})
 	}
 }
+
 func Test_splunkhecReceiver_handleAck(t *testing.T) {
 	t.Parallel()
 	config := createDefaultConfig().(*Config)

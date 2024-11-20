@@ -4,6 +4,7 @@
 package translator
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -174,7 +175,7 @@ func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.Sta
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
@@ -199,7 +200,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 func TestCauseWithHttpStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	attributes["http.status_text"] = errorMsg
@@ -224,7 +225,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	attributes["http.status_text"] = errorMsg
@@ -248,7 +249,7 @@ func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 func TestNonHttpUnsetCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
 
@@ -271,7 +272,7 @@ func TestNonHttpUnsetCodeSpan(t *testing.T) {
 func TestNonHttpOkCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
 
@@ -294,7 +295,7 @@ func TestNonHttpOkCodeSpan(t *testing.T) {
 func TestNonHttpErrCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
 
@@ -317,7 +318,7 @@ func TestNonHttpErrCodeSpan(t *testing.T) {
 func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 400
 	attributes["http.status_text"] = errorMsg
@@ -341,7 +342,7 @@ func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
 func TestCauseWithClientErrorMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 499
 	attributes["http.status_text"] = errorMsg
@@ -362,7 +363,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 func TestCauseWithThrottled(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
 	attributes["http.status_text"] = errorMsg

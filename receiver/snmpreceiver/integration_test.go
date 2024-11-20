@@ -89,17 +89,15 @@ func TestIntegration(t *testing.T) {
 	}
 }
 
-var (
-	snmpAgentContainerRequest = testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration", "docker"),
-			Dockerfile: "snmp_agent.Dockerfile",
-		},
-		ExposedPorts: []string{"161/udp"},
-		WaitingFor: wait.ForListeningPort("161/udp").
-			WithStartupTimeout(2 * time.Minute),
-	}
-)
+var snmpAgentContainerRequest = testcontainers.ContainerRequest{
+	FromDockerfile: testcontainers.FromDockerfile{
+		Context:    filepath.Join("testdata", "integration", "docker"),
+		Dockerfile: "snmp_agent.Dockerfile",
+	},
+	ExposedPorts: []string{"161/udp"},
+	WaitingFor: wait.ForListeningPort("161/udp").
+		WithStartupTimeout(2 * time.Minute),
+}
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
 	require.NoError(t, req.Validate())
