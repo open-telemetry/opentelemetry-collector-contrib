@@ -18,7 +18,9 @@ This receiver scrapes Azure Monitor API for resources metrics.
 
 The following settings are required:
 
-- `subscription_id`
+- `subscription_ids`: list of subscriptions on which the resource's metrics are collected
+- or `subscriptions_id`: same as `subscription_ids` but not a list
+- or `discover_subscriptions`: (default = `false`) If set to true, will collect metrics from all subscriptions in the tenant.
 
 The following settings are optional:
 

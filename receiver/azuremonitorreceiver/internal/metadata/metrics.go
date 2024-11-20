@@ -108,16 +108,7 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
 
-// WithAzureMonitorSubscriptionID sets provided value as "azuremonitor.subscription_id" attribute for current resource.
-func WithAzureMonitorSubscriptionID(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.AzureMonitorSubscriptionID.Enabled {
-			rm.Resource().Attributes().PutStr("azuremonitor.subscription_id", val)
-		}
-	}
-}
-
-// WithAzuremonitorTenantID sets provided value as "azuremonitor.tenant_id" attribute for current resource.
+// WithAzureMonitorTenantID sets provided value as "azuremonitor.tenant_id" attribute for current resource.
 func WithAzureMonitorTenantID(val string) ResourceMetricsOption {
 	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
 		if ras.AzureMonitorTenantID.Enabled {
@@ -209,6 +200,7 @@ func (mb *MetricsBuilder) addMetric(resourceMetricID, logicalMetricID, unit stri
 }
 
 func (mb *MetricsBuilder) AddDataPoint(
+	subscriptionID,
 	resourceID,
 	metric,
 	aggregation,
@@ -218,7 +210,7 @@ func (mb *MetricsBuilder) AddDataPoint(
 	val float64,
 ) {
 	logicalMetricID := getLogicalMetricID(metric, aggregation)
-	resourceMetricID := getLogicalResourceMetricID(resourceID, logicalMetricID)
+	resourceMetricID := getLogicalResourceMetricID(subscriptionID, resourceID, logicalMetricID)
 
 	m, exists := mb.getMetric(resourceMetricID)
 	if !exists {
@@ -232,6 +224,11 @@ func (mb *MetricsBuilder) AddDataPoint(
 	dp.SetStartTimestamp(mb.startTime)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
+
+	if mb.resourceAttributesSettings.AzureMonitorSubscriptionID.Enabled {
+		dp.Attributes().PutStr("azuremonitor.subscription_id", subscriptionID)
+	}
+
 	dp.Attributes().PutStr("azuremonitor.resource_id", resourceID)
 	for key, value := range attributes {
 		dp.Attributes().PutStr(key, *value)
@@ -242,8 +239,8 @@ func getLogicalMetricID(metric, aggregation string) string {
 	return strings.ToLower(fmt.Sprintf("%s%s_%s", metricsPrefix, strings.ReplaceAll(metric, " ", "_"), aggregation))
 }
 
-func getLogicalResourceMetricID(resourceID, logicalMetricID string) string {
-	return fmt.Sprintf("%s/%s", strings.ToLower(resourceID), logicalMetricID)
+func getLogicalResourceMetricID(subscriptionID, resourceID, logicalMetricID string) string {
+	return fmt.Sprintf("%s/%s/%s", strings.ToLower(subscriptionID), strings.ToLower(resourceID), logicalMetricID)
 }
 
 func (mb *MetricsBuilder) EmitAllMetrics(ils pmetric.ScopeMetrics) {

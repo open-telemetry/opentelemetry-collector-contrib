@@ -1,9 +1,6 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: azuremonitor.subscription_id
-          value:
-            stringValue: ""
         - key: azuremonitor.tenant_id
           value:
             stringValue: ""
@@ -15,7 +12,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -38,7 +38,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -61,7 +64,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -84,7 +90,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -107,7 +116,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -136,7 +148,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -165,7 +180,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -194,7 +212,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -217,7 +238,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -240,7 +264,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -266,7 +293,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -289,7 +319,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -312,7 +345,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -335,7 +371,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -358,7 +397,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId3
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId3
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -384,7 +426,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -413,7 +458,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -439,7 +487,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -462,7 +513,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -485,7 +539,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -508,7 +565,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -531,7 +591,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -554,7 +617,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -577,7 +643,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -606,7 +675,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -629,7 +701,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -652,7 +727,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -675,7 +753,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -701,7 +782,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -727,7 +811,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1
@@ -750,7 +837,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: azuremonitor.subscription_id
+                      value:
+                        stringValue: subscriptionId1
                     - key: location
                       value:
                         stringValue: location1

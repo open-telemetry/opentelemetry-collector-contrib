@@ -56,9 +56,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			var val1 float64 = 1
 			attributes := map[string]*string{}
-			mb.AddDataPoint("resId1", "metric1", "count", "unit", attributes, ts, val1)
+			mb.AddDataPoint("subId1", "resId1", "metric1", "count", "unit", attributes, ts, val1)
 
-			metrics := mb.Emit(WithAzureMonitorSubscriptionID("attr-val"), WithAzureMonitorTenantID("attr-val"))
+			metrics := mb.Emit(WithAzureMonitorTenantID("attr-val"))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -67,27 +67,22 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("azuremonitor.subscription_id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.AzureMonitorSubscriptionID.Enabled, ok)
-			if mb.resourceAttributesSettings.AzureMonitorSubscriptionID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("azuremonitor.tenant_id")
-			attrCount++
+			attrVal, ok := rm.Resource().Attributes().Get("azuremonitor.tenant_id")
 			assert.Equal(t, mb.resourceAttributesSettings.AzureMonitorTenantID.Enabled, ok)
 			if mb.resourceAttributesSettings.AzureMonitorTenantID.Enabled {
-				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, 2, attrCount)
+			attrCount := rm.Resource().Attributes().Len()
+			assert.Equal(t, 1, attrCount)
 
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
+
+			attrVal, ok = ms.At(0).Gauge().DataPoints().At(0).Attributes().Get("azuremonitor.subscription_id")
+			assert.Equal(t, mb.resourceAttributesSettings.AzureMonitorSubscriptionID.Enabled, ok)
+			if mb.resourceAttributesSettings.AzureMonitorSubscriptionID.Enabled {
+				assert.EqualValues(t, "subId1", attrVal.Str())
+			}
 			if test.configSet == testSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}

@@ -5,6 +5,10 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"fmt"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -14,10 +18,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
+	armmonitorfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/fake"
+	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/fake"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -51,18 +58,6 @@ func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*a
 	return &azidentity.DefaultAzureCredential{}, nil
 }
 
-func armClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error) {
-	return &armresources.Client{}, nil
-}
-
-func armMonitorDefinitionsClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error) {
-	return &armmonitor.MetricDefinitionsClient{}, nil
-}
-
-func armMonitorMetricsClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error) {
-	return &armmonitor.MetricsClient{}, nil
-}
-
 func TestAzureScraperStart(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
@@ -75,12 +70,9 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "default",
 			testFunc: func(t *testing.T) {
 				s := &azureScraper{
-					cfg:                             cfg,
-					azIDCredentialsFunc:             azIDCredentialsFuncMock,
-					azIDWorkloadFunc:                azIDWorkloadFuncMock,
-					armClientFunc:                   armClientFuncMock,
-					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
-					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+					cfg:                 cfg,
+					azIDCredentialsFunc: azIDCredentialsFuncMock,
+					azIDWorkloadFunc:    azIDWorkloadFuncMock,
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -103,12 +95,9 @@ func TestAzureScraperStart(t *testing.T) {
 					Authentication:                servicePrincipal,
 				}
 				s := &azureScraper{
-					cfg:                             customCfg,
-					azIDCredentialsFunc:             azIDCredentialsFuncMock,
-					azIDWorkloadFunc:                azIDWorkloadFuncMock,
-					armClientFunc:                   armClientFuncMock,
-					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
-					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+					cfg:                 customCfg,
+					azIDCredentialsFunc: azIDCredentialsFuncMock,
+					azIDWorkloadFunc:    azIDWorkloadFuncMock,
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -131,12 +120,9 @@ func TestAzureScraperStart(t *testing.T) {
 					Authentication:                workloadIdentity,
 				}
 				s := &azureScraper{
-					cfg:                             customCfg,
-					azIDCredentialsFunc:             azIDCredentialsFuncMock,
-					azIDWorkloadFunc:                azIDWorkloadFuncMock,
-					armClientFunc:                   armClientFuncMock,
-					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
-					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+					cfg:                 customCfg,
+					azIDCredentialsFunc: azIDCredentialsFuncMock,
+					azIDWorkloadFunc:    azIDWorkloadFuncMock,
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -159,12 +145,9 @@ func TestAzureScraperStart(t *testing.T) {
 					Authentication:                managedIdentity,
 				}
 				s := &azureScraper{
-					cfg:                             customCfg,
-					azIDCredentialsFunc:             azIDCredentialsFuncMock,
-					azManagedIdentityFunc:           azManagedIdentityFuncMock,
-					armClientFunc:                   armClientFuncMock,
-					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
-					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+					cfg:                   customCfg,
+					azIDCredentialsFunc:   azIDCredentialsFuncMock,
+					azManagedIdentityFunc: azManagedIdentityFuncMock,
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -187,12 +170,9 @@ func TestAzureScraperStart(t *testing.T) {
 					Authentication:                defaultCredentials,
 				}
 				s := &azureScraper{
-					cfg:                             customCfg,
-					azIDCredentialsFunc:             azIDCredentialsFuncMock,
-					azDefaultCredentialsFunc:        azDefaultCredentialsFuncMock,
-					armClientFunc:                   armClientFuncMock,
-					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
-					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+					cfg:                      customCfg,
+					azIDCredentialsFunc:      azIDCredentialsFuncMock,
+					azDefaultCredentialsFunc: azDefaultCredentialsFuncMock,
 				}
 
 				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
@@ -208,48 +188,39 @@ func TestAzureScraperStart(t *testing.T) {
 	}
 }
 
-type armClientMock struct {
-	current int
-	pages   []armresources.ClientListResponse
+func newMockSubscriptionsListPager(pages []armsubscriptions.ClientListResponse) func(options *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {
+	return func(options *armsubscriptions.ClientListOptions) (resp azfake.PagerResponder[armsubscriptions.ClientListResponse]) {
+		for _, page := range pages {
+			resp.AddPage(http.StatusOK, page, nil)
+		}
+		return
+	}
 }
 
-func (acm *armClientMock) NewListPager(_ *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
-	return runtime.NewPager(runtime.PagingHandler[armresources.ClientListResponse]{
-		More: func(armresources.ClientListResponse) bool {
-			return acm.current < len(acm.pages)
-		},
-		Fetcher: func(context.Context, *armresources.ClientListResponse) (armresources.ClientListResponse, error) {
-			currentPage := acm.pages[acm.current]
-			acm.current++
-			return currentPage, nil
-		},
-	})
+func newMockResourcesListPager(pages []armresources.ClientListResponse) func(options *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
+	return func(options *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
+		for _, page := range pages {
+			resp.AddPage(http.StatusOK, page, nil)
+		}
+		return
+	}
 }
 
-type metricsDefinitionsClientMock struct {
-	current map[string]int
-	pages   map[string][]armmonitor.MetricDefinitionsClientListResponse
+func newMockMetricsDefinitionListPager(pagesByResourceURI map[string][]armmonitor.MetricDefinitionsClientListResponse) func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
+	return func(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
+		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
+		for _, page := range pagesByResourceURI[resourceURI] {
+			resp.AddPage(http.StatusOK, page, nil)
+		}
+		return
+	}
 }
-
-func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
-	return runtime.NewPager(runtime.PagingHandler[armmonitor.MetricDefinitionsClientListResponse]{
-		More: func(armmonitor.MetricDefinitionsClientListResponse) bool {
-			return mdcm.current[resourceURI] < len(mdcm.pages[resourceURI])
-		},
-		Fetcher: func(context.Context, *armmonitor.MetricDefinitionsClientListResponse) (armmonitor.MetricDefinitionsClientListResponse, error) {
-			currentPage := mdcm.pages[resourceURI][mdcm.current[resourceURI]]
-			mdcm.current[resourceURI]++
-			return currentPage, nil
-		},
-	})
-}
-
-type metricsValuesClientMock struct {
-	lists map[string]map[string]armmonitor.MetricsClientListResponse
-}
-
-func (mvcm metricsValuesClientMock) List(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
-	return mvcm.lists[resourceURI][*options.Metricnames], nil
+func newMockMetricList(listsByResourceURIAndMetricName map[string]map[string]armmonitor.MetricsClientListResponse) func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
+	return func(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
+		resourceURI = fmt.Sprintf("/%s", resourceURI) // Hack the fake API as it's not taking starting slash from called request
+		resp.SetResponse(http.StatusOK, listsByResourceURIAndMetricName[resourceURI][*options.Metricnames], nil)
+		return
+	}
 }
 
 func TestAzureScraperScrape(t *testing.T) {
@@ -261,6 +232,7 @@ func TestAzureScraperScrape(t *testing.T) {
 	}
 	cfg := createDefaultConfig().(*Config)
 	cfg.MaximumNumberOfMetricsInACall = 2
+	cfg.SubscriptionIDs = []string{"subscriptionId1"}
 
 	cfgTagsEnabled := createDefaultConfig().(*Config)
 	cfgTagsEnabled.AppendTagsAsAttributes = true
@@ -296,31 +268,48 @@ func TestAzureScraperScrape(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			settings := receivertest.NewNopSettings()
 
-			armClientMock := &armClientMock{
-				current: 0,
-				pages:   getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
+			resourceServer := armresourcesfake.Server{
+				NewListPager: newMockResourcesListPager(getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes)),
 			}
-
-			counters, pages := getMetricsDefinitionsMockData()
-
-			metricsDefinitionsClientMock := &metricsDefinitionsClientMock{
-				current: counters,
-				pages:   pages,
+			subscriptionsServer := armsubscriptionsfake.Server{
+				NewListPager: newMockSubscriptionsListPager(getSubscriptionsMockData()),
 			}
-
-			metricsValuesClientMock := &metricsValuesClientMock{
-				lists: getMetricsValuesMockData(),
+			monitorServerFactory := armmonitorfake.ServerFactory{
+				MetricDefinitionsServer: armmonitorfake.MetricDefinitionsServer{
+					NewListPager: newMockMetricsDefinitionListPager(getMetricsDefinitionsMockData()),
+				},
+				MetricsServer: armmonitorfake.MetricsServer{
+					List: newMockMetricList(getMetricsValuesMockData()),
+				},
 			}
 
 			s := &azureScraper{
-				cfg:                      tt.fields.cfg,
-				clientResources:          armClientMock,
-				clientMetricsDefinitions: metricsDefinitionsClientMock,
-				clientMetricsValues:      metricsValuesClientMock,
-				mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
-				mutex:                    &sync.Mutex{},
+				cfg:   tt.fields.cfg,
+				mb:    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mutex: &sync.Mutex{},
+				// From there, initialize everything that is normally initialized in start() func
+				armResourcesClientOptions: &arm.ClientOptions{
+					ClientOptions: azcore.ClientOptions{
+						Transport: armresourcesfake.NewServerTransport(&resourceServer),
+					},
+				},
+				armSubscriptionsClientOptions: &arm.ClientOptions{
+					ClientOptions: azcore.ClientOptions{
+						Transport: armsubscriptionsfake.NewServerTransport(&subscriptionsServer),
+					},
+				},
+				armMonitorClientOptions: &arm.ClientOptions{
+					ClientOptions: azcore.ClientOptions{
+						Transport: armmonitorfake.NewServerFactoryTransport(&monitorServerFactory),
+					},
+				},
+				subscriptions: map[string]*azureSubscription{
+					"subscriptionId1": {SubscriptionID: "subscriptionId1"},
+				},
+				resources: map[string]map[string]*azureResource{
+					"subscriptionId1": {},
+				},
 			}
-			s.resources = map[string]*azureResource{}
 
 			metrics, err := s.scrape(tt.args.ctx)
 			if (err != nil) != tt.wantErr {
@@ -339,12 +328,33 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
+
+	}
+}
+
+func getSubscriptionsMockData() []armsubscriptions.ClientListResponse {
+	return []armsubscriptions.ClientListResponse{
+		{
+			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
+				Value: []*armsubscriptions.Subscription{
+					{ID: to.Ptr("subscriptionId1")},
+					{ID: to.Ptr("subscriptionId2")},
+				},
+			},
+		},
+		{
+			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
+				Value: []*armsubscriptions.Subscription{
+					{ID: to.Ptr("subscriptionId3")},
+				},
+			},
+		},
 	}
 }
 
 func getResourcesMockData(tags bool) []armresources.ClientListResponse {
-	id1, id2, id3, location1, name1, type1 := "/resourceGroups/group1/resourceId1",
-		"/resourceGroups/group1/resourceId2", "/resourceGroups/group1/resourceId3", "location1", "name1", "type1"
+	id1, id2, id3, location1, name1, type1 := "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1",
+		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2", "/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3", "location1", "name1", "type1"
 
 	resourceID1 := armresources.GenericResourceExpanded{
 		ID:       &id1,
@@ -385,18 +395,12 @@ func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 	}
 }
 
-func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.MetricDefinitionsClientListResponse) {
+func getMetricsDefinitionsMockData() map[string][]armmonitor.MetricDefinitionsClientListResponse {
 	name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension1, dimension2 := "metric1",
 		"metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension1", "dimension2"
 
-	counters := map[string]int{
-		"/resourceGroups/group1/resourceId1": 0,
-		"/resourceGroups/group1/resourceId2": 0,
-		"/resourceGroups/group1/resourceId3": 0,
-	}
-
-	pages := map[string][]armmonitor.MetricDefinitionsClientListResponse{
-		"/resourceGroups/group1/resourceId1": {
+	return map[string][]armmonitor.MetricDefinitionsClientListResponse{
+		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -434,7 +438,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"/resourceGroups/group1/resourceId2": {
+		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -485,7 +489,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"/resourceGroups/group1/resourceId3": {
+		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -509,7 +513,6 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 			},
 		},
 	}
-	return counters, pages
 }
 
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
@@ -519,7 +522,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 	var value1 float64 = 1
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{
-		"/resourceGroups/group1/resourceId1": {
+		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId1": {
 			strings.Join([]string{name1, name2}, ","): {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
@@ -590,7 +593,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
-		"/resourceGroups/group1/resourceId2": {
+		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId2": {
 			name4: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
@@ -689,7 +692,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
-		"/resourceGroups/group1/resourceId3": {
+		"/subscriptions/subscriptionId1/resourceGroups/group1/resourceId3": {
 			name7: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
