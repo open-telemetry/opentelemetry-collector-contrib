@@ -26,7 +26,7 @@ confmap/provider/s3provider/                      @open-telemetry/collector-cont
 confmap/provider/secretsmanagerprovider/          @open-telemetry/collector-contrib-approvers @driverpt @atoulme
 
 connector/countconnector/                         @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
-connector/datadogconnector/                       @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @ankitpatel96
+connector/datadogconnector/                       @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @ankitpatel96 @jade-guiton-dd
 connector/exceptionsconnector/                    @open-telemetry/collector-contrib-approvers @jpkrohling @marctc
 connector/failoverconnector/                      @open-telemetry/collector-contrib-approvers @akats7 @djaglowski @fatsheep9146
 connector/grafanacloudconnector/                  @open-telemetry/collector-contrib-approvers @jpkrohling @rlankfo @jcreixell
@@ -52,7 +52,7 @@ exporter/carbonexporter/                          @open-telemetry/collector-cont
 exporter/cassandraexporter/                       @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                      @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen @SpencerTorres
 exporter/coralogixexporter/                       @open-telemetry/collector-contrib-approvers @povilasv @matej-g
-exporter/datadogexporter/                         @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96
+exporter/datadogexporter/                         @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
 exporter/datasetexporter/                         @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
 exporter/dorisexporter/                           @open-telemetry/collector-contrib-approvers @atoulme @joker-star-l
 exporter/elasticsearchexporter/                   @open-telemetry/collector-contrib-approvers @JaredTan95 @carsonip @lahsivjar
@@ -144,7 +144,7 @@ internal/tools/                                   @open-telemetry/collector-cont
 
 pkg/batchperresourceattr/                         @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                               @open-telemetry/collector-contrib-approvers @jpkrohling
-pkg/datadog/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96
+pkg/datadog/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
 pkg/experimentalmetricmetadata/                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/golden/                                       @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/kafka/topic/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
