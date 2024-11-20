@@ -621,8 +621,10 @@ func (se *SumologicExtension) heartbeatLoop() {
 	}
 }
 
-var errUnauthorizedHeartbeat = errors.New("heartbeat unauthorized")
-var errUnauthorizedMetadata = errors.New("metadata update unauthorized")
+var (
+	errUnauthorizedHeartbeat = errors.New("heartbeat unauthorized")
+	errUnauthorizedMetadata  = errors.New("metadata update unauthorized")
+)
 
 type ErrorAPI struct {
 	status int

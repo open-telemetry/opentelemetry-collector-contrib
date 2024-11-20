@@ -29,7 +29,7 @@ func TestStartAndShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
@@ -48,7 +48,7 @@ func TestStart_UnknownMarshallerEncoding(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
 
@@ -66,7 +66,7 @@ func TestStart_UnknownMarshallerEncoding(t *testing.T) {
 func TestStart_PublisherCreationErr(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return nil, errors.New("simulating error creating publisher")
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
@@ -82,7 +82,7 @@ func TestStart_TLSError(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
 	tlsFactory := func(context.Context) (*tls.Config, error) {
@@ -137,7 +137,7 @@ func exporterForPublishing(t *testing.T) (*mockPublisher, *rabbitmqExporter) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	pub := mockPublisher{}
-	var pubFactory = func(publisher.DialConfig) (publisher.Publisher, error) {
+	pubFactory := func(publisher.DialConfig) (publisher.Publisher, error) {
 		return &pub, nil
 	}
 	exporter := newRabbitmqExporter(cfg, exportertest.NewNopSettings().TelemetrySettings, pubFactory, newTLSFactory(cfg), routingKey, connectionName)
