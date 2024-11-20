@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.20.0
 	go.opentelemetry.io/collector/pdata v1.20.0
 	go.opentelemetry.io/collector/processor v0.114.0
-	go.opentelemetry.io/collector/semconv v0.114.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.114.0
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/metric v1.32.0
 	go.opentelemetry.io/otel/sdk/metric v1.32.0
@@ -27,6 +27,7 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.114.0
 	go.opentelemetry.io/collector/processor/processortest v0.114.0

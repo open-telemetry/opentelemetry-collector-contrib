@@ -43,6 +43,8 @@ const (
 	// OTTLCondition sample traces which match user provided OpenTelemetry Transformation Language
 	// conditions.
 	OTTLCondition PolicyType = "ottl_condition"
+	// RareSpans sample traces with rare spans
+	RareSpans PolicyType = "rare_spans"
 )
 
 // sharedPolicyCfg holds the common configuration to all policies that are used in derivative policy configurations
@@ -72,6 +74,50 @@ type sharedPolicyCfg struct {
 	BooleanAttributeCfg BooleanAttributeCfg `mapstructure:"boolean_attribute"`
 	// Configs for OTTL condition filter sampling policy evaluator
 	OTTLConditionCfg OTTLConditionCfg `mapstructure:"ottl_condition"`
+	// Configs for rare_spans policy
+	RareSpansCfg RareSpansCfg `mapstructure:"rare_spans"`
+}
+
+// RareSpansCfg configuration for the rare spans sampler.
+type RareSpansCfg struct {
+	// ErrorProbability error probability (δ, delta in the turms of Count-min sketch)
+	// defines the probability of error or failure rate of the estimation. If the
+	// probability is small, it means there is a low chance that the CMS will produce
+	// a count estimation that is too far from the true count. On the other hand,
+	// the smaller the value, the more times the hash will need to be calculated for
+	// each span. This in turn can negatively affect performance.
+	ErrorProbability float64 `mapstructure:"error_probability"`
+	// TotalFreq total number of spans that will need to be processed in
+	// ObservationInterval time interval. This parameter affects the accuracy
+	// of the span frequency calculation (`epsilon` in the terms of
+	// Count-min sketch):
+	//  - the closer the value is to the actual number of spans, the more
+	//    accurate the estimate will be;
+	//  - if the value is higher than the real one, this will lead to a very
+	//    accurate estimate;
+	//  - the larger this value, the more memory will be needed to calculate
+	//    the estimate.
+	TotalFreq float64 `mapstructure:"total_frequency"`
+	// MaxErrValue the maximum value of the overestimation at spans frequency
+	// calculation. Alongside with the TotalFreq option, it is used to calculate
+	// the `epsilon` (ε) parameter for the Count-Min sketch data structure.
+	// The lower the value of MaxErrValue, the more accurate the estimate of the
+	// frequency of each unique span will be. On the other hand, the smaller the
+	// value, the more memory will be allocated for CMS data structure.
+	MaxErrValue float64 `mapstructure:"max_error_value"`
+	// SpsSampledLimit maximum number of spans that can be sampled per second.
+	SpsSampledLimit int64 `mapstructure:"sampled_spans_per_second"`
+	// SpsSampledLimit maximum number of spans that can be processed per second.
+	SpsProcessedLimit int64 `mapstructure:"processed_spans_per_second"`
+	// ObservationInterval the time interval of the sliding window within which
+	// rare spans will be taken into account.
+	ObservationInterval time.Duration `mapstructure:"observation_interval"`
+	// Buckets number of segments in a sliding window.
+	Buckets uint8 `mapstructure:"buckets_num"`
+	// RareSpanFrequency frequency of occurrence of a span in the ObservationInterval
+	// at which the span will be sampled. For example, if the value is 1, then the
+	// span will be sampled only at its first occurrence in the ObservationInterval.
+	RareSpanFrequency uint32 `mapstructure:"rare_span_frequency"`
 }
 
 // CompositeSubPolicyCfg holds the common configuration to all policies under composite policy.

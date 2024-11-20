@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cms"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -235,6 +236,25 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
 		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
+	case RareSpans:
+		rsCfg := cfg.RareSpansCfg
+		return sampling.NewRareSpansSampler(
+			cms.CountMinSketchCfg{
+				ErrorProbability: rsCfg.ErrorProbability,
+				TotalFreq:        rsCfg.TotalFreq,
+				MaxErr:           rsCfg.MaxErrValue,
+			},
+			cms.BucketsCfg{
+				ObservationInterval: rsCfg.ObservationInterval,
+				Buckets:             rsCfg.Buckets,
+				EstimationSoftLimit: rsCfg.RareSpanFrequency,
+			},
+			rsCfg.RareSpanFrequency,
+			rsCfg.SpsSampledLimit,
+			rsCfg.SpsProcessedLimit,
+			&sampling.MonotonicClock{},
+			settings,
+		)
 
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)

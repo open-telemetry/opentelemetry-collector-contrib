@@ -35,7 +35,8 @@ Multiple policies exist today and it is straight forward to add more. These incl
 - `span_count`: Sample based on the minimum and/or maximum number of spans, inclusive. If the sum of all spans in the trace is outside the range threshold, the trace will not be sampled.
 - `boolean_attribute`: Sample based on boolean attribute (resource and record).
 - `ottl_condition`: Sample based on given boolean OTTL condition (span and span event).
-- `and`: Sample based on multiple policies, creates an AND policy 
+- `and`: Sample based on multiple policies, creates an AND policy
+- `rare_spans`: Sample low-frequency spans based on counting unique spans
 - `composite`: Sample based on a combination of above samplers, with ordering and rate allocation per sampler. Rate allocation allocates certain percentages of spans per policy order. 
   For example if we have set max_total_spans_per_second as 100 then we can set rate_allocation as follows
   1. test-composite-policy-1 = 50 % of max_total_spans_per_second = 50 spans_per_second
@@ -166,6 +167,19 @@ processors:
               ]
             }
          },
+         {
+            name: rare-spans-policy-1,
+            type: rare_spans,
+            rare_spans: {
+              error_probability: 0.01,
+              total_frequency: 1000,
+              max_error_value: 1,
+              observation_interval: 60m,
+              buckets_num: 4,
+              rare_span_frequency: 2,
+              sampled_spans_per_second: 500,
+              processed_spans_per_second: 1000,
+            }
          {
             name: composite-policy-1,
             type: composite,
