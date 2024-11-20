@@ -4,7 +4,6 @@
 package config
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -48,18 +47,5 @@ func TestConfig(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expected, cfg)
 		})
-	}
-}
-
-const validationMsgFormat = "failed to validate %s configuration: %s"
-
-func fullErrorForSignal(t *testing.T, signal, errMsg string) string {
-	t.Helper()
-
-	switch signal {
-	case "spans", "datapoints", "logs":
-		return fmt.Sprintf(validationMsgFormat, signal, errMsg)
-	default:
-		panic("unhandled signal type")
 	}
 }
