@@ -60,7 +60,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		toBody:        toBody,
 	}
 
-	input.fileConsumer, err = c.Config.Build(set, input.emit)
+	input.fileConsumer, err = c.Config.Build(set, input.emitBatch)
 	if err != nil {
 		return nil, err
 	}

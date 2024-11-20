@@ -215,11 +215,9 @@ func (r *Reader) readContents(ctx context.Context) {
 		tokens = append(tokens, emit.NewToken(copyBody(token), copyAttributes(r.FileAttributes)))
 
 		if r.maxBatchSize > 0 && len(tokens) >= r.maxBatchSize {
-			for _, t := range tokens {
-				err := r.emitFunc(ctx, t)
-				if err != nil {
-					r.set.Logger.Error("failed to emit token", zap.Error(err))
-				}
+			err := r.emitFunc(ctx, tokens)
+			if err != nil {
+				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
 			tokens = tokens[:0]
 			r.Offset = s.Pos()
@@ -227,11 +225,9 @@ func (r *Reader) readContents(ctx context.Context) {
 	}
 
 	if len(tokens) > 0 {
-		for _, t := range tokens {
-			err := r.emitFunc(ctx, t)
-			if err != nil {
-				r.set.Logger.Error("failed to emit token", zap.Error(err))
-			}
+		err := r.emitFunc(ctx, tokens)
+		if err != nil {
+			r.set.Logger.Error("failed to emit token", zap.Error(err))
 		}
 		r.Offset = s.Pos()
 	}
