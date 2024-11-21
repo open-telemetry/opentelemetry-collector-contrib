@@ -10,9 +10,6 @@
     "schedule": ["every tuesday"],
     "extends": [
       "config:recommended",
-      "schedule:nonOfficeHours",
-      "customManagers:githubActionsVersions",
-      "customManagers:makefileVersions",
     ],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
