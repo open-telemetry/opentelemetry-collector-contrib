@@ -1042,12 +1042,14 @@ type mockConn struct {
 func (mockConn) Connection() net.Conn {
 	return nil
 }
+
 func (m mockConn) Send(ctx context.Context, message *protobufs.ServerToAgent) error {
 	if m.sendFunc != nil {
 		return m.sendFunc(ctx, message)
 	}
 	return nil
 }
+
 func (mockConn) Disconnect() error {
 	return nil
 }
@@ -1273,8 +1275,8 @@ service:
 		marshalledOwnMetricsCfg, err := proto.Marshal(ownMetricsCfg)
 		require.NoError(t, err)
 
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0600))
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnMetricsConfigFile), marshalledOwnMetricsCfg, 0o600))
 
 		s := Supervisor{
 			logger: zap.NewNop(),

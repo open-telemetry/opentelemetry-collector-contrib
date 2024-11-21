@@ -284,7 +284,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 	marshalledRemoteConfig, err := proto.Marshal(remoteConfigProto)
 	require.NoError(t, err)
 
-	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0600))
+	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0o600))
 
 	connected := atomic.Bool{}
 	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
@@ -407,7 +407,6 @@ func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
 
 		return n != 0
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
-
 }
 
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
@@ -1077,7 +1076,6 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 
 		return strings.Contains(loadedConfig, "filelog")
 	}, 10*time.Second, 500*time.Millisecond, "Collector was not started with the last received remote config")
-
 }
 
 func TestSupervisorPersistsInstanceID(t *testing.T) {
@@ -1091,7 +1089,6 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
 			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-
 				select {
 				case agentIDChan <- message.InstanceUid:
 				default:
@@ -1168,7 +1165,6 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 		defaultConnectingHandler,
 		server.ConnectionCallbacksStruct{
 			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-
 				select {
 				case agentIDChan <- message.InstanceUid:
 				default:
@@ -1359,7 +1355,6 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	} else {
 		require.ErrorContains(t, err, "No connection could be made")
 	}
-
 }
 
 type LogEntry struct {
@@ -1387,7 +1382,7 @@ func TestSupervisorLogging(t *testing.T) {
 	}
 	marshalledRemoteCfg, err := proto.Marshal(remoteCfgProto)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(remoteCfgFilePath, marshalledRemoteCfg, 0600))
+	require.NoError(t, os.WriteFile(remoteCfgFilePath, marshalledRemoteCfg, 0o600))
 
 	connected := atomic.Bool{}
 	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
@@ -1635,7 +1630,6 @@ func TestSupervisorOpAmpServerPort(t *testing.T) {
 
 func findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
-
 	if err != nil {
 		return 0, err
 	}
@@ -1643,7 +1637,6 @@ func findRandomPort() (int, error) {
 	port := l.Addr().(*net.TCPAddr).Port
 
 	err = l.Close()
-
 	if err != nil {
 		return 0, err
 	}

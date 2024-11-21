@@ -43,6 +43,7 @@ func createMetricsReceiver(
 	_ context.Context,
 	_ receiver.Settings,
 	_ component.Config,
-	_ consumer.Metrics) (receiver.Metrics, error) {
+	_ consumer.Metrics,
+) (receiver.Metrics, error) {
 	return nil, nil
 }
