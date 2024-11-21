@@ -37,7 +37,7 @@ func trim[K any](target ottl.StringGetter[K], replacement ottl.Optional[string])
 		if err != nil {
 			return nil, err
 		}
-		if replacementString == "" {
+		if replacement.IsEmpty() || replacementString == "" {
 			return strings.Trim(val, " "), nil
 		}
 		return strings.Trim(val, replacementString), nil

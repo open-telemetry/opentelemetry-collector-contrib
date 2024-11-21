@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add a new ottl trim function that trims leading and trailing whitespace from a string.
+note: Add a new ottl trim function that trims leading and trailing characters from a string (default- whitespace).
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34100]
