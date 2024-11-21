@@ -63,7 +63,6 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 		return err
 	}
 
-	//govmomi.NewClient()
 	soapClient := soap.NewClient(sdkURL, vc.cfg.Insecure)
 	tlsCfg, err := vc.cfg.LoadTLSConfig(ctx)
 	if err != nil {
