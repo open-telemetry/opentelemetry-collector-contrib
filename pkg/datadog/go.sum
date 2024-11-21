@@ -53,8 +53,6 @@ github.com/google/gofuzz v1.2.0 h1:xRy4A+RhZaiKjJ1bPfwQ8sedCA+YS2YcCHW6ec7JMi0=
 github.com/google/gofuzz v1.2.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
-github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -160,8 +158,6 @@ go.opentelemetry.io/collector/extension/experimental/storage v0.114.0 h1:hLyX9Uv
 go.opentelemetry.io/collector/extension/experimental/storage v0.114.0/go.mod h1:WqYRQVJjJLE1rm+y/ks1wPdPRGWePEvE1VO07xm2J2k=
 go.opentelemetry.io/collector/extension/extensiontest v0.114.0 h1:ibXDms1qrswlvlR6b3d2BeyI8sXUXoFV11yOi9Sop8o=
 go.opentelemetry.io/collector/extension/extensiontest v0.114.0/go.mod h1:/bOYmqu5yTDfI1bJZUxFqm8ZtmcodpquebiSxiQxtDY=
-go.opentelemetry.io/collector/featuregate v1.20.0 h1:Mi7nMy/q52eruI+6jWnMKUOeM55XvwoPnGcdB1++O8c=
-go.opentelemetry.io/collector/featuregate v1.20.0/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
 go.opentelemetry.io/collector/pdata v1.20.0 h1:ePcwt4bdtISP0loHaE+C9xYoU2ZkIvWv89Fob16o9SM=
 go.opentelemetry.io/collector/pdata v1.20.0/go.mod h1:Ox1YVLe87cZDB/TL30i4SUz1cA5s6AM6SpFMfY61ICs=
 go.opentelemetry.io/collector/pdata/pprofile v0.114.0 h1:pUNfTzsI/JUTiE+DScDM4lsrPoxnVNLI2fbTxR/oapo=
