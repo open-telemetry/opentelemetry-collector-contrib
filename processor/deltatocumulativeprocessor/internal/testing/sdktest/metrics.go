@@ -132,5 +132,5 @@ func Expect(metrics map[string]Metric) Spec {
 		}
 		metrics[name] = m
 	}
-	return Spec(metrics)
+	return metrics
 }

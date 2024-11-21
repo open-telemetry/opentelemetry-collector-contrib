@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/sdktest"
 )
 
-var out consumertest.MetricsSink
+var out *consumertest.MetricsSink
 
 func BenchmarkProcessor(gb *testing.B) {
 	const (
@@ -145,6 +145,7 @@ func BenchmarkProcessor(gb *testing.B) {
 	for _, cs := range cases {
 		gb.Run(cs.name, func(b *testing.B) {
 			st := setup(b, nil)
+			out = st.sink
 			run(b, st.proc, cs)
 
 			// verify all dps are processed without error
