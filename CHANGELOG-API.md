@@ -7,6 +7,17 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Changed signature of `emit.Callback` function in `pkg/stanza/fileconsumer/emit` package by introducing `emit.Token` struct that encapsulates the token's body and attributes. (#36260)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: Expose an API `TranslatorFromConfig` that creates a new metrics translator (#36300)
+  This is only code refactor and has no user-facing impact
+
 ## v0.113.0
 
 ### 🛑 Breaking changes 🛑

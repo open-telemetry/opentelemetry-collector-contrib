@@ -61,6 +61,15 @@ span/to_attributes:
       rules:
         - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
 
+# This example will add the same new "documentId"="12345678" attribute,
+# but now resulting in an unchanged span name (/api/v1/document/12345678/update).
+span/to_attributes_keep_original_name:
+  name:
+    to_attributes:
+      keep_original_name: true
+      rules:
+        - ^\/api\/v1\/document\/(?P<documentId>.*)\/update$
+
 # The following demonstrates renaming the span name to `{operation_website}`
 # and adding the attribute {Key: operation_website, Value: <old span name> }
 # when the span has the following properties

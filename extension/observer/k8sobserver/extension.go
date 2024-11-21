@@ -21,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-var _ extension.Extension = (*k8sObserver)(nil)
-var _ observer.Observable = (*k8sObserver)(nil)
+var (
+	_ extension.Extension = (*k8sObserver)(nil)
+	_ observer.Observable = (*k8sObserver)(nil)
+)
 
 type k8sObserver struct {
 	*observer.EndpointsWatcher
@@ -111,7 +113,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 
 	var serviceListerWatcher cache.ListerWatcher
 	if config.ObserveServices {
-		var serviceSelector = fields.Everything()
+		serviceSelector := fields.Everything()
 		set.Logger.Debug("observing services")
 		serviceListerWatcher = cache.NewListWatchFromClient(restClient, "services", v1.NamespaceAll, serviceSelector)
 	}
@@ -130,7 +132,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 
 	var ingressListerWatcher cache.ListerWatcher
 	if config.ObserveIngresses {
-		var ingressSelector = fields.Everything()
+		ingressSelector := fields.Everything()
 		set.Logger.Debug("observing ingresses")
 		ingressListerWatcher = cache.NewListWatchFromClient(client.NetworkingV1().RESTClient(), "ingresses", v1.NamespaceAll, ingressSelector)
 	}

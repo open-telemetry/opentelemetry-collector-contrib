@@ -44,25 +44,29 @@ func Test_createMetricsExporter(t *testing.T) {
 		returnErrorOnCreate bool
 		returnErrorOnStart  bool
 	}{
-		{"success_case",
+		{
+			"success_case",
 			createDefaultConfig(),
 			exportertest.NewNopSettings(),
 			false,
 			false,
 		},
-		{"fail_case",
+		{
+			"fail_case",
 			nil,
 			exportertest.NewNopSettings(),
 			true,
 			false,
 		},
-		{"invalid_config_case",
+		{
+			"invalid_config_case",
 			invalidConfig,
 			exportertest.NewNopSettings(),
 			true,
 			false,
 		},
-		{"invalid_tls_config_case",
+		{
+			"invalid_tls_config_case",
 			invalidTLSConfig,
 			exportertest.NewNopSettings(),
 			false,

@@ -283,8 +283,7 @@ func (t *testClickhouseDriverStmt) Query(_ []driver.Value) (driver.Rows, error) 
 	return nil, nil
 }
 
-type testClickhouseDriverTx struct {
-}
+type testClickhouseDriverTx struct{}
 
 func (*testClickhouseDriverTx) Commit() error {
 	return nil

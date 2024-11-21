@@ -35,7 +35,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		MaxStale: 5 * time.Minute,
 
-		// disable. TODO: find good default
+		// TODO: find good default
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
 		MaxStreams: math.MaxInt,
 	}

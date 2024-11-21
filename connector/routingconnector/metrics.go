@@ -45,7 +45,6 @@ func newMetricsConnector(
 		cfg.DefaultPipelines,
 		mr.Consumer,
 		set.TelemetrySettings)
-
 	if err != nil {
 		return nil, err
 	}

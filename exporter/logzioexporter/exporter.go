@@ -89,6 +89,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 		exporterhelper.WithRetry(config.BackOffConfig),
 	)
 }
+
 func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {

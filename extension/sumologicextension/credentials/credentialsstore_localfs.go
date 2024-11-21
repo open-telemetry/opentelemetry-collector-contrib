@@ -133,7 +133,6 @@ func (cr LocalFsStore) Get(key string) (CollectorCredentials, error) {
 	}
 
 	creds, err := f(_getHasher(), key)
-
 	if err != nil {
 		return CollectorCredentials{}, err
 	}
@@ -170,7 +169,7 @@ func (cr LocalFsStore) Store(key string, creds CollectorCredentials) error {
 			return err
 		}
 
-		if err = os.WriteFile(path, encryptedCreds, 0600); err != nil {
+		if err = os.WriteFile(path, encryptedCreds, 0o600); err != nil {
 			return fmt.Errorf("failed to save credentials file '%s': %w",
 				path, err,
 			)
@@ -239,7 +238,7 @@ func (cr LocalFsStore) Validate() error {
 func ensureDir(path string) error {
 	fi, err := os.Stat(path)
 	if err != nil {
-		if err := os.Mkdir(path, 0700); err != nil {
+		if err := os.Mkdir(path, 0o700); err != nil {
 			return err
 		}
 		return nil
@@ -247,8 +246,8 @@ func ensureDir(path string) error {
 
 	// If the directory doesn't have the execution bit then
 	// set it so that we can 'exec' into it.
-	if fi.Mode().Perm() != 0700 {
-		if err := os.Chmod(path, 0700); err != nil {
+	if fi.Mode().Perm() != 0o700 {
+		if err := os.Chmod(path, 0o700); err != nil {
 			return err
 		}
 	}

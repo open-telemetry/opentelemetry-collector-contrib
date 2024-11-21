@@ -43,7 +43,6 @@ func newExporter(config *Config, settings component.TelemetrySettings) (*lokiExp
 	settings.Logger.Info("using the new Loki exporter")
 
 	builder, err := metadata.NewTelemetryBuilder(settings)
-
 	if err != nil {
 		return nil, err
 	}

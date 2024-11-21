@@ -154,9 +154,11 @@ func (c *client) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 // A guesstimated value > length of bytes of a single event.
 // Added to buffer capacity so that buffer is likely to grow by reslicing when buf.Len() > bufCap.
-const bufCapPadding = uint(4096)
-const libraryHeaderName = "X-Splunk-Instrumentation-Library"
-const profilingLibraryName = "otel.profiling"
+const (
+	bufCapPadding        = uint(4096)
+	libraryHeaderName    = "X-Splunk-Instrumentation-Library"
+	profilingLibraryName = "otel.profiling"
+)
 
 func isProfilingData(sl plog.ScopeLogs) bool {
 	return sl.Scope().Name() == profilingLibraryName

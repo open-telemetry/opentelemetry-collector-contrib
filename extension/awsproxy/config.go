@@ -9,7 +9,6 @@ import (
 
 // Config defines the configuration for an AWS X-Ray proxy.
 type Config struct {
-
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyConfig proxy.Config `mapstructure:",squash"`
 }

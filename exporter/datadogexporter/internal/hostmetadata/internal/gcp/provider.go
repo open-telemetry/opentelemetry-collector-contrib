@@ -15,8 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/provider"
 )
 
-var _ source.Provider = (*Provider)(nil)
-var _ provider.ClusterNameProvider = (*Provider)(nil)
+var (
+	_ source.Provider              = (*Provider)(nil)
+	_ provider.ClusterNameProvider = (*Provider)(nil)
+)
 
 var _ gcpDetector = gcp.NewDetector()
 

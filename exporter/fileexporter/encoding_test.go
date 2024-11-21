@@ -58,7 +58,6 @@ func TestEncoding(t *testing.T) {
 	require.NoError(t, te.Start(context.Background(), host))
 	require.NoError(t, le.Start(context.Background(), host))
 	t.Cleanup(func() {
-
 	})
 
 	require.NoError(t, me.ConsumeMetrics(context.Background(), generateMetrics()))

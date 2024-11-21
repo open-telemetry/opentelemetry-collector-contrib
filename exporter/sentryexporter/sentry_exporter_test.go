@@ -371,7 +371,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				conventions.AttributeHTTPMethod: "GET",
+				conventions.AttributeHTTPMethod: http.MethodGet,
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",

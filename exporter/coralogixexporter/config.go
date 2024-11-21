@@ -63,6 +63,7 @@ func isEmpty(endpoint string) bool {
 	}
 	return false
 }
+
 func (c *Config) Validate() error {
 	// validate that at least one endpoint is set up correctly
 	if isEmpty(c.Domain) &&

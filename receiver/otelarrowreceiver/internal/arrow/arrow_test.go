@@ -43,16 +43,20 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 )
 
-var noopTelemetry = componenttest.NewNopTelemetrySettings()
+var (
+	noopTelemetry = componenttest.NewNopTelemetrySettings()
+	testingID     = component.MustNewID("testing")
+)
 
-func defaultBQ() admission.Queue {
-	return admission.NewBoundedQueue(noopTelemetry, 100000, 10)
+func defaultBQ() admission2.Queue {
+	bq, _ := admission2.NewBoundedQueue(testingID, noopTelemetry, 100000, 10)
+	return bq
 }
 
 type (
@@ -362,7 +366,7 @@ func (ctc *commonTestCase) newOOMConsumer() arrowRecord.ConsumerAPI {
 	return mock
 }
 
-func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission.Queue, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
+func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
 	var authServer auth.Server
 	var gsettings configgrpc.ServerConfig
 	for _, gf := range opts {
@@ -452,14 +456,22 @@ func TestBoundedQueueLimits(t *testing.T) {
 			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
 			require.NoError(t, err)
 
-			var bq admission.Queue
+			var bq admission2.Queue
+			// Note that this test exercises the case where there is or is not an
+			// error unrelated to pending data, thus we pass 0 in both cases as
+			// the WaitingLimitMiB below.
+			//
+			// There is an end-to-end test of admission control, including the
+			// ResourceExhausted status code we expect, in
+			// internal/otelarrow/test/e2e_test.go.
 			if tt.expectErr {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
-				bq = admission.NewBoundedQueue(noopTelemetry, int64(sizer.TracesSize(td)-100), 10)
+				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(sizer.TracesSize(td)-100), 0)
 			} else {
 				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
-				bq = admission.NewBoundedQueue(noopTelemetry, tt.admitLimit, 10)
+				bq, err = admission2.NewBoundedQueue(testingID, noopTelemetry, uint64(tt.admitLimit), 0)
 			}
+			require.NoError(t, err)
 
 			ctc.start(ctc.newRealConsumer, bq)
 			ctc.putBatch(batch, nil)

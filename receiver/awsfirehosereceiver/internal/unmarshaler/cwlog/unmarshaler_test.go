@@ -81,3 +81,25 @@ func TestUnmarshal(t *testing.T) {
 		})
 	}
 }
+
+func TestLogTimestamp(t *testing.T) {
+	unmarshaler := NewUnmarshaler(zap.NewNop())
+	record, err := os.ReadFile(filepath.Join(".", "testdata", "single_record"))
+	require.NoError(t, err)
+
+	compressedRecord, err := compression.Zip(record)
+	require.NoError(t, err)
+	records := [][]byte{compressedRecord}
+
+	got, err := unmarshaler.Unmarshal(records)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.Equal(t, 1, got.ResourceLogs().Len())
+
+	rm := got.ResourceLogs().At(0)
+	require.Equal(t, 1, rm.ScopeLogs().Len())
+	ilm := rm.ScopeLogs().At(0)
+	ilm.LogRecords().At(0).Timestamp()
+	expectedTimestamp := "2024-09-05 13:47:15.523 +0000 UTC"
+	require.Equal(t, expectedTimestamp, ilm.LogRecords().At(0).Timestamp().String())
+}

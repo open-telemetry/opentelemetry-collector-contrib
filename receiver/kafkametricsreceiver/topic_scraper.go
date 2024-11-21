@@ -180,8 +180,7 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		saramaConfig: saramaConfig,
 		config:       cfg,
 	}
-	return scraperhelper.NewScraper(
-		topicsScraperType,
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),

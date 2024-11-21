@@ -42,7 +42,7 @@ type mezmoLogBody struct {
 }
 
 func newLogsExporter(config *Config, settings component.TelemetrySettings, buildInfo component.BuildInfo, logger *zap.Logger) *mezmoExporter {
-	var e = &mezmoExporter{
+	e := &mezmoExporter{
 		config:          config,
 		settings:        settings,
 		userAgentString: fmt.Sprintf("mezmo-otel-exporter/%s", buildInfo.Version),
@@ -145,7 +145,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 			return fmt.Errorf("error Creating JSON payload: %w", errs)
 		}
 
-		var newBufSize = b.Len() + len(lineBytes)
+		newBufSize := b.Len() + len(lineBytes)
 		if newBufSize >= maxBodySize-2 {
 			str := b.String()
 			str = str[:len(str)-1] + "]}"

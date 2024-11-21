@@ -289,7 +289,8 @@ func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*task
 
 // Run ecs.DescribeContainerInstances and ec2.DescribeInstances for a batch (less than 100 container instances).
 func (f *taskFetcher) describeContainerInstances(ctx context.Context, instanceList []*string,
-	ci2EC2 map[string]*ec2.Instance) error {
+	ci2EC2 map[string]*ec2.Instance,
+) error {
 	// Get container instances
 	res, err := f.ecs.DescribeContainerInstancesWithContext(ctx, &ecs.DescribeContainerInstancesInput{
 		Cluster:            aws.String(f.cluster),

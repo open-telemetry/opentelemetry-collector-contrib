@@ -122,7 +122,8 @@ func commonSplunkEvent(
 		Source:     "myservice",
 		SourceType: "mysourcetype",
 		Index:      "myindex",
-		Event: hecSpan{Name: name, StartTime: ts,
+		Event: hecSpan{
+			Name: name, StartTime: ts,
 			TraceID:    "",
 			SpanID:     "",
 			ParentSpan: "",

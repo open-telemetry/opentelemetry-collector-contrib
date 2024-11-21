@@ -9,7 +9,6 @@ import (
 
 // Config defines configuration for http forwarder extension.
 type Config struct {
-
 	// Ingress holds config settings for HTTP server listening for requests.
 	Ingress confighttp.ServerConfig `mapstructure:"ingress"`
 

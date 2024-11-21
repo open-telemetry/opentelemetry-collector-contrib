@@ -51,7 +51,7 @@ func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) *mongodbat
 }
 
 func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraperhelper.Scraper, error) {
-	return scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
+	return scraperhelper.NewScraperWithoutType(recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
 func (s *mongodbatlasreceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {

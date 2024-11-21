@@ -109,7 +109,7 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 
 	for _, tc := range tests {
 		// Create HTTP listener
-		var requestCount = 0
+		requestCount := 0
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var err error
 			docs := getReceivedDocuments(r.Body)
@@ -239,7 +239,7 @@ func TestOpenSearchLogExporter(t *testing.T) {
 
 	for _, tc := range tests {
 		// Create HTTP listener
-		var requestCount = 0
+		requestCount := 0
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var err error
 			docs := getReceivedDocuments(r.Body)

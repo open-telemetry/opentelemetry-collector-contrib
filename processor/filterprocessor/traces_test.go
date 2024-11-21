@@ -314,6 +314,7 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	}
 
 	tel.assertMetrics(t, want)
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructTraces() ptrace.Traces {

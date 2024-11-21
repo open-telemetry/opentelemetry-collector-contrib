@@ -5,6 +5,7 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -146,7 +147,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 	lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 
 	m := lr.Attributes().PutEmptyMap(azureProperties)
-	m.PutStr("method", "GET")
+	m.PutStr("method", http.MethodGet)
 	m.PutStr("url", "https://api.azure-api.net/sessions")
 	m.PutDouble("backendResponseCode", 200)
 	m.PutDouble("responseCode", 200)
@@ -162,7 +163,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 	m.PutStr("backendProtocol", "HTTP/1.1")
 	m.PutStr("apiRevision", "1")
 	m.PutStr("clientTlsVersion", "1.2")
-	m.PutStr("backendMethod", "GET")
+	m.PutStr("backendMethod", http.MethodGet)
 	m.PutStr("backendUrl", "https://api.azurewebsites.net/sessions")
 	return lr
 }()
@@ -181,7 +182,7 @@ var badTimeLogRecord = func() plog.LogRecord {
 	m.PutStr("instanceId", "appgw_2")
 	m.PutStr("clientIP", "185.42.129.24")
 	m.PutDouble("clientPort", 45057)
-	m.PutStr("httpMethod", "GET")
+	m.PutStr("httpMethod", http.MethodGet)
 	m.PutStr("originalRequestUriWithArgs", "/")
 	m.PutStr("requestUri", "/")
 	m.PutStr("requestQuery", "")

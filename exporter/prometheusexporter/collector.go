@@ -7,20 +7,22 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sort"
+	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-var (
-	separatorString = string([]byte{model.SeparatorByte})
-)
+var separatorString = string([]byte{model.SeparatorByte})
 
 type collector struct {
 	accumulator accumulator
@@ -30,6 +32,13 @@ type collector struct {
 	addMetricSuffixes bool
 	namespace         string
 	constLabels       prometheus.Labels
+	metricFamilies    sync.Map
+	metricExpiration  time.Duration
+}
+
+type metricFamily struct {
+	lastSeen time.Time
+	mf       *dto.MetricFamily
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
@@ -40,6 +49,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
+		metricExpiration:  config.MetricExpiration,
 	}
 }
 
@@ -104,7 +114,13 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string) {
+func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string, error) {
+	name := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
+	help, err := c.validateMetrics(name, metric.Description(), mType)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	keys := make([]string, 0, attributes.Len()+2) // +2 for job and instance labels.
 	values := make([]string, 0, attributes.Len()+2)
 
@@ -123,18 +139,17 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 		values = append(values, instance)
 	}
 
-	return prometheus.NewDesc(
-		prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes),
-		metric.Description(),
-		keys,
-		c.constLabels,
-	), values
+	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
 }
 
 func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Gauge().DataPoints().At(0)
 
-	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_GAUGE.Enum(), ip.Attributes(), resourceAttrs)
+	if err != nil {
+		return nil, err
+	}
+
 	var value float64
 	switch ip.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
@@ -162,11 +177,16 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 	ip := metric.Sum().DataPoints().At(0)
 
 	metricType := prometheus.GaugeValue
+	mType := dto.MetricType_GAUGE.Enum()
 	if metric.Sum().IsMonotonic() {
 		metricType = prometheus.CounterValue
+		mType = dto.MetricType_COUNTER.Enum()
 	}
 
-	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, mType, ip.Attributes(), resourceAttrs)
+	if err != nil {
+		return nil, err
+	}
 	var value float64
 	switch ip.ValueType() {
 	case pmetric.NumberDataPointValueTypeInt:
@@ -182,7 +202,6 @@ func (c *collector) convertSum(metric pmetric.Metric, resourceAttrs pcommon.Map)
 	}
 
 	var m prometheus.Metric
-	var err error
 	if metricType == prometheus.CounterValue && ip.StartTimestamp().AsTime().Unix() > 0 {
 		m, err = prometheus.NewConstMetricWithCreatedTimestamp(desc, metricType, value, ip.StartTimestamp().AsTime(), attributes...)
 	} else {
@@ -218,9 +237,11 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 		quantiles[qvj.Quantile()] = qvj.Value()
 	}
 
-	desc, attributes := c.getMetricMetadata(metric, point.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_SUMMARY.Enum(), point.Attributes(), resourceAttrs)
+	if err != nil {
+		return nil, err
+	}
 	var m prometheus.Metric
-	var err error
 	if point.StartTimestamp().AsTime().Unix() > 0 {
 		m, err = prometheus.NewConstSummaryWithCreatedTimestamp(desc, point.Count(), point.Sum(), quantiles, point.StartTimestamp().AsTime(), attributes...)
 	} else {
@@ -237,7 +258,10 @@ func (c *collector) convertSummary(metric pmetric.Metric, resourceAttrs pcommon.
 
 func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	ip := metric.Histogram().DataPoints().At(0)
-	desc, attributes := c.getMetricMetadata(metric, ip.Attributes(), resourceAttrs)
+	desc, attributes, err := c.getMetricMetadata(metric, dto.MetricType_HISTOGRAM.Enum(), ip.Attributes(), resourceAttrs)
+	if err != nil {
+		return nil, err
+	}
 
 	indicesMap := make(map[float64]int)
 	buckets := make([]float64, 0, ip.BucketCounts().Len())
@@ -266,7 +290,6 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	exemplars := convertExemplars(ip.Exemplars())
 
 	var m prometheus.Metric
-	var err error
 	if ip.StartTimestamp().AsTime().Unix() > 0 {
 		m, err = prometheus.NewConstHistogramWithCreatedTimestamp(desc, ip.Count(), ip.Sum(), points, ip.StartTimestamp().AsTime(), attributes...)
 	} else {
@@ -403,4 +426,50 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
 	}
+	c.cleanupMetricFamilies()
+}
+
+func (c *collector) validateMetrics(name, description string, metricType *dto.MetricType) (help string, err error) {
+	now := time.Now()
+	v, exist := c.metricFamilies.Load(name)
+	if !exist {
+		c.metricFamilies.Store(name, metricFamily{
+			lastSeen: now,
+			mf: &dto.MetricFamily{
+				Name: proto.String(name),
+				Help: proto.String(description),
+				Type: metricType,
+			},
+		})
+		return description, nil
+	}
+	emf := v.(metricFamily)
+	if emf.mf.GetType() != *metricType {
+		return "", fmt.Errorf("instrument type conflict, using existing type definition. instrument: %s, existing: %s, dropped: %s", name, emf.mf.GetType(), *metricType)
+	}
+	emf.lastSeen = now
+	c.metricFamilies.Store(name, emf)
+	if emf.mf.GetHelp() != description {
+		c.logger.Info(
+			"Instrument description conflict, using existing",
+			zap.String("instrument", name),
+			zap.String("existing", emf.mf.GetHelp()),
+			zap.String("dropped", description),
+		)
+	}
+	return emf.mf.GetHelp(), nil
+}
+
+func (c *collector) cleanupMetricFamilies() {
+	expirationTime := time.Now().Add(-c.metricExpiration)
+
+	c.metricFamilies.Range(func(key, value any) bool {
+		v := value.(metricFamily)
+		if expirationTime.After(v.lastSeen) {
+			c.logger.Debug("metric expired", zap.String("instrument", key.(string)))
+			c.metricFamilies.Delete(key)
+			return true
+		}
+		return true
+	})
 }

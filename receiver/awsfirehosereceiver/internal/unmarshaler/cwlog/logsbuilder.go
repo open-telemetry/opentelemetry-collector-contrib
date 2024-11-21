@@ -4,6 +4,8 @@
 package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -44,7 +46,9 @@ func newResourceLogsBuilder(logs plog.Logs, attrs resourceAttributes) *resourceL
 func (rlb *resourceLogsBuilder) AddLog(log cWLog) {
 	for _, event := range log.LogEvents {
 		logLine := rlb.rls.AppendEmpty()
-		logLine.SetTimestamp(pcommon.Timestamp(event.Timestamp))
+		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
+		// but timestamp in cloudwatch logs are in milliseconds.
+		logLine.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
 		logLine.Body().SetStr(event.Message)
 	}
 }

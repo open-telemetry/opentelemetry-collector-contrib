@@ -93,7 +93,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -117,7 +118,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -164,7 +165,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -188,7 +190,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},
@@ -235,7 +237,8 @@ func TestConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:    10485760,
+					Interval: 30 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -259,7 +262,7 @@ func TestConfig(t *testing.T) {
 						MinSizeItems: 5000,
 					},
 					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10000,
+						MaxSizeItems: 0,
 					},
 				},
 			},

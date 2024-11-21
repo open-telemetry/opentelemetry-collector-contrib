@@ -116,7 +116,7 @@ func newHTTPForwarder(config *Config, settings component.TelemetrySettings) (ext
 		return nil, errors.New("'egress.endpoint' config option cannot be empty")
 	}
 
-	var url, err = url.Parse(config.Egress.Endpoint)
+	url, err := url.Parse(config.Egress.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("enter a valid URL for 'egress.endpoint': %w", err)
 	}

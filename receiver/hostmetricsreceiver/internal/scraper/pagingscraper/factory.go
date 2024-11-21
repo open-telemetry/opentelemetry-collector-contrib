@@ -6,7 +6,6 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -20,9 +19,6 @@ const (
 	// TypeStr the value of "type" key in configuration.
 	TypeStr = "paging"
 )
-
-// scraperType is the component type used for the built scraper.
-var scraperType component.Type = component.MustNewType(TypeStr)
 
 // Factory is the Factory for scraper.
 type Factory struct{}
@@ -43,8 +39,7 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newPagingScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

@@ -15,11 +15,10 @@ func makeSpanLinks(links ptrace.SpanLinkSlice, skipTimestampValidation bool) ([]
 
 	for i := 0; i < links.Len(); i++ {
 		var spanLinkData awsxray.SpanLinkData
-		var link = links.At(i)
+		link := links.At(i)
 
-		var spanID = link.SpanID().String()
+		spanID := link.SpanID().String()
 		traceID, err := convertToAmazonTraceID(link.TraceID(), skipTimestampValidation)
-
 		if err != nil {
 			return nil, err
 		}

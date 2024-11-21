@@ -12,8 +12,7 @@ import (
 )
 
 // An inappropriate config
-type badConfig struct {
-}
+type badConfig struct{}
 
 func TestCreateTracesUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation

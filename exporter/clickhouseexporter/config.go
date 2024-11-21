@@ -81,14 +81,16 @@ type TableEngine struct {
 	Params string `mapstructure:"params"`
 }
 
-const defaultDatabase = "default"
-const defaultTableEngineName = "MergeTree"
-const defaultMetricTableName = "otel_metrics"
-const defaultGaugeSuffix = "_gauge"
-const defaultSumSuffix = "_sum"
-const defaultSummarySuffix = "_summary"
-const defaultHistogramSuffix = "_histogram"
-const defaultExpHistogramSuffix = "_exponential_histogram"
+const (
+	defaultDatabase           = "default"
+	defaultTableEngineName    = "MergeTree"
+	defaultMetricTableName    = "otel_metrics"
+	defaultGaugeSuffix        = "_gauge"
+	defaultSumSuffix          = "_sum"
+	defaultSummarySuffix      = "_summary"
+	defaultHistogramSuffix    = "_histogram"
+	defaultExpHistogramSuffix = "_exponential_histogram"
+)
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")

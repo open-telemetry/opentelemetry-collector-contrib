@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/multierr"
@@ -23,7 +24,7 @@ import (
 type filterSpanProcessor struct {
 	skipSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
 	skipSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
-	telemetry         *filterProcessorTelemetry
+	telemetry         *filterTelemetry
 	logger            *zap.Logger
 }
 
@@ -33,7 +34,7 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 		logger: set.Logger,
 	}
 
-	fpt, err := newfilterProcessorTelemetry(set)
+	fpt, err := newFilterTelemetry(set, pipeline.SignalTraces)
 	if err != nil {
 		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
@@ -120,7 +121,7 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 	})
 
 	spanCountAfterFilters := td.SpanCount()
-	fsp.telemetry.record(triggerSpansDropped, int64(spanCountBeforeFilters-spanCountAfterFilters))
+	fsp.telemetry.record(ctx, int64(spanCountBeforeFilters-spanCountAfterFilters))
 
 	if errors != nil {
 		fsp.logger.Error("failed processing traces", zap.Error(errors))

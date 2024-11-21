@@ -96,6 +96,7 @@ func (c *correlationTestClient) Get(_ string, dimValue string, cb correlations.S
 		}
 	}()
 }
+
 func (c *correlationTestClient) Correlate(cl *correlations.Correlation, cb correlations.CorrelateCB) {
 	c.Lock()
 	defer c.Unlock()
@@ -103,6 +104,7 @@ func (c *correlationTestClient) Correlate(cl *correlations.Correlation, cb corre
 	cb(cl, nil)
 	atomic.AddInt64(&c.correlateCounter, 1)
 }
+
 func (c *correlationTestClient) Delete(cl *correlations.Correlation, cb correlations.SuccessfulDeleteCB) {
 	c.Lock()
 	defer c.Unlock()
@@ -110,6 +112,7 @@ func (c *correlationTestClient) Delete(cl *correlations.Correlation, cb correlat
 	cb(cl)
 	atomic.AddInt64(&c.deleteCounter, 1)
 }
+
 func (c *correlationTestClient) getCorrelations() []*correlations.Correlation {
 	c.Lock()
 	defer c.Unlock()

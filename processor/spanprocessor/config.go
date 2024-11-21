@@ -68,6 +68,11 @@ type ToAttributes struct {
 	// match. If it is false rule processing will continue to be performed over the
 	// modified span name.
 	BreakAfterMatch bool `mapstructure:"break_after_match"`
+
+	// KeepOriginalName specifies if the original span name should be kept after
+	// processing the rules. If it is true the original span name will be kept,
+	// otherwise it will be replaced with the placeholders of the captured attributes.
+	KeepOriginalName bool `mapstructure:"keep_original_name"`
 }
 
 type Status struct {

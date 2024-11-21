@@ -45,13 +45,13 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	ns := newCouchdbScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraperWithoutType(ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ControllerConfig, params, consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraperWithType(metadata.Type, scraper),
 	)
 }

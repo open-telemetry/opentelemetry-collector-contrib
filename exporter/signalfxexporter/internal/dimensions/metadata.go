@@ -20,7 +20,8 @@ type MetadataUpdateClient interface {
 
 func getDimensionUpdateFromMetadata(
 	metadata metadata.MetadataUpdate,
-	metricsConverter translation.MetricsConverter) *DimensionUpdate {
+	metricsConverter translation.MetricsConverter,
+) *DimensionUpdate {
 	properties, tags := getPropertiesAndTags(metadata)
 
 	return &DimensionUpdate{

@@ -189,6 +189,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
@@ -233,6 +234,7 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
@@ -331,6 +333,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -531,6 +534,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
@@ -574,6 +578,7 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
@@ -672,6 +677,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -887,6 +893,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
@@ -930,6 +937,7 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
@@ -1028,6 +1036,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {

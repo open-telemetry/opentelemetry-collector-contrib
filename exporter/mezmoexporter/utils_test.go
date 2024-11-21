@@ -40,7 +40,7 @@ func TestTruncateString(t *testing.T) {
 
 func TestRandString(t *testing.T) {
 	t.Run("Test fixed length string", func(t *testing.T) {
-		var s = randString(16 * 1024)
+		s := randString(16 * 1024)
 		require.Len(t, s, 16*1024)
 	})
 }

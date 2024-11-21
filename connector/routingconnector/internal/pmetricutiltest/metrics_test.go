@@ -34,15 +34,12 @@ func TestNewMetrics(t *testing.T) {
 			dp.Attributes().PutStr("dpName", "dpD") // resourceA.scopeB.metricC.dpD
 			return md
 		}()
-		fromOpts := pmetricutiltest.NewMetricsFromOpts(
-			pmetricutiltest.WithResource('A',
-				pmetricutiltest.WithScope('B',
-					pmetricutiltest.WithMetric('C', "D"),
-				),
-			),
-		)
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("A", "B", "C", "D")))
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, fromOpts))
+		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
+			pmetricutiltest.Resource("A",
+				pmetricutiltest.Scope("B", pmetricutiltest.Metric("C", pmetricutiltest.NumberDataPoint("D"))),
+			),
+		)))
 	})
 
 	t.Run("two_resources", func(t *testing.T) {
@@ -68,20 +65,15 @@ func TestNewMetrics(t *testing.T) {
 			dp.Attributes().PutStr("dpName", "dpE") // resourceB.scopeC.metricD.dpE
 			return md
 		}()
-		fromOpts := pmetricutiltest.NewMetricsFromOpts(
-			pmetricutiltest.WithResource('A',
-				pmetricutiltest.WithScope('C',
-					pmetricutiltest.WithMetric('D', "E"),
-				),
-			),
-			pmetricutiltest.WithResource('B',
-				pmetricutiltest.WithScope('C',
-					pmetricutiltest.WithMetric('D', "E"),
-				),
-			),
-		)
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("AB", "C", "D", "E")))
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, fromOpts))
+		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
+			pmetricutiltest.Resource("A",
+				pmetricutiltest.Scope("C", pmetricutiltest.Metric("D", pmetricutiltest.NumberDataPoint("E"))),
+			),
+			pmetricutiltest.Resource("B",
+				pmetricutiltest.Scope("C", pmetricutiltest.Metric("D", pmetricutiltest.NumberDataPoint("E"))),
+			),
+		)))
 	})
 
 	t.Run("two_scopes", func(t *testing.T) {
@@ -105,18 +97,13 @@ func TestNewMetrics(t *testing.T) {
 			dp.Attributes().PutStr("dpName", "dpE") // resourceA.scopeC.metricD.dpE
 			return md
 		}()
-		fromOpts := pmetricutiltest.NewMetricsFromOpts(
-			pmetricutiltest.WithResource('A',
-				pmetricutiltest.WithScope('B',
-					pmetricutiltest.WithMetric('D', "E"),
-				),
-				pmetricutiltest.WithScope('C',
-					pmetricutiltest.WithMetric('D', "E"),
-				),
-			),
-		)
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("A", "BC", "D", "E")))
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, fromOpts))
+		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
+			pmetricutiltest.Resource("A",
+				pmetricutiltest.Scope("B", pmetricutiltest.Metric("D", pmetricutiltest.NumberDataPoint("E"))),
+				pmetricutiltest.Scope("C", pmetricutiltest.Metric("D", pmetricutiltest.NumberDataPoint("E"))),
+			),
+		)))
 	})
 
 	t.Run("two_metrics", func(t *testing.T) {
@@ -138,16 +125,15 @@ func TestNewMetrics(t *testing.T) {
 			dp.Attributes().PutStr("dpName", "dpE") // resourceA.scopeB.metricD.dpE
 			return md
 		}()
-		fromOpts := pmetricutiltest.NewMetricsFromOpts(
-			pmetricutiltest.WithResource('A',
-				pmetricutiltest.WithScope('B',
-					pmetricutiltest.WithMetric('C', "E"),
-					pmetricutiltest.WithMetric('D', "E"),
+		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("A", "B", "CD", "E")))
+		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
+			pmetricutiltest.Resource("A",
+				pmetricutiltest.Scope("B",
+					pmetricutiltest.Metric("C", pmetricutiltest.NumberDataPoint("E")),
+					pmetricutiltest.Metric("D", pmetricutiltest.NumberDataPoint("E")),
 				),
 			),
-		)
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("A", "B", "CD", "E")))
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, fromOpts))
+		)))
 	})
 
 	t.Run("two_datapoints", func(t *testing.T) {
@@ -166,14 +152,11 @@ func TestNewMetrics(t *testing.T) {
 			dp.Attributes().PutStr("dpName", "dpE") // resourceA.scopeB.metricC.dpE
 			return md
 		}()
-		fromOpts := pmetricutiltest.NewMetricsFromOpts(
-			pmetricutiltest.WithResource('A',
-				pmetricutiltest.WithScope('B',
-					pmetricutiltest.WithMetric('C', "DE"),
-				),
-			),
-		)
 		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetrics("A", "B", "C", "DE")))
-		assert.NoError(t, pmetrictest.CompareMetrics(expected, fromOpts))
+		assert.NoError(t, pmetrictest.CompareMetrics(expected, pmetricutiltest.NewMetricsFromOpts(
+			pmetricutiltest.Resource("A",
+				pmetricutiltest.Scope("B", pmetricutiltest.Metric("C", pmetricutiltest.NumberDataPoint("D"), pmetricutiltest.NumberDataPoint("E"))),
+			),
+		)))
 	})
 }

@@ -36,7 +36,8 @@ func TestLoadConfig(t *testing.T) {
 						Action:      INSERT,
 						FromContext: stringp("tenant_id"),
 						Value:       nil,
-					}, {
+					},
+					{
 						Key:          stringp("X-Scope-OrgID"),
 						Action:       INSERT,
 						FromContext:  stringp("tenant_id"),

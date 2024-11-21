@@ -43,7 +43,8 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 }
 
 func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
-	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error)) {
+	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
+) {
 	f1 = getEC2Region
 	f2 = newAWSSession
 	m := mock{sn: sess}
@@ -399,8 +400,7 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 		"expected error message")
 }
 
-type mockAWSErr struct {
-}
+type mockAWSErr struct{}
 
 func (m *mockAWSErr) Error() string {
 	return "mockAWSErr"
@@ -433,6 +433,7 @@ func (m *mockProvider) Retrieve() (credentials.Value, error) {
 func (m *mockProvider) IsExpired() bool {
 	return true
 }
+
 func TestSTSRegionalEndpointDisabled(t *testing.T) {
 	logger, recordedLogs := logSetup()
 

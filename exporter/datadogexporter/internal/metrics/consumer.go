@@ -15,9 +15,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
-var _ metrics.Consumer = (*Consumer)(nil)
-var _ metrics.HostConsumer = (*Consumer)(nil)
-var _ metrics.TagsConsumer = (*Consumer)(nil)
+var (
+	_ metrics.Consumer     = (*Consumer)(nil)
+	_ metrics.HostConsumer = (*Consumer)(nil)
+	_ metrics.TagsConsumer = (*Consumer)(nil)
+)
 
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.

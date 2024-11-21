@@ -27,7 +27,6 @@ func TestLoadConfig(t *testing.T) {
 		id       component.ID
 		expected component.Config
 	}{
-
 		{
 			id:       component.MustNewIDWithName("kinetica", ""),
 			expected: defaultCfg,

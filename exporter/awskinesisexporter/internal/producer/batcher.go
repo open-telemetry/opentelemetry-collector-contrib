@@ -23,9 +23,7 @@ type batcher struct {
 	log    *zap.Logger
 }
 
-var (
-	_ Batcher = (*batcher)(nil)
-)
+var _ Batcher = (*batcher)(nil)
 
 var (
 	permanentErrResourceNotFound = new(*types.ResourceNotFoundException)
@@ -52,7 +50,6 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 			StreamName: b.stream,
 			Records:    records,
 		})
-
 		if err != nil {
 			if errors.As(err, permanentErrResourceNotFound) || errors.As(err, permanentErrInvalidArgument) {
 				err = consumererror.NewPermanent(err)

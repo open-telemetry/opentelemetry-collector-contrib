@@ -27,6 +27,7 @@ func generateLogRecordWithNestedBody() plog.LogRecord {
 	fillLogOne(lr)
 	return lr
 }
+
 func generateLogRecordWithMultiTypeValues() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogTwo(lr)
@@ -40,8 +41,9 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		expected map[string]any
 	}
 
-	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
-		{generateLogRecordWithNestedBody(),
+	convertLogRecordToJSONTests := []convertLogRecordToJSONTest{
+		{
+			generateLogRecordWithNestedBody(),
 			pcommon.NewResource(),
 			map[string]any{
 				"23":           float64(45),
@@ -56,7 +58,8 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"traceID":      "08040201000000000000000000000000",
 			},
 		},
-		{generateLogRecordWithMultiTypeValues(),
+		{
+			generateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
 			map[string]any{
 				"bool":       true,
