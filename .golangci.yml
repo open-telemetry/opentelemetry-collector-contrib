@@ -150,7 +150,7 @@ linters:
     - exhaustive
     - gci
     - gocritic
-    - gofmt
+    - gofumpt
     - goimports
     - gosec
     - govet
