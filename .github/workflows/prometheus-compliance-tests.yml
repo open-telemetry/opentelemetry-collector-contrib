@@ -20,6 +20,8 @@ env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  # renovate: datasource=golang-version depName=go
+  GO_VERSION: "1.22.9"
 
 jobs:
   prometheus-compliance-tests:
@@ -31,7 +33,7 @@ jobs:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: ${{ env.GO_VERSION }}
           cache: false
       - name: Cache Go
         id: go-cache
