@@ -202,8 +202,8 @@ func generateProfiles() pprofile.Profiles {
 	for i := 0; i < num; i++ {
 		im := ilm.Profiles().AppendEmpty()
 		im.SetProfileID(pprofile.ProfileID([16]byte{0x01, 0x02, 0x03, 0x04}))
-		im.SetStartTime(pcommon.NewTimestampFromTime(now))
-		im.SetEndTime(pcommon.NewTimestampFromTime(now))
+		im.SetTime(pcommon.NewTimestampFromTime(now))
+		im.SetDuration(pcommon.NewTimestampFromTime(now))
 	}
 	return pd
 }
