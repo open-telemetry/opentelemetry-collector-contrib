@@ -17,7 +17,7 @@ func TestNewLogs(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		expected := plog.NewLogs()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("", "", "")))
-		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New()))
+		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts()))
 	})
 
 	t.Run("simple", func(t *testing.T) {
@@ -32,7 +32,7 @@ func TestNewLogs(t *testing.T) {
 			return ld
 		}()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("A", "B", "C")))
-		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New(
+		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts(
 			plogutiltest.Resource("A", plogutiltest.Scope("B", plogutiltest.LogRecord("C"))),
 		)))
 	})
@@ -55,7 +55,7 @@ func TestNewLogs(t *testing.T) {
 			return ld
 		}()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("AB", "C", "D")))
-		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New(
+		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts(
 			plogutiltest.Resource("A", plogutiltest.Scope("C", plogutiltest.LogRecord("D"))),
 			plogutiltest.Resource("B", plogutiltest.Scope("C", plogutiltest.LogRecord("D"))),
 		)))
@@ -77,7 +77,7 @@ func TestNewLogs(t *testing.T) {
 			return ld
 		}()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("A", "BC", "D")))
-		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New(
+		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts(
 			plogutiltest.Resource("A",
 				plogutiltest.Scope("B", plogutiltest.LogRecord("D")),
 				plogutiltest.Scope("C", plogutiltest.LogRecord("D")),
@@ -99,7 +99,7 @@ func TestNewLogs(t *testing.T) {
 			return ld
 		}()
 		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogs("A", "B", "CD")))
-		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New(
+		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts(
 			plogutiltest.Resource("A", plogutiltest.Scope("B", plogutiltest.LogRecord("C"), plogutiltest.LogRecord("D"))),
 		)))
 	})
@@ -127,7 +127,7 @@ func TestNewLogs(t *testing.T) {
 			l.Body().SetStr("logG") // resourceB.scopeD.logG
 			return ld
 		}()
-		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.New(
+		assert.NoError(t, plogtest.CompareLogs(expected, plogutiltest.NewLogsFromOpts(
 			plogutiltest.Resource("A",
 				plogutiltest.Scope("C", plogutiltest.LogRecord("E")),
 				plogutiltest.Scope("D", plogutiltest.LogRecord("E")),

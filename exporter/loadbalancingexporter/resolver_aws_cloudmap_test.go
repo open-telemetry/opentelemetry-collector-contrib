@@ -17,9 +17,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var instanceID = "test"
-var namespaceName = "cloudmap"
-var statusFilterHealthy = types.HealthStatusFilterHealthy
+var (
+	instanceID          = "test"
+	namespaceName       = "cloudmap"
+	statusFilterHealthy = types.HealthStatusFilterHealthy
+)
 
 var port uint16 = 1234
 
@@ -102,6 +104,7 @@ func makeSummary(i int) types.HttpInstanceSummary {
 		ServiceName:   nil,
 	}
 }
+
 func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
 	s := &servicediscovery.DiscoverInstancesOutput{
 		Instances: []types.HttpInstanceSummary{

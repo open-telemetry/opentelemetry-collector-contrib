@@ -61,7 +61,8 @@ func Test_mapToAdxTrace(t *testing.T) {
 				Events:             getEmptyEvents(),
 				Links:              getEmptyLinks(),
 			},
-		}, {
+		},
+		{
 			name: "No data",
 			spanDatafn: func() ptrace.Span {
 				span := ptrace.NewSpan()
@@ -79,7 +80,8 @@ func Test_mapToAdxTrace(t *testing.T) {
 				Events:             getEmptyEvents(),
 				Links:              getEmptyLinks(),
 			},
-		}, {
+		},
+		{
 			name: "with_events_links",
 			spanDatafn: func() ptrace.Span {
 				span := ptrace.NewSpan()
