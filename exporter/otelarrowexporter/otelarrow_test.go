@@ -1082,7 +1082,6 @@ func (r *mockTracesReceiver) startStreamMockArrowTraces(t *testing.T, statusFor 
 		MockArrowTracesServiceServer: svc,
 	})
 	svc.EXPECT().ArrowTraces(gomock.Any()).Times(1).DoAndReturn(doer)
-
 }
 
 func TestSendArrowFailedTraces(t *testing.T) {

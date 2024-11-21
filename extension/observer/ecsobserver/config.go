@@ -17,7 +17,6 @@ const (
 )
 
 type Config struct {
-
 	// ClusterName is the target ECS cluster name for service discovery.
 	ClusterName string `mapstructure:"cluster_name" yaml:"cluster_name"`
 	// ClusterRegion is the target ECS cluster's AWS region.

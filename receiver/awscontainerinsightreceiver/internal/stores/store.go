@@ -55,7 +55,6 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 	}
 
 	podstore, err := NewPodStore(hostIP, prefFullPodName, addFullPodNameMetricLabel, logger)
-
 	if err != nil {
 		return nil, err
 	}

@@ -444,8 +444,8 @@ This is the overall status of the kvstore for the given deployment.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.kvstore.storage.engine | The backend storage used by the KV store. | Any Str |
-| splunk.kvstore.external | Value denoting if the KV store is using an external service. | Any Str |
+| splunk.kvstore.storage.engine | The backend storage used by the KV store | Any Str |
+| splunk.kvstore.external | Value denoting if the KV store is using an external service | Any Str |
 | splunk.kvstore.status.value | The string value of the status returned when reporting on KV store using the introspection endpoint | Any Str |
 
 ### splunk.server.introspection.queues.current
@@ -475,3 +475,116 @@ Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at speci
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |
+
+### splunk.server.searchartifacts.adhoc
+
+Gauge tracking number of ad hoc search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searchartifacts.completed
+
+Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searchartifacts.incomplete
+
+Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searchartifacts.invalid
+
+Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searchartifacts.job.cache.count
+
+Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searchartifacts.job.cache.size
+
+Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mb} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+| splunk.searchartifacts.cache.type | The search artifacts cache type | Any Str |
+
+### splunk.server.searchartifacts.savedsearches
+
+Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.server.searchartifacts.scheduled
+
+Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {search_artifacts} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |

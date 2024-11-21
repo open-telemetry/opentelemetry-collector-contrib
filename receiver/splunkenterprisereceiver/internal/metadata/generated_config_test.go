@@ -56,6 +56,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: true},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsCompleted:        MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsIncomplete:       MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsInvalid:          MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsJobCacheCount:    MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsJobCacheSize:     MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsSavedsearches:    MetricConfig{Enabled: true},
+					SplunkServerSearchartifactsScheduled:        MetricConfig{Enabled: true},
 					SplunkTypingQueueRatio:                      MetricConfig{Enabled: true},
 				},
 			},
@@ -95,6 +103,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkSchedulerCompletionRatio:              MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrent:      MetricConfig{Enabled: false},
 					SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsAdhoc:            MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsCompleted:        MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsIncomplete:       MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsInvalid:          MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsJobCacheCount:    MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsJobCacheSize:     MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsSavedsearches:    MetricConfig{Enabled: false},
+					SplunkServerSearchartifactsScheduled:        MetricConfig{Enabled: false},
 					SplunkTypingQueueRatio:                      MetricConfig{Enabled: false},
 				},
 			},
@@ -103,9 +119,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

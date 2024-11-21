@@ -17,7 +17,6 @@ import (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-
 	refMetric := createMetricTelemetry()
 
 	newCache := pcommon.NewMap()

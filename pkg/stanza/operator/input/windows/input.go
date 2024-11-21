@@ -24,7 +24,7 @@ import (
 type Input struct {
 	helper.InputOperator
 	bookmark            Bookmark
-	buffer              Buffer
+	buffer              *Buffer
 	channel             string
 	maxReads            int
 	startAt             string
@@ -154,22 +154,28 @@ func (i *Input) Start(persister operator.Persister) error {
 
 // Stop will stop reading events from a subscription.
 func (i *Input) Stop() error {
-	i.cancel()
+	// Warning: all calls made below must be safe to be done even if Start() was not called or failed.
+
+	if i.cancel != nil {
+		i.cancel()
+	}
+
 	i.wg.Wait()
 
+	var errs error
 	if err := i.subscription.Close(); err != nil {
-		return fmt.Errorf("failed to close subscription: %w", err)
+		errs = errors.Join(errs, fmt.Errorf("failed to close subscription: %w", err))
 	}
 
 	if err := i.bookmark.Close(); err != nil {
-		return fmt.Errorf("failed to close bookmark: %w", err)
+		errs = errors.Join(errs, fmt.Errorf("failed to close bookmark: %w", err))
 	}
 
 	if err := i.publisherCache.evictAll(); err != nil {
-		return fmt.Errorf("failed to close publishers: %w", err)
+		errs = errors.Join(errs, fmt.Errorf("failed to close publishers: %w", err))
 	}
 
-	return i.stopRemoteSession()
+	return errors.Join(errs, i.stopRemoteSession())
 }
 
 // readOnInterval will read events with respect to the polling interval until it reaches the end of the channel.

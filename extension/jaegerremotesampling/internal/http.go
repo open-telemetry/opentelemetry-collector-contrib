@@ -18,9 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-var (
-	errMissingStrategyStore = errors.New("the strategy store has not been provided")
-)
+var errMissingStrategyStore = errors.New("the strategy store has not been provided")
 
 var _ component.Component = (*SamplingHTTPServer)(nil)
 

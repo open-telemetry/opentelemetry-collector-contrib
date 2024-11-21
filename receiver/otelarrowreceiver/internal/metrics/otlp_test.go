@@ -8,135 +8,181 @@ import (
 	"errors"
 	"net"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/otel/trace/noop"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/testconsumer"
 )
 
 const (
-	maxWaiters = 10
-	maxBytes   = int64(250)
+	maxBytes = 250
 )
 
-func TestExport(t *testing.T) {
+type testSink struct {
+	consumertest.MetricsSink
+	context.Context
+	context.CancelFunc
+}
+
+func newTestSink() *testSink {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &testSink{
+		Context:    ctx,
+		CancelFunc: cancel,
+	}
+}
+
+func (ts *testSink) unblock() {
+	time.Sleep(10 * time.Millisecond)
+	ts.CancelFunc()
+}
+
+func (ts *testSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	<-ts.Context.Done()
+	return ts.MetricsSink.ConsumeMetrics(ctx, md)
+}
+
+func TestExport_Success(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
-	metricSink := new(consumertest.MetricsSink)
-	metricsClient := makeMetricsServiceClient(t, metricSink)
-	resp, err := metricsClient.Export(context.Background(), req)
+	metricsSink := newTestSink()
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
 
-	require.NoError(t, err, "Failed to export metrics: %v", err)
+	go metricsSink.unblock()
+	resp, err := metricsClient.Export(context.Background(), req)
+	require.NoError(t, err, "Failed to export trace: %v", err)
 	require.NotNil(t, resp, "The response is missing")
 
-	mds := metricSink.AllMetrics()
-	require.Len(t, mds, 1)
-	assert.EqualValues(t, md, mds[0])
+	require.Len(t, metricsSink.AllMetrics(), 1)
+	assert.EqualValues(t, md, metricsSink.AllMetrics()[0])
+
+	// One self-tracing spans is issued.
+	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.Len(t, selfExp.GetSpans(), 1)
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
-	metricSink := new(consumertest.MetricsSink)
-	metricsClient := makeMetricsServiceClient(t, metricSink)
-	resp, err := metricsClient.Export(context.Background(), pmetricotlp.NewExportRequest())
-	require.NoError(t, err)
-	require.NotNil(t, resp)
+	metricsSink := newTestSink()
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
+	empty := pmetricotlp.NewExportRequest()
+
+	go metricsSink.unblock()
+	resp, err := metricsClient.Export(context.Background(), empty)
+	assert.NoError(t, err, "Failed to export trace: %v", err)
+	assert.NotNil(t, resp, "The response is missing")
+
+	require.Empty(t, metricsSink.AllMetrics())
+
+	// No self-tracing spans are issued.
+	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.Empty(t, selfExp.GetSpans())
 }
 
 func TestExport_ErrorConsumer(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
 
-	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(context.Background(), req)
 	assert.EqualError(t, err, "rpc error: code = Unknown desc = my error")
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
+
+	// One self-tracing spans is issued.
+	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.Len(t, selfExp.GetSpans(), 1)
 }
 
-func TestExport_AdmissionLimitBytesExceeded(t *testing.T) {
+func TestExport_AdmissionRequestTooLarge(t *testing.T) {
 	md := testdata.GenerateMetrics(10)
-	metricSink := new(consumertest.MetricsSink)
+	metricsSink := newTestSink()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
 
-	metricsClient := makeMetricsServiceClient(t, metricSink)
+	go metricsSink.unblock()
 	resp, err := metricsClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unknown desc = rejecting request, request size larger than configured limit")
+	assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = rejecting request, request is too large")
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
+
+	// One self-tracing spans is issued.
+	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.Len(t, selfExp.GetSpans(), 1)
 }
 
-func TestExport_TooManyWaiters(t *testing.T) {
-	bc := testconsumer.NewBlockingConsumer()
-
-	metricsClient := makeMetricsServiceClient(t, bc)
-	bg := context.Background()
-	var errs, err error
+func TestExport_AdmissionLimitExceeded(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
+	metricsSink := newTestSink()
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
-	var mtx sync.Mutex
-	numResponses := 0
-	// Send request that will acquire all of the semaphores bytes and block.
-	go func() {
-		_, err = metricsClient.Export(bg, req)
-		mtx.Lock()
-		errs = multierr.Append(errs, err)
-		numResponses++
-		mtx.Unlock()
-	}()
 
-	for i := 0; i < maxWaiters+1; i++ {
+	metricsClient, selfExp, selfProv := makeMetricsServiceClient(t, metricsSink)
+
+	var wait sync.WaitGroup
+	wait.Add(10)
+
+	var expectSuccess atomic.Int32
+
+	for i := 0; i < 10; i++ {
 		go func() {
-			_, err := metricsClient.Export(bg, req)
-			mtx.Lock()
-			errs = multierr.Append(errs, err)
-			numResponses++
-			mtx.Unlock()
+			defer wait.Done()
+			_, err := metricsClient.Export(context.Background(), req)
+			if err == nil {
+				// some succeed!
+				expectSuccess.Add(1)
+				return
+			}
+			assert.EqualError(t, err, "rpc error: code = ResourceExhausted desc = rejecting request, too much pending data")
 		}()
 	}
 
-	// sleep so all async requests are blocked on semaphore Acquire.
-	time.Sleep(1 * time.Second)
+	metricsSink.unblock()
+	wait.Wait()
 
-	// unblock and wait for errors to be returned and written.
-	bc.Unblock()
-	assert.Eventually(t, func() bool {
-		mtx.Lock()
-		defer mtx.Unlock()
-		errSlice := multierr.Errors(errs)
-		return numResponses == maxWaiters+2 && len(errSlice) == 1
-	}, 3*time.Second, 10*time.Millisecond)
+	// 10 self-tracing spans are issued
+	require.NoError(t, selfProv.ForceFlush(context.Background()))
+	require.Len(t, selfExp.GetSpans(), 10)
 
-	assert.ErrorContains(t, errs, "too many waiters")
+	// Expect the correct number of success and failure.
+	testSuccess := 0
+	for _, span := range selfExp.GetSpans() {
+		switch span.Status.Code {
+		case codes.Ok, codes.Unset:
+			testSuccess++
+		}
+	}
+	require.Equal(t, int(expectSuccess.Load()), testSuccess)
 }
 
-func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRPCClient {
-	addr := otlpReceiverOnGRPCServer(t, mc)
-
+func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) (pmetricotlp.GRPCClient, *tracetest.InMemoryExporter, *trace.TracerProvider) {
+	addr, exp, tp := otlpReceiverOnGRPCServer(t, mc)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
+	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())
 	})
 
-	return pmetricotlp.NewGRPCClient(cc)
+	return pmetricotlp.NewGRPCClient(cc), exp, tp
 }
 
-func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
+func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) (net.Addr, *tracetest.InMemoryExporter, *trace.TracerProvider) {
 	ln, err := net.Listen("tcp", "localhost:")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
@@ -144,7 +190,15 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
+	exp := tracetest.NewInMemoryExporter()
+
+	tp := trace.NewTracerProvider(trace.WithSyncer(exp))
+	telset := componenttest.NewNopTelemetrySettings()
+	telset.TracerProvider = tp
+
 	set := receivertest.NewNopSettings()
+	set.TelemetrySettings = telset
+
 	set.ID = component.NewIDWithName(component.MustNewType("otlp"), "metrics")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
@@ -152,8 +206,8 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		ReceiverCreateSettings: set,
 	})
 	require.NoError(t, err)
-
-	bq := admission.NewBoundedQueue(noop.NewTracerProvider(), maxBytes, maxWaiters)
+	bq, err := admission2.NewBoundedQueue(set.ID, telset, maxBytes, 0)
+	require.NoError(t, err)
 	r := New(zap.NewNop(), mc, obsrecv, bq)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
@@ -162,5 +216,5 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		_ = srv.Serve(ln)
 	}()
 
-	return ln.Addr()
+	return ln.Addr(), exp, tp
 }

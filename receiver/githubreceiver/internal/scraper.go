@@ -19,5 +19,4 @@ type ScraperFactory interface {
 
 type Config any
 
-type ScraperConfig struct {
-}
+type ScraperConfig struct{}

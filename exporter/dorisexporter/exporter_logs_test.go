@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
@@ -28,11 +29,11 @@ func TestPushLogData(t *testing.T) {
 	err = config.Validate()
 	require.NoError(t, err)
 
-	exporter := newLogsExporter(nil, config, testTelemetrySettings)
+	exporter := newLogsExporter(nil, config, componenttest.NewNopTelemetrySettings())
 
 	ctx := context.Background()
 
-	client, err := createDorisHTTPClient(ctx, config, nil, testTelemetrySettings)
+	client, err := createDorisHTTPClient(ctx, config, nil, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client)
 
@@ -57,10 +58,11 @@ func TestPushLogData(t *testing.T) {
 	}()
 
 	err0 := fmt.Errorf("Not Started")
-	for err0 != nil { // until server started
+	for i := 0; err0 != nil && i < 10; i++ { // until server started
 		err0 = exporter.pushLogData(ctx, simpleLogs(10))
 		time.Sleep(100 * time.Millisecond)
 	}
+	require.NoError(t, err0)
 
 	_ = server.Shutdown(ctx)
 }
