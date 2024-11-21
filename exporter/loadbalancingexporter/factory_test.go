@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
@@ -122,4 +124,36 @@ func TestBuildExporterSettings(t *testing.T) {
 		allLogs[0].Context,
 		zap.String(zapEndpointKey, testEndpoint),
 	)
+}
+
+func TestBuildExporterResilienceOptions(t *testing.T) {
+	t.Run("Shouldn't have resilience options by default", func(t *testing.T) {
+		o := []exporterhelper.Option{}
+		cfg := createDefaultConfig().(*Config)
+		assert.Empty(t, buildExporterResilienceOptions(o, cfg))
+	})
+	t.Run("Should have timeout option if defined", func(t *testing.T) {
+		o := []exporterhelper.Option{}
+		cfg := createDefaultConfig().(*Config)
+		cfg.TimeoutSettings = exporterhelper.NewDefaultTimeoutConfig()
+
+		assert.Len(t, buildExporterResilienceOptions(o, cfg), 1)
+	})
+	t.Run("Should have timeout and queue options if defined", func(t *testing.T) {
+		o := []exporterhelper.Option{}
+		cfg := createDefaultConfig().(*Config)
+		cfg.TimeoutSettings = exporterhelper.NewDefaultTimeoutConfig()
+		cfg.QueueSettings = exporterhelper.NewDefaultQueueConfig()
+
+		assert.Len(t, buildExporterResilienceOptions(o, cfg), 2)
+	})
+	t.Run("Should have all resilience options if defined", func(t *testing.T) {
+		o := []exporterhelper.Option{}
+		cfg := createDefaultConfig().(*Config)
+		cfg.TimeoutSettings = exporterhelper.NewDefaultTimeoutConfig()
+		cfg.QueueSettings = exporterhelper.NewDefaultQueueConfig()
+		cfg.BackOffConfig = configretry.NewDefaultBackOffConfig()
+
+		assert.Len(t, buildExporterResilienceOptions(o, cfg), 3)
+	})
 }

@@ -48,13 +48,35 @@ This also supports service name based exporting for traces. If you have two or m
 
 ## Resilience and scaling considerations
 
-The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one exporter per endpoint. Each level of exporters, `loadbalancingexporter` itself and all sub-exporters (one per each endpoint), have it's own queue, timeout and retry mechanisms. Importantly, the `loadbalancingexporter` will attempt to re-route data to a healthy endpoint on delivery failure because in-memory queue, retry and timeout setting are enabled by default ([more details on queuing, retry and timeout default settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)).
+The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one `otlp` exporter per endpoint. Each level of exporters, `loadbalancingexporter` itself and all sub-exporters (one per each endpoint), have it's own queue, timeout and retry mechanisms. Importantly, the `loadbalancingexporter`, by default, will NOT attempt to re-route data to a healthy endpoint on delivery failure, because in-memory queue, retry and timeout setting are disabled by default ([more details on queuing, retry and timeout default settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)).
 
-Unfortunately, data loss is still possible if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
+```
+                                        +------------------+          +---------------+
+ resiliency options 1                   |                  |          |               |
+                                       -- otlp exporter 1  ------------  backend 1    |
+           |                       ---/ |                  |          |               |
+           |                   ---/     +----|-------------+          +---------------+
+           |               ---/              |
+  +-----------------+  ---/                  |
+  |                 --/                      |
+  |  loadbalancing  |                   resiliency options 2
+  |    exporter     |                        |
+  |                 --\                      |
+  +-----------------+  ----\                 |
+                            ----\       +----|-------------+          +---------------+
+                                 ----\  |                  |          |               |
+                                      --- otlp exporter N  ------------  backend N    |
+                                        |                  |          |               |
+                                        +------------------+          +---------------+
+```
 
-* For all types of resolvers (`static`, `dns`, `k8s`) - if one of endpoints is unavailable - first works queue, retry and timeout settings defined for sub-exporters (under `otlp` property). Once redelivery is exhausted on sub-exporter level, telemetry data returns to `loadbalancingexporter` itself and data redelivery happens according to exporter level queue, retry and timeout settings.
+* For all types of resolvers (`static`, `dns`, `k8s`) - if one of endpoints is unavailable - first works queue, retry and timeout settings defined for sub-exporters (under `otlp` property). Once redelivery is exhausted on sub-exporter level, and resilience options 1 are enabled - telemetry data returns to `loadbalancingexporter` itself and data redelivery happens according to exporter level queue, retry and timeout settings.
 * When using the `static` resolver and all targets are unavailable, all load-balanced telemetry will fail to be delivered until either one or all targets are restored or valid target is added the static list. The same principle applies to the `dns` and `k8s` resolvers, except for endpoints list update which happens automatically.
 * When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
+* Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `loadbalancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
+* Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
+
+Unfortunately, data loss is still possible if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
 ## Configuration
 
@@ -93,7 +115,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
-* loadbalancing exporter supports set of standard [queuing, batching, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+* loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
 
 Simple example
 
@@ -161,8 +183,6 @@ exporters:
       max_interval: 30s
       max_elapsed_time: 300s
     sending_queue:
-      # please take a note that otlp.sending_queue will be
-      # disabled automatically in this case to avoid data loss
       enabled: true
       num_consumers: 2
       queue_size: 1000
@@ -173,8 +193,6 @@ exporters:
         # all options from the OTLP exporter are supported
         # except the endpoint
         timeout: 1s
-        # doesn't take any effect because loadbalancing.sending_queue
-        # is enabled
         sending_queue:
           enabled: true
     resolver:

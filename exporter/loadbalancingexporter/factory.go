@@ -10,7 +10,6 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -40,9 +39,8 @@ func createDefaultConfig() component.Config {
 	otlpDefaultCfg.Endpoint = "placeholder:4317"
 
 	return &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+		// By default we disable resilience options on loadbalancing exporter level
+		// to maintain compatibility with workflow in previous versions
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
@@ -69,6 +67,20 @@ func buildExporterSettings(params exporter.Settings, endpoint string) exporter.S
 	return params
 }
 
+func buildExporterResilienceOptions(options []exporterhelper.Option, cfg *Config) []exporterhelper.Option {
+	if cfg.TimeoutSettings.Timeout > 0 {
+		options = append(options, exporterhelper.WithTimeout(cfg.TimeoutSettings))
+	}
+	if cfg.QueueSettings.Enabled {
+		options = append(options, exporterhelper.WithQueue(cfg.QueueSettings))
+	}
+	if cfg.BackOffConfig.Enabled {
+		options = append(options, exporterhelper.WithRetry(cfg.BackOffConfig))
+	}
+
+	return options
+}
+
 func createTracesExporter(ctx context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	c := cfg.(*Config)
 	exporter, err := newTracesExporter(params, cfg)
@@ -76,17 +88,18 @@ func createTracesExporter(ctx context.Context, params exporter.Settings, cfg com
 		return nil, fmt.Errorf("cannot configure loadbalancing traces exporter: %w", err)
 	}
 
+	options := []exporterhelper.Option{
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithCapabilities(exporter.Capabilities()),
+	}
+
 	return exporterhelper.NewTraces(
 		ctx,
 		params,
 		cfg,
 		exporter.ConsumeTraces,
-		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
-		exporterhelper.WithCapabilities(exporter.Capabilities()),
-		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.BackOffConfig),
+		buildExporterResilienceOptions(options, c)...,
 	)
 }
 
@@ -97,17 +110,18 @@ func createLogsExporter(ctx context.Context, params exporter.Settings, cfg compo
 		return nil, fmt.Errorf("cannot configure loadbalancing logs exporter: %w", err)
 	}
 
+	options := []exporterhelper.Option{
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithCapabilities(exporter.Capabilities()),
+	}
+
 	return exporterhelper.NewLogs(
 		ctx,
 		params,
 		cfg,
 		exporter.ConsumeLogs,
-		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
-		exporterhelper.WithCapabilities(exporter.Capabilities()),
-		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.BackOffConfig),
+		buildExporterResilienceOptions(options, c)...,
 	)
 }
 
@@ -118,16 +132,17 @@ func createMetricsExporter(ctx context.Context, params exporter.Settings, cfg co
 		return nil, fmt.Errorf("cannot configure loadbalancing metrics exporter: %w", err)
 	}
 
+	options := []exporterhelper.Option{
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithCapabilities(exporter.Capabilities()),
+	}
+
 	return exporterhelper.NewMetrics(
 		ctx,
 		params,
 		cfg,
 		exporter.ConsumeMetrics,
-		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithShutdown(exporter.Shutdown),
-		exporterhelper.WithCapabilities(exporter.Capabilities()),
-		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.BackOffConfig),
+		buildExporterResilienceOptions(options, c)...,
 	)
 }
