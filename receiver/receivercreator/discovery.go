@@ -35,7 +35,6 @@ type hintsTemplatesBuilder interface {
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
 	logger          *zap.Logger
-	config          DiscoveryConfig
 	ignoreReceivers map[string]bool
 }
 
@@ -48,7 +47,6 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 	}
 	return k8sHintsBuilder{
 		logger:          logger,
-		config:          config,
 		ignoreReceivers: ignoreReceivers,
 	}
 }
