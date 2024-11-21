@@ -30,14 +30,9 @@ type MetricInfo struct {
 	// IncludeResourceAttributes is a list of resource attributes that
 	// needs to be included in the generated metric. If no resource
 	// attribute is included in the list then all attributes are included.
-	// Metric data streams MUST obey single-writer. The component produces
-	// metrics from non-metric signals as well as alters resource attributes
-	// from the source signals. To keep the single-writer valid, the
-	// component adds collector information as resource attribute with the
-	// component name as the prefix of the resource attributes.
 	IncludeResourceAttributes []Attribute `mapstructure:"include_resource_attributes"`
 	Attributes                []Attribute `mapstructure:"attributes"`
-	// Conditions are a set of OTTL condtions which are ORd. Data is
+	// Conditions are a set of OTTL condtions which are ORed. Data is
 	// processed into metrics only if the sequence evaluates to true.
 	Conditions           []string              `mapstructure:"conditions"`
 	Histogram            *Histogram            `mapstructure:"histogram"`
