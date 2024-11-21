@@ -5,14 +5,16 @@ package sampling
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cms"
+	"sync/atomic"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
-	"sync/atomic"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cms"
 )
 
 type mockTimeProvider struct {
@@ -54,13 +56,13 @@ func TestRareSpansSamplerSimple(t *testing.T) {
 
 	des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, Sampled, des)
 	assert.Equal(t, 1, cmsStub.InsertionsWithCnt)
 	assert.Equal(t, 0, cmsStub.CountReq)
 	assert.Equal(t, 0, cmsStub.InsertionsReq)
 	assert.Equal(t, 0, cmsStub.ClearCnt)
-	assert.Equal(t, 1, len(cmsStub.InsertionsWithCntKeys))
+	assert.Len(t, cmsStub.InsertionsWithCntKeys, 1)
 	assert.Equal(t, key, cmsStub.InsertionsWithCntKeys[0])
 }
 
@@ -87,19 +89,18 @@ func TestRareSpansSamplerSampleOneSpanInTrace(t *testing.T) {
 
 	des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, Sampled, des)
 	assert.Equal(t, 2, cmsStub.InsertionsWithCnt)
 	assert.Equal(t, 0, cmsStub.CountReq)
 	assert.Equal(t, 0, cmsStub.InsertionsReq)
 	assert.Equal(t, 0, cmsStub.ClearCnt)
-	assert.Equal(t, 2, len(cmsStub.InsertionsWithCntKeys))
+	assert.Len(t, cmsStub.InsertionsWithCntKeys, 2)
 	assert.Equal(t, key1, cmsStub.InsertionsWithCntKeys[0])
 	assert.Equal(t, key2, cmsStub.InsertionsWithCntKeys[1])
 }
 
 func TestRareSpansSamplerFreqLimit(t *testing.T) {
-
 	serviceName := "test_svc"
 	spanName := "test_span"
 	key := serviceName + ":" + spanName
@@ -137,7 +138,6 @@ func TestRareSpansSamplerFreqLimit(t *testing.T) {
 
 	for _, tCase := range testCases {
 		t.Run(tCase.caseName, func(t *testing.T) {
-
 			cmsStub := cms.NewCmsStubWithCounts(1, cms.CntMap{key: tCase.cmsReturnValue})
 			sampler := NewRareSpansSamplerWithCms(
 				tCase.cmsFreqLimit,
@@ -149,14 +149,13 @@ func TestRareSpansSamplerFreqLimit(t *testing.T) {
 			)
 
 			des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tCase.decision, des)
 		})
 	}
 }
 
 func TestRareSpansSamplerKeyLenLimit(t *testing.T) {
-
 	serviceName := "test_svc"
 	spanCnt := int64(1)
 	tmProvider := newMockTimer(0)
@@ -173,21 +172,21 @@ func TestRareSpansSamplerKeyLenLimit(t *testing.T) {
 			caseName:     "below_limit",
 			decision:     Sampled,
 			cmsFreqLimit: 1,
-			spanNames:    []string{string(make([]byte, spainUniqIdBufferSize-len(serviceName)-2))},
+			spanNames:    []string{string(make([]byte, spanUniqIDBufferSize-len(serviceName)-2))},
 			cmsCounts:    1,
 		},
 		{
 			caseName:     "equal_to_limit",
 			decision:     Sampled,
 			cmsFreqLimit: 1,
-			spanNames:    []string{string(make([]byte, spainUniqIdBufferSize-len(serviceName)-1))},
+			spanNames:    []string{string(make([]byte, spanUniqIDBufferSize-len(serviceName)-1))},
 			cmsCounts:    1,
 		},
 		{
 			caseName:     "above_limit",
 			decision:     NotSampled,
 			cmsFreqLimit: 1,
-			spanNames:    []string{string(make([]byte, spainUniqIdBufferSize-len(serviceName)))},
+			spanNames:    []string{string(make([]byte, spanUniqIDBufferSize-len(serviceName)))},
 			cmsCounts:    0,
 		},
 
@@ -196,8 +195,8 @@ func TestRareSpansSamplerKeyLenLimit(t *testing.T) {
 			decision:     Sampled,
 			cmsFreqLimit: 1,
 			spanNames: []string{
-				string(make([]byte, spainUniqIdBufferSize-len(serviceName))),
-				string(make([]byte, spainUniqIdBufferSize-len(serviceName)-1)),
+				string(make([]byte, spanUniqIDBufferSize-len(serviceName))),
+				string(make([]byte, spanUniqIDBufferSize-len(serviceName)-1)),
 			},
 			cmsCounts: 1,
 		},
@@ -205,7 +204,6 @@ func TestRareSpansSamplerKeyLenLimit(t *testing.T) {
 
 	for _, tCase := range testCases {
 		t.Run(tCase.caseName, func(t *testing.T) {
-
 			cmsStub := cms.NewEmptyCmsStub(1)
 			sampler := NewRareSpansSamplerWithCms(
 				tCase.cmsFreqLimit,
@@ -218,7 +216,7 @@ func TestRareSpansSamplerKeyLenLimit(t *testing.T) {
 
 			traceMock := newMockTrace(serviceName, tCase.spanNames, spanCnt)
 			des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tCase.decision, des)
 			assert.Equal(t, tCase.cmsCounts, cmsStub.InsertionsWithCnt)
 		})
@@ -226,7 +224,6 @@ func TestRareSpansSamplerKeyLenLimit(t *testing.T) {
 }
 
 func TestRareSpansSamplerProcessedLimitSameSecond(t *testing.T) {
-
 	serviceName := "test_svc"
 	spanName := "test_span"
 
@@ -280,7 +277,7 @@ func TestRareSpansSamplerProcessedLimitSameSecond(t *testing.T) {
 			)
 
 			des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tCase.decision, des)
 			assert.Equal(t, tCase.cmsProbes, cmsStub.InsertionsWithCnt)
 		})
@@ -288,7 +285,6 @@ func TestRareSpansSamplerProcessedLimitSameSecond(t *testing.T) {
 }
 
 func TestRareSpansSamplerSampledLimitSameSecond(t *testing.T) {
-
 	serviceName := "test_svc"
 	spanName := "test_span"
 
@@ -342,7 +338,7 @@ func TestRareSpansSamplerSampledLimitSameSecond(t *testing.T) {
 			)
 
 			des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tCase.decision, des)
 			assert.Equal(t, tCase.cmsProbes, cmsStub.InsertionsWithCnt)
 		})
@@ -350,7 +346,6 @@ func TestRareSpansSamplerSampledLimitSameSecond(t *testing.T) {
 }
 
 func TestRareSpansSamplerSampledLimitDifferentSeconds(t *testing.T) {
-
 	serviceName := "test_svc"
 	spanName := "test_span"
 
@@ -384,7 +379,6 @@ func TestRareSpansSamplerSampledLimitDifferentSeconds(t *testing.T) {
 
 	for _, tCase := range testCases {
 		t.Run(tCase.caseName, func(t *testing.T) {
-
 			cmsStub := cms.NewEmptyCmsStub(1)
 			sampler := NewRareSpansSamplerWithCms(
 				tCase.cmsFreqLimit,
@@ -398,7 +392,7 @@ func TestRareSpansSamplerSampledLimitDifferentSeconds(t *testing.T) {
 			for i := 0; i < len(tCase.spansInTrace); i++ {
 				traceMock := newMockTrace(serviceName, []string{spanName}, tCase.spansInTrace[i])
 				des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, tCase.decisions[i], des)
 			}
 			assert.Equal(t, tCase.cmsProbes, cmsStub.InsertionsWithCnt)
@@ -407,7 +401,6 @@ func TestRareSpansSamplerSampledLimitDifferentSeconds(t *testing.T) {
 }
 
 func TestRareSpansSamplerProcessedLimitDifferentSeconds(t *testing.T) {
-
 	serviceName := "test_svc"
 	spanName := "test_span"
 
@@ -441,7 +434,6 @@ func TestRareSpansSamplerProcessedLimitDifferentSeconds(t *testing.T) {
 
 	for _, tCase := range testCases {
 		t.Run(tCase.caseName, func(t *testing.T) {
-
 			cmsStub := cms.NewEmptyCmsStub(1)
 			sampler := NewRareSpansSamplerWithCms(
 				tCase.cmsFreqLimit,
@@ -455,7 +447,7 @@ func TestRareSpansSamplerProcessedLimitDifferentSeconds(t *testing.T) {
 			for i := 0; i < len(tCase.spansInTrace); i++ {
 				traceMock := newMockTrace(serviceName, []string{spanName}, tCase.spansInTrace[i])
 				des, err := sampler.Evaluate(context.Background(), pcommon.TraceID{}, traceMock)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equal(t, tCase.decisions[i], des)
 			}
 			assert.Equal(t, tCase.cmsProbes, cmsStub.InsertionsWithCnt)

@@ -33,7 +33,6 @@ func (cfg BucketsCfg) BucketInterval() (time.Duration, error) {
 	if ((cfg.ObservationInterval % time.Duration(cfg.Buckets)) != time.Duration(0)) ||
 		(bucketInterval < time.Second) ||
 		(bucketInterval%time.Second != 0) {
-
 		return 0, errNonMultiplyObservInterval
 	}
 
@@ -62,8 +61,6 @@ type SlidingCms struct {
 	startPoint time.Time
 	// bucketInterval time interval of each bucket.
 	bucketInterval time.Duration
-	// observationInterval time interval for the whole sliding window.
-	observationInterval time.Duration
 	// softLimit
 	softLimit uint32
 }
@@ -161,7 +158,6 @@ func (h *SlidingCms) Clear() {
 }
 
 func NewSlidingCMSWithStartPoint(bucketsCfg BucketsCfg, cmsCfg CountMinSketchCfg, startTm time.Time) (*SlidingCms, error) {
-
 	err := bucketsCfg.Validate()
 	if err != nil {
 		return nil, err
@@ -193,7 +189,6 @@ func NewSlidingCMSWithStartPoint(bucketsCfg BucketsCfg, cmsCfg CountMinSketchCfg
 }
 
 func NewSlidingPredefinedCMSWithStartPoint(bucketsCfg BucketsCfg, cmsBuckets []CountMinSketch, startTm time.Time) (*SlidingCms, error) {
-
 	err := bucketsCfg.Validate()
 	if err != nil {
 		return nil, err

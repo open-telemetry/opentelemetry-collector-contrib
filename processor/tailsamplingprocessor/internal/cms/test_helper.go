@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cms
+package cms // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cms"
 
 import "fmt"
 
@@ -50,8 +50,7 @@ type StubCms struct {
 func CopyCmsStubSlice(src []CountMinSketch) []CountMinSketch {
 	dst := make([]CountMinSketch, 0, len(src))
 	for _, cs := range src {
-		var s StubCms
-		s = *(cs.(*StubCms))
+		s := *(cs.(*StubCms))
 		dst = append(dst, &s)
 	}
 	return dst

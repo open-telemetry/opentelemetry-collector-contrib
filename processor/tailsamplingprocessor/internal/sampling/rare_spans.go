@@ -18,7 +18,7 @@ import (
 const (
 	spansPerSecondSampledDefaultLimit   = 1000
 	spansPerSecondProcessedDefaultLimit = 100000
-	spainUniqIdBufferSize               = 20 * 1024
+	spanUniqIDBufferSize                = 20 * 1024
 )
 
 type RareSpansSampler struct {
@@ -54,16 +54,13 @@ type RareSpansSampler struct {
 // based on its name and the service name.
 func (r *RareSpansSampler) ShouldBeSampled(svcName, operationName string) bool {
 	r.idBuff = r.idBuff[:len(svcName)]
-	copy(r.idBuff[:], svcName)
+	copy(r.idBuff, svcName)
 	copy(r.idBuff[len(svcName):len(svcName)+1], []byte{':'})
 	copy(r.idBuff[len(svcName)+1:len(svcName)+1+len(operationName)], operationName)
 	r.idBuff = r.idBuff[:len(svcName)+1+len(operationName)]
 
 	cnt := r.cntMinSketch.InsertWithCount(r.idBuff)
-	if cnt <= r.maxSpanFreq {
-		return true
-	}
-	return false
+	return cnt <= r.maxSpanFreq
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
@@ -97,7 +94,7 @@ func (r *RareSpansSampler) Evaluate(_ context.Context, _ pcommon.TraceID, trace 
 			rss := rs.ScopeSpans().At(j).Spans()
 			for k := 0; k < rss.Len(); k++ {
 				keyLen := len(svcName.Str()) + 1 + len(rss.At(k).Name())
-				if keyLen > spainUniqIdBufferSize {
+				if keyLen > spanUniqIDBufferSize {
 					r.logger.Error("too long span key", zap.Int("key_len", keyLen))
 					continue
 				}
@@ -132,14 +129,13 @@ func NewRareSpansSamplerWithCms(
 	cms cms.CountMinSketch,
 	settings component.TelemetrySettings,
 ) *RareSpansSampler {
-
 	return &RareSpansSampler{
 		cntMinSketch:       cms,
 		maxSpanFreq:        rareSpansFreq,
 		spsSampledLimit:    spsSampledLimit,
 		spsProcessingLimit: spsProcessedLimit,
 		currentSecond:      tmProvider.getCurSecond(),
-		idBuff:             make([]byte, 0, spainUniqIdBufferSize),
+		idBuff:             make([]byte, 0, spanUniqIDBufferSize),
 		tmProvider:         tmProvider,
 		logger:             settings.Logger,
 	}
@@ -157,7 +153,6 @@ func NewRareSpansSampler(
 	tmProvider TimeProvider,
 	settings component.TelemetrySettings,
 ) (*RareSpansSampler, error) {
-
 	if spsSampledLimit == 0 {
 		spsSampledLimit = spansPerSecondSampledDefaultLimit
 	}

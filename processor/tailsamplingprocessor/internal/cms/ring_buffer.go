@@ -83,7 +83,6 @@ func (r *RingBufferQueue[T]) TailMoveForward() error {
 // is called. The iteration ends either when the tail is reached or when the
 // visitor returns false.
 func (r *RingBufferQueue[T]) Visit(visitor func(T) bool) {
-
 	start := int(r.head)
 	for i := 0; i < r.Size(); i++ {
 		if !visitor(r.data[(start+i)%int(r.capacity)]) {
@@ -135,7 +134,6 @@ func (r *RingBufferQueue[T]) Dequeue() (T, error) {
 }
 
 func NewEmptyRingBufferQueue[T any](capacity uint32) (*RingBufferQueue[T], error) {
-
 	if capacity == 0 {
 		return nil, errors.New("empty capacity value passed")
 	}
@@ -150,7 +148,6 @@ func NewEmptyRingBufferQueue[T any](capacity uint32) (*RingBufferQueue[T], error
 }
 
 func NewRingBufferQueue[T any](initData []T) (*RingBufferQueue[T], error) {
-
 	if len(initData) == 0 {
 		return nil, errEmptyData
 	}

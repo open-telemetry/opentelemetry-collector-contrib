@@ -12,29 +12,29 @@ import (
 func TestRingbufferEmptyCapacity(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](0)
 	assert.Nil(t, rb)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestRingbufferEnqueueFull(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, rb)
 
 	err = rb.Enqueue(1)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, rb.Size())
 	assert.True(t, rb.IsFull())
 
 	err = rb.Enqueue(2)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.ErrorIs(t, err, errFullBuffer)
 	assert.Equal(t, 1, rb.Size())
 	assert.True(t, rb.IsFull())
-
 }
 
 func TestRingbufferEnqueueSimple(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](3)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var (
 		valTail int
@@ -44,6 +44,7 @@ func TestRingbufferEnqueueSimple(t *testing.T) {
 	)
 
 	err = rb.Enqueue(3)
+	assert.NoError(t, err)
 	valTail, _ = rb.Tail()
 	val0, _ = rb.At(0)
 	assert.False(t, rb.IsEmpty())
@@ -54,7 +55,11 @@ func TestRingbufferEnqueueSimple(t *testing.T) {
 	assert.Equal(t, 3, val0)
 
 	err = rb.Enqueue(2)
+	assert.NoError(t, err)
+
 	err = rb.Enqueue(1)
+	assert.NoError(t, err)
+
 	valTail, _ = rb.Tail()
 	val0, _ = rb.At(0)
 	val1, _ = rb.At(1)
@@ -71,7 +76,7 @@ func TestRingbufferEnqueueSimple(t *testing.T) {
 
 func TestRingbufferDequeueSequential(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](3)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var (
 		valTail int
@@ -81,15 +86,20 @@ func TestRingbufferDequeueSequential(t *testing.T) {
 	)
 
 	err = rb.Enqueue(3)
+	assert.NoError(t, err)
+
 	err = rb.Enqueue(2)
+	assert.NoError(t, err)
+
 	err = rb.Enqueue(1)
+	assert.NoError(t, err)
 
 	val, err = rb.Dequeue()
 	valTail, _ = rb.Tail()
 	val0, _ = rb.At(0)
 	val1, _ = rb.At(1)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.False(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 3, val)
@@ -102,7 +112,7 @@ func TestRingbufferDequeueSequential(t *testing.T) {
 	valTail, _ = rb.Tail()
 	val0, _ = rb.At(0)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.False(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 2, val)
@@ -111,7 +121,7 @@ func TestRingbufferDequeueSequential(t *testing.T) {
 	assert.Equal(t, 1, rb.Size())
 
 	val, err = rb.Dequeue()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 1, val)
@@ -120,7 +130,7 @@ func TestRingbufferDequeueSequential(t *testing.T) {
 
 func TestRingbufferDequeueSimple(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](3)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var (
 		valTail int
@@ -129,26 +139,29 @@ func TestRingbufferDequeueSimple(t *testing.T) {
 	)
 
 	err = rb.Enqueue(3)
+	assert.NoError(t, err)
 	val, err = rb.Dequeue()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 3, val)
 	assert.Equal(t, 0, rb.Size())
 
 	err = rb.Enqueue(2)
+	assert.NoError(t, err)
 	val, err = rb.Dequeue()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 2, val)
 	assert.Equal(t, 0, rb.Size())
 
 	err = rb.Enqueue(1)
+	assert.NoError(t, err)
 	val, err = rb.Dequeue()
 	valTail, _ = rb.Tail()
 	val0, _ = rb.At(0)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 1, val)
@@ -159,15 +172,16 @@ func TestRingbufferDequeueSimple(t *testing.T) {
 
 func TestRingbufferDequeueEmpty(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](3)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = rb.Dequeue()
 	assert.ErrorIs(t, err, errEmptyBuffer)
 
 	err = rb.Enqueue(1)
+	assert.NoError(t, err)
 
 	_, err = rb.Dequeue()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	_, err = rb.Dequeue()
 	assert.ErrorIs(t, err, errEmptyBuffer)
@@ -175,7 +189,7 @@ func TestRingbufferDequeueEmpty(t *testing.T) {
 
 func TestRingbufferTailEmpty(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](3)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	val, ok := rb.Tail()
 	assert.True(t, rb.IsEmpty())
@@ -194,7 +208,7 @@ func TestRingbufferTailEmpty(t *testing.T) {
 
 func TestRingbufferAccessByIndexEmpty(t *testing.T) {
 	rb, err := NewEmptyRingBufferQueue[int](3)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var (
 		val0 int
@@ -241,9 +255,9 @@ func TestRingbufferAccessByIndexSimple(t *testing.T) {
 
 	assert.False(t, rb.IsEmpty())
 	assert.True(t, rb.IsFull())
-	assert.Nil(t, err0)
-	assert.Nil(t, err1)
-	assert.Nil(t, err2)
+	assert.NoError(t, err0)
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
 	assert.Equal(t, 1, val0)
 	assert.Equal(t, 2, val1)
 	assert.Equal(t, 3, val2)
@@ -263,9 +277,9 @@ func TestRingbufferAccessByIndexWithShiftSimple(t *testing.T) {
 
 	assert.False(t, rb.IsEmpty())
 	assert.True(t, rb.IsFull())
-	assert.Nil(t, err0)
-	assert.Nil(t, err1)
-	assert.Nil(t, err2)
+	assert.NoError(t, err0)
+	assert.NoError(t, err1)
+	assert.NoError(t, err2)
 	assert.Equal(t, 2, val0)
 	assert.Equal(t, 3, val1)
 	assert.Equal(t, 4, val2)
@@ -279,7 +293,7 @@ func TestRingbufferAccessByIndexOverflow(t *testing.T) {
 
 	val2, err2 := rb.At(2)
 	assert.Equal(t, 3, val2)
-	assert.Nil(t, err2)
+	assert.NoError(t, err2)
 
 	val3, err3 := rb.At(3)
 	assert.Equal(t, 0, val3)
@@ -330,7 +344,7 @@ func TestRingbufferVisitAllSimple(t *testing.T) {
 	}
 
 	rb.Visit(visitor)
-	assert.Equal(t, 0, len(arr))
+	assert.Empty(t, arr)
 
 	_ = rb.Enqueue(1)
 	_ = rb.Enqueue(2)
@@ -357,12 +371,12 @@ func TestRingbufferPartialVisitAllSimple(t *testing.T) {
 
 	v1 := newPVisitor[int](1)
 	rb.Visit(v1.visit)
-	assert.Equal(t, 1, len(v1.visited))
+	assert.Len(t, v1.visited, 1)
 	assert.Equal(t, []int{1}, v1.visited)
 
 	v2 := newPVisitor[int](2)
 	rb.Visit(v2.visit)
-	assert.Equal(t, 2, len(v2.visited))
+	assert.Len(t, v2.visited, 2)
 	assert.Equal(t, []int{1, 2}, v2.visited)
 }
 
@@ -391,19 +405,19 @@ func TestRingbufferTailMoveForwardFromEmptyToFull(t *testing.T) {
 	assert.False(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 1, rb.Size())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = rb.TailMoveForward()
 	assert.False(t, rb.IsEmpty())
 	assert.False(t, rb.IsFull())
 	assert.Equal(t, 2, rb.Size())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	err = rb.TailMoveForward()
 	assert.False(t, rb.IsEmpty())
 	assert.True(t, rb.IsFull())
 	assert.Equal(t, 3, rb.Size())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestRingbufferTailMoveForwardAfterDequeue(t *testing.T) {
@@ -420,7 +434,7 @@ func TestRingbufferTailMoveForwardAfterDequeue(t *testing.T) {
 
 	_, _ = rb.Dequeue()
 	err = rb.TailMoveForward()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, rb.IsFull())
 
 	val, ok = rb.Tail()
@@ -436,14 +450,14 @@ func TestRingbufferNewRingBufferQueue(t *testing.T) {
 
 	rb, err := NewRingBufferQueue[int]([]int{3, 2, 1})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, rb.Size())
 	assert.Equal(t, uint32(3), rb.Capacity())
 	assert.False(t, rb.IsFull())
 	assert.True(t, rb.IsEmpty())
 
 	err = rb.TailMoveForward()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, rb.Size())
 
 	val, ok = rb.Tail()
@@ -451,7 +465,7 @@ func TestRingbufferNewRingBufferQueue(t *testing.T) {
 	assert.True(t, ok)
 
 	err = rb.TailMoveForward()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 2, rb.Size())
 
 	val, ok = rb.Tail()
@@ -459,7 +473,7 @@ func TestRingbufferNewRingBufferQueue(t *testing.T) {
 	assert.True(t, ok)
 
 	err = rb.TailMoveForward()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 3, rb.Size())
 
 	val, ok = rb.Tail()
@@ -470,6 +484,7 @@ func TestRingbufferNewRingBufferQueue(t *testing.T) {
 func TestRingbufferNewRingBufferQueueEmptyInitData(t *testing.T) {
 	rb, err := NewRingBufferQueue[int]([]int{})
 
+	assert.Error(t, err)
 	assert.ErrorIs(t, err, errEmptyData)
 	assert.Nil(t, rb)
 }

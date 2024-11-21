@@ -58,7 +58,7 @@ func TestCmsCountAfterInsertNoUnderEstimate(t *testing.T) {
 			for i := 1; i < maxValue+1; i++ {
 				bytesData := []byte(strconv.Itoa(i))
 				cnt := int(cms.Count(bytesData))
-				assert.True(t, cnt >= i, "estimated cnt (%d) is less than actual (%d)", cnt, i)
+				assert.GreaterOrEqual(t, cnt, i, "estimated cnt (%d) is less than actual (%d)", cnt, i)
 			}
 		})
 	}
@@ -112,7 +112,7 @@ func TestCmsCountAfterInsertErrorBound(t *testing.T) {
 				bytesData := makeTestCMSKey(i)
 				cnt := int(cms.Count(bytesData))
 				errValue := cnt - i
-				assert.True(t, errValue <= int(c.ErrorBound),
+				assert.LessOrEqualf(t, errValue, int(c.ErrorBound),
 					"error(%d) is greater than defined(%d); i = %d",
 					errValue, int(c.ErrorBound), i)
 			}
@@ -173,7 +173,7 @@ func TestCmsCountAfterInsertErrorProbability(t *testing.T) {
 				}
 			}
 			errProb := overestimated / float64(countOfInsertions(maxValue))
-			assert.True(t, errProb <= c.ErrorProbability,
+			assert.LessOrEqualf(t, errProb, c.ErrorProbability,
 				"%s: error(%.4f) is greater than defined(%.2f)",
 				caseName, errProb, c.ErrorProbability)
 		})
@@ -223,7 +223,7 @@ func TestCmsInsertWithCountNoUnderEstimate(t *testing.T) {
 					cms.InsertWithCount(bytesData)
 				}
 				cnt := int(cms.InsertWithCount(bytesData))
-				assert.True(t, cnt >= i, "estimated cnt (%d) is less than actual (%d)", cnt, i)
+				assert.GreaterOrEqualf(t, cnt, i, "estimated cnt (%d) is less than actual (%d)", cnt, i)
 			}
 		})
 	}
@@ -273,7 +273,7 @@ func TestCmsInsertWithCountErrorBound(t *testing.T) {
 				}
 				cnt := cms.InsertWithCount(bytesData)
 				errValue := int(cnt) - i
-				assert.True(t, errValue <= int(c.ErrorBound),
+				assert.LessOrEqualf(t, errValue, int(c.ErrorBound),
 					"error(%d) is greater than defined(%d); i = %d",
 					errValue, int(c.ErrorBound), i)
 			}
@@ -336,10 +336,9 @@ func TestCmsInsertWithCountErrorProbability(t *testing.T) {
 			if overEstimated == 0 {
 				errProb = 0.
 			}
-			assert.True(t, errProb <= c.ErrorProbability,
+			assert.LessOrEqualf(t, errProb, c.ErrorProbability,
 				"%s: error(%.4f) is greater than defined(%.2f)",
 				caseName, errProb, c.ErrorProbability)
-
 		})
 	}
 }

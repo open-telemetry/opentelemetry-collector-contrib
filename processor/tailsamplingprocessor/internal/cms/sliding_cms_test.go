@@ -50,7 +50,6 @@ func TestNewSlidingCMSInputParamsEmptyBuckets(t *testing.T) {
 }
 
 func TestNewSlidingCMSInputParamsNonMultiplyInterval(t *testing.T) {
-
 	cmsCfg := CountMinSketchCfg{
 		ErrorProbability: .1,
 		TotalFreq:        1,
@@ -101,7 +100,6 @@ func TestNewSlidingCMSInputParamsNonMultiplyInterval(t *testing.T) {
 			sCms, err = NewSlidingPredefinedCMSWithStartPoint(bCfg, cmsStubs, tm)
 			assert.ErrorIs(t, err, errNonMultiplyObservInterval)
 			assert.Nil(t, sCms)
-
 		})
 	}
 }
@@ -267,11 +265,9 @@ func TestNewSlidingCMSUpdateBucketsTimeGap(t *testing.T) {
 	assert.Equal(t, 0, cmsData[1].(*StubCms).ClearCnt)
 	assert.Equal(t, 0, cmsData[2].(*StubCms).ClearCnt)
 	assert.Equal(t, time.Unix(10, 0), sCms.CurrentObservationIntervalStartTm())
-
 }
 
 func TestNewSlidingCMSInsertOverlap(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -298,7 +294,6 @@ func TestNewSlidingCMSInsertOverlap(t *testing.T) {
 }
 
 func TestNewSlidingCMSCountOverlapWithEmptySoftLimit(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -337,7 +332,6 @@ func TestNewSlidingCMSCountOverlapWithEmptySoftLimit(t *testing.T) {
 }
 
 func TestNewSlidingCMSInsertWithCountOverlap(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -384,7 +378,6 @@ func TestNewSlidingCMSInsertWithCountOverlap(t *testing.T) {
 }
 
 func TestNewSlidingCMSCountWithExactSoftLimit(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -444,7 +437,6 @@ func TestNewSlidingCMSCountWithExactSoftLimit(t *testing.T) {
 }
 
 func TestNewSlidingCMSCountWithSoftLimitOverflow(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -508,7 +500,6 @@ func TestNewSlidingCMSCountWithSoftLimitOverflow(t *testing.T) {
 }
 
 func TestNewSlidingCMSInsertCountWithSoftLimitOverflow(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -574,7 +565,6 @@ func TestNewSlidingCMSInsertCountWithSoftLimitOverflow(t *testing.T) {
 }
 
 func TestNewSlidingCMSInsertCountWithExactSoftLimit(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -640,7 +630,6 @@ func TestNewSlidingCMSInsertCountWithExactSoftLimit(t *testing.T) {
 }
 
 func TestNewSlidingCMSClearSimple(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
@@ -669,11 +658,9 @@ func TestNewSlidingCMSClearSimple(t *testing.T) {
 	assert.Equal(t, 2, cmsData[0].(*StubCms).ClearCnt)
 	assert.Equal(t, 1, cmsData[1].(*StubCms).ClearCnt)
 	assert.Equal(t, 0, cmsData[2].(*StubCms).ClearCnt)
-
 }
 
 func TestNewSlidingCMSClearOverflow(t *testing.T) {
-
 	tm := time.Unix(1, 0)
 	bCfg := BucketsCfg{
 		ObservationInterval: 3 * time.Second,
