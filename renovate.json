@@ -13,7 +13,6 @@
       "schedule:nonOfficeHours",
       "customManagers:githubActionsVersions",
       "customManagers:makefileVersions",
-      ":dependencyDashboard"
     ],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
