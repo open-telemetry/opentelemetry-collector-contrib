@@ -227,6 +227,7 @@ body:
       - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
+      - receiver/huaweicloudces
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
