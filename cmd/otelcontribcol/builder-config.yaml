@@ -231,7 +231,6 @@ connectors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector v0.114.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector v0.114.0
 
@@ -466,7 +465,6 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector => ../../connector/roundrobinconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../../connector/routingconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector => ../../connector/servicegraphconnector
-  - github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector => ../../connector/signaltometricsconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../../connector/spanmetricsconnector
   - github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector => ../../connector/sumconnector
   - github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
