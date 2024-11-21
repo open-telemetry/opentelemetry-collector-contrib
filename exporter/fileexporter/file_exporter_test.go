@@ -524,13 +524,48 @@ func TestFileProfilesExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// TODO
+			conf := tt.args.conf
+			fe := &fileExporter{
+				conf: conf,
+			}
+			require.NotNil(t, fe)
+
+			pd := testdata.GenerateProfilesTwoProfilesSameResource()
+			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.consumeProfiles(context.Background(), pd))
+			assert.NoError(t, fe.consumeProfiles(context.Background(), pd))
+			defer func() {
+				assert.NoError(t, fe.Shutdown(context.Background()))
+			}()
+
+			fi, err := os.Open(fe.writer.path)
+			assert.NoError(t, err)
+			defer fi.Close()
+			br := bufio.NewReader(fi)
+			for {
+				buf, isEnd, err := func() ([]byte, bool, error) {
+					if fe.marshaller.formatType == formatTypeJSON && fe.marshaller.compression == "" {
+						return readJSONMessage(br)
+					}
+					return readMessageFromStream(br)
+				}()
+				assert.NoError(t, err)
+				if isEnd {
+					break
+				}
+				decoder := buildUnCompressor(fe.marshaller.compression)
+				buf, err = decoder(buf)
+				assert.NoError(t, err)
+				got, err := tt.args.unmarshaler.UnmarshalProfiles(buf)
+				assert.NoError(t, err)
+				assert.EqualValues(t, pd, got)
+			}
 		})
 	}
 }
 
 func TestFileProfilesExporterErrors(t *testing.T) {
-	mf := &errorWriter{}
+	pf := &errorWriter{}
 	fe := &fileExporter{
 		marshaller: &marshaller{
 			formatType:        formatTypeJSON,
@@ -538,13 +573,16 @@ func TestFileProfilesExporterErrors(t *testing.T) {
 			compressor:        noneCompress,
 		},
 		writer: &fileWriter{
-			file:     mf,
+			file:     pf,
 			exporter: exportMessageAsLine,
 		},
 	}
 	require.NotNil(t, fe)
 
-	// TODO
+	pd := testdata.GenerateProfilesTwoProfilesSameResource()
+	// Cannot call Start since we inject directly the WriterCloser.
+	assert.Error(t, fe.consumeProfiles(context.Background(), pd))
+	assert.NoError(t, fe.Shutdown(context.Background()))
 }
 
 func TestExportMessageAsBuffer(t *testing.T) {
@@ -629,15 +667,17 @@ func decompress(src []byte) ([]byte, error) {
 
 func TestConcurrentlyCompress(t *testing.T) {
 	wg := sync.WaitGroup{}
-	wg.Add(3)
+	wg.Add(4)
 	var (
 		ctd []byte
 		cmd []byte
 		cld []byte
+		cpd []byte
 	)
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	md := testdata.GenerateMetricsTwoMetrics()
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+	pd := testdata.GenerateProfilesTwoProfilesSameResource()
 	go func() {
 		defer wg.Done()
 		buf, err := tracesMarshalers[formatTypeJSON].MarshalTraces(td)
@@ -662,6 +702,14 @@ func TestConcurrentlyCompress(t *testing.T) {
 		}
 		cld = zstdCompress(buf)
 	}()
+	go func() {
+		defer wg.Done()
+		buf, err := profilesMarshalers[formatTypeJSON].MarshalProfiles(pd)
+		if err != nil {
+			return
+		}
+		cpd = zstdCompress(buf)
+	}()
 	wg.Wait()
 	buf, err := decompress(ctd)
 	assert.NoError(t, err)
@@ -683,6 +731,13 @@ func TestConcurrentlyCompress(t *testing.T) {
 	gotLd, err := logsUnmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
 	assert.EqualValues(t, ld, gotLd)
+
+	buf, err = decompress(cpd)
+	assert.NoError(t, err)
+	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
+	gotPd, err := profilesUnmarshaler.UnmarshalProfiles(buf)
+	assert.NoError(t, err)
+	assert.EqualValues(t, pd, gotPd)
 }
 
 // tsBuffer is a thread safe buffer to prevent race conditions in the CI/CD.

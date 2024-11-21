@@ -100,7 +100,7 @@ func generateProfiles() pprofile.Profiles {
 	p := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	p.SetProfileID(pprofile.NewProfileIDEmpty())
 	p.SetStartTime(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
-	p.SetEndTime(pcommon.NewTimestampFromTime(time.Now()))
+	p.SetDuration(pcommon.Timestamp(1 * time.Second / time.Nanosecond))
 	return proflies
 }
 
