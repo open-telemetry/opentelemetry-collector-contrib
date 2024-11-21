@@ -37,12 +37,12 @@ require (
 	go.opentelemetry.io/collector/semconv v0.114.0
 	go.opentelemetry.io/otel/metric v1.32.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.35.2
 )
 
 require (
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.135 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.136 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.59.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.59.0 // indirect
