@@ -109,7 +109,7 @@
     ],
     "ignoreDeps": [
       "github.com/DataDog/datadog-agent/pkg/trace/exportable",
-      "github.com/datadog/datadog-api-client-go/v2"
+      "github.com/DataDog/datadog-api-client-go"
     ],
     "prConcurrentLimit": 200,
     "suppressNotifications": ["prEditedNotification"]
