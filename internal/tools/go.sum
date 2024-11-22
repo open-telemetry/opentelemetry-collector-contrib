@@ -12,8 +12,8 @@ github.com/Antonboom/errname v0.1.13 h1:JHICqsewj/fNckzrfVSe+T33svwQxmjC+1ntDsHO
 github.com/Antonboom/errname v0.1.13/go.mod h1:uWyefRYRN54lBg6HseYCFhs6Qjcy41Y3Jl/dVhA87Ns=
 github.com/Antonboom/nilnil v0.1.9 h1:eKFMejSxPSA9eLSensFmjW2XTgTwJMjZ8hUHtV4s/SQ=
 github.com/Antonboom/nilnil v0.1.9/go.mod h1:iGe2rYwCq5/Me1khrysB4nwI7swQvjclR8/YRPl5ihQ=
-github.com/Antonboom/testifylint v1.5.0 h1:dlUIsDMtCrZWUnvkaCz3quJCoIjaGi41GzjPBGkkJ8A=
-github.com/Antonboom/testifylint v1.5.0/go.mod h1:wqaJbu0Blb5Wag2wv7Z5xt+CIV+eVLxtGZrlK13z3AE=
+github.com/Antonboom/testifylint v1.5.2 h1:4s3Xhuv5AvdIgbd8wOOEeo0uZG7PbDKQyKY5lGoQazk=
+github.com/Antonboom/testifylint v1.5.2/go.mod h1:vxy8VJ0bc6NavlYqjZfmp6EfqXMtBgQ4+mhCojwC1P8=
 github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0=
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/Crocmagnon/fatcontext v0.2.2 h1:OrFlsDdOj9hW/oBEJBNSuH7QWf+E9WPVHw+x52bXVbk=

@@ -179,11 +179,11 @@ LOOP:
 		codeowners += fmt.Sprintf("reports/distributions/%s.yaml%s @open-telemetry/collector-contrib-approvers %s\n", dist.Name, strings.Repeat(" ", longestName-len(dist.Name)), strings.Join(maintainers, " "))
 	}
 
-	err = os.WriteFile(filepath.Join(".github", "CODEOWNERS"), []byte(codeowners+unmaintainedCodeowners), 0600)
+	err = os.WriteFile(filepath.Join(".github", "CODEOWNERS"), []byte(codeowners+unmaintainedCodeowners), 0o600)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(filepath.Join(".github", "ALLOWLIST"), []byte(allowlistHeader+deprecatedList+unmaintainedList), 0600)
+	err = os.WriteFile(filepath.Join(".github", "ALLOWLIST"), []byte(allowlistHeader+deprecatedList+unmaintainedList), 0o600)
 	if err != nil {
 		return err
 	}
