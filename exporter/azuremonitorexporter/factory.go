@@ -24,9 +24,7 @@ const (
 	defaultEndpoint = "https://dc.services.visualstudio.com/v2/track"
 )
 
-var (
-	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
-)
+var errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
 
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() exporter.Factory {
