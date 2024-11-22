@@ -94,7 +94,7 @@ func TestMakeCauseAwsSdkSpan(t *testing.T) {
 }
 
 func TestCauseExceptionWithoutError(t *testing.T) {
-	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
+	nonErrorStatusCodes := []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
 
 	for _, element := range nonErrorStatusCodes {
 		ExceptionWithoutErrorHelper(t, element)
@@ -104,7 +104,7 @@ func TestCauseExceptionWithoutError(t *testing.T) {
 func ExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
 	errorMsg := "this is a test"
 
-	var exceptionStack = `java.lang.IllegalStateException: state is not legal
+	exceptionStack := `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
@@ -140,7 +140,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument`
 }
 
 func TestEventWithoutExceptionWithoutError(t *testing.T) {
-	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
+	nonErrorStatusCodes := []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
 
 	for _, element := range nonErrorStatusCodes {
 		EventWithoutExceptionWithoutErrorHelper(t, element)

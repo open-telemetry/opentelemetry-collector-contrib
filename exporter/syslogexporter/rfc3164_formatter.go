@@ -10,8 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type rfc3164Formatter struct {
-}
+type rfc3164Formatter struct{}
 
 func newRFC3164Formatter() *rfc3164Formatter {
 	return &rfc3164Formatter{}

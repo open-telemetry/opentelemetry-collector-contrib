@@ -154,7 +154,7 @@ func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInte
 		} else {
 			fileFlags |= os.O_TRUNC
 		}
-		f, err := os.OpenFile(path, fileFlags, 0644)
+		f, err := os.OpenFile(path, fileFlags, 0o644)
 		if err != nil {
 			return nil, err
 		}

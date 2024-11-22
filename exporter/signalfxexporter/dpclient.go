@@ -244,7 +244,6 @@ func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetri
 	s.logger.Debug("Sending metrics in OTLP format")
 
 	err = s.postData(ctx, body, headers)
-
 	if err != nil {
 		return dataPointCount, consumererror.NewMetrics(err, mh)
 	}
@@ -256,7 +255,6 @@ func (s *sfxDPClient) encodeOTLPBody(md pmetric.Metrics) (bodyReader io.Reader, 
 	tr := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	body, err := tr.MarshalProto()
-
 	if err != nil {
 		return nil, false, err
 	}
