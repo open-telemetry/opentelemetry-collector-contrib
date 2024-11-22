@@ -47,7 +47,8 @@ func spanToEnvelopes(
 	instrumentationScope pcommon.InstrumentationScope,
 	span ptrace.Span,
 	spanEventsEnabled bool,
-	logger *zap.Logger) ([]*contracts.Envelope, error) {
+	logger *zap.Logger,
+) ([]*contracts.Envelope, error) {
 	spanKind := span.Kind()
 
 	// According to the SpanKind documentation, we can assume it to be INTERNAL
@@ -550,7 +551,8 @@ func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteD
 func copyAndMapAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-	mappingFunc func(k string, v pcommon.Value)) {
+	mappingFunc func(k string, v pcommon.Value),
+) {
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		setAttributeValueAsProperty(k, v, properties)
 		if mappingFunc != nil {
@@ -563,14 +565,16 @@ func copyAndMapAttributes(
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes
 func copyAttributesWithoutMapping(
 	attributeMap pcommon.Map,
-	properties map[string]string) {
+	properties map[string]string,
+) {
 	copyAndMapAttributes(attributeMap, properties, nil)
 }
 
 // Attribute extraction logic for HTTP Span attributes
 func copyAndExtractHTTPAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *HTTPAttributes {
+	properties map[string]string,
+) *HTTPAttributes {
 	attrs := &HTTPAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -583,7 +587,8 @@ func copyAndExtractHTTPAttributes(
 // Attribute extraction logic for RPC Span attributes
 func copyAndExtractRPCAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *RPCAttributes {
+	properties map[string]string,
+) *RPCAttributes {
 	attrs := &RPCAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -596,7 +601,8 @@ func copyAndExtractRPCAttributes(
 // Attribute extraction logic for Database Span attributes
 func copyAndExtractDatabaseAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *DatabaseAttributes {
+	properties map[string]string,
+) *DatabaseAttributes {
 	attrs := &DatabaseAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -609,7 +615,8 @@ func copyAndExtractDatabaseAttributes(
 // Attribute extraction logic for Messaging Span attributes
 func copyAndExtractMessagingAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *MessagingAttributes {
+	properties map[string]string,
+) *MessagingAttributes {
 	attrs := &MessagingAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -622,7 +629,8 @@ func copyAndExtractMessagingAttributes(
 // Attribute extraction logic for Span event exception attributes
 func copyAndExtractExceptionAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string) *ExceptionAttributes {
+	properties map[string]string,
+) *ExceptionAttributes {
 	attrs := &ExceptionAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
@@ -696,7 +704,8 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 func setAttributeValueAsProperty(
 	key string,
 	attributeValue pcommon.Value,
-	properties map[string]string) {
+	properties map[string]string,
+) {
 	switch attributeValue.Type() {
 	case pcommon.ValueTypeBool:
 		properties[key] = strconv.FormatBool(attributeValue.Bool())

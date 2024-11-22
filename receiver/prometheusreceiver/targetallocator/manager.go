@@ -32,6 +32,7 @@ type Manager struct {
 	shutdown               chan struct{}
 	cfg                    *Config
 	promCfg                *promconfig.Config
+	initialScrapeConfigs   []*promconfig.ScrapeConfig
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	enableNativeHistograms bool
@@ -43,6 +44,7 @@ func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, 
 		settings:               set,
 		cfg:                    cfg,
 		promCfg:                promCfg,
+		initialScrapeConfigs:   promCfg.ScrapeConfigs,
 		enableNativeHistograms: enableNativeHistograms,
 	}
 }
@@ -115,8 +117,11 @@ func (m *Manager) sync(compareHash uint64, httpClient *http.Client) (uint64, err
 		return hash, nil
 	}
 
-	// Clear out the current configurations
-	m.promCfg.ScrapeConfigs = []*promconfig.ScrapeConfig{}
+	// Copy initial scrape configurations
+	initialConfig := make([]*promconfig.ScrapeConfig, len(m.initialScrapeConfigs))
+	copy(initialConfig, m.initialScrapeConfigs)
+
+	m.promCfg.ScrapeConfigs = initialConfig
 
 	for jobName, scrapeConfig := range scrapeConfigsResponse {
 		var httpSD promHTTP.SDConfig

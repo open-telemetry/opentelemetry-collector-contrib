@@ -35,7 +35,7 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 				Value: *header.Value,
 			}
 		} else if header.FromContext != nil {
-			var defaultValue = ""
+			defaultValue := ""
 			if header.DefaultValue != nil {
 				defaultValue = *header.DefaultValue
 			}
