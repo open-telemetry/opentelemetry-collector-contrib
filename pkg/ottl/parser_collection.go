@@ -24,7 +24,8 @@ var _ ParsedStatementConverter[any, any] = func(
 	_ *Parser[any],
 	_ string,
 	_ StatementsGetter,
-	_ []*Statement[any]) (any, error) {
+	_ []*Statement[any],
+) (any, error) {
 	return nil, nil
 }
 
@@ -147,7 +148,8 @@ type ParserCollectionOption[R any] func(*ParserCollection[R]) error
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewParserCollection[R any](
 	settings component.TelemetrySettings,
-	options ...ParserCollectionOption[R]) (*ParserCollection[R], error) {
+	options ...ParserCollectionOption[R],
+) (*ParserCollection[R], error) {
 	pc := &ParserCollection[R]{
 		Settings:        settings,
 		contextParsers:  map[string]*parserCollectionParser{},
@@ -185,7 +187,8 @@ func newNopParsedStatementConverter[K any]() ParsedStatementConverter[K, any] {
 		_ *Parser[K],
 		_ string,
 		_ StatementsGetter,
-		parsedStatements []*Statement[K]) (any, error) {
+		parsedStatements []*Statement[K],
+	) (any, error) {
 		return parsedStatements, nil
 	}
 }
@@ -302,7 +305,6 @@ func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statem
 		statements,
 		parsedStatements,
 	)
-
 	if err != nil {
 		return *new(R), err
 	}

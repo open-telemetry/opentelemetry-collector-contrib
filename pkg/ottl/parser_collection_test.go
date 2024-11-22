@@ -207,7 +207,8 @@ func Test_ParseStatements_MultipleContexts_Success(t *testing.T) {
 		_ *Parser[any],
 		_ string,
 		_ StatementsGetter,
-		_ []*Statement[any]) (any, error) {
+		_ []*Statement[any],
+	) (any, error) {
 		return nil, errors.New("failing converter")
 	}
 
