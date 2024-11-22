@@ -17,7 +17,7 @@ import (
 
 var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.fieldExtractConfigRegex.disallow",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
 	featuregate.WithRegisterFromVersion("v0.106.0"),
 )
