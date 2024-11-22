@@ -292,7 +292,8 @@ func Test_export(t *testing.T) {
 		httpResponseCode    int
 		returnErrorOnCreate bool
 	}{
-		{"success_case",
+		{
+			"success_case",
 			*ts1,
 			true,
 			http.StatusAccepted,
@@ -304,7 +305,8 @@ func Test_export(t *testing.T) {
 			false,
 			http.StatusAccepted,
 			true,
-		}, {
+		},
+		{
 			"error_status_code_case",
 			*ts1,
 			true,
@@ -807,32 +809,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,
@@ -844,32 +852,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,

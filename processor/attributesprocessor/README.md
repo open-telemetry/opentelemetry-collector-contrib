@@ -60,7 +60,8 @@ For the actions `insert`, `update` and `upsert`,
   action: {insert, update, upsert}
   # FromContext specifies the context value to use to populate the attribute value. 
   # If the key is prefixed with `metadata.`, the values are searched
-  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers. 
+  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers
+  # (be sure to set `include_metadata: true` on the receiver).
   # If the key is prefixed with `auth.`, the values are searched
   # in the authentication information set by the server authenticator.
   # Refer to the server authenticator's documentation part of your pipeline for more information about which attributes are available.
