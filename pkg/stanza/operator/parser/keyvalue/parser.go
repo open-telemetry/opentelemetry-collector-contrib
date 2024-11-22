@@ -5,6 +5,7 @@ package keyvalue // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
@@ -17,6 +18,14 @@ type Parser struct {
 	helper.ParserOperator
 	delimiter     string
 	pairDelimiter string
+}
+
+func (p *Parser) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, p.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry for key value pairs.

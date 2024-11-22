@@ -15,6 +15,10 @@ type Output struct {
 	helper.OutputOperator
 }
 
+func (o *Output) ProcessBatch(_ context.Context, _ []entry.Entry) error {
+	return nil
+}
+
 // Process will drop the incoming entry.
 func (o *Output) Process(_ context.Context, _ *entry.Entry) error {
 	return nil

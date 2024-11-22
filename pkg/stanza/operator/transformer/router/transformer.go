@@ -5,6 +5,7 @@ package router // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
@@ -32,6 +33,14 @@ type Route struct {
 // CanProcess will always return true for a router operator
 func (t *Transformer) CanProcess() bool {
 	return true
+}
+
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, t.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will route incoming entries based on matching expressions

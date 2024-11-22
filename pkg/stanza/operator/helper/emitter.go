@@ -94,6 +94,15 @@ func (e *LogEmitter) Stop() error {
 	return nil
 }
 
+// ProcessBatch emits the entries to the consumerFunc
+func (e *LogEmitter) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	for i := range entries {
+		_ = e.Process(ctx, &entries[i])
+	}
+
+	return nil
+}
+
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
 	if oldBatch := e.appendEntry(ent); len(oldBatch) > 0 {

@@ -4,6 +4,7 @@ package assignkeys // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -15,6 +16,14 @@ type Transformer struct {
 	helper.TransformerOperator
 	Field entry.Field
 	Keys  []string
+}
+
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, t.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will process an entry with AssignKeys transformation.

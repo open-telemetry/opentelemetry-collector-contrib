@@ -5,6 +5,7 @@ package retain // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -17,6 +18,14 @@ type Transformer struct {
 	AllBodyFields      bool
 	AllAttributeFields bool
 	AllResourceFields  bool
+}
+
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, t.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will process an entry with a retain transformation.

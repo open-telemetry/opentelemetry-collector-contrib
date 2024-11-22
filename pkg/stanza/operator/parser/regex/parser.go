@@ -5,6 +5,7 @@ package regex // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -24,6 +25,14 @@ func (p *Parser) Stop() error {
 		p.cache.stop()
 	}
 	return nil
+}
+
+func (p *Parser) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, p.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will parse an entry for regex.

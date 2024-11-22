@@ -4,6 +4,7 @@ package csv // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,14 @@ type Parser struct {
 }
 
 type parseFunc func(any) (any, error)
+
+func (p *Parser) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, p.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
+}
 
 // Process will parse an entry for csv.
 func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {

@@ -47,6 +47,25 @@ type WriterOperator struct {
 	OutputOperators []operator.Operator
 }
 
+// Write writes a batch of entries to the outputs of the operator.
+// A batch is a collection of entries that are sent in one go.
+func (w *WriterOperator) WriteBatch(ctx context.Context, entries []entry.Entry) error {
+	for i, op := range w.OutputOperators {
+		if i == len(w.OutputOperators)-1 {
+			return op.ProcessBatch(ctx, entries)
+		}
+		copyOfEntries := make([]entry.Entry, 0, len(entries))
+		for i := range entries {
+			copyOfEntries = append(copyOfEntries, *entries[i].Copy())
+		}
+		err := op.ProcessBatch(ctx, copyOfEntries)
+		if err != nil {
+			w.Logger().Error("Failed to process entries", zap.Error(err))
+		}
+	}
+	return nil
+}
+
 // Write will write an entry to the outputs of the operator.
 func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
 	for i, op := range w.OutputOperators {

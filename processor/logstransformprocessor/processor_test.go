@@ -5,6 +5,7 @@ package logstransformprocessor
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -200,6 +201,14 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 type laggyOperator struct {
 	helper.WriterOperator
 	logsCount int
+}
+
+func (t *laggyOperator) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, t.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {

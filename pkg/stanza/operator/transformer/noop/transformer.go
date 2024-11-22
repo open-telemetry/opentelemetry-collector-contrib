@@ -5,6 +5,7 @@ package noop // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -13,6 +14,14 @@ import (
 // Transformer is an operator that performs no operations on an entry.
 type Transformer struct {
 	helper.TransformerOperator
+}
+
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, t.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will forward the entry to the next output without any alterations.

@@ -5,6 +5,7 @@ package unquote // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -16,6 +17,14 @@ import (
 type Transformer struct {
 	helper.TransformerOperator
 	field entry.Field
+}
+
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, t.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will unquote a string

@@ -5,6 +5,7 @@ package trace // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -14,6 +15,14 @@ import (
 type Parser struct {
 	helper.TransformerOperator
 	helper.TraceParser
+}
+
+func (p *Parser) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, p.Process(ctx, &entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will parse traces from an entry.
