@@ -22,7 +22,7 @@ Config:
 ```yaml
 - type: add
   field: body.key3
-  value: val3
+  value: value3
 - type: remove
   field: body.key2.nested_key1
 - type: add
