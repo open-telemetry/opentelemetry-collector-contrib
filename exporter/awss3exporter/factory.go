@@ -37,7 +37,8 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(ctx context.Context,
 	params exporter.Settings,
-	config component.Config) (exporter.Logs, error) {
+	config component.Config,
+) (exporter.Logs, error) {
 	s3Exporter := newS3Exporter(config.(*Config), params)
 
 	return exporterhelper.NewLogs(ctx, params,
@@ -48,7 +49,8 @@ func createLogsExporter(ctx context.Context,
 
 func createMetricsExporter(ctx context.Context,
 	params exporter.Settings,
-	config component.Config) (exporter.Metrics, error) {
+	config component.Config,
+) (exporter.Metrics, error) {
 	s3Exporter := newS3Exporter(config.(*Config), params)
 
 	if config.(*Config).MarshalerName == SumoIC {
@@ -63,7 +65,8 @@ func createMetricsExporter(ctx context.Context,
 
 func createTracesExporter(ctx context.Context,
 	params exporter.Settings,
-	config component.Config) (exporter.Traces, error) {
+	config component.Config,
+) (exporter.Traces, error) {
 	s3Exporter := newS3Exporter(config.(*Config), params)
 
 	if config.(*Config).MarshalerName == SumoIC {
