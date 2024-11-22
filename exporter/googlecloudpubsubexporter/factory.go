@@ -84,7 +84,8 @@ func createDefaultConfig() component.Config {
 func createTracesExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config) (exporter.Traces, error) {
+	cfg component.Config,
+) (exporter.Traces, error) {
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
@@ -105,7 +106,8 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config) (exporter.Metrics, error) {
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 	return exporterhelper.NewMetrics(
@@ -125,7 +127,8 @@ func createMetricsExporter(
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config) (exporter.Logs, error) {
+	cfg component.Config,
+) (exporter.Logs, error) {
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
