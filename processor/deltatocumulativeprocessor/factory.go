@@ -34,8 +34,5 @@ func createMetricsProcessor(_ context.Context, set processor.Settings, cfg compo
 		return nil, err
 	}
 
-	proc := newProcessor(pcfg, set.Logger, &ltel.TelemetryBuilder, next)
-	linear := newLinear(pcfg, ltel, proc)
-
-	return Chain{linear, proc}, nil
+	return newLinear(pcfg, ltel, next), nil
 }
