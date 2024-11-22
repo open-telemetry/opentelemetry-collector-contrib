@@ -23,7 +23,8 @@ var _ consumer.Traces = &traceStatements{}
 
 type traceStatements struct {
 	ottl.StatementSequence[ottlspan.TransformContext]
-	expr.BoolExpr[ottlspan.TransformContext]
+	SpanGlobalExpr expr.BoolExpr[ottlspan.TransformContext]
+	baseGlobalExpressions
 }
 
 func (t traceStatements) Capabilities() consumer.Capabilities {
@@ -35,12 +36,32 @@ func (t traceStatements) Capabilities() consumer.Capabilities {
 func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
+
+		resourceCtx := ottlresource.NewTransformContext(rspans.Resource(), ptrace.NewResourceSpans())
+		rCondition, err := t.ResourceGlobalExpr.Eval(ctx, resourceCtx)
+		if err != nil {
+			return err
+		}
+		if !rCondition {
+			continue
+		}
+
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
+
+			scopeCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), ptrace.NewScopeSpans())
+			sCondition, err := t.ScopeGlobalExpr.Eval(ctx, scopeCtx)
+			if err != nil {
+				return err
+			}
+			if !sCondition {
+				continue
+			}
+
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource(), sspans, rspans)
-				condition, err := t.BoolExpr.Eval(ctx, tCtx)
+				condition, err := t.SpanGlobalExpr.Eval(ctx, tCtx)
 				if err != nil {
 					return err
 				}
@@ -60,7 +81,8 @@ var _ consumer.Traces = &spanEventStatements{}
 
 type spanEventStatements struct {
 	ottl.StatementSequence[ottlspanevent.TransformContext]
-	expr.BoolExpr[ottlspanevent.TransformContext]
+	SpanEventGlobalExpr expr.BoolExpr[ottlspanevent.TransformContext]
+	baseGlobalExpressions
 }
 
 func (s spanEventStatements) Capabilities() consumer.Capabilities {
@@ -72,15 +94,35 @@ func (s spanEventStatements) Capabilities() consumer.Capabilities {
 func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
+
+		resourceCtx := ottlresource.NewTransformContext(rspans.Resource(), ptrace.NewResourceSpans())
+		rCondition, err := s.ResourceGlobalExpr.Eval(ctx, resourceCtx)
+		if err != nil {
+			return err
+		}
+		if !rCondition {
+			continue
+		}
+
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
+
+			scopeCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), ptrace.NewScopeSpans())
+			sCondition, err := s.ScopeGlobalExpr.Eval(ctx, scopeCtx)
+			if err != nil {
+				return err
+			}
+			if !sCondition {
+				continue
+			}
+
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
 					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource(), sspans, rspans)
-					condition, err := s.BoolExpr.Eval(ctx, tCtx)
+					condition, err := s.SpanEventGlobalExpr.Eval(ctx, tCtx)
 					if err != nil {
 						return err
 					}
@@ -168,23 +210,45 @@ func (pc TraceParserCollection) ParseContextStatements(contextStatements Context
 		if err != nil {
 			return nil, err
 		}
+
 		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpan, contextStatements.Conditions, pc.parserCollection, filterottl.StandardSpanFuncs())
 		if errGlobalBoolExpr != nil {
 			return nil, errGlobalBoolExpr
 		}
+
+		bge, err := pc.parseCommonGlobalExpressions(contextStatements)
+		if err != nil {
+			return nil, err
+		}
+
 		sStatements := ottlspan.NewStatementSequence(parsedStatements, pc.settings, ottlspan.WithStatementSequenceErrorMode(pc.errorMode))
-		return traceStatements{sStatements, globalExpr}, nil
+		return traceStatements{
+			StatementSequence:     sStatements,
+			SpanGlobalExpr:        globalExpr,
+			baseGlobalExpressions: *bge,
+		}, nil
 	case SpanEvent:
 		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
+
 		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForSpanEvent, contextStatements.Conditions, pc.parserCollection, filterottl.StandardSpanEventFuncs())
 		if errGlobalBoolExpr != nil {
 			return nil, errGlobalBoolExpr
 		}
+
+		bge, err := pc.parseCommonGlobalExpressions(contextStatements)
+		if err != nil {
+			return nil, err
+		}
+
 		seStatements := ottlspanevent.NewStatementSequence(parsedStatements, pc.settings, ottlspanevent.WithStatementSequenceErrorMode(pc.errorMode))
-		return spanEventStatements{seStatements, globalExpr}, nil
+		return spanEventStatements{
+			StatementSequence:     seStatements,
+			SpanEventGlobalExpr:   globalExpr,
+			baseGlobalExpressions: *bge,
+		}, nil
 	default:
 		return pc.parseCommonContextStatements(contextStatements)
 	}

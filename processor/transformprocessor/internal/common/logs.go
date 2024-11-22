@@ -22,7 +22,8 @@ var _ consumer.Logs = &logStatements{}
 
 type logStatements struct {
 	ottl.StatementSequence[ottllog.TransformContext]
-	expr.BoolExpr[ottllog.TransformContext]
+	LogRecordGlobalExpr expr.BoolExpr[ottllog.TransformContext]
+	baseGlobalExpressions
 }
 
 func (l logStatements) Capabilities() consumer.Capabilities {
@@ -34,12 +35,32 @@ func (l logStatements) Capabilities() consumer.Capabilities {
 func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
+
+		resourceCtx := ottlresource.NewTransformContext(rlogs.Resource(), plog.NewResourceLogs())
+		rCondition, err := l.ResourceGlobalExpr.Eval(ctx, resourceCtx)
+		if err != nil {
+			return err
+		}
+		if !rCondition {
+			continue
+		}
+
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
+
+			scopeCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), plog.NewScopeLogs())
+			sCondition, err := l.ScopeGlobalExpr.Eval(ctx, scopeCtx)
+			if err != nil {
+				return err
+			}
+			if !sCondition {
+				continue
+			}
+
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource(), slogs, rlogs)
-				condition, err := l.BoolExpr.Eval(ctx, tCtx)
+				condition, err := l.LogRecordGlobalExpr.Eval(ctx, tCtx)
 				if err != nil {
 					return err
 				}
@@ -114,12 +135,27 @@ func (pc LogParserCollection) ParseContextStatements(contextStatements ContextSt
 		if err != nil {
 			return nil, err
 		}
-		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForLog, contextStatements.Conditions, pc.parserCollection, filterottl.StandardLogFuncs())
+		globalExpr, errGlobalBoolExpr := parseGlobalExpr(
+			filterottl.NewBoolExprForLog,
+			contextStatements.Conditions,
+			pc.parserCollection,
+			filterottl.StandardLogFuncs(),
+		)
 		if errGlobalBoolExpr != nil {
 			return nil, errGlobalBoolExpr
 		}
+
+		bge, err := pc.parseCommonGlobalExpressions(contextStatements)
+		if err != nil {
+			return nil, err
+		}
+
 		lStatements := ottllog.NewStatementSequence(parsedStatements, pc.settings, ottllog.WithStatementSequenceErrorMode(pc.errorMode))
-		return logStatements{lStatements, globalExpr}, nil
+		return logStatements{
+			StatementSequence:     lStatements,
+			LogRecordGlobalExpr:   globalExpr,
+			baseGlobalExpressions: *bge,
+		}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {
