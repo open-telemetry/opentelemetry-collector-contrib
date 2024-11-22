@@ -425,7 +425,7 @@ func TestValidate(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	filePath := filepath.Join(tmpDir, "file")
-	require.NoError(t, os.WriteFile(filePath, []byte{}, 0600))
+	require.NoError(t, os.WriteFile(filePath, []byte{}, 0o600))
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
