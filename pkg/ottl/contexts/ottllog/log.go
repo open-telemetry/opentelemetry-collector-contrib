@@ -96,6 +96,10 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
+func (tCtx TransformContext) GetScopeLogs() plog.ScopeLogs {
+	return tCtx.scopeLogs
+}
+
 func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.scopeLogs
 }
