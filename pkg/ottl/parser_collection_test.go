@@ -298,6 +298,25 @@ func Test_ParseStatements_ConverterError(t *testing.T) {
 	assert.EqualError(t, err, "converter error")
 }
 
+func Test_ParseStatements_ConverterNilReturn(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
+	conv := func(_ *ParserCollection[any], _ *Parser[any], _ string, _ StatementsGetter, _ []*Statement[any]) (any, error) {
+		return nil, nil
+	}
+
+	pc, err := NewParserCollection(
+		component.TelemetrySettings{},
+		WithParserCollectionContext("dummy", ps, conv),
+	)
+	require.NoError(t, err)
+	pc.contextInferrer = &mockStaticContextInferrer{"dummy"}
+
+	statements := mockStatementsGetter{values: []string{`set(dummy.attributes["bar"], "foo")`}}
+	result, err := pc.ParseStatements(statements)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+}
+
 func Test_ParseStatements_StatementsConverterGetterType(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	statements := mockStatementsGetter{values: []string{`set(dummy.attributes["bar"], "foo")`}}

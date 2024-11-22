@@ -307,6 +307,10 @@ func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statem
 		return *new(R), err
 	}
 
+	if convertedStatements.IsNil() {
+		return *new(R), nil
+	}
+
 	return convertedStatements.Interface().(R), nil
 }
 
