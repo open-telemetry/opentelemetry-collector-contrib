@@ -16,13 +16,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
-	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/lineartelemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
-var _ processor.Metrics = (*Linear)(nil)
+var _ processor.Metrics = (*Processor)(nil)
 
-type Linear struct {
+type Processor struct {
 	next consumer.Metrics
 	cfg  Config
 
@@ -36,10 +36,10 @@ type Linear struct {
 	tel   telemetry.Metrics
 }
 
-func newLinear(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *Linear {
+func newProcessor(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *Processor {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	proc := Linear{
+	proc := Processor{
 		next: next,
 		cfg:  *cfg,
 		last: state{
@@ -60,7 +60,7 @@ func newLinear(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *Linea
 	return &proc
 }
 
-func (p *Linear) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
@@ -141,7 +141,7 @@ func (p *Linear) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return p.next.ConsumeMetrics(ctx, md)
 }
 
-func (p *Linear) Start(_ context.Context, _ component.Host) error {
+func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	if p.cfg.MaxStale != 0 {
 		// delete stale streams once per minute
 		go func() {
@@ -166,12 +166,12 @@ func (p *Linear) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (p *Linear) Shutdown(_ context.Context) error {
+func (p *Processor) Shutdown(_ context.Context) error {
 	p.cancel()
 	return nil
 }
 
-func (p *Linear) Capabilities() consumer.Capabilities {
+func (p *Processor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
