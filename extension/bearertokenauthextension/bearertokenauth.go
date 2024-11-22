@@ -174,10 +174,10 @@ func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	// Create a function that will return the request metadata when called later
 	return &PerRPCAuth{
-        renderMetadata: func() map[string]string {
-            return map[string]string{"authorization": b.authorizationValue()}
-        },
-    }, nil
+		renderMetadata: func() map[string]string {
+			return map[string]string{"authorization": b.authorizationValue()}
+		},
+	}, nil
 }
 
 // RoundTripper is not implemented by BearerTokenAuth
