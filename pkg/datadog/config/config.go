@@ -250,7 +250,8 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
 
-	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
+	// remove leading/trailing quotation marks to avoid issues with the API key
+	c.API.Key = configopaque.String(strings.Trim(c.API.Key.String(), `"'`))
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
