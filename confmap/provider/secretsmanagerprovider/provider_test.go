@@ -21,7 +21,8 @@ type testSecretManagerClient struct {
 
 // Implement GetSecretValue()
 func (client *testSecretManagerClient) GetSecretValue(_ context.Context, _ *secretsmanager.GetSecretValueInput,
-	_ ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error) {
+	_ ...func(*secretsmanager.Options),
+) (*secretsmanager.GetSecretValueOutput, error) {
 	return &secretsmanager.GetSecretValueOutput{SecretString: &client.secretValue}, nil
 }
 

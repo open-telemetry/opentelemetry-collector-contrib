@@ -23,13 +23,17 @@ const (
 )
 
 // The timestamps used for the tests
-var tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
-var ts = pcommon.NewTimestampFromTime(tsUnix)
-var tstr = ts.AsTime().Format(time.RFC3339Nano)
+var (
+	tsUnix = time.Unix(time.Now().Unix(), time.Now().UnixNano())
+	ts     = pcommon.NewTimestampFromTime(tsUnix)
+	tstr   = ts.AsTime().Format(time.RFC3339Nano)
+)
 
 // the histogram values and distribution for the tests
-var distributionBounds = []float64{1, 2, 4}
-var distributionCounts = []uint64{4, 2, 3, 5}
+var (
+	distributionBounds = []float64{1, 2, 4}
+	distributionCounts = []uint64{4, 2, 3, 5}
+)
 
 func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	t.Parallel()

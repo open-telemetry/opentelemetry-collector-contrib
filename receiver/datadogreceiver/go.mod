@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.22.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.135
+	github.com/DataDog/agent-payload/v5 v5.0.136
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.59.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.59.0
 	github.com/DataDog/datadog-agent/pkg/trace v0.59.0
@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.114.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.35.1
+	google.golang.org/protobuf v1.35.2
 )
 
 require (
