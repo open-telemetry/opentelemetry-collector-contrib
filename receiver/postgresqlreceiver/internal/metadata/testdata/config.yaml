@@ -13,6 +13,10 @@ all_set:
       enabled: true
     postgresql.bgwriter.maxwritten:
       enabled: true
+    postgresql.blks_hit:
+      enabled: true
+    postgresql.blks_read:
+      enabled: true
     postgresql.blocks_read:
       enabled: true
     postgresql.commits:
@@ -49,8 +53,6 @@ all_set:
       enabled: true
     postgresql.temp_files:
       enabled: true
-<<<<<<< HEAD
-=======
     postgresql.tup_deleted:
       enabled: true
     postgresql.tup_fetched:
@@ -59,7 +61,6 @@ all_set:
       enabled: true
     postgresql.tup_returned:
       enabled: true
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
     postgresql.tup_updated:
       enabled: true
     postgresql.wal.age:
@@ -91,6 +92,10 @@ none_set:
       enabled: false
     postgresql.bgwriter.maxwritten:
       enabled: false
+    postgresql.blks_hit:
+      enabled: false
+    postgresql.blks_read:
+      enabled: false
     postgresql.blocks_read:
       enabled: false
     postgresql.commits:
@@ -127,8 +132,6 @@ none_set:
       enabled: false
     postgresql.temp_files:
       enabled: false
-<<<<<<< HEAD
-=======
     postgresql.tup_deleted:
       enabled: false
     postgresql.tup_fetched:
@@ -137,7 +140,6 @@ none_set:
       enabled: false
     postgresql.tup_returned:
       enabled: false
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
     postgresql.tup_updated:
       enabled: false
     postgresql.wal.age:

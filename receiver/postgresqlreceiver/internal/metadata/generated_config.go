@@ -34,6 +34,8 @@ type MetricsConfig struct {
 	PostgresqlBgwriterCheckpointCount  MetricConfig `mapstructure:"postgresql.bgwriter.checkpoint.count"`
 	PostgresqlBgwriterDuration         MetricConfig `mapstructure:"postgresql.bgwriter.duration"`
 	PostgresqlBgwriterMaxwritten       MetricConfig `mapstructure:"postgresql.bgwriter.maxwritten"`
+	PostgresqlBlksHit                  MetricConfig `mapstructure:"postgresql.blks_hit"`
+	PostgresqlBlksRead                 MetricConfig `mapstructure:"postgresql.blks_read"`
 	PostgresqlBlocksRead               MetricConfig `mapstructure:"postgresql.blocks_read"`
 	PostgresqlCommits                  MetricConfig `mapstructure:"postgresql.commits"`
 	PostgresqlConnectionMax            MetricConfig `mapstructure:"postgresql.connection.max"`
@@ -52,13 +54,10 @@ type MetricsConfig struct {
 	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
 	PostgresqlTempFiles                MetricConfig `mapstructure:"postgresql.temp_files"`
-<<<<<<< HEAD
-=======
 	PostgresqlTupDeleted               MetricConfig `mapstructure:"postgresql.tup_deleted"`
 	PostgresqlTupFetched               MetricConfig `mapstructure:"postgresql.tup_fetched"`
 	PostgresqlTupInserted              MetricConfig `mapstructure:"postgresql.tup_inserted"`
 	PostgresqlTupReturned              MetricConfig `mapstructure:"postgresql.tup_returned"`
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 	PostgresqlTupUpdated               MetricConfig `mapstructure:"postgresql.tup_updated"`
 	PostgresqlWalAge                   MetricConfig `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalDelay                 MetricConfig `mapstructure:"postgresql.wal.delay"`
@@ -84,6 +83,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		PostgresqlBgwriterMaxwritten: MetricConfig{
 			Enabled: true,
+		},
+		PostgresqlBlksHit: MetricConfig{
+			Enabled: false,
+		},
+		PostgresqlBlksRead: MetricConfig{
+			Enabled: false,
 		},
 		PostgresqlBlocksRead: MetricConfig{
 			Enabled: true,
@@ -139,23 +144,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlTempFiles: MetricConfig{
 			Enabled: false,
 		},
-<<<<<<< HEAD
-=======
 		PostgresqlTupDeleted: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		PostgresqlTupFetched: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		PostgresqlTupInserted: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		PostgresqlTupReturned: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 		PostgresqlTupUpdated: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		PostgresqlWalAge: MetricConfig{
 			Enabled: true,

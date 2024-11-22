@@ -214,49 +214,6 @@ Number of times a table has manually been vacuumed.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {vacuums} | Sum | Int | Cumulative | true |
 
-<<<<<<< HEAD
-=======
-### postgresql.tup_deleted
-
-Number of rows deleted by queries in the database.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tup_deleted} | Sum | Int | Cumulative | true |
-
-### postgresql.tup_fetched
-
-Number of rows fetched by queries in the database.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tup_fetched} | Sum | Int | Cumulative | true |
-
-### postgresql.tup_inserted
-
-Number of rows inserted by queries in the database.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tup_inserted} | Sum | Int | Cumulative | true |
-
-### postgresql.tup_returned
-
-Number of rows returned by queries in the database.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tup_returned} | Sum | Int | Cumulative | true |
-
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
-### postgresql.tup_updated
-
-Number of rows updated by queries in the database.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {tup_updated} | Sum | Int | Cumulative | true |
-
 ### postgresql.wal.age
 
 Age of the oldest WAL file.
@@ -295,6 +252,22 @@ metrics:
   <metric_name>:
     enabled: true
 ```
+
+### postgresql.blks_hit
+
+Number of times disk blocks were found already in the buffer cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {blks_hit} | Sum | Int | Cumulative | true |
+
+### postgresql.blks_read
+
+Number of disk blocks read in this database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {blks_read} | Sum | Int | Cumulative | true |
 
 ### postgresql.database.locks
 
@@ -335,6 +308,46 @@ The number of temp files.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {temp_file} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_deleted
+
+Number of rows deleted by queries in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_deleted} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_fetched
+
+Number of rows fetched by queries in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_fetched} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_inserted
+
+Number of rows inserted by queries in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_inserted} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_returned
+
+Number of rows returned by queries in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_returned} | Sum | Int | Cumulative | true |
+
+### postgresql.tup_updated
+
+Number of rows updated by queries in the database.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tup_updated} | Sum | Int | Cumulative | true |
 
 ### postgresql.wal.delay
 

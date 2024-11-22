@@ -31,6 +31,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: true},
 					PostgresqlBgwriterDuration:         MetricConfig{Enabled: true},
 					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: true},
+					PostgresqlBlksHit:                  MetricConfig{Enabled: true},
+					PostgresqlBlksRead:                 MetricConfig{Enabled: true},
 					PostgresqlBlocksRead:               MetricConfig{Enabled: true},
 					PostgresqlCommits:                  MetricConfig{Enabled: true},
 					PostgresqlConnectionMax:            MetricConfig{Enabled: true},
@@ -49,13 +51,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableSize:                MetricConfig{Enabled: true},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
 					PostgresqlTempFiles:                MetricConfig{Enabled: true},
-<<<<<<< HEAD
-=======
 					PostgresqlTupDeleted:               MetricConfig{Enabled: true},
 					PostgresqlTupFetched:               MetricConfig{Enabled: true},
 					PostgresqlTupInserted:              MetricConfig{Enabled: true},
 					PostgresqlTupReturned:              MetricConfig{Enabled: true},
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 					PostgresqlTupUpdated:               MetricConfig{Enabled: true},
 					PostgresqlWalAge:                   MetricConfig{Enabled: true},
 					PostgresqlWalDelay:                 MetricConfig{Enabled: true},
@@ -79,6 +78,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlBgwriterCheckpointCount:  MetricConfig{Enabled: false},
 					PostgresqlBgwriterDuration:         MetricConfig{Enabled: false},
 					PostgresqlBgwriterMaxwritten:       MetricConfig{Enabled: false},
+					PostgresqlBlksHit:                  MetricConfig{Enabled: false},
+					PostgresqlBlksRead:                 MetricConfig{Enabled: false},
 					PostgresqlBlocksRead:               MetricConfig{Enabled: false},
 					PostgresqlCommits:                  MetricConfig{Enabled: false},
 					PostgresqlConnectionMax:            MetricConfig{Enabled: false},
@@ -97,13 +98,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableSize:                MetricConfig{Enabled: false},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
 					PostgresqlTempFiles:                MetricConfig{Enabled: false},
-<<<<<<< HEAD
-=======
 					PostgresqlTupDeleted:               MetricConfig{Enabled: false},
 					PostgresqlTupFetched:               MetricConfig{Enabled: false},
 					PostgresqlTupInserted:              MetricConfig{Enabled: false},
 					PostgresqlTupReturned:              MetricConfig{Enabled: false},
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 					PostgresqlTupUpdated:               MetricConfig{Enabled: false},
 					PostgresqlWalAge:                   MetricConfig{Enabled: false},
 					PostgresqlWalDelay:                 MetricConfig{Enabled: false},

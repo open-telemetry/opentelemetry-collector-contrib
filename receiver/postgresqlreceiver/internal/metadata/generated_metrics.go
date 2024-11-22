@@ -550,6 +550,108 @@ func newMetricPostgresqlBgwriterMaxwritten(cfg MetricConfig) metricPostgresqlBgw
 	return m
 }
 
+type metricPostgresqlBlksHit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.blks_hit metric with initial data.
+func (m *metricPostgresqlBlksHit) init() {
+	m.data.SetName("postgresql.blks_hit")
+	m.data.SetDescription("Number of times disk blocks were found already in the buffer cache.")
+	m.data.SetUnit("{blks_hit}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlBlksHit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlBlksHit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlBlksHit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlBlksHit(cfg MetricConfig) metricPostgresqlBlksHit {
+	m := metricPostgresqlBlksHit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlBlksRead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.blks_read metric with initial data.
+func (m *metricPostgresqlBlksRead) init() {
+	m.data.SetName("postgresql.blks_read")
+	m.data.SetDescription("Number of disk blocks read in this database.")
+	m.data.SetUnit("{blks_read}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlBlksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlBlksRead) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlBlksRead) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlBlksRead(cfg MetricConfig) metricPostgresqlBlksRead {
+	m := metricPostgresqlBlksRead{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlBlocksRead struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1472,8 +1574,6 @@ func newMetricPostgresqlTempFiles(cfg MetricConfig) metricPostgresqlTempFiles {
 	return m
 }
 
-<<<<<<< HEAD
-=======
 type metricPostgresqlTupDeleted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1678,7 +1778,6 @@ func newMetricPostgresqlTupReturned(cfg MetricConfig) metricPostgresqlTupReturne
 	return m
 }
 
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 type metricPostgresqlTupUpdated struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1899,6 +1998,8 @@ type MetricsBuilder struct {
 	metricPostgresqlBgwriterCheckpointCount  metricPostgresqlBgwriterCheckpointCount
 	metricPostgresqlBgwriterDuration         metricPostgresqlBgwriterDuration
 	metricPostgresqlBgwriterMaxwritten       metricPostgresqlBgwriterMaxwritten
+	metricPostgresqlBlksHit                  metricPostgresqlBlksHit
+	metricPostgresqlBlksRead                 metricPostgresqlBlksRead
 	metricPostgresqlBlocksRead               metricPostgresqlBlocksRead
 	metricPostgresqlCommits                  metricPostgresqlCommits
 	metricPostgresqlConnectionMax            metricPostgresqlConnectionMax
@@ -1917,13 +2018,10 @@ type MetricsBuilder struct {
 	metricPostgresqlTableSize                metricPostgresqlTableSize
 	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
 	metricPostgresqlTempFiles                metricPostgresqlTempFiles
-<<<<<<< HEAD
-=======
 	metricPostgresqlTupDeleted               metricPostgresqlTupDeleted
 	metricPostgresqlTupFetched               metricPostgresqlTupFetched
 	metricPostgresqlTupInserted              metricPostgresqlTupInserted
 	metricPostgresqlTupReturned              metricPostgresqlTupReturned
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 	metricPostgresqlTupUpdated               metricPostgresqlTupUpdated
 	metricPostgresqlWalAge                   metricPostgresqlWalAge
 	metricPostgresqlWalDelay                 metricPostgresqlWalDelay
@@ -1960,6 +2058,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
 		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
 		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlksHit:                  newMetricPostgresqlBlksHit(mbc.Metrics.PostgresqlBlksHit),
+		metricPostgresqlBlksRead:                 newMetricPostgresqlBlksRead(mbc.Metrics.PostgresqlBlksRead),
 		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
 		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
 		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
@@ -1978,13 +2078,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
 		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
 		metricPostgresqlTempFiles:                newMetricPostgresqlTempFiles(mbc.Metrics.PostgresqlTempFiles),
-<<<<<<< HEAD
-=======
 		metricPostgresqlTupDeleted:               newMetricPostgresqlTupDeleted(mbc.Metrics.PostgresqlTupDeleted),
 		metricPostgresqlTupFetched:               newMetricPostgresqlTupFetched(mbc.Metrics.PostgresqlTupFetched),
 		metricPostgresqlTupInserted:              newMetricPostgresqlTupInserted(mbc.Metrics.PostgresqlTupInserted),
 		metricPostgresqlTupReturned:              newMetricPostgresqlTupReturned(mbc.Metrics.PostgresqlTupReturned),
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 		metricPostgresqlTupUpdated:               newMetricPostgresqlTupUpdated(mbc.Metrics.PostgresqlTupUpdated),
 		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
 		metricPostgresqlWalDelay:                 newMetricPostgresqlWalDelay(mbc.Metrics.PostgresqlWalDelay),
@@ -2091,6 +2188,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlBgwriterCheckpointCount.emit(ils.Metrics())
 	mb.metricPostgresqlBgwriterDuration.emit(ils.Metrics())
 	mb.metricPostgresqlBgwriterMaxwritten.emit(ils.Metrics())
+	mb.metricPostgresqlBlksHit.emit(ils.Metrics())
+	mb.metricPostgresqlBlksRead.emit(ils.Metrics())
 	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
 	mb.metricPostgresqlCommits.emit(ils.Metrics())
 	mb.metricPostgresqlConnectionMax.emit(ils.Metrics())
@@ -2109,13 +2208,10 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricPostgresqlTableSize.emit(ils.Metrics())
 	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
 	mb.metricPostgresqlTempFiles.emit(ils.Metrics())
-<<<<<<< HEAD
-=======
 	mb.metricPostgresqlTupDeleted.emit(ils.Metrics())
 	mb.metricPostgresqlTupFetched.emit(ils.Metrics())
 	mb.metricPostgresqlTupInserted.emit(ils.Metrics())
 	mb.metricPostgresqlTupReturned.emit(ils.Metrics())
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 	mb.metricPostgresqlTupUpdated.emit(ils.Metrics())
 	mb.metricPostgresqlWalAge.emit(ils.Metrics())
 	mb.metricPostgresqlWalDelay.emit(ils.Metrics())
@@ -2179,6 +2275,16 @@ func (mb *MetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.T
 // RecordPostgresqlBgwriterMaxwrittenDataPoint adds a data point to postgresql.bgwriter.maxwritten metric.
 func (mb *MetricsBuilder) RecordPostgresqlBgwriterMaxwrittenDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlBgwriterMaxwritten.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlBlksHitDataPoint adds a data point to postgresql.blks_hit metric.
+func (mb *MetricsBuilder) RecordPostgresqlBlksHitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlBlksHit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlBlksReadDataPoint adds a data point to postgresql.blks_read metric.
+func (mb *MetricsBuilder) RecordPostgresqlBlksReadDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlBlksRead.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
@@ -2271,8 +2377,6 @@ func (mb *MetricsBuilder) RecordPostgresqlTempFilesDataPoint(ts pcommon.Timestam
 	mb.metricPostgresqlTempFiles.recordDataPoint(mb.startTime, ts, val)
 }
 
-<<<<<<< HEAD
-=======
 // RecordPostgresqlTupDeletedDataPoint adds a data point to postgresql.tup_deleted metric.
 func (mb *MetricsBuilder) RecordPostgresqlTupDeletedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlTupDeleted.recordDataPoint(mb.startTime, ts, val)
@@ -2293,7 +2397,6 @@ func (mb *MetricsBuilder) RecordPostgresqlTupReturnedDataPoint(ts pcommon.Timest
 	mb.metricPostgresqlTupReturned.recordDataPoint(mb.startTime, ts, val)
 }
 
->>>>>>> a560b922dd (Added new postgresql metrics to acheive parity with Telegraf)
 // RecordPostgresqlTupUpdatedDataPoint adds a data point to postgresql.tup_updated metric.
 func (mb *MetricsBuilder) RecordPostgresqlTupUpdatedDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlTupUpdated.recordDataPoint(mb.startTime, ts, val)

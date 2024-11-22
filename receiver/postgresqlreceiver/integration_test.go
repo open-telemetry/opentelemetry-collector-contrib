@@ -84,6 +84,8 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Metrics.PostgresqlTupFetched.Enabled = true
 				rCfg.Metrics.PostgresqlTupInserted.Enabled = true
 				rCfg.Metrics.PostgresqlTupDeleted.Enabled = true
+				rCfg.Metrics.PostgresqlBlksHit.Enabled = true
+				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
 				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
 				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 			}),
