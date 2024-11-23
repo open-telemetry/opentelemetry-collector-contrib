@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -122,6 +123,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			config: Config{
 				NumWorkers: 1,
 				Mapping:    MappingsSettings{Mode: MappingECS.String()},
+				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: false,
 		},
@@ -130,6 +132,7 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 			config: Config{
 				NumWorkers: 1,
 				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
+				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 			wantRequireDataStream: true,
 		},
@@ -252,6 +255,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "none"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
 		{
@@ -259,6 +263,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
 	}
@@ -315,4 +320,29 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 	assert.NoError(t, bulkIndexer.Close(context.Background()))
 
 	return bulkIndexer
+}
+
+func TestSyncBulkIndexer_flushBytes(t *testing.T) {
+	var reqCnt atomic.Int64
+	cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
+	client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
+		RoundTripFunc: func(r *http.Request) (*http.Response, error) {
+			if r.URL.Path == "/_bulk" {
+				reqCnt.Add(1)
+			}
+			return &http.Response{
+				Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+				Body:   io.NopCloser(strings.NewReader(successResp)),
+			}, nil
+		},
+	}})
+	require.NoError(t, err)
+
+	bi := newSyncBulkIndexer(zap.NewNop(), client, &cfg)
+	session, err := bi.StartSession(context.Background())
+	require.NoError(t, err)
+
+	assert.NoError(t, session.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
+	assert.NoError(t, bi.Close(context.Background()))
 }
