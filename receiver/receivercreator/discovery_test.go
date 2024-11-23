@@ -222,6 +222,7 @@ nested_example:
 		expectedConf    userConfigMap
 		defaultEndpoint string
 		scopeSuffix     string
+		expectError     bool
 	}{"simple_annotation_case": {
 		hintsAnn: map[string]string{
 			"io.opentelemetry.discovery.metrics/enabled": "true",
@@ -265,16 +266,22 @@ nested_example:
 		}, expectedConf: userConfigMap{},
 		defaultEndpoint: "1.2.3.4:8080",
 		scopeSuffix:     "",
+		expectError:     true,
 	},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			assert.Equal(
-				t,
-				test.expectedConf,
-				getScraperConfFromAnnotations(test.hintsAnn, test.defaultEndpoint, test.scopeSuffix, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel))),
-			)
+			conf, err := getScraperConfFromAnnotations(test.hintsAnn, test.defaultEndpoint, test.scopeSuffix, zaptest.NewLogger(t, zaptest.Level(zap.InfoLevel)))
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(
+					t,
+					test.expectedConf,
+					conf)
+			}
 		})
 	}
 }
@@ -324,6 +331,45 @@ endpoint: "0.0.0.0:8080"`
 				test.expected,
 				discoveryMetricsEnabled(test.hintsAnn, otelMetricsHints, test.scopeSuffix),
 			)
+		})
+	}
+}
+
+func TestValidateEndpoint(t *testing.T) {
+	tests := map[string]struct {
+		endpoint        string
+		defaultEndpoint string
+		expectError     bool
+	}{
+		"test_valid": {
+			endpoint:        "http://1.2.3.4:8080/stats",
+			defaultEndpoint: "1.2.3.4:8080",
+			expectError:     false,
+		},
+		"test_valid_no_scheme": {
+			endpoint:        "1.2.3.4:8080/stats",
+			defaultEndpoint: "1.2.3.4:8080",
+			expectError:     false,
+		},
+		"test_valid_no_scheme_dynamic": {
+			endpoint:        "`endpoint`/stats",
+			defaultEndpoint: "1.2.3.4:8080",
+			expectError:     false,
+		},
+		"test_valid_dynamic": {
+			endpoint:        "http://`endpoint`/stats",
+			defaultEndpoint: "1.2.3.4:8080",
+			expectError:     false,
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := validateEndpoint(test.endpoint, test.defaultEndpoint)
+			if test.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

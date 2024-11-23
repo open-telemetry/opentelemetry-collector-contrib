@@ -5,6 +5,7 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -112,7 +113,10 @@ func (builder *k8sHintsBuilder) createScraper(
 	builder.logger.Debug("handling added hinted receiver", zap.Any("subreceiverKey", subreceiverKey))
 
 	defaultEndpoint := getStringEnv(env, endpointConfigKey)
-	userConfMap := getScraperConfFromAnnotations(annotations, defaultEndpoint, fmt.Sprint(port), builder.logger)
+	userConfMap, err := getScraperConfFromAnnotations(annotations, defaultEndpoint, fmt.Sprint(port), builder.logger)
+	if err != nil {
+		return nil, fmt.Errorf("could not create receiver configuration: %v", zap.Any("err", err))
+	}
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, port), userConfMap)
 	recTemplate.signals = receiverSignals{true, false, false}
@@ -123,31 +127,33 @@ func (builder *k8sHintsBuilder) createScraper(
 func getScraperConfFromAnnotations(
 	annotations map[string]string,
 	defaultEndpoint, scopeSuffix string,
-	logger *zap.Logger) userConfigMap {
+	logger *zap.Logger) (userConfigMap, error) {
 	conf := userConfigMap{}
 	conf[endpointConfigKey] = defaultEndpoint
 
 	configStr, found := getHintAnnotation(annotations, otelMetricsHints, configHint, scopeSuffix)
 	if !found || configStr == "" {
-		return conf
+		return conf, nil
 	}
 	if err := yaml.Unmarshal([]byte(configStr), &conf); err != nil {
-		logger.Debug("could not unmarshal configuration from hint", zap.Error(err))
+		return userConfigMap{}, fmt.Errorf("could not unmarshal configuration from hint: %v", zap.Error(err))
 	}
 
 	val := conf[endpointConfigKey]
 	confEndpoint, ok := val.(string)
 	if !ok {
-		logger.Debug("could not extract configured enpoint")
-		return userConfigMap{}
+		logger.Debug("could not extract configured endpoint")
+		return userConfigMap{}, fmt.Errorf("could not extract configured endpoint")
 	}
 
-	if !strings.Contains(confEndpoint, defaultEndpoint) {
-		logger.Debug("configured enpoint should include Pod's endpoint")
-		return userConfigMap{}
+	err := validateEndpoint(confEndpoint, defaultEndpoint)
+	if err != nil {
+		logger.Debug("configured endpoint is not valid", zap.Error(err))
+		return userConfigMap{}, fmt.Errorf("configured endpoint is not valid: %v", zap.Error(err))
+
 	}
 
-	return conf
+	return conf, nil
 }
 
 func getHintAnnotation(annotations map[string]string, hintBase string, hintKey string, suffix string) (string, bool) {
@@ -180,4 +186,35 @@ func getStringEnv(env observer.EndpointEnv, key string) string {
 		}
 	}
 	return valString
+}
+
+func validateEndpoint(endpoint, defaultEndpoint string) error {
+	// replace temporarily the dynamic reference to ease the url parsing
+	endpoint = strings.Replace(endpoint, "`endpoint`", defaultEndpoint, -1)
+
+	uri, _ := url.Parse(endpoint)
+	// target endpoint can come in form ip:port. In that case we fix the uri
+	// temporarily with adding http scheme
+	if uri == nil {
+		u, err := url.Parse("http://" + endpoint)
+		if err != nil {
+			return fmt.Errorf("could not parse enpoint")
+		}
+		uri = u
+	}
+	// target endpoint can come in form ip:port. In that case we fix the uri
+	// temporarily with adding http scheme
+	if uri.Scheme == "" {
+		u, err := url.Parse("http://" + endpoint)
+		if err != nil {
+			return fmt.Errorf("could not parse enpoint")
+		}
+		uri = u
+	}
+
+	// configured endpoint should include the target Pod's endpoint
+	if uri.Host != defaultEndpoint {
+		return fmt.Errorf("configured enpoint should include target Pod's endpoint")
+	}
+	return nil
 }
