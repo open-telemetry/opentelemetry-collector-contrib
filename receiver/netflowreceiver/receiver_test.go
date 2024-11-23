@@ -21,5 +21,4 @@ func TestCreateValidDefaultReceiver(t *testing.T) {
 	assert.NotNil(t, receiver, "receiver creation failed")
 	// TODO - Will be added on the following PR
 	// assert.NotNil(t, "sflow", receiver.(*netflowReceiver).listeners[0].recv)
-
 }

@@ -32,7 +32,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "one_listener"),
 			expected: &Config{
-
 				Scheme:    "netflow",
 				Port:      2055,
 				Sockets:   1,
@@ -90,5 +89,4 @@ func TestInvalidConfig(t *testing.T) {
 			assert.ErrorContains(t, err, tt.err)
 		})
 	}
-
 }

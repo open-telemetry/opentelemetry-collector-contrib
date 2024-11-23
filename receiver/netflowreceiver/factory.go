@@ -35,7 +35,6 @@ func createDefaultConfig() component.Config {
 		Workers:   defaultWorkers,
 		QueueSize: defaultQueueSize,
 	}
-
 }
 
 func createLogsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Logs) (receiver.Logs, error) {
