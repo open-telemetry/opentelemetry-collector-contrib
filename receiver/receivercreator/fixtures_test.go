@@ -72,8 +72,10 @@ var portEndpointWithHints = observer.Endpoint{
 				otelMetricsHints + "/enabled": "true",
 				otelMetricsHints + "/scraper": "with_endpoint",
 				otelMetricsHints + "/config":  config,
-			}},
-		Port: 6379},
+			},
+		},
+		Port: 6379,
+	},
 }
 
 var hostportEndpoint = observer.Endpoint{

@@ -84,7 +84,8 @@ func (builder *k8sHintsBuilder) createReceiverTemplateFromHints(env observer.End
 
 func (builder *k8sHintsBuilder) createScraper(
 	annotations map[string]string,
-	env observer.EndpointEnv) (*receiverTemplate, error) {
+	env observer.EndpointEnv,
+) (*receiverTemplate, error) {
 	var port uint16
 	var p observer.Port
 	err := mapstructure.Decode(env, &p)
@@ -127,7 +128,8 @@ func (builder *k8sHintsBuilder) createScraper(
 func getScraperConfFromAnnotations(
 	annotations map[string]string,
 	defaultEndpoint, scopeSuffix string,
-	logger *zap.Logger) (userConfigMap, error) {
+	logger *zap.Logger,
+) (userConfigMap, error) {
 	conf := userConfigMap{}
 	conf[endpointConfigKey] = defaultEndpoint
 
@@ -150,9 +152,7 @@ func getScraperConfFromAnnotations(
 	if err != nil {
 		logger.Debug("configured endpoint is not valid", zap.Error(err))
 		return userConfigMap{}, fmt.Errorf("configured endpoint is not valid: %v", zap.Error(err))
-
 	}
-
 	return conf, nil
 }
 
@@ -190,7 +190,7 @@ func getStringEnv(env observer.EndpointEnv, key string) string {
 
 func validateEndpoint(endpoint, defaultEndpoint string) error {
 	// replace temporarily the dynamic reference to ease the url parsing
-	endpoint = strings.Replace(endpoint, "`endpoint`", defaultEndpoint, -1)
+	endpoint = strings.ReplaceAll(endpoint, "`endpoint`", defaultEndpoint)
 
 	uri, _ := url.Parse(endpoint)
 	// target endpoint can come in form ip:port. In that case we fix the uri

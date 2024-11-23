@@ -22,12 +22,12 @@ func TestK8sHintsBuilderMetrics(t *testing.T) {
 	err := id.UnmarshalText([]byte("redis/pod-2-UID_6379"))
 	assert.NoError(t, err)
 
-	var config = `
+	config := `
 collection_interval: "20s"
 timeout: "30s"
 username: "username"
 password: "changeme"`
-	var configRedis = `
+	configRedis := `
 collection_interval: "20s"
 timeout: "130s"
 username: "username"
@@ -53,8 +53,10 @@ password: "changeme"`
 							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
 							otelMetricsHints + "/config":  config,
-						}},
-					Port: 6379},
+						},
+					},
+					Port: 6379,
+				},
 			},
 			expectedReceiver: receiverTemplate{
 				receiverConfig: receiverConfig{
@@ -78,8 +80,10 @@ password: "changeme"`
 							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
 							otelMetricsHints + "/config":  config,
-						}},
-					Port: 6379},
+						},
+					},
+					Port: 6379,
+				},
 			},
 			expectedReceiver: receiverTemplate{},
 			wantError:        false,
@@ -97,8 +101,10 @@ password: "changeme"`
 						Annotations: map[string]string{
 							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
-						}},
-					Port: 6379},
+						},
+					},
+					Port: 6379,
+				},
 			},
 			expectedReceiver: receiverTemplate{
 				receiverConfig: receiverConfig{
@@ -122,8 +128,10 @@ password: "changeme"`
 							otelMetricsHints + ".6379/enabled": "true",
 							otelMetricsHints + ".6379/scraper": "redis",
 							otelMetricsHints + ".6379/config":  config,
-						}},
-					Port: 6379},
+						},
+					},
+					Port: 6379,
+				},
 			},
 			expectedReceiver: receiverTemplate{
 				receiverConfig: receiverConfig{
@@ -148,8 +156,10 @@ password: "changeme"`
 							otelMetricsHints + ".6379/scraper": "redis",
 							otelMetricsHints + "/config":       config,
 							otelMetricsHints + ".6379/config":  configRedis,
-						}},
-					Port: 6379},
+						},
+					},
+					Port: 6379,
+				},
 			},
 			expectedReceiver: receiverTemplate{
 				receiverConfig: receiverConfig{
@@ -173,7 +183,9 @@ password: "changeme"`
 							otelMetricsHints + "/enabled": "true",
 							otelMetricsHints + "/scraper": "redis",
 							otelMetricsHints + "/config":  config,
-						}}},
+						},
+					},
+				},
 			},
 			expectedReceiver: receiverTemplate{},
 			wantError:        true,
@@ -204,14 +216,14 @@ password: "changeme"`
 }
 
 func TestGetConfFromAnnotations(t *testing.T) {
-	var config = `
+	config := `
 endpoint: "0.0.0.0:8080"
 collection_interval: "20s"
 initial_delay: "20s"
 read_buffer_size: "10"
 nested_example:
   foo: bar`
-	var configNoEndpoint = `
+	configNoEndpoint := `
 collection_interval: "20s"
 initial_delay: "20s"
 read_buffer_size: "10"
@@ -223,51 +235,52 @@ nested_example:
 		defaultEndpoint string
 		scopeSuffix     string
 		expectError     bool
-	}{"simple_annotation_case": {
-		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics/enabled": "true",
-			"io.opentelemetry.discovery.metrics/config":  config,
-		}, expectedConf: userConfigMap{
-			"collection_interval": "20s",
-			"endpoint":            "0.0.0.0:8080",
-			"initial_delay":       "20s",
-			"read_buffer_size":    "10",
-			"nested_example":      userConfigMap{"foo": "bar"},
-		}, defaultEndpoint: "0.0.0.0:8080",
-		scopeSuffix: "",
-	}, "simple_annotation_case_default_endpoint": {
-		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics/enabled": "true",
-			"io.opentelemetry.discovery.metrics/config":  configNoEndpoint,
-		}, expectedConf: userConfigMap{
-			"collection_interval": "20s",
-			"endpoint":            "1.1.1.1:8080",
-			"initial_delay":       "20s",
-			"read_buffer_size":    "10",
-			"nested_example":      userConfigMap{"foo": "bar"},
-		}, defaultEndpoint: "1.1.1.1:8080",
-		scopeSuffix: "",
-	}, "simple_annotation_case_scoped": {
-		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics.8080/enabled": "true",
-			"io.opentelemetry.discovery.metrics.8080/config":  config,
-		}, expectedConf: userConfigMap{
-			"collection_interval": "20s",
-			"endpoint":            "0.0.0.0:8080",
-			"initial_delay":       "20s",
-			"read_buffer_size":    "10",
-			"nested_example":      userConfigMap{"foo": "bar"},
-		}, defaultEndpoint: "0.0.0.0:8080",
-		scopeSuffix: "8080",
-	}, "simple_annotation_case_with_invalid_endpoint": {
-		hintsAnn: map[string]string{
-			"io.opentelemetry.discovery.metrics/enabled": "true",
-			"io.opentelemetry.discovery.metrics/config":  config,
-		}, expectedConf: userConfigMap{},
-		defaultEndpoint: "1.2.3.4:8080",
-		scopeSuffix:     "",
-		expectError:     true,
-	},
+	}{
+		"simple_annotation_case": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery.metrics/enabled": "true",
+				"io.opentelemetry.discovery.metrics/config":  config,
+			}, expectedConf: userConfigMap{
+				"collection_interval": "20s",
+				"endpoint":            "0.0.0.0:8080",
+				"initial_delay":       "20s",
+				"read_buffer_size":    "10",
+				"nested_example":      userConfigMap{"foo": "bar"},
+			}, defaultEndpoint: "0.0.0.0:8080",
+			scopeSuffix: "",
+		}, "simple_annotation_case_default_endpoint": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery.metrics/enabled": "true",
+				"io.opentelemetry.discovery.metrics/config":  configNoEndpoint,
+			}, expectedConf: userConfigMap{
+				"collection_interval": "20s",
+				"endpoint":            "1.1.1.1:8080",
+				"initial_delay":       "20s",
+				"read_buffer_size":    "10",
+				"nested_example":      userConfigMap{"foo": "bar"},
+			}, defaultEndpoint: "1.1.1.1:8080",
+			scopeSuffix: "",
+		}, "simple_annotation_case_scoped": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery.metrics.8080/enabled": "true",
+				"io.opentelemetry.discovery.metrics.8080/config":  config,
+			}, expectedConf: userConfigMap{
+				"collection_interval": "20s",
+				"endpoint":            "0.0.0.0:8080",
+				"initial_delay":       "20s",
+				"read_buffer_size":    "10",
+				"nested_example":      userConfigMap{"foo": "bar"},
+			}, defaultEndpoint: "0.0.0.0:8080",
+			scopeSuffix: "8080",
+		}, "simple_annotation_case_with_invalid_endpoint": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery.metrics/enabled": "true",
+				"io.opentelemetry.discovery.metrics/config":  config,
+			}, expectedConf: userConfigMap{},
+			defaultEndpoint: "1.2.3.4:8080",
+			scopeSuffix:     "",
+			expectError:     true,
+		},
 	}
 
 	for name, test := range tests {
@@ -287,7 +300,7 @@ nested_example:
 }
 
 func TestDiscoveryMetricsEnabled(t *testing.T) {
-	var config = `
+	config := `
 endpoint: "0.0.0.0:8080"`
 	tests := map[string]struct {
 		hintsAnn    map[string]string
@@ -345,6 +358,11 @@ func TestValidateEndpoint(t *testing.T) {
 			endpoint:        "http://1.2.3.4:8080/stats",
 			defaultEndpoint: "1.2.3.4:8080",
 			expectError:     false,
+		},
+		"test_invalid": {
+			endpoint:        "http://0.0.0.0:8080/some?foo=1.2.3.4:8080",
+			defaultEndpoint: "1.2.3.4:8080",
+			expectError:     true,
 		},
 		"test_valid_no_scheme": {
 			endpoint:        "1.2.3.4:8080/stats",
