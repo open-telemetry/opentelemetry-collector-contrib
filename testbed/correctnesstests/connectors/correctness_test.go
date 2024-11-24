@@ -43,7 +43,6 @@ func TestGoldenData(t *testing.T) {
 	t.Run(sampleTest.TestName, func(t *testing.T) {
 		testWithGoldenDataset(t, sampleTest.DataSender, sampleTest.DataReceiver, sampleTest.ResourceSpec, sampleTest.DataConnector, processors)
 	})
-
 }
 
 func testWithGoldenDataset(
@@ -96,5 +95,4 @@ func testWithGoldenDataset(
 		3*time.Second, "all data items received")
 
 	tc.StopAgent()
-
 }

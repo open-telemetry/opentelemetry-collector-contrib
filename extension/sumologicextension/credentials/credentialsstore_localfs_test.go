@@ -69,11 +69,11 @@ func TestCredentialsStoreValidate(t *testing.T) {
 	var expectedFileMode fs.FileMode
 	dir := filepath.Join(t.TempDir(), "store")
 	if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
-		expectedFileMode = fs.FileMode(0777)
+		expectedFileMode = fs.FileMode(0o777)
 	} else {
-		expectedFileMode = fs.FileMode(0700)
+		expectedFileMode = fs.FileMode(0o700)
 	}
-	err := os.Mkdir(dir, 0400)
+	err := os.Mkdir(dir, 0o400)
 	require.NoError(t, err)
 
 	store, err := NewLocalFsStore(WithCredentialsDirectory(dir), WithLogger(zap.NewNop()))
