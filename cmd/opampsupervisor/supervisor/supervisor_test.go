@@ -1390,8 +1390,6 @@ capabilities:
 	require.Error(t, err)
 	require.ErrorContains(t, err, "cannot parse")
 
-	fmt.Println(err.Error())
-
 	t.Cleanup(func() {
 		require.NoError(t, os.Chmod(tmpDir, 0o700))
 		require.NoError(t, os.RemoveAll(tmpDir))
