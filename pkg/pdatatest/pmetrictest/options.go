@@ -63,7 +63,6 @@ func maskMetricSliceValues(metrics pmetric.MetricSlice, metricNames ...string) {
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", metrics.At(i).Type()))
 			}
-
 		}
 	}
 }
@@ -516,7 +515,6 @@ func matchMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName 
 					return false
 				})
 			}
-
 		}
 	}
 }
@@ -630,7 +628,6 @@ func maskSubsequentDataPoints(metrics pmetric.Metrics, metricNames []string) {
 							return n > 1
 						})
 					}
-
 				}
 			}
 		}

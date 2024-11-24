@@ -111,7 +111,6 @@ func (s *sfxDPClient) pushMetricsData(
 	}
 
 	return 0, nil
-
 }
 
 func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[string]string) error {
@@ -119,7 +118,7 @@ func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[
 	if !strings.HasSuffix(datapointURL.Path, "v2/datapoint") {
 		datapointURL.Path = path.Join(datapointURL.Path, "v2/datapoint")
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", datapointURL.String(), body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, datapointURL.String(), body)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -154,7 +153,6 @@ func (s *sfxDPClient) postData(ctx context.Context, body io.Reader, headers map[
 }
 
 func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints []*sfxpb.DataPoint, accessToken string) (int, error) {
-
 	if s.logDataPoints {
 		for _, dp := range sfxDataPoints {
 			s.logger.Debug("Dispatching SFx datapoint", zap.Stringer("dp", dp))
@@ -210,7 +208,6 @@ func (s *sfxDPClient) retrieveAccessToken(md pmetric.ResourceMetrics) string {
 }
 
 func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetric.Metrics, accessToken string) (int, error) {
-
 	dataPointCount := mh.DataPointCount()
 	if s.logDataPoints {
 		s.logger.Debug("Count of metrics to send in OTLP format",
@@ -247,7 +244,6 @@ func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetri
 	s.logger.Debug("Sending metrics in OTLP format")
 
 	err = s.postData(ctx, body, headers)
-
 	if err != nil {
 		return dataPointCount, consumererror.NewMetrics(err, mh)
 	}
@@ -256,11 +252,9 @@ func (s *sfxDPClient) pushOTLPMetricsDataForToken(ctx context.Context, mh pmetri
 }
 
 func (s *sfxDPClient) encodeOTLPBody(md pmetric.Metrics) (bodyReader io.Reader, compressed bool, err error) {
-
 	tr := pmetricotlp.NewExportRequestFromMetrics(md)
 
 	body, err := tr.MarshalProto()
-
 	if err != nil {
 		return nil, false, err
 	}

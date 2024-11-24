@@ -6,7 +6,8 @@ status:
     development: [metrics, traces, logs]
   distributions: []
   codeowners:
-    active: [am-kinetica, TylerHelmuth]
+    active: [TylerHelmuth]
+    emeritus: [am-kinetica]
 
 
 # TODO: Update the exporter to pass the tests

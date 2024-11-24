@@ -173,7 +173,7 @@ func TestExportErrors(tester *testing.T) {
 	type ExportErrorsTest struct {
 		status int
 	}
-	var ExportErrorsTests = []ExportErrorsTest{
+	ExportErrorsTests := []ExportErrorsTest{
 		{http.StatusUnauthorized},
 		{http.StatusBadGateway},
 		{http.StatusInternalServerError},
@@ -204,7 +204,6 @@ func TestExportErrors(tester *testing.T) {
 		server.Close()
 		require.Error(tester, err)
 	}
-
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
@@ -304,9 +303,9 @@ func TestPushLogsData(tester *testing.T) {
 }
 
 func TestMergeMapEntries(tester *testing.T) {
-	var firstMap = pcommon.NewMap()
-	var secondMap = pcommon.NewMap()
-	var expectedMap = pcommon.NewMap()
+	firstMap := pcommon.NewMap()
+	secondMap := pcommon.NewMap()
+	expectedMap := pcommon.NewMap()
 	firstMap.PutStr("name", "exporter")
 	firstMap.PutStr("host", "localhost")
 	firstMap.PutStr("instanceNum", "1")
@@ -317,17 +316,17 @@ func TestMergeMapEntries(tester *testing.T) {
 	secondMap.PutEmptyMap("id").PutInt("instance_a", 1)
 	expectedMap.PutStr("name", "exporter")
 	expectedMap.PutStr("tag", "test")
-	var slice = expectedMap.PutEmptySlice("host")
+	slice := expectedMap.PutEmptySlice("host")
 	slice.AppendEmpty().SetStr("localhost")
 	slice.AppendEmpty().SetStr("ec2")
 	slice = expectedMap.PutEmptySlice("instanceNum")
-	var val = slice.AppendEmpty()
+	val := slice.AppendEmpty()
 	val.SetStr("1")
 	val = slice.AppendEmpty()
 	val.SetInt(3)
 	slice = expectedMap.PutEmptySlice("id")
 	slice.AppendEmpty().SetInt(4)
 	slice.AppendEmpty().SetEmptyMap().PutInt("instance_a", 1)
-	var mergedMap = mergeMapEntries(firstMap, secondMap)
+	mergedMap := mergeMapEntries(firstMap, secondMap)
 	assert.Equal(tester, expectedMap.AsRaw(), mergedMap.AsRaw())
 }

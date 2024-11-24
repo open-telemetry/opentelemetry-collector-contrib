@@ -42,7 +42,6 @@ func TestEndpointFor(t *testing.T) {
 
 			// verify
 			assert.Equal(t, tt.expected, endpoint)
-
 		})
 	}
 }
