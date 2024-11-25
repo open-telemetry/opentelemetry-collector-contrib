@@ -120,7 +120,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if c.API.Key == "" {
+	if string(c.API.Key) == "" {
 		return ErrUnsetAPIKey
 	}
 
@@ -251,7 +251,7 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	c.warnings = append(c.warnings, renamingWarnings...)
 
 	// remove leading/trailing quotation marks to avoid issues with the API key
-	c.API.Key = configopaque.String(strings.Trim(c.API.Key.String(), `"'`))
+	c.API.Key = configopaque.String(strings.Trim(string(c.API.Key), `"'`))
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
