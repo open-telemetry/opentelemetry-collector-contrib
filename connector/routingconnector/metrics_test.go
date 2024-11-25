@@ -515,9 +515,13 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 	isMetricX := `name == "metricX"`
 	isMetricY := `name == "metricY"`
 
-	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
-	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
+	isDataPointG := `attributes["dpName"] == "dpG"`
+	isDataPointH := `attributes["dpName"] == "dpH"`
+	isDataPointX := `attributes["dpName"] == "dpX"`
+	isDataPointY := `attributes["dpName"] == "dpY"`
 
+	isMetricFFromLowerContext := `metric.name == "metricF"`
+	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
 	isResourceBFromLowerContext := `resource.attributes["resourceName"] == "resourceB"`
 
 	testCases := []struct {
@@ -822,14 +826,14 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 		{
 			name: "metric/with_scope_condition",
 			cfg: testConfig(
-				withRoute("metric", isScopeCFromLowerContext, idSink0),
+				withRoute("metric", isScopeDFromLowerContext, idSink0),
 				withRoute("metric", isMetricY, idSink1),
 				withDefault(idSinkD),
 			),
 			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
-			expectSink0: pmetricutiltest.NewGauges("AB", "C", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "D", "EF", "GH"),
 			expectSink1: pmetric.Metrics{},
-			expectSinkD: pmetricutiltest.NewGauges("AB", "D", "EF", "GH"),
+			expectSinkD: pmetricutiltest.NewGauges("AB", "C", "EF", "GH"),
 		},
 		{
 			name: "metric/with_resource_and_scope_conditions",
@@ -861,6 +865,136 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			),
 		},
 		{
+			name: "datapoint/all_match_first_only",
+			cfg: testConfig(
+				withRoute("datapoint", "true", idSink0),
+				withRoute("datapoint", isDataPointY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "datapoint/all_match_last_only",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointX, idSink0),
+				withRoute("datapoint", "true", idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "datapoint/all_match_only_once",
+			cfg: testConfig(
+				withRoute("datapoint", "true", idSink0),
+				withRoute("datapoint", isDataPointG+" or "+isDataPointH, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "datapoint/each_matches_one",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointG, idSink0),
+				withRoute("datapoint", isDataPointH, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "G"),
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "EF", "H"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "datapoint/some_match_with_default",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointX, idSink0),
+				withRoute("datapoint", isDataPointH, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "EF", "H"),
+			expectSinkD: pmetricutiltest.NewGauges("AB", "CD", "EF", "G"),
+		},
+		{
+			name: "datapoint/some_match_without_default",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointX, idSink0),
+				withRoute("datapoint", isDataPointH, idSink1),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "EF", "H"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "datapoint/match_none_with_default",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointX, idSink0),
+				withRoute("datapoint", isDataPointY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+		},
+		{
+			name: "datapoint/match_none_without_default",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointX, idSink0),
+				withRoute("datapoint", isDataPointY, idSink1),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetric.Metrics{},
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "datapoint/with_resource_condition",
+			cfg: testConfig(
+				withRoute("datapoint", isResourceBFromLowerContext, idSink0),
+				withRoute("datapoint", isDataPointY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("B", "CD", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewGauges("A", "CD", "EF", "GH"),
+		},
+		{
+			name: "datapoint/with_scope_condition",
+			cfg: testConfig(
+				withRoute("datapoint", isScopeDFromLowerContext, idSink0),
+				withRoute("datapoint", isDataPointY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "D", "EF", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewGauges("AB", "C", "EF", "GH"),
+		},
+		{
+			name: "datapoint/with_metric_condition",
+			cfg: testConfig(
+				withRoute("datapoint", isMetricFFromLowerContext, idSink0),
+				withRoute("datapoint", isDataPointY, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "F", "GH"),
+			expectSink1: pmetric.Metrics{},
+			expectSinkD: pmetricutiltest.NewGauges("AB", "CD", "E", "GH"),
+		},
+		{
 			name: "mixed/match_resource_then_metrics",
 			cfg: testConfig(
 				withRoute("resource", isResourceA, idSink0),
@@ -883,6 +1017,54 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "E", "GH"),
 			expectSink1: pmetricutiltest.NewGauges("B", "CD", "F", "GH"),
 			expectSinkD: pmetricutiltest.NewGauges("A", "CD", "F", "GH"),
+		},
+		{
+			name: "mixed/match_resource_then_datapoint",
+			cfg: testConfig(
+				withRoute("resource", isResourceA, idSink0),
+				withRoute("datapoint", isDataPointG, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("A", "CD", "EF", "GH"),
+			expectSink1: pmetricutiltest.NewGauges("B", "CD", "EF", "G"),
+			expectSinkD: pmetricutiltest.NewGauges("B", "CD", "EF", "H"),
+		},
+		{
+			name: "mixed/match_datapoint_then_resource",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointG, idSink0),
+				withRoute("resource", isResourceB, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "G"),
+			expectSink1: pmetricutiltest.NewGauges("B", "CD", "EF", "H"),
+			expectSinkD: pmetricutiltest.NewGauges("A", "CD", "EF", "H"),
+		},
+		{
+			name: "mixed/match_metric_then_datapoint",
+			cfg: testConfig(
+				withRoute("metric", isMetricE, idSink0),
+				withRoute("datapoint", isDataPointG, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "E", "GH"),
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "F", "G"),
+			expectSinkD: pmetricutiltest.NewGauges("AB", "CD", "F", "H"),
+		},
+		{
+			name: "mixed/match_datapoint_then_metric",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointG, idSink0),
+				withRoute("metric", isMetricE, idSink1),
+				withDefault(idSinkD),
+			),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "G"),
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "E", "H"),
+			expectSinkD: pmetricutiltest.NewGauges("AB", "CD", "F", "H"),
 		},
 		{
 			name: "mixed/match_resource_then_grpc_request",
@@ -911,6 +1093,19 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			expectSinkD: pmetric.Metrics{},
 		},
 		{
+			name: "mixed/match_datapoint_then_grpc_request",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointG, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withGRPCMetadata(context.Background(), map[string]string{"X-Tenant": "acme"}),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "G"),
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "EF", "H"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
 			name: "mixed/match_resource_then_http_request",
 			cfg: testConfig(
 				withRoute("resource", isResourceA, idSink0),
@@ -934,6 +1129,19 @@ func TestMetricsConnectorDetailed(t *testing.T) {
 			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
 			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "F", "GH"),
 			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "E", "GH"),
+			expectSinkD: pmetric.Metrics{},
+		},
+		{
+			name: "mixed/match_datapoint_then_http_request",
+			cfg: testConfig(
+				withRoute("datapoint", isDataPointG, idSink0),
+				withRoute("request", isAcme, idSink1),
+				withDefault(idSinkD),
+			),
+			ctx:         withHTTPMetadata(context.Background(), map[string][]string{"X-Tenant": {"acme"}}),
+			input:       pmetricutiltest.NewGauges("AB", "CD", "EF", "GH"),
+			expectSink0: pmetricutiltest.NewGauges("AB", "CD", "EF", "G"),
+			expectSink1: pmetricutiltest.NewGauges("AB", "CD", "EF", "H"),
 			expectSinkD: pmetric.Metrics{},
 		},
 	}
