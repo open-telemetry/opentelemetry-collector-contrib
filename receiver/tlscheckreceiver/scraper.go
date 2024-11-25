@@ -19,9 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
 
-var (
-	ErrMissingTargets = errors.New(`No targets specified`)
-)
+var ErrMissingTargets = errors.New(`No targets specified`)
 
 type scraper struct {
 	cfg                *Config
