@@ -44,9 +44,10 @@ type Criteria struct {
 }
 
 type OrderingCriteria struct {
-	Regex  string `mapstructure:"regex,omitempty"`
-	TopN   int    `mapstructure:"top_n,omitempty"`
-	SortBy []Sort `mapstructure:"sort_by,omitempty"`
+	Regex   string `mapstructure:"regex,omitempty"`
+	TopN    int    `mapstructure:"top_n,omitempty"`
+	SortBy  []Sort `mapstructure:"sort_by,omitempty"`
+	GroupBy string `mapstructure:"group_by,omitempty"`
 }
 
 type Sort struct {
@@ -92,14 +93,17 @@ func New(c Criteria) (*Matcher, error) {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
 
-	var regex *regexp.Regexp
+	if c.OrderingCriteria.GroupBy != "" {
+		m.groupBy = regexp.MustCompile(c.OrderingCriteria.GroupBy)
+	}
+
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
 		if c.OrderingCriteria.Regex == "" {
 			return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
 		}
 
 		var err error
-		regex, err = regexp.Compile(c.OrderingCriteria.Regex)
+		regex, err := regexp.Compile(c.OrderingCriteria.Regex)
 		if err != nil {
 			return nil, fmt.Errorf("compile regex: %w", err)
 		}
@@ -158,6 +162,7 @@ type Matcher struct {
 	exclude    []string
 	regex      *regexp.Regexp
 	filterOpts []filter.Option
+	groupBy    *regexp.Regexp
 }
 
 // MatchFiles gets a list of paths given an array of glob patterns to include and exclude
@@ -174,9 +179,27 @@ func (m Matcher) MatchFiles() ([]string, error) {
 		return files, errs
 	}
 
-	result, err := filter.Filter(files, m.regex, m.filterOpts...)
-	if len(result) == 0 {
-		return result, errors.Join(err, errs)
+	groups := make(map[string][]string)
+	if m.groupBy != nil {
+		for _, f := range files {
+			matches := m.groupBy.FindStringSubmatch(f)
+			if len(matches) > 1 {
+				group := matches[1]
+				groups[group] = append(groups[group], f)
+			}
+		}
+	} else {
+		groups["1"] = files
 	}
+
+	var result []string
+	for _, files := range groups {
+		groupResult, err := filter.Filter(files, m.regex, m.filterOpts...)
+		if len(result) == 0 {
+			return result, errors.Join(err, errs)
+		}
+		result = append(result, groupResult...)
+	}
+
 	return result, errs
 }
