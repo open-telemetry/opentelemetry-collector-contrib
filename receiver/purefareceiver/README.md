@@ -19,6 +19,7 @@ The Pure Storage FlashArray receiver, receives metrics from the Pure Storage Fla
 The following settings are required:
  -  `endpoint` (default: `http://127.0.0.0:9490/metrics/array`): The URL of the scraper selected endpoint.
  -  `fa_array_name` (no default): The array's pretty name to be used as a metrics label.
+ -  `namespace` (default:purefa): The selected Pure Storage OpenMetrics Namespace to query. 
 
 In the below examples array01 is using the [Pure Storage FlashArray OpenMetrics exporter](https://github.com/PureStorage-OpenConnect/pure-fa-openmetrics-exporter), while array02 is using the native on-box metrics provided in Purity//FA v6.6.11+.
 
