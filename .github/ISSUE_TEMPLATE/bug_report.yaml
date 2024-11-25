@@ -246,6 +246,7 @@ body:
       - receiver/mongodbatlas
       - receiver/mysql
       - receiver/namedpipe
+      - receiver/netflow
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp
