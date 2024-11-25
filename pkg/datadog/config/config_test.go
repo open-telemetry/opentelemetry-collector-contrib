@@ -185,6 +185,18 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+func TestAPIKeyDoubleQuotes(t *testing.T) {
+	configMap := confmap.NewFromStringMap(map[string]any{
+		"api": map[string]any{
+			"key": "'apikey'",
+		},
+	})
+	cfg := CreateDefaultConfig().(*Config)
+	err := cfg.Unmarshal(configMap)
+	assert.NoError(t, err)
+	assert.Equal(t, "apikey", string(cfg.API.Key))
+}
+
 func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs := CreateDefaultConfig().(*Config)
 	idleConnTimeout := 30 * time.Second
