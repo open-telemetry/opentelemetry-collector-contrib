@@ -25,7 +25,8 @@ func NewDatabaseReader(ctx context.Context,
 	databaseID *datasource.DatabaseID,
 	serviceAccountPath string,
 	readerConfig ReaderConfig,
-	logger *zap.Logger) (*DatabaseReader, error) {
+	logger *zap.Logger,
+) (*DatabaseReader, error) {
 	database, err := datasource.NewDatabase(ctx, databaseID, serviceAccountPath)
 	if err != nil {
 		return nil, fmt.Errorf("error occurred during client instantiation for database %q: %w", databaseID.ID(), err)
@@ -41,7 +42,8 @@ func NewDatabaseReader(ctx context.Context,
 }
 
 func initializeReaders(logger *zap.Logger, parsedMetadata []*metadata.MetricsMetadata,
-	database *datasource.Database, readerConfig ReaderConfig) []Reader {
+	database *datasource.Database, readerConfig ReaderConfig,
+) []Reader {
 	readers := make([]Reader, len(parsedMetadata))
 
 	for i, mData := range parsedMetadata {

@@ -7,7 +7,6 @@ import (
 	"context"
 	"os"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -22,14 +21,8 @@ const (
 	TypeStr = "filesystem"
 )
 
-var (
-	// scraperType is the component type used for the built scraper.
-	scraperType component.Type = component.MustNewType(TypeStr)
-)
-
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // Type gets the type of the scraper config created by this Factory.
 func (f *Factory) Type() string {
@@ -74,6 +67,5 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		scraperType, s.scrape, scraperhelper.WithStart(s.start))
+	return scraperhelper.NewScraperWithoutType(s.scrape, scraperhelper.WithStart(s.start))
 }

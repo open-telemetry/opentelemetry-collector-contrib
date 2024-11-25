@@ -99,7 +99,6 @@ func handleFile(f *ast.File, result *api) {
 						result.Structs = append(result.Structs, t.Name.String())
 					}
 				}
-
 			}
 		}
 		if fn, isFn := d.(*ast.FuncDecl); isFn {
@@ -112,7 +111,6 @@ func handleFile(f *ast.File, result *api) {
 				exported = true
 			}
 			if fn.Recv.NumFields() > 0 {
-
 				for _, t := range fn.Recv.List {
 					for _, n := range t.Names {
 						exported = exported || n.IsExported()
