@@ -170,7 +170,7 @@ spec:
     - --duration=10s
     - --rate=1
     - --otlp-attributes=k8s.container.name="telemetrygen"
-    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:0.112.0@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096
     name: telemetrygen
 status:
   podIP: 10.244.0.11
@@ -193,7 +193,8 @@ the processor associates the received trace to the pod, based on the connection 
     "k8s.pod.name": "telemetrygen-pod",
     "k8s.pod.uid": "038e2267-b473-489b-b48c-46bafdb852eb",
     "container.image.name": "telemetrygen",
-    "container.image.tag": "latest"
+    "container.image.tag": "0.112.0", 
+    "container.image.repo_digests": ["ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096"]
   }
 }
 ```
