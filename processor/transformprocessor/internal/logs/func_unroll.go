@@ -31,31 +31,44 @@ func createUnrollFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.Ex
 
 func unroll(field ottl.GetSetter[ottllog.TransformContext]) (ottl.ExprFunc[ottllog.TransformContext], error) {
 	changeCounter := 0
+	var unrollType pcommon.ValueType
 	return func(ctx context.Context, tCtx ottllog.TransformContext) (any, error) {
-		if changeCounter > 0 {
-			changeCounter--
-			return nil, nil
-		}
-
 		value, err := field.Get(ctx, tCtx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get value to unroll: %w", err)
 		}
 
-		expansions := []string{}
+		if changeCounter > 0 {
+			changeCounter--
+			currentLogRecord := tCtx.GetLogRecord()
+			switch unrollType {
+			case pcommon.ValueTypeStr:
+				currentLogRecord.Body().SetStr(currentLogRecord.Body().AsString())
+			case pcommon.ValueTypeInt:
+				currentLogRecord.Body().SetInt(currentLogRecord.Body().Int())
+			case pcommon.ValueTypeDouble:
+				currentLogRecord.Body().SetDouble(currentLogRecord.Body().Double())
+			case pcommon.ValueTypeBool:
+				currentLogRecord.Body().SetBool(currentLogRecord.Body().Bool())
+			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
+				// do nothing
+			default:
+				return nil, fmt.Errorf("unable to continue unrolling%v", unrollType)
+			}
+			return nil, nil
+		}
+
+		expansions := []pcommon.Value{}
 		switch value := value.(type) {
 		case pcommon.Slice:
-			for _, v := range value.AsRaw() {
-				if s, ok := v.(string); ok {
-					expansions = append(expansions, s)
-				} else {
-					return nil, fmt.Errorf("value is not a string slice, got %T", v)
-				}
+			for i := 0; i < value.Len(); i++ {
+				v := value.At(i)
+				unrollType = v.Type()
+				expansions = append(expansions, v)
 				value.RemoveIf(func(removeCandidate pcommon.Value) bool {
-					return removeCandidate.AsRaw() == v
+					return removeCandidate == v
 				})
 			}
-
 		default:
 			return nil, fmt.Errorf("input field is not a slice, got %T", value)
 		}
@@ -74,9 +87,20 @@ func unroll(field ottl.GetSetter[ottllog.TransformContext]) (ottl.ExprFunc[ottll
 		for _, expansion := range expansions {
 			newRecord := records.AppendEmpty()
 			currentRecord.CopyTo(newRecord)
+			switch unrollType {
+			case pcommon.ValueTypeStr:
+				newRecord.Body().SetStr(expansion.AsString())
+			case pcommon.ValueTypeInt:
+				newRecord.Body().SetInt(expansion.Int())
+			case pcommon.ValueTypeDouble:
+				newRecord.Body().SetDouble(expansion.Double())
+			case pcommon.ValueTypeBool:
+				newRecord.Body().SetBool(expansion.Bool())
+			default:
+				return nil, fmt.Errorf("unable to unroll %v", unrollType)
+			}
 			// figure out the field being set; not always going to be the body
-			newRecord.Body().SetStr(expansion)
-			// TODO: This is not a safe assumption that the records processed by the transform processor are going to be in order
+			// newRecord.Body().SetStr(expansion)
 			changeCounter++
 		}
 		newLogs.MoveTo(scopeLogs)
