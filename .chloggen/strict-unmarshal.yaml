@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "The change enables strict unmarshal of config file for opampsupervisor. Post this change, an error would be returned while unmarshalling a config file where a key exist which doesn't configure anything"
+note: "Enable strict unmarshalling of the OpAMP Supervisor config file. An error will now be returned if an invalid config key is set."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [35838]
