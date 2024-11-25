@@ -34,6 +34,7 @@ body:
       - connector/roundrobin
       - connector/routing
       - connector/servicegraph
+      - connector/signaltometrics
       - connector/spanmetrics
       - connector/sum
       - examples/demo
