@@ -88,6 +88,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
+	assert.NotNil(t, httpData.Request.URL)
 
 	assert.Equal(t, "10.8.17.36", *httpData.Request.ClientIP)
 

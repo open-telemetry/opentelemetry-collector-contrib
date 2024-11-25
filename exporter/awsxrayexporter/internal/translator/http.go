@@ -92,6 +92,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			hasHTTPRequestURLAttributes = true
 		case conventions.AttributeNetPeerName:
 			urlParts[key] = value.Str()
+			hasHTTPRequestURLAttributes = true
 		case conventions.AttributeNetPeerPort:
 			urlParts[key] = value.Str()
 			if len(urlParts[key]) == 0 {
