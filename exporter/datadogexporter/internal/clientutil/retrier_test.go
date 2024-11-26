@@ -46,7 +46,7 @@ func TestNoRetriesOnPermanentError(t *testing.T) {
 	scrubber := scrub.NewScrubber()
 	retrier := NewRetrier(zap.NewNop(), configretry.NewDefaultBackOffConfig(), scrubber)
 	ctx := context.Background()
-	respNonRetriable := http.Response{StatusCode: 404}
+	respNonRetriable := http.Response{StatusCode: http.StatusNotFound}
 
 	retryNum, err := retrier.DoWithRetries(ctx, func(context.Context) error {
 		return WrapError(fmt.Errorf("test"), &respNonRetriable)

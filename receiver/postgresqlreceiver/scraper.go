@@ -27,13 +27,11 @@ const (
 	defaultPostgreSQLDatabase = "postgres"
 )
 
-var (
-	separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
-		separateSchemaAttrID,
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
-	)
+var separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
+	separateSchemaAttrID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
 )
 
 type postgreSQLScraper struct {

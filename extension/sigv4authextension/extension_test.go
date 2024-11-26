@@ -44,7 +44,6 @@ func TestRoundTripper(t *testing.T) {
 	assert.Equal(t, cfg.Service, si.service)
 	assert.Equal(t, awsSDKInfo, si.awsSDKInfo)
 	assert.Equal(t, cfg.credsProvider, si.credsProvider)
-
 }
 
 func TestPerRPCCredentials(t *testing.T) {
@@ -103,10 +102,10 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 }
 
 func TestCloneRequest(t *testing.T) {
-	req1, err := http.NewRequest("GET", "https://example.com", nil)
+	req1, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
 	assert.NoError(t, err)
 
-	req2, err := http.NewRequest("GET", "https://example.com", nil)
+	req2, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
 	assert.NoError(t, err)
 	req2.Header.Add("Header1", "val1")
 

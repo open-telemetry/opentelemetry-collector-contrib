@@ -6,7 +6,6 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -69,7 +68,6 @@ type solaceTracesReceiver struct {
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
-
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {
 		set.Logger.Warn("Error validating messaging service configuration", zap.Any("error", err))
@@ -222,7 +220,6 @@ func (s *solaceTracesReceiver) receiveMessages(ctx context.Context, service mess
 			return err
 		}
 	}
-
 }
 
 // receiveMessage is the heart of the receiver's control flow. It will receive messages, unmarshal the message and forward the trace.
@@ -285,7 +282,7 @@ flowControlLoop:
 				case <-ctx.Done():
 					s.settings.Logger.Info("Context was cancelled while attempting redelivery, exiting")
 					disposition = nil // do not make any network requests, we are shutting down
-					return fmt.Errorf("delayed retry interrupted by shutdown request")
+					return errors.New("delayed retry interrupted by shutdown request")
 				}
 			} else { // error is permanent, we want to accept the message and increment the number of dropped messages
 				s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))

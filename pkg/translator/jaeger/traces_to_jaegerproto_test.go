@@ -164,7 +164,6 @@ func TestGetTagFromSpanKind(t *testing.T) {
 }
 
 func TestAttributesToJaegerProtoTags(t *testing.T) {
-
 	attributes := pcommon.NewMap()
 	attributes.PutBool("bool-val", true)
 	attributes.PutInt("int-val", 123)
@@ -215,7 +214,6 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 }
 
 func TestInternalTracesToJaegerProto(t *testing.T) {
-
 	tests := []struct {
 		name string
 		td   ptrace.Traces

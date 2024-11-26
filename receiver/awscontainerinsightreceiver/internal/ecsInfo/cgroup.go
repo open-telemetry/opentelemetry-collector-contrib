@@ -6,6 +6,7 @@ package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -85,7 +86,6 @@ func newCGroupScanner(ctx context.Context, mountConfigPath string, logger *zap.L
 }
 
 func (c *cgroupScanner) refresh() {
-
 	if c.ecsTaskInfoProvider == nil {
 		return
 	}
@@ -196,6 +196,7 @@ func readInt64(dirpath string, file string) (int64, error) {
 
 	return val, nil
 }
+
 func getCGroupMountPoint(mountConfigPath string) (string, error) {
 	f, err := os.Open(mountConfigPath)
 	if err != nil {
@@ -228,7 +229,7 @@ func getCGroupMountPoint(mountConfigPath string) (string, error) {
 			return filepath.Dir(fields[4]), nil
 		}
 	}
-	return "", fmt.Errorf("mount point not existed")
+	return "", errors.New("mount point not existed")
 }
 
 func getCGroupPathForTask(cgroupMount, controller, taskID, clusterName string) (string, error) {

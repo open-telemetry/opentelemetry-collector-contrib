@@ -1,0 +1,21 @@
+kind: CronJob
+apiVersion: batch/v1
+metadata:
+  name: test-k8scluster-receiver-cronjob
+  namespace: default
+spec:
+  # ensure that only one job/pod is active for the lifetime of the test
+  concurrencyPolicy: Forbid
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: alpine
+              image: alpine
+              args:
+                - /bin/sh
+                - -c
+                - "echo Running; sleep 600"
+          restartPolicy: OnFailure

@@ -41,9 +41,11 @@ var AllPrioritizers = []PrioritizerName{LeastLoadedPrioritizer, LeastLoadedTwoPr
 
 const defaultMaxStreamLifetime = 11 * time.Second
 
-type compareJSONTraces struct{ ptrace.Traces }
-type compareJSONMetrics struct{ pmetric.Metrics }
-type compareJSONLogs struct{ plog.Logs }
+type (
+	compareJSONTraces  struct{ ptrace.Traces }
+	compareJSONMetrics struct{ pmetric.Metrics }
+	compareJSONLogs    struct{ plog.Logs }
+)
 
 func (c compareJSONTraces) MarshalJSON() ([]byte, error) {
 	var m ptrace.JSONMarshaler
@@ -579,7 +581,6 @@ func TestArrowExporterStreaming(t *testing.T) {
 func TestArrowExporterHeaders(t *testing.T) {
 	for _, withDeadline := range []bool{true, false} {
 		t.Run(fmt.Sprint("with_deadline=", withDeadline), func(t *testing.T) {
-
 			tc := newSingleStreamMetadataTestCase(t)
 			channel := newHealthyTestChannel()
 
