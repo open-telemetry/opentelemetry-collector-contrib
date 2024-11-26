@@ -147,6 +147,15 @@ func (cfg *Config) buildDSN() (string, error) {
 		queryParams.Set("compress", cfg.Compress)
 	}
 
+	productInfo := queryParams.Get("client_info_product")
+	binaryProductInfo := fmt.Sprintf("%s/%s", "otelcol", getCollectorVersion())
+	if productInfo == "" {
+		productInfo = binaryProductInfo
+	} else {
+		productInfo = fmt.Sprintf("%s,%s", productInfo, binaryProductInfo)
+	}
+	queryParams.Set("client_info_product", productInfo)
+
 	// Use database from config if not specified in path, or if config is not default.
 	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
 		dsnURL.Path = cfg.Database
@@ -168,19 +177,13 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 		return nil, err
 	}
 
-	opts, err := clickhouse.ParseDSN(dsn)
+	// ClickHouse sql driver will read clickhouse settings from the DSN string.
+	// It also ensures defaults.
+	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
+	conn, err := sql.Open(driverName, dsn)
 	if err != nil {
 		return nil, err
 	}
-
-	if opts.ClientInfo.Products == nil {
-		opts.ClientInfo.Products = []struct {
-			Name    string
-			Version string
-		}{{"otelcol", getCollectorVersion()}}
-	}
-
-	conn := clickhouse.OpenDB(opts)
 
 	return conn, nil
 }
