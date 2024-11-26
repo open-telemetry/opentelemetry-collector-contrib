@@ -36,7 +36,15 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:                   component.NewIDWithName(metadata.Type, "invalid_ratio"),
-			validateErrorMessage: "gomemlimit ratio must be between 0 and 1",
+			validateErrorMessage: "gomemlimit ratio must be in the (0.0,1.0] range",
+		},
+		{
+			id:                   component.NewIDWithName(metadata.Type, "invalid_ratio_disabled"),
+			validateErrorMessage: "gomemlimit ratio must be in the (0.0,1.0] range",
+		},
+		{
+			id:                   component.NewIDWithName(metadata.Type, "invalid_ratio_negative"),
+			validateErrorMessage: "gomemlimit ratio must be in the (0.0,1.0] range",
 		},
 		{
 			id:                    component.NewIDWithName(metadata.Type, "invalid_ratio_type"),

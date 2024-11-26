@@ -21,8 +21,8 @@ type GoMemLimitConfig struct {
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GoMemLimit.Ratio < 0 || cfg.GoMemLimit.Ratio > 1 {
-		return errors.New("gomemlimit ratio must be between 0 and 1")
+	if cfg.GoMemLimit.Ratio <= 0 || cfg.GoMemLimit.Ratio > 1 {
+		return errors.New("gomemlimit ratio must be in the (0.0,1.0] range")
 	}
 	return nil
 }
