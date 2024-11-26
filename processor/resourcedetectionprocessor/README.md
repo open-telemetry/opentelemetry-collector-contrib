@@ -428,7 +428,7 @@ processors:
 
 ### Kubeadm Metadata
 
-Queries the K8S API server to retrieve the following resource attributes:
+Queries the K8S API server to retrieve kubeadm resource attributes:
 
 The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
 
