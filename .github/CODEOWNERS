@@ -34,6 +34,7 @@ connector/otlpjsonconnector/                      @open-telemetry/collector-cont
 connector/roundrobinconnector/                    @open-telemetry/collector-contrib-approvers @bogdandrutu
 connector/routingconnector/                       @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                  @open-telemetry/collector-contrib-approvers @jpkrohling @mapno @JaredTan95
+connector/signaltometricsconnector/               @open-telemetry/collector-contrib-approvers @ChrsMark @lahsivjar
 connector/spanmetricsconnector/                   @open-telemetry/collector-contrib-approvers @portertech @Frapschen
 connector/sumconnector/                           @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 
@@ -89,6 +90,7 @@ extension/asapauthextension/                      @open-telemetry/collector-cont
 extension/awsproxy/                               @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                     @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/bearertokenauthextension/               @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
+extension/cgroupruntimeextension/                 @open-telemetry/collector-contrib-approvers @mx-psi @rogercoll
 extension/encoding/                               @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
 extension/encoding/avrologencodingextension/      @open-telemetry/collector-contrib-approvers @thmshmm
 extension/encoding/jaegerencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
@@ -248,6 +250,7 @@ receiver/mongodbatlasreceiver/                    @open-telemetry/collector-cont
 receiver/mongodbreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
 receiver/mysqlreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/namedpipereceiver/                       @open-telemetry/collector-contrib-approvers @sinkingpoint @djaglowski
+receiver/netflowreceiver/                         @open-telemetry/collector-contrib-approvers @evan-bradley @dlopes7
 receiver/nginxreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/nsxtreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/ntpreceiver/                             @open-telemetry/collector-contrib-approvers @atoulme
