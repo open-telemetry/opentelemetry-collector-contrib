@@ -441,6 +441,17 @@ func TestMatcher(t *testing.T) {
 			expected: []string{"err.a.123456789.log", "err.a.123456788.log", "err.a.123456787.log", "err.a.123456786.log", "err.b.123456789.log", "err.b.123456788.log"},
 		},
 		{
+			name:    "Grouping",
+			files:   []string{"err.a.123456788.log", "err.a.123456789.log", "err.a.123456787.log", "err.b.123456788.log", "err.a.123456786.log", "err.b.123456789.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterCriteria: OrderingCriteria{
+				TopN:    6,
+				GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
+			},
+			expected: []string{"err.a.123456786.log", "err.a.123456787.log", "err.a.123456788.log", "err.a.123456789.log", "err.b.123456788.log", "err.b.123456789.log"},
+		},
+		{
 			name:    "Numeric Sorting Ascending",
 			files:   []string{"err.123456789.log", "err.123456788.log", "err.123456786.log", "err.123456787.log"},
 			include: []string{"err.*.log"},
