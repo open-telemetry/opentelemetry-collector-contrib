@@ -7,22 +7,22 @@ import (
 )
 
 var (
-	once    sync.Once
-	version string
+	versionOnce      sync.Once
+	collectorVersion string
 )
 
 func getCollectorVersion() string {
-	once.Do(func() {
+	versionOnce.Do(func() {
 		osInformation := runtime.GOOS[:3] + "-" + runtime.GOARCH
-		version = "unknown-" + osInformation
+		collectorVersion = "unknown-" + osInformation
 
 		info, ok := debug.ReadBuildInfo()
 		if !ok {
 			return
 		}
 
-		version = info.Main.Version + "-" + osInformation
+		collectorVersion = info.Main.Version + "-" + osInformation
 	})
 
-	return version
+	return collectorVersion
 }
