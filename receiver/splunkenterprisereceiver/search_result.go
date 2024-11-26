@@ -170,4 +170,18 @@ type healthArtifactEntry struct {
 type healthDetails struct {
 	Health   string                   `json:"health"`
 	Features map[string]healthDetails `json:"features,omitempty"`
+	
+// '/services/server/info'
+type Info struct {
+	Host    string      `json:"origin"`
+	Entries []InfoEntry `json:"entry"`
+}
+
+type InfoEntry struct {
+	Content InfoContent `json:"content"`
+}
+
+type InfoContent struct {
+	Build   string `json:"build"`
+	Version string `json:"version"`
 }
