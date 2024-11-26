@@ -8,7 +8,10 @@
       "go": "1.22.0"
     },
     "schedule": ["every tuesday"],
-    "extends": ["config:recommended"],
+    "extends": [
+      "config:recommended",
+      "customManagers:githubActionsVersions"
+    ],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
