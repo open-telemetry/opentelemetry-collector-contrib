@@ -154,8 +154,7 @@ func IgnoreProfileContainerTimestampValues() CompareProfilesOption {
 	return ignoreProfileContainerTimestampValues{}
 }
 
-type ignoreProfileContainerTimestampValues struct {
-}
+type ignoreProfileContainerTimestampValues struct{}
 
 func (opt ignoreProfileContainerTimestampValues) applyOnProfiles(expected, actual pprofile.Profiles) {
 	opt.maskProfileContainerTimestampValues(expected)
@@ -183,8 +182,7 @@ func IgnoreProfileTimestampValues() CompareProfilesOption {
 	return ignoreProfileTimestampValues{}
 }
 
-type ignoreProfileTimestampValues struct {
-}
+type ignoreProfileTimestampValues struct{}
 
 func (opt ignoreProfileTimestampValues) applyOnProfiles(expected, actual pprofile.Profiles) {
 	opt.maskProfileTimestampValues(expected)
