@@ -53,7 +53,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 * When using the `static` resolver and a target is unavailable, all the target's load-balanced telemetry will fail to be delivered until either the target is restored or removed from the static list. The same principle applies to the `dns` resolver.
 * When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
 
-To avoid a single point of failure requests can be distributed among multiple instances of `loadbalancingexporter`. Consistent hashing mechanism will ensure a deterministic result between instances which share the same configuration and resolve an exact list of backend endpoints.
+To avoid a single point of failure, requests can be distributed among multiple Collector instances configured with the `loadbalancingexporter`. The consistent hashing mechanism will ensure a deterministic result between instances sharing the same configuration and resolve an exact list of backend endpoints.
 
 ## Configuration
 
