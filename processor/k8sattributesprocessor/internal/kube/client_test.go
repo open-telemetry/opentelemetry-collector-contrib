@@ -145,17 +145,59 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil, false, 10*time.Second)
+	c, err := New(
+		componenttest.NewNopTelemetrySettings(),
+		k8sconfig.APIConfig{},
+		ExtractionRules{},
+		Filters{},
+		[]Association{},
+		Excludes{},
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		false,
+		10*time.Second,
+	)
 	require.EqualError(t, err, "invalid authType for kubernetes: ")
 	assert.Nil(t, c)
 
-	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil, false, 10*time.Second)
+	c, err = New(
+		componenttest.NewNopTelemetrySettings(),
+		k8sconfig.APIConfig{},
+		ExtractionRules{},
+		Filters{},
+		[]Association{},
+		Excludes{},
+		newFakeAPIClientset,
+		nil,
+		nil,
+		nil,
+		nil,
+		false,
+		10*time.Second,
+	)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
 
 func TestBadFilters(t *testing.T) {
-	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{Fields: []FieldFilter{{Op: selection.Exists}}}, []Association{}, Excludes{}, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer, false, 10*time.Second)
+	c, err := New(
+		componenttest.NewNopTelemetrySettings(),
+		k8sconfig.APIConfig{},
+		ExtractionRules{},
+		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
+		[]Association{},
+		Excludes{},
+		newFakeAPIClientset,
+		NewFakeInformer,
+		NewFakeNamespaceInformer,
+		NewFakeReplicaSetInformer,
+		NewFakeNodeInformer,
+		false,
+		10*time.Second,
+	)
 	assert.Error(t, err)
 	assert.Nil(t, c)
 }
@@ -192,7 +234,21 @@ func TestConstructorErrors(t *testing.T) {
 			gotAPIConfig = c
 			return nil, fmt.Errorf("error creating k8s client")
 		}
-		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil, false, 10*time.Second)
+		c, err := New(
+			componenttest.NewNopTelemetrySettings(),
+			apiCfg,
+			er,
+			ff,
+			[]Association{},
+			Excludes{},
+			clientProvider,
+			NewFakeInformer,
+			NewFakeNamespaceInformer,
+			nil,
+			nil,
+			false,
+			10*time.Second,
+		)
 		assert.Nil(t, c)
 		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
@@ -1955,7 +2011,21 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 			},
 		},
 	}
-	c, err := New(set, k8sconfig.APIConfig{}, ExtractionRules{}, f, associations, exclude, newFakeAPIClientset, NewFakeInformer, NewFakeNamespaceInformer, NewFakeReplicaSetInformer, false, 10*time.Second)
+	c, err := New(
+		set,
+		k8sconfig.APIConfig{},
+		ExtractionRules{},
+		f,
+		associations,
+		exclude,
+		newFakeAPIClientset,
+		NewFakeInformer,
+		NewFakeNamespaceInformer,
+		NewFakeReplicaSetInformer,
+		NewFakeNodeInformer,
+		false,
+		10*time.Second,
+	)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
@@ -2002,16 +2072,32 @@ func TestWaitForMetadata(t *testing.T) {
 	}}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, tc.informerProvider, nil, nil, true, 1*time.Second)
-			require.NoError(t, err)
-
-			err = c.Start()
-			if tc.err {
-				require.Error(t, err)
-			} else {
+		t.Run(
+			tc.name, func(t *testing.T) {
+				c, err := New(
+					componenttest.NewNopTelemetrySettings(),
+					k8sconfig.APIConfig{},
+					ExtractionRules{},
+					Filters{},
+					[]Association{},
+					Excludes{},
+					newFakeAPIClientset,
+					tc.informerProvider,
+					nil,
+					nil,
+					nil,
+					true,
+					1*time.Second,
+				)
 				require.NoError(t, err)
-			}
-		})
+
+				err = c.Start()
+				if tc.err {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+				}
+			},
+		)
 	}
 }
