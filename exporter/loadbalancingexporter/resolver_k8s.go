@@ -173,6 +173,7 @@ func (r *k8sResolver) shutdown(_ context.Context) error {
 	r.shutdownWg.Wait()
 	return nil
 }
+
 func newInClusterClient() (kubernetes.Interface, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -227,6 +228,7 @@ func (r *k8sResolver) onChange(f func([]string)) {
 	defer r.changeCallbackLock.Unlock()
 	r.onChangeCallbacks = append(r.onChangeCallbacks, f)
 }
+
 func (r *k8sResolver) Endpoints() []string {
 	r.updateLock.RLock()
 	defer r.updateLock.RUnlock()
