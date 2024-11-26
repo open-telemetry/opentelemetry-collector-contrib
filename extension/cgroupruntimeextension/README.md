@@ -35,8 +35,8 @@ extension:
     # processor name: cgroupruntime
     cgroupruntime:
       gomaxprocs:
-        enable: true
+        enabled: true
       gomemlimit:
-        enable: true
+        enabled: true
         ratio: 0.8
 ```
