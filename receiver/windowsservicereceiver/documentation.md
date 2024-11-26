@@ -16,7 +16,7 @@ metrics:
 
 Gauge value containing service status as an integer value.
 
-Gauge values map to service status as follows: 1 - Stopped, 2 - Start Pending, 3 - Stop Pending, 4 - Service Running, 5 - Continue Pending, 6 - Pause Pending, 7 - Service Paused
+Gauge values map to service status as follows: 0 - Failed to retrieve service status, 1 - Stopped, 2 - Start Pending, 3 - Stop Pending, 4 - Service Running, 5 - Continue Pending, 6 - Pause Pending, 7 - Service Paused
 
 
 | Unit | Metric Type | Value Type |

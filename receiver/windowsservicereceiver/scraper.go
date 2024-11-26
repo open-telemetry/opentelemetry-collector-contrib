@@ -81,10 +81,8 @@ func filterServices(slist []string, cfg *Config) []string {
 	return res
 }
 
-// TODO: scraperhelper shutdown function run on service termination, closes the connection
-// to the windows service manager
+// handle cleanup: return the control handler from the windows service manager
 func (wss *windowsServiceScraper) shutdown(_ context.Context) error {
-
 	err := wss.mgr.Disconnect()
 	return err
 }
