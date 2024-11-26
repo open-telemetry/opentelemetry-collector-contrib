@@ -94,7 +94,11 @@ func New(c Criteria) (*Matcher, error) {
 	}
 
 	if c.OrderingCriteria.GroupBy != "" {
-		m.groupBy = regexp.MustCompile(c.OrderingCriteria.GroupBy)
+		r, err := regexp.Compile(c.OrderingCriteria.GroupBy)
+		if err != nil {
+			return nil, fmt.Errorf("compile group_by regex: %w", err)
+		}
+		m.groupBy = r
 	}
 
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
@@ -195,8 +199,8 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	var result []string
 	for _, files := range groups {
 		groupResult, err := filter.Filter(files, m.regex, m.filterOpts...)
-		if len(result) == 0 {
-			return result, errors.Join(err, errs)
+		if len(groupResult) == 0 {
+			return groupResult, errors.Join(err, errs)
 		}
 		result = append(result, groupResult...)
 	}
