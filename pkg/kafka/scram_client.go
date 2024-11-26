@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka"
 
 import (
 	"github.com/IBM/sarama"
