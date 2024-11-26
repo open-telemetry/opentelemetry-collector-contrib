@@ -125,6 +125,19 @@ func (f *FakeReplicaSetInformer) GetController() cache.Controller {
 	return f.FakeController
 }
 
+func NewFakeNodeInformer(
+	_ kubernetes.Interface,
+	_ string,
+	_ time.Duration,
+	stopCh chan struct{},
+) cache.SharedInformer {
+	informer := &FakeInformer{
+		FakeController: &FakeController{},
+	}
+	go informer.Run(stopCh)
+	return informer
+}
+
 type FakeController struct {
 	sync.Mutex
 	stopped bool
