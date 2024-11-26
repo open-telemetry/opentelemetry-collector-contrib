@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.114.0
 	github.com/openzipkin/zipkin-go v0.4.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
 	go.opentelemetry.io/collector/config/configretry v1.20.0
