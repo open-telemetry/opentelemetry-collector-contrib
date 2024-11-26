@@ -43,9 +43,16 @@ func TestValidate(t *testing.T) {
 			err:  ErrUnsetAPIKey.Error(),
 		},
 		{
+			name: "invalid format api::key",
+			cfg: &Config{
+				API: APIConfig{Key: "'aaaaaaa"},
+			},
+			err: ErrAPIKeyFormat.Error(),
+		},
+		{
 			name: "invalid hostname",
 			cfg: &Config{
-				API:        APIConfig{Key: "notnull"},
+				API:        APIConfig{Key: "aaaaaaa"},
 				TagsConfig: TagsConfig{Hostname: "invalid_host"},
 			},
 			err: "hostname field is invalid: invalid_host is not RFC1123 compliant",
@@ -53,7 +60,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "no metadata",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				OnlyMetadata: true,
 				HostMetadata: HostMetadataConfig{Enabled: false},
 			},
@@ -62,14 +69,14 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping valid",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
+				API:    APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}},
 			},
 		},
 		{
 			name: "span name remapping empty val",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
+				API:    APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}},
 			},
 			err: "'' is not valid value for span name remapping",
@@ -77,7 +84,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping empty key",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
+				API:    APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}}},
 			},
 			err: "'' is not valid key for span name remapping",
@@ -85,14 +92,14 @@ func TestValidate(t *testing.T) {
 		{
 			name: "ignore resources valid",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
+				API:    APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123]"}}},
 			},
 		},
 		{
 			name: "ignore resources missing bracket",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
+				API:    APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123"}}},
 			},
 			err: "'[123' is not valid resource filter regular expression",
@@ -100,7 +107,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid histogram settings",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				Metrics: MetricsConfig{
 					HistConfig: HistogramConfig{
 						Mode:             HistogramModeNoBuckets,
@@ -113,7 +120,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS settings are valid",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					TLSSetting: configtls.ClientConfig{
 						InsecureSkipVerify: true,
@@ -124,14 +131,14 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With trace_buffer",
 			cfg: &Config{
-				API:    APIConfig{Key: "notnull"},
+				API:    APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{TraceBuffer: 10},
 			},
 		},
 		{
 			name: "With peer_tags",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{
 					TracesConfig: TracesConfig{
 						PeerTags: []string{"tag1", "tag2"},
@@ -142,7 +149,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					ReadBufferSize:      100,
 					WriteBufferSize:     200,
@@ -160,7 +167,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "unsupported confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint:             "endpoint",
 					Compression:          "gzip",
@@ -177,24 +184,12 @@ func TestValidate(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			err := testInstance.cfg.Validate()
 			if testInstance.err != "" {
-				assert.EqualError(t, err, testInstance.err)
+				assert.ErrorContains(t, err, testInstance.err)
 			} else {
 				assert.NoError(t, err)
 			}
 		})
 	}
-}
-
-func TestAPIKeyDoubleQuotes(t *testing.T) {
-	configMap := confmap.NewFromStringMap(map[string]any{
-		"api": map[string]any{
-			"key": "'apikey'",
-		},
-	})
-	cfg := CreateDefaultConfig().(*Config)
-	err := cfg.Unmarshal(configMap)
-	assert.NoError(t, err)
-	assert.Equal(t, "apikey", string(cfg.API.Key))
 }
 
 func TestUnmarshal(t *testing.T) {

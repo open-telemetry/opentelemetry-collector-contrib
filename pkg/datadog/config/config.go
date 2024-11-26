@@ -6,6 +6,7 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,6 +28,8 @@ var (
 	ErrNoMetadata = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 	// ErrInvalidHostname is returned when the hostname is invalid.
 	ErrEmptyEndpoint = errors.New("endpoint cannot be empty")
+	// ErrAPIKeyFormat is returned if API key contains invalid characters
+	ErrAPIKeyFormat = errors.New("api.key contains invalid characters")
 )
 
 const (
@@ -124,11 +127,20 @@ func (c *Config) Validate() error {
 		return ErrUnsetAPIKey
 	}
 
+	nonHex, err := regexp.Compile("[^0-9a-fA-F]")
+	if err != nil {
+		return err
+	}
+	invalidAPIKeyChars := nonHex.FindAllString(string(c.API.Key), -1)
+	if len(invalidAPIKeyChars) > 0 {
+		return errors.Join(ErrAPIKeyFormat, fmt.Errorf("invalid characters: %s", strings.Join(invalidAPIKeyChars, ", ")))
+	}
+
 	if err := c.Traces.Validate(); err != nil {
 		return err
 	}
 
-	err := c.Metrics.HistConfig.validate()
+	err = c.Metrics.HistConfig.validate()
 	if err != nil {
 		return err
 	}
@@ -249,9 +261,6 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
-
-	// remove leading/trailing quotation marks to avoid issues with the API key
-	c.API.Key = configopaque.String(strings.Trim(string(c.API.Key), `"'`))
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
