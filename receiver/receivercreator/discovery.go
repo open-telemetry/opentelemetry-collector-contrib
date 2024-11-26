@@ -28,18 +28,11 @@ const (
 	configHint           = "config"
 )
 
-// hintsTemplatesBuilder creates configuration templates from provided hints.
-type hintsTemplatesBuilder interface {
-	createReceiverTemplateFromHints(env observer.EndpointEnv) (*receiverTemplate, error)
-}
-
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
 type k8sHintsBuilder struct {
 	logger          *zap.Logger
 	ignoreReceivers map[string]bool
 }
-
-var _ hintsTemplatesBuilder = (*k8sHintsBuilder)(nil)
 
 func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsBuilder {
 	ignoreReceivers := make(map[string]bool, len(config.IgnoreReceivers))
@@ -196,15 +189,6 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 	// target endpoint can come in form ip:port. In that case we fix the uri
 	// temporarily with adding http scheme
 	if uri == nil {
-		u, err := url.Parse("http://" + endpoint)
-		if err != nil {
-			return fmt.Errorf("could not parse enpoint")
-		}
-		uri = u
-	}
-	// target endpoint can come in form ip:port. In that case we fix the uri
-	// temporarily with adding http scheme
-	if uri.Scheme == "" {
 		u, err := url.Parse("http://" + endpoint)
 		if err != nil {
 			return fmt.Errorf("could not parse enpoint")

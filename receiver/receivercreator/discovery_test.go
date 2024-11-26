@@ -369,6 +369,11 @@ func TestValidateEndpoint(t *testing.T) {
 			defaultEndpoint: "1.2.3.4:8080",
 			expectError:     false,
 		},
+		"test_valid_no_scheme_no_path": {
+			endpoint:        "1.2.3.4:8080",
+			defaultEndpoint: "1.2.3.4:8080",
+			expectError:     false,
+		},
 		"test_valid_no_scheme_dynamic": {
 			endpoint:        "`endpoint`/stats",
 			defaultEndpoint: "1.2.3.4:8080",
