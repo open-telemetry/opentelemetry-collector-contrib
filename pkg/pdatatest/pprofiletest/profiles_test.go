@@ -94,7 +94,8 @@ func TestCompareProfiles(t *testing.T) {
 				errors.New(`resources are out of order: resource "map[key2:value2]" expected at index 1, found at index 0`),
 			),
 			compareOptions: []CompareProfilesOption{
-				IgnoreResourceProfilesOrder()},
+				IgnoreResourceProfilesOrder(),
+			},
 		},
 		{
 			name: "resource masked attribute",
@@ -115,7 +116,8 @@ func TestCompareProfiles(t *testing.T) {
 				errors.New(`unexpected resource: map[key1:value2]`),
 			),
 			compareOptions: []CompareProfilesOption{
-				IgnoreResourceAttributeValue("key1")},
+				IgnoreResourceAttributeValue("key1"),
+			},
 		},
 		{
 			name: "resource scope order",
@@ -145,7 +147,8 @@ func TestCompareProfiles(t *testing.T) {
 			}(),
 			withoutOptions: errors.New(`resource "map[key1:value1]": scopes are out of order: scope scope1 expected at index 0, found at index 1; resource "map[key1:value1]": scopes are out of order: scope scope2 expected at index 1, found at index 0`),
 			compareOptions: []CompareProfilesOption{
-				IgnoreScopeProfilesOrder()},
+				IgnoreScopeProfilesOrder(),
+			},
 		},
 		{
 			name: "mask scope attribute",
@@ -1999,7 +2002,6 @@ func TestCompareProfileLineSlice(t *testing.T) {
 		actual   pprofile.LineSlice
 		err      error
 	}{
-
 		{
 			name: "empty",
 			expected: func() pprofile.LineSlice {
