@@ -434,13 +434,14 @@ Queries the K8S API server to retrieve the following resource attributes:
 
 The following permissions are required:
 ```yaml
-kind: ClusterRole
+kind: Role
 metadata:
   name: otel-collector
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
-    verbs: ["get", "list"]
+    resourceNames: ["kubeadm-config"]
+    verbs: ["get"]
 ```
 
 | Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |

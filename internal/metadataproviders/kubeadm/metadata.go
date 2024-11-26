@@ -18,10 +18,15 @@ type Provider interface {
 	ClusterName(ctx context.Context) (string, error)
 }
 
+type LocalCache struct {
+	ClusterName string
+}
+
 type kubeadmProvider struct {
 	kubeadmClient      kubernetes.Interface
 	configMapName      string
 	configMapNamespace string
+	cache              LocalCache
 }
 
 func NewProvider(configMapName string, configMapNamespace string, apiConf k8sconfig.APIConfig) (Provider, error) {
@@ -37,10 +42,15 @@ func NewProvider(configMapName string, configMapNamespace string, apiConf k8scon
 }
 
 func (k *kubeadmProvider) ClusterName(ctx context.Context) (string, error) {
+	if k.cache.ClusterName != "" {
+		return k.cache.ClusterName, nil
+	}
 	configmap, err := k.kubeadmClient.CoreV1().ConfigMaps(k.configMapNamespace).Get(ctx, k.configMapName, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch ConfigMap with name %s and namespace %s from K8s API: %w", k.configMapName, k.configMapNamespace, err)
 	}
+
+	k.cache.ClusterName = configmap.Data["clusterName"]
 
 	return configmap.Data["clusterName"], nil
 }
