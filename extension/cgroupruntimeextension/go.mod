@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.20.0
 	go.opentelemetry.io/collector/extension v0.114.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.114.0
-	go.uber.org/automaxprocs v1.5.3
+	go.uber.org/automaxprocs v1.6.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
