@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/scraper"
 )
 
 func createMetricsReceiver(
@@ -22,15 +21,17 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	_stgs := scraper.Settings{}
 	s := newWindowsServiceScraper(params, c)
 
-	scp, err := scraper.NewMetrics(context.Background(), _stgs, s.scrape, scraper.WithStart(s.start), scraper.WithShutdown(s.shutdown))
+	scp, err := scraperhelper.NewScraperWithoutType(s.scrape,
+		scraperhelper.WithStart(s.start),
+		scraperhelper.WithShutdown(s.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
-	scopt := scraperhelper.AddScraper(metadata.Type, scp)
-
-	return scraperhelper.NewScraperControllerReceiver(&c.ControllerConfig, params, consumer, scopt)
+	return scraperhelper.NewScraperControllerReceiver(&c.ControllerConfig,
+		params,
+		consumer,
+		scraperhelper.AddScraperWithType(metadata.Type, scp))
 }
