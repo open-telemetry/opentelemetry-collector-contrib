@@ -78,12 +78,73 @@ func TestOnAddForMetrics(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{true, true, true},
 				},
 			}
 
 			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
 			handler.OnAdd([]observer.Endpoint{
 				portEndpoint,
+				unsupportedEndpoint,
+			})
+
+			if test.expectedError != "" {
+				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
+				require.Error(t, mr.lastError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
+				require.Nil(t, mr.startedComponent)
+				return
+			}
+
+			assert.Equal(t, 1, handler.receiversByEndpointID.Size())
+			require.NoError(t, mr.lastError)
+			require.NotNil(t, mr.startedComponent)
+
+			wr, ok := mr.startedComponent.(*wrappedReceiver)
+			require.True(t, ok)
+
+			require.Nil(t, wr.logs)
+			require.Nil(t, wr.traces)
+
+			var actualConfig component.Config
+			switch v := wr.metrics.(type) {
+			case *nopWithEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			case *nopWithoutEndpointReceiver:
+				require.NotNil(t, v)
+				actualConfig = v.cfg
+			default:
+				t.Fatalf("unexpected startedComponent: %T", v)
+			}
+			require.Equal(t, test.expectedReceiverConfig, actualConfig)
+		})
+	}
+}
+
+func TestOnAddForMetricsWithHints(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		expectedReceiverType   component.Component
+		expectedReceiverConfig component.Config
+		expectedError          string
+	}{
+		{
+			name:                 "dynamically set with supported endpoint",
+			expectedReceiverType: &nopWithEndpointReceiver{},
+			expectedReceiverConfig: &nopWithEndpointConfig{
+				IntField: 20,
+				Endpoint: "1.2.3.4:6379",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Discovery.Enabled = true
+
+			handler, mr := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
+			handler.OnAdd([]observer.Endpoint{
+				portEndpointWithHints,
 				unsupportedEndpoint,
 			})
 
@@ -180,6 +241,7 @@ func TestOnAddForLogs(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -282,6 +344,7 @@ func TestOnAddForTraces(t *testing.T) {
 					rule:               portRule,
 					Rule:               `type == "port"`,
 					ResourceAttributes: map[string]any{},
+					signals:            receiverSignals{metrics: true, logs: true, traces: true},
 				},
 			}
 
@@ -338,6 +401,7 @@ func TestOnRemoveForMetrics(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
@@ -367,6 +431,7 @@ func TestOnRemoveForLogs(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, consumertest.NewNop(), nil, nil)
@@ -396,6 +461,7 @@ func TestOnChange(t *testing.T) {
 			rule:               portRule,
 			Rule:               `type == "port"`,
 			ResourceAttributes: map[string]any{},
+			signals:            receiverSignals{metrics: true, logs: true, traces: true},
 		},
 	}
 	handler, r := newObserverHandler(t, cfg, nil, consumertest.NewNop(), nil)
