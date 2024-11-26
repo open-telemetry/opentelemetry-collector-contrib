@@ -75,9 +75,10 @@ func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrape
 // The big one: Describes how all scraping tasks should be performed. Part of the scraper interface
 func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var wg sync.WaitGroup
-	errOut := make(chan *scrapererror.ScrapeErrors)
 	var errs *scrapererror.ScrapeErrors
+
 	now := pcommon.NewTimestampFromTime(time.Now())
+	errOut := make(chan *scrapererror.ScrapeErrors)
 	metricScrapes := []func(context.Context, pcommon.Timestamp, chan error){
 		s.scrapeLicenseUsageByIndex,
 		s.scrapeIndexThroughput,
@@ -1732,4 +1733,43 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint)
 		}
 	}
+}
+
+// somewhat unique scrape function for gathering the info attribute
+func (s *splunkScraper) scrapeInfo(ctx context.Context, now pcommon.Timestamp, errs chan error) *Info {
+	// there could be an endpoint configured for each type
+	var info Info
+
+	for clientType, _ := range s.splunkClient.clients {
+		ctx = context.WithValue(ctx, endpointType("type"), clientType)
+		ept := apiDict[`SplunkInfo`]
+
+		req, err := s.splunkClient.createAPIRequest(ctx, ept)
+		if err != nil {
+			errs <- err
+			return nil
+		}
+
+		res, err := s.splunkClient.makeRequest(req)
+		if err != nil {
+			errs <- err
+			return nil
+		}
+		defer res.Body.Close()
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			errs <- err
+			return nil
+		}
+
+		err = json.Unmarshal(body, &info)
+		if err != nil {
+			errs <- err
+			return nil
+		}
+
+	}
+
+	return &info
 }
