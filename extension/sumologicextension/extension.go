@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/component"
 	"io"
 	"net"
 	"net/http"
@@ -24,7 +25,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	ps "github.com/mitchellh/go-ps"
 	"github.com/shirou/gopsutil/v4/host"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/featuregate"
@@ -1057,12 +1057,19 @@ func getHostname(logger *zap.Logger) (string, error) {
 // cleaned up. All other version formats will remain the same.
 // Cleaned up format: 0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113
 func cleanupBuildVersion(version string) string {
-	pattern := "(^[0-9]+\\.[0-9]+\\.[0-9]+-sumo-[0-9]+)-[0-9a-f]{40}$"
+	pattern := "^v?([0-9]+\\.[0-9]+\\.[0-9]+-sumo-[0-9]+)(-[0-9a-f]{40}){0,1}(-fips){0,1}$"
 	re := regexp.MustCompile(pattern)
 
-	sm := re.FindAllStringSubmatch(version, 1)
-	if len(sm) == 1 {
-		ver := sm[0][1]
+	matches := re.FindAllStringSubmatch(version, 1)
+	if len(matches) != 1 {
+		return version
+	}
+	subMatches := matches[0]
+	if len(subMatches) > 1 {
+		ver := subMatches[1]
+		if len(subMatches) == 4 {
+			ver += subMatches[3]
+		}
 		return "v" + ver
 	}
 
