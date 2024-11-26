@@ -57,7 +57,6 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 	// initialize the secrets manager client in the first call of Retrieve
 	if provider.client == nil {
 		cfg, err := config.LoadDefaultConfig(ctx)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
 		}
