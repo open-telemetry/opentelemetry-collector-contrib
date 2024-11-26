@@ -136,7 +136,7 @@ func (c *Config) Validate() error {
 		return errors.Join(ErrAPIKeyFormat, fmt.Errorf("invalid characters: %s", strings.Join(invalidAPIKeyChars, ", ")))
 	}
 
-	if err := c.Traces.Validate(); err != nil {
+	if err = c.Traces.Validate(); err != nil {
 		return err
 	}
 
