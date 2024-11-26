@@ -102,6 +102,7 @@ func New(
 	newInformer InformerProvider,
 	newNamespaceInformer InformerProviderNamespace,
 	newReplicaSetInformer InformerProviderReplicaSet,
+	newNodeInformer InformerProviderNode,
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 ) (Client, error) {
@@ -204,7 +205,10 @@ func New(
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
+		if newNodeInformer == nil {
+			newNodeInformer = newNodeSharedInformer
+		}
+		c.nodeInformer = newNodeInformer(c.kc, c.Filters.Node, 5*time.Minute, c.stopCh)
 	}
 
 	return c, err
@@ -261,7 +265,6 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, c.nodeHandlerRegistration.HasSynced)
 	}
-
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
 		t := time.AfterFunc(c.waitForMetadataTimeout, func() {

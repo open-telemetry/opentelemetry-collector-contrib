@@ -48,7 +48,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
 		if err != nil {
 			return err
 		}
