@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/expr-lang/expr v1.16.9
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.114.0
@@ -26,6 +27,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -37,7 +39,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.23.0 // indirect
@@ -122,7 +123,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
