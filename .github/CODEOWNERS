@@ -90,6 +90,7 @@ extension/asapauthextension/                      @open-telemetry/collector-cont
 extension/awsproxy/                               @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                     @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/bearertokenauthextension/               @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
+extension/cgroupruntimeextension/                 @open-telemetry/collector-contrib-approvers @mx-psi @rogercoll
 extension/encoding/                               @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
 extension/encoding/avrologencodingextension/      @open-telemetry/collector-contrib-approvers @thmshmm
 extension/encoding/jaegerencodingextension/       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
