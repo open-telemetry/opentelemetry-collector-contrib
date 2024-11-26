@@ -46,6 +46,8 @@ func (v *traceVisitor) visit(
 		v.exporter.transportChannel.Send(envelope)
 	}
 
+	// Flush the transport channel to force the telemetry to be sent
+	v.exporter.transportChannel.Flush()
 	v.processed++
 
 	return true
