@@ -15,7 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.114.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fastjson v1.6.4
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
