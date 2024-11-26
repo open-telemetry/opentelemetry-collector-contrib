@@ -81,6 +81,14 @@ func New(c Criteria) (*Matcher, error) {
 		m.filterOpts = append(m.filterOpts, filter.ExcludeOlderThan(c.ExcludeOlderThan))
 	}
 
+	if c.OrderingCriteria.GroupBy != "" {
+		r, err := regexp.Compile(c.OrderingCriteria.GroupBy)
+		if err != nil {
+			return nil, fmt.Errorf("compile group_by regex: %w", err)
+		}
+		m.groupBy = r
+	}
+
 	if len(c.OrderingCriteria.SortBy) == 0 {
 		return m, nil
 	}
@@ -91,14 +99,6 @@ func New(c Criteria) (*Matcher, error) {
 
 	if c.OrderingCriteria.TopN == 0 {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
-	}
-
-	if c.OrderingCriteria.GroupBy != "" {
-		r, err := regexp.Compile(c.OrderingCriteria.GroupBy)
-		if err != nil {
-			return nil, fmt.Errorf("compile group_by regex: %w", err)
-		}
-		m.groupBy = r
 	}
 
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
@@ -197,8 +197,8 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	}
 
 	var result []string
-	for _, files := range groups {
-		groupResult, err := filter.Filter(files, m.regex, m.filterOpts...)
+	for _, groupedFiles := range groups {
+		groupResult, err := filter.Filter(groupedFiles, m.regex, m.filterOpts...)
 		if len(groupResult) == 0 {
 			return groupResult, errors.Join(err, errs)
 		}
