@@ -5,6 +5,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"time"
 
 	apps_v1 "k8s.io/api/apps/v1"
 	api_v1 "k8s.io/api/core/v1"
@@ -15,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const kubeSystemNamespace = "kube-system"
@@ -40,6 +43,8 @@ type InformerProviderNamespace func(
 // allow passing custom shared informers to the watch client for fetching node objects.
 type InformerProviderNode func(
 	client kubernetes.Interface,
+	nodeName string,
+	watchSyncPeriod time.Duration,
 	stopCh chan struct{},
 ) cache.SharedInformer
 
@@ -164,4 +169,15 @@ func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace str
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().ReplicaSets(namespace).Watch(context.Background(), opts)
 	}
+}
+
+func newNodeSharedInformer(
+	client kubernetes.Interface,
+	nodeName string,
+	watchSyncPeriod time.Duration,
+	stopCh chan struct{},
+) cache.SharedInformer {
+	informer := k8sconfig.NewNodeSharedInformer(client, nodeName, watchSyncPeriod)
+	go informer.Run(stopCh)
+	return informer
 }
