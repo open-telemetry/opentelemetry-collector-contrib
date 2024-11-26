@@ -6,7 +6,7 @@ require (
 	github.com/facebook/time v0.0.0-20240510113249-fa89cc575891
 	github.com/google/go-cmp v0.6.0
 	github.com/jonboulle/clockwork v0.4.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
 	go.opentelemetry.io/collector/confmap v1.20.0

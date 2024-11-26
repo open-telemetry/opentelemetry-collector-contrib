@@ -7,7 +7,7 @@ require (
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.114.0
 	github.com/scalyr/dataset-go v0.20.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/confmap v1.20.0
 	go.opentelemetry.io/collector/exporter v0.114.0
