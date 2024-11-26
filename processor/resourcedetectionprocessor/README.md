@@ -437,11 +437,26 @@ The following permissions are required:
 kind: Role
 metadata:
   name: otel-collector
+  namespace: kube-system
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["kubeadm-config"]
     verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otel-collector-rolebinding
+  namespace: kube-system
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: Role
+  name: otel-collector
+  apiGroup: rbac.authorization.k8s.io
 ```
 
 | Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
