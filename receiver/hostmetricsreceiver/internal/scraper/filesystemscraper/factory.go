@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
-	hostmeta "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
@@ -23,8 +22,7 @@ const (
 )
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // Type gets the type of the scraper config created by this Factory.
 func (f *Factory) Type() string {
@@ -69,6 +67,5 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		hostmeta.Type, s.scrape, scraperhelper.WithStart(s.start))
+	return scraperhelper.NewScraperWithoutType(s.scrape, scraperhelper.WithStart(s.start))
 }

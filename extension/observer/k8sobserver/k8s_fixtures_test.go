@@ -39,12 +39,14 @@ func newPod(name, host string) *v1.Pod {
 	return pod
 }
 
-var pod1V1 = newPod("pod1", "localhost")
-var pod1V2 = func() *v1.Pod {
-	pod := pod1V1.DeepCopy()
-	pod.Labels["pod-version"] = "2"
-	return pod
-}()
+var (
+	pod1V1 = newPod("pod1", "localhost")
+	pod1V2 = func() *v1.Pod {
+		pod := pod1V1.DeepCopy()
+		pod.Labels["pod-version"] = "2"
+		return pod
+	}()
+)
 
 var container1 = v1.Container{
 	Name:  "container-1",
@@ -168,6 +170,12 @@ var ingress = &networkingv1.Ingress{
 	},
 }
 
+var ingressV2 = func() *networkingv1.Ingress {
+	i2 := ingress.DeepCopy()
+	i2.Labels["env"] = "hardening"
+	return i2
+}()
+
 var ingressMultipleHost = &networkingv1.Ingress{
 	ObjectMeta: metav1.ObjectMeta{
 		Namespace: "default",
@@ -270,9 +278,11 @@ func newNode(name, hostname string) *v1.Node {
 	}
 }
 
-var node1V1 = newNode("node1", "localhost")
-var node1V2 = func() *v1.Node {
-	node := node1V1.DeepCopy()
-	node.Labels["node-version"] = "2"
-	return node
-}()
+var (
+	node1V1 = newNode("node1", "localhost")
+	node1V2 = func() *v1.Node {
+		node := node1V1.DeepCopy()
+		node.Labels["node-version"] = "2"
+		return node
+	}()
+)

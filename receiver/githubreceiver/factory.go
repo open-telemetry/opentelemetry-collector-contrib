@@ -67,7 +67,6 @@ func createMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	// check that the configuration is valid
 	conf, ok := cfg.(*Config)
 	if !ok {
@@ -97,12 +96,11 @@ func createAddScraperOpts(
 
 	for key, cfg := range cfg.Scrapers {
 		githubScraper, err := createGitHubScraper(ctx, params, key, cfg, factories)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(githubScraper))
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraperWithType(metadata.Type, githubScraper))
 	}
 
 	return scraperControllerOptions, nil
