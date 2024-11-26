@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/getsentry/sentry-go"
@@ -370,7 +371,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				conventions.AttributeHTTPMethod: "GET",
+				conventions.AttributeHTTPMethod: http.MethodGet,
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",
@@ -380,7 +381,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				conventions.AttributeHTTPMethod: "POST",
+				conventions.AttributeHTTPMethod: http.MethodPost,
 			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "http.server",

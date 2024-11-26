@@ -34,3 +34,11 @@ resourceMetrics:
                 - {startTimeUnixNano: 1000, timeUnixNano: 1100, asDouble: 0}
                 - {startTimeUnixNano: 1000, timeUnixNano: 1200, asDouble: 0}
                 - {startTimeUnixNano: 1000, timeUnixNano: 1400, asDouble: 0}
+
+-- telemetry --
+counter otelcol_deltatocumulative.datapoints.linear:
+- int: 3
+- attr: {error: "delta.ErrOutOfOrder"}
+  int: 1
+- attr: {error: "delta.ErrOlderStart"}
+  int: 1

@@ -42,11 +42,10 @@ type Reader struct {
 	fingerprintSize        int
 	initialBufferSize      int
 	maxLogSize             int
-	lineSplitFunc          bufio.SplitFunc
-	splitFunc              bufio.SplitFunc
+	headerSplitFunc        bufio.SplitFunc
+	contentSplitFunc       bufio.SplitFunc
 	decoder                *decode.Decoder
 	headerReader           *header.Reader
-	processFunc            emit.Callback
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
 	needsUpdateFingerprint bool
@@ -116,7 +115,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 }
 
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
-	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.headerSplitFunc)
 
 	// Read the tokens from the file until no more header tokens are found or the end of file is reached.
 	for {
@@ -167,10 +166,6 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	r.HeaderFinalized = true
 	r.initialBufferSize = scanner.DefaultBufferSize
 
-	// Switch to the normal split and process functions.
-	r.splitFunc = r.lineSplitFunc
-	r.processFunc = r.emitFunc
-
 	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.set.Logger.Error("failed to seek post-header", zap.Error(err))
@@ -182,7 +177,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 
 func (r *Reader) readContents(ctx context.Context) {
 	// Create the scanner to read the contents of the file.
-	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.contentSplitFunc)
 
 	// Iterate over the contents of the file.
 	for {
@@ -214,7 +209,7 @@ func (r *Reader) readContents(ctx context.Context) {
 			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		err = r.processFunc(ctx, token, r.FileAttributes)
+		err = r.emitFunc(ctx, emit.NewToken(token, r.FileAttributes))
 		if err != nil {
 			r.set.Logger.Error("failed to process token", zap.Error(err))
 		}
