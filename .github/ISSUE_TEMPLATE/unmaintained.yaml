@@ -34,6 +34,7 @@ body:
       - connector/roundrobin
       - connector/routing
       - connector/servicegraph
+      - connector/signaltometrics
       - connector/spanmetrics
       - connector/sum
       - examples/demo
@@ -245,6 +246,7 @@ body:
       - receiver/mongodbatlas
       - receiver/mysql
       - receiver/namedpipe
+      - receiver/netflow
       - receiver/nginx
       - receiver/nsxt
       - receiver/ntp
