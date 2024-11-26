@@ -52,5 +52,5 @@ func (k *kubeadmProvider) ClusterName(ctx context.Context) (string, error) {
 
 	k.cache.ClusterName = configmap.Data["clusterName"]
 
-	return configmap.Data["clusterName"], nil
+	return k.cache.ClusterName, nil
 }

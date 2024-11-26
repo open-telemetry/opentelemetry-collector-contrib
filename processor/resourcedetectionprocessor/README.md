@@ -430,7 +430,7 @@ processors:
 
 Queries the K8S API server to retrieve the following resource attributes:
 
-    * k8s.cluster.name
+The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
 
 The following permissions are required:
 ```yaml
