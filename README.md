@@ -47,6 +47,8 @@ The official distributions, core and contrib, are available as part of the [open
 
 Each component has its own support levels, as defined in the following sections. For each signal that a component supports, there's a stability level, setting the right expectations. It is possible then that a component will be **Stable** for traces but **Alpha** for metrics and **Development** for logs.
 
+some random markdown change
+
 ## Stability levels
 
 Stability level for components in this repository follow the [definitions](https://github.com/open-telemetry/opentelemetry-collector#stability-levels) from the OpenTelemetry Collector repository.
