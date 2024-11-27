@@ -29,9 +29,9 @@ func createHTMLStripFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	return htmlStrip(args.HTMLSource), nil
 }
 
-func htmlStrip[K any](unescapedSource ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func htmlStrip[K any](rawString ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		htmlString, err := unescapedSource.Get(ctx, tCtx)
+		htmlString, err := rawString.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
