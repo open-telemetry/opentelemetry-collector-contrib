@@ -12,26 +12,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type HtmlStripArguments[K any] struct {
-	HtmlSource ottl.StringGetter[K]
+type HTMLStripArguments[K any] struct {
+	HTMLSource ottl.StringGetter[K]
 }
 
-func NewHtmlStripFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("HTMLStrip", &HtmlStripArguments[K]{}, createHtmlStripFunction[K])
+func NewHTMLStripFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("HTMLStrip", &HTMLStripArguments[K]{}, createHTMLStripFunction[K])
 }
 
-func createHtmlStripFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*HtmlStripArguments[K])
+func createHTMLStripFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*HTMLStripArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("NewHtmlStripFactory args must be of type *HtmlStripArguments[K]")
+		return nil, fmt.Errorf("NewHTMLStripFactory args must be of type *HTMLStripArguments[K]")
 	}
 
-	return htmlStrip(args.HtmlSource), nil
+	return htmlStrip(args.HTMLSource), nil
 }
 
-func htmlStrip[K any](htmlSource ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func htmlStrip[K any](HTMLSource ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		htmlString, err := htmlSource.Get(ctx, tCtx)
+		htmlString, err := HTMLSource.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
