@@ -23,7 +23,7 @@ func NewBinaryCollectorVersionResolver() *BinaryCollectorVersionResolver {
 	resolver.version = "unknown-" + osInformation
 
 	info, ok := debug.ReadBuildInfo()
-	if ok {
+	if ok && info.Main.Version != "" {
 		resolver.version = info.Main.Version + "-" + osInformation
 	}
 
