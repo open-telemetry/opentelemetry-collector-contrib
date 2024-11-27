@@ -106,7 +106,7 @@ func (prwe *prwExporter) handleExportV2(ctx context.Context, symbolsTable writev
 		// See:
 		// * https://github.com/open-telemetry/wg-prometheus/issues/10
 		// * https://github.com/open-telemetry/opentelemetry-collector/issues/2315
-		//Timeseries: orderBySampleTimestamp(tsArray),
+		// Timeseries: orderBySampleTimestamp(tsArray),
 		Timeseries: tsArray,
 		Symbols:    symbolsTable.Symbols(),
 	})
