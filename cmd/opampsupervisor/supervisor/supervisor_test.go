@@ -183,7 +183,7 @@ func Test_onMessage(t *testing.T) {
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
@@ -339,7 +339,7 @@ func Test_onMessage(t *testing.T) {
 			cfgState:                     &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
-			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop())),
+			opampClient:                  client.NewHTTP(newLoggerFromZap(zap.NewNop(), "opamp-client")),
 		}
 		require.NoError(t, s.createTemplates())
 
