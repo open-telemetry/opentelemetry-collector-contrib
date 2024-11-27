@@ -30,7 +30,7 @@ func (prwe *prwExporter) pushMetricsV2(ctx context.Context, md pmetric.Metrics) 
 	return prwe.handleExportV2(ctx, symbolsTable, tsMap)
 }
 
-// export sends a Snappy-compressed writev2.Request containing writev2.TimeSeries to a remote write endpoint
+// exportV2 sends a Snappy-compressed writev2.Request containing writev2.TimeSeries to a remote write endpoint.
 func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Request) error {
 	input := make(chan *writev2.Request, len(requests))
 	for _, request := range requests {
