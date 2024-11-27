@@ -8,15 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 func TestToPrometheusConfig(t *testing.T) {
@@ -38,7 +38,10 @@ func TestToPrometheusConfig(t *testing.T) {
 
 	endpoint := "http://example.com"
 	namespace := "purefa"
-	insecureskipverify := true
+	tlsSettings := configtls.ClientConfig{
+		InsecureSkipVerify: true,
+		ServerName:         "TestThisServerName",
+	}
 	interval := 15 * time.Second
 	cfgs := []ScraperConfig{
 		{
@@ -49,7 +52,7 @@ func TestToPrometheusConfig(t *testing.T) {
 		},
 	}
 
-	scraper := NewScraper(context.Background(), "hosts", endpoint, namespace, insecureskipverify, cfgs, interval, model.LabelSet{})
+	scraper := NewScraper(context.Background(), "hosts", endpoint, namespace, tlsSettings, cfgs, interval, model.LabelSet{})
 
 	// test
 	scCfgs, err := scraper.ToPrometheusReceiverConfig(host, prFactory)
@@ -61,6 +64,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	assert.EqualValues(t, "purefa", scCfgs[0].Params.Get("namespace"))
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
 	assert.True(t, scCfgs[0].HTTPClientConfig.TLSConfig.InsecureSkipVerify)
+	assert.Equal(t, "TestThisServerName", scCfgs[0].HTTPClientConfig.TLSConfig.ServerName)
 	assert.Equal(t, "array01", scCfgs[0].Params.Get("endpoint"))
 	assert.Equal(t, "/metrics/hosts", scCfgs[0].MetricsPath)
 	assert.Equal(t, "purefa/hosts/array01", scCfgs[0].JobName)

@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -32,32 +33,32 @@ const (
 )
 
 type scraper struct {
-	scraperType        ScraperType
-	endpoint           string
-	namespace          string
-	insecureskipverify bool
-	configs            []ScraperConfig
-	scrapeInterval     time.Duration
-	labels             model.LabelSet
+	scraperType    ScraperType
+	endpoint       string
+	namespace      string
+	tlsSettings    configtls.ClientConfig
+	configs        []ScraperConfig
+	scrapeInterval time.Duration
+	labels         model.LabelSet
 }
 
 func NewScraper(_ context.Context,
 	scraperType ScraperType,
 	endpoint string,
 	namespace string,
-	insecureskipverify bool,
+	tlsSettings configtls.ClientConfig,
 	configs []ScraperConfig,
 	scrapeInterval time.Duration,
 	labels model.LabelSet,
 ) Scraper {
 	return &scraper{
-		scraperType:        scraperType,
-		endpoint:           endpoint,
-		namespace:          namespace,
-		insecureskipverify: insecureskipverify,
-		configs:            configs,
-		scrapeInterval:     scrapeInterval,
-		labels:             labels,
+		scraperType:    scraperType,
+		endpoint:       endpoint,
+		namespace:      namespace,
+		tlsSettings:    tlsSettings,
+		configs:        configs,
+		scrapeInterval: scrapeInterval,
+		labels:         labels,
 	}
 }
 
@@ -77,7 +78,16 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
-		httpConfig.TLSConfig.InsecureSkipVerify = h.insecureskipverify
+		httpConfig.TLSConfig = configutil.TLSConfig{
+			CAFile:             h.tlsSettings.CAFile,
+			CA:                 h.tlsSettings.CAPem.String(),
+			CertFile:           h.tlsSettings.CertFile,
+			Cert:               h.tlsSettings.CertPem.GoString(),
+			KeyFile:            h.tlsSettings.KeyFile,
+			Key:                configutil.Secret(h.tlsSettings.KeyPem),
+			InsecureSkipVerify: h.tlsSettings.InsecureSkipVerify,
+			ServerName:         h.tlsSettings.ServerName,
+		}
 
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
