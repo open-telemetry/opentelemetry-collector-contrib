@@ -11,7 +11,7 @@ concurrency:
 
 env:
   # renovate: datasource=github-releases depName=tcort/markdown-link-check
-  MD_LINK_CHECK_VERSION: "3.12.2"
+  MD_LINK_CHECK_VERSION: "3.13.6"
 
 jobs:
   changedfiles:
