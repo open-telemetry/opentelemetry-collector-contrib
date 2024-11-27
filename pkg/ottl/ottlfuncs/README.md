@@ -426,6 +426,7 @@ Available Converters:
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
+- [HTMLStrip](#htmlstrip)
 - [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
@@ -889,6 +890,24 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
+
+### HTMLStrip
+
+`HTMLStrip(value)`
+
+The `HTMLStrip` Converter removes all HTML tags from the given input and returns only the plain text content.
+
+`value` is a `string`. If `value` is another type, an error is returned.
+
+The returned type is `string`.
+
+Examples:
+
+- `HTMLStrip("<b>Bold Text</b>")` returns `"Bold Text"`
+- `HTMLStrip("<div><p>Paragraph</p><br>Line break</div>")` returns `"ParagraphLine break"`
+- `HTMLStrip("<img src='image.jpg' alt='An image'>")` returns `""`
+- `HTMLStrip("Plain text without tags")` returns `"Plain text without tags"`
+
 
 ### InsertXML
 
