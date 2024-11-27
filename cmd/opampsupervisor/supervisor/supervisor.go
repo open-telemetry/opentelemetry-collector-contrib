@@ -289,7 +289,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
-	srv := server.New(newLoggerFromZap(s.logger))
+	srv := server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
@@ -387,7 +387,7 @@ func (s *Supervisor) startOpAMP() error {
 }
 
 func (s *Supervisor) startOpAMPClient() error {
-	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
+	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger, "opamp-client"))
 
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
@@ -465,7 +465,7 @@ func (s *Supervisor) startOpAMPClient() error {
 // depending on information received by the Supervisor from the remote
 // OpAMP server.
 func (s *Supervisor) startOpAMPServer() error {
-	s.opampServer = server.New(newLoggerFromZap(s.logger))
+	s.opampServer = server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	var err error
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
