@@ -387,8 +387,6 @@ func (s *Supervisor) startOpAMP() error {
 }
 
 func (s *Supervisor) startOpAMPClient() error {
-	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
-
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
 	parsedURL, err := url.Parse(s.config.Server.Endpoint)
@@ -400,6 +398,14 @@ func (s *Supervisor) startOpAMPClient() error {
 		if err != nil {
 			return err
 		}
+	}
+	switch parsedURL.Scheme {
+	case "ws", "wss":
+		s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
+	case "http", "https":
+		s.opampClient = client.NewHTTP(newLoggerFromZap(s.logger))
+	default:
+		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
 	s.logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))
