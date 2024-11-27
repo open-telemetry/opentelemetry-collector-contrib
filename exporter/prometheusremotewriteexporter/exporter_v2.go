@@ -62,12 +62,12 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 
 					buf := bufferPool.Get().(*buffer)
 					buf.protobuf.Reset()
-					defer bufferPool.Put(buf)
 
 					// Uses proto.Marshal to convert the WriteRequest into bytes array
 					errMarshal := buf.protobuf.Marshal(request)
 					if errMarshal != nil {
 						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						bufferPool.Put(buf)
 						return
 					}
 
@@ -76,6 +76,7 @@ func (prwe *prwExporter) exportV2(ctx context.Context, requests []*writev2.Reque
 						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 						mu.Unlock()
 					}
+					bufferPool.Put(buf)
 				}
 			}
 		}()
