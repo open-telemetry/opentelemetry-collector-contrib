@@ -458,7 +458,8 @@ receiver_creator/metrics:
      # ignore_receivers: []
 ```
 
-Find bellow the supported annotations that user can define to automatically enable receivers to start collecting metrics signals from the target Pods/containers.
+Find bellow the supported annotations that user can define to automatically enable receivers to start
+collecting metrics signals from the target Pods/containers.
 
 ### Supported metrics annotations
 
@@ -511,11 +512,82 @@ The current implementation relies on the implementation of `k8sobserver` extensi
 the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).
 The hints are evaluated per container by extracting the annotations from each [`Port` endpoint](#Port) that is emitted. 
 
+### Supported logs annotations
+
+This feature enables `filelog` receiver along with the `container` parser in order to collect logs from the discovered
+Pods.
+
+#### Enable/disable discovery
+
+`io.opentelemetry.discovery.logs/enabled` (Required. Example: `"true"`)
+
+By default `"false"`.
+
+The following configuration can be used:
+
+```yaml
+receiver_creator/logs:
+  watch_observers: [ k8s_observer ]
+  discovery:
+    enabled: true
+```
+#### Define configuration
+The default configuration for the `filelog` receiver is the following:
+
+```yaml
+include:
+  - /var/log/pods/`pod.namespace`_`pod.name`_`pod.uid`/`container_name`/*.log
+include_file_name: false
+include_file_path: true
+operators:
+  - id: container-parser
+    type: container
+```
+This default can be extended using the respective annotation:
+`io.opentelemetry.discovery.logs/config`
+
+**Example:**
+
+```yaml
+io.opentelemetry.discovery.logs/config: |
+  include_file_name: true
+  max_log_size: "2MiB"
+  operators:
+    - type: regex_parser
+      regex: "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
+```
+
+Note that individual settings are overridden by the configuration provided by the hints while the operators list
+is extended keeping first the `container` parser.
+
+
+#### Support multiple target containers
+
+Users can target the annotation to a specific container by suffixing it with the name of that container:
+`io.opentelemetry.discovery.logs.<container_name>/endpoint`.
+For example:
+```yaml
+io.opentelemetry.discovery.logs.busybox/config: |
+  max_log_size: "3MiB"
+  operators:
+    - id: some
+      type: add
+      field: attributes.tag
+      value: hints
+```
+where `busybox` is the name of the target container.
+
+If a Pod is annotated with both container level hints and pod level hints the container level hints have priority and
+the Pod level hints are used as a fallback (see detailed example bellow).
+
+The current implementation relies on the implementation of `k8sobserver` extension and specifically
+the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).
+The hints are evaluated per container by extracting the annotations from each [`Pod Container` endpoint](#Pod Container) that is emitted.
 
 
 ### Examples
 
-#### Metrics example
+#### Metrics and Logs example
 
 Collector's configuration:
 ```yaml
@@ -525,12 +597,22 @@ receivers:
     discovery:
       enabled: true
     receivers:
+  
+  receiver_creator/logs:
+    watch_observers: [ k8s_observer ]
+    discovery:
+      enabled: true
+    receivers:
 
 service:
   extensions: [ k8s_observer]
   pipelines:
     metrics:
-      receivers: [ receiver_creator ]
+      receivers: [ receiver_creator/metrics ]
+      processors: []
+      exporters: [ debug ]
+    logs:
+      receivers: [ receiver_creator/logs ]
       processors: []
       exporters: [ debug ]
 ```
@@ -600,6 +682,21 @@ spec:
           endpoint: "http://`endpoint`/nginx_status"
           collection_interval: "30s"
           timeout: "20s"
+
+        # redis pod container logs hints
+        io.opentelemetry.discovery.logs.redis/enabled: "true"
+        io.opentelemetry.discovery.logs.redis/config: |
+          max_log_size: "4MiB"
+          operators:
+            - id: some
+              type: add
+              field: attributes.tag
+              value: logs_hints
+
+        # nginx pod container logs hints
+        io.opentelemetry.discovery.logs.webserver/enabled: "true"
+        io.opentelemetry.discovery.logs.webserver/config: |
+          max_log_size: "3MiB"
     spec:
       volumes:
         - name: nginx-conf
