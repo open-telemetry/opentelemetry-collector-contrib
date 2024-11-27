@@ -8,10 +8,6 @@ type testCollectorVersionResolver struct {
 	version string
 }
 
-func newTestCollectorVersionResolver(version string) *testCollectorVersionResolver {
-	return &testCollectorVersionResolver{version: version}
-}
-
 func newDefaultTestCollectorVersionResolver() *testCollectorVersionResolver {
 	return &testCollectorVersionResolver{version: "test"}
 }
