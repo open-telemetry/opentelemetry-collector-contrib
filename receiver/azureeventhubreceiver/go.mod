@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs v0.114.0
-	github.com/relvacode/iso8601 v1.5.0
+	github.com/relvacode/iso8601 v1.6.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
