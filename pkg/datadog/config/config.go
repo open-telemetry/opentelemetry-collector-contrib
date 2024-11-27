@@ -127,20 +127,17 @@ func (c *Config) Validate() error {
 		return ErrUnsetAPIKey
 	}
 
-	nonHex, err := regexp.Compile("[^0-9a-fA-F]")
-	if err != nil {
-		return err
-	}
+	nonHex := regexp.MustCompile("[^0-9a-fA-F]")
 	invalidAPIKeyChars := nonHex.FindAllString(string(c.API.Key), -1)
 	if len(invalidAPIKeyChars) > 0 {
 		return errors.Join(ErrAPIKeyFormat, fmt.Errorf("invalid characters: %s", strings.Join(invalidAPIKeyChars, ", ")))
 	}
 
-	if err = c.Traces.Validate(); err != nil {
+	if err := c.Traces.Validate(); err != nil {
 		return err
 	}
 
-	err = c.Metrics.HistConfig.validate()
+	err := c.Metrics.HistConfig.validate()
 	if err != nil {
 		return err
 	}
