@@ -19,7 +19,7 @@ func TestHTMLStrip(t *testing.T) {
 		want          any
 		expectedError string
 	}
-	var testCases = []testCase{
+	testCases := []testCase{
 		// Comment
 		{name: "HTML Comment", value: "<!--This is a comment-->", want: "", expectedError: ""},
 
