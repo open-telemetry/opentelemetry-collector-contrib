@@ -7,5 +7,6 @@ status:
   distributions: [contrib, k8s]
   codeowners:
     active: []
+    seeking_new: true
 tests:
   config:
