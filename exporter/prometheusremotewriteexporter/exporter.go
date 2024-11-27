@@ -361,19 +361,16 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		req.Header.Add("Content-Encoding", "snappy")
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
+		switch {
 		// If feature flag not enabled support only RW1
-		if !enableSendingRW2FeatureGate.IsEnabled() {
+		case !enableSendingRW2FeatureGate.IsEnabled(), prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV1:
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-		} else {
-			switch prwe.RemoteWriteProtoMsg {
-			case config.RemoteWriteProtoMsgV1:
-				req.Header.Set("Content-Type", "application/x-protobuf")
-				req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-			case config.RemoteWriteProtoMsgV2:
-				req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
-				req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
-			}
+		case prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2:
+			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
+			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
+		default:
+			return errors.New("proto message validated earlier")
 		}
 
 		resp, err := prwe.client.Do(req)
