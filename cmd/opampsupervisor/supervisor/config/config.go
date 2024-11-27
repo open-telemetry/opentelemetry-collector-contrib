@@ -255,7 +255,7 @@ func DefaultSupervisor() Supervisor {
 		Telemetry: Telemetry{
 			Logs: Logs{
 				Level:       zapcore.InfoLevel,
-				OutputPaths: []string{"stdout", "stderr"},
+				OutputPaths: []string{"stderr"},
 			},
 		},
 	}
