@@ -293,7 +293,7 @@ Connection options:
 Additional DSN features:
 
 The underlying `clickhouse-go` module offers additional configuration. These can be set in the exporter's `endpoint` or `connection_params` config values.
-- `client_info_product` Must be in `productName/version` format. By default the exporter will append its binary build information. You can use this information to track the origin of `INSERT` statements in the `system.query_log` table.
+- `client_info_product` Must be in `productName/version` format with comma separated entries. By default the exporter will append its binary build information. You can use this information to track the origin of `INSERT` statements in the `system.query_log` table.
 
 ClickHouse tables:
 
