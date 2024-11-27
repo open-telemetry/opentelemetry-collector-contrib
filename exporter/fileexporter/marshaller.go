@@ -18,10 +18,12 @@ var tracesMarshalers = map[string]ptrace.Marshaler{
 	formatTypeJSON:  &ptrace.JSONMarshaler{},
 	formatTypeProto: &ptrace.ProtoMarshaler{},
 }
+
 var metricsMarshalers = map[string]pmetric.Marshaler{
 	formatTypeJSON:  &pmetric.JSONMarshaler{},
 	formatTypeProto: &pmetric.ProtoMarshaler{},
 }
+
 var logsMarshalers = map[string]plog.Marshaler{
 	formatTypeJSON:  &plog.JSONMarshaler{},
 	formatTypeProto: &plog.ProtoMarshaler{},
