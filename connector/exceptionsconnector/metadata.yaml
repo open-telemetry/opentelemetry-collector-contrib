@@ -6,7 +6,7 @@ status:
     alpha: [traces_to_metrics, traces_to_logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jpkrohling, marctc]
+    active: [marctc]
 
 tests:
   config:
