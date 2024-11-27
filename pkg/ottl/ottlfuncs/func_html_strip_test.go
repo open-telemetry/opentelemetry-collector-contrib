@@ -83,7 +83,7 @@ func TestHTMLStrip(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			expressionFunc, err := createHTMLStripFunction[any](ottl.FunctionContext{}, &HTMLStripArguments[any]{
-				HtmlSource: &ottl.StandardStringGetter[any]{
+				HTMLSource: &ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.value, nil
 					},
