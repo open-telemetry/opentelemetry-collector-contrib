@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	defaultCfg := createDefaultConfig()
-	defaultCfg.(*Config).collectorVersionResolver = NewDefaultTestCollectorVersionResolver()
+	defaultCfg.(*Config).collectorVersionResolver = newDefaultTestCollectorVersionResolver()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
 	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
-				collectorVersionResolver: NewDefaultTestCollectorVersionResolver(),
+				collectorVersionResolver: newDefaultTestCollectorVersionResolver(),
 				Endpoint:                 defaultEndpoint,
 				Database:                 "otel",
 				Username:                 "foo",
@@ -91,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
-			cfg.(*Config).collectorVersionResolver = NewDefaultTestCollectorVersionResolver()
+			cfg.(*Config).collectorVersionResolver = newDefaultTestCollectorVersionResolver()
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
@@ -508,7 +508,7 @@ func TestConfig_buildDSN(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
-			cfg.collectorVersionResolver = NewDefaultTestCollectorVersionResolver()
+			cfg.collectorVersionResolver = newDefaultTestCollectorVersionResolver()
 			mergeConfigWithFields(cfg, tt.fields)
 			dsn, err := cfg.buildDSN()
 

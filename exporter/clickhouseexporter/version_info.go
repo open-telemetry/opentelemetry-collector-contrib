@@ -8,19 +8,19 @@ import (
 	"runtime/debug"
 )
 
-type CollectorVersionResolver interface {
+type collectorVersionResolver interface {
 	// GetVersion returns the collector build information for use in query tracking.
 	// Version should not include any slashes.
 	GetVersion() string
 }
 
-// BinaryCollectorVersionResolver will use the Go binary to detect the collector version.
-type BinaryCollectorVersionResolver struct {
+// binaryCollectorVersionResolver will use the Go binary to detect the collector version.
+type binaryCollectorVersionResolver struct {
 	version string
 }
 
-func NewBinaryCollectorVersionResolver() *BinaryCollectorVersionResolver {
-	resolver := BinaryCollectorVersionResolver{}
+func newBinaryCollectorVersionResolver() *binaryCollectorVersionResolver {
+	resolver := binaryCollectorVersionResolver{}
 
 	osInformation := runtime.GOOS[:3] + "-" + runtime.GOARCH
 	resolver.version = "unknown-" + osInformation
@@ -33,6 +33,6 @@ func NewBinaryCollectorVersionResolver() *BinaryCollectorVersionResolver {
 	return &resolver
 }
 
-func (r *BinaryCollectorVersionResolver) GetVersion() string {
+func (r *binaryCollectorVersionResolver) GetVersion() string {
 	return r.version
 }

@@ -32,7 +32,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		collectorVersionResolver: NewBinaryCollectorVersionResolver(),
+		collectorVersionResolver: newBinaryCollectorVersionResolver(),
 
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),

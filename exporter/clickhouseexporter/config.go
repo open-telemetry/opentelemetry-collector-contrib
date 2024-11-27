@@ -20,7 +20,7 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	collectorVersionResolver CollectorVersionResolver
+	collectorVersionResolver collectorVersionResolver
 
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`

@@ -3,19 +3,19 @@
 
 package clickhouseexporter
 
-// TestCollectorVersionResolver will return a constant value for the collector version.
-type TestCollectorVersionResolver struct {
+// testCollectorVersionResolver will return a constant value for the collector version.
+type testCollectorVersionResolver struct {
 	version string
 }
 
-func NewTestCollectorVersionResolver(version string) *TestCollectorVersionResolver {
-	return &TestCollectorVersionResolver{version: version}
+func newTestCollectorVersionResolver(version string) *testCollectorVersionResolver {
+	return &testCollectorVersionResolver{version: version}
 }
 
-func NewDefaultTestCollectorVersionResolver() *TestCollectorVersionResolver {
-	return &TestCollectorVersionResolver{version: "test"}
+func newDefaultTestCollectorVersionResolver() *testCollectorVersionResolver {
+	return &testCollectorVersionResolver{version: "test"}
 }
 
-func (r *TestCollectorVersionResolver) GetVersion() string {
+func (r *testCollectorVersionResolver) GetVersion() string {
 	return r.version
 }
