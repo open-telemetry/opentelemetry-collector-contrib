@@ -167,20 +167,15 @@ func New(
 		}
 	}
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector, c.stopCh)
-	err = c.informer.SetTransform(
-		func(object any) (any, error) {
-			originalPod, success := object.(*api_v1.Pod)
-			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-				return object, nil
-			}
+	podTransformFunc := func(object any) (any, error) {
+		originalPod, success := object.(*api_v1.Pod)
+		if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+			return object, nil
+		}
 
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
-		},
-	)
-	if err != nil {
-		return nil, err
+		return removeUnnecessaryPodData(originalPod, c.Rules), nil
 	}
+	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector, podTransformFunc, c.stopCh)
 
 	c.namespaceInformer = newNamespaceInformer(c.kc, c.stopCh)
 
@@ -188,20 +183,20 @@ func New(
 		if newReplicaSetInformer == nil {
 			newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace, c.stopCh)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
+		transformFunc := func(object any) (any, error) {
+			originalReplicaset, success := object.(*apps_v1.ReplicaSet)
+			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+				return object, nil
+			}
 
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
-		)
-		if err != nil {
-			return nil, err
+			return removeUnnecessaryReplicaSetData(originalReplicaset), nil
 		}
+		c.replicasetInformer = newReplicaSetInformer(
+			c.kc,
+			c.Filters.Namespace,
+			transformFunc,
+			c.stopCh,
+		)
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {

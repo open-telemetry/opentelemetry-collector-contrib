@@ -2065,8 +2065,15 @@ func TestWaitForMetadata(t *testing.T) {
 		err:              false,
 	}, {
 		name: "wait but never synced",
-		informerProvider: func(client kubernetes.Interface, namespace string, labelSelector labels.Selector, fieldSelector fields.Selector, stopCh chan struct{}) cache.SharedInformer {
-			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector, stopCh)}
+		informerProvider: func(
+			client kubernetes.Interface,
+			namespace string,
+			labelSelector labels.Selector,
+			fieldSelector fields.Selector,
+			transformFunc cache.TransformFunc,
+			stopCh chan struct{},
+		) cache.SharedInformer {
+			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector, transformFunc, stopCh)}
 		},
 		err: true,
 	}}
