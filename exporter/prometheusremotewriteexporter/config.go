@@ -121,10 +121,5 @@ func (cfg *Config) Validate() error {
 		cfg.MaxBatchSizeBytes = 3000000
 	}
 
-	err := cfg.RemoteWriteProtoMsg.Validate()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return cfg.RemoteWriteProtoMsg.Validate()
 }
