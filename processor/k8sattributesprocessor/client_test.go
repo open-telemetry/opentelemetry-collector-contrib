@@ -61,10 +61,10 @@ func newFakeClient(
 		Rules:              rules,
 		Filters:            filters,
 		Associations:       associations,
-		Informer:           kube.NewFakeInformer(cs, "", ls, fs, closeCh),
-		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs, closeCh),
-		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs, closeCh),
-		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs, closeCh),
+		Informer:           kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
+		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
+		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
+		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
 		StopCh:             make(chan struct{}),
 	}, nil
 }

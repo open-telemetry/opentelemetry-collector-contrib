@@ -26,6 +26,7 @@ func NewFakeInformer(
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
+	_ cache.TransformFunc,
 	closeCh chan struct{},
 ) cache.SharedInformer {
 	informer := &FakeInformer{
@@ -99,6 +100,7 @@ type FakeReplicaSetInformer struct {
 func NewFakeReplicaSetInformer(
 	_ kubernetes.Interface,
 	_ string,
+	_ cache.TransformFunc,
 	stopCh chan struct{},
 ) cache.SharedInformer {
 	informer := &FakeInformer{

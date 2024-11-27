@@ -16,6 +16,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 const kubeSystemNamespace = "kube-system"
@@ -27,6 +29,7 @@ type InformerProvider func(
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
 ) cache.SharedInformer
 
@@ -51,6 +54,7 @@ type InformerProviderNode func(
 type InformerProviderReplicaSet func(
 	client kubernetes.Interface,
 	namespace string,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
 ) cache.SharedInformer
 
@@ -59,6 +63,7 @@ func newSharedInformer(
 	namespace string,
 	ls labels.Selector,
 	fs fields.Selector,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
@@ -69,6 +74,9 @@ func newSharedInformer(
 		&api_v1.Pod{},
 		watchSyncPeriod,
 	)
+	if transformFunc != nil {
+		_ = informer.SetTransform(transformFunc) // only errors if the informer was already started
+	}
 	go informer.Run(stopCh)
 	return informer
 }
@@ -143,6 +151,7 @@ func namespaceInformerWatchFunc(client kubernetes.Interface) cache.WatchFunc {
 func newReplicaSetSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
+	transformFunc cache.TransformFunc,
 	stopCh chan struct{},
 ) cache.SharedInformer {
 	informer := cache.NewSharedInformer(
@@ -153,6 +162,9 @@ func newReplicaSetSharedInformer(
 		&apps_v1.ReplicaSet{},
 		watchSyncPeriod,
 	)
+	if transformFunc != nil {
+		_ = informer.SetTransform(transformFunc) // only errors if the informer was already started
+	}
 	go informer.Run(stopCh)
 	return informer
 }
