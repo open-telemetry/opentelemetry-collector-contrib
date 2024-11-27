@@ -12,7 +12,7 @@ import (
 )
 
 // RevisionV1 represents all changes that are to be applied to a signal at a given version.  V1 represents the fact
-// that we only support the Schema Files version 1.0 - not 1.1 which contains split.
+// that this struct only support the Schema Files version 1.0 - not 1.1 which contains split.
 // todo(ankit) implement split and rest of otel schema
 type RevisionV1 struct {
 	ver        *Version
