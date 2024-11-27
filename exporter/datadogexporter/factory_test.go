@@ -300,7 +300,7 @@ func TestOnlyMetadata(t *testing.T) {
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
-		API:          APIConfig{Key: "notnull"},
+		API:          APIConfig{Key: "aaaaaaa"},
 		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		Traces:       TracesConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		OnlyMetadata: true,
