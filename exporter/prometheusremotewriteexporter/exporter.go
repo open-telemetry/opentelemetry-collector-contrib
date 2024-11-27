@@ -308,8 +308,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 					defer bufferPool.Put(buf)
 
 					// Uses proto.Marshal to convert the WriteRequest into bytes array
-					errMarshal := buf.protobuf.Marshal(request)
-					if errMarshal != nil {
+					if errMarshal := buf.protobuf.Marshal(request); errMarshal != nil {
 						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
 						return
 					}
