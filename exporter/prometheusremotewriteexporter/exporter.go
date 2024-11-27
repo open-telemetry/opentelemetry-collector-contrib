@@ -151,7 +151,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		batchTimeSeriesState: newBatchTimeSericesState(),
 	}
 
-	prwe.settings.Logger.Info("Running with prometheus remote write proto message", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
+	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
 	if prwe.exporterSettings.ExportCreatedMetric {
 		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
 	}
