@@ -20,6 +20,8 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
+	collectorVersionResolver CollectorVersionResolver
+
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
@@ -148,7 +150,7 @@ func (cfg *Config) buildDSN() (string, error) {
 	}
 
 	productInfo := queryParams.Get("client_info_product")
-	binaryProductInfo := fmt.Sprintf("%s/%s", "otelcol", getCollectorVersion())
+	binaryProductInfo := fmt.Sprintf("%s/%s", "otelcol", cfg.collectorVersionResolver.GetVersion())
 	if productInfo == "" {
 		productInfo = binaryProductInfo
 	} else {

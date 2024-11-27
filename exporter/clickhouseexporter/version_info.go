@@ -3,26 +3,33 @@ package clickhouseexporter
 import (
 	"runtime"
 	"runtime/debug"
-	"sync"
 )
 
-var (
-	versionOnce      sync.Once
-	collectorVersion string
-)
+type CollectorVersionResolver interface {
+	// GetVersion returns the collector build information for use in query tracking.
+	// Version should not include any slashes.
+	GetVersion() string
+}
 
-func getCollectorVersion() string {
-	versionOnce.Do(func() {
-		osInformation := runtime.GOOS[:3] + "-" + runtime.GOARCH
-		collectorVersion = "unknown-" + osInformation
+// BinaryCollectorVersionResolver will use the Go binary to detect the collector version.
+type BinaryCollectorVersionResolver struct {
+	version string
+}
 
-		info, ok := debug.ReadBuildInfo()
-		if !ok {
-			return
-		}
+func NewBinaryCollectorVersionResolver() *BinaryCollectorVersionResolver {
+	resolver := BinaryCollectorVersionResolver{}
 
-		collectorVersion = info.Main.Version + "-" + osInformation
-	})
+	osInformation := runtime.GOOS[:3] + "-" + runtime.GOARCH
+	resolver.version = "unknown-" + osInformation
 
-	return collectorVersion
+	info, ok := debug.ReadBuildInfo()
+	if ok {
+		resolver.version = info.Main.Version + "-" + osInformation
+	}
+
+	return &resolver
+}
+
+func (r *BinaryCollectorVersionResolver) GetVersion() string {
+	return r.version
 }
