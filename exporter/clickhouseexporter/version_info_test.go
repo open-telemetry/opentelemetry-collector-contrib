@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package clickhouseexporter
 
 // TestCollectorVersionResolver will return a constant value for the collector version.
