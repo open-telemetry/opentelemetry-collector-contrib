@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
@@ -41,11 +42,19 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, err
 	}
 
+	cfg := DefaultSupervisor()
+
 	decodeConf := koanf.UnmarshalConf{
 		Tag: "mapstructure",
+		DecoderConfig: &mapstructure.DecoderConfig{
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(
+				mapstructure.StringToTimeDurationHookFunc()),
+			Result:           &cfg,
+			WeaklyTypedInput: true,
+			ErrorUnused:      true,
+		},
 	}
 
-	cfg := DefaultSupervisor()
 	if err := k.UnmarshalWithConf("", &cfg, decodeConf); err != nil {
 		return Supervisor{}, fmt.Errorf("cannot parse %s: %w", configFile, err)
 	}
