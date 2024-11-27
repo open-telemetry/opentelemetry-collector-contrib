@@ -907,6 +907,7 @@ Examples:
 - `HTMLStrip("<div><p>Paragraph</p><br>Line break</div>")` returns `"ParagraphLine break"`
 - `HTMLStrip("<img src='image.jpg' alt='An image'>")` returns `""`
 - `HTMLStrip("Plain text without tags")` returns `"Plain text without tags"`
+- `HTMLStrip(body)`
 
 
 ### InsertXML
