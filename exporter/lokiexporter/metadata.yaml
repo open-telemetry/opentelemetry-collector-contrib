@@ -7,7 +7,7 @@ status:
   distributions:
   - contrib
   codeowners:
-    active: [gramidt, jpkrohling, mar4uk]
+    active: [gramidt, mar4uk]
 
 tests:
   expect_consumer_error: true
