@@ -5,8 +5,10 @@ package logratelimitprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+	"go.uber.org/zap"
 	"strings"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,6 +25,7 @@ const (
 // keyHelper helps in generating a key from the values of the rate_limit_fields
 type keyHelper struct {
 	fields []*field
+	logger *zap.Logger
 }
 
 // field represents a field and it's compound key to match on
@@ -31,9 +34,10 @@ type field struct {
 }
 
 // newKeyHelper creates a new keyHelper based on the keys passed in rateLimiterFields
-func newKeyHelper(rateLimiterFields []string) *keyHelper {
+func newKeyHelper(rateLimiterFields []string, lggr *zap.Logger) *keyHelper {
 	fe := &keyHelper{
 		fields: make([]*field, 0, len(rateLimiterFields)),
+		logger: lggr,
 	}
 
 	for _, f := range rateLimiterFields {
@@ -48,11 +52,11 @@ func newKeyHelper(rateLimiterFields []string) *keyHelper {
 // GenerateKey removes any body or attribute fields that match in the log record
 func (fe *keyHelper) GenerateKey(logRecord plog.LogRecord, resource pcommon.Resource) (uint64, string) {
 	fieldValueArray := make([]pdatautil.HashOption, 0, len(fe.fields))
-	stringBuilder := strings.Builder{}
-	for i, field := range fe.fields {
+	var stringBuilder strings.Builder
+	for _, field := range fe.fields {
 		value := field.getFieldValue(logRecord, resource)
 		stringBuilder.WriteString(value.AsString())
-		fieldValueArray[i] = pdatautil.WithValue(value)
+		fieldValueArray = append(fieldValueArray, pdatautil.WithValue(value))
 	}
 	return pdatautil.Hash64(fieldValueArray...), stringBuilder.String()
 }

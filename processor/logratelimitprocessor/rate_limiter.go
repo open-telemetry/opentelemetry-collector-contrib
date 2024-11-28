@@ -4,6 +4,7 @@
 package logratelimitprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logratelimitprocessor"
 
 import (
+	"go.uber.org/zap"
 	"sync/atomic"
 	"time"
 )
@@ -13,16 +14,18 @@ type RateLimiter struct {
 	threshold          uint64
 	windowStartTimeMap map[uint64]time.Time
 	windowSize         time.Duration
-	counterMap         map[uint64]atomic.Uint64
+	counterMap         map[uint64]*atomic.Uint64
+	logger             *zap.Logger
 }
 
 // NewRateLimiter create a new rate-limiter initialization
-func NewRateLimiter(threshold uint64, windowSize time.Duration) *RateLimiter {
+func NewRateLimiter(threshold uint64, windowSize time.Duration, lggr *zap.Logger) *RateLimiter {
 	return &RateLimiter{
 		threshold:          threshold,
 		windowStartTimeMap: make(map[uint64]time.Time),
 		windowSize:         windowSize,
-		counterMap:         make(map[uint64]atomic.Uint64),
+		counterMap:         make(map[uint64]*atomic.Uint64),
+		logger:             lggr,
 	}
 }
 
@@ -31,8 +34,13 @@ func NewRateLimiter(threshold uint64, windowSize time.Duration) *RateLimiter {
 // and try to drop logs in the best effort way, i.e. it is possible that algorithm might allow slightly more or less logs than what
 // is configured in AllowedRate
 func (fw *RateLimiter) IsRequestAllowed(key uint64) bool {
-	cntr := fw.counterMap[key]
 	now := time.Now()
+	cntr, ok := fw.counterMap[key]
+	if !ok {
+		fw.counterMap[key] = new(atomic.Uint64)
+		cntr = fw.counterMap[key]
+		fw.windowStartTimeMap[key] = now
+	}
 	// cases where now.Sub(fw.windowStartTime) is negative or positive should be handled
 	if now.Sub(fw.windowStartTimeMap[key]) > fw.windowSize {
 		cntr.Store(0)

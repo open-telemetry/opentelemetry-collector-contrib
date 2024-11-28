@@ -6,6 +6,8 @@ package logratelimitprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logratelimitprocessor/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -15,9 +17,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 // logratelimitprocessor is an opentelemetry-collector processor that rate limits the log records based on specified rate_limit_fields
@@ -37,8 +36,8 @@ func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Se
 	}
 
 	return &logratelimitprocessor{
-		keyHelper:        newKeyHelper(cfg.RateLimitFields),
-		rateLimiter:      NewRateLimiter(cfg.AllowedRate, cfg.Interval),
+		keyHelper:        newKeyHelper(cfg.RateLimitFields, settings.Logger),
+		rateLimiter:      NewRateLimiter(cfg.AllowedRate, cfg.Interval, settings.Logger),
 		nextConsumer:     nextConsumer,
 		logger:           settings.Logger,
 		telemetryBuilder: telemetryBuilder,
@@ -110,7 +109,7 @@ func (p *logratelimitprocessor) isLogAllowed(ctx context.Context, logRecord plog
 	isAllowed := p.rateLimiter.IsRequestAllowed(key)
 	if !isAllowed {
 		// increment dropped log metric
-		p.telemetryBuilder.RatelimitProcessorDroppedLogs.Record(
+		p.telemetryBuilder.RatelimitProcessorDroppedLogs.Add(
 			ctx,
 			1,
 			metric.WithAttributes(attribute.String("rate_limit_fields", appendedFieldValsStr)),
