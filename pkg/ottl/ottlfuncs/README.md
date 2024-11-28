@@ -472,7 +472,7 @@ Available Converters:
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
-- [UUID](#UUID)
+- [UUID](#uuid)
 - [Year](#year)
 
 ### Base64Decode (Deprecated)
