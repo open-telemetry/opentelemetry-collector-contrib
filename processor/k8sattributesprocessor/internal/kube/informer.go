@@ -22,6 +22,13 @@ import (
 
 const kubeSystemNamespace = "kube-system"
 
+type InformerProviders struct {
+	PodInformerProvider        InformerProvider
+	NamespaceInformerProvider  InformerProviderNamespace
+	ReplicaSetInformerProvider InformerProviderReplicaSet
+	NodeInformerProvider       InformerProviderNode
+}
+
 // InformerProvider defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client.
 type InformerProvider func(
