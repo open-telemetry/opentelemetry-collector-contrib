@@ -273,6 +273,35 @@ func generateTestExponentialHistogramMetricWithLongBuckets(name string) pmetric.
 	return otelMetrics
 }
 
+func generateTestExponentialHistogramMetricWithThousandBuckets(name string) pmetric.Metrics {
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit("Seconds")
+	exponentialHistogramMetric := metric.SetEmptyExponentialHistogram()
+
+	exponentialHistogramDatapoint := exponentialHistogramMetric.DataPoints().AppendEmpty()
+	exponentialHistogramDatapoint.SetCount(250550)
+	exponentialHistogramDatapoint.SetSum(10000)
+	exponentialHistogramDatapoint.SetMin(-9e+20)
+	exponentialHistogramDatapoint.SetMax(9e+20)
+	exponentialHistogramDatapoint.SetZeroCount(50)
+	posBucketCounts := make([]uint64, 500)
+	for i := range posBucketCounts {
+		posBucketCounts[i] = uint64(i + 1)
+	}
+	exponentialHistogramDatapoint.Positive().BucketCounts().FromRaw(posBucketCounts)
+	negBucketCounts := make([]uint64, 500)
+	for i := range negBucketCounts {
+		negBucketCounts[i] = uint64(i + 1)
+	}
+	exponentialHistogramDatapoint.Negative().BucketCounts().FromRaw(negBucketCounts)
+	exponentialHistogramDatapoint.Attributes().PutStr("label1", "value1")
+	return otelMetrics
+}
+
 func generateTestSummaryMetric(name string) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
@@ -2043,6 +2072,8 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 		generateTestGaugeMetric("int-gauge", doubleValueType),
 		generateTestHistogramMetric("histogram"),
 		generateTestExponentialHistogramMetric("exponential-histogram"),
+		generateTestExponentialHistogramMetricWithLongBuckets("exponential-histogram-long-buckets"),
+		generateTestExponentialHistogramMetricWithThousandBuckets("exponential-histogram-thousand-buckets"),
 		generateTestSumMetric("int-sum", intValueType),
 		generateTestSumMetric("double-sum", doubleValueType),
 		generateTestSummaryMetric("summary"),
