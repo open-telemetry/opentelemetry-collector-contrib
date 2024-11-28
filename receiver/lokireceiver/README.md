@@ -21,7 +21,7 @@ This receiver runs HTTP and GRPC servers to ingest log entries in Loki format.
 
 The settings are:
 
-- `endpoint` (required, default = localhost:3500 for HTTP protocol, localhost:3600 gRPC protocol): host:port to which the receiver is going to receive data. You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:3500` and `0.0.0.0:3600`. This feature gate will be removed in a future release.
+- `endpoint` (required, default = localhost:3500 for HTTP protocol, localhost:3600 gRPC protocol): host:port to which the receiver is going to receive data. See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 - `use_incoming_timestamp` (optional, default = false) if set `true` the timestamp from Loki log entry is used
 
 Example:
