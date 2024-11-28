@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -1192,6 +1193,13 @@ func BenchmarkExecute(b *testing.B) {
 	}
 }
 
+func BenchmarkExecuteUnevenBatches(b *testing.B) {
+	benchmarkExecute(b, -1)
+}
+
+// benchmarkExecute benchmarks the execute function with a given number of samples.
+// If numSample is -1, the batch size will switch between 10, 100, 1000 and 10000 samples
+// for each interaction so we benchmark uneven batch sizes.
 func benchmarkExecute(b *testing.B, numSample int) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -1232,6 +1240,10 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	reqs := make([]*prompb.WriteRequest, 0, b.N)
 	const labelValue = "abcdefg'hijlmn234!@#$%^&*()_+~`\"{}[],./<>?hello0123hiOlá你好Dzieńdobry9Zd8ra765v4stvuyte"
 	for n := 0; n < b.N; n++ {
+		actualSampleSize := numSample
+		if numSample == -1 {
+			actualSampleSize = int(math.Pow(10, float64((n%4)+1)))
+		}
 		num := strings.Repeat(strconv.Itoa(n), 16)
 		req := &prompb.WriteRequest{
 			Metadata: []prompb.MetricMetadata{
@@ -1248,14 +1260,14 @@ func benchmarkExecute(b *testing.B, numSample int) {
 			},
 			Timeseries: []prompb.TimeSeries{
 				{
-					Samples: generateSamples(numSample),
+					Samples: generateSamples(actualSampleSize),
 					Labels: []prompb.Label{
 						{Name: "__name__", Value: "test_metric"},
 						{Name: "test_label_name_" + num, Value: labelValue + num},
 					},
 				},
 				{
-					Histograms: generateHistograms(numSample),
+					Histograms: generateHistograms(actualSampleSize),
 					Labels: []prompb.Label{
 						{Name: "__name__", Value: "test_histogram"},
 						{Name: "test_label_name_" + num, Value: labelValue + num},
