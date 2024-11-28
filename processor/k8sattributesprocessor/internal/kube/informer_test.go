@@ -12,18 +12,17 @@ import (
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func Test_newSharedInformer(t *testing.T) {
 	labelSelector, fieldSelector, err := selectorsFromFilters(Filters{})
 	require.NoError(t, err)
-	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	require.NoError(t, err)
+	client := fake.NewClientset()
 	stopCh := make(chan struct{})
-	informer := newSharedInformer(client, "testns", labelSelector, fieldSelector, nil, stopCh)
+	informer, err := newSharedInformer(client, "testns", labelSelector, fieldSelector, nil, stopCh)
+	assert.NoError(t, err)
 	assert.NotNil(t, informer)
 	assert.False(t, informer.IsStopped())
 	close(stopCh)
@@ -33,24 +32,12 @@ func Test_newSharedInformer(t *testing.T) {
 }
 
 func Test_newSharedNamespaceInformer(t *testing.T) {
-	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	require.NoError(t, err)
+	client := fake.NewClientset()
 	stopCh := make(chan struct{})
-	informer := newNamespaceSharedInformer(client, stopCh)
+	informer, err := newNamespaceSharedInformer(client, nil, stopCh)
+	assert.NoError(t, err)
 	assert.NotNil(t, informer)
 	assert.False(t, informer.IsStopped())
-	close(stopCh)
-	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
-		assert.True(collect, informer.IsStopped())
-	}, time.Second*5, time.Millisecond)
-}
-
-func Test_newKubeSystemSharedInformer(t *testing.T) {
-	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	require.NoError(t, err)
-	stopCh := make(chan struct{})
-	informer := newKubeSystemSharedInformer(client, stopCh)
-	assert.NotNil(t, informer)
 	close(stopCh)
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
 		assert.True(collect, informer.IsStopped())
@@ -75,8 +62,7 @@ func Test_informerListFuncWithSelectors(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
+	c := fake.NewSimpleClientset()
 	listFunc := informerListFuncWithSelectors(c, "test-ns", ls, fs)
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(opts)
@@ -85,9 +71,8 @@ func Test_informerListFuncWithSelectors(t *testing.T) {
 }
 
 func Test_namespaceInformerListFunc(t *testing.T) {
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
-	listFunc := namespaceInformerListFunc(c)
+	c := fake.NewClientset()
+	listFunc := namespaceInformerListFunc(c, nil)
 	opts := metav1.ListOptions{}
 	obj, err := listFunc(opts)
 	assert.NoError(t, err)
@@ -112,8 +97,7 @@ func Test_informerWatchFuncWithSelectors(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
+	c := fake.NewClientset()
 	watchFunc := informerWatchFuncWithSelectors(c, "test-ns", ls, fs)
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(opts)
@@ -122,9 +106,8 @@ func Test_informerWatchFuncWithSelectors(t *testing.T) {
 }
 
 func Test_namespaceInformerWatchFunc(t *testing.T) {
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
-	watchFunc := namespaceInformerWatchFunc(c)
+	c := fake.NewClientset()
+	watchFunc := namespaceInformerWatchFunc(c, nil)
 	opts := metav1.ListOptions{}
 	obj, err := watchFunc(opts)
 	assert.NoError(t, err)
@@ -133,10 +116,9 @@ func Test_namespaceInformerWatchFunc(t *testing.T) {
 
 func Test_fakeInformer(t *testing.T) {
 	// nothing real to test here. just to make coverage happy
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
 	stopCh := make(chan struct{})
-	i := NewFakeInformer(c, "ns", nil, nil, nil, stopCh)
+	i, err := NewFakeInformer("ns", nil, nil, nil, stopCh)
+	assert.NoError(t, err)
 	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
 	assert.NoError(t, err)
 	i.HasSynced()
@@ -146,11 +128,9 @@ func Test_fakeInformer(t *testing.T) {
 }
 
 func Test_fakeNamespaceInformer(t *testing.T) {
-	// nothing real to test here. just to make coverage happy
-	c, err := newFakeAPIClientset(k8sconfig.APIConfig{})
-	assert.NoError(t, err)
 	stopCh := make(chan struct{})
-	i := NewFakeNamespaceInformer(c, stopCh)
+	i, err := NewFakeNamespaceInformer(nil, stopCh)
+	assert.NoError(t, err)
 	_, err = i.AddEventHandlerWithResyncPeriod(cache.ResourceEventHandlerFuncs{}, time.Second)
 	assert.NoError(t, err)
 	i.HasSynced()

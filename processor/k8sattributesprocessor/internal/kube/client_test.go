@@ -4,7 +4,6 @@
 package kube
 
 import (
-	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -21,16 +20,8 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
-
-func newFakeAPIClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
-	return fake.NewSimpleClientset(), nil
-}
 
 func newPodIdentifier(from string, name string, value string) PodIdentifier {
 	if from == "connection" {
@@ -144,57 +135,14 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	assert.Equal(t, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", got.NodeUID)
 }
 
-func TestDefaultClientset(t *testing.T) {
-	c, err := New(
-		componenttest.NewNopTelemetrySettings(),
-		k8sconfig.APIConfig{},
-		ExtractionRules{},
-		Filters{},
-		[]Association{},
-		Excludes{},
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
-		false,
-		10*time.Second,
-	)
-	require.EqualError(t, err, "invalid authType for kubernetes: ")
-	assert.Nil(t, c)
-
-	c, err = New(
-		componenttest.NewNopTelemetrySettings(),
-		k8sconfig.APIConfig{},
-		ExtractionRules{},
-		Filters{},
-		[]Association{},
-		Excludes{},
-		newFakeAPIClientset,
-		nil,
-		nil,
-		nil,
-		nil,
-		false,
-		10*time.Second,
-	)
-	assert.NoError(t, err)
-	assert.NotNil(t, c)
-}
-
 func TestBadFilters(t *testing.T) {
 	c, err := New(
 		componenttest.NewNopTelemetrySettings(),
-		k8sconfig.APIConfig{},
 		ExtractionRules{},
 		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
 		[]Association{},
 		Excludes{},
-		newFakeAPIClientset,
-		NewFakeInformer,
-		NewFakeNamespaceInformer,
-		NewFakeReplicaSetInformer,
-		NewFakeNodeInformer,
+		NewFakeInformerProviders(),
 		false,
 		10*time.Second,
 	)
@@ -220,39 +168,6 @@ func TestClientStartStop(t *testing.T) {
 	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
 		assert.True(collect, fctr.HasStopped())
 	}, time.Second, time.Millisecond)
-}
-
-func TestConstructorErrors(t *testing.T) {
-	er := ExtractionRules{}
-	ff := Filters{}
-	t.Run("client-provider-call", func(t *testing.T) {
-		var gotAPIConfig k8sconfig.APIConfig
-		apiCfg := k8sconfig.APIConfig{
-			AuthType: "test-auth-type",
-		}
-		clientProvider := func(c k8sconfig.APIConfig) (kubernetes.Interface, error) {
-			gotAPIConfig = c
-			return nil, fmt.Errorf("error creating k8s client")
-		}
-		c, err := New(
-			componenttest.NewNopTelemetrySettings(),
-			apiCfg,
-			er,
-			ff,
-			[]Association{},
-			Excludes{},
-			clientProvider,
-			NewFakeInformer,
-			NewFakeNamespaceInformer,
-			nil,
-			nil,
-			false,
-			10*time.Second,
-		)
-		assert.Nil(t, c)
-		require.EqualError(t, err, "error creating k8s client")
-		assert.Equal(t, apiCfg, gotAPIConfig)
-	})
 }
 
 func TestPodAdd(t *testing.T) {
@@ -1921,7 +1836,6 @@ func TestErrorSelectorsFromFilters(t *testing.T) {
 }
 
 func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
 	testCases := []struct {
 		name                   string
 		shouldExtractNamespace bool
@@ -1978,8 +1892,7 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c.Rules = tc.rules
-			assert.Equal(t, tc.shouldExtractNamespace, c.extractNamespaceLabelsAnnotations())
+			assert.Equal(t, tc.shouldExtractNamespace, tc.rules.extractNamespaceLabelsAnnotations())
 		})
 	}
 }
@@ -2013,16 +1926,11 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 	}
 	c, err := New(
 		set,
-		k8sconfig.APIConfig{},
 		ExtractionRules{},
 		f,
 		associations,
 		exclude,
-		newFakeAPIClientset,
-		NewFakeInformer,
-		NewFakeNamespaceInformer,
-		NewFakeReplicaSetInformer,
-		NewFakeNodeInformer,
+		NewFakeInformerProviders(),
 		false,
 		10*time.Second,
 	)
@@ -2066,14 +1974,17 @@ func TestWaitForMetadata(t *testing.T) {
 	}, {
 		name: "wait but never synced",
 		informerProvider: func(
-			client kubernetes.Interface,
 			namespace string,
 			labelSelector labels.Selector,
 			fieldSelector fields.Selector,
 			transformFunc cache.TransformFunc,
 			stopCh chan struct{},
-		) cache.SharedInformer {
-			return &neverSyncedFakeClient{NewFakeInformer(client, namespace, labelSelector, fieldSelector, transformFunc, stopCh)}
+		) (cache.SharedInformer, error) {
+			informer, err := NewFakeInformer(namespace, labelSelector, fieldSelector, transformFunc, stopCh)
+			if err != nil {
+				return nil, err
+			}
+			return &neverSyncedFakeClient{informer}, nil
 		},
 		err: true,
 	}}
@@ -2081,18 +1992,15 @@ func TestWaitForMetadata(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(
 			tc.name, func(t *testing.T) {
+				informerProviders := NewFakeInformerProviders()
+				informerProviders.PodInformerProvider = tc.informerProvider
 				c, err := New(
 					componenttest.NewNopTelemetrySettings(),
-					k8sconfig.APIConfig{},
 					ExtractionRules{},
 					Filters{},
 					[]Association{},
 					Excludes{},
-					newFakeAPIClientset,
-					tc.informerProvider,
-					nil,
-					nil,
-					nil,
+					informerProviders,
 					true,
 					1*time.Second,
 				)

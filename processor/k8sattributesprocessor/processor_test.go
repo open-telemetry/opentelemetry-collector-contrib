@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -47,7 +49,7 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 
 func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
 	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+	opts = append(opts, withKubeClientProvider(newFakeClient), withAPIClientsetProvider(newFakeClientset))
 	set := processortest.NewNopSettings()
 	return createTracesProcessorWithOptions(
 		context.Background(),
@@ -60,7 +62,7 @@ func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...o
 
 func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (processor.Metrics, error) {
 	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+	opts = append(opts, withKubeClientProvider(newFakeClient), withAPIClientsetProvider(newFakeClientset))
 	set := processortest.NewNopSettings()
 	return createMetricsProcessorWithOptions(
 		context.Background(),
@@ -73,7 +75,7 @@ func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metr
 
 func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (processor.Logs, error) {
 	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+	opts = append(opts, withKubeClientProvider(newFakeClient), withAPIClientsetProvider(newFakeClientset))
 	set := processortest.NewNopSettings()
 	return createLogsProcessorWithOptions(
 		context.Background(),
@@ -86,7 +88,7 @@ func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, opti
 
 func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.Profiles, options ...option) (xprocessor.Profiles, error) {
 	opts := options
-	opts = append(opts, withKubeClientProvider(newFakeClient))
+	opts = append(opts, withKubeClientProvider(newFakeClient), withAPIClientsetProvider(newFakeClientset))
 	set := processortest.NewNopSettings()
 	return createProfilesProcessorWithOptions(
 		context.Background(),
@@ -95,6 +97,18 @@ func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.P
 		nextProfilesConsumer,
 		opts...,
 	)
+}
+
+func newFakeClientset(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+	return fake.NewClientset(), nil
+}
+
+// withAPIClientsetProvider provides a factory method for creating the K8s clientset.
+func withAPIClientsetProvider(provider kube.APIClientsetProvider) option {
+	return func(p *kubernetesprocessor) error {
+		p.k8sClientProvider = provider
+		return nil
+	}
 }
 
 // withKubeClientProvider sets the specific implementation for getting K8s Client instances
@@ -138,6 +152,11 @@ func newMultiTest(
 	errFunc func(err error),
 	options ...option,
 ) *multiTest {
+	if errFunc == nil {
+		errFunc = func(err error) {
+			require.NoError(t, err)
+		}
+	}
 	m := &multiTest{
 		t:            t,
 		nextTrace:    new(consumertest.TracesSink),
@@ -263,22 +282,17 @@ func (m *multiTest) assertResource(batchNum int, resourceFunc func(res pcommon.R
 func TestNewProcessor(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
 
-	newMultiTest(t, cfg, nil, withKubeClientProvider(newFakeClient))
+	newMultiTest(t, cfg, nil, withAPIClientsetProvider(newFakeClientset))
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
 	clientProvider := func(
 		_ component.TelemetrySettings,
-		_ k8sconfig.APIConfig,
 		_ kube.ExtractionRules,
 		_ kube.Filters,
 		_ []kube.Association,
 		_ kube.Excludes,
-		_ kube.APIClientsetProvider,
-		_ kube.InformerProvider,
-		_ kube.InformerProviderNamespace,
-		_ kube.InformerProviderReplicaSet,
-		_ kube.InformerProviderNode,
+		_ *kube.InformerProviders,
 		_ bool, _ time.Duration,
 	) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
