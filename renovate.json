@@ -108,6 +108,10 @@
           "https://github.com/open-telemetry/opentelemetry-go-contrib"
         ],
         "groupName": "All opentelemetry-go-contrib packages"
+      },
+      {
+        "matchPackageNames": ["google.golang.org/grpc"],
+        "allowedVersions": "!/v1.68.0$/"
       }
     ],
     "ignoreDeps": [
