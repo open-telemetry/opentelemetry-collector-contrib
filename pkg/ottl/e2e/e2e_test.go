@@ -601,6 +601,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], NetworkDirection("192.168.1.1", "192.168.1.2", ["private"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "internal")
+			},
+		},
+		{
 			statement: `set(attributes["test"], "pass") where Now() - Now() < Duration("1h")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
