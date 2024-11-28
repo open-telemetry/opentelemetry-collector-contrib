@@ -10,6 +10,6 @@ The following telemetry is emitted by this component.
 
 Number of log records that were dropped per rate_limit_fields fields cardinality
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {records} | Histogram | Int |
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |

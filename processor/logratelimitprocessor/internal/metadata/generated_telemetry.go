@@ -4,6 +4,7 @@ package metadata
 
 import (
 	"errors"
+	"go.opentelemetry.io/otel/metric/noop"
 
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -24,7 +25,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                         metric.Meter
-	RatelimitProcessorDroppedLogs metric.Int64Histogram
+	RatelimitProcessorDroppedLogs metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -47,7 +48,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.RatelimitProcessorDroppedLogs, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
+	builder.RatelimitProcessorDroppedLogs, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
 		"otelcol_ratelimit_processor_dropped_logs",
 		metric.WithDescription("Number of log records that were dropped per rate_limit_fields fields cardinality"),
 		metric.WithUnit("{records}"),

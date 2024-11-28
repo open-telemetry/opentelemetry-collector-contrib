@@ -9,11 +9,6 @@ status:
   codeowners:
     active: [anuraj381]
 
-attributes:
-  rate_limit_fields:
-    description: the rate_limit_fields values appended on which rate-limit is applied
-    type: string
-
 tests:
   config:
 
@@ -23,6 +18,6 @@ telemetry:
       description: Number of log records that were dropped per rate_limit_fields fields cardinality
       unit: "{records}"
       enabled: true
-      histogram:
+      sum:
         value_type: int
-      attributes: [rate_limit_fields]
+        monotonic: true
