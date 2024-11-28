@@ -169,7 +169,7 @@ func isPublicNetwork(addr net.IP) bool {
 		return false
 	}
 
-	return false
+	return true
 }
 
 func isInRange(addr net.IP, networks ...string) (bool, error) {
