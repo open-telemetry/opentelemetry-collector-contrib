@@ -33,6 +33,7 @@ type kubernetesprocessor struct {
 	telemetrySettings      component.TelemetrySettings
 	logger                 *zap.Logger
 	apiConfig              k8sconfig.APIConfig
+	k8sClientProvider      kube.APIClientsetProvider
 	kcProvider             kube.ClientProvider
 	informerProviders      *kube.InformerProviders
 	kc                     kube.Client
@@ -47,21 +48,20 @@ type kubernetesprocessor struct {
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
 	if kp.informerProviders == nil {
-		kp.informerProviders = &kube.InformerProviders{}
+		k8sClient, err := kp.k8sClientProvider(kp.apiConfig)
+		if err != nil {
+			return err
+		}
+		kp.informerProviders = kube.NewDefaultInformerProviders(k8sClient)
 	}
 	if !kp.passthroughMode {
 		kc, err := kubeClient(
 			set,
-			kp.apiConfig,
 			kp.rules,
 			kp.filters,
 			kp.podAssociations,
 			kp.podIgnore,
-			nil,
-			kp.informerProviders.PodInformerProvider,
-			kp.informerProviders.NamespaceInformerProvider,
-			kp.informerProviders.ReplicaSetInformerProvider,
-			kp.informerProviders.NodeInformerProvider,
+			kp.informerProviders,
 			kp.waitForMetadata,
 			kp.waitForMetadataTimeout,
 		)
@@ -74,6 +74,10 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
+	if kp.k8sClientProvider == nil {
+		kp.k8sClientProvider = k8sconfig.MakeClient
+	}
+
 	if kp.kcProvider == nil {
 		kp.kcProvider = kube.New
 	}

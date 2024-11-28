@@ -9,10 +9,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
@@ -39,32 +37,41 @@ func selectors() (labels.Selector, fields.Selector) {
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
 func newFakeClient(
 	_ component.TelemetrySettings,
-	_ k8sconfig.APIConfig,
 	rules kube.ExtractionRules,
 	filters kube.Filters,
 	associations []kube.Association,
 	_ kube.Excludes,
-	_ kube.APIClientsetProvider,
-	_ kube.InformerProvider,
-	_ kube.InformerProviderNamespace,
-	_ kube.InformerProviderReplicaSet,
-	_ kube.InformerProviderNode,
+	_ *kube.InformerProviders,
 	_ bool,
 	_ time.Duration,
 ) (kube.Client, error) {
-	cs := fake.NewSimpleClientset()
-
 	ls, fs := selectors()
 	closeCh := make(chan struct{})
+	informer, err := kube.NewFakeInformer("", ls, fs, nil, closeCh)
+	if err != nil {
+		return nil, err
+	}
+	nsInformer, err := kube.NewFakeInformer("", ls, fs, nil, closeCh)
+	if err != nil {
+		return nil, err
+	}
+	nodeInformer, err := kube.NewFakeInformer("", ls, fs, nil, closeCh)
+	if err != nil {
+		return nil, err
+	}
+	rsInformer, err := kube.NewFakeInformer("", ls, fs, nil, closeCh)
+	if err != nil {
+		return nil, err
+	}
 	return &fakeClient{
 		Pods:               map[kube.PodIdentifier]*kube.Pod{},
 		Rules:              rules,
 		Filters:            filters,
 		Associations:       associations,
-		Informer:           kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
-		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
-		NodeInformer:       kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
-		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs, nil, closeCh),
+		Informer:           informer,
+		NamespaceInformer:  nsInformer,
+		NodeInformer:       nodeInformer,
+		ReplicaSetInformer: rsInformer,
 		StopCh:             make(chan struct{}),
 	}, nil
 }

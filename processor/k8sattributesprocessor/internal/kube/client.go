@@ -23,10 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
@@ -43,7 +41,6 @@ type WatchClient struct {
 	m                             sync.RWMutex
 	deleteMut                     sync.Mutex
 	logger                        *zap.Logger
-	kc                            kubernetes.Interface
 	informer                      cache.SharedInformer
 	podHandlerRegistration        cache.ResourceEventHandlerRegistration
 	namespaceInformer             cache.SharedInformer
@@ -93,16 +90,11 @@ var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 // New initializes a new k8s Client.
 func New(
 	set component.TelemetrySettings,
-	apiCfg k8sconfig.APIConfig,
 	rules ExtractionRules,
 	filters Filters,
 	associations []Association,
 	exclude Excludes,
-	newClientSet APIClientsetProvider,
-	newInformer InformerProvider,
-	newNamespaceInformer InformerProviderNamespace,
-	newReplicaSetInformer InformerProviderReplicaSet,
-	newNodeInformer InformerProviderNode,
+	informerProviders *InformerProviders,
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 ) (Client, error) {
@@ -129,15 +121,6 @@ func New(
 	c.Namespaces = map[string]*Namespace{}
 	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
-	if newClientSet == nil {
-		newClientSet = k8sconfig.MakeClient
-	}
-
-	kc, err := newClientSet(apiCfg)
-	if err != nil {
-		return nil, err
-	}
-	c.kc = kc
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -148,24 +131,6 @@ func New(
 		zap.String("labelSelector", labelSelector.String()),
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
-	if newInformer == nil {
-		newInformer = newSharedInformer
-	}
-
-	if newNamespaceInformer == nil {
-		switch {
-		case c.extractNamespaceLabelsAnnotations():
-			// if rules to extract metadata from namespace is configured use namespace shared informer containing
-			// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
-			newNamespaceInformer = newNamespaceSharedInformer
-		case rules.ClusterUID:
-			// use kube-system shared informer to only watch kube-system namespace
-			// reducing overhead of watching all the namespaces
-			newNamespaceInformer = newKubeSystemSharedInformer
-		default:
-			newNamespaceInformer = NewNoOpInformer
-		}
-	}
 
 	podTransformFunc := func(object any) (any, error) {
 		originalPod, success := object.(*api_v1.Pod)
@@ -175,14 +140,31 @@ func New(
 
 		return removeUnnecessaryPodData(originalPod, c.Rules), nil
 	}
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector, podTransformFunc, c.stopCh)
+	c.informer, err = informerProviders.PodInformerProvider(
+		c.Filters.Namespace,
+		labelSelector,
+		fieldSelector,
+		podTransformFunc,
+		c.stopCh,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-	c.namespaceInformer = newNamespaceInformer(c.kc, c.stopCh)
+	// if rules to extract metadata from namespace is configured use namespace shared informer containing
+	// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
+	if rules.extractNamespaceLabelsAnnotations() || rules.ClusterUID {
+		fs := fields.Everything()
+		if !rules.extractNamespaceLabelsAnnotations() {
+			fs = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace)
+		}
+		c.namespaceInformer, err = informerProviders.NamespaceInformerProvider(fs, c.stopCh)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if rules.DeploymentName || rules.DeploymentUID {
-		if newReplicaSetInformer == nil {
-			newReplicaSetInformer = newReplicaSetSharedInformer
-		}
 		transformFunc := func(object any) (any, error) {
 			originalReplicaset, success := object.(*apps_v1.ReplicaSet)
 			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
@@ -191,19 +173,21 @@ func New(
 
 			return removeUnnecessaryReplicaSetData(originalReplicaset), nil
 		}
-		c.replicasetInformer = newReplicaSetInformer(
-			c.kc,
+		c.replicasetInformer, err = informerProviders.ReplicaSetInformerProvider(
 			c.Filters.Namespace,
 			transformFunc,
 			c.stopCh,
 		)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		if newNodeInformer == nil {
-			newNodeInformer = newNodeSharedInformer
+		c.nodeInformer, err = informerProviders.NodeInformerProvider(c.Filters.Node, 5*time.Minute, c.stopCh)
+		if err != nil {
+			return nil, err
 		}
-		c.nodeInformer = newNodeInformer(c.kc, c.Filters.Node, 5*time.Minute, c.stopCh)
 	}
 
 	return c, err
@@ -239,15 +223,17 @@ func (c *WatchClient) Start() error {
 	}
 	synced = append(synced, c.podHandlerRegistration.HasSynced)
 
-	c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
-	if err != nil {
-		return err
+	if c.namespaceInformer != nil {
+		c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleNamespaceAdd,
+			UpdateFunc: c.handleNamespaceUpdate,
+			DeleteFunc: c.handleNamespaceDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, c.namespaceHandlerRegistration.HasSynced)
 	}
-	synced = append(synced, c.namespaceHandlerRegistration.HasSynced)
 
 	if c.nodeInformer != nil {
 		c.nodeHandlerRegistration, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -1039,22 +1025,6 @@ func (c *WatchClient) addOrUpdateNamespace(namespace *api_v1.Namespace) {
 		c.Namespaces[namespace.Name] = newNamespace
 	}
 	c.m.Unlock()
-}
-
-func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
-	for _, r := range c.Rules.Labels {
-		if r.From == MetadataFromNamespace {
-			return true
-		}
-	}
-
-	for _, r := range c.Rules.Annotations {
-		if r.From == MetadataFromNamespace {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
