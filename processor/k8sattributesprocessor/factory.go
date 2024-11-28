@@ -16,12 +16,10 @@ import (
 	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 var (
-	kubeClientProvider   = kube.ClientProvider(nil)
 	consumerCapabilities = consumer.Capabilities{MutatesData: true}
 	defaultExcludes      = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
 )

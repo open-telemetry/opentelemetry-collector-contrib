@@ -101,7 +101,8 @@ func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.P
 // withKubeClientProvider sets the specific implementation for getting K8s Client instances
 func withKubeClientProvider(kcp kube.ClientProvider) option {
 	return func(p *kubernetesprocessor) error {
-		return p.initKubeClient(p.telemetrySettings, kcp)
+		p.kcProvider = kcp
+		return nil
 	}
 }
 
@@ -263,7 +264,7 @@ func (m *multiTest) assertResource(batchNum int, resourceFunc func(res pcommon.R
 func TestNewProcessor(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig()
 
-	newMultiTest(t, cfg, nil)
+	newMultiTest(t, cfg, nil, withKubeClientProvider(newFakeClient))
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
@@ -1609,7 +1610,6 @@ func TestRealClient(t *testing.T) {
 		func(err error) {
 			require.EqualError(t, err, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		},
-		withKubeClientProvider(kubeClientProvider),
 		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
 	)
 }
