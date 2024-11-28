@@ -16,8 +16,8 @@
 ## Details
 The logratelimit processor is useful in the situation where you are collecting logs from multiple services on every otel-collector pod and there 
 are one or many services which are logging too many logs such that it increases noise in the entire pipeline and storage (otel backend). So to control 
-the log noise/surge from any service/namespace/pod etc. you can use the rate-limit processor, you can give the fields on which you want and add config for 
-allowed rate and interval.<br>
+the log noise/surge from any service/namespace/pod etc. you can use the rate-limit processor, you can give the fields on which you want to limit logs 
+and add config for allowed rate and interval.<br>
 The processor caches the count of logs in the given interval for each combination of given rate_limit_fields and once logs count starts to exceed the count 
 the processor will start dropping the logs till the interval finish in the best effort way. There are no mutex/locks involved, only one atomic counter is used 
 to keep rate-limiter lightweight / easy on resources.
@@ -38,8 +38,8 @@ Before using this processor you should have a rough idea on how many logs lines 
 on the opentelemetry-collector pods as you need to add a config for allowed_rate, this might be difficult to calculate in case of a daemonset deployment of 
 the collector as how many pods of any service will be there on a Kubernetes node is not fixed (generally) so you might get high logs a combination of rate_limit_fields 
 on one collector pod and maybe low number on other, this will disturb your calculation of allowed_rate, you might false drop logs. Ideally if you have a daemonset deployment 
-strategy for collector then maybe add one more deployment (not daemonset, but k8s deployment) of collector and there you can have fair idea of allowed_rate and 
-configure accordingly.
+strategy for collector then next to that in pipeline maybe add one more deployment (not daemonset, but k8s deployment) of collector and there you can have fair idea of 
+allowed_rate and configure accordingly.
 
 ### Example Config
 The following config is an example configuration for the logratelimit processor. It is configured with an allowed_rate of 30000 in an interval of `60 seconds` for each combination of mentioned rate_limit_fields array.
@@ -57,6 +57,7 @@ processors:
         interval: 60s
         rate_limit_fields: 
           - attributes.service\.name
+          - resource.k8s\.container\.name
 
 exporters:
     kafka:

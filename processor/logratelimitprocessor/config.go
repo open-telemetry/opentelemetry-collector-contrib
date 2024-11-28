@@ -14,8 +14,10 @@ import (
 
 // Config defaults
 const (
+	// defaultAllowedLogRate is default allowed logs per configured interval
 	defaultAllowedLogRate = 30000
 
+	// defaultInterval is default time interval for applying rate-limit after allowed logs
 	defaultInterval = 60 * time.Second
 
 	// bodyField is the name of the body field
@@ -70,7 +72,7 @@ func (c Config) validateRateLimitFields() error {
 	knownExcludeFields := make(map[string]struct{})
 
 	for _, field := range c.RateLimitFields {
-		// Split and ensure the field starts with `body` or `attributes`
+		// Split and ensure the field starts with `body` or `attributes` or resource
 		parts := strings.Split(field, fieldDelimiter)
 		if parts[0] != bodyField && parts[0] != attributeField && parts[0] != resourceField {
 			return fmt.Errorf("an ratelimit field must start with %s or %s or %s", bodyField, attributeField, resourceField)

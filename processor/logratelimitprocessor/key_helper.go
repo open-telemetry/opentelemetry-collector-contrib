@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	// fieldDelimiter is the delimiter used to split a field key into its parts.
+	// fieldDelimiter is the delimiter used to split a field key into its parts
 	fieldDelimiter = "."
 
-	// fieldEscapeKeyReplacement is the string used to temporarily replace escaped delimters while splitting a field key.
+	// fieldEscapeKeyReplacement is the string used to temporarily replace escaped delimiters while splitting a field key
 	fieldEscapeKeyReplacement = "{TEMP_REPLACE}"
 )
 
@@ -49,7 +49,8 @@ func newKeyHelper(rateLimiterFields []string, lggr *zap.Logger) *keyHelper {
 	return fe
 }
 
-// GenerateKey removes any body or attribute fields that match in the log record
+// GenerateKey generates a key with the combination of values of configured rate_limit_fields
+// returns a hash of the key and also a concatenated string key as well
 func (fe *keyHelper) GenerateKey(logRecord plog.LogRecord, resource pcommon.Resource) (uint64, string) {
 	fieldValueArray := make([]pdatautil.HashOption, 0, len(fe.fields))
 	var stringBuilder strings.Builder
@@ -61,7 +62,7 @@ func (fe *keyHelper) GenerateKey(logRecord plog.LogRecord, resource pcommon.Reso
 	return pdatautil.Hash64(fieldValueArray...), stringBuilder.String()
 }
 
-// getFieldValue gets the field value for the given log
+// getFieldValue gets the field value from the given log record
 func (f *field) getFieldValue(logRecord plog.LogRecord, resource pcommon.Resource) pcommon.Value {
 	firstPart, remainingParts := f.keyParts[0], f.keyParts[1:]
 
@@ -77,7 +78,7 @@ func (f *field) getFieldValue(logRecord plog.LogRecord, resource pcommon.Resourc
 			return res
 		}
 
-		// If body is a map then recurse through to remove the field
+		// If body is a map then recurse through to get value for the field
 		return getFieldValueFromMap(logRecord.Body().Map(), remainingParts)
 
 	case attributeField:
@@ -89,7 +90,7 @@ func (f *field) getFieldValue(logRecord plog.LogRecord, resource pcommon.Resourc
 			return res
 		}
 
-		// Recurse through map and remove fields
+		// Recurse through attributes map and get the value of the field
 		return getFieldValueFromMap(logRecord.Attributes(), remainingParts)
 
 	case resourceField:
@@ -101,7 +102,7 @@ func (f *field) getFieldValue(logRecord plog.LogRecord, resource pcommon.Resourc
 			return res
 		}
 
-		// Recurse through the map and remove fields
+		// Recurse through resource attributes map and get the value of the field
 		return getFieldValueFromMap(resource.Attributes(), remainingParts)
 	}
 
@@ -113,13 +114,13 @@ func getFieldValueFromMap(valueMap pcommon.Map, keyParts []string) pcommon.Value
 	nextKeyPart, remainingParts := keyParts[0], keyParts[1:]
 
 	// Look for the value associated with the next key part.
-	// If we don't find it then return
+	// If we don't find it then return empty value
 	value, ok := valueMap.Get(nextKeyPart)
 	if !ok {
 		return pcommon.NewValueEmpty()
 	}
 
-	// No more key parts that means we have found the value and remove it
+	// No more key parts that means we have found the value
 	if len(remainingParts) == 0 {
 		return value
 	}

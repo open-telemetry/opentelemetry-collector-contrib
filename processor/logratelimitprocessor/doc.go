@@ -3,6 +3,6 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package logratelimitprocessor implements a processor for filtering
-// (dropping) metrics and/or spans by various properties.
+// Package logratelimitprocessor implements a processor for rate-limiting logs based
+// on a set of configurable log fields
 package logratelimitprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/logratelimitprocessor"

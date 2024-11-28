@@ -29,6 +29,7 @@ type logratelimitprocessor struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
+// newProcessor creates a logratelimit processor
 func newProcessor(cfg *Config, nextConsumer consumer.Logs, settings processor.Settings) (*logratelimitprocessor, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
 	if err != nil {
