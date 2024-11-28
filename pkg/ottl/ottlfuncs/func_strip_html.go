@@ -12,24 +12,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type HTMLStripArguments[K any] struct {
+type StripHTMLArguments[K any] struct {
 	HTMLSource ottl.StringGetter[K]
 }
 
-func NewHTMLStripFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("HTMLStrip", &HTMLStripArguments[K]{}, createHTMLStripFunction[K])
+func NewStripHTMLFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("StripHTML", &StripHTMLArguments[K]{}, createStripHTMLFunction[K])
 }
 
-func createHTMLStripFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*HTMLStripArguments[K])
+func createStripHTMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*StripHTMLArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("NewHTMLStripFactory args must be of type *HTMLStripArguments[K]")
+		return nil, fmt.Errorf("NewStripHTMLFactory args must be of type *StripHTMLArguments[K]")
 	}
 
-	return htmlStrip(args.HTMLSource), nil
+	return stripHTML(args.HTMLSource), nil
 }
 
-func htmlStrip[K any](rawString ottl.StringGetter[K]) ottl.ExprFunc[K] {
+func stripHTML[K any](rawString ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		htmlString, err := rawString.Get(ctx, tCtx)
 		if err != nil {
@@ -40,7 +40,7 @@ func htmlStrip[K any](rawString ottl.StringGetter[K]) ottl.ExprFunc[K] {
 			return "", nil
 		}
 
-		b := bluemonday.StripTagsPolicy()
+		b := bluemonday.StrictPolicy()
 		return b.Sanitize(htmlString), nil
 	}
 }

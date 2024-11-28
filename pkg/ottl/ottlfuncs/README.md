@@ -426,7 +426,6 @@ Available Converters:
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
-- [HTMLStrip](#htmlstrip)
 - [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
@@ -462,6 +461,7 @@ Available Converters:
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
+- [StripHTML](#striphtml)
 - [Substring](#substring)
 - [Time](#time)
 - [ToKeyValueString](#tokeyvaluestring)
@@ -890,24 +890,6 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
-
-### HTMLStrip
-
-`HTMLStrip(value)`
-
-The `HTMLStrip` Converter removes all HTML tags from the given input and returns only the plain text content.
-
-`value` is a `string`. If `value` is another type, an error is returned.
-
-The returned type is `string`.
-
-Examples:
-
-- `HTMLStrip("<b>Bold Text</b>")` returns `"Bold Text"`
-- `HTMLStrip("<div><p>Paragraph</p><br>Line break</div>")` returns `"ParagraphLine break"`
-- `HTMLStrip("<img src='image.jpg' alt='An image'>")` returns `""`
-- `HTMLStrip("Plain text without tags")` returns `"Plain text without tags"`
-- `HTMLStrip(body)`
 
 
 ### InsertXML
@@ -1830,6 +1812,24 @@ Examples:
 - `String(span_id)`
 - `String([1,2,3])`
 - `String(false)`
+
+### StripHTML
+
+`StripHTML(value)`
+
+The `StripHTML` Converter removes all HTML tags from the given input and returns only the plain text content. Malformed inputs results in empty string.
+
+`value` is a `string`. If `value` is another type, an error is returned.
+
+The returned type is `string`.
+
+Examples:
+
+- `StripHTML("<b>Bold Text</b>")` returns `"Bold Text"`
+- `StripHTML("<div><p>Paragraph</p><br>Line break</div>")` returns `"ParagraphLine break"`
+- `StripHTML("<img src='image.jpg' alt='An image'>")` returns `""`
+- `StripHTML("Plain text without tags")` returns `"Plain text without tags"`
+- `StripHTML(body)`
 
 ### Substring
 

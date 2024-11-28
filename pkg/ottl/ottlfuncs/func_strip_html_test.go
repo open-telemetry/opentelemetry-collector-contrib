@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func TestHTMLStrip(t *testing.T) {
+func TestStripHTML(t *testing.T) {
 	type testCase struct {
 		name          string
 		value         any
@@ -82,7 +82,7 @@ func TestHTMLStrip(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			expressionFunc, err := createHTMLStripFunction[any](ottl.FunctionContext{}, &HTMLStripArguments[any]{
+			expressionFunc, err := createStripHTMLFunction[any](ottl.FunctionContext{}, &StripHTMLArguments[any]{
 				HTMLSource: &ottl.StandardStringGetter[any]{
 					Getter: func(context.Context, any) (any, error) {
 						return tt.value, nil

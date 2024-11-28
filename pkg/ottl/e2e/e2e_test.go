@@ -523,18 +523,6 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], HTMLStrip("<div><p>Nested <strong>text</strong></p></div>"))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "Nested text")
-			},
-		},
-		{
-			statement: `set(attributes["test"], HTMLStrip("Text without tags"))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "Text without tags")
-			},
-		},
-		{
 			statement: `set(attributes["test"], "pass") where IsBool(false)`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
@@ -853,6 +841,18 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], String(true))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "true")
+			},
+		},
+		{
+			statement: `set(attributes["test"], StripHTML("<div><p>Nested <strong>text</strong></p></div>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "Nested text")
+			},
+		},
+		{
+			statement: `set(attributes["test"], StripHTML("Text without tags"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "Text without tags")
 			},
 		},
 		{
