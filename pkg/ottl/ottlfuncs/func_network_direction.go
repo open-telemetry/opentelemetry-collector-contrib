@@ -13,22 +13,22 @@ import (
 
 const (
 	// direction
-	DIRECTION_INTERNAL = "internal"
-	DIRECTION_EXTERNAL = "external"
-	DIRECTION_INBOUND  = "inbound"
-	DIRECTION_OUTBOUND = "outbound"
+	directionInternal = "internal"
+	directionExternal = "external"
+	directionInbound  = "inbound"
+	directionOutbound = "outbound"
 
 	// netwroks
-	LOOPBACK_NAMED_NETWORK             = "loopback"
-	GLOBAL_UNICAST_NAMED_NETWORK       = "global_unicast"
-	UNICAST_NAMED_NETWORK              = "unicast"
-	LINK_LOCAL_UNICAST_NAMED_NETWORK   = "link_local_unicast"
-	INTERFACE_LOCAL_NAMED_NETWORK      = "interface_local_multicast"
-	LINK_LOCAL_MULTICAST_NAMED_NETWORK = "link_local_multicast"
-	MULTICAST_NAMED_NETWORK            = "multicast"
-	UNSPECIFIED_NAMED_NETWORK          = "unspecified"
-	PRIVATE_NAMED_NETWORK              = "private"
-	PUBLIC_NAMED_NETWORK               = "public"
+	loopbackNamedNetwork           = "loopback"
+	globalUnicastNamedNetwork      = "global_unicast"
+	unicastNamedNetwork            = "unicast"
+	linkLocalUnicastNamedNetwork   = "link_local_unicast"
+	interfaceLocalNamedNetwork     = "interface_local_multicast"
+	linkLocalMulticastNamedNetwork = "link_local_multicast"
+	multicastNamedNetwork          = "multicast"
+	unspecifiedNamedNetwork        = "unspecified"
+	privateNamedNetwork            = "private"
+	publicNamedNetwork             = "public"
 )
 
 type NetworkDirectionArguments[K any] struct {
@@ -100,15 +100,15 @@ func networkDirection[K any](sourceIP ottl.StringGetter[K], destinationIP ottl.S
 		}
 
 		if sourceInternal && destinationInternal {
-			return DIRECTION_INTERNAL, nil
+			return directionInternal, nil
 		}
 		if sourceInternal {
-			return DIRECTION_OUTBOUND, nil
+			return directionOutbound, nil
 		}
 		if destinationInternal {
-			return DIRECTION_INBOUND, nil
+			return directionInbound, nil
 		}
-		return DIRECTION_EXTERNAL, nil
+		return directionExternal, nil
 	}
 }
 
@@ -128,23 +128,23 @@ func isInternalIP(addr net.IP, networks []string) (bool, error) {
 
 func isIPInNetwork(addr net.IP, network string) (bool, error) {
 	switch network {
-	case LOOPBACK_NAMED_NETWORK:
+	case loopbackNamedNetwork:
 		return addr.IsLoopback(), nil
-	case GLOBAL_UNICAST_NAMED_NETWORK:
+	case globalUnicastNamedNetwork:
 		return addr.IsGlobalUnicast(), nil
-	case LINK_LOCAL_UNICAST_NAMED_NETWORK:
+	case linkLocalUnicastNamedNetwork:
 		return addr.IsLinkLocalUnicast(), nil
-	case LINK_LOCAL_MULTICAST_NAMED_NETWORK:
+	case linkLocalMulticastNamedNetwork:
 		return addr.IsLinkLocalMulticast(), nil
-	case INTERFACE_LOCAL_NAMED_NETWORK:
+	case interfaceLocalNamedNetwork:
 		return addr.IsInterfaceLocalMulticast(), nil
-	case MULTICAST_NAMED_NETWORK:
+	case multicastNamedNetwork:
 		return addr.IsMulticast(), nil
-	case PRIVATE_NAMED_NETWORK:
+	case privateNamedNetwork:
 		return isPrivateNetwork(addr), nil
-	case PUBLIC_NAMED_NETWORK:
+	case publicNamedNetwork:
 		return isPublicNetwork(addr), nil
-	case UNSPECIFIED_NAMED_NETWORK:
+	case unspecifiedNamedNetwork:
 		return addr.IsUnspecified(), nil
 
 	}
