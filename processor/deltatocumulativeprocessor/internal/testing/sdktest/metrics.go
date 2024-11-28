@@ -123,14 +123,3 @@ func (attr attributes) Into() attribute.Set {
 //
 // Temporality is optional and defaults to [sdk.CumulativeTemporality]
 type Format = []byte
-
-func Expect(metrics map[string]Metric) Spec {
-	for name, m := range metrics {
-		m.Name = name
-		if m.Temporality == 0 {
-			m.Temporality = sdk.CumulativeTemporality
-		}
-		metrics[name] = m
-	}
-	return metrics
-}
