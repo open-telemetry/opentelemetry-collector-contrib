@@ -12,7 +12,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
-func NewAdjustedCountFactory[K any]() ottl.Factory[ottlspan.TransformContext] {
+func NewAdjustedCountFactory() ottl.Factory[ottlspan.TransformContext] {
 	return ottl.NewFactory("AdjustedCount", nil, createAdjustedCountFunction)
 }
 
