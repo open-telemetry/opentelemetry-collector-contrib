@@ -998,3 +998,29 @@ func sliceHash(h hash.Hash, s pcommon.Slice) {
 		valueHash(h, s.At(i))
 	}
 }
+
+// convertGeolocationToGeopoint mutates attributes map to merge `geo.location.lat` and `geo.location.lon` to `geo.location`.
+func convertGeolocationToGeopoint(attributes pcommon.Map) {
+	const (
+		lonKey    = "geo.location.lon"
+		latKey    = "geo.location.lat"
+		mergedKey = "geo.location"
+	)
+	var lon, lat pcommon.Value
+	if v, ok := attributes.Get(lonKey); ok {
+		lon = v
+	}
+	if v, ok := attributes.Get(latKey); ok {
+		lat = v
+	}
+	if lon.Type() == pcommon.ValueTypeDouble && lat.Type() == pcommon.ValueTypeDouble {
+		attributes.PutStr(mergedKey, fmt.Sprintf("POINT(%f %f)", lon.Double(), lat.Double()))
+		attributes.RemoveIf(func(key string, val pcommon.Value) bool {
+			switch key {
+			case lonKey, latKey:
+				return true
+			}
+			return false
+		})
+	}
+}
