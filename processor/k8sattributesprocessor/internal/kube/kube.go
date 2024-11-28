@@ -98,16 +98,11 @@ type Client interface {
 // ClientProvider defines a func type that returns a new Client.
 type ClientProvider func(
 	component.TelemetrySettings,
-	k8sconfig.APIConfig,
 	ExtractionRules,
 	Filters,
 	[]Association,
 	Excludes,
-	APIClientsetProvider,
-	InformerProvider,
-	InformerProviderNamespace,
-	InformerProviderReplicaSet,
-	InformerProviderNode,
+	*InformerProviders,
 	bool, time.Duration,
 ) (Client, error)
 
@@ -258,6 +253,22 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
+	return false
+}
+
+func (rules *ExtractionRules) extractNamespaceLabelsAnnotations() bool {
+	for _, r := range rules.Labels {
+		if r.From == MetadataFromNamespace {
+			return true
+		}
+	}
+
+	for _, r := range rules.Annotations {
+		if r.From == MetadataFromNamespace {
+			return true
+		}
+	}
+
 	return false
 }
 
