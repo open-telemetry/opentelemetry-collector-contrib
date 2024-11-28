@@ -34,6 +34,7 @@ type kubernetesprocessor struct {
 	logger                 *zap.Logger
 	apiConfig              k8sconfig.APIConfig
 	kcProvider             kube.ClientProvider
+	informerProviders      *kube.InformerProviders
 	kc                     kube.Client
 	passthroughMode        bool
 	rules                  kube.ExtractionRules
@@ -45,8 +46,25 @@ type kubernetesprocessor struct {
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
+	if kp.informerProviders == nil {
+		kp.informerProviders = &kube.InformerProviders{}
+	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(
+			set,
+			kp.apiConfig,
+			kp.rules,
+			kp.filters,
+			kp.podAssociations,
+			kp.podIgnore,
+			nil,
+			kp.informerProviders.PodInformerProvider,
+			kp.informerProviders.NamespaceInformerProvider,
+			kp.informerProviders.ReplicaSetInformerProvider,
+			kp.informerProviders.NodeInformerProvider,
+			kp.waitForMetadata,
+			kp.waitForMetadataTimeout,
+		)
 		if err != nil {
 			return err
 		}
