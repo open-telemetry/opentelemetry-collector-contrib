@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -19,13 +20,20 @@ var (
 
 type startTimeMetricAdjuster struct {
 	startTimeMetricRegex *regexp.Regexp
+	fallbackStartTime    *time.Time
 	logger               *zap.Logger
 }
 
 // NewStartTimeMetricAdjuster returns a new MetricsAdjuster that adjust metrics' start times based on a start time metric.
-func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp) MetricsAdjuster {
+func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp.Regexp, useCollectorStartTimeFallback bool) MetricsAdjuster {
+	var fallbackStartTime *time.Time
+	if useCollectorStartTimeFallback {
+		now := time.Now()
+		fallbackStartTime = &now
+	}
 	return &startTimeMetricAdjuster{
 		startTimeMetricRegex: startTimeMetricRegex,
+		fallbackStartTime:    fallbackStartTime,
 		logger:               logger,
 	}
 }
@@ -33,7 +41,11 @@ func NewStartTimeMetricAdjuster(logger *zap.Logger, startTimeMetricRegex *regexp
 func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 	startTime, err := stma.getStartTime(metrics)
 	if err != nil {
-		return err
+		if stma.fallbackStartTime == nil {
+			return err
+		}
+		stma.logger.Warn("Couldn't get start time for metrics. Using fallback start time.", zap.Error(err))
+		startTime = float64(stma.fallbackStartTime.Unix())
 	}
 
 	startTimeTs := timestampFromFloat64(startTime)

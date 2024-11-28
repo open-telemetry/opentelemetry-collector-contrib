@@ -1424,7 +1424,7 @@ func TestStartTimeMetric(t *testing.T) {
 		},
 	}
 	testComponent(t, targets, func(c *Config) {
-		c.UseStartTimeMetric = true
+		c.AdjustOpts.UseStartTimeMetric = true
 	})
 }
 
@@ -1475,8 +1475,8 @@ func TestStartTimeMetricRegex(t *testing.T) {
 		},
 	}
 	testComponent(t, targets, func(c *Config) {
-		c.StartTimeMetricRegex = "^(.+_)*process_start_time_seconds$"
-		c.UseStartTimeMetric = true
+		c.AdjustOpts.StartTimeMetricRegex = "^(.+_)*process_start_time_seconds$"
+		c.AdjustOpts.UseStartTimeMetric = true
 	})
 }
 
