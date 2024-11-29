@@ -146,9 +146,7 @@ func isIPInNetwork(addr net.IP, network string) (bool, error) {
 		return isPublicNetwork(addr), nil
 	case unspecifiedNamedNetwork:
 		return addr.IsUnspecified(), nil
-
 	}
-
 	// cidr range
 	return isInRange(addr, network)
 }
