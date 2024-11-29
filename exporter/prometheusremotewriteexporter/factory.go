@@ -50,7 +50,7 @@ func createMetricsExporter(ctx context.Context, set exporter.Settings,
 	}
 
 	if !enableMultipleWorkersFeatureGate.IsEnabled() && prwCfg.RemoteWriteQueue.NumConsumers != 5 {
-		set.Logger.Warn("`remote_write_queue.num_consumers` is deprecated for controlling the single request parallelism. Please configure `max_batch_request_parallelism: X` for the same behavior.")
+		set.Logger.Warn("`remote_write_queue.num_consumers` will be used to configure processing parallelism, rather than request parallelism in a future release. This may cause out-of-order issues unless you take action. Please migrate to using `max_batch_request_parallelism` to keep the your existing behavior.")
 	}
 
 	prwe, err := newPRWExporter(prwCfg, set)
