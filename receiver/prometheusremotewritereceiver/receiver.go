@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
@@ -31,7 +32,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		settings:         settings,
 		nextConsumer:     nextConsumer,
 		config:           cfg,
-		jobInstanceCache: make(map[string]pmetric.ResourceMetrics),
+		jobInstanceCache: make(map[uint64]pmetric.ResourceMetrics),
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
@@ -42,7 +43,7 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	jobInstanceCache map[string]pmetric.ResourceMetrics
+	jobInstanceCache map[uint64]pmetric.ResourceMetrics
 	config           *Config
 	server           *http.Server
 }
@@ -158,26 +159,27 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 // nolint
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
-		badRequestErrors []error
+		badRequestErrors error
 		otelMetrics      = pmetric.NewMetrics()
-		b                = labels.NewScratchBuilder(0)
+		labelsBuilder    = labels.NewScratchBuilder(0)
 		stats            = promremote.WriteResponseStats{}
 	)
 
 	for _, ts := range req.Timeseries {
-		ls := ts.ToLabels(&b, req.Symbols)
+		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
 
 		if !ls.Has(labels.MetricName) {
-			badRequestErrors = append(badRequestErrors, fmt.Errorf("missing metric name in labels"))
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
-			badRequestErrors = append(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
 			continue
 		}
 
 		var rm pmetric.ResourceMetrics
 		// This cache should be populated by the metric 'target_info', but we're not handling it yet.
-		cacheEntry, ok := prw.jobInstanceCache[ls.Get("instance")+ls.Get("job")]
+		hashedJobAndInstance := xxhash.Sum64String(ls.Get("job") + ls.Get("instance"))
+		cacheEntry, ok := prw.jobInstanceCache[hashedJobAndInstance]
 		if ok {
 			rm = pmetric.NewResourceMetrics()
 			cacheEntry.CopyTo(rm)
@@ -186,8 +188,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			// While they are different timeseries in Prometheus, we're handling it as the same OTLP metric
 			// until we support 'target_info'.
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
-			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("instance"), ls.Get("job"))
-			prw.jobInstanceCache[ls.Get("instance")+ls.Get("job")] = rm
+			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
+			prw.jobInstanceCache[hashedJobAndInstance] = rm
 		}
 
 		switch ts.Metadata.Type {
@@ -200,27 +202,27 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 			addHistogramDatapoints(rm, ls, ts)
 		default:
-			badRequestErrors = append(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
 		}
 	}
 
-	return otelMetrics, stats, errors.Join(badRequestErrors...)
+	return otelMetrics, stats, badRequestErrors
 }
 
 // parseJobAndInstance turns the job and instance labels service resource attributes.
 // Following the specification at https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/
-func parseJobAndInstance(dest pcommon.Map, instance, job string) {
-	if job != "" {
-		dest.PutStr("service.namespace", job)
-	}
+func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	if instance != "" {
-		parts := strings.Split(instance, "/")
+		dest.PutStr("service.instance.id", instance)
+	}
+	if job != "" {
+		parts := strings.Split(job, "/")
 		if len(parts) == 2 {
-			dest.PutStr("service.name", parts[0])
-			dest.PutStr("service.instance.id", parts[1])
+			dest.PutStr("service.namespace", parts[0])
+			dest.PutStr("service.name", parts[1])
 			return
 		}
-		dest.PutStr("service.name", instance)
+		dest.PutStr("service.name", job)
 	}
 }
 
