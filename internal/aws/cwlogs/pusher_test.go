@@ -83,7 +83,9 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 	totalEvents := 10
 	logEventBatch := &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
-			LogEvents: make([]*cloudwatchlogs.InputLogEvent, 0, totalEvents)}}
+			LogEvents: make([]*cloudwatchlogs.InputLogEvent, 0, totalEvents),
+		},
+	}
 
 	for i := 0; i < totalEvents; i++ {
 		timestamp := rand.Int()
@@ -120,8 +122,10 @@ func newMockPusher() *logPusher {
 // pusher Tests
 //
 
-var timestampMs = time.Now().UnixNano() / 1e6
-var msg = "test log message"
+var (
+	timestampMs = time.Now().UnixNano() / 1e6
+	msg         = "test log message"
+)
 
 func TestPusher_newLogEventBatch(t *testing.T) {
 	p := newMockPusher()
@@ -172,7 +176,6 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 	p.logEventBatch.byteTotal = 1
 	assert.Nil(t, p.addLogEvent(nil))
 	assert.Len(t, p.logEventBatch.putLogEventsInput.LogEvents, 1)
-
 }
 
 func TestAddLogEventWithValidation(t *testing.T) {

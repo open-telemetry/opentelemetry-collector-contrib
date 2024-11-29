@@ -60,7 +60,6 @@ func TestConsumeMetrics(t *testing.T) {
 			processor.cs.closeAndRemove(idx)
 			wg.Wait()
 			assert.Equal(t, c.limit, receiveNum)
-
 		})
 	}
 }

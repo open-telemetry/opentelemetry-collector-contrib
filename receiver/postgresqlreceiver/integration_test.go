@@ -79,6 +79,13 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
+				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
+				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
+				rCfg.Metrics.PostgresqlTupFetched.Enabled = true
+				rCfg.Metrics.PostgresqlTupInserted.Enabled = true
+				rCfg.Metrics.PostgresqlTupDeleted.Enabled = true
+				rCfg.Metrics.PostgresqlBlksHit.Enabled = true
+				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
 				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
 				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 			}),
