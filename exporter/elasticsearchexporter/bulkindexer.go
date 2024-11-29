@@ -88,6 +88,7 @@ func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config
 	return &syncBulkIndexer{
 		config:       bulkIndexerConfig(client, config),
 		flushTimeout: config.Timeout,
+		flushBytes:   config.Flush.Bytes,
 		retryConfig:  config.Retry,
 		logger:       logger,
 	}
@@ -96,6 +97,7 @@ func newSyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config
 type syncBulkIndexer struct {
 	config       docappender.BulkIndexerConfig
 	flushTimeout time.Duration
+	flushBytes   int
 	retryConfig  RetrySettings
 	logger       *zap.Logger
 }
@@ -124,8 +126,17 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(_ context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string) error {
-	return s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document, DynamicTemplates: dynamicTemplates})
+func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, document io.WriterTo, dynamicTemplates map[string]string) error {
+	err := s.bi.Add(docappender.BulkIndexerItem{Index: index, Body: document, DynamicTemplates: dynamicTemplates})
+	if err != nil {
+		return err
+	}
+	// flush bytes should operate on uncompressed length
+	// as Elasticsearch http.max_content_length measures uncompressed length.
+	if s.bi.UncompressedLen() >= s.s.flushBytes {
+		return s.Flush(ctx)
+	}
+	return nil
 }
 
 // End is a no-op.
@@ -170,16 +181,6 @@ func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, confi
 		numWorkers = runtime.NumCPU()
 	}
 
-	flushInterval := config.Flush.Interval
-	if flushInterval == 0 {
-		flushInterval = 30 * time.Second
-	}
-
-	flushBytes := config.Flush.Bytes
-	if flushBytes == 0 {
-		flushBytes = 5e+6
-	}
-
 	pool := &asyncBulkIndexer{
 		wg:    sync.WaitGroup{},
 		items: make(chan docappender.BulkIndexerItem, config.NumWorkers),
@@ -195,9 +196,9 @@ func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, confi
 		w := asyncBulkIndexerWorker{
 			indexer:       bi,
 			items:         pool.items,
-			flushInterval: flushInterval,
+			flushInterval: config.Flush.Interval,
 			flushTimeout:  config.Timeout,
-			flushBytes:    flushBytes,
+			flushBytes:    config.Flush.Bytes,
 			logger:        logger,
 			stats:         &pool.stats,
 		}
@@ -298,8 +299,9 @@ func (w *asyncBulkIndexerWorker) run() {
 				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
 			}
 
-			// w.indexer.Len() can be either compressed or uncompressed bytes
-			if w.indexer.Len() >= w.flushBytes {
+			// flush bytes should operate on uncompressed length
+			// as Elasticsearch http.max_content_length measures uncompressed length.
+			if w.indexer.UncompressedLen() >= w.flushBytes {
 				w.flush()
 				flushTick.Reset(w.flushInterval)
 			}

@@ -30,9 +30,7 @@ const (
 	resourceArrayKey  = "array.key"
 )
 
-var (
-	testWriters = newWriterPool(2048)
-)
+var testWriters = newWriterPool(2048)
 
 func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
@@ -1544,7 +1542,7 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 	assert.Equal(t, "myRemoteService", segment.Annotations["aws_remote_service"])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
-	var numberOfMetadataKeys = 8
+	numberOfMetadataKeys := 8
 
 	if span.Kind() == ptrace.SpanKindServer {
 		numberOfMetadataKeys = 30

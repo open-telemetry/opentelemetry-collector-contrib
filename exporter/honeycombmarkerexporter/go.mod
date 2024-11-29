@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.114.0
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/config/confighttp v0.114.0
 	go.opentelemetry.io/collector/config/configopaque v1.20.0
