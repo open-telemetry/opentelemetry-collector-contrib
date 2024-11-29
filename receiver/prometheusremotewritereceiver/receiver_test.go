@@ -24,28 +24,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-var (
-	writeV2RequestFixture = &writev2.Request{
-		Symbols: []string{"", "__name__", "test_metric1", "job", "test", "instance", "service-x/107cn001", "d", "e", "foo", "bar", "f", "g", "h", "i", "Test gauge for test purposes", "Maybe op/sec who knows (:", "Test counter for test purposes"},
-		Timeseries: []writev2.TimeSeries{
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Symbolized writeRequestFixture.Timeseries[0].Labels
-				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
-			},
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Same series as first. Should use the same resource metrics.
-				Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
-			},
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{1, 2, 3, 9, 5, 10, 7, 8, 9, 10}, // This series has different label values for job and instance.
-				Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
-			},
+var writeV2RequestFixture = &writev2.Request{
+	Symbols: []string{"", "__name__", "test_metric1", "job", "test", "instance", "service-x/107cn001", "d", "e", "foo", "bar", "f", "g", "h", "i", "Test gauge for test purposes", "Maybe op/sec who knows (:", "Test counter for test purposes"},
+	Timeseries: []writev2.TimeSeries{
+		{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Symbolized writeRequestFixture.Timeseries[0].Labels
+			Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 		},
-	}
-)
+		{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, // Same series as first. Should use the same resource metrics.
+			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+		},
+		{
+			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+			LabelsRefs: []uint32{1, 2, 3, 9, 5, 10, 7, 8, 9, 10}, // This series has different label values for job and instance.
+			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+		},
+	},
+}
 
 func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	t.Helper()
