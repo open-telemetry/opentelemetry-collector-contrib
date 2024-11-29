@@ -13,6 +13,7 @@ import (
 	"hash/fnv"
 	"math"
 	"slices"
+	"strings"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
@@ -999,28 +1000,77 @@ func sliceHash(h hash.Hash, s pcommon.Slice) {
 	}
 }
 
-// convertGeolocationToGeopoint mutates attributes map to merge `geo.location.lat` and `geo.location.lon` to `geo.location`.
-func convertGeolocationToGeopoint(attributes pcommon.Map) {
+// mergeGeolocation mutates attributes map to merge all `geo.location.{lon,lat}`,
+// and namespaced `*.geo.location.{lon,lat}` to unnamespaced and namespaced `geo.location`.
+// This is to match the geo_point type in Elasticsearch.
+func mergeGeolocation(attributes pcommon.Map) {
 	const (
 		lonKey    = "geo.location.lon"
 		latKey    = "geo.location.lat"
 		mergedKey = "geo.location"
 	)
-	var lon, lat pcommon.Value
-	if v, ok := attributes.Get(lonKey); ok {
-		lon = v
+	// Prefix is the attribute name without lonKey or latKey suffix
+	// e.g. prefix of "foo.bar.geo.location.lon" is "foo.bar.", prefix of "geo.location.lon" is "".
+	prefixToGeo := make(map[string]struct {
+		lon, lat       float64
+		lonSet, latSet bool
+	})
+	setLon := func(prefix string, v float64) {
+		g := prefixToGeo[prefix]
+		g.lon = v
+		g.lonSet = true
+		prefixToGeo[prefix] = g
 	}
-	if v, ok := attributes.Get(latKey); ok {
-		lat = v
+	setLat := func(prefix string, v float64) {
+		g := prefixToGeo[prefix]
+		g.lat = v
+		g.latSet = true
+		prefixToGeo[prefix] = g
 	}
-	if lon.Type() == pcommon.ValueTypeDouble && lat.Type() == pcommon.ValueTypeDouble {
-		attributes.PutStr(mergedKey, fmt.Sprintf("POINT(%f %f)", lon.Double(), lat.Double()))
-		attributes.RemoveIf(func(key string, val pcommon.Value) bool {
-			switch key {
-			case lonKey, latKey:
-				return true
-			}
+	attributes.RemoveIf(func(key string, val pcommon.Value) bool {
+		if val.Type() != pcommon.ValueTypeDouble {
 			return false
-		})
+		}
+		v := val.Double()
+
+		if key == lonKey {
+			setLon("", v)
+			return true
+		} else if key == latKey {
+			setLat("", v)
+			return true
+		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
+			prefix := namespace + "."
+			setLon(prefix, v)
+			return true
+		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
+			prefix := namespace + "."
+			setLat(prefix, v)
+			return true
+		}
+
+		return false
+	})
+
+	for prefix, geo := range prefixToGeo {
+		if geo.lonSet && geo.latSet {
+			key := prefix + mergedKey
+			// Geopoint expressed as an array with the format: [lon, lat]
+			s := attributes.PutEmptySlice(key)
+			s.EnsureCapacity(2)
+			s.AppendEmpty().SetDouble(geo.lon)
+			s.AppendEmpty().SetDouble(geo.lat)
+			continue
+		}
+
+		// Place the attributes back if lon and lat are not present together
+		if geo.lonSet {
+			key := prefix + lonKey
+			attributes.PutDouble(key, geo.lon)
+		}
+		if geo.latSet {
+			key := prefix + latKey
+			attributes.PutDouble(key, geo.lat)
+		}
 	}
 }
