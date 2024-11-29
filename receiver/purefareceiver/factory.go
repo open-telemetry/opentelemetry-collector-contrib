@@ -30,7 +30,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ArrayName:    "foobar.example.com",
 		Namespace:    "purefa",
-    ClientConfig: confighttp.NewDefaultClientConfig(),
+		ClientConfig: confighttp.NewDefaultClientConfig(),
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
 				Array:       60 * time.Second,
