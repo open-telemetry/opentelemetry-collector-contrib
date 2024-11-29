@@ -600,7 +600,7 @@ func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resour
 		}
 		return false
 	})
-
+	mergeGeolocation(resourceAttrMap)
 	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
 }
 
@@ -626,6 +626,7 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 		}
 		return false
 	})
+	mergeGeolocation(scopeAttrMap)
 	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 }
 
@@ -645,6 +646,7 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 		}
 		return false
 	})
+	mergeGeolocation(attrsCopy)
 	document.AddAttributes("attributes", attrsCopy)
 }
 
