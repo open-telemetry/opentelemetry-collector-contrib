@@ -16,6 +16,43 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+func Test_DefaultInformerProviders(t *testing.T) {
+	client := fake.NewClientset()
+	labelSelector, fieldSelector, err := selectorsFromFilters(Filters{})
+	require.NoError(t, err)
+	providers := NewDefaultInformerProviders(client)
+	require.NotNil(t, providers)
+	closeCh := make(chan struct{})
+
+	podInformer, err := providers.PodInformerProvider("testns", labelSelector, fieldSelector, nil, closeCh)
+	assert.NoError(t, err)
+	assert.NotNil(t, podInformer)
+	assert.False(t, podInformer.IsStopped())
+
+	namespaceInformer, err := providers.NamespaceInformerProvider(fieldSelector, closeCh)
+	assert.NoError(t, err)
+	assert.NotNil(t, namespaceInformer)
+	assert.False(t, namespaceInformer.IsStopped())
+
+	replicasetInformer, err := providers.ReplicaSetInformerProvider("testns", nil, closeCh)
+	assert.NoError(t, err)
+	assert.NotNil(t, replicasetInformer)
+	assert.False(t, replicasetInformer.IsStopped())
+
+	nodeInformer, err := providers.NodeInformerProvider("testNode", time.Minute, closeCh)
+	assert.NoError(t, err)
+	assert.NotNil(t, nodeInformer)
+	assert.False(t, nodeInformer.IsStopped())
+
+	close(closeCh)
+	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+		assert.True(collect, podInformer.IsStopped())
+		assert.True(collect, namespaceInformer.IsStopped())
+		assert.True(collect, replicasetInformer.IsStopped())
+		assert.True(collect, nodeInformer.IsStopped())
+	}, time.Second*5, time.Millisecond)
+}
+
 func Test_newSharedInformer(t *testing.T) {
 	labelSelector, fieldSelector, err := selectorsFromFilters(Filters{})
 	require.NoError(t, err)
