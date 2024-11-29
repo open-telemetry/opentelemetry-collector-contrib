@@ -150,24 +150,144 @@ func TestBadFilters(t *testing.T) {
 	assert.Nil(t, c)
 }
 
-func TestClientStartStop(t *testing.T) {
-	c, _ := newTestClient(t)
-	ctr := c.informer.GetController()
-	require.IsType(t, &FakeController{}, ctr)
-	fctr := ctr.(*FakeController)
-	require.NotNil(t, fctr)
+func TestNewClientInformers(t *testing.T) {
+	testCases := []struct {
+		name               string
+		extractionRules    ExtractionRules
+		namespaceInformer  bool
+		replicaSetInformer bool
+		nodeInformer       bool
+	}{
+		{
+			name:            "default",
+			extractionRules: ExtractionRules{},
+		},
+		{
+			name: "namespace labels",
+			extractionRules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						From: MetadataFromNamespace,
+					},
+				},
+			},
+			namespaceInformer: true,
+		},
+		{
+			name: "namespace annotations",
+			extractionRules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						From: MetadataFromNamespace,
+					},
+				},
+			},
+			namespaceInformer: true,
+		},
+		{
+			name: "cluster id",
+			extractionRules: ExtractionRules{
+				ClusterUID: true,
+			},
+			namespaceInformer: true,
+		},
+		{
+			name: "deployment name",
+			extractionRules: ExtractionRules{
+				DeploymentName: true,
+			},
+			replicaSetInformer: true,
+		},
+		{
+			name: "deployment uid",
+			extractionRules: ExtractionRules{
+				DeploymentUID: true,
+			},
+			replicaSetInformer: true,
+		},
+		{
+			name: "deployment uid",
+			extractionRules: ExtractionRules{
+				DeploymentUID: true,
+			},
+			replicaSetInformer: true,
+		},
+		{
+			name: "node labels",
+			extractionRules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						From: MetadataFromNode,
+					},
+				},
+			},
+			nodeInformer: true,
+		},
+		{
+			name: "node annotations",
+			extractionRules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						From: MetadataFromNode,
+					},
+				},
+			},
+			nodeInformer: true,
+		},
+		{
+			name: "node uid",
+			extractionRules: ExtractionRules{
+				NodeUID: true,
+			},
+			nodeInformer: true,
+		},
+	}
 
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, _ := newTestClientWithRulesAndFilters(t, Filters{}, tc.extractionRules)
+			assert.NotNil(t, client)
+			assert.NotNil(t, client.informer)
+			assert.Equal(t, tc.namespaceInformer, client.namespaceInformer != nil)
+			assert.Equal(t, tc.replicaSetInformer, client.replicasetInformer != nil)
+			assert.Equal(t, tc.nodeInformer, client.nodeInformer != nil)
+		})
+	}
+}
+
+func TestClientStartStop(t *testing.T) {
+	rulesForAllInformers := ExtractionRules{
+		DeploymentName: true,
+		ClusterUID:     true,
+		NodeUID:        true,
+	}
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{}, rulesForAllInformers)
+	informers := []cache.SharedInformer{
+		c.informer, c.namespaceInformer, c.replicasetInformer, c.nodeInformer,
+	}
+	for _, informer := range informers {
+		ctr := informer.GetController()
+		require.IsType(t, &FakeController{}, ctr)
+		fctr := ctr.(*FakeController)
+		require.NotNil(t, fctr)
+	}
 	done := make(chan struct{})
-	assert.False(t, fctr.HasStopped())
 	go func() {
 		assert.NoError(t, c.Start())
 		close(done)
 	}()
-	c.Stop()
 	<-done
-	assert.EventuallyWithT(t, func(collect *assert.CollectT) {
-		assert.True(collect, fctr.HasStopped())
-	}, time.Second, time.Millisecond)
+	c.Stop()
+
+	for _, informer := range informers {
+		ctr := informer.GetController()
+		require.IsType(t, &FakeController{}, ctr)
+		fctr := ctr.(*FakeController)
+		require.NotNil(t, fctr)
+		assert.EventuallyWithT(t, func(collect *assert.CollectT) {
+			assert.True(collect, fctr.HasStopped())
+		}, time.Second, time.Millisecond)
+	}
 }
 
 func TestPodAdd(t *testing.T) {
@@ -591,7 +711,7 @@ func TestGetIgnoredPod(t *testing.T) {
 }
 
 func TestHandlerWrongType(t *testing.T) {
-	c, logs := newTestClientWithRulesAndFilters(t, Filters{})
+	c, logs := newTestClient(t)
 	assert.Equal(t, 0, logs.Len())
 	c.handlePodAdd(1)
 	c.handlePodDelete(1)
@@ -603,7 +723,7 @@ func TestHandlerWrongType(t *testing.T) {
 }
 
 func TestExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
@@ -959,7 +1079,7 @@ func TestExtractionRules(t *testing.T) {
 }
 
 func TestReplicaSetExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 	// Disable saving ip into k8s.pod.ip
 	c.Associations[0].Sources[0].Name = ""
 
@@ -1115,7 +1235,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 }
 
 func TestNamespaceExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 
 	namespace := &api_v1.Namespace{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -1211,7 +1331,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 }
 
 func TestNodeExtractionRules(t *testing.T) {
-	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	c, _ := newTestClient(t)
 
 	node := &api_v1.Node{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -1362,7 +1482,7 @@ func TestFilters(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c, _ := newTestClientWithRulesAndFilters(t, tc.filters)
+			c, _ := newTestClientWithRulesAndFilters(t, tc.filters, ExtractionRules{})
 			inf := c.informer.(*FakeInformer)
 			assert.Equal(t, tc.filters.Namespace, inf.namespace)
 			assert.Equal(t, tc.labels, inf.labelSelector.String())
@@ -1897,7 +2017,7 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 	}
 }
 
-func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *observer.ObservedLogs) {
+func newTestClientWithRulesAndFilters(t *testing.T, f Filters, rules ExtractionRules) (*WatchClient, *observer.ObservedLogs) {
 	set := componenttest.NewNopTelemetrySettings()
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	set.Logger = zap.New(observedLogger)
@@ -1926,7 +2046,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 	}
 	c, err := New(
 		set,
-		ExtractionRules{},
+		rules,
 		f,
 		associations,
 		exclude,
@@ -1939,7 +2059,7 @@ func newTestClientWithRulesAndFilters(t *testing.T, f Filters) (*WatchClient, *o
 }
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
-	return newTestClientWithRulesAndFilters(t, Filters{})
+	return newTestClientWithRulesAndFilters(t, Filters{}, ExtractionRules{})
 }
 
 type neverSyncedFakeClient struct {
