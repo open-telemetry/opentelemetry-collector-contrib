@@ -14,6 +14,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.0
 	go.opentelemetry.io/collector/component/componenttest v0.114.0
+	go.opentelemetry.io/collector/config/configretry v1.20.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.114.0
 	go.opentelemetry.io/collector/confmap v1.20.0
 	go.opentelemetry.io/collector/consumer v0.114.0
@@ -36,7 +37,7 @@ require (
 	k8s.io/apimachinery v0.31.3
 	k8s.io/client-go v0.31.3
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
-	sigs.k8s.io/controller-runtime v0.19.1
+	sigs.k8s.io/controller-runtime v0.19.2
 )
 
 require (
@@ -113,7 +114,6 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.114.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.20.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.20.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.20.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.20.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.114.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.20.0 // indirect

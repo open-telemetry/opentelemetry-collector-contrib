@@ -48,14 +48,39 @@ This also supports service name based exporting for traces. If you have two or m
 
 ## Resilience and scaling considerations
 
-The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one exporter per endpoint. The exporter conforms to its published configuration regarding sending queue and retry mechanisms. Importantly, the `loadbalancingexporter` will not attempt to re-route data to a healthy endpoint on delivery failure, and data loss is therefore possible if the exporter's target remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
+The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`, `dns`, `k8s`), create one `otlp` exporter per endpoint. Each level of exporters, `loadbalancingexporter` itself and all sub-exporters (one per each endpoint), have it's own queue, timeout and retry mechanisms. Importantly, the `loadbalancingexporter`, by default, will NOT attempt to re-route data to a healthy endpoint on delivery failure, because in-memory queue, retry and timeout setting are disabled by default ([more details on queuing, retry and timeout default settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)).
 
-* When using the `static` resolver and a target is unavailable, all the target's load-balanced telemetry will fail to be delivered until either the target is restored or removed from the static list. The same principle applies to the `dns` resolver.
+```
+                                        +------------------+          +---------------+
+ resiliency options 1                   |                  |          |               |
+                                       -- otlp exporter 1  ------------  backend 1    |
+           |                       ---/ |                  |          |               |
+           |                   ---/     +----|-------------+          +---------------+
+           |               ---/              |
+  +-----------------+  ---/                  |
+  |                 --/                      |
+  |  loadbalancing  |                   resiliency options 2
+  |    exporter     |                        |
+  |                 --\                      |
+  +-----------------+  ----\                 |
+                            ----\       +----|-------------+          +---------------+
+                                 ----\  |                  |          |               |
+                                      --- otlp exporter N  ------------  backend N    |
+                                        |                  |          |               |
+                                        +------------------+          +---------------+
+```
+
+* For all types of resolvers (`static`, `dns`, `k8s`) - if one of endpoints is unavailable - first works queue, retry and timeout settings defined for sub-exporters (under `otlp` property). Once redelivery is exhausted on sub-exporter level, and resilience options 1 are enabled - telemetry data returns to `loadbalancingexporter` itself and data redelivery happens according to exporter level queue, retry and timeout settings.
+* When using the `static` resolver and all targets are unavailable, all load-balanced telemetry will fail to be delivered until either one or all targets are restored or valid target is added the static list. The same principle applies to the `dns` and `k8s` resolvers, except for endpoints list update which happens automatically.
 * When using `k8s`, `dns`, and likely future resolvers, topology changes are eventually reflected in the `loadbalancingexporter`. The `k8s` resolver will update more quickly than `dns`, but a window of time in which the true topology doesn't match the view of the `loadbalancingexporter` remains.
+* Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `loadbalancing` section) - are useful for highly elastic environment (like k8s), where list of resolved endpoints frequently changed due to deployments, scale-up or scale-down events. In case of permanent change of list of resolved exporters this options provide capability to re-route data into new set of healthy backends. Disabled by default.
+* Resiliency options 1 (`timeout`, `retry_on_failure` and `sending_queue` settings in `otlp` section) - are useful for temporary problems with specific backend, like network flukes. Persistent Queue is NOT supported here as all sub-exporter shares the same `sending_queue` configuration, including `storage`. Enabled by default.
+
+Unfortunately, data loss is still possible if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
 ## Configuration
 
-Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
+Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the exporter.
 
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
 * The `resolver` accepts a `static` node, a `dns`, a `k8s` service or `aws_cloud_map`. If all four are specified, an `errMultipleResolversProvided` error will be thrown.
@@ -90,6 +115,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
+* loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
 
 Simple example
 
@@ -117,11 +143,76 @@ exporters:
         - backend-2:4317
         - backend-3:4317
         - backend-4:4317
-      # Notice to config a headless service DNS in Kubernetes  
+      # Notice to config a headless service DNS in Kubernetes
       # dns:
-      #  hostname: otelcol-headless.observability.svc.cluster.local        
+      #  hostname: otelcol-headless.observability.svc.cluster.local
 
 service:
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - loadbalancing
+    logs:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - loadbalancing
+```
+
+Persistent queue, retry and timeout usage example:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: localhost:4317
+
+processors:
+
+exporters:
+  loadbalancing:
+    timeout: 10s
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 1000
+      storage: file_storage/otc
+    routing_key: "service"
+    protocol:
+      otlp:
+        # all options from the OTLP exporter are supported
+        # except the endpoint
+        timeout: 1s
+        sending_queue:
+          enabled: true
+    resolver:
+      static:
+        hostnames:
+        - backend-1:4317
+        - backend-2:4317
+        - backend-3:4317
+        - backend-4:4317
+      # Notice to config a headless service DNS in Kubernetes
+      # dns:
+      #  hostname: otelcol-headless.observability.svc.cluster.local
+
+extensions:
+  file_storage/otc:
+    directory: /var/lib/storage/otc
+    timeout: 10s
+
+service:
+  extensions: [file_storage]
   pipelines:
     traces:
       receivers:
@@ -334,7 +425,7 @@ service:
 
 ## Metrics
 
-The following metrics are recorded by this processor:
+The following metrics are recorded by this exporter:
 
 * `otelcol_loadbalancer_num_resolutions` represents the total number of resolutions performed by the resolver specified in the tag `resolver`, split by their outcome (`success=true|false`). For the static resolver, this should always be `1` with the tag `success=true`.
 * `otelcol_loadbalancer_num_backends` informs how many backends are currently in use. It should always match the number of items specified in the configuration file in case the `static` resolver is used, and should eventually (seconds) catch up with the DNS changes. Note that DNS caches that might exist between the load balancer and the record authority will influence how long it takes for the load balancer to see the change.
