@@ -28,10 +28,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
-var (
-	// errTooManyExporters is returned when the MetadataCardinalityLimit has been reached.
-	errTooManyExporters = consumererror.NewPermanent(errors.New("too many exporter metadata-value combinations"))
-)
+// errTooManyExporters is returned when the MetadataCardinalityLimit has been reached.
+var errTooManyExporters = consumererror.NewPermanent(errors.New("too many exporter metadata-value combinations"))
 
 type metadataExporter struct {
 	config   *Config

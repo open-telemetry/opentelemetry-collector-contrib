@@ -72,7 +72,6 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
-
 	if err != nil {
 		return nil, err
 	}

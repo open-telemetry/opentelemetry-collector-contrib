@@ -162,7 +162,6 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	options := config.clientOptions()
 
 	client, err := pulsar.NewClient(options)
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -170,7 +169,6 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	producerOptions := config.getProducerOptions()
 
 	producer, err := client.CreateProducer(producerOptions)
-
 	if err != nil {
 		return nil, nil, err
 	}

@@ -142,7 +142,7 @@ receivers:
             attributes:
               state: active
       - object: "Processor"
-        instances: [1, 2]
+        instances: ["1", "2"]
         counters:
           - name: "% Idle Time"
             metric: processor.time
