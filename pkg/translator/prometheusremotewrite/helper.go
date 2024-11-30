@@ -44,7 +44,7 @@ const (
 
 var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
 )
@@ -281,7 +281,7 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 
 		bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: math.Inf(1)})
 		c.addExemplars(pt, bucketBounds)
-
+		
 		startTimestamp := pt.StartTimestamp()
 		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
 			labels := createLabels(baseName+createdSuffix, baseLabels)
