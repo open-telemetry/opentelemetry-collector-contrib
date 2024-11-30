@@ -10,12 +10,12 @@ component: exporter/prometheusremotewrite
 note: Change `exporter.prometheusremotewriteexporter.deprecateCreatedMetric` feature gate from Alpha to Beta version.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: 35003
+issues: [35003]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Change `exporter.prometheusremotewriteexporter.deprecateCreatedMetric` feature gate from Alpha to Beta version.
+subtext:
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
