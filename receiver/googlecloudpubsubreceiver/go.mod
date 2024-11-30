@@ -8,6 +8,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.114.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.117.0
 	go.opentelemetry.io/collector/component/componenttest v0.117.0
@@ -36,7 +37,7 @@ require (
 	cloud.google.com/go/iam v1.2.2 // indirect
 	cloud.google.com/go/longrunning v0.6.2 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -55,7 +56,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.einride.tech/aip v0.68.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
@@ -92,3 +93,5 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
