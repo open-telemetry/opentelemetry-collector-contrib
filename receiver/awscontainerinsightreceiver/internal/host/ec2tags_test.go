@@ -29,7 +29,8 @@ type mockEC2TagsClient struct {
 }
 
 func (m *mockEC2TagsClient) DescribeTagsWithContext(_ context.Context, _ *ec2.DescribeTagsInput,
-	_ ...request.Option) (*ec2.DescribeTagsOutput, error) {
+	_ ...request.Option,
+) (*ec2.DescribeTagsOutput, error) {
 	m.count++
 	if m.count == 1 {
 		return &ec2.DescribeTagsOutput{}, errors.New("error")

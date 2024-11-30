@@ -302,14 +302,14 @@ func TestConsumeLogs_ConcurrentResolverChange(t *testing.T) {
 	consumeStarted := make(chan struct{})
 	consumeDone := make(chan struct{})
 
-	// imitate a slow exporter
-	te := &mockLogsExporter{Component: mockComponent{}}
-	te.consumelogsfn = func(_ context.Context, _ plog.Logs) error {
-		close(consumeStarted)
-		time.Sleep(50 * time.Millisecond)
-		return te.consumeErr
-	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		// imitate a slow exporter
+		te := &mockLogsExporter{Component: mockComponent{}}
+		te.consumelogsfn = func(_ context.Context, _ plog.Logs) error {
+			close(consumeStarted)
+			time.Sleep(50 * time.Millisecond)
+			return te.consumeErr
+		}
 		return te, nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)

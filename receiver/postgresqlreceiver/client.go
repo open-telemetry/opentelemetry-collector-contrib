@@ -116,7 +116,7 @@ func (c postgreSQLConfig) ConnectionString() (string, error) {
 
 	if c.address.Transport == confignet.TransportTypeUnix {
 		// lib/pg expects a unix socket host to start with a "/" and appends the appropriate .s.PGSQL.port internally
-		host = fmt.Sprintf("/%s", host)
+		host = "/" + host
 	}
 
 	return fmt.Sprintf("port=%s host=%s user=%s password=%s dbname=%s %s", port, host, c.username, c.password, database, sslConnectionString(c.tls)), nil
@@ -134,20 +134,34 @@ type databaseStats struct {
 	transactionRollback  int64
 	deadlocks            int64
 	tempFiles            int64
+	tupUpdated           int64
+	tupReturned          int64
+	tupFetched           int64
+	tupInserted          int64
+	tupDeleted           int64
+	blksHit              int64
+	blksRead             int64
 }
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
-	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files FROM pg_stat_database", databases, false)
+	query := filterQueryByDatabases(
+		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
+		databases,
+		false,
+	)
+
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
+
 	var errs error
 	dbStats := map[databaseName]databaseStats{}
+
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback, deadlocks, tempFiles int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles)
+		var transactionCommitted, transactionRollback, deadlocks, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted, blksHit, blksRead int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted, &blksHit, &blksRead)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -158,6 +172,13 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 				transactionRollback:  transactionRollback,
 				deadlocks:            deadlocks,
 				tempFiles:            tempFiles,
+				tupUpdated:           tupUpdated,
+				tupReturned:          tupReturned,
+				tupFetched:           tupFetched,
+				tupInserted:          tupInserted,
+				tupDeleted:           tupDeleted,
+				blksHit:              blksHit,
+				blksRead:             blksRead,
 			}
 		}
 	}

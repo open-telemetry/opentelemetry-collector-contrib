@@ -19,11 +19,9 @@ func normalizeValue(key string, val any) any {
 		"http.response.status_code",
 		"server.port":
 		return toInt(val)
-	case
-		"http.server.request.duration":
+	case "http.server.request.duration":
 		return toFloat(val)
-	case
-		"network.protocol.name":
+	case "network.protocol.name":
 		return toLower(val)
 	}
 	return val

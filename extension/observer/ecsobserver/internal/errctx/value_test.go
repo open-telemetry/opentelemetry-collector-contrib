@@ -83,5 +83,4 @@ func TestValueFrom(t *testing.T) {
 		assert.True(t, ok)
 		assert.Equal(t, "e2", v)
 	})
-
 }

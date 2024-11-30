@@ -21,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
-var partialScrapePath = filepath.Join("testdata", "partial_scrape.yaml")
+var (
+	goldenScrapePath  = filepath.Join("testdata", "golden_scrape.yaml")
+	partialScrapePath = filepath.Join("testdata", "partial_scrape.yaml")
+)
 
 func TestScrape(t *testing.T) {
 	t.Run("Fully successful scrape", func(t *testing.T) {
