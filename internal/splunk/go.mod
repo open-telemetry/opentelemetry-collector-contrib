@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.114.0
 	go.opentelemetry.io/collector/exporter v0.114.0
-	go.opentelemetry.io/collector/pdata v1.20.0
+	go.opentelemetry.io/collector/pdata v1.20.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/semconv v0.114.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -25,9 +25,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.opentelemetry.io/collector/component v0.114.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configretry v1.20.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.114.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.114.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/extension v0.114.0 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.114.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.114.0 // indirect
