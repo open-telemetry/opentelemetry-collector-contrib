@@ -29,6 +29,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241130171227-c52d625647be // indirect
+	go.opentelemetry.io/collector/scraper v0.114.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect

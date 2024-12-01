@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.114.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/consumer/consumertest v0.114.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/extension v0.114.1-0.20241130171227-c52d625647be
-	go.opentelemetry.io/collector/extension/auth v0.114.1-0.20241130171227-c52d625647be
+	go.opentelemetry.io/collector/extension/auth/authtest v0.0.0-20241130171227-c52d625647be
 	go.opentelemetry.io/collector/filter v0.114.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/pdata v1.20.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/receiver v0.114.1-0.20241130171227-c52d625647be
@@ -42,9 +42,11 @@ require (
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.114.1-0.20241130171227-c52d625647be // indirect
+	go.opentelemetry.io/collector/extension/auth v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.114.1-0.20241130171227-c52d625647be // indirect
+	go.opentelemetry.io/collector/scraper v0.114.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 )
@@ -64,11 +66,11 @@ require (
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

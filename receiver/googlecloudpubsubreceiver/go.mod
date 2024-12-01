@@ -47,6 +47,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.2 // indirect
@@ -64,6 +65,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/extension v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.114.1-0.20241130171227-c52d625647be // indirect
+	go.opentelemetry.io/collector/featuregate v1.20.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.114.1-0.20241130171227-c52d625647be // indirect

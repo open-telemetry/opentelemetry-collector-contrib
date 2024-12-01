@@ -116,6 +116,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorprofiles v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.114.1-0.20241130171227-c52d625647be // indirect
+	go.opentelemetry.io/collector/scraper v0.114.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/service v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0 // indirect
@@ -151,7 +152,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

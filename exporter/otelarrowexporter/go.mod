@@ -54,6 +54,7 @@ require (
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.8 // indirect
@@ -76,6 +77,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.114.1-0.20241130171227-c52d625647be // indirect
+	go.opentelemetry.io/collector/featuregate v1.20.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/receiver v0.114.1-0.20241130171227-c52d625647be // indirect
