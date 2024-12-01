@@ -22,8 +22,8 @@ func NewUDSServer(transport Transport, socketPath string) (Server, error) {
 		return nil, fmt.Errorf("NewUDSServer with %s: %w", transport.String(), ErrUnsupportedPacketTransport)
 	}
 
-	if _, err := os.Stat(socketPath); err == nil {
-		os.Remove(socketPath)
+	if err := prepareSocket(socketPath); err != nil {
+		return nil, err
 	}
 
 	conn, err := net.ListenPacket(transport.String(), socketPath)
@@ -43,4 +43,18 @@ func NewUDSServer(transport Transport, socketPath string) (Server, error) {
 func (u *udsServer) Close() error {
 	os.Remove(u.packetConn.LocalAddr().String())
 	return u.packetConn.Close()
+}
+
+func prepareSocket(socketPath string) error {
+	if _, err := os.Stat(socketPath); err == nil {
+		// File exists, remove it
+		if err := os.Remove(socketPath); err != nil {
+			return fmt.Errorf("failed to remove existing socket file: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		// Return any error that's not "file does not exist"
+		return fmt.Errorf("failed to stat socket file: %w", err)
+	}
+
+	return nil
 }
