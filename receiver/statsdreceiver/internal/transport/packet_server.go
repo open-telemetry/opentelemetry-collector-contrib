@@ -28,6 +28,13 @@ func (u *packetServer) ListenAndServe(
 	buf := make([]byte, 65527) // max size for udp packet body (assuming ipv6)
 	for {
 		n, addr, err := u.packetConn.ReadFrom(buf)
+		if addr == nil && u.transport == UDS {
+			addr = &udsAddr{
+				network: u.transport.String(),
+				address: u.packetConn.LocalAddr().String(),
+			}
+		}
+
 		if n > 0 {
 			u.handlePacket(n, buf, addr, transferChan)
 		}
@@ -61,4 +68,17 @@ func (u *packetServer) handlePacket(
 			transferChan <- Metric{string(chunk), addr}
 		}
 	}
+}
+
+type udsAddr struct {
+	network string
+	address string
+}
+
+func (u *udsAddr) Network() string {
+	return u.network
+}
+
+func (u *udsAddr) String() string {
+	return u.address
 }
