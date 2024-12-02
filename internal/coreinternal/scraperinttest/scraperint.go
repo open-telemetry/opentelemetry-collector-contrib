@@ -314,3 +314,9 @@ func RunScript(script []string) testcontainers.ContainerHook {
 		return errors.New(strings.TrimSpace(errStr))
 	}
 }
+
+type PrintfLogConsumer struct{}
+
+func (g *PrintfLogConsumer) Accept(l testcontainers.Log) {
+	fmt.Printf("[Container] %s", string(l.Content))
+}
