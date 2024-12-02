@@ -1,0 +1,96 @@
+-- in --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: expo.simple
+            exponential_histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - timeUnixNano: 10
+                  scale: 4
+                  zeroCount: 5
+                  positive:
+                    offset: 2
+                    bucketCounts: [4, 7, 9, 6, 25]
+                  negative:
+                    offset: 6
+                    bucketCounts: [2, 13, 7, 12, 4]
+                - timeUnixNano: 20
+                  scale: 4
+                  zeroCount: 2
+                  positive:
+                    offset: 2
+                    bucketCounts: [1, 2, 1, 2, 1]
+                  negative:
+                    offset: 6
+                    bucketCounts: [1, 2, 1, 2, 1]
+          - name: expo.downscale
+            exponential_histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - timeUnixNano: 10
+                  scale: 2
+                  zeroCount: 1
+                  positive:
+                    bucketCounts: [1,2,3,4,5]
+                - timeUnixNano: 20
+                  scale: 1
+                  zeroCount: 0
+                  positive:
+                    bucketCounts: [0,0,0,0,0]
+
+-- out --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: Test
+          version: 1.2.3
+        metrics:
+          - name: expo.simple
+            exponential_histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 10
+                  scale: 4
+                  zeroCount: 5
+                  positive:
+                    offset: 2
+                    bucketCounts: [4, 7, 9, 6, 25]
+                  negative:
+                    offset: 6
+                    bucketCounts: [2, 13, 7, 12, 4]
+                - timeUnixNano: 20
+                  scale: 4
+                  zeroCount: 7
+                  positive:
+                    offset: 2
+                    bucketCounts: [5, 9, 10, 8, 26]
+                  negative:
+                    offset: 6
+                    bucketCounts: [3, 15, 8, 14, 5]
+
+          - name: expo.downscale
+            exponential_histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 10
+                  scale: 2
+                  zeroCount: 1
+                  positive:
+                    bucketCounts: [1,2,3,4,5]
+                - timeUnixNano: 20
+                  scale: 1
+                  zeroCount: 1
+                  positive:
+                    bucketCounts: [3,7,5,0,0]
+
+-- telemetry --
+updown otelcol_deltatocumulative.streams.tracked.linear:
+- int: 2

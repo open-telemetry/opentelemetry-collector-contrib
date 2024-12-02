@@ -147,7 +147,7 @@ func createAndExtension0(c *Config, t *testing.T) *otlpExtension {
 }
 
 func generateTraces() ptrace.Traces {
-	var num = 10
+	num := 10
 	now := time.Now()
 	md := ptrace.NewTraces()
 	ilm := md.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
@@ -162,7 +162,7 @@ func generateTraces() ptrace.Traces {
 }
 
 func generateLogs() plog.Logs {
-	var num = 10
+	num := 10
 	md := plog.NewLogs()
 	ilm := md.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	ilm.LogRecords().EnsureCapacity(num)
@@ -174,7 +174,7 @@ func generateLogs() plog.Logs {
 }
 
 func generateMetrics() pmetric.Metrics {
-	var num = 10
+	num := 10
 	now := time.Now()
 	startTime := pcommon.NewTimestampFromTime(now.Add(-10 * time.Second))
 	endTime := pcommon.NewTimestampFromTime(now)
@@ -194,16 +194,16 @@ func generateMetrics() pmetric.Metrics {
 }
 
 func generateProfiles() pprofile.Profiles {
-	var num = 10
+	num := 10
 	now := time.Now()
 	pd := pprofile.NewProfiles()
 	ilm := pd.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty()
 	ilm.Profiles().EnsureCapacity(num)
 	for i := 0; i < num; i++ {
 		im := ilm.Profiles().AppendEmpty()
-		im.SetProfileID(pprofile.ProfileID([16]byte{0x01, 0x02, 0x03, 0x04}))
+		im.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 		im.SetStartTime(pcommon.NewTimestampFromTime(now))
-		im.SetEndTime(pcommon.NewTimestampFromTime(now))
+		im.SetDuration(pcommon.NewTimestampFromTime(time.Now()))
 	}
 	return pd
 }

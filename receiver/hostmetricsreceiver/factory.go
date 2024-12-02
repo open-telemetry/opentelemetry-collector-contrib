@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/metadata"
@@ -125,7 +126,7 @@ func createAddScraperOptions(
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(hostMetricsScraper))
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, hostMetricsScraper))
 			continue
 		}
 
@@ -135,7 +136,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (s scraper.Metrics, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false
@@ -143,7 +144,7 @@ func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key st
 	}
 
 	ok = true
-	scraper, err = factory.CreateMetricsScraper(ctx, set, cfg)
+	s, err = factory.CreateMetricsScraper(ctx, set, cfg)
 	return
 }
 

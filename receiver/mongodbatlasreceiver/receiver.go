@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
@@ -50,8 +50,8 @@ func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) *mongodbat
 	}
 }
 
-func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraperhelper.Scraper, error) {
-	return scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
+func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraper.Metrics, error) {
+	return scraper.NewMetrics(recv.scrape, scraper.WithShutdown(recv.shutdown))
 }
 
 func (s *mongodbatlasreceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {

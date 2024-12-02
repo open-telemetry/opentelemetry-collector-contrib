@@ -30,7 +30,8 @@ type traceVisitor struct {
 func (v *traceVisitor) visit(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	span ptrace.Span) (ok bool) {
+	span ptrace.Span,
+) (ok bool) {
 	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
@@ -45,6 +46,8 @@ func (v *traceVisitor) visit(
 		v.exporter.transportChannel.Send(envelope)
 	}
 
+	// Flush the transport channel to force the telemetry to be sent
+	v.exporter.transportChannel.Flush()
 	v.processed++
 
 	return true
