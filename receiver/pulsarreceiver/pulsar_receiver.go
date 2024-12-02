@@ -96,8 +96,8 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 	for {
 		obsCtx := c.obsrecv.StartTracesOp(ctx)
 		message, err := c.consumer.Receive(ctx)
-		c.obsrecv.EndTracesOp(obsCtx, unmarshaler.Encoding(), 0, err)
 		if err != nil {
+			c.obsrecv.EndTracesOp(obsCtx, unmarshaler.Encoding(), 0, err)
 			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
 			}
@@ -210,8 +210,8 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 	for {
 		obsCtx := c.obsrecv.StartMetricsOp(ctx)
 		message, err := c.consumer.Receive(ctx)
-		c.obsrecv.EndMetricsOp(obsCtx, unmarshaler.Encoding(), 0, err)
 		if err != nil {
+			c.obsrecv.EndMetricsOp(obsCtx, unmarshaler.Encoding(), 0, err)
 			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
 			}
