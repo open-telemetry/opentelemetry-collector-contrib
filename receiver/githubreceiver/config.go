@@ -26,8 +26,10 @@ type Config struct {
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
-var _ component.Config = (*Config)(nil)
-var _ confmap.Unmarshaler = (*Config)(nil)
+var (
+	_ component.Config    = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
+)
 
 // Validate the configuration passed through the OTEL config.yaml
 func (cfg *Config) Validate() error {

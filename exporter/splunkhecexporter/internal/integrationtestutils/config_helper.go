@@ -102,12 +102,11 @@ func SetConfigVariable(key string, value string) {
 	}
 
 	// Write yaml file
-	err = os.WriteFile(configFilePth, newData, 0600)
+	err = os.WriteFile(configFilePth, newData, 0o600)
 	if err != nil {
 		fmt.Printf("Error writing file: %v", err)
 		return
 	}
 
 	fmt.Println("Host value updated successfully!")
-
 }

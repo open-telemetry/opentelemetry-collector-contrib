@@ -61,8 +61,10 @@ const (
 	maxDataLen = 396
 )
 
-type Tracking = chrony.Tracking
-type ReplyHead = chrony.ReplyHead
+type (
+	Tracking  = chrony.Tracking
+	ReplyHead = chrony.ReplyHead
+)
 
 type ipAddr struct {
 	IP     [16]uint8

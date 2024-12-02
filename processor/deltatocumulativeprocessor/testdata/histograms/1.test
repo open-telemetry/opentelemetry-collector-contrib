@@ -1,0 +1,53 @@
+-- in --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: test
+          version: 1.2.3
+        metrics:
+          - name: some.histogram
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - timeUnixNano: 10
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [1, 2, 3, 4, 5]
+                - timeUnixNano: 20
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [1, 0, 1, 0, 1]
+
+                  # bounds change
+                - timeUnixNano: 30
+                  explicitBounds: [      0.1, 1, 10, 100]
+                  bucketCounts: [   1, 2, 3, 4]
+
+-- out --
+resourceMetrics:
+  - schemaUrl: https://test.com/resource
+    scopeMetrics:
+      - schemaUrl: https://test.com/scope
+        scope:
+          name: test
+          version: 1.2.3
+        metrics:
+          - name: some.histogram
+            histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - timeUnixNano: 10
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [1, 2, 3, 4, 5]
+                - timeUnixNano: 20
+                  explicitBounds: [0.01, 0.1, 1, 10, 100]
+                  bucketCounts: [2, 2, 4, 4, 6]
+
+                  # bounds change: reset
+                - timeUnixNano: 30
+                  explicitBounds: [      0.1, 1, 10, 100]
+                  bucketCounts: [   1, 2, 3, 4]
+
+-- telemetry --
+updown otelcol_deltatocumulative.streams.tracked.linear:
+- int: 1

@@ -85,7 +85,6 @@ func testExtensionIntegrity(t *testing.T, se storage.Extension) {
 
 		// Repeatedly thrash client
 		for j := 0; j < 100; j++ {
-
 			// Make sure my values are still mine
 			for i := 0; i < len(keys); i++ {
 				v, err := c.Get(ctx, keys[i])

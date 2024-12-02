@@ -48,7 +48,6 @@ func newLogsReceiver(
 	createClient sqlquery.ClientProviderFunc,
 	nextConsumer consumer.Logs,
 ) (*logsReceiver, error) {
-
 	obsr, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		ReceiverCreateSettings: settings,
@@ -268,7 +267,6 @@ func (queryReceiver *logsQueryReceiver) retrieveTrackingValue(ctx context.Contex
 	}
 
 	return string(storedTrackingValueBytes)
-
 }
 
 func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs, error) {

@@ -124,8 +124,7 @@ func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server
 	return server, lis.Addr()
 }
 
-type mockSamplingHandler struct {
-}
+type mockSamplingHandler struct{}
 
 func (*mockSamplingHandler) GetSamplingStrategy(context.Context, *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
 	return &api_v2.SamplingStrategyResponse{StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC}, nil

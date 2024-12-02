@@ -23,7 +23,7 @@ func Test_Scrape(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())
 	logFile := filepath.Join(tmpDir, "my.log")
-	err = os.WriteFile(logFile, []byte("something"), 0600)
+	err = os.WriteFile(logFile, []byte("something"), 0o600)
 	t.Cleanup(func() {
 		_ = os.Remove(tmpDir)
 	})
@@ -62,7 +62,7 @@ func Test_Scrape_All(t *testing.T) {
 	require.Equal(t, int64(0), fileCount.Gauge().DataPoints().At(0).IntValue())
 	require.Equal(t, "file.count", fileCount.Name())
 	logFile := filepath.Join(tmpDir, "my.log")
-	err = os.WriteFile(logFile, []byte("something"), 0600)
+	err = os.WriteFile(logFile, []byte("something"), 0o600)
 	t.Cleanup(func() {
 		_ = os.Remove(tmpDir)
 	})
