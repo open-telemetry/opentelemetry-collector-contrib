@@ -7,6 +7,7 @@ package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/containerd/cgroups/v3"
 	"github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -60,7 +62,7 @@ func TestCgroupV2Integration(t *testing.T) {
 		config          *Config
 	}{
 		{
-			name:            "half the max cgroup memory and 12 GOMAXPROCS",
+			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
 			cgroupCpuQuota:  pointerInt64(100000),
 			cgroupCpuPeriod: 8000,
 			config: &Config{
@@ -69,12 +71,12 @@ func TestCgroupV2Integration(t *testing.T) {
 				},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
-					Ratio:   0.5,
+					Ratio:   0.9,
 				},
 			},
 		},
 		{
-			name:            "0.1 of the max cgroup memory and 1 GOMAXPROCS",
+			name:            "0.5 of the max cgroup memory and 1 GOMAXPROCS",
 			cgroupCpuQuota:  pointerInt64(100000),
 			cgroupCpuPeriod: 100000,
 			config: &Config{
@@ -83,7 +85,7 @@ func TestCgroupV2Integration(t *testing.T) {
 				},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
-					Ratio:   0.1,
+					Ratio:   0.5,
 				},
 			},
 		},
@@ -111,22 +113,34 @@ func TestCgroupV2Integration(t *testing.T) {
 	stats, err := manager.Stat()
 	require.NoError(t, err)
 
-	initialMaxMemory := stats.Memory.UsageLimit
+	initialMaxMemory := stats.GetMemory().GetUsageLimit()
 	initialCpuQuota, initialCpuPeriod, err := cgroupMaxCpu(cgroupPath)
 	require.NoError(t, err)
 
+	fmt.Printf("Initial max memory: %v\n", initialMaxMemory)
+	previous := debug.SetMemoryLimit(math.MaxInt64)
+	fmt.Printf("Previous test: %v\n", previous)
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			initialGoMem := debug.SetMemoryLimit(-1)
+			fmt.Printf("Cgroups mode: %v\n", cgroups.Mode())
+			if cgroups.Mode() == cgroups.Legacy || cgroups.Mode() == cgroups.Hybrid {
+				fmt.Printf("LEGACY CGROUPS\n")
+			} else {
+				fmt.Printf("CGROUPS V2\n")
+			}
+
+			// initialGoMem := debug.SetMemoryLimit(-1)
 			initialGoProcs := runtime.GOMAXPROCS(-1)
 
 			// restore startup cgroup initial resource values
 			t.Cleanup(func() {
-				debug.SetMemoryLimit(initialGoMem)
+				debug.SetMemoryLimit(math.MaxInt64)
 				runtime.GOMAXPROCS(initialGoProcs)
 				err = manager.Update(&cgroup2.Resources{
 					Memory: &cgroup2.Memory{
 						Max: pointerInt64(int64(initialMaxMemory)),
+						// Max: debug.SetMemoryLimit(math.MaxInt64),
 					},
 					CPU: &cgroup2.CPU{
 						Max: cgroup2.NewCPUMax(pointerInt64(initialCpuQuota), pointerUint64(initialCpuPeriod)),
@@ -141,6 +155,13 @@ func TestCgroupV2Integration(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
+			stats, err := manager.Stat()
+			require.NoError(t, err)
+
+			maxMemory := stats.Memory.UsageLimit
+			fmt.Printf("After test: %v\n", maxMemory)
+
+			fmt.Printf("GOMEMLIMIT before: %v\n", debug.SetMemoryLimit(-1))
 			factory := NewFactory()
 			ctx := context.Background()
 			extension, err := factory.Create(ctx, extensiontest.NewNopSettings(), test.config)
@@ -148,6 +169,7 @@ func TestCgroupV2Integration(t *testing.T) {
 
 			err = extension.Start(ctx, componenttest.NewNopHost())
 			assert.NoError(t, err)
+			fmt.Printf("GOMEMLIMIT after: %v\n", debug.SetMemoryLimit(-1))
 
 			assert.Equal(t, float64(initialMaxMemory)*test.config.GoMemLimit.Ratio, float64(debug.SetMemoryLimit(-1)))
 			// GOMAXPROCS is set to the value of  `cpu.max / cpu.period`
