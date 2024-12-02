@@ -46,7 +46,6 @@ func newReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	if config.NetAddr.Endpoint == "" {
 		config.NetAddr.Endpoint = "localhost:8125"
 	}

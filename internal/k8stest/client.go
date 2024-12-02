@@ -21,7 +21,6 @@ type K8sClient struct {
 }
 
 func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
-
 	if kubeconfigPath == "" {
 		return nil, errors.New("Please provide file path to load kubeconfig")
 	}
@@ -42,5 +41,6 @@ func NewK8sClient(kubeconfigPath string) (*K8sClient, error) {
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient))
 	return &K8sClient{
-		DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper}, nil
+		DynamicClient: dynamicClient, DiscoveryClient: discoveryClient, Mapper: mapper,
+	}, nil
 }

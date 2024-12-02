@@ -14,8 +14,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 var errPipelineNotFound = errors.New("pipeline not found")
@@ -29,9 +32,12 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
 // consumer.Logs.
 type router[C any] struct {
-	logger         *zap.Logger
-	resourceParser ottl.Parser[ottlresource.TransformContext]
-	logParser      ottl.Parser[ottllog.TransformContext]
+	logger          *zap.Logger
+	resourceParser  ottl.Parser[ottlresource.TransformContext]
+	spanParser      ottl.Parser[ottlspan.TransformContext]
+	metricParser    ottl.Parser[ottlmetric.TransformContext]
+	dataPointParser ottl.Parser[ottldatapoint.TransformContext]
+	logParser       ottl.Parser[ottllog.TransformContext]
 
 	table      []RoutingTableItem
 	routes     map[string]routingItem[C]
@@ -68,19 +74,28 @@ func newRouter[C any](
 }
 
 type routingItem[C any] struct {
-	consumer          C
-	statementContext  string
-	requestCondition  *requestCondition
-	resourceStatement *ottl.Statement[ottlresource.TransformContext]
-	logStatement      *ottl.Statement[ottllog.TransformContext]
+	consumer           C
+	statementContext   string
+	requestCondition   *requestCondition
+	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
+	spanStatement      *ottl.Statement[ottlspan.TransformContext]
+	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
+	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
+	logStatement       *ottl.Statement[ottllog.TransformContext]
 }
 
 func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.TelemetrySettings) error {
-	var buildResource, buildLog bool
+	var buildResource, buildSpan, buildMetric, buildDataPoint, buildLog bool
 	for _, item := range table {
 		switch item.Context {
 		case "", "resource":
 			buildResource = true
+		case "span":
+			buildSpan = true
+		case "metric":
+			buildMetric = true
+		case "datapoint":
+			buildDataPoint = true
 		case "log":
 			buildLog = true
 		}
@@ -94,6 +109,39 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 		)
 		if err == nil {
 			r.resourceParser = parser
+		} else {
+			errs = errors.Join(errs, err)
+		}
+	}
+	if buildSpan {
+		parser, err := ottlspan.NewParser(
+			common.Functions[ottlspan.TransformContext](),
+			settings,
+		)
+		if err == nil {
+			r.spanParser = parser
+		} else {
+			errs = errors.Join(errs, err)
+		}
+	}
+	if buildMetric {
+		parser, err := ottlmetric.NewParser(
+			common.Functions[ottlmetric.TransformContext](),
+			settings,
+		)
+		if err == nil {
+			r.metricParser = parser
+		} else {
+			errs = errors.Join(errs, err)
+		}
+	}
+	if buildDataPoint {
+		parser, err := ottldatapoint.NewParser(
+			common.Functions[ottldatapoint.TransformContext](),
+			settings,
+		)
+		if err == nil {
+			r.dataPointParser = parser
 		} else {
 			errs = errors.Join(errs, err)
 		}
@@ -174,6 +222,24 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 					return err
 				}
 				route.resourceStatement = statement
+			case "span":
+				statement, err := r.spanParser.ParseStatement(item.Statement)
+				if err != nil {
+					return err
+				}
+				route.spanStatement = statement
+			case "metric":
+				statement, err := r.metricParser.ParseStatement(item.Statement)
+				if err != nil {
+					return err
+				}
+				route.metricStatement = statement
+			case "datapoint":
+				statement, err := r.dataPointParser.ParseStatement(item.Statement)
+				if err != nil {
+					return err
+				}
+				route.dataPointStatement = statement
 			case "log":
 				statement, err := r.logParser.ParseStatement(item.Statement)
 				if err != nil {

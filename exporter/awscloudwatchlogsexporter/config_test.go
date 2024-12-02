@@ -125,7 +125,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		},
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
-
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
@@ -143,7 +142,6 @@ func TestRetentionValidateWrong(t *testing.T) {
 		},
 	}
 	assert.Error(t, component.ValidateConfig(wrongcfg))
-
 }
 
 func TestValidateTags(t *testing.T) {

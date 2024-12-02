@@ -46,7 +46,6 @@ func Test_DataPointFunctions(t *testing.T) {
 		},
 		)
 	}
-
 }
 
 func Test_MetricFunctions(t *testing.T) {

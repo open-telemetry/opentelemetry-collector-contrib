@@ -102,7 +102,6 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 			require.NoError(t, exp.shutdown(ctx))
 		})
 	}
-
 }
 
 func TestConsumeMetricsWithInfValues(t *testing.T) {
@@ -142,7 +141,6 @@ func TestConsumeMetricsWithInfValues(t *testing.T) {
 			require.NoError(t, exp.shutdown(ctx))
 		})
 	}
-
 }
 
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {

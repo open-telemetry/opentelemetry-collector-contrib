@@ -15,6 +15,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
@@ -44,7 +46,6 @@ func newMetricsConnector(
 		cfg.DefaultPipelines,
 		mr.Consumer,
 		set.TelemetrySettings)
-
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +85,24 @@ func (c *metricsConnector) switchMetrics(ctx context.Context, md pmetric.Metrics
 				func(rs pmetric.ResourceMetrics) bool {
 					rtx := ottlresource.NewTransformContext(rs.Resource(), rs)
 					_, isMatch, err := route.resourceStatement.Execute(ctx, rtx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
+		case "metric":
+			pmetricutil.MoveMetricsWithContextIf(md, matchedMetrics,
+				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
+					mtx := ottlmetric.NewTransformContext(m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
+					_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
+		case "datapoint":
+			pmetricutil.MoveDataPointsWithContextIf(md, matchedMetrics,
+				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
+					dptx := ottldatapoint.NewTransformContext(dp, m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
+					_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)
 					errs = errors.Join(errs, err)
 					return isMatch
 				},
@@ -130,7 +149,6 @@ func (c *metricsConnector) matchAllMetrics(ctx context.Context, md pmetric.Metri
 				noRoutesMatch = false
 				groupMetrics(groups, route.consumer, rmetrics)
 			}
-
 		}
 		if noRoutesMatch {
 			// no route conditions are matched, add resource metrics to default exporters group
