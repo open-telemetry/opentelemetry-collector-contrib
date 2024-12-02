@@ -59,7 +59,7 @@ func Test_batchTimeSeries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			state := newBatchTimeSericesState()
-			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, &state)
+			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, state)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return
@@ -68,13 +68,13 @@ func Test_batchTimeSeries(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Len(t, requests, tt.numExpectedRequests)
 			if tt.numExpectedRequests <= 1 {
-				assert.Equal(t, math.MaxInt, state.nextTimeSeriesBufferSize)
-				assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
-				assert.Equal(t, 2*len(requests), state.nextRequestBufferSize)
+				assert.Equal(t, int64(math.MaxInt64), state.nextTimeSeriesBufferSize.Load())
+				assert.Equal(t, int64(math.MaxInt64), state.nextMetricMetadataBufferSize.Load())
+				assert.Equal(t, int64(2*len(requests)), state.nextRequestBufferSize.Load())
 			} else {
-				assert.Equal(t, max(10, len(requests[len(requests)-2].Timeseries)*2), state.nextTimeSeriesBufferSize)
-				assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
-				assert.Equal(t, 2*len(requests), state.nextRequestBufferSize)
+				assert.Equal(t, int64(max(10, len(requests[len(requests)-2].Timeseries)*2)), state.nextTimeSeriesBufferSize.Load())
+				assert.Equal(t, int64(math.MaxInt64), state.nextMetricMetadataBufferSize.Load())
+				assert.Equal(t, int64(2*len(requests)), state.nextRequestBufferSize.Load())
 			}
 		})
 	}
@@ -97,13 +97,13 @@ func Test_batchTimeSeriesUpdatesStateForLargeBatches(t *testing.T) {
 	tsMap1 := getTimeseriesMap(tsArray)
 
 	state := newBatchTimeSericesState()
-	requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+	requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)
 
 	assert.NoError(t, err)
 	assert.Len(t, requests, 18)
-	assert.Equal(t, len(requests[len(requests)-2].Timeseries)*2, state.nextTimeSeriesBufferSize)
-	assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
-	assert.Equal(t, 36, state.nextRequestBufferSize)
+	assert.Equal(t, int64(len(requests[len(requests)-2].Timeseries)*2), state.nextTimeSeriesBufferSize.Load())
+	assert.Equal(t, int64(math.MaxInt64), state.nextMetricMetadataBufferSize.Load())
+	assert.Equal(t, int64(36), state.nextRequestBufferSize.Load())
 }
 
 // Benchmark_batchTimeSeries checks batchTimeSeries
@@ -132,7 +132,7 @@ func Benchmark_batchTimeSeries(b *testing.B) {
 	state := newBatchTimeSericesState()
 	// Run batchTimeSeries 100 times with a 1mb max request size
 	for i := 0; i < b.N; i++ {
-		requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+		requests, err := batchTimeSeries(tsMap1, 1000000, nil, state)
 		assert.NoError(b, err)
 		assert.Len(b, requests, 18)
 	}
