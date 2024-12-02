@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
@@ -49,7 +49,7 @@ func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
 	settings receiver.Settings,
 	cfg internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
 		return nil, errors.New("process scraper only available on Linux, Windows, or MacOS")
 	}
@@ -59,8 +59,8 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperWithoutType(
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
+		scraper.WithStart(s.start),
 	)
 }

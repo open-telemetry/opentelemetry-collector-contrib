@@ -75,6 +75,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
+- [Braydon Kains](https://github.com/braydonk), Google
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
