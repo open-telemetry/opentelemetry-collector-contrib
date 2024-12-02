@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: clientConfig,
 				ArrayName:    "foobar.example.com",
-        Namespace: "purefa",
+				Namespace:    "purefa",
 				Settings: &Settings{
 					ReloadIntervals: &ReloadIntervals{
 						Array:       60 * time.Second,
