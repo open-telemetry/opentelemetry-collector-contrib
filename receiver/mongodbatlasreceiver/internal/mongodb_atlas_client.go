@@ -135,7 +135,7 @@ func NewMongoDBAtlasClient(
 	backoffConfig configretry.BackOffConfig,
 	log *zap.Logger,
 ) *MongoDBAtlasClient {
-	defaultTransporter := &http.Transport{}
+	defaultTransporter := http.DefaultTransport.(*http.Transport)
 	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
 	roundTripper := newClientRoundTripper(t, log, backoffConfig)
 	tc := &http.Client{Transport: roundTripper}
