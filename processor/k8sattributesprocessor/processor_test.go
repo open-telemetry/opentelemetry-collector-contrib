@@ -1647,12 +1647,10 @@ func Test_setResourceAttribute(t *testing.T) {
 		wantAttrs  func() pcommon.Map
 	}{
 		{
-			name: "attribute not present - add value",
-			attributes: func() pcommon.Map {
-				return pcommon.NewMap()
-			},
-			key: "foo",
-			val: "bar",
+			name:       "attribute not present - add value",
+			attributes: pcommon.NewMap,
+			key:        "foo",
+			val:        "bar",
 			wantAttrs: func() pcommon.Map {
 				m := pcommon.NewMap()
 				m.PutStr("foo", "bar")
