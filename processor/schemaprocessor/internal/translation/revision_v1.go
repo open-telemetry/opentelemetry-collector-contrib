@@ -36,7 +36,6 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 	for _, change := range def.Logs.Changes {
 		//nolint:gosimple
 		logChanges.Changes = append(logChanges.Changes, ast.AttributeChange{RenameAttributes: change.RenameAttributes})
-
 	}
 	return &RevisionV1{
 		ver:        ver,
@@ -47,7 +46,6 @@ func NewRevision(ver *Version, def ast.VersionDef) *RevisionV1 {
 		metrics:    newMetricChangeList(def.Metrics),
 		logs:       newLogsChangelist(def.Logs),
 	}
-
 }
 
 func (r RevisionV1) Version() *Version {
@@ -87,7 +85,6 @@ func newSpanChangeList(spans ast.Spans) *changelist.ChangeList {
 		}
 	}
 	return &changelist.ChangeList{Migrators: values}
-
 }
 
 func newMetricChangeList(metrics ast.Metrics) *changelist.ChangeList {

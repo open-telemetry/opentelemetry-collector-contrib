@@ -86,7 +86,6 @@ func TestMetricDataPointAttributesTransformer(t *testing.T) {
 			err = metricDataPointAttributeTransformer.Do(migrate.StateSelectorApply, metric)
 			require.NoError(t, err)
 			assertAttributeEquals(t, item.Attributes(), "service.version", "1.0.0")
-
 		})
 	}
 }
@@ -108,5 +107,4 @@ func TestSpanConditionalAttributeTransformer(t *testing.T) {
 	err = spanConditionalAttributeTransformer.Do(migrate.StateSelectorApply, span)
 	require.NoError(t, err)
 	assertAttributeEquals(t, span.Attributes(), "service.version", "1.0.0")
-
 }

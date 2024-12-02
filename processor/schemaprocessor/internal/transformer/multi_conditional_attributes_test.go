@@ -53,7 +53,8 @@ func TestSpanEventConditionalAttributeTransformer(t *testing.T) {
 				return span
 			},
 			changed: false,
-		}, {
+		},
+		{
 			name: "bothnamematches",
 			span: func() ptrace.Span {
 				span := ptrace.NewSpan()

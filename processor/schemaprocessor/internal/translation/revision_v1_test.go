@@ -148,64 +148,65 @@ func TestNewRevisionV1(t *testing.T) {
 			},
 			expect: &RevisionV1{
 				ver: &Version{1, 0, 0},
-				all: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					transformer.AllAttributes{
-						// initialize one of each transformer with the attribute set
-						MetricAttributes: transformer.MetricAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"state": "status",
-							}),
+				all: &changelist.ChangeList{
+					Migrators: []migrate.Migrator{
+						transformer.AllAttributes{
+							// initialize one of each transformer with the attribute set
+							MetricAttributes: transformer.MetricAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"state": "status",
+								}),
+							},
+							LogAttributes: transformer.LogAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"state": "status",
+								}),
+							},
+							SpanAttributes: transformer.SpanAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"state": "status",
+								}),
+							},
+							SpanEventAttributes: transformer.SpanEventAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"state": "status",
+								}),
+							},
+							ResourceAttributes: transformer.ResourceAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"state": "status",
+								}),
+							},
 						},
-						LogAttributes: transformer.LogAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"state": "status",
-							}),
-						},
-						SpanAttributes: transformer.SpanAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"state": "status",
-							}),
-						},
-						SpanEventAttributes: transformer.SpanEventAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"state": "status",
-							}),
-						},
-						ResourceAttributes: transformer.ResourceAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"state": "status",
-							}),
+						transformer.AllAttributes{
+							// initialize one of each transformer with the attribute set
+							MetricAttributes: transformer.MetricAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"status": "state",
+								}),
+							},
+							LogAttributes: transformer.LogAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"status": "state",
+								}),
+							},
+							SpanAttributes: transformer.SpanAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"status": "state",
+								}),
+							},
+							SpanEventAttributes: transformer.SpanEventAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"status": "state",
+								}),
+							},
+							ResourceAttributes: transformer.ResourceAttributes{
+								AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+									"status": "state",
+								}),
+							},
 						},
 					},
-					transformer.AllAttributes{
-						// initialize one of each transformer with the attribute set
-						MetricAttributes: transformer.MetricAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"status": "state",
-							}),
-						},
-						LogAttributes: transformer.LogAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"status": "state",
-							}),
-						},
-						SpanAttributes: transformer.SpanAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"status": "state",
-							}),
-						},
-						SpanEventAttributes: transformer.SpanEventAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"status": "state",
-							}),
-						},
-						ResourceAttributes: transformer.ResourceAttributes{
-							AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-								"status": "state",
-							}),
-						},
-					},
-				},
 				},
 				resources: &changelist.ChangeList{Migrators: []migrate.Migrator{
 					transformer.ResourceAttributes{AttributeChange: migrate.NewAttributeChangeSet(
@@ -247,9 +248,10 @@ func TestNewRevisionV1(t *testing.T) {
 					)},
 				}},
 				logs: &changelist.ChangeList{Migrators: []migrate.Migrator{
-					transformer.LogAttributes{AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
-						"ERROR": "error",
-					}),
+					transformer.LogAttributes{
+						AttributeChange: migrate.NewAttributeChangeSet(map[string]string{
+							"ERROR": "error",
+						}),
 					},
 				}},
 			},
