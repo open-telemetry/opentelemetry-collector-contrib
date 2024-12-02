@@ -32,7 +32,7 @@ type Tracker interface {
 	EndPoll()
 	EndConsume() int
 	TotalReaders() int
-	FindFiles([]*fingerprint.Fingerprint) []fileset.Matchable
+	FindFiles([]*fingerprint.Fingerprint) []*reader.Metadata
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
@@ -191,31 +191,29 @@ func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Meta
 }
 
 // FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
-func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []fileset.Matchable {
+func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
 	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
 	// We exit if all fingerprints are matched.
 
 	mostRecentIndex := util.Mod(t.archiveIndex-1, t.pollsToArchive)
-	matchedMetadata := make([]fileset.Matchable, len(fps))
-	indices := make(map[int]bool) // Track fp indices of original fps slice
-
-	for i := 0; i < len(fps); i++ {
-		indices[i] = true
-	}
+	matchedMetadata := make([]*reader.Metadata, len(fps))
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
-	for i := 0; i < t.pollsToArchive && len(indices) > 0; i, mostRecentIndex = i+1, util.Mod(mostRecentIndex-1, t.pollsToArchive) {
+	for i := 0; i < t.pollsToArchive; i, mostRecentIndex = i+1, util.Mod(mostRecentIndex-1, t.pollsToArchive) {
 		modified := false
 		data, err := t.readArchive(mostRecentIndex) // we load one fileset atmost once per poll
 		if err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 			continue
 		}
-		for index := range indices {
-			if md := data.Match(fps[index], fileset.StartsWith); md != nil {
-				// update the matched metadata for this index
+		for index, fp := range fps {
+			if matchedMetadata[index] != nil {
+				// we've already found a match for this index, continue
+				continue
+			}
+			if md := data.Match(fp, fileset.StartsWith); md != nil {
+				// update the matched metada for the index
 				matchedMetadata[index] = md
-				delete(indices, index)
 				modified = true
 			}
 		}
@@ -225,10 +223,6 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []fileset.Matcha
 				t.set.Logger.Error("error while opening archive", zap.Error(err))
 			}
 		}
-	}
-	// add remaining fingerprints i.e. unmatched fingerprints
-	for index := range indices {
-		matchedMetadata[index] = fps[index]
 	}
 	return matchedMetadata
 }
@@ -288,4 +282,4 @@ func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
 
-func (t *noStateTracker) FindFiles([]*fingerprint.Fingerprint) []fileset.Matchable { return nil }
+func (t *noStateTracker) FindFiles([]*fingerprint.Fingerprint) []*reader.Metadata { return nil }

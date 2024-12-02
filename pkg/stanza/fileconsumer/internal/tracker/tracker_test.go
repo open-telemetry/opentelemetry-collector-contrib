@@ -33,15 +33,13 @@ func TestFindFilesOrder(t *testing.T) {
 	require.Equal(t, len(fps), len(matchables), "return slice should be of same length as input slice")
 
 	for i := 0; i < len(matchables); i++ {
-		require.Truef(t, fps[i].Equal(matchables[i].GetFingerprint()), "fingerprint at index %d is not equal to corresponding return value", i)
 		if fpInStorage[i] {
-			// if current fingerprint is present in storage, the corresponding return type should be a "Metadata"
-			_, ok := matchables[i].(*reader.Metadata)
-			require.True(t, ok, "resulting index %d should be of reader.Metadata type", i)
+			// if current fingerprint is present in storage, the corresponding return type should not be nil
+			require.NotNilf(t, matchables[i], "resulting index %d should be not be nil type", i)
+			require.Truef(t, fps[i].Equal(matchables[i].GetFingerprint()), "fingerprint at index %d is not equal to corresponding return value", i)
 		} else {
-			// if current fingerprint is absent from storage, the corresponding return type should be a "Fingerprint"
-			_, ok := matchables[i].(*fingerprint.Fingerprint)
-			require.True(t, ok, "resulting index %d should be of fingerprint.Fingerprint type", i)
+			// if current fingerprint is absent from storage, the corresponding index should be empty i.e. "nil"
+			require.Nil(t, matchables[i], "resulting index %d should be of nil type", i)
 		}
 	}
 }
