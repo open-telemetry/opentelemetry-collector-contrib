@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 )
 
@@ -37,7 +38,7 @@ type Scraper struct {
 	Db                 *sql.DB
 }
 
-var _ scraperhelper.Scraper = (*Scraper)(nil)
+var _ scraper.Metrics = (*Scraper)(nil)
 
 func NewScraper(id component.ID, query Query, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, telemetry TelemetryConfig, dbProviderFunc DbProviderFunc, clientProviderFunc ClientProviderFunc) *Scraper {
 	return &Scraper{
@@ -67,7 +68,7 @@ func (s *Scraper) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *Scraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
 	rows, err := s.Client.QueryRows(ctx)
 	if err != nil {
