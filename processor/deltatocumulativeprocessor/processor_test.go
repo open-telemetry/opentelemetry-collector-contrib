@@ -97,7 +97,7 @@ func config(t *testing.T, file string) *Config {
 	return cfg
 }
 
-func setup(t *testing.T, cfg *Config) State {
+func setup(t testing.TB, cfg *Config) State {
 	t.Helper()
 
 	next := &consumertest.MetricsSink{}
