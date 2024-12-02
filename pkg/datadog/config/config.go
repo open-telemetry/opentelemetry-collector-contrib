@@ -259,6 +259,8 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
 
+	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
+
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
 		c.Metrics.TCPAddrConfig.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
