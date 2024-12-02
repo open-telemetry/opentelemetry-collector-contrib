@@ -108,7 +108,7 @@ resource_attributes:
     type: slice
     enabled: false
   container.image.tag:
-    description: Container image tag. Requires container.id or k8s.container.name.
+    description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
     type: string
     enabled: true
 
