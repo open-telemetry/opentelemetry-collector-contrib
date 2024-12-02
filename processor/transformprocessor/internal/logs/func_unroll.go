@@ -29,10 +29,29 @@ func createUnrollFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.Ex
 	return unroll(args.Field)
 }
 
+type valueQueue struct {
+	data []pcommon.Value
+}
+
+func (v *valueQueue) push(val pcommon.Value) {
+	v.data = append(v.data, val)
+}
+
+func (v *valueQueue) pop() (pcommon.Value, error) {
+	if len(v.data) == 0 {
+		return pcommon.NewValueInt(-1), fmt.Errorf("no values in queue")
+	}
+	val := v.data[0]
+	v.data = v.data[1:]
+	return val, nil
+}
+
 func unroll(field ottl.GetSetter[ottllog.TransformContext]) (ottl.ExprFunc[ottllog.TransformContext], error) {
+	valueQueue := valueQueue{
+		data: []pcommon.Value{},
+	}
 
 	var currentExpansions []pcommon.Value
-	var unrollType pcommon.ValueType
 	return func(ctx context.Context, tCtx ottllog.TransformContext) (any, error) {
 		value, err := field.Get(ctx, tCtx)
 		if err != nil {
@@ -40,83 +59,47 @@ func unroll(field ottl.GetSetter[ottllog.TransformContext]) (ottl.ExprFunc[ottll
 		}
 
 		currentLogRecord := tCtx.GetLogRecord()
-		if unrollIdx, ok := currentLogRecord.Attributes().Get("unrolled_idx"); ok {
-			// we're in the middle of unrolling
-			currentLogRecord.Attributes().Remove("unrolled_idx")
-			switch unrollType {
-			case pcommon.ValueTypeStr:
-				value := currentExpansions[unrollIdx.Int()]
-				currentLogRecord.Body().SetStr(value.AsString())
-			case pcommon.ValueTypeInt:
-				value := currentExpansions[unrollIdx.Int()]
-				currentLogRecord.Body().SetInt(value.Int())
-			case pcommon.ValueTypeDouble:
-				value := currentExpansions[unrollIdx.Int()]
-				currentLogRecord.Body().SetDouble(value.Double())
-			case pcommon.ValueTypeBool:
-				value := currentExpansions[unrollIdx.Int()]
-				currentLogRecord.Body().SetBool(value.Bool())
-			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
-			default:
-				return nil, fmt.Errorf("unable to continue unrolling %v", unrollType)
+
+		// Note this is a hack to store metadata on the log record
+		if _, ok := currentLogRecord.Attributes().Get("is_expanded"); ok {
+			value, err := valueQueue.pop()
+			if err != nil {
+				return nil, fmt.Errorf("unable to get value from channel")
 			}
+			currentLogRecord.Body().SetStr(value.AsString())
+			currentLogRecord.Attributes().Remove("is_expanded")
 			return nil, nil
 		}
 
-		expansions := []pcommon.Value{}
+		newValues := []pcommon.Value{}
 		switch value := value.(type) {
 		case pcommon.Slice:
 			for i := 0; i < value.Len(); i++ {
 				v := value.At(i)
-				unrollType = v.Type()
-				expansions = append(expansions, v)
+				newValues = append(newValues, v)
 			}
 		default:
 			return nil, fmt.Errorf("input field is not a slice, got %T", value)
 		}
 
 		scopeLogs := tCtx.GetScopeLogs()
-		currentRecord := tCtx.GetLogRecord()
 		scopeLogs.LogRecords().RemoveIf(func(removeCandidate plog.LogRecord) bool {
-			return removeCandidate == currentRecord
+			return removeCandidate == currentLogRecord
 		})
 
-		for idx, expansion := range expansions {
+		for idx, expansion := range newValues {
 			newRecord := scopeLogs.LogRecords().AppendEmpty()
-			currentRecord.CopyTo(newRecord)
-
+			currentLogRecord.CopyTo(newRecord)
 			// handle current element as base
 			if idx == 0 {
-				switch unrollType {
-				case pcommon.ValueTypeStr:
-					newRecord.Body().SetStr(expansion.AsString())
-				case pcommon.ValueTypeInt:
-					newRecord.Body().SetInt(expansion.Int())
-				case pcommon.ValueTypeDouble:
-					newRecord.Body().SetDouble(expansion.Double())
-				case pcommon.ValueTypeBool:
-					newRecord.Body().SetBool(expansion.Bool())
-				default:
-					return nil, fmt.Errorf("unable to unroll %v", unrollType)
-				}
+				newRecord.Body().SetStr(expansion.AsString())
 				continue
 			}
-			// currentLength := scopeLogs.LogRecords().Len()
-			newRecord.Attributes().PutInt("unrolled_idx", int64(len(currentExpansions)+idx))
-			switch unrollType {
-			case pcommon.ValueTypeStr:
-				newRecord.Body().SetStr(expansion.AsString())
-			case pcommon.ValueTypeInt:
-				newRecord.Body().SetInt(expansion.Int())
-			case pcommon.ValueTypeDouble:
-				newRecord.Body().SetDouble(expansion.Double())
-			case pcommon.ValueTypeBool:
-				newRecord.Body().SetBool(expansion.Bool())
-			default:
-				return nil, fmt.Errorf("unable to unroll %v", unrollType)
-			}
+
+			newRecord.Attributes().PutBool("is_expanded", true)
+			valueQueue.push(expansion)
 		}
-		currentExpansions = append(currentExpansions, expansions...)
+		currentExpansions = append(currentExpansions, newValues...)
 
 		return nil, nil
 	}, nil
