@@ -27,6 +27,7 @@ type Config struct {
 	IdxEndpoint                    confighttp.ClientConfig `mapstructure:"indexer"`
 	SHEndpoint                     confighttp.ClientConfig `mapstructure:"search_head"`
 	CMEndpoint                     confighttp.ClientConfig `mapstructure:"cluster_master"`
+	VersionInfo                    bool                    `mapstructure:"build_version_info"`
 }
 
 func (cfg *Config) Validate() (errors error) {
