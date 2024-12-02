@@ -118,6 +118,10 @@
       {
         "matchDatasources": ["golang-version"],
         "rangeStrategy": "bump"
+      },
+      {
+        "matchPackageNames": ["google.golang.org/grpc"],
+        "allowedVersions": "!/v1.68.0$/"
       }
     ],
     "ignoreDeps": [

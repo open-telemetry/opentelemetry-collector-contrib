@@ -17,6 +17,8 @@ env:
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   # renovate: datasource=golang-version depName=go
   GO_VERSION: "1.22.9"
+  # renovate: datasource=github-releases depName=tcort/markdown-link-check
+  MD_LINK_CHECK_VERSION: "3.12.2"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -86,7 +88,7 @@ jobs:
         run: make chlog-preview > changelog_preview.md
       - name: Install markdown-link-check
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
-        run: npm install -g markdown-link-check@3.12.2
+        run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
       - name: Run markdown-link-check
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: |
