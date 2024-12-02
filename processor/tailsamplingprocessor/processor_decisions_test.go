@@ -400,3 +400,77 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	require.EqualValues(t, 2, nextConsumer.SpanCount(), "original final decision not honored")
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
+
+func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait * 10,
+		NumTraces:    defaultNumTraces,
+	}
+	nextConsumer := new(consumertest.TracesSink)
+	s := setupTestTelemetry()
+	ct := s.NewSettings()
+	idb := newSyncIDBatcher()
+
+	mpe := &mockPolicyEvaluator{}
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+	}
+
+	// Use this instead of the default no-op cache
+	c, err := cache.NewLRUDecisionCache[bool](200)
+	require.NoError(t, err)
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies), withNonSampledDecisionCache(c))
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// We are going to create 2 spans belonging to the same trace
+	traceID := uInt64ToTraceID(1)
+
+	// The first span will be NOT sampled, this will later be set to sampled, but the sampling decision will be cached
+	mpe.NextDecision = sampling.NotSampled
+
+	// A function that return a ptrace.Traces containing a single span for the single trace we are using.
+	spanIndexToTraces := func(spanIndex uint64) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetTraceID(traceID)
+		span.SetSpanID(uInt64ToSpanID(spanIndex))
+		return traces
+	}
+
+	// Generate and deliver first span
+	require.NoError(t, p.ConsumeTraces(context.Background(), spanIndexToTraces(1)))
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	// The first tick won't do anything
+	tsp.policyTicker.OnTick()
+	require.EqualValues(t, 0, mpe.EvaluationCount)
+
+	// This will cause policy evaluations on the first span
+	tsp.policyTicker.OnTick()
+
+	// Policy should have been evaluated once
+	require.EqualValues(t, 1, mpe.EvaluationCount)
+
+	// The final decision SHOULD be NOT Sampled.
+	require.EqualValues(t, 0, nextConsumer.SpanCount())
+
+	// Drop the trace to force cache to make decision
+	tsp.dropTrace(traceID, time.Now())
+	_, ok := tsp.idToTrace.Load(traceID)
+	require.False(t, ok)
+
+	// Set next decision to sampled, ensuring the next decision is determined by the decision cache, not the policy
+	mpe.NextDecision = sampling.Sampled
+
+	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
+	// The policies should NOT be evaluated again.
+	require.NoError(t, p.ConsumeTraces(context.Background(), spanIndexToTraces(2)))
+	require.EqualValues(t, 1, mpe.EvaluationCount)
+	require.EqualValues(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
+}

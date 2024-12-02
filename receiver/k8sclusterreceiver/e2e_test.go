@@ -128,7 +128,6 @@ func TestE2EClusterScoped(t *testing.T) {
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2ENamespaceScoped(t *testing.T) {
-
 	var expected pmetric.Metrics
 	expected, err := golden.ReadMetrics(expectedFileNamespaceScoped)
 	require.NoError(t, err)

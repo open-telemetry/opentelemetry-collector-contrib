@@ -6,7 +6,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [jpkrohling]
+    active: []
 
 tests:
   config:
