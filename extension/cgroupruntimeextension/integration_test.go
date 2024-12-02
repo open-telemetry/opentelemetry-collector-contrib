@@ -17,7 +17,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/containerd/cgroups/v3"
 	"github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,6 +112,8 @@ func TestCgroupV2Integration(t *testing.T) {
 	stats, err := manager.Stat()
 	require.NoError(t, err)
 
+	// 128 MB
+	initialBaseMaxMemory := 134217728
 	initialMaxMemory := stats.GetMemory().GetUsageLimit()
 	initialCpuQuota, initialCpuPeriod, err := cgroupMaxCpu(cgroupPath)
 	require.NoError(t, err)
@@ -123,24 +124,16 @@ func TestCgroupV2Integration(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fmt.Printf("Cgroups mode: %v\n", cgroups.Mode())
-			if cgroups.Mode() == cgroups.Legacy || cgroups.Mode() == cgroups.Hybrid {
-				fmt.Printf("LEGACY CGROUPS\n")
-			} else {
-				fmt.Printf("CGROUPS V2\n")
-			}
-
-			// initialGoMem := debug.SetMemoryLimit(-1)
+			initialGoMem := debug.SetMemoryLimit(-1)
 			initialGoProcs := runtime.GOMAXPROCS(-1)
 
 			// restore startup cgroup initial resource values
 			t.Cleanup(func() {
-				debug.SetMemoryLimit(math.MaxInt64)
+				debug.SetMemoryLimit(initialGoMem)
 				runtime.GOMAXPROCS(initialGoProcs)
 				err = manager.Update(&cgroup2.Resources{
 					Memory: &cgroup2.Memory{
 						Max: pointerInt64(int64(initialMaxMemory)),
-						// Max: debug.SetMemoryLimit(math.MaxInt64),
 					},
 					CPU: &cgroup2.CPU{
 						Max: cgroup2.NewCPUMax(pointerInt64(initialCpuQuota), pointerUint64(initialCpuPeriod)),
@@ -149,6 +142,13 @@ func TestCgroupV2Integration(t *testing.T) {
 			})
 
 			err = manager.Update(&cgroup2.Resources{
+				Memory: &cgroup2.Memory{
+					// Default max memory must be
+					// overwritten
+					// to automemlimit change the GOMEMLIMIT
+					// value
+					Max: pointerInt64(int64(initialBaseMaxMemory)),
+				},
 				CPU: &cgroup2.CPU{
 					Max: cgroup2.NewCPUMax(test.cgroupCpuQuota, pointerUint64(test.cgroupCpuPeriod)),
 				},
@@ -171,7 +171,7 @@ func TestCgroupV2Integration(t *testing.T) {
 			assert.NoError(t, err)
 			fmt.Printf("GOMEMLIMIT after: %v\n", debug.SetMemoryLimit(-1))
 
-			assert.Equal(t, float64(initialMaxMemory)*test.config.GoMemLimit.Ratio, float64(debug.SetMemoryLimit(-1)))
+			assert.Equal(t, uint64(float64(initialBaseMaxMemory)*test.config.GoMemLimit.Ratio), uint64(debug.SetMemoryLimit(-1)))
 			// GOMAXPROCS is set to the value of  `cpu.max / cpu.period`
 			// If cpu.max is set to max, GOMAXPROCS should not be
 			// modified
