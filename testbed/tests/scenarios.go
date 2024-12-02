@@ -657,7 +657,7 @@ func getLogsID(logToRetry []plog.Logs) []string {
 		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for index := 0; index < logRecord.Len(); index++ {
 			logObj := logRecord.At(index)
-			itemIndex, batchIndex := extractIdFromLog(logObj)
+			itemIndex, batchIndex := extractIDFromLog(logObj)
 			result = append(result, fmt.Sprintf("%s%s", batchIndex, itemIndex))
 		}
 	}
@@ -685,7 +685,7 @@ func allElementsExistInSlice(slice1, slice2 []string) bool {
 
 // in case of filelog receiver, the batch_index and item_index are a part of log body.
 // we use regex to extract them
-func extractIdFromLog(log plog.LogRecord) (string, string) {
+func extractIDFromLog(log plog.LogRecord) (string, string) {
 	var batch, item string
 	match := batchRegex.FindStringSubmatch(log.Body().AsString())
 	if len(match) == 2 {
