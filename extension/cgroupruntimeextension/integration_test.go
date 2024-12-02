@@ -9,6 +9,7 @@ package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"os"
 	"path"
@@ -139,17 +140,18 @@ func TestCgroupV2Integration(t *testing.T) {
 
 	// Startup resource values
 	initialMaxMemory := stats.GetMemory().GetUsageLimit()
-	memoryCleanUp := func() {
-		_ = manager.Update(&cgroup2.Resources{
+	memoryCgroupCleanUp := func() {
+		err = manager.Update(&cgroup2.Resources{
 			Memory: &cgroup2.Memory{
 				Max: pointerInt64(int64(initialMaxMemory)),
 			},
 		})
+		assert.NoError(t, err)
 	}
 
 	if initialMaxMemory == math.MaxUint64 {
 		// fallback solution to set cgroup's max memory to "max"
-		memoryCleanUp = func() {
+		memoryCgroupCleanUp = func() {
 			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "memory.max"), []byte("max"), 0o644)
 			assert.NoError(t, err)
 		}
@@ -157,15 +159,26 @@ func TestCgroupV2Integration(t *testing.T) {
 
 	initialCpuQuota, initialCpuPeriod, err := cgroupMaxCpu(cgroupPath)
 	require.NoError(t, err)
-	initialGoMem := debug.SetMemoryLimit(-1)
-	initialGoProcs := runtime.GOMAXPROCS(-1)
-	cpuCleanUp := func() {
+	cpuCgroupCleanUp := func() {
+		fmt.Println(initialCpuQuota)
 		err = manager.Update(&cgroup2.Resources{
 			CPU: &cgroup2.CPU{
 				Max: cgroup2.NewCPUMax(pointerInt64(initialCpuQuota), pointerUint64(initialCpuPeriod)),
 			},
 		})
+		assert.NoError(t, err)
 	}
+
+	if initialCpuQuota == math.MaxInt64 {
+		// fallback solution to set cgroup's max cpu to "max"
+		cpuCgroupCleanUp = func() {
+			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "cpu.max"), []byte("max"), 0o644)
+			assert.NoError(t, err)
+		}
+	}
+
+	initialGoMem := debug.SetMemoryLimit(-1)
+	initialGoProcs := runtime.GOMAXPROCS(-1)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -173,8 +186,8 @@ func TestCgroupV2Integration(t *testing.T) {
 			t.Cleanup(func() {
 				debug.SetMemoryLimit(initialGoMem)
 				runtime.GOMAXPROCS(initialGoProcs)
-				memoryCleanUp()
-				cpuCleanUp()
+				memoryCgroupCleanUp()
+				cpuCgroupCleanUp()
 			})
 
 			err = manager.Update(&cgroup2.Resources{
