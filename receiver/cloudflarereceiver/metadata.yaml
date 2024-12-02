@@ -6,5 +6,5 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [dehaansa, djaglowski]
+    active: [dehaansa]
     seeking_new: true
