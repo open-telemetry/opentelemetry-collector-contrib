@@ -129,3 +129,5 @@ metrics:
 
 tests:
   config:
+    webhook:
+      endpoint: "localhost:8080"

@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -19,6 +20,14 @@ import (
 )
 
 // This file implements a factory for the github receiver
+
+const (
+	defaultReadTimeout  = "500ms"
+	defaultWriteTimeout = "500ms"
+	defaultPath         = "/events"
+	defaultHealthPath   = "/health_check"
+	defaultEndpoint     = "localhost:8080"
+)
 
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
@@ -34,6 +43,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
 	)
 }
 
@@ -48,8 +58,21 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
+	// rt, _ := time.ParseDuration(defaultReadTimeout)
+	// wt, _ := time.ParseDuration(defaultWriteTimeout)
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		// TODO: Confirm this is correct
+		WebHook: WebHook{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint: defaultEndpoint,
+				// ReadTimeout:  rt,
+				// WriteTimeout: wt,
+			},
+			// Path:       defaultPath,
+			// HealthPath: defaultHealthPath,
+		},
+
 		// TODO: metrics builder configuration may need to be in each sub scraper,
 		// TODO: for right now setting here because the metrics in this receiver will apply to all
 		// TODO: scrapers defined as a common set of github
@@ -84,6 +107,21 @@ func createMetricsReceiver(
 		consumer,
 		addScraperOpts...,
 	)
+}
+
+func createTracesReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	cfg component.Config,
+	consumer consumer.Traces,
+) (receiver.Traces, error) {
+	// check that the configuration is valid
+	conf, ok := cfg.(*Config)
+	if !ok {
+		return nil, errConfigNotValid
+	}
+
+	return newTracesReceiver(params, conf, consumer)
 }
 
 func createAddScraperOpts(
