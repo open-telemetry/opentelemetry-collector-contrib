@@ -26,8 +26,8 @@ const (
 	hzInAMHz   = 1_000_000
 )
 
-// scraper for CPU Metrics
-type scraper struct {
+// cpuScraper for CPU Metrics
+type cpuScraper struct {
 	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
@@ -45,11 +45,11 @@ type cpuInfo struct {
 }
 
 // newCPUScraper creates a set of CPU related metrics
-func newCPUScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
+func newCPUScraper(_ context.Context, settings receiver.Settings, cfg *Config) *cpuScraper {
+	return &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
+func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
 	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(s.now())
 	cpuTimes, err := s.times(ctx, true /*percpu=*/)
