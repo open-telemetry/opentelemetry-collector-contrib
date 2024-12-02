@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
@@ -41,7 +41,7 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
 	config internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 
 	if cfg.RootPath == "" {
@@ -67,5 +67,5 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperWithoutType(s.scrape, scraperhelper.WithStart(s.start))
+	return scraper.NewMetrics(s.scrape, scraper.WithStart(s.start))
 }

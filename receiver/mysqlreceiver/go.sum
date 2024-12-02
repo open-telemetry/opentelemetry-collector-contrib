@@ -176,8 +176,8 @@ go.opentelemetry.io/collector/receiver/receiverprofiles v0.114.1-0.2024113017122
 go.opentelemetry.io/collector/receiver/receiverprofiles v0.114.1-0.20241130171227-c52d625647be/go.mod h1:+7Vv46YQ493yuiSnyUPvw6OTbWzdf/ym+oWdNKzdawk=
 go.opentelemetry.io/collector/receiver/receivertest v0.114.1-0.20241130171227-c52d625647be h1:LHOaRHJr8v1d5s3paKdruDh1aBZIDLdWGLwYjcwUY+g=
 go.opentelemetry.io/collector/receiver/receivertest v0.114.1-0.20241130171227-c52d625647be/go.mod h1:x457Z8VzHtpPWL7/d4baWawdP/vFUFa+YVwfYBFFccU=
-go.opentelemetry.io/collector/scraper v0.114.0 h1:65fGJ63oiw31FH089VgIA3VAMzNFGZz43DoCuD2FtDo=
-go.opentelemetry.io/collector/scraper v0.114.0/go.mod h1:vWKPP+UxgMkQNCz22YGnx/PVreUL5CvA2slMSyC7Gks=
+go.opentelemetry.io/collector/scraper v0.114.1-0.20241130171227-c52d625647be h1:srlJbDYpoEMOxdEQL0W632lx5IW8yU2NhE+z4Y4nOp0=
+go.opentelemetry.io/collector/scraper v0.114.1-0.20241130171227-c52d625647be/go.mod h1:JdaLA6lJH34XOA5dCCnhaNvL6ldhTbMn3E7U2A/eHWo=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 h1:jq9TW8u3so/bN+JPT166wjOI6/vQPF6Xe7nMNIltagk=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0/go.mod h1:p8pYQP+m5XfbZm9fxtSKAbM6oIllS7s2AfxrChvc7iw=
 go.opentelemetry.io/otel v1.32.0 h1:WnBN+Xjcteh0zdk01SVqV55d/m62NJLJdIyb4y/WO5U=

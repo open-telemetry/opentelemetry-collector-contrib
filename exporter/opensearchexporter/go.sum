@@ -142,8 +142,8 @@ go.opentelemetry.io/collector/extension/experimental/storage v0.114.1-0.20241130
 go.opentelemetry.io/collector/extension/experimental/storage v0.114.1-0.20241130171227-c52d625647be/go.mod h1:67/qBJjonwNC8o8AJYD7ajPNtmgbelSx4CEAiFLyqZQ=
 go.opentelemetry.io/collector/extension/extensiontest v0.114.0 h1:ibXDms1qrswlvlR6b3d2BeyI8sXUXoFV11yOi9Sop8o=
 go.opentelemetry.io/collector/extension/extensiontest v0.114.0/go.mod h1:/bOYmqu5yTDfI1bJZUxFqm8ZtmcodpquebiSxiQxtDY=
-go.opentelemetry.io/collector/featuregate v1.20.0 h1:Mi7nMy/q52eruI+6jWnMKUOeM55XvwoPnGcdB1++O8c=
-go.opentelemetry.io/collector/featuregate v1.20.0/go.mod h1:47xrISO71vJ83LSMm8+yIDsUbKktUp48Ovt7RR6VbRs=
+go.opentelemetry.io/collector/featuregate v1.20.1-0.20241130171227-c52d625647be h1:kVV8i9CzkSCmJZyTOOq1UdcUm7Et0SHIhVTlohXZJ0Q=
+go.opentelemetry.io/collector/featuregate v1.20.1-0.20241130171227-c52d625647be/go.mod h1:3GaXqflNDVwWndNGBJ1+XJFy3Fv/XrFgjMN60N3z7yg=
 go.opentelemetry.io/collector/pdata v1.20.1-0.20241130171227-c52d625647be h1:g9VXvUGkTR/9hfBmFVpBFdhFF4yvQTwKHq4tt1PI63k=
 go.opentelemetry.io/collector/pdata v1.20.1-0.20241130171227-c52d625647be/go.mod h1:GKb1/zocKJMvxKbS+sl0W85lxhYBTFJ6h6I1tphVyDU=
 go.opentelemetry.io/collector/pdata/pprofile v0.114.1-0.20241130171227-c52d625647be h1:BOr/XU1PcNjm1lSH3Enf/F6CMDrCJ5DA3MJX0+FFXac=

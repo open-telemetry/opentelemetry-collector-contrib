@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.20.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/receiver v0.114.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/receiver/receivertest v0.114.1-0.20241130171227-c52d625647be
+	go.opentelemetry.io/collector/scraper v0.114.1-0.20241130171227-c52d625647be
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -30,7 +31,6 @@ require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.114.1-0.20241130171227-c52d625647be // indirect
-	go.opentelemetry.io/collector/scraper v0.114.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 )

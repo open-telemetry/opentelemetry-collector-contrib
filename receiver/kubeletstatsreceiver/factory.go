@@ -63,7 +63,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsReceiver(
-	_ context.Context,
+	ctx context.Context,
 	set receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
@@ -103,12 +103,12 @@ func createMetricsReceiver(
 		}
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions, cfg.MetricsBuilderConfig, cfg.NodeName)
+	scrp, err := newKubletScraper(ctx, rest, set, rOptions, cfg.MetricsBuilderConfig, cfg.NodeName)
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, set, consumer, scraperhelper.AddScraperWithType(metadata.Type, scrp))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, set, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
 }
 
 func restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {

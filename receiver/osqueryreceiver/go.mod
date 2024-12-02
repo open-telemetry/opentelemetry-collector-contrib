@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.20.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241130171227-c52d625647be // indirect
-	go.opentelemetry.io/collector/scraper v0.114.0 // indirect
+	go.opentelemetry.io/collector/scraper v0.114.1-0.20241130171227-c52d625647be // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
