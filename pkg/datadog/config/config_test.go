@@ -190,9 +190,9 @@ func TestValidate(t *testing.T) {
 			name: "Invalid reporter_period",
 			cfg: &Config{
 				API:          APIConfig{Key: "notnull"},
-				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 0},
+				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 4 * time.Minute},
 			},
-			err: "reporter_period must be a positive duration",
+			err: "reporter_period must be 5 minutes or higher",
 		},
 	}
 	for _, testInstance := range tests {

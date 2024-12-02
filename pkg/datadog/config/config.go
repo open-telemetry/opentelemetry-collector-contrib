@@ -133,8 +133,8 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	if c.HostMetadata.ReporterPeriod <= 0 {
-		return errors.New("reporter_period must be a positive duration")
+	if c.HostMetadata.ReporterPeriod < 5*time.Minute {
+		return errors.New("reporter_period must be 5 minutes or higher")
 	}
 
 	return nil
