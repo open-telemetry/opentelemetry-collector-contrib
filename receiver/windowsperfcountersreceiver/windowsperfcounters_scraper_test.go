@@ -328,7 +328,7 @@ func TestInitWatchers(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			s := &scraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher}
+			s := &windowsPerfCountersScraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher}
 			watchers, errs := s.initWatchers()
 			if test.expectedErr != "" {
 				require.EqualError(t, errs, test.expectedErr)
@@ -372,7 +372,7 @@ func TestWatcherResetFailure(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger = logger
 
-	s := &scraper{cfg: &cfg, settings: settings, newWatcher: mockPerfCounterFactoryInvocations(mpc)}
+	s := &windowsPerfCountersScraper{cfg: &cfg, settings: settings, newWatcher: mockPerfCounterFactoryInvocations(mpc)}
 	errs := s.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, errs)
 
@@ -498,7 +498,7 @@ func TestScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mpcs := test.mockPerfCounters
 			testConfig := test.cfg
-			s := &scraper{cfg: &testConfig, newWatcher: mockPerfCounterFactoryInvocations(mpcs...)}
+			s := &windowsPerfCountersScraper{cfg: &testConfig, newWatcher: mockPerfCounterFactoryInvocations(mpcs...)}
 			errs := s.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, errs)
 

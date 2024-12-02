@@ -27,7 +27,7 @@ Write responses:
 
 The following configuration options are supported:
 
-* `endpoint` (default = localhost:8086) HTTP service endpoint for the line protocol receiver. You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:8086`. This feature gate will be removed in a future release.
+* `endpoint` (default = localhost:8086) HTTP service endpoint for the line protocol receiver. See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 The full list of settings exposed for this receiver are documented in [config.go](config.go).
 
