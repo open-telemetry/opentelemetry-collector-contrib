@@ -72,9 +72,11 @@ func (s Histogram) SetAggregationTemporality(at pmetric.AggregationTemporality) 
 
 type ExpHistogram Metric
 
+const expHistogramMaxSize = 160
+
 func (s ExpHistogram) At(i int) data.ExpHistogram {
-	dp := Metric(s).ExponentialHistogram().DataPoints().At(i)
-	return data.ExpHistogram{DataPoint: dp}
+	dp := s.Metric.ExponentialHistogram().DataPoints().At(i)
+	return data.ExpHistogram{DataPoint: dp, MaxSize: expHistogramMaxSize}
 }
 
 func (s ExpHistogram) Len() int {
@@ -87,7 +89,7 @@ func (s ExpHistogram) Ident() Ident {
 
 func (s ExpHistogram) Filter(expr func(data.ExpHistogram) bool) {
 	s.ExponentialHistogram().DataPoints().RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
-		return !expr(data.ExpHistogram{DataPoint: dp})
+		return !expr(data.ExpHistogram{DataPoint: dp, MaxSize: expHistogramMaxSize})
 	})
 }
 
