@@ -169,7 +169,7 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 	}
 }
 
-func createTopicsScraper(ctx context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraper.Metrics, error) {
+func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraper.Metrics, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)

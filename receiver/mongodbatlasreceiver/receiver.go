@@ -50,7 +50,7 @@ func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) *mongodbat
 	}
 }
 
-func newMongoDBAtlasScraper(ctx context.Context, settings receiver.Settings, recv *mongodbatlasreceiver) (scraper.Metrics, error) {
+func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraper.Metrics, error) {
 	return scraper.NewMetrics(recv.scrape, scraper.WithShutdown(recv.shutdown))
 }
 

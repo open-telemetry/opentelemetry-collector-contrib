@@ -51,7 +51,6 @@ type kubletScraper struct {
 }
 
 func newKubletScraper(
-	ctx context.Context,
 	restClient kubelet.RestClient,
 	set receiver.Settings,
 	rOptions *scraperOptions,

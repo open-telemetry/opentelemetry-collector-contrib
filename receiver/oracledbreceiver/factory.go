@@ -44,7 +44,7 @@ type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
 
 func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
-		ctx context.Context,
+		_ context.Context,
 		settings receiver.Settings,
 		cfg component.Config,
 		consumer consumer.Metrics,
@@ -57,7 +57,7 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 			return nil, err
 		}
 
-		mp, err := newScraper(ctx, settings, metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
+		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
 		}, clientProviderFunc, instanceName)
 		if err != nil {

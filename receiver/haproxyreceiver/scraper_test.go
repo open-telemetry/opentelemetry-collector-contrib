@@ -55,7 +55,7 @@ func Test_scraper_readStats(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
-	expectedFile := filepath.Join("testdata", "haproxyScraper", "expected.yaml")
+	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, m, pmetrictest.IgnoreStartTimestamp(),
@@ -99,7 +99,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 
-	expectedFile := filepath.Join("testdata", "haproxyScraper", "30252_expected.yaml")
+	expectedFile := filepath.Join("testdata", "scraper", "30252_expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, m, pmetrictest.IgnoreStartTimestamp(),

@@ -34,14 +34,14 @@ func NewFactory() receiver.Factory {
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	recv := newMongoDBAtlasReceiver(params, cfg)
-	ms, err := newMongoDBAtlasScraper(ctx, params, recv)
+	ms, err := newMongoDBAtlasScraper(recv)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)
 	}

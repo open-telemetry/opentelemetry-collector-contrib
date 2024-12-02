@@ -35,7 +35,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(ctx context.Context, settings receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, settings receiver.Settings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 	mp := newScraper(rCfg, settings)
 	s, err := scraper.NewMetrics(

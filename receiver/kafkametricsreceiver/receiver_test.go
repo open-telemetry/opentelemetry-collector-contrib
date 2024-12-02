@@ -31,7 +31,7 @@ func TestNewReceiver_invalid_version_err(t *testing.T) {
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
-	mockScraper := func(ctx context.Context, _ Config, _ *sarama.Config, settings receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(_ context.Context, _ Config, _ *sarama.Config, _ receiver.Settings) (scraper.Metrics, error) {
 		return scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
@@ -62,7 +62,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(ctx context.Context, _ Config, _ *sarama.Config, settings receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(_ context.Context, _ Config, _ *sarama.Config, _ receiver.Settings) (scraper.Metrics, error) {
 		return scraper.NewMetrics(
 			func(context.Context) (pmetric.Metrics, error) {
 				return pmetric.Metrics{}, nil
