@@ -37,6 +37,13 @@ type Type interface {
 	Timestamp() pcommon.Timestamp
 }
 
+type Type interface {
+	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint
+
+	StartTimestamp() pcommon.Timestamp
+	Timestamp() pcommon.Timestamp
+}
+
 // AccumulateInto adds state and dp, storing the result in state
 //
 //	state = state + dp
