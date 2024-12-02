@@ -35,4 +35,8 @@ func TestCreateReceiver(t *testing.T) {
 	metricReceiver, err := factory.CreateMetrics(context.Background(), params, config, consumertest.NewNop())
 	assert.NoError(t, err, "Metric receiver creation failed")
 	assert.NotNil(t, metricReceiver, "receiver creation failed")
+
+	logReceiver, err := factory.CreateLogs(context.Background(), params, config, consumertest.NewNop())
+	assert.NoError(t, err, "log receiver creation failed")
+	assert.NotNil(t, logReceiver, "receiver creation failed")
 }

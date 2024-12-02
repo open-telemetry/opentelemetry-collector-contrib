@@ -18,3 +18,11 @@ docker_stats/allsettings:
       enabled: false
     container.memory.total_rss:
       enabled: true
+  min_docker_retry_wait: 1s
+  max_docker_retry_wait: 30s
+  logs:
+    filters:
+      type: [ "container", "image" ]
+      event: [ "start", "stop", "die" ]
+    since: "2024-01-01T00:00:00Z"
+    until: "2024-01-02T00:00:00Z"
