@@ -133,8 +133,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			value := uint64(0)
 			// now create buckets for each bound.
 			for bi := 0; bi < bounds.Len(); bi++ {
-				customMap :=
-					copyMap(map[string]any{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
+				customMap := copyMap(map[string]any{"le": float64ToDimValue(bounds.At(bi))}, dataPoint.Attributes().AsRaw())
 
 				value += counts.At(bi)
 				vMap := pcommon.NewMap()
@@ -151,10 +150,9 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			// add an upper bound for +Inf
 			{
 				// Add the LE field for the bucket's bound
-				customMap :=
-					copyMap(map[string]any{
-						"le": float64ToDimValue(math.Inf(1)),
-					}, dataPoint.Attributes().AsRaw())
+				customMap := copyMap(map[string]any{
+					"le": float64ToDimValue(math.Inf(1)),
+				}, dataPoint.Attributes().AsRaw())
 				vMap := pcommon.NewMap()
 				//nolint:errcheck
 				vMap.FromRaw(customMap)

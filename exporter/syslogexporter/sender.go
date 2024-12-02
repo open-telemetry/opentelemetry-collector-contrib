@@ -15,23 +15,31 @@ import (
 	"go.uber.org/zap"
 )
 
-const defaultPriority = 165
-const versionRFC5424 = 1
+const (
+	defaultPriority = 165
+	versionRFC5424  = 1
+)
 
-const protocolRFC5424Str = "rfc5424"
-const protocolRFC3164Str = "rfc3164"
+const (
+	protocolRFC5424Str = "rfc5424"
+	protocolRFC3164Str = "rfc3164"
+)
 
-const priority = "priority"
-const version = "version"
-const hostname = "hostname"
-const app = "appname"
-const pid = "proc_id"
-const msgID = "msg_id"
-const structuredData = "structured_data"
-const message = "message"
+const (
+	priority       = "priority"
+	version        = "version"
+	hostname       = "hostname"
+	app            = "appname"
+	pid            = "proc_id"
+	msgID          = "msg_id"
+	structuredData = "structured_data"
+	message        = "message"
+)
 
-const emptyValue = "-"
-const emptyMessage = ""
+const (
+	emptyValue   = "-"
+	emptyMessage = ""
+)
 
 type sender struct {
 	network   string
@@ -105,6 +113,7 @@ func (s *sender) Write(ctx context.Context, msgStr string) error {
 
 	return s.write(msgStr)
 }
+
 func (s *sender) write(msg string) error {
 	// check if logs contains new line character at the end, if not add it
 	if !strings.HasSuffix(msg, "\n") {
