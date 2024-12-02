@@ -27,7 +27,7 @@ func TestNewGitHubScraper(t *testing.T) {
 	factory := Factory{}
 	defaultConfig := factory.CreateDefaultConfig()
 
-	s := newGitHubScraper(context.Background(), receiver.Settings{}, defaultConfig.(*Config))
+	s := newGitHubScraper(receiver.Settings{}, defaultConfig.(*Config))
 
 	assert.NotNil(t, s)
 }
@@ -165,7 +165,7 @@ func TestScrape(t *testing.T) {
 
 			cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 
-			ghs := newGitHubScraper(context.Background(), receivertest.NewNopSettings(), cfg)
+			ghs := newGitHubScraper(receivertest.NewNopSettings(), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
 			ghs.cfg.ClientConfig.Endpoint = server.URL
 
