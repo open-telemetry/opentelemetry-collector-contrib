@@ -41,7 +41,7 @@ service:
       receivers: [github, github/customname]
       processors: [nop]
       exporters: [nop]
-      traces:
-        receivers: [github, github/customname]
-        processors: [nop]
-        exporters: [nop]
+    traces:
+      receivers: [github, github/customname]
+      processors: [nop]
+      exporters: [nop]

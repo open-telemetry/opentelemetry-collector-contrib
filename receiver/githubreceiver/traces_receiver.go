@@ -20,16 +20,9 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	errMissingEndpoint       = errors.New("missing a receiver endpoint")
-	errNilLogsConsumer       = errors.New("missing a logs consumer")
-	errInvalidRequestMethod  = errors.New("invalid method. Valid method is POST")
-	errInvalidEncodingType   = errors.New("invalid encoding type")
-	errEmptyResponseBody     = errors.New("request body content length is zero")
-	errMissingRequiredHeader = errors.New("request was missing required header or incorrect header value")
-)
+var errMissingEndpoint = errors.New("missing a receiver endpoint")
 
-const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
+const healthyResponse = `{"text": "GitHub receiver webhook is healthy"}`
 
 type githubTracesReceiver struct {
 	traceConsumer consumer.Traces
