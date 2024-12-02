@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -25,7 +26,7 @@ const (
 	defaultReadTimeout  = "500ms"
 	defaultWriteTimeout = "500ms"
 	defaultPath         = "/events"
-	defaultHealthPath   = "/health_check"
+	defaultHealthPath   = "/health"
 	defaultEndpoint     = "localhost:8080"
 )
 
@@ -58,27 +59,19 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
-	// rt, _ := time.ParseDuration(defaultReadTimeout)
-	// wt, _ := time.ParseDuration(defaultWriteTimeout)
+	rt, _ := time.ParseDuration(defaultReadTimeout)
+	wt, _ := time.ParseDuration(defaultWriteTimeout)
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-		// TODO: Confirm this is correct
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: defaultEndpoint,
-				// ReadTimeout:  rt,
-				// WriteTimeout: wt,
+				Endpoint:     defaultEndpoint,
+				ReadTimeout:  rt,
+				WriteTimeout: wt,
 			},
-			// Path:       defaultPath,
-			// HealthPath: defaultHealthPath,
+			Path:       defaultPath,
+			HealthPath: defaultHealthPath,
 		},
-
-		// TODO: metrics builder configuration may need to be in each sub scraper,
-		// TODO: for right now setting here because the metrics in this receiver will apply to all
-		// TODO: scrapers defined as a common set of github
-		// TODO: aqp completely remove these comments if the metrics build config
-		// needs to be defined in each scraper
-		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

@@ -75,31 +75,9 @@ func (cfg *Config) Validate() error {
 		errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
 	}
 
-	// if cfg.WebHook.ServerConfig.ReadTimeout != "" {
-	// 	readTimeout, err := time.ParseDuration(cfg.WebHook.ServerConfig.ReadTimeout)
-	// 	if err != nil {
-	// 		errs = multierr.Append(errs, err)
-	// 	}
-
-	// 	if readTimeout > maxReadWriteTimeout {
-	// 		errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
-	// 	}
-	// }
-
 	if cfg.WebHook.ServerConfig.WriteTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 	}
-
-	// if cfg.WebHook.WriteTimeout != "" {
-	// 	writeTimeout, err := time.ParseDuration(cfg.WebHook.WriteTimeout)
-	// 	if err != nil {
-	// 		errs = multierr.Append(errs, err)
-	// 	}
-
-	// 	if writeTimeout > maxReadWriteTimeout {
-	// 		errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
-	// 	}
-	// }
 
 	if (cfg.WebHook.RequiredHeader.Key != "" && cfg.WebHook.RequiredHeader.Value == "") || (cfg.WebHook.RequiredHeader.Value != "" && cfg.WebHook.RequiredHeader.Key == "") {
 		errs = multierr.Append(errs, errRequiredHeader)

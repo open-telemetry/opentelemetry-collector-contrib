@@ -20,23 +20,32 @@ import (
 	"go.uber.org/zap"
 )
 
-var errMissingEndpoint = errors.New("missing a receiver endpoint")
+var (
+	errMissingEndpoint       = errors.New("missing a receiver endpoint")
+	errNilLogsConsumer       = errors.New("missing a logs consumer")
+	errInvalidRequestMethod  = errors.New("invalid method. Valid method is POST")
+	errInvalidEncodingType   = errors.New("invalid encoding type")
+	errEmptyResponseBody     = errors.New("request body content length is zero")
+	errMissingRequiredHeader = errors.New("request was missing required header or incorrect header value")
+)
+
+const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
 
 type githubTracesReceiver struct {
-	nextConsumer   consumer.Traces
-	config         *Config
-	server         *http.Server
-	shutdownWG     sync.WaitGroup
-	createSettings receiver.Settings
-	logger         *zap.Logger
-	obsrecv        *receiverhelper.ObsReport
-	ghClient       *github.Client
+	traceConsumer consumer.Traces
+	cfg           *Config
+	server        *http.Server
+	shutdownWG    sync.WaitGroup
+	settings      receiver.Settings
+	logger        *zap.Logger
+	obsrecv       *receiverhelper.ObsReport
+	ghClient      *github.Client
 }
 
 func newTracesReceiver(
 	params receiver.Settings,
 	config *Config,
-	nextConsumer consumer.Traces,
+	traceConsumer consumer.Traces,
 ) (*githubTracesReceiver, error) {
 	if config.WebHook.Endpoint == "" {
 		return nil, errMissingEndpoint
@@ -59,19 +68,19 @@ func newTracesReceiver(
 	client := github.NewClient(nil)
 
 	gtr := &githubTracesReceiver{
-		nextConsumer:   nextConsumer,
-		config:         config,
-		createSettings: params,
-		logger:         params.Logger,
-		obsrecv:        obsrecv,
-		ghClient:       client,
+		traceConsumer: traceConsumer,
+		cfg:           config,
+		settings:      params,
+		logger:        params.Logger,
+		obsrecv:       obsrecv,
+		ghClient:      client,
 	}
 
 	return gtr, nil
 }
 
 func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host) error {
-	endpoint := fmt.Sprintf("%s%s", gtr.config.WebHook.Endpoint, gtr.config.WebHook.Path)
+	endpoint := fmt.Sprintf("%s%s", gtr.cfg.WebHook.Endpoint, gtr.cfg.WebHook.Path)
 	gtr.logger.Info("Starting GitHub WebHook receiving server", zap.String("endpoint", endpoint))
 
 	// noop if not nil. if start has not been called before these values should be nil.
@@ -79,14 +88,8 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 		return nil
 	}
 
-	//  #nosec G112
-	// gtr.server = &http.Server{
-	// 	Addr:    gtr.config.WebHook.ServerConfig.Endpoint,
-	// 	// Handler: gtr.server.Handler,
-	// }
-
 	// create listener from config
-	ln, err := gtr.config.WebHook.ServerConfig.ToListener(ctx)
+	ln, err := gtr.cfg.WebHook.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -94,31 +97,15 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 	// set up router.
 	router := httprouter.New()
 
-	// router.POST(gtr.config.WebHook.Path, gtr.handleReq)
-	// router.GET(gtr.config.WebHook.HealthPath, gtr.handleHealthCheck)
-
-	// router.POST(gtr.config.WebHook.Path, gtr.handleReq)
-	// router.GET(gtr.config.WebHook.HealthPath, gtr.handleHealthCheck)
+	router.GET(gtr.cfg.WebHook.HealthPath, gtr.handleHealthCheck)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.config.WebHook.ServerConfig.ToServer(ctx, host, gtr.createSettings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}
 
-	// readTimeout, err := time.ParseDuration(gtr.config.WebHook.ReadTimeout)
-	// if err != nil {
-	// 	return err
-	// }
-	//
-	// writeTimeout, err := time.ParseDuration(er.cfg.WriteTimeout)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// set timeouts
-	// er.server.ReadHeaderTimeout = readTimeout
-	// er.server.WriteTimeout = writeTimeout
+	gtr.logger.Sugar().Infof("servering health check at %v", gtr.cfg.WebHook.HealthPath)
 
 	gtr.shutdownWG.Add(1)
 	go func() {
@@ -143,52 +130,10 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-// func (gtr *githubTracesReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//
-// 	// Validate request path
-// 	if r.URL.Path != gtr.config.WebHook.Path {
-// 		http.Error(w, "Not found", http.StatusNotFound)
-// 		return
-// 	}
-//
-// 	// Validate the payload using the configured secret
-// 	payload, err := github.ValidatePayload(r, []byte(gtr.config.WebHook.Secret))
-// 	if err != nil {
-// 		gtr.logger.Debug("Payload validation failed", zap.Error(err))
-// 		http.Error(w, "Invalid payload or signature", http.StatusBadRequest)
-// 		return
-// 	}
-//
-// 	// Determine the type of GitHub webhook event and ensure it's one we handle
-// 	eventType := github.WebHookType(r)
-// 	event, err := github.ParseWebHook(eventType, payload)
-// 	if err != nil {
-// 		gtr.logger.Debug("Webhook parsing failed", zap.Error(err))
-// 		http.Error(w, "Failed to parse webhook", http.StatusBadRequest)
-// 		return
-// 	}
-//
-// 	// Handle events based on specific types and completion status
-// 	switch e := event.(type) {
-// 	case *github.WorkflowJobEvent:
-// 		if e.GetWorkflowJob().GetStatus() != "completed" {
-// 			gtr.logger.Debug("Skipping non-completed WorkflowJobEvent", zap.String("status", e.GetWorkflowJob().GetStatus()))
-// 			w.WriteHeader(http.StatusNoContent)
-// 			return
-// 		}
-// 	case *github.WorkflowRunEvent:
-// 		if e.GetWorkflowRun().GetStatus() != "completed" {
-// 			gtr.logger.Debug("Skipping non-completed WorkflowRunEvent", zap.String("status", e.GetWorkflowRun().GetStatus()))
-// 			w.WriteHeader(http.StatusNoContent)
-// 			return
-// 		}
-// 	default:
-// 		gtr.logger.Debug("Skipping unsupported event type", zap.String("event", eventType))
-// 		w.WriteHeader(http.StatusNoContent)
-// 		return
-// 	}
-//
-// 	gtr.logger.Debug("Received valid GitHub event", zap.String("type", eventType))
-//
-// 	w.WriteHeader(http.StatusAccepted)
-// }
+// Simple healthcheck endpoint.
+func (gtr *githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	_, _ = w.Write([]byte(healthyResponse))
+}
