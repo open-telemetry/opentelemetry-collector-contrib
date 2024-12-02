@@ -171,3 +171,5 @@ type InfoContent struct {
 	Build   string `json:"build"`
 	Version string `json:"version"`
 }
+
+type infoDict map[any]Info
