@@ -1,15 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-//go:build integration
-// +build integration
+//go:build integration && sudo
+// +build integration,sudo
+
+// Priviledged access is required to set cgroup's memory and cpu max values
 
 package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -56,14 +58,19 @@ func TestCgroupV2Integration(t *testing.T) {
 	tests := []struct {
 		name string
 		// nil CPU quota == "max" cgroup string value
-		cgroupCpuQuota  *int64
-		cgroupCpuPeriod uint64
-		config          *Config
+		cgroupCpuQuota     *int64
+		cgroupCpuPeriod    uint64
+		cgroupMaxMemory    int64
+		config             *Config
+		expectedGoMaxProcs int
+		expectedGoMemLimit int64
 	}{
 		{
 			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
 			cgroupCpuQuota:  pointerInt64(100000),
 			cgroupCpuPeriod: 8000,
+			// 128 Mb
+			cgroupMaxMemory: 134217728,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -73,11 +80,17 @@ func TestCgroupV2Integration(t *testing.T) {
 					Ratio:   0.9,
 				},
 			},
+			// 100000 / 8000
+			expectedGoMaxProcs: 12,
+			// 134217728 * 0.9
+			expectedGoMemLimit: 120795955,
 		},
 		{
-			name:            "0.5 of the max cgroup memory and 1 GOMAXPROCS",
+			name:            "50% of the max cgroup memory and 1 GOMAXPROCS",
 			cgroupCpuQuota:  pointerInt64(100000),
 			cgroupCpuPeriod: 100000,
+			// 128 Mb
+			cgroupMaxMemory: 134217728,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -87,11 +100,17 @@ func TestCgroupV2Integration(t *testing.T) {
 					Ratio:   0.5,
 				},
 			},
+			// 100000 / 100000
+			expectedGoMaxProcs: 1,
+			// 134217728 * 0.5
+			expectedGoMemLimit: 67108864,
 		},
 		{
-			name:            "default GOMAXPROCS",
+			name:            "10% of the max cgroup memory, max cpu, default GOMAXPROCS",
 			cgroupCpuQuota:  nil,
 			cgroupCpuPeriod: 100000,
+			// 128 Mb
+			cgroupMaxMemory: 134217728,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -101,6 +120,12 @@ func TestCgroupV2Integration(t *testing.T) {
 					Ratio:   0.1,
 				},
 			},
+			// GOMAXPROCS is set to the value of  `cpu.max / cpu.period`
+			// If cpu.max is set to max, GOMAXPROCS should not be
+			// modified
+			expectedGoMaxProcs: runtime.GOMAXPROCS(-1),
+			// 134217728 * 0.1
+			expectedGoMemLimit: 13421772,
 		},
 	}
 
@@ -112,33 +137,44 @@ func TestCgroupV2Integration(t *testing.T) {
 	stats, err := manager.Stat()
 	require.NoError(t, err)
 
-	// 128 MB
-	initialBaseMaxMemory := 134217728
+	// Startup resource values
 	initialMaxMemory := stats.GetMemory().GetUsageLimit()
+	memoryCleanUp := func() {
+		_ = manager.Update(&cgroup2.Resources{
+			Memory: &cgroup2.Memory{
+				Max: pointerInt64(int64(initialMaxMemory)),
+			},
+		})
+	}
+
+	if initialMaxMemory == math.MaxUint64 {
+		// fallback solution to set cgroup's max memory to "max"
+		memoryCleanUp = func() {
+			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "memory.max"), []byte("max"), 0o644)
+			assert.NoError(t, err)
+		}
+	}
+
 	initialCpuQuota, initialCpuPeriod, err := cgroupMaxCpu(cgroupPath)
 	require.NoError(t, err)
-
-	fmt.Printf("Initial max memory: %v\n", initialMaxMemory)
-	previous := debug.SetMemoryLimit(math.MaxInt64)
-	fmt.Printf("Previous test: %v\n", previous)
+	initialGoMem := debug.SetMemoryLimit(-1)
+	initialGoProcs := runtime.GOMAXPROCS(-1)
+	cpuCleanUp := func() {
+		err = manager.Update(&cgroup2.Resources{
+			CPU: &cgroup2.CPU{
+				Max: cgroup2.NewCPUMax(pointerInt64(initialCpuQuota), pointerUint64(initialCpuPeriod)),
+			},
+		})
+	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			initialGoMem := debug.SetMemoryLimit(-1)
-			initialGoProcs := runtime.GOMAXPROCS(-1)
-
 			// restore startup cgroup initial resource values
 			t.Cleanup(func() {
 				debug.SetMemoryLimit(initialGoMem)
 				runtime.GOMAXPROCS(initialGoProcs)
-				err = manager.Update(&cgroup2.Resources{
-					Memory: &cgroup2.Memory{
-						Max: pointerInt64(int64(initialMaxMemory)),
-					},
-					CPU: &cgroup2.CPU{
-						Max: cgroup2.NewCPUMax(pointerInt64(initialCpuQuota), pointerUint64(initialCpuPeriod)),
-					},
-				})
+				memoryCleanUp()
+				cpuCleanUp()
 			})
 
 			err = manager.Update(&cgroup2.Resources{
@@ -147,39 +183,24 @@ func TestCgroupV2Integration(t *testing.T) {
 					// overwritten
 					// to automemlimit change the GOMEMLIMIT
 					// value
-					Max: pointerInt64(int64(initialBaseMaxMemory)),
+					Max: pointerInt64(test.cgroupMaxMemory),
 				},
 				CPU: &cgroup2.CPU{
 					Max: cgroup2.NewCPUMax(test.cgroupCpuQuota, pointerUint64(test.cgroupCpuPeriod)),
 				},
 			})
-			assert.NoError(t, err)
-
-			stats, err := manager.Stat()
 			require.NoError(t, err)
 
-			maxMemory := stats.Memory.UsageLimit
-			fmt.Printf("After test: %v\n", maxMemory)
-
-			fmt.Printf("GOMEMLIMIT before: %v\n", debug.SetMemoryLimit(-1))
 			factory := NewFactory()
 			ctx := context.Background()
 			extension, err := factory.Create(ctx, extensiontest.NewNopSettings(), test.config)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = extension.Start(ctx, componenttest.NewNopHost())
-			assert.NoError(t, err)
-			fmt.Printf("GOMEMLIMIT after: %v\n", debug.SetMemoryLimit(-1))
+			require.NoError(t, err)
 
-			assert.Equal(t, uint64(float64(initialBaseMaxMemory)*test.config.GoMemLimit.Ratio), uint64(debug.SetMemoryLimit(-1)))
-			// GOMAXPROCS is set to the value of  `cpu.max / cpu.period`
-			// If cpu.max is set to max, GOMAXPROCS should not be
-			// modified
-			if test.cgroupCpuQuota == nil {
-				assert.Equal(t, initialGoProcs, runtime.GOMAXPROCS(-1))
-			} else {
-				assert.Equal(t, *test.cgroupCpuQuota/int64(test.cgroupCpuPeriod), int64(runtime.GOMAXPROCS(-1)))
-			}
+			assert.Equal(t, test.expectedGoMaxProcs, runtime.GOMAXPROCS(-1))
+			assert.Equal(t, test.expectedGoMemLimit, debug.SetMemoryLimit(-1))
 		})
 	}
 }
