@@ -29,12 +29,16 @@ var (
 	// ErrInvalidHostname is returned when the hostname is invalid.
 	ErrEmptyEndpoint = errors.New("endpoint cannot be empty")
 	// ErrAPIKeyFormat is returned if API key contains invalid characters
-	ErrAPIKeyFormat = errors.New("api.key contains invalid characters")
+	ErrAPIKeyFormat = errors.New("api::key contains invalid characters")
+	// NonHexRegex is a regex of characters that are always invalid in a Datadog API key
+	NonHexRegex = regexp.MustCompile(NonHexChars)
 )
 
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
+	// NonHexChars is a regex of characters that are always invalid in a Datadog API key
+	NonHexChars = "[^0-9a-fA-F]"
 )
 
 // APIConfig defines the API configuration options
@@ -127,10 +131,9 @@ func (c *Config) Validate() error {
 		return ErrUnsetAPIKey
 	}
 
-	nonHex := regexp.MustCompile("[^0-9a-fA-F]")
-	invalidAPIKeyChars := nonHex.FindAllString(string(c.API.Key), -1)
+	invalidAPIKeyChars := NonHexRegex.FindAllString(string(c.API.Key), -1)
 	if len(invalidAPIKeyChars) > 0 {
-		return errors.Join(ErrAPIKeyFormat, fmt.Errorf("invalid characters: %s", strings.Join(invalidAPIKeyChars, ", ")))
+		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
 	}
 
 	if err := c.Traces.Validate(); err != nil {
