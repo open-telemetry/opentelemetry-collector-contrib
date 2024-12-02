@@ -853,7 +853,7 @@ func TestMatcher(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.ElementsMatch(t, tc.expected, files)
+			assert.Equal(t, tc.expected, files)
 		})
 	}
 }
