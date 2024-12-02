@@ -368,7 +368,6 @@ func canBeCombined(metrics []pmetric.Metric) error {
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.Histogram().AggregationTemporality(), metric.Name(),
 					metric.Histogram().AggregationTemporality())
-
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			if firstMetric.ExponentialHistogram().AggregationTemporality() != metric.ExponentialHistogram().AggregationTemporality() {
@@ -376,7 +375,6 @@ func canBeCombined(metrics []pmetric.Metric) error {
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.ExponentialHistogram().AggregationTemporality(), metric.Name(),
 					metric.ExponentialHistogram().AggregationTemporality())
-
 			}
 		}
 	}
@@ -554,7 +552,7 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
 		case aggregateLabels:
 			if canChangeMetric {
-				attrs := []string{}
+				attrs := make([]string, 0, len(op.labelSetMap))
 				for k, v := range op.labelSetMap {
 					if v {
 						attrs = append(attrs, k)

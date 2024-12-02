@@ -23,7 +23,7 @@ type result struct {
 }
 
 func (r *results) Init(resultsDir string) {
-	err := os.MkdirAll(resultsDir, os.FileMode(0755))
+	err := os.MkdirAll(resultsDir, os.FileMode(0o755))
 	if err != nil {
 		log.Fatal(err.Error())
 	}

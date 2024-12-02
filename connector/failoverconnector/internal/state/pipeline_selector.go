@@ -87,13 +87,12 @@ func (p *PipelineSelector) setToNextPriorityPipeline(idx int) {
 
 // RetryHighPriorityPipelines responsible for single iteration through all higher priority pipelines
 func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retryGap time.Duration) {
-
 	ticker := time.NewTicker(retryGap)
 
 	defer ticker.Stop()
 
 	for i := 0; i < len(p.pipelineRetries); i++ {
-		if p.maxRetriesUsed(i) {
+		if p.exceededMaxRetries(i) {
 			continue
 		}
 		select {
@@ -111,7 +110,7 @@ func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retry
 // checkContinueRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
 func (p *PipelineSelector) checkContinueRetry(index int) bool {
 	for i := 0; i < index; i++ {
-		if p.loadRetryCount(i) < p.constants.MaxRetries {
+		if p.constants.MaxRetries == 0 || p.loadRetryCount(i) < p.constants.MaxRetries {
 			return true
 		}
 	}
@@ -126,11 +125,6 @@ func (p *PipelineSelector) exceededMaxRetries(idx int) bool {
 func (p *PipelineSelector) setToStableIndex(idx int) {
 	p.incrementRetryCount(idx)
 	p.currentIndex.Store(p.stableIndex.Load())
-}
-
-// MaxRetriesUsed exported access to maxRetriesUsed
-func (p *PipelineSelector) maxRetriesUsed(idx int) bool {
-	return p.loadRetryCount(idx) >= p.constants.MaxRetries
 }
 
 // SetNewStableIndex Update stableIndex to the passed stable index
@@ -250,8 +244,8 @@ func (p *PipelineSelector) TestRetryPipelines(ctx context.Context, retryInterval
 	p.enableRetry(ctx, retryInterval, retryGap)
 }
 
-func (p *PipelineSelector) SetRetryCountToMax(idx int) {
-	p.pipelineRetries[idx].Store(int32(p.constants.MaxRetries))
+func (p *PipelineSelector) SetRetryCountToValue(idx int, val int) {
+	p.pipelineRetries[idx].Store(int32(val))
 }
 
 func (p *PipelineSelector) ResetRetryCount(idx int) {

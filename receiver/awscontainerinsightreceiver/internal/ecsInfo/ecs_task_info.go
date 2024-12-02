@@ -45,7 +45,8 @@ type taskInfo struct {
 }
 
 func newECSTaskInfo(ctx context.Context, ecsTaskEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient doer, readyC chan bool) ecsTaskInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient doer, readyC chan bool,
+) ecsTaskInfoProvider {
 	ti := &taskInfo{
 		logger:                  logger,
 		httpClient:              httpClient,
@@ -79,7 +80,6 @@ func (ti *taskInfo) getTasksInfo(ctx context.Context) (ecsTasksInfo *ECSTasksInf
 }
 
 func (ti *taskInfo) refresh(ctx context.Context) {
-
 	ecsTasksInfo := ti.getTasksInfo(ctx)
 	runningTaskCount := int64(0)
 	var tasks []ECSTask
@@ -100,7 +100,6 @@ func (ti *taskInfo) refresh(ctx context.Context) {
 	if len(ti.runningTasksInfo) != 0 && ti.runningTaskCount != 0 && !isClosed(ti.readyC) {
 		close(ti.readyC)
 	}
-
 }
 
 func (ti *taskInfo) getRunningTaskCount() int64 {

@@ -2986,7 +2986,7 @@ func TestStatus(t *testing.T) {
 				body, err := io.ReadAll(resp.Body)
 				require.NoError(t, err)
 
-				assert.True(t, strings.Contains(string(body), ts.expectedBody))
+				assert.Contains(t, string(body), ts.expectedBody)
 
 				if ts.expectedComponentStatus != nil {
 					st := &serializableStatus{}
@@ -3143,5 +3143,4 @@ func TestConfig(t *testing.T) {
 			assert.Equal(t, tc.expectedBody, body)
 		})
 	}
-
 }

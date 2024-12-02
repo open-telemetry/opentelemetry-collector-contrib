@@ -5,7 +5,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
@@ -31,13 +31,15 @@ func TestNewReceiver_invalid_version_err(t *testing.T) {
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
-	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
-		return nil, nil
+	mockScraper := func(_ context.Context, _ Config, _ *sarama.Config, _ receiver.Settings) (scraper.Metrics, error) {
+		return scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
+			return pmetric.Metrics{}, nil
+		})
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), nil)
 	assert.Nil(t, r)
-	expectedError := fmt.Errorf("no scraper found for key: cpu")
+	expectedError := errors.New("no scraper found for key: cpu")
 	if assert.Error(t, err) {
 		assert.Equal(t, expectedError, err)
 	}
@@ -60,10 +62,11 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
-		return scraperhelper.NewScraper(brokersScraperType, func(context.Context) (pmetric.Metrics, error) {
-			return pmetric.Metrics{}, nil
-		})
+	mockScraper := func(_ context.Context, _ Config, _ *sarama.Config, _ receiver.Settings) (scraper.Metrics, error) {
+		return scraper.NewMetrics(
+			func(context.Context) (pmetric.Metrics, error) {
+				return pmetric.Metrics{}, nil
+			})
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())
@@ -74,8 +77,8 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error) {
-		return nil, fmt.Errorf("fail")
+	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraper.Metrics, error) {
+		return nil, errors.New("fail")
 	}
 	allScrapers["brokers"] = mockScraper
 	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(), consumertest.NewNop())

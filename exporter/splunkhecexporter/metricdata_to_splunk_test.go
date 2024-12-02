@@ -215,7 +215,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
-
 				doubleGauge := pmetric.NewMetric()
 				doubleGauge.SetName("gauge_double_with_dims")
 				doubleDataPt := doubleGauge.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -716,7 +715,7 @@ func TestMergeEvents(t *testing.T) {
 	require.Len(t, merged, 1)
 	b, err := json.Marshal(merged[0])
 	require.NoError(t, err)
-	require.Equal(t, `{"host":"","event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_name:otel.collector.test":3411,"metric_name:otel.collector.test2":26059,"metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42"}}`, string(b))
+	require.JSONEq(t, `{"host":"","event":"metric","fields":{"IF-Azure":"azure-env","k8s.cluster.name":"devops-uat","k8s.namespace.name":"splunk-collector-tests","k8s.node.name":"myk8snodename","k8s.pod.name":"my-otel-collector-pod","metric_name:otel.collector.test":3411,"metric_name:otel.collector.test2":26059,"metric_type":"Gauge","metricsIndex":"test_metrics","metricsPlatform":"unset","resourceAttrs":"NO","testNumber":"number42","testRun":"42"}}`, string(b))
 }
 
 func newMetricsWithResources() pcommon.Resource {

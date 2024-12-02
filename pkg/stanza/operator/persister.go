@@ -30,9 +30,11 @@ func NewScopedPersister(s string, p Persister) Persister {
 func (p scopedPersister) Get(ctx context.Context, key string) ([]byte, error) {
 	return p.Persister.Get(ctx, fmt.Sprintf("%s.%s", p.scope, key))
 }
+
 func (p scopedPersister) Set(ctx context.Context, key string, value []byte) error {
 	return p.Persister.Set(ctx, fmt.Sprintf("%s.%s", p.scope, key), value)
 }
+
 func (p scopedPersister) Delete(ctx context.Context, key string) error {
 	return p.Persister.Delete(ctx, fmt.Sprintf("%s.%s", p.scope, key))
 }

@@ -69,7 +69,6 @@ func TestExtensionIntegrity(t *testing.T) {
 
 		// Repeatedly thrash client
 		for j := 0; j < 100; j++ {
-
 			// Make sure my values are still mine
 			for i := 0; i < len(keys); i++ {
 				v, err := c.Get(ctx, keys[i])
@@ -143,7 +142,6 @@ func TestClientHandlesSimpleCases(t *testing.T) {
 	data, err = client.Get(ctx, "key")
 	require.NoError(t, err)
 	require.Nil(t, data)
-
 }
 
 func TestTwoClientsWithDifferentNames(t *testing.T) {
@@ -234,7 +232,7 @@ func TestComponentNameWithUnsafeCharacters(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -262,7 +260,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -288,7 +286,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -310,7 +308,7 @@ func TestCompaction(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -400,7 +398,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -468,7 +466,7 @@ func TestCleanupOnStart(t *testing.T) {
 	cfg.Directory = tempDir
 	cfg.Compaction.Directory = tempDir
 	cfg.Compaction.CleanupOnStart = true
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -508,7 +506,7 @@ func TestCompactionOnStart(t *testing.T) {
 	cfg.Directory = tempDir
 	cfg.Compaction.Directory = tempDir
 	cfg.Compaction.OnStart = true
-	extension, err := f.CreateExtension(context.Background(), set, cfg)
+	extension, err := f.Create(context.Background(), set, cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -553,9 +551,9 @@ func TestDirectoryCreation(t *testing.T) {
 				require.NoError(t, err)
 				var expectedFileMode os.FileMode
 				if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
-					expectedFileMode = os.FileMode(0777)
+					expectedFileMode = os.FileMode(0o777)
 				} else {
-					expectedFileMode = os.FileMode(0750)
+					expectedFileMode = os.FileMode(0o750)
 				}
 				require.Equal(t, expectedFileMode, s.Mode()&os.ModePerm)
 			},
@@ -578,9 +576,9 @@ func TestDirectoryCreation(t *testing.T) {
 				require.NoError(t, err)
 				var expectedFileMode os.FileMode
 				if runtime.GOOS == "windows" { // on Windows, we get 0777 for writable directories
-					expectedFileMode = os.FileMode(0777)
+					expectedFileMode = os.FileMode(0o777)
 				} else {
-					expectedFileMode = os.FileMode(0700)
+					expectedFileMode = os.FileMode(0o700)
 				}
 				require.Equal(t, expectedFileMode, s.Mode()&os.ModePerm)
 			},
@@ -606,7 +604,7 @@ func TestDirectoryCreation(t *testing.T) {
 			f := NewFactory()
 			config := tt.config(t, f)
 			if config != nil {
-				ext, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), config)
+				ext, err := f.Create(context.Background(), extensiontest.NewNopSettings(), config)
 				require.NoError(t, err)
 				require.NotNil(t, ext)
 				tt.validate(t, config)

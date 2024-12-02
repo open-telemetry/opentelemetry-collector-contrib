@@ -137,6 +137,7 @@ linters-settings:
       - float-compare
       - require-error
       - suite-subtest-run
+      - encoded-compare # has false positives that cannot be fixed with testifylint-fix
     enable-all: true
 
 linters:
@@ -149,7 +150,7 @@ linters:
     - exhaustive
     - gci
     - gocritic
-    - gofmt
+    - gofumpt
     - goimports
     - gosec
     - govet
@@ -163,7 +164,9 @@ linters:
     - unconvert
     - unparam
     - unused
+    - usestdlibvars
     - wastedassign
+    - whitespace
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

@@ -4,6 +4,7 @@
 package translator
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 
@@ -168,14 +169,14 @@ func TestProcessStats(t *testing.T) {
 								Service:        "service",
 								Name:           "name------",
 								Resource:       "resource",
-								HTTPStatusCode: 200,
+								HTTPStatusCode: http.StatusOK,
 								Type:           "web",
 							},
 							{
 								Service:        "redis_service",
 								Name:           "name-2",
 								Resource:       "SET k v",
-								HTTPStatusCode: 200,
+								HTTPStatusCode: http.StatusOK,
 								Type:           "redis",
 							},
 						},

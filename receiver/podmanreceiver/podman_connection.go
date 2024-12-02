@@ -108,7 +108,7 @@ func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphra
 
 	var authMethods []ssh.AuthMethod
 	if len(signers) > 0 {
-		var dedup = make(map[string]ssh.Signer)
+		dedup := make(map[string]ssh.Signer)
 		// Dedup signers based on fingerprint, ssh-agent keys override CONTAINER_SSHKEY
 		for _, s := range signers {
 			fp := ssh.FingerprintSHA256(s.PublicKey())

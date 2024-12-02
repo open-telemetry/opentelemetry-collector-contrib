@@ -33,9 +33,21 @@ func CopyMetricDetails(from, to pmetric.Metric) {
 }
 
 func FilterAttrs(metric pmetric.Metric, filterAttrKeys []string) {
-	if len(filterAttrKeys) == 0 {
+	// filterAttrKeys being nil means the filter is to be skipped.
+	if filterAttrKeys == nil {
 		return
 	}
+	// filterAttrKeys being empty means it is explicitly expected to filter
+	// against an empty label set, which is functionally the same as removing
+	// all attributes.
+	if len(filterAttrKeys) == 0 {
+		RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+			attrs.Clear()
+			return true
+		})
+	}
+	// filterAttrKeys having provided attributes means the filter continues
+	// as normal.
 	RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
 			return isNotPresent(k, filterAttrKeys)
@@ -176,7 +188,6 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 						dp.SetDoubleValue((medianNumbers[mNumber-1] + medianNumbers[mNumber]) / 2)
 					}
 				}
-
 			}
 		case pmetric.NumberDataPointValueTypeInt:
 			medianNumbers := []int64{dp.IntValue()}
@@ -272,7 +283,8 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 }
 
 func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHistogramDataPointSlice,
-	to pmetric.ExponentialHistogramDataPointSlice) {
+	to pmetric.ExponentialHistogramDataPointSlice,
+) {
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
 		dps.At(0).MoveTo(dp)
@@ -305,7 +317,8 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 }
 
 func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
-	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice) {
+	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice,
+) {
 	var keyHashParts []any
 	for i := 0; i < dps.Len(); i++ {
 		if useStartTime {
@@ -320,7 +333,8 @@ func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
 }
 
 func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime bool,
-	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) {
+	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice,
+) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		keyHashParts := make([]any, 0, dp.ExplicitBounds().Len()+4)
@@ -341,7 +355,8 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime 
 }
 
 func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, useStartTime bool,
-	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice) {
+	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice,
+) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		keyHashParts := make([]any, 0, 5)

@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
@@ -41,11 +42,19 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, err
 	}
 
+	cfg := DefaultSupervisor()
+
 	decodeConf := koanf.UnmarshalConf{
 		Tag: "mapstructure",
+		DecoderConfig: &mapstructure.DecoderConfig{
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(
+				mapstructure.StringToTimeDurationHookFunc()),
+			Result:           &cfg,
+			WeaklyTypedInput: true,
+			ErrorUnused:      true,
+		},
 	}
 
-	cfg := DefaultSupervisor()
 	if err := k.UnmarshalWithConf("", &cfg, decodeConf); err != nil {
 		return Supervisor{}, fmt.Errorf("cannot parse %s: %w", configFile, err)
 	}
@@ -153,8 +162,10 @@ type Agent struct {
 	Executable              string
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
+	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
 	HealthCheckPort         int              `mapstructure:"health_check_port"`
+	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
 }
 
@@ -171,6 +182,10 @@ func (a Agent) Validate() error {
 		return errors.New("agent::health_check_port must be a valid port number")
 	}
 
+	if a.OpAMPServerPort < 0 || a.OpAMPServerPort > 65535 {
+		return errors.New("agent::opamp_server_port must be a valid port number")
+	}
+
 	if a.Executable == "" {
 		return errors.New("agent::executable must be specified")
 	}
@@ -178,6 +193,10 @@ func (a Agent) Validate() error {
 	_, err := os.Stat(a.Executable)
 	if err != nil {
 		return fmt.Errorf("could not stat agent::executable path: %w", err)
+	}
+
+	if a.ConfigApplyTimeout <= 0 {
+		return errors.New("agent::config_apply_timeout must be valid duration")
 	}
 
 	return nil
@@ -229,13 +248,14 @@ func DefaultSupervisor() Supervisor {
 		},
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
+			ConfigApplyTimeout:      5 * time.Second,
 			BootstrapTimeout:        3 * time.Second,
 			PassthroughLogs:         false,
 		},
 		Telemetry: Telemetry{
 			Logs: Logs{
 				Level:       zapcore.InfoLevel,
-				OutputPaths: []string{"stdout", "stderr"},
+				OutputPaths: []string{"stderr"},
 			},
 		},
 	}
