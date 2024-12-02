@@ -332,7 +332,7 @@ func TestCheckOwnerExists(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 
@@ -446,7 +446,7 @@ func TestGetPullRequests(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
@@ -549,7 +549,7 @@ func TestGetRepos(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
@@ -653,7 +653,7 @@ func TestGetBranches(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
@@ -705,7 +705,7 @@ func TestGetContributors(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			ghs.cfg.GitHubOrg = tc.org
 
 			server := httptest.NewServer(tc.server)
@@ -890,7 +890,7 @@ func TestEvalCommits(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
