@@ -29,10 +29,10 @@ data:
         log_statements:
           - context: log
             statements:
-              - replace_match(body["metadata"]["resourceVersion"], "*", "12345")
-              - replace_match(body["metadata"]["creationTimestamp"], "*", "2000-01-01T00:00:00Z")
-              - replace_match(body["metadata"]["managedFields"][0]["time"], "*", "2000-01-01T00:00:00Z")
-              - replace_match(body["metadata"]["managedFields"][0]["manager"], "*", "")
+              - replace_match(body["object"]["metadata"]["uid"], "*", "12345")
+              - replace_match(body["object"]["metadata"]["resourceVersion"], "*", "12345")
+              - replace_match(body["object"]["metadata"]["creationTimestamp"], "*", "2000-01-01T00:00:00Z")
+              - replace_match(body["object"]["metadata"]["managedFields"][0]["time"], "*", "2000-01-01T00:00:00Z")
     receivers:
       k8sobjects:
         objects:
