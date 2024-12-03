@@ -196,7 +196,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid reporter_period",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "abcdef0"},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 4 * time.Minute},
 			},
 			err: "reporter_period must be 5 minutes or higher",
@@ -656,7 +656,7 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				API: APIConfig{
-					Key:              "key",
+					Key:              "abc",
 					Site:             "datadoghq.com",
 					FailOnInvalidKey: false,
 				},
