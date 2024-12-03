@@ -1782,7 +1782,7 @@ If the `target` is not a string or does not exist, the `Split` Converter will re
 
 ### Trim
 
-```Trim(target, replacement)```
+```Trim(target, Optional[replacement])```
 
 The `Trim` Converter removes the leading and trailing character (default: whitespace).
 
