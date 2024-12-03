@@ -6,7 +6,6 @@ package migrate // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/otel/schema/v1.0/ast"
-	"go.uber.org/multierr"
 )
 
 // ValueMatch defines the expected match type
@@ -15,74 +14,43 @@ type ValueMatch interface {
 	~string
 }
 
+// ConditionalAttributeSet represents a rename_attribute that will happen only if the passed in value matches the `on` set.
 type ConditionalAttributeSet struct {
-	on    *map[string]struct{}
-	attrs *AttributeChangeSet
+	on    map[string]struct{}
+	attrs AttributeChangeSet
 }
 
 type ConditionalAttributeSetSlice []*ConditionalAttributeSet
 
-func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches ...Match) *ConditionalAttributeSet {
+func NewConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches ...Match) ConditionalAttributeSet {
 	on := make(map[string]struct{})
 	for _, m := range matches {
 		on[string(m)] = struct{}{}
 	}
-	return &ConditionalAttributeSet{
-		on:    &on,
+	return ConditionalAttributeSet{
+		on:    on,
 		attrs: NewAttributeChangeSet(mappings),
 	}
 }
 
-func (ca *ConditionalAttributeSet) Apply(attrs pcommon.Map, values ...string) (errs error) {
-	if ca.check(values...) {
-		errs = ca.attrs.Apply(attrs)
-	}
-	return errs
-}
+func (ca ConditionalAttributeSet) IsMigrator() {}
 
-func (ca *ConditionalAttributeSet) Rollback(attrs pcommon.Map, values ...string) (errs error) {
+// Do applies the attribute changes specified in the constructor if any of the values in values matches the matches specified in the constructor.
+func (ca *ConditionalAttributeSet) Do(ss StateSelector, attrs pcommon.Map, values ...string) (errs error) {
 	if ca.check(values...) {
-		errs = ca.attrs.Rollback(attrs)
+		errs = ca.attrs.Do(ss, attrs)
 	}
 	return errs
 }
 
 func (ca *ConditionalAttributeSet) check(values ...string) bool {
-	if len(*ca.on) == 0 {
+	if len(ca.on) == 0 {
 		return true
 	}
 	for _, v := range values {
-		if _, ok := (*ca.on)[v]; !ok {
+		if _, ok := (ca.on)[v]; !ok {
 			return false
 		}
 	}
 	return true
-}
-
-func NewConditionalAttributeSetSlice(conditions ...*ConditionalAttributeSet) *ConditionalAttributeSetSlice {
-	values := new(ConditionalAttributeSetSlice)
-	for _, c := range conditions {
-		(*values) = append((*values), c)
-	}
-	return values
-}
-
-func (slice *ConditionalAttributeSetSlice) Apply(attrs pcommon.Map, values ...string) error {
-	return slice.do(StateSelectorApply, attrs, values)
-}
-
-func (slice *ConditionalAttributeSetSlice) Rollback(attrs pcommon.Map, values ...string) error {
-	return slice.do(StateSelectorRollback, attrs, values)
-}
-
-func (slice *ConditionalAttributeSetSlice) do(ss StateSelector, attrs pcommon.Map, values []string) (errs error) {
-	for i := 0; i < len((*slice)); i++ {
-		switch ss {
-		case StateSelectorApply:
-			errs = multierr.Append(errs, (*slice)[i].Apply(attrs, values...))
-		case StateSelectorRollback:
-			errs = multierr.Append(errs, (*slice)[len((*slice))-i-1].Rollback(attrs, values...))
-		}
-	}
-	return errs
 }
