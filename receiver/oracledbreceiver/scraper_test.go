@@ -22,7 +22,7 @@ import (
 )
 
 func TestScraper_ErrorOnStart(t *testing.T) {
-	scrpr := scraper{
+	scrpr := oracleScraper{
 		dbProviderFunc: func() (*sql.DB, error) {
 			return nil, errors.New("oops")
 		},
@@ -129,7 +129,7 @@ func TestScraper_Scrape(t *testing.T) {
 			cfg.Metrics.OracledbConsistentGets.Enabled = true
 			cfg.Metrics.OracledbDbBlockGets.Enabled = true
 
-			scrpr := scraper{
+			scrpr := oracleScraper{
 				logger: zap.NewNop(),
 				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
 				dbProviderFunc: func() (*sql.DB, error) {

@@ -18,5 +18,6 @@ func newMetadataConfigfromConfig(cfg *Config) hostmetadata.PusherConfig {
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
 		ClientConfig:        cfg.ClientConfig,
 		RetrySettings:       cfg.BackOffConfig,
+		ReporterPeriod:      cfg.HostMetadata.ReporterPeriod,
 	}
 }

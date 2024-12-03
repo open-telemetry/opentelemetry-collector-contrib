@@ -6,7 +6,7 @@ status:
     development: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [MovieStoreGuy]
+    active: [MovieStoreGuy, ankitpatel96]
 
 tests:
   config:

@@ -289,7 +289,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
-	srv := server.New(newLoggerFromZap(s.logger))
+	srv := server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
@@ -387,7 +387,7 @@ func (s *Supervisor) startOpAMP() error {
 }
 
 func (s *Supervisor) startOpAMPClient() error {
-	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
+	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger, "opamp-client"))
 
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
@@ -465,7 +465,7 @@ func (s *Supervisor) startOpAMPClient() error {
 // depending on information received by the Supervisor from the remote
 // OpAMP server.
 func (s *Supervisor) startOpAMPServer() error {
-	s.opampServer = server.New(newLoggerFromZap(s.logger))
+	s.opampServer = server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	var err error
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
@@ -782,7 +782,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
-		if err == nil {
+		switch {
+		case err == nil:
 			config := &protobufs.AgentRemoteConfig{}
 			err = proto.Unmarshal(lastRecvRemoteConfig, config)
 			if err != nil {
@@ -790,7 +791,9 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 			} else {
 				s.remoteConfig = config
 			}
-		} else {
+		case errors.Is(err, os.ErrNotExist):
+			s.logger.Info("No last received remote config found")
+		default:
 			s.logger.Error("error while reading last received config", zap.Error(err))
 		}
 	} else {

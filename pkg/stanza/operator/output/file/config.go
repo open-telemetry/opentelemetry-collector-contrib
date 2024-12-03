@@ -5,7 +5,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-	"html/template"
+	"text/template"
 
 	"go.opentelemetry.io/collector/component"
 
