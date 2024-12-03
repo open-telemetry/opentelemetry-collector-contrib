@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.114.1-0.20241130171227-c52d625647be
-	go.opentelemetry.io/collector/component/componenttest v0.114.1-0.20241130171227-c52d625647be
+	go.opentelemetry.io/collector/component v0.114.1-0.20241202231142-b9ff1bc54c99
+	go.opentelemetry.io/collector/component/componenttest v0.114.1-0.20241202231142-b9ff1bc54c99
 	go.uber.org/goleak v1.3.0
 )
 
@@ -16,8 +16,8 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.114.1-0.20241130171227-c52d625647be // indirect
-	go.opentelemetry.io/collector/pdata v1.20.1-0.20241130171227-c52d625647be // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
+	go.opentelemetry.io/collector/pdata v1.20.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
