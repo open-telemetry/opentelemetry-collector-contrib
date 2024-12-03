@@ -4,6 +4,8 @@
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 )
@@ -26,4 +28,6 @@ type PusherConfig struct {
 	ClientConfig confighttp.ClientConfig
 	// RetrySettings of exporter.
 	RetrySettings configretry.BackOffConfig
+	// ReporterPeriod is the period of the reporter goroutine.
+	ReporterPeriod time.Duration
 }

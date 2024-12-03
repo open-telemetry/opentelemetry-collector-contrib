@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -56,7 +56,7 @@ func newKubletScraper(
 	rOptions *scraperOptions,
 	metricsConfig metadata.MetricsBuilderConfig,
 	nodeName string,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	ks := &kubletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
 		metadataProvider:      kubelet.NewMetadataProvider(restClient),
@@ -90,11 +90,10 @@ func newKubletScraper(
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
 
-	return scraperhelper.NewScraper(
-		metadata.Type,
+	return scraper.NewMetrics(
 		ks.scrape,
-		scraperhelper.WithStart(ks.start),
-		scraperhelper.WithShutdown(ks.shutdown),
+		scraper.WithStart(ks.start),
+		scraper.WithShutdown(ks.shutdown),
 	)
 }
 

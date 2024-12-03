@@ -173,7 +173,8 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true}},
+				isAvailable: true,
+			}},
 			args: args{ctx: context.Background()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
@@ -188,7 +189,8 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("host.type", "c4.xlarge")
 				attr.PutStr("host.name", "example-hostname")
 				return res
-			}()},
+			}(),
+		},
 		{
 			name: "success with tags",
 			fields: fields{metadataProvider: &mockMetadata{
@@ -201,7 +203,8 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true}},
+				isAvailable: true,
+			}},
 			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
 			args:          args{ctx: context.Background()},
 			want: func() pcommon.Resource {
@@ -234,7 +237,8 @@ func TestDetector_Detect(t *testing.T) {
 					InstanceType:     "c4.xlarge",
 				},
 				retHostname: "example-hostname",
-				isAvailable: true}},
+				isAvailable: true,
+			}},
 			args: args{ctx: context.Background()},
 			want: func() pcommon.Resource {
 				res := pcommon.NewResource()
@@ -261,7 +265,8 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
-			wantErr: false},
+			wantErr: false,
+		},
 		{
 			name: "get fails",
 			fields: fields{metadataProvider: &mockMetadata{
@@ -271,7 +276,8 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
-			wantErr: true},
+			wantErr: true,
+		},
 		{
 			name: "hostname fails",
 			fields: fields{metadataProvider: &mockMetadata{
@@ -282,7 +288,8 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args:    args{ctx: context.Background()},
 			want:    pcommon.NewResource(),
-			wantErr: true},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

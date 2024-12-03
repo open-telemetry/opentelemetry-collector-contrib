@@ -55,7 +55,7 @@ func (f BodyField) String() string {
 // Get will retrieve a value from an entry's body using the field.
 // It will return the value and whether the field existed.
 func (f BodyField) Get(entry *Entry) (any, bool) {
-	var currentValue = entry.Body
+	currentValue := entry.Body
 
 	for _, key := range f.Keys {
 		currentMap, ok := currentValue.(map[string]any)

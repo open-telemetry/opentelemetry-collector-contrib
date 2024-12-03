@@ -581,7 +581,6 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 		for key := range p.reqServerDurationSecondsCount {
-
 			dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 			dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 			dpDuration.SetTimestamp(timestamp)
@@ -652,7 +651,6 @@ func (p *serviceGraphConnector) cacheLoop(d time.Duration) {
 			return
 		}
 	}
-
 }
 
 // cleanCache removes series that have not been updated in 15 minutes

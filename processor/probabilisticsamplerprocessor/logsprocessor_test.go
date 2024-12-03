@@ -210,7 +210,7 @@ func TestLogsSampling(t *testing.T) {
 func TestLogsSamplingState(t *testing.T) {
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
-	var defaultTID = mustParseTID("fefefefefefefefefe80000000000000")
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 
 	tests := []struct {
 		name     string

@@ -6,9 +6,9 @@ require (
 	github.com/IBM/sarama v1.43.3
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.0
 	github.com/aws/aws-sdk-go v1.55.5
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/config/configtls v1.19.0
+	go.opentelemetry.io/collector/config/configtls v1.20.1-0.20241202231142-b9ff1bc54c99
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -47,7 +47,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.19.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.20.1-0.20241202231142-b9ff1bc54c99 // indirect
 	golang.org/x/crypto v0.26.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sys v0.23.0 // indirect

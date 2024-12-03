@@ -75,10 +75,10 @@ func TestPushLogData(t *testing.T) {
 			}))
 			defer ts.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = ts.URL
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: ts.URL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			f := NewFactory()
@@ -254,10 +254,11 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}))
 			defer ts.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = ts.URL
+
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: ts.URL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			f := NewFactory()

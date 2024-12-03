@@ -9,13 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	validStrictFilters = []string{
-		"exact_string_match",
-		".*/suffix",
-		"(a|b)",
-	}
-)
+var validStrictFilters = []string{
+	"exact_string_match",
+	".*/suffix",
+	"(a|b)",
+}
 
 func TestNewStrictFilterSet(t *testing.T) {
 	tests := []struct {

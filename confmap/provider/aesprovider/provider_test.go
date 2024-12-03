@@ -13,7 +13,6 @@ import (
 )
 
 func TestAESCredentialProvider(t *testing.T) {
-
 	tests := []struct {
 		name          string
 		configValue   string

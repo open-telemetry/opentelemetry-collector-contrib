@@ -93,7 +93,6 @@ func (p *publisher) Publish(ctx context.Context, message Message) error {
 		Body:         message.Body,
 		DeliveryMode: deliveryMode,
 	})
-
 	if err != nil {
 		err = errors.Join(errors.New("error publishing message"), err)
 		return err

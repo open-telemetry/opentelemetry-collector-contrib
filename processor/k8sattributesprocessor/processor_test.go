@@ -266,7 +266,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ component.TelemetrySettings, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
+	clientProvider := func(_ component.TelemetrySettings, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet, _ bool, _ time.Duration) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
 
@@ -1192,7 +1192,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 						ByName: map[string]*kube.Container{
 							"app": {
 								Statuses: map[int]kube.ContainerStatus{
-									2: {ImageRepoDigest: "docker.io/otel/collector@sha256:deadbeef02"},
+									2: {ImageRepoDigest: "docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 								},
 							},
 						},
@@ -1206,7 +1206,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
-				containerImageRepoDigests:             []string{"docker.io/otel/collector@sha256:deadbeef02"},
+				containerImageRepoDigests:             []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
 		{

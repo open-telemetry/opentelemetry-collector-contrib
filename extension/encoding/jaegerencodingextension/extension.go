@@ -13,8 +13,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-var _ encoding.TracesUnmarshalerExtension = &jaegerExtension{}
-var _ ptrace.Unmarshaler = &jaegerExtension{}
+var (
+	_ encoding.TracesUnmarshalerExtension = &jaegerExtension{}
+	_ ptrace.Unmarshaler                  = &jaegerExtension{}
+)
 
 type jaegerExtension struct {
 	config      *Config

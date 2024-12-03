@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -27,17 +28,19 @@ const (
 )
 
 type kubernetesprocessor struct {
-	cfg               component.Config
-	options           []option
-	telemetrySettings component.TelemetrySettings
-	logger            *zap.Logger
-	apiConfig         k8sconfig.APIConfig
-	kc                kube.Client
-	passthroughMode   bool
-	rules             kube.ExtractionRules
-	filters           kube.Filters
-	podAssociations   []kube.Association
-	podIgnore         kube.Excludes
+	cfg                    component.Config
+	options                []option
+	telemetrySettings      component.TelemetrySettings
+	logger                 *zap.Logger
+	apiConfig              k8sconfig.APIConfig
+	kc                     kube.Client
+	passthroughMode        bool
+	rules                  kube.ExtractionRules
+	filters                kube.Filters
+	podAssociations        []kube.Association
+	podIgnore              kube.Excludes
+	waitForMetadata        bool
+	waitForMetadataTimeout time.Duration
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
@@ -45,7 +48,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
 		if err != nil {
 			return err
 		}
@@ -60,7 +63,7 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 	for _, opt := range allOptions {
 		if err := opt(kp); err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			return nil
+			return err
 		}
 	}
 
@@ -69,11 +72,15 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
 		if err != nil {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-			return nil
+			return err
 		}
 	}
 	if !kp.passthroughMode {
-		go kp.kc.Start()
+		err := kp.kc.Start()
+		if err != nil {
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
+		}
 	}
 	return nil
 }

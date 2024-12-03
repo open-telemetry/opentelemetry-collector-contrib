@@ -70,9 +70,7 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 		hostsCount = 4
 	)
 
-	var (
-		entries = complexEntriesForNDifferentHosts(entryCount, hostsCount)
-	)
+	entries := complexEntriesForNDifferentHosts(entryCount, hostsCount)
 
 	cl := &consumertest.LogsSink{}
 	logsReceiver, err := createNoopReceiver(cl)
@@ -109,9 +107,7 @@ func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
 		scopesCount = 2
 	)
 
-	var (
-		entries = complexEntriesForNDifferentHostsMDifferentScopes(entryCount, hostsCount, scopesCount)
-	)
+	entries := complexEntriesForNDifferentHostsMDifferentScopes(entryCount, hostsCount, scopesCount)
 
 	cl := &consumertest.LogsSink{}
 	logsReceiver, err := createNoopReceiver(cl)

@@ -162,3 +162,4 @@ service:
 These are previous conference presentations given about OTTL:
 - [OTTL Me Why Transforming Telemetry in the OpenTelemetry Collector Just Got Better](https://youtu.be/uVs0oUV72CE)
 - [Managing Observability Data at the Edge with the OpenTelemetry Collector and OTTL](https://youtu.be/GO0ulYLxy_8)
+- [The OTTL Cookbook: A Collection of Solutions to Common Problems](https://www.youtube.com/watch?v=UGTU0-KT_60)
