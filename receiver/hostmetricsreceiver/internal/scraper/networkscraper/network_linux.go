@@ -29,7 +29,7 @@ var allTCPStates = []string{
 	"TIME_WAIT",
 }
 
-func (s *scraper) recordNetworkConntrackMetrics() error {
+func (s *networkScraper) recordNetworkConntrackMetrics() error {
 	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackMax.Enabled {
 		return nil
 	}
