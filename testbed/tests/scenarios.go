@@ -23,9 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
-var batchRegex = regexp.MustCompile(` batch_index=(\S+) `)
-var itemRegex = regexp.MustCompile(` item_index=(\S+) `)
+var (
+	batchRegex                                           = regexp.MustCompile(` batch_index=(\S+) `)
+	itemRegex                                            = regexp.MustCompile(` item_index=(\S+) `)
+	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+)
 
 type ProcessorNameAndConfigBody struct {
 	Name string
