@@ -6,7 +6,7 @@ status:
     development: [logs]
   distributions: []
   codeowners:
-    active: [djaglowski, dehaansa]
+    active: [dehaansa]
 
 tests:
   config:

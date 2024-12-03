@@ -115,6 +115,7 @@ func (s Gauge) Filter(expr func(data.Number) bool) {
 		return !expr(data.Number{NumberDataPoint: dp})
 	})
 }
+func (s Gauge) SetAggregationTemporality(pmetric.AggregationTemporality) {}
 
 type Summary Metric
 
@@ -136,3 +137,4 @@ func (s Summary) Filter(expr func(data.Summary) bool) {
 		return !expr(data.Summary{SummaryDataPoint: dp})
 	})
 }
+func (s Summary) SetAggregationTemporality(pmetric.AggregationTemporality) {}
