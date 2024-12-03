@@ -9,13 +9,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestUnstructuredListToLogData(t *testing.T) {
@@ -93,54 +90,6 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, 3, logRecords.Len())
 	})
 
-	t.Run("Test event.name in watch events", func(t *testing.T) {
-		config := &K8sObjectsConfig{
-			gvr: &schema.GroupVersionResource{
-				Group:    "",
-				Version:  "v1",
-				Resource: "events",
-			},
-		}
-		event := &watch.Event{
-			Type: watch.Added,
-			Object: &unstructured.Unstructured{
-				Object: map[string]any{
-					"kind":       "Event",
-					"apiVersion": "v1",
-					"metadata": map[string]any{
-						"name":      "generic-name",
-						"namespace": "my-namespace",
-					},
-				},
-			},
-		}
-
-		logs, err := watchObjectsToLogData(event, time.Now(), config)
-		assert.NoError(t, err)
-
-		assert.Equal(t, 1, logs.LogRecordCount())
-
-		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, 1, resourceLogs.Len())
-
-		rl := resourceLogs.At(0)
-		namespaceAttr, ok := rl.Resource().Attributes().Get(semconv.AttributeK8SNamespaceName)
-		assert.True(t, ok)
-		assert.Equal(t, "my-namespace", namespaceAttr.Str())
-		logRecords := rl.ScopeLogs().At(0).LogRecords()
-		assert.Equal(t, 1, rl.ScopeLogs().Len())
-		assert.Equal(t, 1, logRecords.Len())
-
-		attrs := logRecords.At(0).Attributes()
-		eventName, ok := attrs.Get("event.name")
-		require.True(t, ok)
-		assert.EqualValues(t, "generic-name", eventName.AsRaw())
-
-		eventType, ok := attrs.Get("event.type")
-		require.True(t, ok)
-		assert.Equal(t, string(watch.Added), eventType.AsString())
-	})
-
 	t.Run("Test event observed timestamp is present", func(t *testing.T) {
 		config := &K8sObjectsConfig{
 			gvr: &schema.GroupVersionResource{
@@ -178,7 +127,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
-	t.Run("Test pull and watch objects result in the same log entry body", func(t *testing.T) {
+	t.Run("Test pull and watch objects both contain k8s.namespace.name", func(t *testing.T) {
 		observedTimestamp := time.Now()
 		config := &K8sObjectsConfig{
 			gvr: &schema.GroupVersionResource{
@@ -194,7 +143,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 					"kind":       "Event",
 					"apiVersion": "v1",
 					"metadata": map[string]any{
-						"name": "generic-name",
+						"name":      "generic-name",
+						"namespace": "my-namespace",
 					},
 				},
 			},
@@ -206,7 +156,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 					"kind":       "Event",
 					"apiVersion": "v1",
 					"metadata": map[string]any{
-						"name": "generic-name",
+						"name":      "generic-name",
+						"namespace": "my-namespace",
 					},
 				},
 			}},
@@ -218,16 +169,24 @@ func TestUnstructuredListToLogData(t *testing.T) {
 
 		// verify the event.type, event.domain and k8s.resource.name attributes have been added
 
-		watchEventAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-		eventType, ok := watchEventAttrs.Get("event.type")
+		watchEventResourceAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).Resource().Attributes()
+		k8sNamespace, ok := watchEventResourceAttrs.Get(semconv.AttributeK8SNamespaceName)
+		assert.True(t, ok)
+		assert.Equal(t,
+			"my-namespace",
+			k8sNamespace.Str(),
+		)
+
+		watchEvenLogRecordtAttrs := logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+		eventType, ok := watchEvenLogRecordtAttrs.Get("event.name")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
-			"ADDED",
+			"generic-name",
 			eventType.AsString(),
 		)
 
-		eventDomain, ok := watchEventAttrs.Get("event.domain")
+		eventDomain, ok := watchEvenLogRecordtAttrs.Get("event.domain")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
@@ -235,7 +194,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			eventDomain.AsString(),
 		)
 
-		k8sResourceName, ok := watchEventAttrs.Get("k8s.resource.name")
+		k8sResourceName, ok := watchEvenLogRecordtAttrs.Get("k8s.resource.name")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
@@ -246,23 +205,23 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		logEntryFromPulledEvent := unstructuredListToLogData(pulledEvent, observedTimestamp, config)
 		assert.NotNil(t, logEntryFromPulledEvent)
 
-		pullEventAttrs := logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+		pullEventResourceAttrs := logEntryFromPulledEvent.ResourceLogs().At(0).Resource().Attributes()
+		k8sNamespace, ok = pullEventResourceAttrs.Get(semconv.AttributeK8SNamespaceName)
+		assert.True(t, ok)
+		assert.Equal(
+			t,
+			"my-namespace",
+			k8sNamespace.Str(),
+		)
 
-		k8sResourceName, ok = pullEventAttrs.Get("k8s.resource.name")
+		pullEventLogRecordAttrs := logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+
+		k8sResourceName, ok = pullEventLogRecordAttrs.Get("k8s.resource.name")
 		assert.True(t, ok)
 		assert.Equal(
 			t,
 			"events",
 			k8sResourceName.AsString(),
 		)
-
-		// clean the attributes as they have been verified before, and we just want to compare the log record bodies
-		logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
-		logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
-
-		assert.NoError(t, plogtest.CompareLogRecord(
-			logEntryFromWatchEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0),
-			logEntryFromPulledEvent.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0),
-		))
 	})
 }

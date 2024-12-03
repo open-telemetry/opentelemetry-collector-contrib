@@ -24,7 +24,10 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 
 	ul := unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{{
-			Object: udata.Object,
+			Object: map[string]any{
+				"type":   string(event.Type),
+				"object": udata.Object,
+			},
 		}},
 	}
 
@@ -34,7 +37,6 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 		if name != "" {
 			attrs.PutStr("event.domain", "k8s")
 			attrs.PutStr("event.name", name)
-			attrs.PutStr("event.type", string(event.Type))
 		}
 	}), nil
 }
@@ -49,16 +51,16 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
 
 	for _, e := range event.Items {
-		logSlice, ok := namespaceResourceMap[e.GetNamespace()]
+		logSlice, ok := namespaceResourceMap[getNamespace(e)]
 		if !ok {
 			rl := resourceLogs.AppendEmpty()
 			resourceAttrs := rl.Resource().Attributes()
-			if namespace := e.GetNamespace(); namespace != "" {
+			if namespace := getNamespace(e); namespace != "" {
 				resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
 			}
 			sl := rl.ScopeLogs().AppendEmpty()
 			logSlice = sl.LogRecords()
-			namespaceResourceMap[e.GetNamespace()] = logSlice
+			namespaceResourceMap[getNamespace(e)] = logSlice
 		}
 		record := logSlice.AppendEmpty()
 		record.SetObservedTimestamp(pcommon.NewTimestampFromTime(observedAt))
@@ -76,4 +78,16 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 		destMap.FromRaw(e.Object)
 	}
 	return out
+}
+
+func getNamespace(e unstructured.Unstructured) string {
+	// first, try to use the GetNamespace() method, which checks for the metadata.namespace property
+	if namespace := e.GetNamespace(); namespace != "" {
+		return namespace
+	}
+	// try to look up namespace in object.metadata.namespace (for objects reported via watch mode)
+	if namespace, ok, _ := unstructured.NestedString(e.Object, "object", "metadata", "namespace"); ok && namespace != "" {
+		return namespace
+	}
+	return ""
 }
