@@ -29,7 +29,14 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-          echo "md=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)" >> $GITHUB_OUTPUT
+          md=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
+
+          md_link_check_version_change=$(git diff origin/main -- .github/workflows/check-links.yaml $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -E '^[\+\-]\s*MD_LINK_CHECK_VERSION:' || echo "")
+          if [ -z "$md" ] && [[ -n "$md_link_check_version_change" ]]; then
+            md="**/*.md"
+          fi
+
+          echo "md=$md" >> $GITHUB_OUTPUT
   check-links:
     runs-on: ubuntu-latest
     needs: changedfiles
