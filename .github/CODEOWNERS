@@ -210,7 +210,7 @@ receiver/awss3receiver/                           @open-telemetry/collector-cont
 receiver/awsxrayreceiver/                         @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                       @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/azureeventhubreceiver/                   @open-telemetry/collector-contrib-approvers @atoulme @cparkins
-receiver/azuremonitorreceiver/                    @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
+receiver/azuremonitorreceiver/                    @open-telemetry/collector-contrib-approvers @nslaughter
 receiver/bigipreceiver/                           @open-telemetry/collector-contrib-approvers @StefanKurek
 receiver/carbonreceiver/                          @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 receiver/chronyreceiver/                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
@@ -256,7 +256,7 @@ receiver/nsxtreceiver/                            @open-telemetry/collector-cont
 receiver/ntpreceiver/                             @open-telemetry/collector-contrib-approvers @atoulme
 receiver/opencensusreceiver/                      @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 receiver/oracledbreceiver/                        @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme
-receiver/osqueryreceiver/                         @open-telemetry/collector-contrib-approvers @codeboten @nslaughter @smithclay
+receiver/osqueryreceiver/                         @open-telemetry/collector-contrib-approvers @nslaughter @smithclay
 receiver/otelarrowreceiver/                       @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
 receiver/otlpjsonfilereceiver/                    @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 receiver/podmanreceiver/                          @open-telemetry/collector-contrib-approvers @rogercoll
@@ -282,7 +282,7 @@ receiver/splunkenterprisereceiver/                @open-telemetry/collector-cont
 receiver/splunkhecreceiver/                       @open-telemetry/collector-contrib-approvers @atoulme
 receiver/sqlqueryreceiver/                        @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1
 receiver/sqlserverreceiver/                       @open-telemetry/collector-contrib-approvers @StefanKurek
-receiver/sshcheckreceiver/                        @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
+receiver/sshcheckreceiver/                        @open-telemetry/collector-contrib-approvers @nslaughter
 receiver/statsdreceiver/                          @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/syslogreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @andrzej-stencel
 receiver/systemdreceiver/                         @open-telemetry/collector-contrib-approvers @Hemansh31 @atoulme
