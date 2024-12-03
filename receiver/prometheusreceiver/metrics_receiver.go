@@ -167,7 +167,15 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 			Set(reflect.ValueOf(true))
 	}
 
-	scrapeManager, err := scrape.NewManager(opts, logger, store, r.registerer)
+	scrapeManager, err := scrape.NewManager(
+		opts,
+		logger,
+		func(s string) (log.Logger, error) {
+			return logger, nil
+		},
+		store,
+		r.registerer,
+	)
 	if err != nil {
 		return err
 	}

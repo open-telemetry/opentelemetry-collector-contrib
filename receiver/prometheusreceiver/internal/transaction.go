@@ -298,7 +298,15 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	return 0, nil // never return errors, as that fails the whole scrape
 }
 
-func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ct int64) (storage.SeriesRef, error) {
+func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+	return t.setCreationTimestamp(ls, atMs, ctMs)
+}
+
+func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
+	return t.setCreationTimestamp(ls, atMs, ctMs)
+}
+
+func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -333,7 +341,7 @@ func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, 
 
 	curMF, _ := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
-	if err := curMF.addSeries(seriesRef, metricName, ls, ct, 0); err != nil {
+	if err := curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs); err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
 	}
 
