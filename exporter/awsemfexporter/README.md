@@ -6,7 +6,8 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fawsemf%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fawsemf) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fawsemf%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fawsemf) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@shaochengwang](https://www.github.com/shaochengwang), [@mxiamxia](https://www.github.com/mxiamxia), [@bryan-aguilar](https://www.github.com/bryan-aguilar) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@mxiamxia](https://www.github.com/mxiamxia), [@bryan-aguilar](https://www.github.com/bryan-aguilar) |
+| Emeritus      | [@shaochengwang](https://www.github.com/shaochengwang) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -84,6 +85,14 @@ This exporter follows default credential resolution for the
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the 
 credential configuration.
 
+## Metric Attributes
+By setting attributes on your metrics you can change how individual metrics are sent to CloudWatch. Attributes can be set in code or using components like the [Attribute Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor).
+
+The AWS EMF Exporter will interpret the following metric attributes to change how it publishes metrics to CloudWatch:
+
+| Attribute Name    | Description                                                            | Default |
+| :---------------- | :--------------------------------------------------------------------- | ------- |
+| `aws.emf.storage_resolution` | This attribute should be set to an integer value of `1` or `60`. When sending the metric value to CloudWatch use the specified storage resolution value. CloudWatch currently supports a storage resolution of `1` or `60` to indicate 1 second or 60 second resolution. | `aws.emf.storage_resolution = 60` |
 
 ## Configuration Examples
 

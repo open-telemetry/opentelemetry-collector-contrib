@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
-	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/lineartelemetry"
+	telemetry "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
 var _ component.ConfigValidator = (*Config)(nil)
@@ -35,7 +35,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		MaxStale: 5 * time.Minute,
 
-		// disable. TODO: find good default
+		// TODO: find good default
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31603
 		MaxStreams: math.MaxInt,
 	}

@@ -61,6 +61,7 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	),
 	)
 }
+
 func TestNodeOptionalMetrics(t *testing.T) {
 	n := testutils.NewNode("2")
 	rac := metadata.DefaultResourceAttributesConfig()
@@ -94,6 +95,7 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	),
 	)
 }
+
 func TestNodeConditionValue(t *testing.T) {
 	type args struct {
 		node     *corev1.Node

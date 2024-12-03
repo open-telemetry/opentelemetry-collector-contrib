@@ -111,7 +111,6 @@ func testMetricNameMatch(t *testing.T, dataType pmetric.MetricType) {
 	matched, err = matcher.MatchMetric(m)
 	assert.NoError(t, err)
 	assert.True(t, matched)
-
 }
 
 func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
