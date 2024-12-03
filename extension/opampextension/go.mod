@@ -7,7 +7,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/open-telemetry/opamp-go v0.17.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.114.0
-	github.com/shirou/gopsutil/v4 v4.24.10
+	github.com/shirou/gopsutil/v4 v4.24.11
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.1-0.20241130171227-c52d625647be
 	go.opentelemetry.io/collector/component/componentstatus v0.114.1-0.20241130171227-c52d625647be
