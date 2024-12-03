@@ -145,6 +145,10 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	if c.HostMetadata.ReporterPeriod < 5*time.Minute {
+		return errors.New("reporter_period must be 5 minutes or higher")
+	}
+
 	return nil
 }
 
@@ -352,6 +356,7 @@ func CreateDefaultConfig() component.Config {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 }
