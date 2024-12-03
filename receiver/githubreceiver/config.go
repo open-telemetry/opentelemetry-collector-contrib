@@ -47,7 +47,6 @@ var (
 	_ component.Config    = (*Config)(nil)
 	_ confmap.Unmarshaler = (*Config)(nil)
 
-	// TODO: Adjust & maybe move to factory alongside other errors
 	errMissingEndpointFromConfig   = errors.New("missing receiver server endpoint from config")
 	errReadTimeoutExceedsMaxValue  = errors.New("the duration specified for read_timeout exceeds the maximum allowed value of 10s")
 	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
@@ -59,6 +58,8 @@ var (
 func (cfg *Config) Validate() error {
 	var errs error
 
+	// For now, scrapers are required to be defined in the config. As tracing
+	// and other signals are added, this requirement will change.
 	if len(cfg.Scrapers) == 0 {
 		errs = multierr.Append(errs, errRequireOneScraper)
 	}
@@ -69,8 +70,6 @@ func (cfg *Config) Validate() error {
 		errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	}
 
-	// If a user defines a custom read/write timeout there is a maximum value
-	// of 10s imposed here.
 	if cfg.WebHook.ServerConfig.ReadTimeout > maxReadWriteTimeout {
 		errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
 	}
