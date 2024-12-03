@@ -37,7 +37,7 @@ func TestScrape(t *testing.T) {
 		initializationErr       string
 		expectedErr             string
 		expectedErrCount        int
-		mutateScraper           func(*scraper)
+		mutateScraper           func(*networkScraper)
 	}
 
 	testCases := []testCase{
