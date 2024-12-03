@@ -6,7 +6,7 @@ status:
     alpha: [traces, metrics]
   distributions: [contrib]
   codeowners:
-    active: [boostchicken, gouthamve, jpkrohling, MovieStoreGuy]
+    active: [boostchicken, gouthamve, MovieStoreGuy]
 
 tests:
   skip_lifecycle: true # Skip lifecycle tests since there are multiple receivers that run on the same port

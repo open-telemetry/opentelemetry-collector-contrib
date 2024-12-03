@@ -50,7 +50,7 @@ func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 	type testCase struct {
 		name                string
-		mutateScraper       func(*scraper)
+		mutateScraper       func(*processScraper)
 		mutateMetricsConfig func(*testing.T, *metadata.MetricsConfig)
 	}
 	testCases := []testCase{

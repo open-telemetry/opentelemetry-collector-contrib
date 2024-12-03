@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver/internal/metadata"
 )
@@ -27,14 +27,14 @@ type sapHanaScraper struct {
 	factory  sapHanaConnectionFactory
 }
 
-func newSapHanaScraper(settings receiver.Settings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
+func newSapHanaScraper(settings receiver.Settings, cfg *Config, factory sapHanaConnectionFactory) (scraper.Metrics, error) {
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,
 		mbs:      make(map[string]*metadata.MetricsBuilder),
 		factory:  factory,
 	}
-	return scraperhelper.NewScraperWithoutType(rs.scrape)
+	return scraper.NewMetrics(rs.scrape)
 }
 
 func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string) (*metadata.MetricsBuilder, error) {

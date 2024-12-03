@@ -12,15 +12,14 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -128,7 +127,6 @@ func TestE2EClusterScoped(t *testing.T) {
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2ENamespaceScoped(t *testing.T) {
-
 	var expected pmetric.Metrics
 	expected, err := golden.ReadMetrics(expectedFileNamespaceScoped)
 	require.NoError(t, err)
