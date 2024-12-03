@@ -4,23 +4,15 @@
 package githubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
-	// "bytes"
-	// "compress/gzip"
 	"context"
-	// "encoding/json"
-	// "io"
 	"net/http"
 	"net/http/httptest"
-
-	// "strings"
 	"testing"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 
-	// "go.opentelemetry.io/collector/config/confighttp"
-	// "go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
