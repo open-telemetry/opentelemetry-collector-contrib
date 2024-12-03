@@ -230,6 +230,9 @@ func TestLogsExporter(t *testing.T) {
 						Endpoint: server.URL,
 					},
 				},
+				HostMetadata: HostMetadataConfig{
+					ReporterPeriod: 30 * time.Minute,
+				},
 			}
 
 			params := exportertest.NewNopSettings()
@@ -594,6 +597,9 @@ func TestLogsAgentExporter(t *testing.T) {
 					UseCompression:   true,
 					CompressionLevel: 6,
 					BatchWait:        1,
+				},
+				HostMetadata: HostMetadataConfig{
+					ReporterPeriod: 30 * time.Minute,
 				},
 			}
 			params := exportertest.NewNopSettings()
