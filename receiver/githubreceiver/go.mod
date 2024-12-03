@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241202231142-b9ff1bc54c99
 	go.opentelemetry.io/collector/receiver v0.114.1-0.20241202231142-b9ff1bc54c99
 	go.opentelemetry.io/collector/receiver/receivertest v0.114.1-0.20241202231142-b9ff1bc54c99
+	go.opentelemetry.io/collector/scraper v0.114.1-0.20241202231142-b9ff1bc54c99
 	go.opentelemetry.io/collector/semconv v0.114.1-0.20241202231142-b9ff1bc54c99
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -106,7 +107,6 @@ require (
 	go.opentelemetry.io/collector/processor/processorprofiles v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/collector/receiver/receiverprofiles v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
-	go.opentelemetry.io/collector/scraper v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/collector/service v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.6.0 // indirect
 	go.opentelemetry.io/contrib/config v0.10.0 // indirect
