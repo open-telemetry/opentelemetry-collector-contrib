@@ -9,7 +9,7 @@ import (
 	"runtime"
 
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper/internal/metadata"
@@ -37,15 +37,15 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
 	cfg internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
 		return nil, errors.New("uptime scraper only available on Linux, Windows, or MacOS")
 	}
 
 	uptimeScraper := newUptimeScraper(ctx, settings, cfg.(*Config))
 
-	return scraperhelper.NewScraperWithoutType(
+	return scraper.NewMetrics(
 		uptimeScraper.scrape,
-		scraperhelper.WithStart(uptimeScraper.start),
+		scraper.WithStart(uptimeScraper.start),
 	)
 }
