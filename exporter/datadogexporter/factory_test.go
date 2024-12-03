@@ -308,6 +308,7 @@ func TestOnlyMetadata(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
