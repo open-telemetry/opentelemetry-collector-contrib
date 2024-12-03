@@ -60,6 +60,8 @@ github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOf
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1048 h1:WvooPEWRp/0KDvmRVyTSW8jObgWAH2hDYiRCcHsDmPw=
 github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1048/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1053 h1:Qrwvu384xBXaAl8Vv5qvOKwBNOL73x0iyjQ0MocSidI=
+github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.1053/go.mod h1:r5r4xbfxSaeR04b166HGsBa/R4U3SueirEUpXGuw+Q0=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/collector/component v0.114.1-0.20241202231142-b9ff1bc54c99 h1:4Qgv+nQcKMtU1EiJJ1AI6ZjvtBKDqMny7vgNmez+PIM=
