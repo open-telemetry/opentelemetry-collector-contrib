@@ -109,14 +109,15 @@ type summaryMetricEntry struct {
 	count uint64
 }
 
+// dataPointSplit is not thread-safe. Ensure proper synchronization if concurrent access is required.
 type dataPointSplit struct {
 	cWMetricHistogram *cWMetricHistogram
 	length            int
 	capacity          int
 }
 
-func (split *dataPointSplit) isNotFull() bool {
-	return split.length < split.capacity
+func (split *dataPointSplit) isFull() bool {
+	return split.length >= split.capacity
 }
 
 func (split *dataPointSplit) setMax(maxVal float64) {
@@ -242,10 +243,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 
 	for currentBucketIndex < totalBucketLen {
 		// Create a new dataPointSplit with a capacity of up to splitThreshold buckets
-		capacity := splitThreshold
-		if totalBucketLen-currentBucketIndex < splitThreshold {
-			capacity = totalBucketLen - currentBucketIndex
-		}
+		capacity := min(splitThreshold, totalBucketLen-currentBucketIndex)
 
 		sum := 0.0
 		// Only assign `Sum` if this is the first split to make sure the total sum of the datapoints after aggregation is correct.
@@ -309,7 +307,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 }
 
 func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex int, currentPositiveIndex int) (int, int) {
-	if !split.isNotFull() || currentPositiveIndex < 0 {
+	if split.isFull() || currentPositiveIndex < 0 {
 		return currentBucketIndex, currentPositiveIndex
 	}
 
@@ -321,7 +319,7 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 	bucketBegin := 0.0
 	bucketEnd := 0.0
 
-	for split.isNotFull() && currentPositiveIndex >= 0 {
+	for !split.isFull() && currentPositiveIndex >= 0 {
 		index := currentPositiveIndex + int(positiveOffset)
 		if bucketEnd == 0 {
 			bucketEnd = math.Pow(base, float64(index+1))
@@ -338,7 +336,7 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 			if split.length == 1 {
 				split.setMax(bucketEnd)
 			}
-			if !split.isNotFull() {
+			if split.isFull() {
 				split.setMin(bucketBegin)
 			}
 		}
@@ -350,14 +348,14 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 }
 
 func collectDatapointsWithZeroBucket(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex int, currentZeroIndex int) (int, int) {
-	if metric.ZeroCount() > 0 && split.isNotFull() && currentZeroIndex == 0 {
+	if metric.ZeroCount() > 0 && !split.isFull() && currentZeroIndex == 0 {
 		split.appendMetricData(0, metric.ZeroCount())
 
 		// The value are append from high to low, set Max from the first bucket (highest value) and Min from the last bucket (lowest value)
 		if split.length == 1 {
 			split.setMax(0)
 		}
-		if !split.isNotFull() {
+		if split.isFull() {
 			split.setMin(0)
 		}
 		currentZeroIndex++
@@ -373,7 +371,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 	// However, the negative support is defined in metrics data model.
 	// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram
 	// The negative is also supported but only verified with unit test.
-	if !split.isNotFull() || currentNegativeIndex >= metric.Negative().BucketCounts().Len() {
+	if split.isFull() || currentNegativeIndex >= metric.Negative().BucketCounts().Len() {
 		return currentBucketIndex, currentNegativeIndex
 	}
 
@@ -385,7 +383,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 	bucketBegin := 0.0
 	bucketEnd := 0.0
 
-	for split.isNotFull() && currentNegativeIndex < metric.Negative().BucketCounts().Len() {
+	for !split.isFull() && currentNegativeIndex < metric.Negative().BucketCounts().Len() {
 		index := currentNegativeIndex + int(negativeOffset)
 		if bucketEnd == 0 {
 			bucketEnd = -math.Pow(base, float64(index))
@@ -402,7 +400,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 			if split.length == 1 {
 				split.setMax(bucketEnd)
 			}
-			if !split.isNotFull() {
+			if split.isFull() {
 				split.setMin(bucketBegin)
 			}
 		}
