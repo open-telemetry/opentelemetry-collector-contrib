@@ -30,9 +30,9 @@ func newPipelineOutput(set component.TelemetrySettings) *pipelineOutput {
 	}
 }
 
-func (e *pipelineOutput) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+func (e *pipelineOutput) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	for i := range entries {
-		_ = e.Process(ctx, &entries[i])
+		_ = e.Process(ctx, entries[i])
 	}
 	return nil
 }

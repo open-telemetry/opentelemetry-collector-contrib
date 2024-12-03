@@ -27,10 +27,10 @@ func (p *Parser) Stop() error {
 	return nil
 }
 
-func (p *Parser) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	var errs []error
 	for i := range entries {
-		errs = append(errs, p.Process(ctx, &entries[i]))
+		errs = append(errs, p.Process(ctx, entries[i]))
 	}
 	return errors.Join(errs...)
 }

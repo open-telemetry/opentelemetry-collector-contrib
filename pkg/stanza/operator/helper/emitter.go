@@ -95,9 +95,9 @@ func (e *LogEmitter) Stop() error {
 }
 
 // ProcessBatch emits the entries to the consumerFunc
-func (e *LogEmitter) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+func (e *LogEmitter) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	for i := range entries {
-		_ = e.Process(ctx, &entries[i])
+		_ = e.Process(ctx, entries[i])
 	}
 
 	return nil

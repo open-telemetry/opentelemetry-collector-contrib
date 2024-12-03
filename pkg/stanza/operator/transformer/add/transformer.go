@@ -24,10 +24,10 @@ type Transformer struct {
 	program *vm.Program
 }
 
-func (t *Transformer) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	var errs []error
 	for i := range entries {
-		errs = append(errs, t.Process(ctx, &entries[i]))
+		errs = append(errs, t.Process(ctx, entries[i]))
 	}
 	return errors.Join(errs...)
 }

@@ -24,10 +24,10 @@ type Transformer[T interface {
 	Field T
 }
 
-func (t *Transformer[T]) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+func (t *Transformer[T]) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	var errs []error
 	for i := range entries {
-		errs = append(errs, t.Process(ctx, &entries[i]))
+		errs = append(errs, t.Process(ctx, entries[i]))
 	}
 	return goerrors.Join(errs...)
 }

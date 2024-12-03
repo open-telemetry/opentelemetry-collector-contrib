@@ -83,7 +83,7 @@ func (i *InputOperator) CanProcess() bool {
 }
 
 // ProcessBatch will always return an error if called.
-func (i *InputOperator) ProcessBatch(_ context.Context, _ []entry.Entry) error {
+func (i *InputOperator) ProcessBatch(_ context.Context, _ []*entry.Entry) error {
 	i.Logger().Error("Operator received a batch of entries, but can not process")
 	return errors.NewError(
 		"Operator can not process logs.",

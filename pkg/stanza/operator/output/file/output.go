@@ -53,10 +53,10 @@ func (o *Output) Stop() error {
 	return nil
 }
 
-func (o *Output) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	var errs []error
 	for i := range entries {
-		errs = append(errs, o.Process(ctx, &entries[i]))
+		errs = append(errs, o.Process(ctx, entries[i]))
 	}
 	return errors.Join(errs...)
 }

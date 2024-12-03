@@ -203,10 +203,10 @@ type laggyOperator struct {
 	logsCount int
 }
 
-func (t *laggyOperator) ProcessBatch(ctx context.Context, entries []entry.Entry) error {
+func (t *laggyOperator) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	var errs []error
 	for i := range entries {
-		errs = append(errs, t.Process(ctx, &entries[i]))
+		errs = append(errs, t.Process(ctx, entries[i]))
 	}
 	return errors.Join(errs...)
 }

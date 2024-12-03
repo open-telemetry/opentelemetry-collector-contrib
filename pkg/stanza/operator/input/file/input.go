@@ -52,8 +52,8 @@ func (i *Input) emitBatch(ctx context.Context, tokens []emit.Token) error {
 	return errors.Join(conversionError, consumeError)
 }
 
-func (i *Input) convertTokens(tokens []emit.Token) ([]entry.Entry, error) {
-	entries := make([]entry.Entry, 0, len(tokens))
+func (i *Input) convertTokens(tokens []emit.Token) ([]*entry.Entry, error) {
+	entries := make([]*entry.Entry, 0, len(tokens))
 	var errs []error
 	for _, token := range tokens {
 		if len(token.Body) == 0 {
@@ -64,7 +64,7 @@ func (i *Input) convertTokens(tokens []emit.Token) ([]entry.Entry, error) {
 			errs = append(errs, err)
 			continue
 		}
-		entries = append(entries, *entry)
+		entries = append(entries, entry)
 	}
 	return entries, errors.Join(errs...)
 }

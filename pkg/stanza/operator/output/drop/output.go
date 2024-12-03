@@ -15,7 +15,7 @@ type Output struct {
 	helper.OutputOperator
 }
 
-func (o *Output) ProcessBatch(_ context.Context, _ []entry.Entry) error {
+func (o *Output) ProcessBatch(_ context.Context, _ []*entry.Entry) error {
 	return nil
 }
 
