@@ -45,8 +45,7 @@ The UDP address and port on which this receiver listens for X-Ray segment docume
 
 Default: `localhost:2000`
 
-You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:2000`. This feature gate will be removed in a future release.
-
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 ### transport (Optional)
 This should always be "udp" as X-Ray SDKs only send segments using UDP.
@@ -61,7 +60,7 @@ The TCP address and port on which this receiver listens for calls from the X-Ray
 
 Default: `0.0.0.0:2000`
 
-The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 ### proxy_address (Optional)
 Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
