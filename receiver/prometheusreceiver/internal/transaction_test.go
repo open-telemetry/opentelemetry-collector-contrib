@@ -595,6 +595,98 @@ func testAppendExemplarWithEmptyLabelArray(t *testing.T, enableNativeHistograms 
 	assert.Equal(t, errNoJobInstance, err)
 }
 
+func TestAppendCTZeroSampleNoLabels(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(), 0, 100)
+	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
+}
+
+func TestAppendHistogramCTZeroSampleNoLabels(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(), 0, 100, nil, nil)
+	assert.ErrorContains(t, err, "job or instance cannot be found from labels")
+}
+
+func TestAppendCTZeroSampleDuplicateLabels(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "counter_test",
+		"a", "b",
+		"a", "c",
+	), 0, 100)
+	assert.ErrorContains(t, err, "invalid sample: non-unique label names")
+}
+
+func TestAppendHistogramCTZeroSampleDuplicateLabels(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "hist_test_bucket",
+		"a", "b",
+		"a", "c",
+	), 0, 100, nil, nil)
+	assert.ErrorContains(t, err, "invalid sample: non-unique label names")
+}
+
+func TestAppendCTZeroSampleEmptyMetricName(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "",
+	), 0, 100)
+	assert.ErrorContains(t, err, "metricName not found")
+}
+
+func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "",
+	), 0, 100, nil, nil)
+	assert.ErrorContains(t, err, "metricName not found")
+}
+
+func TestAppendCTZeroSample(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "counter_test",
+	), 0, 100)
+	assert.NoError(t, err, "metricName not found")
+}
+
+func TestAppendHistogramCTZeroSample(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+
+	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "hist_test_bucket",
+	), 0, 100, nil, nil)
+	assert.NoError(t, err, "metricName not found")
+}
+
 func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.MustNewID("prometheus"),
