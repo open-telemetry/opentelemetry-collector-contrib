@@ -1033,24 +1033,22 @@ func mergeGeolocation(attributes pcommon.Map) {
 		if val.Type() != pcommon.ValueTypeDouble {
 			return false
 		}
-		v := val.Double()
 
 		if key == lonKey {
-			setLon("", v)
+			setLon("", val.Double())
 			return true
 		} else if key == latKey {
-			setLat("", v)
+			setLat("", val.Double())
 			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
 			prefix := namespace + "."
-			setLon(prefix, v)
+			setLon(prefix, val.Double())
 			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
 			prefix := namespace + "."
-			setLat(prefix, v)
+			setLat(prefix, val.Double())
 			return true
 		}
-
 		return false
 	})
 
