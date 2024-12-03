@@ -11,6 +11,7 @@ require (
 	github.com/goccy/go-json v0.10.3
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
+	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.114.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.114.0
 	github.com/stretchr/testify v1.10.0
@@ -28,6 +29,7 @@ require (
 )
 
 require (
+	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
@@ -35,6 +37,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/gorilla/css v1.0.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/magefile/mage v1.15.0 // indirect

@@ -844,6 +844,18 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], StripHTML("<div><p>Nested <strong>text</strong></p></div>"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "Nested text")
+			},
+		},
+		{
+			statement: `set(attributes["test"], StripHTML("Text without tags"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "Text without tags")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Substring("pass", 0, 2))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pa")
