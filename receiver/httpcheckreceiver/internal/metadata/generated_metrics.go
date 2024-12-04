@@ -11,6 +11,57 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+type metricHttpcheckDnslookupDuration struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills httpcheck.dnslookup_duration metric with initial data.
+func (m *metricHttpcheckDnslookupDuration) init() {
+	m.data.SetName("httpcheck.dnslookup_duration")
+	m.data.SetDescription("Measures the duration of the DNS Component of the HTTP check.")
+	m.data.SetUnit("ms")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricHttpcheckDnslookupDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("http.url", httpURLAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricHttpcheckDnslookupDuration) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricHttpcheckDnslookupDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricHttpcheckDnslookupDuration(cfg MetricConfig) metricHttpcheckDnslookupDuration {
+	m := metricHttpcheckDnslookupDuration{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricHttpcheckDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -175,14 +226,15 @@ func newMetricHttpcheckStatus(cfg MetricConfig) metricHttpcheckStatus {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                  MetricsBuilderConfig // config of the metrics builder.
-	startTime               pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity         int                  // maximum observed number of metrics per resource.
-	metricsBuffer           pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo               component.BuildInfo  // contains version information.
-	metricHttpcheckDuration metricHttpcheckDuration
-	metricHttpcheckError    metricHttpcheckError
-	metricHttpcheckStatus   metricHttpcheckStatus
+	config                           MetricsBuilderConfig // config of the metrics builder.
+	startTime                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                  int                  // maximum observed number of metrics per resource.
+	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                        component.BuildInfo  // contains version information.
+	metricHttpcheckDnslookupDuration metricHttpcheckDnslookupDuration
+	metricHttpcheckDuration          metricHttpcheckDuration
+	metricHttpcheckError             metricHttpcheckError
+	metricHttpcheckStatus            metricHttpcheckStatus
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -205,13 +257,14 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                  mbc,
-		startTime:               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:           pmetric.NewMetrics(),
-		buildInfo:               settings.BuildInfo,
-		metricHttpcheckDuration: newMetricHttpcheckDuration(mbc.Metrics.HttpcheckDuration),
-		metricHttpcheckError:    newMetricHttpcheckError(mbc.Metrics.HttpcheckError),
-		metricHttpcheckStatus:   newMetricHttpcheckStatus(mbc.Metrics.HttpcheckStatus),
+		config:                           mbc,
+		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                    pmetric.NewMetrics(),
+		buildInfo:                        settings.BuildInfo,
+		metricHttpcheckDnslookupDuration: newMetricHttpcheckDnslookupDuration(mbc.Metrics.HttpcheckDnslookupDuration),
+		metricHttpcheckDuration:          newMetricHttpcheckDuration(mbc.Metrics.HttpcheckDuration),
+		metricHttpcheckError:             newMetricHttpcheckError(mbc.Metrics.HttpcheckError),
+		metricHttpcheckStatus:            newMetricHttpcheckStatus(mbc.Metrics.HttpcheckStatus),
 	}
 
 	for _, op := range options {
@@ -277,6 +330,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricHttpcheckDnslookupDuration.emit(ils.Metrics())
 	mb.metricHttpcheckDuration.emit(ils.Metrics())
 	mb.metricHttpcheckError.emit(ils.Metrics())
 	mb.metricHttpcheckStatus.emit(ils.Metrics())
@@ -299,6 +353,11 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordHttpcheckDnslookupDurationDataPoint adds a data point to httpcheck.dnslookup_duration metric.
+func (mb *MetricsBuilder) RecordHttpcheckDnslookupDurationDataPoint(ts pcommon.Timestamp, val int64, httpURLAttributeValue string) {
+	mb.metricHttpcheckDnslookupDuration.recordDataPoint(mb.startTime, ts, val, httpURLAttributeValue)
 }
 
 // RecordHttpcheckDurationDataPoint adds a data point to httpcheck.duration metric.

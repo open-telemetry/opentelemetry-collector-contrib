@@ -12,6 +12,20 @@ metrics:
     enabled: false
 ```
 
+### httpcheck.dnslookup_duration
+
+Measures the duration of the DNS Component of the HTTP check.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.url | Full HTTP request URL. | Any Str |
+
 ### httpcheck.duration
 
 Measures the duration of the HTTP check.

@@ -61,6 +61,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordHttpcheckDnslookupDurationDataPoint(ts, 1, "http.url-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordHttpcheckDurationDataPoint(ts, 1, "http.url-val")
 
 			defaultMetricsCount++
@@ -93,6 +97,21 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "httpcheck.dnslookup_duration":
+					assert.False(t, validatedMetrics["httpcheck.dnslookup_duration"], "Found a duplicate in the metrics slice: httpcheck.dnslookup_duration")
+					validatedMetrics["httpcheck.dnslookup_duration"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Measures the duration of the DNS Component of the HTTP check.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("http.url")
+					assert.True(t, ok)
+					assert.EqualValues(t, "http.url-val", attrVal.Str())
 				case "httpcheck.duration":
 					assert.False(t, validatedMetrics["httpcheck.duration"], "Found a duplicate in the metrics slice: httpcheck.duration")
 					validatedMetrics["httpcheck.duration"] = true

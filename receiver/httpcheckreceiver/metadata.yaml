@@ -45,6 +45,13 @@ metrics:
       value_type: int
     unit: ms
     attributes: [http.url]
+  httpcheck.dnslookup_duration:
+    description: Measures the duration of the DNS Component of the HTTP check.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]
   httpcheck.error:
     description: Records errors occurring during HTTP check.
     enabled: true
