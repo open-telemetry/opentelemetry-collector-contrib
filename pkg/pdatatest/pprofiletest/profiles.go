@@ -258,7 +258,7 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 		errs = multierr.Append(errs, fmt.Errorf("originalPayloadFormat does not match expected '%s', actual '%s'", expected.OriginalPayloadFormat(), actual.OriginalPayloadFormat()))
 	}
 
-	if bytes.Compare(expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()) != 0 {
+	if !bytes.Equal(expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()) {
 		errs = multierr.Append(errs, fmt.Errorf("keepFrames does not match expected '%s', actual '%s'", expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()))
 	}
 
