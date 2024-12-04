@@ -442,6 +442,11 @@ func TestNewExporter_Zorkian(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
+		HostMetadata: config.HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
+		},
 	}
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
@@ -456,8 +461,6 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
-	cfg.HostMetadata.Enabled = true
-	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
