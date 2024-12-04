@@ -2068,12 +2068,14 @@ func TestGetDataPoints(t *testing.T) {
 	})
 }
 
-func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
+func benchmarkGetAndCalculateDeltaDataPoints(b *testing.B, bucketLength int) {
 	generateMetrics := []pmetric.Metrics{
 		generateTestGaugeMetric("int-gauge", intValueType),
 		generateTestGaugeMetric("int-gauge", doubleValueType),
 		generateTestHistogramMetric("histogram"),
 		generateTestExponentialHistogramMetric("exponential-histogram"),
+		generateTestExponentialHistogramMetricWithSpecifiedNumberOfBuckets(
+			"exponential-histogram-buckets-"+strconv.Itoa(bucketLength), bucketLength),
 		generateTestSumMetric("int-sum", intValueType),
 		generateTestSumMetric("double-sum", doubleValueType),
 		generateTestSummaryMetric("summary"),
@@ -2097,46 +2099,18 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 	}
 }
 
-func benchmarkGetAndCalculateDeltaDataPointsWithBuckets(b *testing.B, bucketLength int) {
-	// Generate metrics with the specified number of buckets
-	generateMetrics := []pmetric.Metrics{
-		generateTestExponentialHistogramMetricWithSpecifiedNumberOfBuckets(
-			"exponential-histogram-thousand-buckets-"+strconv.Itoa(bucketLength), bucketLength),
-	}
-
-	finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
-	rms := finalOtelMetrics.ResourceMetrics()
-	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
-
-	emfCalcs := setupEmfCalculators()
-	defer require.NoError(b, shutdownEmfCalculators(emfCalcs))
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		for i := 0; i < metrics.Len(); i++ {
-			metadata := generateTestMetricMetadata(
-				"namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
-			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())
-
-			for j := 0; j < dps.Len(); j++ {
-				dps.CalculateDeltaDatapoints(j, "", false, emfCalcs)
-			}
-		}
-	}
+func BenchmarkGetAndCalculateDeltaDataPointsInclude100Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 100)
 }
 
-func BenchmarkGetAndCalculateDeltaDataPointsWith100Buckets(b *testing.B) {
-	benchmarkGetAndCalculateDeltaDataPointsWithBuckets(b, 100)
+func BenchmarkGetAndCalculateDeltaDataPointsInclude200Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 200)
 }
 
-func BenchmarkGetAndCalculateDeltaDataPointsWith200Buckets(b *testing.B) {
-	benchmarkGetAndCalculateDeltaDataPointsWithBuckets(b, 200)
+func BenchmarkGetAndCalculateDeltaDataPointsInclude300Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 300)
 }
 
-func BenchmarkGetAndCalculateDeltaDataPointsWith300Buckets(b *testing.B) {
-	benchmarkGetAndCalculateDeltaDataPointsWithBuckets(b, 300)
-}
-
-func BenchmarkGetAndCalculateDeltaDataPointsWith500Buckets(b *testing.B) {
-	benchmarkGetAndCalculateDeltaDataPointsWithBuckets(b, 500)
+func BenchmarkGetAndCalculateDeltaDataPointsInclude500Buckets(b *testing.B) {
+	benchmarkGetAndCalculateDeltaDataPoints(b, 500)
 }
