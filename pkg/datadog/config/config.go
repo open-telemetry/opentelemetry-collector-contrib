@@ -6,6 +6,7 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -27,11 +28,17 @@ var (
 	ErrNoMetadata = errors.New("only_metadata can't be enabled when host_metadata::enabled = false or host_metadata::hostname_source != first_resource")
 	// ErrInvalidHostname is returned when the hostname is invalid.
 	ErrEmptyEndpoint = errors.New("endpoint cannot be empty")
+	// ErrAPIKeyFormat is returned if API key contains invalid characters
+	ErrAPIKeyFormat = errors.New("api::key contains invalid characters")
+	// NonHexRegex is a regex of characters that are always invalid in a Datadog API key
+	NonHexRegex = regexp.MustCompile(NonHexChars)
 )
 
 const (
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
+	// NonHexChars is a regex of characters that are always invalid in a Datadog API key
+	NonHexChars = "[^0-9a-fA-F]"
 )
 
 // APIConfig defines the API configuration options
@@ -120,8 +127,13 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if c.API.Key == "" {
+	if string(c.API.Key) == "" {
 		return ErrUnsetAPIKey
+	}
+
+	invalidAPIKeyChars := NonHexRegex.FindAllString(string(c.API.Key), -1)
+	if len(invalidAPIKeyChars) > 0 {
+		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
 	}
 
 	if err := c.Traces.Validate(); err != nil {
