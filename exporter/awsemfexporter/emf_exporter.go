@@ -116,7 +116,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 			})
 		}
 	}
-	emf.config.logger.Info("Start processing resource metrics", zap.Any("labels", labels))
+	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
 	emf.processResourceLabels(labels)
 
 	groupedMetrics := make(map[any]*groupedMetric)
