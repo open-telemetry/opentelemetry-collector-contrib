@@ -11,12 +11,12 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.114.1-0.20241202231142-b9ff1bc54c99
 	go.opentelemetry.io/collector/component/componenttest v0.114.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/config/configretry v1.20.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/confmap v1.20.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/consumer v0.114.1-0.20241202231142-b9ff1bc54c99
+	go.opentelemetry.io/collector/config/configretry v1.21.0
+	go.opentelemetry.io/collector/confmap v1.21.0
+	go.opentelemetry.io/collector/consumer v1.21.0
 	go.opentelemetry.io/collector/exporter v0.114.1-0.20241202231142-b9ff1bc54c99
 	go.opentelemetry.io/collector/exporter/exportertest v0.114.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/pdata v1.20.1-0.20241202231142-b9ff1bc54c99
+	go.opentelemetry.io/collector/pdata v1.21.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -48,7 +48,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterprofiles v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/collector/extension v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
-	go.opentelemetry.io/collector/featuregate v1.20.1-0.20241202231142-b9ff1bc54c99 // indirect
+	go.opentelemetry.io/collector/featuregate v1.21.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
 	go.opentelemetry.io/collector/receiver v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
