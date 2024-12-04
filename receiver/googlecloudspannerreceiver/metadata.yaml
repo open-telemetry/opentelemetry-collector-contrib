@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, dsimil, KiranmayiB, harishbohara11]
+    active: [dashpole, dsimil, KiranmayiB, harishbohara11, manu2]
     emeritus: [architjugran, varunraiko]
 tests:
   config:
