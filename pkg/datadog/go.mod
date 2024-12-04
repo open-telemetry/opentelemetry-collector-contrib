@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.115.0
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
 	go.opentelemetry.io/collector/config/configauth v0.115.0
+	go.opentelemetry.io/collector/config/configcompression v1.21.0
 	go.opentelemetry.io/collector/config/confighttp v0.115.0
 	go.opentelemetry.io/collector/config/confignet v1.21.0
 	go.opentelemetry.io/collector/config/configopaque v1.21.0
@@ -56,7 +57,6 @@ require (
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/tinylib/msgp v1.1.8 // indirect
 	go.opentelemetry.io/collector/client v1.21.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.21.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.21.0 // indirect
@@ -88,6 +88,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/config/configcompression => github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241118202008-518d136b719c
+replace go.opentelemetry.io/collector/config/configcompression => github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241204155200-78d83fd4ebca
 
-replace go.opentelemetry.io/collector/config/confighttp => github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241118202008-518d136b719c
+replace go.opentelemetry.io/collector/config/confighttp => github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241204155200-78d83fd4ebca

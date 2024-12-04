@@ -94,10 +94,10 @@ github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ
 github.com/pierrec/lz4/v4 v4.1.21/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241118202008-518d136b719c h1:UM4aAdmHvSfI+fCiQ6FBFjn1ORq43rP4X7Epnzu8KpA=
-github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241118202008-518d136b719c/go.mod h1:GH3iEYQYCULGQfcG92n1rjfOsytLIWxymnlYkE8Y95U=
-github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241118202008-518d136b719c h1:d+EskULp1gMfvs8/FP6LUn28I7a+0oA6qYZJ6DeL2nw=
-github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241118202008-518d136b719c/go.mod h1:nrlNLxOZ+4JQaV9j0TiqQV7LOHhrRivPrT8nQRHED3Q=
+github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241204155200-78d83fd4ebca h1:rWYWOGMwPqrrfNvF4EGu6o+Ew3JoiRvKJ6QiRljMLjU=
+github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241204155200-78d83fd4ebca/go.mod h1:QY1HtxILD1CoZnZ/+WBNaCYXppveAFlLADZRmlDUpt0=
+github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241204155200-78d83fd4ebca h1:odnCElmXSPIj/e7vBtZuhZkK6HAosfmWpouEnbv/VQM=
+github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241204155200-78d83fd4ebca/go.mod h1:Wr50ut12NmCEAl4bWLJryw2EjUmJTtYRg89560Q51wc=
 github.com/rogpeppe/go-internal v1.12.0 h1:exVL4IDcn6na9z1rAb56Vxr+CgyK3nn3O+epU5NdKM8=
 github.com/rogpeppe/go-internal v1.12.0/go.mod h1:E+RYuTGaKKdloAfM02xzb0FW3Paa99yedzYV+kq4uf4=
 github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
@@ -124,10 +124,6 @@ go.opentelemetry.io/collector/component/componenttest v0.115.0 h1:9URDJ9VyP6tuij
 go.opentelemetry.io/collector/component/componenttest v0.115.0/go.mod h1:PzXvNqKLCiSADZGZFKH+IOHMkaQ0GTHuzysfVbTPKYY=
 go.opentelemetry.io/collector/config/configauth v0.115.0 h1:xa+ALdyPgva3rZnLBh1H2oS5MsHP6JxSqMtQmcELnys=
 go.opentelemetry.io/collector/config/configauth v0.115.0/go.mod h1:C7anpb3Rf4KswMT+dgOzkW9UX0z/65PLORpUw3p0VYc=
-go.opentelemetry.io/collector/config/configcompression v1.21.0 h1:0zbPdZAgPFMAarwJEC4gaR6f/JBP686A3TYSgb3oa+E=
-go.opentelemetry.io/collector/config/configcompression v1.21.0/go.mod h1:LvYG00tbPTv0NOLoZN0wXq1F5thcxvukO8INq7xyfWU=
-go.opentelemetry.io/collector/config/confighttp v0.115.0 h1:BIy394oNXnqySJwrCqgAJu4gWgAV5aQUDD6k1hy6C8o=
-go.opentelemetry.io/collector/config/confighttp v0.115.0/go.mod h1:Wr50ut12NmCEAl4bWLJryw2EjUmJTtYRg89560Q51wc=
 go.opentelemetry.io/collector/config/confignet v1.21.0 h1:PeQ5YrMnfftysFL/WVaSrjPOWjD6DfeABY50pf9CZxU=
 go.opentelemetry.io/collector/config/confignet v1.21.0/go.mod h1:ZppUH1hgUJOubawEsxsQ9MzEYFytqo2GnVSS7d4CVxc=
 go.opentelemetry.io/collector/config/configopaque v1.21.0 h1:PcvRGkBk4Px8BQM7tX+kw4i3jBsfAHGoGQbtZg6Ox7U=

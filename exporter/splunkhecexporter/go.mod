@@ -14,6 +14,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.34.0
 	go.opentelemetry.io/collector/component v0.115.0
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
+	go.opentelemetry.io/collector/config/configcompression v1.21.0
 	go.opentelemetry.io/collector/config/confighttp v0.115.0
 	go.opentelemetry.io/collector/config/configopaque v1.21.0
 	go.opentelemetry.io/collector/config/configretry v1.21.0
@@ -93,7 +94,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/client v1.21.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.115.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.21.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.115.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0 // indirect
@@ -138,6 +138,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-replace go.opentelemetry.io/collector/config/configcompression => github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241118202008-518d136b719c
+replace go.opentelemetry.io/collector/config/configcompression => github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241204155200-78d83fd4ebca
 
-replace go.opentelemetry.io/collector/config/confighttp => github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241118202008-518d136b719c
+replace go.opentelemetry.io/collector/config/confighttp => github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241204155200-78d83fd4ebca
