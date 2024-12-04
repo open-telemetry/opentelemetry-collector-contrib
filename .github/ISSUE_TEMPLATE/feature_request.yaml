@@ -125,7 +125,6 @@ body:
       - internal/filter
       - internal/grpcutil
       - internal/k8sconfig
-      - internal/k8stest
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
@@ -141,6 +140,7 @@ body:
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/k8stest
       - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest

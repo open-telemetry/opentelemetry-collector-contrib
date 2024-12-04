@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
