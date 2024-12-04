@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"github.com/google/go-github/v67/github"
-	"github.com/julienschmidt/httprouter"
+	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
@@ -87,10 +87,11 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 		return err
 	}
 
-	// set up router.
-	router := httprouter.New()
+	// use gorilla mux to set up a router
+	router := mux.NewRouter()
 
-	router.GET(gtr.cfg.WebHook.HealthPath, gtr.handleHealthCheck)
+	// setup health route
+	router.HandleFunc(gtr.cfg.WebHook.HealthPath, gtr.handleHealthCheck)
 
 	// webhook server standup and configuration
 	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
@@ -124,7 +125,7 @@ func (gtr *githubTracesReceiver) Shutdown(_ context.Context) error {
 }
 
 // Simple healthcheck endpoint.
-func (gtr *githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
+func (gtr *githubTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
