@@ -4,6 +4,7 @@
 package pprofiletest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 
@@ -167,7 +168,7 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	)
 
 	if expected.Profiles().Len() != actual.Profiles().Len() {
-		errs = multierr.Append(errs, fmt.Errorf("number of profile containers doesn't match expected: %d, actual: %d",
+		errs = multierr.Append(errs, fmt.Errorf("number of profiles doesn't match expected: %d, actual: %d",
 			expected.Profiles().Len(), actual.Profiles().Len()))
 		return errs
 	}
@@ -175,7 +176,7 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	numProfiles := expected.Profiles().Len()
 
 	// Keep track of matching containers so that each container can only be matched once
-	matchingProfiles := make(map[pprofile.ProfileContainer]pprofile.ProfileContainer, numProfiles)
+	matchingProfiles := make(map[pprofile.Profile]pprofile.Profile, numProfiles)
 
 	var outOfOrderErrs error
 	for e := 0; e < numProfiles; e++ {
@@ -191,20 +192,20 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 				matchingProfiles[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`profile containers are out of order: profile container "%v" expected at index %d, found at index %d`,
+						fmt.Errorf(`profiles are out of order: profile "%v" expected at index %d, found at index %d`,
 							elr.Attributes().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected profile container: %v", elr.Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected profile: %v", elr.Attributes().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numProfiles; i++ {
 		if _, ok := matchingProfiles[actual.Profiles().At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf("unexpected profile container: %v",
+			errs = multierr.Append(errs, fmt.Errorf("unexpected profile: %v",
 				actual.Profiles().At(i).Attributes().AsRaw()))
 		}
 	}
@@ -217,13 +218,13 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	}
 
 	for alr, elr := range matchingProfiles {
-		errPrefix := fmt.Sprintf(`profile container "%v"`, elr.Attributes().AsRaw())
-		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileContainer(elr, alr)))
+		errPrefix := fmt.Sprintf(`profile "%v"`, elr.Attributes().AsRaw())
+		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfile(elr, alr)))
 	}
 	return errs
 }
 
-func CompareProfileContainer(expected, actual pprofile.ProfileContainer) error {
+func CompareProfile(expected, actual pprofile.Profile) error {
 	errs := multierr.Combine(
 		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
 		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
@@ -237,39 +238,28 @@ func CompareProfileContainer(expected, actual pprofile.ProfileContainer) error {
 		errs = multierr.Append(errs, fmt.Errorf("start timestamp doesn't match expected: %d, "+"actual: %d", expected.StartTime(), actual.StartTime()))
 	}
 
-	if expected.EndTime() != actual.EndTime() {
-		errs = multierr.Append(errs, fmt.Errorf("end timestamp doesn't match expected: %d, "+"actual: %d", expected.EndTime(), actual.EndTime()))
-	}
-
-	errPrefix := fmt.Sprintf(`profile "%v"`, expected.Attributes().AsRaw())
-	errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfile(expected.Profile(), actual.Profile())))
-
-	return errs
-}
-
-func CompareProfile(expected, actual pprofile.Profile) error {
-	errs := multierr.Combine(
-		internal.CompareAttributes(expected.AttributeTable(), actual.AttributeTable()),
-	)
-
 	if !reflect.DeepEqual(expected.LocationIndices(), actual.LocationIndices()) {
 		errs = multierr.Append(errs, fmt.Errorf("locationIndicies do not match expected"))
 	}
 
-	if !reflect.DeepEqual(expected.Comment(), actual.Comment()) {
+	if !reflect.DeepEqual(expected.CommentStrindices(), actual.CommentStrindices()) {
 		errs = multierr.Append(errs, fmt.Errorf("comment does not match expected"))
+	}
+
+	if expected.Time() != actual.Time() {
+		errs = multierr.Append(errs, fmt.Errorf("time doesn't match expected: %d, actual: %d", expected.Time(), actual.Time()))
 	}
 
 	if !reflect.DeepEqual(expected.StringTable(), actual.StringTable()) {
 		errs = multierr.Append(errs, fmt.Errorf("stringTable does not match expected"))
 	}
 
-	if expected.DropFrames() != actual.DropFrames() {
-		errs = multierr.Append(errs, fmt.Errorf("profileID does not match expected '%d', actual '%d'", expected.DropFrames(), actual.DropFrames()))
+	if expected.OriginalPayloadFormat() != actual.OriginalPayloadFormat() {
+		errs = multierr.Append(errs, fmt.Errorf("originalPayloadFormat does not match expected '%s', actual '%s'", expected.OriginalPayloadFormat(), actual.OriginalPayloadFormat()))
 	}
 
-	if expected.KeepFrames() != actual.KeepFrames() {
-		errs = multierr.Append(errs, fmt.Errorf("keepFrames does not match expected '%d', actual '%d'", expected.KeepFrames(), actual.KeepFrames()))
+	if bytes.Compare(expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()) != 0 {
+		errs = multierr.Append(errs, fmt.Errorf("keepFrames does not match expected '%s', actual '%s'", expected.OriginalPayload().AsRaw(), actual.OriginalPayload().AsRaw()))
 	}
 
 	if expected.StartTime() != actual.StartTime() {
@@ -284,27 +274,27 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 		errs = multierr.Append(errs, fmt.Errorf("period does not match expected '%d', actual '%d'", expected.Period(), actual.Period()))
 	}
 
-	if expected.DefaultSampleType() != actual.DefaultSampleType() {
-		errs = multierr.Append(errs, fmt.Errorf("defaultSampleType does not match expected '%d', actual '%d'", expected.DefaultSampleType(), actual.DefaultSampleType()))
+	if expected.DefaultSampleTypeStrindex() != actual.DefaultSampleTypeStrindex() {
+		errs = multierr.Append(errs, fmt.Errorf("defaultSampleType does not match expected '%d', actual '%d'", expected.DefaultSampleTypeStrindex(), actual.DefaultSampleTypeStrindex()))
 	}
 
-	if expected.PeriodType().Type() != actual.PeriodType().Type() ||
-		expected.PeriodType().Unit() != actual.PeriodType().Unit() ||
+	if expected.PeriodType().TypeStrindex() != actual.PeriodType().TypeStrindex() ||
+		expected.PeriodType().UnitStrindex() != actual.PeriodType().UnitStrindex() ||
 		expected.PeriodType().AggregationTemporality() != actual.PeriodType().AggregationTemporality() {
 		errs = multierr.Append(errs, fmt.Errorf("periodType does not match expected 'unit: %d, type: %d, aggregationTemporality: %d', actual 'unit: %d, type: %d,"+
-			"aggregationTemporality: %d'", expected.PeriodType().Unit(), expected.PeriodType().Type(), expected.PeriodType().AggregationTemporality(),
-			actual.PeriodType().Unit(), actual.PeriodType().Type(), actual.PeriodType().AggregationTemporality()))
+			"aggregationTemporality: %d'", expected.PeriodType().UnitStrindex(), expected.PeriodType().TypeStrindex(), expected.PeriodType().AggregationTemporality(),
+			actual.PeriodType().UnitStrindex(), actual.PeriodType().TypeStrindex(), actual.PeriodType().AggregationTemporality()))
 	}
 
 	errs = multierr.Append(errs, internal.AddErrPrefix("sampleType", CompareProfileValueTypeSlice(expected.SampleType(), actual.SampleType())))
 
 	errs = multierr.Append(errs, internal.AddErrPrefix("sample", CompareProfileSampleSlice(expected.Sample(), actual.Sample())))
 
-	errs = multierr.Append(errs, internal.AddErrPrefix("mapping", CompareProfileMappingSlice(expected.Mapping(), actual.Mapping())))
+	errs = multierr.Append(errs, internal.AddErrPrefix("mapping", CompareProfileMappingSlice(expected.MappingTable(), actual.MappingTable())))
 
-	errs = multierr.Append(errs, internal.AddErrPrefix("location", CompareProfileLocationSlice(expected.Location(), actual.Location())))
+	errs = multierr.Append(errs, internal.AddErrPrefix("location", CompareProfileLocationSlice(expected.LocationTable(), actual.LocationTable())))
 
-	errs = multierr.Append(errs, internal.AddErrPrefix("function", CompareProfileFunctionSlice(expected.Function(), actual.Function())))
+	errs = multierr.Append(errs, internal.AddErrPrefix("function", CompareProfileFunctionSlice(expected.FunctionTable(), actual.FunctionTable())))
 
 	errs = multierr.Append(errs, internal.AddErrPrefix("attributeUnits", CompareProfileAttributeUnitSlice(expected.AttributeUnits(), actual.AttributeUnits())))
 
@@ -334,26 +324,26 @@ func CompareProfileValueTypeSlice(expected, actual pprofile.ValueTypeSlice) erro
 			if _, ok := matchingValueTypes[alr]; ok {
 				continue
 			}
-			if elr.Type() == alr.Type() && elr.Unit() == alr.Unit() {
+			if elr.TypeStrindex() == alr.TypeStrindex() && elr.UnitStrindex() == alr.UnitStrindex() {
 				foundMatch = true
 				matchingValueTypes[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf(`valueTypes are out of order: valueType "unit: %d, type: %d, aggregationTemporality: %d" expected at index %d, found at index %d`,
-							elr.Unit(), elr.Type(), elr.AggregationTemporality(), e, a))
+							elr.UnitStrindex(), elr.TypeStrindex(), elr.AggregationTemporality(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected valueType "unit: %d, type: %d, aggregationTemporality: %d"`, elr.Unit(), elr.Type(), elr.AggregationTemporality()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected valueType "unit: %d, type: %d, aggregationTemporality: %d"`, elr.UnitStrindex(), elr.TypeStrindex(), elr.AggregationTemporality()))
 		}
 	}
 
 	for i := 0; i < numValueTypes; i++ {
 		if _, ok := matchingValueTypes[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf(`unexpected valueType "unit: %d, type: %d, aggregationTemporality: %d"`,
-				actual.At(i).Unit(), actual.At(i).Type(), actual.At(i).AggregationTemporality()))
+				actual.At(i).UnitStrindex(), actual.At(i).TypeStrindex(), actual.At(i).AggregationTemporality()))
 		}
 	}
 
@@ -367,8 +357,8 @@ func CompareProfileValueTypeSlice(expected, actual pprofile.ValueTypeSlice) erro
 	for alr, elr := range matchingValueTypes {
 		if !isValueTypeEqual(elr, alr) {
 			errs = multierr.Append(errs, fmt.Errorf(`expected valueType "unit: %d, type: %d, aggregationTemporality: %d",`+
-				`got "unit: %d, type: %d, aggregationTemporality: %d"`, elr.Unit(), elr.Type(), elr.AggregationTemporality(),
-				alr.Unit(), alr.Type(), alr.AggregationTemporality()))
+				`got "unit: %d, type: %d, aggregationTemporality: %d"`, elr.UnitStrindex(), elr.TypeStrindex(), elr.AggregationTemporality(),
+				alr.UnitStrindex(), alr.TypeStrindex(), alr.AggregationTemporality()))
 		}
 	}
 
@@ -376,8 +366,8 @@ func CompareProfileValueTypeSlice(expected, actual pprofile.ValueTypeSlice) erro
 }
 
 func isValueTypeEqual(expected, actual pprofile.ValueType) bool {
-	return expected.Type() == actual.Type() &&
-		expected.Unit() == actual.Unit() &&
+	return expected.TypeStrindex() == actual.TypeStrindex() &&
+		expected.UnitStrindex() == actual.UnitStrindex() &&
 		expected.AggregationTemporality() == actual.AggregationTemporality()
 }
 
@@ -402,26 +392,26 @@ func CompareProfileSampleSlice(expected, actual pprofile.SampleSlice) error {
 			if _, ok := matchingItems[alr]; ok {
 				continue
 			}
-			if reflect.DeepEqual(elr.Attributes().AsRaw(), alr.Attributes().AsRaw()) {
+			if reflect.DeepEqual(elr.AttributeIndices().AsRaw(), alr.AttributeIndices().AsRaw()) {
 				foundMatch = true
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf(`samples are out of order: sample "attributes: %v" expected at index %d, found at index %d`,
-							elr.Attributes().AsRaw(), e, a))
+							elr.AttributeIndices().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected sample "attributes: %v"`, elr.Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected sample "attributes: %v"`, elr.AttributeIndices().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numSlice; i++ {
 		if _, ok := matchingItems[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf(`unexpected sample "attributes: %v"`,
-				actual.At(i).Attributes().AsRaw()))
+				actual.At(i).AttributeIndices().AsRaw()))
 		}
 	}
 
@@ -433,7 +423,7 @@ func CompareProfileSampleSlice(expected, actual pprofile.SampleSlice) error {
 	}
 
 	for alr, elr := range matchingItems {
-		errPrefix := fmt.Sprintf(`sample "attributes: %v"`, elr.Attributes().AsRaw())
+		errPrefix := fmt.Sprintf(`sample "attributes: %v"`, elr.AttributeIndices().AsRaw())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileSample(elr, alr)))
 	}
 
@@ -450,16 +440,8 @@ func CompareProfileSample(expected, actual pprofile.Sample) error {
 		errs = multierr.Append(errs, fmt.Errorf("expected locationLenght '%d', got '%d'", expected.LocationsLength(), actual.LocationsLength()))
 	}
 
-	if expected.StacktraceIdIndex() != actual.StacktraceIdIndex() {
-		errs = multierr.Append(errs, fmt.Errorf("expected stacktraceIdIndex '%d', got '%d'", expected.StacktraceIdIndex(), actual.StacktraceIdIndex()))
-	}
-
-	if expected.Link() != actual.Link() {
-		errs = multierr.Append(errs, fmt.Errorf("expected link '%d', got '%d'", expected.Link(), actual.Link()))
-	}
-
-	if !reflect.DeepEqual(expected.LocationIndex().AsRaw(), actual.LocationIndex().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("expected locationIndex '%v', got '%v'", expected.LocationIndex().AsRaw(), actual.LocationIndex().AsRaw()))
+	if !reflect.DeepEqual(expected.TimestampsUnixNano().AsRaw(), actual.TimestampsUnixNano().AsRaw()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected timestampUnixNano '%v', got '%v'", expected.TimestampsUnixNano().AsRaw(), actual.TimestampsUnixNano().AsRaw()))
 	}
 
 	if !reflect.DeepEqual(expected.Value().AsRaw(), actual.Value().AsRaw()) {
@@ -470,81 +452,11 @@ func CompareProfileSample(expected, actual pprofile.Sample) error {
 		errs = multierr.Append(errs, fmt.Errorf("expected timestampUnixNano '%v', got '%v'", expected.TimestampsUnixNano().AsRaw(), actual.TimestampsUnixNano().AsRaw()))
 	}
 
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
-	}
-
-	errPrefix := fmt.Sprintf(`labelSlice of sample with attributes "%v"`, expected.Attributes().AsRaw())
-	errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileLabelSlice(expected.Label(), actual.Label())))
-
-	return errs
-}
-
-func CompareProfileLabelSlice(expected, actual pprofile.LabelSlice) error {
-	var errs error
-	if expected.Len() != actual.Len() {
-		errs = multierr.Append(errs, fmt.Errorf("number of labels doesn't match expected: %d, actual: %d",
-			expected.Len(), actual.Len()))
-		return errs
-	}
-
-	numLabels := expected.Len()
-
-	matchingLabels := make(map[pprofile.Label]pprofile.Label, numLabels)
-
-	var outOfOrderErrs error
-	for e := 0; e < numLabels; e++ {
-		elr := expected.At(e)
-		var foundMatch bool
-		for a := 0; a < numLabels; a++ {
-			alr := actual.At(a)
-			if _, ok := matchingLabels[alr]; ok {
-				continue
-			}
-			if elr.Key() == alr.Key() {
-				foundMatch = true
-				matchingLabels[alr] = elr
-				if e != a {
-					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`labels are out of order: label "key: %d" expected at index %d, found at index %d`,
-							elr.Key(), e, a))
-				}
-				break
-			}
-		}
-		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected label "key: %d"`, elr.Key()))
-		}
-	}
-
-	for i := 0; i < numLabels; i++ {
-		if _, ok := matchingLabels[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf(`unexpected label "key: %d"`,
-				actual.At(i).Key()))
-		}
-	}
-
-	if errs != nil {
-		return errs
-	}
-	if outOfOrderErrs != nil {
-		return outOfOrderErrs
-	}
-
-	for alr, elr := range matchingLabels {
-		if !isLabelEqual(elr, alr) {
-			errs = multierr.Append(errs, fmt.Errorf(`label with "key: %d" does not match expected`, alr.Key()))
-		}
+	if !reflect.DeepEqual(expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()))
 	}
 
 	return errs
-}
-
-func isLabelEqual(expected, actual pprofile.Label) bool {
-	return expected.Key() == actual.Key() &&
-		expected.Str() == actual.Str() &&
-		expected.Num() == actual.Num() &&
-		expected.NumUnit() == actual.NumUnit()
 }
 
 func CompareProfileMappingSlice(expected, actual pprofile.MappingSlice) error {
@@ -568,26 +480,26 @@ func CompareProfileMappingSlice(expected, actual pprofile.MappingSlice) error {
 			if _, ok := matchingItems[alr]; ok {
 				continue
 			}
-			if reflect.DeepEqual(elr.Attributes().AsRaw(), alr.Attributes().AsRaw()) && elr.ID() == alr.ID() {
+			if reflect.DeepEqual(elr.AttributeIndices().AsRaw(), alr.AttributeIndices().AsRaw()) {
 				foundMatch = true
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`mappings are out of order: mapping "attributes: %v, id: %d" expected at index %d, found at index %d`,
-							elr.Attributes().AsRaw(), elr.ID(), e, a))
+						fmt.Errorf(`mappings are out of order: mapping "attributes: %v" expected at index %d, found at index %d`,
+							elr.AttributeIndices().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected mapping "attributes: %v, id: %d"`, elr.Attributes().AsRaw(), elr.ID()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected mapping "attributes: %v"`, elr.AttributeIndices().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numItems; i++ {
 		if _, ok := matchingItems[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf(`unexpected profile mapping "attributes: %v, id: %d"`,
-				actual.At(i).Attributes().AsRaw(), actual.At(i).ID()))
+			errs = multierr.Append(errs, fmt.Errorf(`unexpected profile mapping "attributes: %v"`,
+				actual.At(i).AttributeIndices().AsRaw()))
 		}
 	}
 
@@ -600,8 +512,8 @@ func CompareProfileMappingSlice(expected, actual pprofile.MappingSlice) error {
 
 	for alr, elr := range matchingItems {
 		if !isMappingEqual(elr, alr) {
-			errs = multierr.Append(errs, fmt.Errorf(`mapping with "attributes: %v, id: %d", does not match expected`,
-				alr.Attributes().AsRaw(), alr.ID()))
+			errs = multierr.Append(errs, fmt.Errorf(`mapping with "attributes: %v", does not match expected`,
+				alr.AttributeIndices().AsRaw()))
 		}
 	}
 
@@ -609,14 +521,11 @@ func CompareProfileMappingSlice(expected, actual pprofile.MappingSlice) error {
 }
 
 func isMappingEqual(expected, actual pprofile.Mapping) bool {
-	return expected.ID() == actual.ID() &&
-		expected.MemoryStart() == actual.MemoryStart() &&
+	return expected.MemoryStart() == actual.MemoryStart() &&
 		expected.MemoryLimit() == actual.MemoryLimit() &&
 		expected.FileOffset() == actual.FileOffset() &&
-		expected.Filename() == actual.Filename() &&
-		expected.BuildID() == actual.BuildID() &&
-		expected.BuildIDKind() == actual.BuildIDKind() &&
-		reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) &&
+		expected.FilenameStrindex() == actual.FilenameStrindex() &&
+		reflect.DeepEqual(expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()) &&
 		expected.HasFunctions() == actual.HasFunctions() &&
 		expected.HasFilenames() == actual.HasFilenames() &&
 		expected.HasLineNumbers() == actual.HasLineNumbers() &&
@@ -644,26 +553,26 @@ func CompareProfileFunctionSlice(expected, actual pprofile.FunctionSlice) error 
 			if _, ok := matchingItems[alr]; ok {
 				continue
 			}
-			if elr.Name() == alr.Name() {
+			if elr.NameStrindex() == alr.NameStrindex() {
 				foundMatch = true
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf(`functions are out of order: function "name: %d" expected at index %d, found at index %d`,
-							elr.Name(), e, a))
+							elr.NameStrindex(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected function "name: %d"`, elr.Name()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected function "name: %d"`, elr.NameStrindex()))
 		}
 	}
 
 	for i := 0; i < numItems; i++ {
 		if _, ok := matchingItems[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf(`unexpected profile function "name: %d"`,
-				actual.At(i).Name()))
+				actual.At(i).NameStrindex()))
 		}
 	}
 
@@ -676,7 +585,7 @@ func CompareProfileFunctionSlice(expected, actual pprofile.FunctionSlice) error 
 
 	for alr, elr := range matchingItems {
 		if !isFunctionEqual(elr, alr) {
-			errs = multierr.Append(errs, fmt.Errorf(`function with "name: %d" does not match expected`, alr.Name()))
+			errs = multierr.Append(errs, fmt.Errorf(`function with "name: %d" does not match expected`, alr.NameStrindex()))
 		}
 	}
 
@@ -684,11 +593,10 @@ func CompareProfileFunctionSlice(expected, actual pprofile.FunctionSlice) error 
 }
 
 func isFunctionEqual(expected, actual pprofile.Function) bool {
-	return expected.ID() == actual.ID() &&
-		expected.Name() == actual.Name() &&
-		expected.SystemName() == actual.SystemName() &&
+	return expected.NameStrindex() == actual.NameStrindex() &&
+		expected.SystemNameStrindex() == actual.SystemNameStrindex() &&
 		expected.StartLine() == actual.StartLine() &&
-		expected.Filename() == actual.Filename()
+		expected.FilenameStrindex() == actual.FilenameStrindex()
 }
 
 func CompareProfileLocationSlice(expected, actual pprofile.LocationSlice) error {
@@ -712,26 +620,26 @@ func CompareProfileLocationSlice(expected, actual pprofile.LocationSlice) error 
 			if _, ok := matchingItems[alr]; ok {
 				continue
 			}
-			if reflect.DeepEqual(elr.Attributes().AsRaw(), alr.Attributes().AsRaw()) && elr.ID() == alr.ID() {
+			if reflect.DeepEqual(elr.AttributeIndices().AsRaw(), alr.AttributeIndices().AsRaw()) {
 				foundMatch = true
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
-						fmt.Errorf(`locations are out of order: location "attributes: %v, id: %d" expected at index %d, found at index %d`,
-							elr.Attributes().AsRaw(), elr.ID(), e, a))
+						fmt.Errorf(`locations are out of order: location "attributes: %v" expected at index %d, found at index %d`,
+							elr.AttributeIndices().AsRaw(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected location "attributes: %v, id: %d"`, elr.Attributes().AsRaw(), elr.ID()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected location "attributes: %v"`, elr.AttributeIndices().AsRaw()))
 		}
 	}
 
 	for i := 0; i < numItems; i++ {
 		if _, ok := matchingItems[actual.At(i)]; !ok {
-			errs = multierr.Append(errs, fmt.Errorf(`unexpected location "attributes: %v, id: %d"`,
-				actual.At(i).Attributes().AsRaw(), actual.At(i).ID()))
+			errs = multierr.Append(errs, fmt.Errorf(`unexpected location "attributes: %v"`,
+				actual.At(i).AttributeIndices().AsRaw()))
 		}
 	}
 
@@ -743,7 +651,7 @@ func CompareProfileLocationSlice(expected, actual pprofile.LocationSlice) error 
 	}
 
 	for alr, elr := range matchingItems {
-		errPrefix := fmt.Sprintf(`location "id: %d"`, elr.ID())
+		errPrefix := fmt.Sprintf(`location "attributes: %v"`, elr.AttributeIndices().AsRaw())
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileLocation(elr, alr)))
 	}
 
@@ -752,9 +660,6 @@ func CompareProfileLocationSlice(expected, actual pprofile.LocationSlice) error 
 
 func CompareProfileLocation(expected, actual pprofile.Location) error {
 	var errs error
-	if expected.ID() != actual.ID() {
-		errs = multierr.Append(errs, fmt.Errorf("expected id '%d', got '%d'", expected.ID(), actual.ID()))
-	}
 
 	if expected.MappingIndex() != actual.MappingIndex() {
 		errs = multierr.Append(errs, fmt.Errorf("expected mappingIndex '%d', got '%d'", expected.MappingIndex(), actual.MappingIndex()))
@@ -768,15 +673,11 @@ func CompareProfileLocation(expected, actual pprofile.Location) error {
 		errs = multierr.Append(errs, fmt.Errorf("expected isFolded '%v', got '%v'", expected.IsFolded(), actual.IsFolded()))
 	}
 
-	if expected.TypeIndex() != actual.TypeIndex() {
-		errs = multierr.Append(errs, fmt.Errorf("expected typeIndex '%d', got '%d'", expected.TypeIndex(), actual.TypeIndex()))
+	if !reflect.DeepEqual(expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()) {
+		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.AttributeIndices().AsRaw(), actual.AttributeIndices().AsRaw()))
 	}
 
-	if !reflect.DeepEqual(expected.Attributes().AsRaw(), actual.Attributes().AsRaw()) {
-		errs = multierr.Append(errs, fmt.Errorf("expected attributes '%v', got '%v'", expected.Attributes().AsRaw(), actual.Attributes().AsRaw()))
-	}
-
-	errPrefix := fmt.Sprintf(`line od location with "id: %d"`, expected.ID())
+	errPrefix := fmt.Sprintf(`line of location with "attributes: %v"`, expected.AttributeIndices().AsRaw())
 	errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfileLineSlice(expected.Line(), actual.Line())))
 
 	return errs
@@ -869,26 +770,26 @@ func CompareProfileAttributeUnitSlice(expected, actual pprofile.AttributeUnitSli
 			if _, ok := matchingItems[alr]; ok {
 				continue
 			}
-			if elr.AttributeKey() == alr.AttributeKey() && elr.Unit() == alr.Unit() {
+			if elr.AttributeKeyStrindex() == alr.AttributeKeyStrindex() && elr.UnitStrindex() == alr.UnitStrindex() {
 				foundMatch = true
 				matchingItems[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf(`attributeUnits are out of order: attributeUnit "attributeKey: %d" expected at index %d, found at index %d`,
-							elr.AttributeKey(), e, a))
+							elr.AttributeKeyStrindex(), e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf(`missing expected attributeUnit "attributeKey: %d"`, elr.AttributeKey()))
+			errs = multierr.Append(errs, fmt.Errorf(`missing expected attributeUnit "attributeKey: %d"`, elr.AttributeKeyStrindex()))
 		}
 	}
 
 	for i := 0; i < numItems; i++ {
 		if _, ok := matchingItems[actual.At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf(`unexpected profile attributeUnit "attributeKey: %d"`,
-				actual.At(i).AttributeKey()))
+				actual.At(i).AttributeKeyStrindex()))
 		}
 	}
 
