@@ -164,7 +164,7 @@ func (mi *MetricInfo) ensureDefaults() {
 	if mi.Histogram != nil {
 		// Add default buckets if explicit histogram is defined
 		if len(mi.Histogram.Buckets) == 0 {
-			mi.Histogram.Buckets = defaultHistogramBuckets[:]
+			mi.Histogram.Buckets = defaultHistogramBuckets
 		}
 	}
 	if mi.ExponentialHistogram != nil {

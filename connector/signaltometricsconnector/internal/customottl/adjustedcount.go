@@ -25,7 +25,7 @@ func adjustedCount() (ottl.ExprFunc[ottlspan.TransformContext], error) {
 		tracestate := tCtx.GetSpan().TraceState().AsRaw()
 		w3cTraceState, err := sampling.NewW3CTraceState(tracestate)
 		if err != nil {
-			return float64(0), fmt.Errorf("failed to parse w3c tracestate: %v", err)
+			return float64(0), fmt.Errorf("failed to parse w3c tracestate: %w", err)
 		}
 		otTraceState := w3cTraceState.OTelValue()
 		if otTraceState == nil {
