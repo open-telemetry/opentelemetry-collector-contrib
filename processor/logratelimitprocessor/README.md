@@ -19,8 +19,8 @@ are one or many services which are logging too many logs such that it increases 
 the log noise/surge from any service/namespace/pod etc. you can use the rate-limit processor, you can give the fields on which you want to limit logs 
 and add config for allowed rate and interval.<br>
 The processor caches the count of logs in the given interval for each combination of given rate_limit_fields and once logs count starts to exceed the count 
-the processor will start dropping the logs till the interval finish in the best effort way. There are no mutex/locks involved, only one atomic counter is used 
-to keep rate-limiter lightweight / easy on resources.
+the processor will start dropping the logs till the interval finish in the best effort way. There are no mutex/locks involved, sync.Map and atomic counter is 
+used to keep rate-limiter lightweight / easy on resources.
 
 ## Configuration
 | Field             | Type     | Default | Description                                                                                                                                                                            |
