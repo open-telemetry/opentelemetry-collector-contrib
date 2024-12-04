@@ -21,6 +21,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -58,10 +59,13 @@ func TestNewExporter(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
+		HostMetadata: config.HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
+		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
-	cfg.HostMetadata.Enabled = true
-	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
