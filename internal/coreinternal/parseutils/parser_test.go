@@ -275,7 +275,7 @@ func Test_ParseKeyValuePairs(t *testing.T) {
 			pairs:     []string{"key=foobar", `key2="foo bar"`, `key3="foo \"bar\""`, `key4='\'foo\' \'bar\''`},
 			delimiter: "=",
 			expected: map[string]any{
-				"key": "foobar",
+				"key":  "foobar",
 				"key2": `"foo bar"`,
 				"key3": `"foo \"bar\""`,
 				"key4": `'\'foo\' \'bar\''`,
