@@ -14,7 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -195,13 +194,18 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
 	// We exit if all fingerprints are matched.
 
-	mostRecentIndex := util.Mod(t.archiveIndex-1, t.pollsToArchive)
+	mostRecentIndex := (t.archiveIndex - 1 + t.pollsToArchive) % t.pollsToArchive
 	matchedMetadata := make([]*reader.Metadata, len(fps))
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
-	for i := 0; i < t.pollsToArchive; i, mostRecentIndex = i+1, util.Mod(mostRecentIndex-1, t.pollsToArchive) {
-		modified := false
-		data, err := t.readArchive(mostRecentIndex) // we load one fileset atmost once per poll
+	for i := 0; i < t.pollsToArchive; i++ {
+		metadataUpdated := false
+
+		// Update the mostRecentIndex
+		currentIndex := mostRecentIndex
+		mostRecentIndex = (mostRecentIndex - 1 + t.pollsToArchive) % t.pollsToArchive
+
+		data, err := t.readArchive(currentIndex) // we load one fileset atmost once per poll
 		if err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 			continue
@@ -214,12 +218,12 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 			if md := data.Match(fp, fileset.StartsWith); md != nil {
 				// update the matched metada for the index
 				matchedMetadata[index] = md
-				modified = true
+				metadataUpdated = true
 			}
 		}
-		if modified {
+		if metadataUpdated {
 			// we save one fileset atmost once per poll
-			if err := t.writeArchive(mostRecentIndex, data); err != nil {
+			if err := t.writeArchive(currentIndex, data); err != nil {
 				t.set.Logger.Error("error while opening archive", zap.Error(err))
 			}
 		}

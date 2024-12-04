@@ -18,7 +18,3 @@ func MapCopy(m map[string]any) map[string]any {
 	}
 	return newMap
 }
-
-func Mod(x, y int) int {
-	return ((x % y) + y) % y
-}
