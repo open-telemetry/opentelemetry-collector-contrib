@@ -101,6 +101,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.115.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.115.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.115.0 // indirect
@@ -235,6 +236,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipki
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core => ../../../pkg/core
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../../internal/sharedcomponent
 

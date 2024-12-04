@@ -16,6 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.115.0
@@ -412,6 +413,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockda
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../pkg/translator/jaeger
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core => ../pkg/core
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../pkg/resourcetotelemetry
 
