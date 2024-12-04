@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add the `ottl.ParserCollection` utility to help handling multiple OTTL contexts parsers"
+note: "Add the `ottl.ParserCollection` utility to help handling parsers for multiple OTTL contexts"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [29017]
@@ -16,9 +16,9 @@ issues: [29017]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: | 
-  The `ottl.ParserCollection` groups context's `ottl.Parser` choosing the suitable one 
-  when parsing statements. It does support context inference from the given statements, 
-  and allows prepending the context name to the statement's paths.
+  The `ottl.ParserCollection` groups contexts' `ottl.Parser`s, choosing the suitable one 
+  to parse a given statement. It supports context inference using the given statements, 
+  and allows prepending the context name to the statements' paths.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

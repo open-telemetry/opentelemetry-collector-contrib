@@ -167,9 +167,9 @@ func NewParserCollection[R any](
 }
 
 // ParsedStatementConverter is a function that converts the parsed ottl.Statement[K] into
-// a common representation to all parser collection contexts WithParserCollectionContext.
+// a common representation to all parser collection contexts passed through WithParserCollectionContext.
 // Given each parser has its own transform context type, they must agree on a common type [R]
-// so is can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
+// so it can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
 // functions.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
@@ -244,7 +244,7 @@ func EnableParserCollectionModifiedStatementLogging[R any](enabled bool) ParserC
 // highest priority context found.
 // If no contexts are present in the statements, or if the inferred value is not supported by
 // the [ParserCollection], it returns an error.
-// If parsing the statements fails, it returns the underline [ottl.Parser.ParseStatements] error.
+// If parsing the statements fails, it returns the underlying [ottl.Parser.ParseStatements] error.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, error) {
@@ -263,13 +263,13 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, 
 
 // ParseStatementsWithContext parses the given statements into [R] using the configured
 // context's ottl.Parser and subsequently calling the ParsedStatementConverter function.
-// Differently from ParseStatements, it uses the provided context and does not infer it
-// automatically. The context valuer must be supported by the [ParserCollection],
+// Unlike ParseStatements, it uses the provided context and does not infer it
+// automatically. The context value must be supported by the [ParserCollection],
 // otherwise an error is returned.
 // If the statement's Path does not provide their Path.Context value, the prependPathsContext
 // argument should be set to true, so it rewrites the statements prepending the missing paths
 // contexts.
-// If parsing the statements fails, it returns the underline [ottl.Parser.ParseStatements] error.
+// If parsing the statements fails, it returns the underlying [ottl.Parser.ParseStatements] error.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
