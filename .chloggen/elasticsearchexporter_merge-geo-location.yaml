@@ -7,7 +7,7 @@ change_type: enhancement
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Merge *.geo.location.{lat,lon} to *.geo.location in OTel mode
+note: Map *.geo.location.{lat,lon} as geo_point field in OTel mode
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36565]
