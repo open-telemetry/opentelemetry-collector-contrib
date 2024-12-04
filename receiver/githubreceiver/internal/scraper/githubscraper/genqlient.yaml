@@ -11,4 +11,6 @@ generated: generated_graphql.go
 bindings:
     DateTime:
         type: time.Time
+    URI:
+        type: net/url.URL
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
@@ -749,6 +750,8 @@ type SearchNodeRepository struct {
 	Name string `json:"name"`
 	// The Ref associated with the repository's default branch.
 	DefaultBranchRef SearchNodeDefaultBranchRef `json:"defaultBranchRef"`
+	// The HTTP URL for this repository
+	Url url.URL `json:"url"`
 }
 
 // GetTypename returns SearchNodeRepository.Typename, and is useful for accessing the field via an interface.
@@ -764,6 +767,9 @@ func (v *SearchNodeRepository) GetName() string { return v.Name }
 func (v *SearchNodeRepository) GetDefaultBranchRef() SearchNodeDefaultBranchRef {
 	return v.DefaultBranchRef
 }
+
+// GetUrl returns SearchNodeRepository.Url, and is useful for accessing the field via an interface.
+func (v *SearchNodeRepository) GetUrl() url.URL { return v.Url }
 
 // SearchNodeUser includes the requested fields of the GraphQL type User.
 // The GraphQL type's documentation follows.
@@ -1463,6 +1469,7 @@ query getRepoDataBySearch ($searchQuery: String!, $repoCursor: String) {
 				defaultBranchRef {
 					name
 				}
+				url
 			}
 		}
 		pageInfo {

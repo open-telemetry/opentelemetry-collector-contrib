@@ -70,22 +70,22 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryChangeCountDataPoint(ts, 1, AttributeChangeStateOpen, "repository.name-val")
+			mb.RecordVcsRepositoryChangeCountDataPoint(ts, 1, "vcs.repository.url.full-val", AttributeChangeStateOpen, "repository.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryChangeTimeOpenDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryChangeTimeOpenDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(ts, 1, "repository.name-val", "ref.name-val")
+			mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val")
 
 			allMetricsCount++
-			mb.RecordVcsRepositoryContributorCountDataPoint(ts, 1, "repository.name-val")
+			mb.RecordVcsRepositoryContributorCountDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -93,27 +93,27 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryRefCountDataPoint(ts, 1, "repository.name-val", AttributeRefTypeBranch)
+			mb.RecordVcsRepositoryRefCountDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryRefLinesAddedDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
+			mb.RecordVcsRepositoryRefLinesAddedDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryRefLinesDeletedDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
+			mb.RecordVcsRepositoryRefLinesDeletedDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryRefRevisionsAheadDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
+			mb.RecordVcsRepositoryRefRevisionsAheadDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryRefRevisionsBehindDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
+			mb.RecordVcsRepositoryRefRevisionsBehindDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryRefTimeDataPoint(ts, 1, "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
+			mb.RecordVcsRepositoryRefTimeDataPoint(ts, 1, "vcs.repository.url.full-val", "repository.name-val", "ref.name-val", AttributeRefTypeBranch)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetOrganizationName("organization.name-val")
@@ -152,7 +152,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("change.state")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("change.state")
 					assert.True(t, ok)
 					assert.EqualValues(t, "open", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("repository.name")
@@ -170,7 +173,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")
@@ -188,7 +194,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")
@@ -206,7 +215,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")
@@ -224,7 +236,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 				case "vcs.repository.count":
@@ -251,7 +266,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.type")
@@ -269,7 +287,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")
@@ -290,7 +311,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")
@@ -311,7 +335,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")
@@ -332,7 +359,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")
@@ -353,7 +383,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("repository.name")
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "repository.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("ref.name")

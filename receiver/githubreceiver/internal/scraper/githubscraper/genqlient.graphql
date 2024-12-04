@@ -18,6 +18,7 @@ query getRepoDataBySearch(
         defaultBranchRef {
           name
         }
+        url
       }
     }
     pageInfo {
