@@ -5,7 +5,6 @@ package metrics
 
 import (
 	"context"
-	rand "math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,6 +30,53 @@ type worker struct {
 	index          int                          // worker index
 }
 
+var histogramBucketSamples = []struct {
+	bucketCounts []uint64
+	sum          int64
+}{
+	{
+		[]uint64{0, 0, 0, 0, 0},
+		0,
+	},
+
+	{
+		[]uint64{0, 1, 0, 0, 0},
+		1,
+	},
+	{
+		[]uint64{0, 1, 0, 1, 0},
+		4,
+	},
+	{
+		[]uint64{1, 1, 1, 0, 0},
+		3,
+	},
+	{
+		[]uint64{0, 0, 1, 2, 1},
+		12,
+	},
+	{
+		[]uint64{0, 0, 0, 0, 0},
+		0,
+	},
+	{
+		[]uint64{0, 1, 0, 0, 0},
+		1,
+	},
+	{
+		[]uint64{0, 2, 0, 0, 0},
+		2,
+	},
+	{
+		[]uint64{1, 0, 1, 1, 0},
+		5,
+	},
+	{
+		[]uint64{2, 0, 1, 0, 1},
+		6,
+	},
+}
+
 func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdkmetric.Exporter, error), signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
@@ -39,8 +85,6 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 		w.logger.Error("failed to create the exporter", zap.Error(err))
 		return
 	}
-	randomPCG := rand.NewPCG(0, 0)
-	randomgenerator := rand.New(randomPCG)
 
 	defer func() {
 		w.logger.Info("stopping the exporter")
@@ -86,8 +130,9 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 				},
 			})
 		case metricTypeHistogram:
-			iteration := uint64(i) % 5
-			sum, bucketCounts := generateHistogramBuckets[int64](iteration, randomgenerator)
+			iteration := uint64(i) % 10
+			sum := histogramBucketSamples[iteration].sum
+			bucketCounts := histogramBucketSamples[iteration].bucketCounts
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
 				Data: metricdata.Histogram[int64]{
@@ -132,17 +177,4 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 
 	w.logger.Info("metrics generated", zap.Int64("metrics", i))
 	w.wg.Done()
-}
-
-func generateHistogramBuckets[T int64 | float64](count uint64, randomgenerator *rand.Rand) (sum T, bucketCounts []uint64) {
-	sum = 0
-	bucketCounts = make([]uint64, 5)
-	var i uint64
-	for i = 0; i < count; i++ {
-		sample := randomgenerator.IntN(5)
-		// See bounds above
-		sum += T(sample)
-		bucketCounts[sample]++
-	}
-	return
 }
