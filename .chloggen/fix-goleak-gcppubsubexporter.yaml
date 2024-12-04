@@ -1,8 +1,0 @@
-change_type: bug_fix
-component: googlecloudpubsubexporter
-note: Fix a goroutine leak during shutdown.
-issues: [30438]
-subtext: |
-  A goroutine leak was found in the googlecloudpubsubexporter. 
-  The goroutine leak was caused by the exporter not closing the underlying created gRPC client when using an insecure custom endpoint.
-change_logs: []

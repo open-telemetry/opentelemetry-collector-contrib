@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelo
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.114.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.114.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.114.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.115.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.0
 	go.opentelemetry.io/collector/confmap v1.21.0
