@@ -194,38 +194,47 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
 	// We exit if all fingerprints are matched.
 
-	mostRecentIndex := (t.archiveIndex - 1 + t.pollsToArchive) % t.pollsToArchive
+	// Track number of matched fingerprints so we can exit if all matched.
+	var numMatched int
+
+	// Determine the index for reading archive, starting from the most recent and moving towards the oldest
+	nextIndex := (t.archiveIndex - 1 + t.pollsToArchive) % t.pollsToArchive
 	matchedMetadata := make([]*reader.Metadata, len(fps))
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
 	for i := 0; i < t.pollsToArchive; i++ {
-		metadataUpdated := false
-
 		// Update the mostRecentIndex
-		currentIndex := mostRecentIndex
-		mostRecentIndex = (mostRecentIndex - 1 + t.pollsToArchive) % t.pollsToArchive
+		currentIndex := nextIndex
+		nextIndex = (nextIndex - 1 + t.pollsToArchive) % t.pollsToArchive
 
 		data, err := t.readArchive(currentIndex) // we load one fileset atmost once per poll
 		if err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 			continue
 		}
-		for index, fp := range fps {
-			if matchedMetadata[index] != nil {
+		archiveModified := false
+		for j, fp := range fps {
+			if matchedMetadata[j] != nil {
 				// we've already found a match for this index, continue
 				continue
 			}
 			if md := data.Match(fp, fileset.StartsWith); md != nil {
 				// update the matched metada for the index
-				matchedMetadata[index] = md
-				metadataUpdated = true
+				matchedMetadata[j] = md
+				archiveModified = true
+				numMatched++
 			}
 		}
-		if metadataUpdated {
-			// we save one fileset atmost once per poll
-			if err := t.writeArchive(currentIndex, data); err != nil {
-				t.set.Logger.Error("error while opening archive", zap.Error(err))
-			}
+		if !archiveModified {
+			continue
+		}
+		// we save one fileset atmost once per poll
+		if err := t.writeArchive(currentIndex, data); err != nil {
+			t.set.Logger.Error("error while opening archive", zap.Error(err))
+		}
+		// Check if all metadata have been found
+		if numMatched == len(fps) {
+			return matchedMetadata
 		}
 	}
 	return matchedMetadata
