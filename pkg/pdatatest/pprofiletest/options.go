@@ -80,40 +80,6 @@ func (opt ignoreScopeAttributeValue) maskProfilesScopeAttributeValue(profiles pp
 	}
 }
 
-// IgnoreProfileContainerAttributeValue is a CompareProfilesOption that sets the value of an attribute
-// to empty bytes for every profile
-func IgnoreProfileContainerAttributeValue(attributeName string) CompareProfilesOption {
-	return ignoreProfileContainerAttributeValue{
-		attributeName: attributeName,
-	}
-}
-
-type ignoreProfileContainerAttributeValue struct {
-	attributeName string
-}
-
-func (opt ignoreProfileContainerAttributeValue) applyOnProfiles(expected, actual pprofile.Profiles) {
-	opt.maskProfileContainerAttributeValue(expected)
-	opt.maskProfileContainerAttributeValue(actual)
-}
-
-func (opt ignoreProfileContainerAttributeValue) maskProfileContainerAttributeValue(profiles pprofile.Profiles) {
-	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).Profiles()
-			for k := 0; k < lrs.Len(); k++ {
-				lr := lrs.At(k)
-				val, exists := lr.Attributes().Get(opt.attributeName)
-				if exists {
-					val.SetEmptyBytes()
-				}
-			}
-		}
-	}
-}
-
 // IgnoreProfileAttributeValue is a CompareProfilesOption that sets the value of an attribute
 // to empty bytes for every profile
 func IgnoreProfileAttributeValue(attributeName string) CompareProfilesOption {
@@ -138,39 +104,11 @@ func (opt ignoreProfileAttributeValue) maskProfileAttributeValue(profiles pprofi
 		for j := 0; j < sls.Len(); j++ {
 			lrs := sls.At(j).Profiles()
 			for k := 0; k < lrs.Len(); k++ {
-				lr := lrs.At(k).Profile()
-				val, exists := lr.AttributeTable().Get(opt.attributeName)
+				lr := lrs.At(k)
+				val, exists := lr.Attributes().Get(opt.attributeName)
 				if exists {
 					val.SetEmptyBytes()
 				}
-			}
-		}
-	}
-}
-
-// IgnoreProfileContainerTimestampValues is a CompareProfilesOption that sets the value of start and end timestamp
-// to empty bytes for every profile
-func IgnoreProfileContainerTimestampValues() CompareProfilesOption {
-	return ignoreProfileContainerTimestampValues{}
-}
-
-type ignoreProfileContainerTimestampValues struct{}
-
-func (opt ignoreProfileContainerTimestampValues) applyOnProfiles(expected, actual pprofile.Profiles) {
-	opt.maskProfileContainerTimestampValues(expected)
-	opt.maskProfileContainerTimestampValues(actual)
-}
-
-func (opt ignoreProfileContainerTimestampValues) maskProfileContainerTimestampValues(profiles pprofile.Profiles) {
-	rls := profiles.ResourceProfiles()
-	for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-		sls := rls.At(i).ScopeProfiles()
-		for j := 0; j < sls.Len(); j++ {
-			lrs := sls.At(j).Profiles()
-			for k := 0; k < lrs.Len(); k++ {
-				lr := lrs.At(k)
-				lr.SetStartTime(pcommon.NewTimestampFromTime(time.Time{}))
-				lr.SetEndTime(pcommon.NewTimestampFromTime(time.Time{}))
 			}
 		}
 	}
@@ -196,7 +134,7 @@ func (opt ignoreProfileTimestampValues) maskProfileTimestampValues(profiles ppro
 		for j := 0; j < sls.Len(); j++ {
 			lrs := sls.At(j).Profiles()
 			for k := 0; k < lrs.Len(); k++ {
-				lr := lrs.At(k).Profile()
+				lr := lrs.At(k)
 				lr.SetStartTime(pcommon.NewTimestampFromTime(time.Time{}))
 				lr.SetDuration(pcommon.NewTimestampFromTime(time.Time{}))
 			}
@@ -246,22 +184,22 @@ func sortScopeProfilesSlices(ls pprofile.Profiles) {
 }
 
 // IgnoreProfilesOrder is a CompareProfilesOption that ignores the order of profile records.
-func IgnoreProfileContainersOrder() CompareProfilesOption {
+func IgnoreProfilesOrder() CompareProfilesOption {
 	return compareProfilesOptionFunc(func(expected, actual pprofile.Profiles) {
-		sortProfileContainerSlices(expected)
-		sortProfileContainerSlices(actual)
+		sortProfileSlices(expected)
+		sortProfileSlices(actual)
 	})
 }
 
-func sortProfileContainerSlices(ls pprofile.Profiles) {
+func sortProfileSlices(ls pprofile.Profiles) {
 	for i := 0; i < ls.ResourceProfiles().Len(); i++ {
 		for j := 0; j < ls.ResourceProfiles().At(i).ScopeProfiles().Len(); j++ {
-			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.ProfileContainer) bool {
+			ls.ResourceProfiles().At(i).ScopeProfiles().At(j).Profiles().Sort(func(a, b pprofile.Profile) bool {
 				if a.StartTime() != b.StartTime() {
 					return a.StartTime() < b.StartTime()
 				}
-				if a.EndTime() != b.EndTime() {
-					return a.EndTime() < b.EndTime()
+				if a.Duration() != b.Duration() {
+					return a.Duration() < b.Duration()
 				}
 				as := a.ProfileID()
 				bs := b.ProfileID()
