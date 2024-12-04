@@ -415,7 +415,7 @@ func TestLogsSamplingState(t *testing.T) {
 			} else {
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "logs sampler")
-				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
+				require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), tt.log)
 			}
 
 			sampledData := sink.AllLogs()
@@ -513,7 +513,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 					// pct==0 bypasses the randomness check
 					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 					require.Contains(t, observed.All()[0].Message, "logs sampler")
-					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
+					require.ErrorContains(t, observed.All()[0].Context[0].Interface.(error), "missing randomness")
 				} else {
 					require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 				}

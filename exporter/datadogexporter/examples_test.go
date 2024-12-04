@@ -53,7 +53,7 @@ func TestExamples(t *testing.T) {
 			continue
 		}
 		t.Run(filepath.Base(f.Name()), func(t *testing.T) {
-			t.Setenv("DD_API_KEY", "testvalue")
+			t.Setenv("DD_API_KEY", "aaaaaaaaa")
 			name := filepath.Join(folder, f.Name())
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 			// nolint:staticcheck
