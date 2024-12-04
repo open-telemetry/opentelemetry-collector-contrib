@@ -220,6 +220,7 @@ func Test_ParseStatements_MultipleContexts_Success(t *testing.T) {
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"bar"}
 
+	// The `foo` context is never used, so these statements will successfully parse.
 	statements := mockStatementsGetter{values: []string{`set(bar.attributes["bar"], "foo")`, `set(bar.attributes["bar"], "bar")`}}
 	result, err := pc.ParseStatements(statements)
 	require.NoError(t, err)
