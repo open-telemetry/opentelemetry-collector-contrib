@@ -198,16 +198,15 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 	var numMatched int
 
 	// Determine the index for reading archive, starting from the most recent and moving towards the oldest
-	nextIndex := (t.archiveIndex - 1 + t.pollsToArchive) % t.pollsToArchive
+	nextIndex := t.archiveIndex
 	matchedMetadata := make([]*reader.Metadata, len(fps))
 
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
 	for i := 0; i < t.pollsToArchive; i++ {
 		// Update the mostRecentIndex
-		currentIndex := nextIndex
 		nextIndex = (nextIndex - 1 + t.pollsToArchive) % t.pollsToArchive
 
-		data, err := t.readArchive(currentIndex) // we load one fileset atmost once per poll
+		data, err := t.readArchive(nextIndex) // we load one fileset atmost once per poll
 		if err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 			continue
@@ -229,7 +228,7 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 			continue
 		}
 		// we save one fileset atmost once per poll
-		if err := t.writeArchive(currentIndex, data); err != nil {
+		if err := t.writeArchive(nextIndex, data); err != nil {
 			t.set.Logger.Error("error while opening archive", zap.Error(err))
 		}
 		// Check if all metadata have been found
