@@ -98,7 +98,7 @@ func (gtr *githubTracesReceiver) Start(ctx context.Context, host component.Host)
 		return err
 	}
 
-	gtr.logger.Sugar().Infof("servering health check at %v", gtr.cfg.WebHook.HealthPath)
+	gtr.logger.Info("Health check now listening at", zap.String("health_path", gtr.cfg.WebHook.HealthPath))
 
 	gtr.shutdownWG.Add(1)
 	go func() {
