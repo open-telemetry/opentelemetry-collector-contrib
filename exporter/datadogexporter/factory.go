@@ -269,11 +269,20 @@ func (f *factory) createMetricsExporter(
 	statsIn := make(chan []byte, 1000)
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
 	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
-	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+
+	// These variables are referenced below, but only used if HostMetadata.Enabled
+	var (
+		pcfg             hostmetadata.PusherConfig
+		metadataReporter *inframetadata.Reporter
+	)
+	if cfg.HostMetadata.Enabled {
+		pcfg := newMetadataConfigfromConfig(cfg)
+		var err error
+		metadataReporter, err = f.Reporter(set, pcfg)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+		}
 	}
 
 	if cfg.OnlyMetadata {
@@ -374,11 +383,19 @@ func (f *factory) createTracesExporter(
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
 
-	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	// These variables are referenced below, but only used if HostMetadata.Enabled
+	var (
+		pcfg             hostmetadata.PusherConfig
+		metadataReporter *inframetadata.Reporter
+	)
+	if cfg.HostMetadata.Enabled {
+		pcfg = newMetadataConfigfromConfig(cfg)
+		var err error
+		metadataReporter, err = f.Reporter(set, pcfg)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+		}
 	}
 
 	if cfg.OnlyMetadata {
@@ -462,11 +479,19 @@ func (f *factory) createLogsExporter(
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
 
-	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	// These variables are referenced below, but only used if HostMetadata.Enabled
+	var (
+		pcfg             hostmetadata.PusherConfig
+		metadataReporter *inframetadata.Reporter
+	)
+	if cfg.HostMetadata.Enabled {
+		pcfg = newMetadataConfigfromConfig(cfg)
+		var err error
+		metadataReporter, err = f.Reporter(set, pcfg)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+		}
 	}
 
 	attributesTranslator, err := f.AttributesTranslator(set.TelemetrySettings)

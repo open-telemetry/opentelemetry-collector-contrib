@@ -58,9 +58,6 @@ func TestNewExporter(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: HostMetadataConfig{
-			ReporterPeriod: 30 * time.Minute,
-		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 	params := exportertest.NewNopSettings()
@@ -438,9 +435,6 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
-		},
-		HostMetadata: HostMetadataConfig{
-			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 	params := exportertest.NewNopSettings()
