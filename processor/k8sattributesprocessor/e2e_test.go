@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest"
 )
 
 const (
