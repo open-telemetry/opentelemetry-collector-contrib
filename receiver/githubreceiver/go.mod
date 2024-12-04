@@ -6,10 +6,12 @@ require (
 	github.com/Khan/genqlient v0.7.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v67 v67.0.0
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.115.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.0
+	go.opentelemetry.io/collector/component/componentstatus v0.115.0
 	go.opentelemetry.io/collector/component/componenttest v0.115.0
 	go.opentelemetry.io/collector/config/confighttp v0.115.0
 	go.opentelemetry.io/collector/confmap v1.21.0
@@ -75,7 +77,6 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.20 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector/client v1.21.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.21.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.21.0 // indirect
