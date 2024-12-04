@@ -104,7 +104,6 @@ func configurePlaintext(config PlainTextConfig, saramaConfig *sarama.Config) {
 }
 
 func configureSASL(ctx context.Context, config SASLConfig, saramaConfig *sarama.Config) error {
-
 	if config.Username == "" && config.Mechanism != "AWS_MSK_IAM_OAUTHBEARER" {
 		return fmt.Errorf("username have to be provided")
 	}
