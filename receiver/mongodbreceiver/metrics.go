@@ -154,6 +154,18 @@ func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, db
 	}
 }
 
+func (s *mongodbScraper) recordFlowControlLagTime(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"flowControl", "isLaggedTimeMicros"}
+	metricName := "mongodb.flowcontrol.lag.time"
+	// metricAttributes := fmt.Sprintf("%s", dbName)
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
+		return
+	}
+	s.mb.RecordMongodbFlowcontrolLagTimeDataPoint(now, val/1000)
+}
+
 func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	for mtVal, mt := range metadata.MapAttributeMemoryType {
 		metricPath := []string{"mem", mtVal}
