@@ -24,8 +24,8 @@ import (
 // This file implements a factory for the github receiver
 
 const (
-	defaultReadTimeout  = "500ms"
-	defaultWriteTimeout = "500ms"
+	defaultReadTimeout  = 500 * time.Millisecond
+	defaultWriteTimeout = 500 * time.Millisecond
 	defaultPath         = "/events"
 	defaultHealthPath   = "/health"
 	defaultEndpoint     = "localhost:8080"
@@ -60,15 +60,13 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // Create the default config based on the const(s) defined above.
 func createDefaultConfig() component.Config {
-	rt, _ := time.ParseDuration(defaultReadTimeout)
-	wt, _ := time.ParseDuration(defaultWriteTimeout)
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
 				Endpoint:     defaultEndpoint,
-				ReadTimeout:  rt,
-				WriteTimeout: wt,
+				ReadTimeout:  defaultReadTimeout,
+				WriteTimeout: defaultWriteTimeout,
 			},
 			Path:       defaultPath,
 			HealthPath: defaultHealthPath,
