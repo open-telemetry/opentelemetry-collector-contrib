@@ -145,6 +145,9 @@ func TestTracesSource(t *testing.T) {
 				IgnoreResources: []string{},
 			},
 		},
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
+		},
 	}
 
 	assert := assert.New(t)
@@ -267,6 +270,9 @@ func TestTraceExporter(t *testing.T) {
 			},
 			TraceBuffer: 2,
 		},
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
+		},
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
@@ -292,7 +298,11 @@ func TestNewTracesExporter(t *testing.T) {
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
-	cfg := &Config{}
+	cfg := &Config{
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
+		},
+	}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
 	params := exportertest.NewNopSettings()
@@ -320,10 +330,10 @@ func TestPushTraceData(t *testing.T) {
 		Traces: TracesConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 
@@ -357,6 +367,9 @@ func TestPushTraceData_NewEnvConvention(t *testing.T) {
 		},
 		Traces: TracesConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 	cfg.Traces.SetFlushInterval(0.1)

@@ -43,7 +43,9 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateMetrics(ctx, params, &oCfg)
+		oParams := buildExporterSettings(params, endpoint)
+
+		return exporterFactory.CreateMetrics(ctx, oParams, &oCfg)
 	}
 
 	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)

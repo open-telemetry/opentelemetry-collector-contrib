@@ -20,7 +20,7 @@ import (
 	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
 )
 
-type scraper struct {
+type nsxtScraper struct {
 	config   *Config
 	settings component.TelemetrySettings
 	host     component.Host
@@ -28,15 +28,15 @@ type scraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newScraper(cfg *Config, settings receiver.Settings) *scraper {
-	return &scraper{
+func newScraper(cfg *Config, settings receiver.Settings) *nsxtScraper {
+	return &nsxtScraper{
 		config:   cfg,
 		settings: settings.TelemetrySettings,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
-func (s *scraper) start(ctx context.Context, host component.Host) error {
+func (s *nsxtScraper) start(ctx context.Context, host component.Host) error {
 	s.host = host
 	client, err := newClient(ctx, s.config, s.settings, s.host, s.settings.Logger)
 	if err != nil {
@@ -53,7 +53,7 @@ const (
 	managerClass
 )
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *nsxtScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	r, err := s.retrieve(ctx)
 	if err != nil {
 		return pmetric.NewMetrics(), err
@@ -76,7 +76,7 @@ type interfaceInformation struct {
 	stats *dm.NetworkInterfaceStats
 }
 
-func (s *scraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
+func (s *nsxtScraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
 	var r []*nodeInfo
 	errs := &scrapererror.ScrapeErrors{}
 
@@ -126,7 +126,7 @@ func (s *scraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
 	return r, errs.Combine()
 }
 
-func (s *scraper) retrieveInterfaces(
+func (s *nsxtScraper) retrieveInterfaces(
 	ctx context.Context,
 	nodeProps dm.NodeProperties,
 	nodeInfo *nodeInfo,
@@ -154,7 +154,7 @@ func (s *scraper) retrieveInterfaces(
 	}
 }
 
-func (s *scraper) retrieveNodeStats(
+func (s *nsxtScraper) retrieveNodeStats(
 	ctx context.Context,
 	nodeProps dm.NodeProperties,
 	nodeInfo *nodeInfo,
@@ -171,7 +171,7 @@ func (s *scraper) retrieveNodeStats(
 	nodeInfo.stats = ns
 }
 
-func (s *scraper) process(
+func (s *nsxtScraper) process(
 	nodes []*nodeInfo,
 	colTime pcommon.Timestamp,
 ) {
@@ -183,7 +183,7 @@ func (s *scraper) process(
 	}
 }
 
-func (s *scraper) recordNodeInterface(colTime pcommon.Timestamp, nodeProps dm.NodeProperties, i interfaceInformation) {
+func (s *nsxtScraper) recordNodeInterface(colTime pcommon.Timestamp, nodeProps dm.NodeProperties, i interfaceInformation) {
 	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxDropped, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeDropped)
 	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxErrors, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeErrored)
 	successRxPackets := i.stats.RxPackets - i.stats.RxDropped - i.stats.RxErrors
@@ -205,7 +205,7 @@ func (s *scraper) recordNodeInterface(colTime pcommon.Timestamp, nodeProps dm.No
 	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
-func (s *scraper) recordNode(
+func (s *nsxtScraper) recordNode(
 	colTime pcommon.Timestamp,
 	info *nodeInfo,
 ) {

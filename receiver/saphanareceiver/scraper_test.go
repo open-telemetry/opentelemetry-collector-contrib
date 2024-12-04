@@ -35,7 +35,7 @@ func TestScraper(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.Scrape(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
@@ -102,7 +102,7 @@ func TestDisabledMetrics(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.Scrape(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
