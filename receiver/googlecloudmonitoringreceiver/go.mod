@@ -4,14 +4,14 @@ go 1.22.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.114.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/component/componenttest v0.114.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/confmap v1.20.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/consumer v0.114.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/consumer/consumertest v0.114.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/pdata v1.20.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/receiver v0.114.1-0.20241202231142-b9ff1bc54c99
-	go.opentelemetry.io/collector/receiver/receivertest v0.114.1-0.20241202231142-b9ff1bc54c99
+	go.opentelemetry.io/collector/component v0.115.0
+	go.opentelemetry.io/collector/component/componenttest v0.115.0
+	go.opentelemetry.io/collector/confmap v1.21.0
+	go.opentelemetry.io/collector/consumer v1.21.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.115.0
+	go.opentelemetry.io/collector/pdata v1.21.0
+	go.opentelemetry.io/collector/receiver v0.115.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.115.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/oauth2 v0.23.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53
@@ -27,8 +27,8 @@ require (
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
-	go.opentelemetry.io/collector/pipeline v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror v0.115.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.115.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
@@ -53,11 +53,11 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
-	go.opentelemetry.io/collector/receiver/receiverprofiles v0.114.1-0.20241202231142-b9ff1bc54c99 // indirect
-	go.opentelemetry.io/collector/scraper v0.114.1-0.20241202231142-b9ff1bc54c99
+	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.115.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/scraper v0.115.0
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect

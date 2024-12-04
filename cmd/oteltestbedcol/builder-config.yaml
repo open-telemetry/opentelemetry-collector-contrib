@@ -10,14 +10,14 @@ dist:
   version: 0.114.0-dev
 
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.114.1-0.20241202231142-b9ff1bc54c99
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.115.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.114.0
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.114.1-0.20241202231142-b9ff1bc54c99
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.114.1-0.20241202231142-b9ff1bc54c99
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.114.1-0.20241202231142-b9ff1bc54c99
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.115.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.115.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.115.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.114.0
@@ -29,13 +29,13 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.114.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.114.1-0.20241202231142-b9ff1bc54c99
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.114.1-0.20241202231142-b9ff1bc54c99
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.115.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.115.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.114.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.114.1-0.20241202231142-b9ff1bc54c99
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.115.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.114.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.114.0
@@ -51,11 +51,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.114.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.20.1-0.20241202231142-b9ff1bc54c99
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.20.1-0.20241202231142-b9ff1bc54c99
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.20.1-0.20241202231142-b9ff1bc54c99
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.20.1-0.20241202231142-b9ff1bc54c99
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.20.1-0.20241202231142-b9ff1bc54c99
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.21.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.21.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.21.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.21.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.21.0
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
@@ -109,4 +109,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
   - github.com/DataDog/datadog-api-client-go/v2 => github.com/DataDog/datadog-api-client-go/v2 v2.31.0
     # delete after 0.115.0 is released.
-  - go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.114.1-0.20241202231142-b9ff1bc54c99
+  - go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles => go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles v0.115.0
