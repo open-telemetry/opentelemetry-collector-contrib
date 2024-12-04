@@ -665,26 +665,67 @@ func TestAppendHistogramCTZeroSampleEmptyMetricName(t *testing.T) {
 
 func TestAppendCTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
 
 	_, err := tr.AppendCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
-	), 0, 100)
-	assert.NoError(t, err, "metricName not found")
+	), 200, 100)
+	assert.NoError(t, err)
+
+	_, err = tr.Append(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "counter_test",
+	), 200, 100)
+	assert.NoError(t, err)
+
+	assert.NoError(t, tr.Commit())
+	expectedResource := CreateResource("test", "0.0.0.0:8855", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+	require.Equal(t, 1, mds[0].MetricCount())
+	require.Equal(
+		t,
+		pcommon.Timestamp(100000000000),
+		mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp(),
+	)
 }
 
 func TestAppendHistogramCTZeroSample(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, false)
+	tr := newTransaction(scrapeCtx, &nopAdjuster{}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, true)
 
 	_, err := tr.AppendHistogramCTZeroSample(0, labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "hist_test_bucket",
-	), 0, 100, nil, nil)
-	assert.NoError(t, err, "metricName not found")
+	), 200, 100, nil, nil)
+	assert.NoError(t, err)
+
+	_, err = tr.AppendHistogram(0, labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "hist_test_bucket",
+	), 200, tsdbutil.GenerateTestHistogram(1), tsdbutil.GenerateTestFloatHistogram(1))
+
+	assert.NoError(t, err)
+
+	assert.NoError(t, tr.Commit())
+	expectedResource := CreateResource("test", "0.0.0.0:8855", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+	require.Equal(t, 1, mds[0].MetricCount())
+	require.Equal(
+		t,
+		pcommon.Timestamp(100000000000),
+		mds[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).StartTimestamp(),
+	)
 }
 
 func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
@@ -1987,6 +2028,12 @@ type errorAdjuster struct {
 
 func (ea *errorAdjuster) AdjustMetrics(pmetric.Metrics) error {
 	return ea.err
+}
+
+type nopAdjuster struct{}
+
+func (n *nopAdjuster) AdjustMetrics(_ pmetric.Metrics) error {
+	return nil
 }
 
 type startTimeAdjuster struct {

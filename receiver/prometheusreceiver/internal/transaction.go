@@ -299,14 +299,14 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 }
 
 func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
-	return t.setCreationTimestamp(ls, atMs, ctMs)
+	return t.setCreationTimestamp(ls, atMs, ctMs, false)
 }
 
 func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
-	return t.setCreationTimestamp(ls, atMs, ctMs)
+	return t.setCreationTimestamp(ls, atMs, ctMs, true)
 }
 
-func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
+func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64, histogram bool) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -339,7 +339,17 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (
 		return 0, errMetricNameNotFound
 	}
 
-	curMF, _ := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
+	curMF, existing := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
+
+	if histogram {
+		if !existing {
+			curMF.mtype = pmetric.MetricTypeExponentialHistogram
+		} else if curMF.mtype != pmetric.MetricTypeExponentialHistogram {
+			// Already scraped as classic histogram.
+			return 0, nil
+		}
+	}
+
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 	if err := curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs); err != nil {
 		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
