@@ -276,8 +276,7 @@ func (f *factory) createMetricsExporter(
 		metadataReporter *inframetadata.Reporter
 	)
 	if cfg.HostMetadata.Enabled {
-		pcfg := newMetadataConfigfromConfig(cfg)
-		var err error
+		pcfg = newMetadataConfigfromConfig(cfg)
 		metadataReporter, err = f.Reporter(set, pcfg)
 		if err != nil {
 			cancel()
@@ -390,7 +389,6 @@ func (f *factory) createTracesExporter(
 	)
 	if cfg.HostMetadata.Enabled {
 		pcfg = newMetadataConfigfromConfig(cfg)
-		var err error
 		metadataReporter, err = f.Reporter(set, pcfg)
 		if err != nil {
 			cancel()
@@ -486,7 +484,6 @@ func (f *factory) createLogsExporter(
 	)
 	if cfg.HostMetadata.Enabled {
 		pcfg = newMetadataConfigfromConfig(cfg)
-		var err error
 		metadataReporter, err = f.Reporter(set, pcfg)
 		if err != nil {
 			cancel()
