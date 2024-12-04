@@ -425,12 +425,9 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 	return nil
 }
 
-func (mf *metricFamily) addCreationTimestamp(seriesRef uint64, ls labels.Labels, atMs, created int64) error {
+func (mf *metricFamily) addCreationTimestamp(seriesRef uint64, ls labels.Labels, atMs, created int64) {
 	mg := mf.loadMetricGroupOrCreate(seriesRef, ls, atMs)
-
 	mg.created = float64(created)
-
-	return nil
 }
 
 func (mf *metricFamily) addExponentialHistogramSeries(seriesRef uint64, metricName string, ls labels.Labels, t int64, h *histogram.Histogram, fh *histogram.FloatHistogram) error {

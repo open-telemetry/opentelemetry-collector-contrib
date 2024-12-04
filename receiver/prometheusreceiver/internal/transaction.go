@@ -351,9 +351,7 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64, h
 	}
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
-	if err := curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs); err != nil {
-		t.logger.Warn("failed to add datapoint", zap.Error(err), zap.String("metric_name", metricName), zap.Any("labels", ls))
-	}
+	curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs)
 
 	return storage.SeriesRef(seriesRef), nil
 }
