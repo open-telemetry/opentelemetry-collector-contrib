@@ -217,9 +217,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := Sampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		require.Equal(t, expected, decision, "Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
 	}
 
 	// Now we hit the rate limit for second subpolicy, so subsequent evaluations should result in NotSampled
@@ -228,9 +226,7 @@ func TestCompositeEvaluator2SubpolicyThrottling(t *testing.T) {
 		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
 
 		expected := NotSampled
-		if decision != expected {
-			t.Fatalf("Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
-		}
+		require.Equal(t, expected, decision, "Incorrect decision by composite policy evaluator: expected %v, actual %v", expected, decision)
 	}
 
 	// Let the time advance by one second.
