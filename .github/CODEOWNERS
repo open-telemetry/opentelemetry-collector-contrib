@@ -191,7 +191,7 @@ processor/remotetapprocessor/                     @open-telemetry/collector-cont
 processor/resourcedetectionprocessor/             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 processor/resourceprocessor/                      @open-telemetry/collector-contrib-approvers @dmitryax
 processor/routingprocessor/                       @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/schemaprocessor/                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+processor/schemaprocessor/                        @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96
 processor/spanprocessor/                          @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                     @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo
 processor/tailsamplingprocessor/                  @open-telemetry/collector-contrib-approvers @jpkrohling
