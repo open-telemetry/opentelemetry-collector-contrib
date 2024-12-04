@@ -109,7 +109,8 @@ type summaryMetricEntry struct {
 	count uint64
 }
 
-// dataPointSplit is not thread-safe. Ensure proper synchronization if concurrent access is required.
+// dataPointSplit is a structure used to manage segments of data points split from a histogram.
+// It is not safe for concurrent use.
 type dataPointSplit struct {
 	cWMetricHistogram *cWMetricHistogram
 	length            int
