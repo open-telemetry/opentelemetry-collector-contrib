@@ -302,12 +302,13 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		exemplarRunes := 0
 
 		var promExemplar prompb.Exemplar
-		if exemplar.ValueType() == pmetric.ExemplarValueTypeInt {
+		switch exemplar.ValueType() {
+		case pmetric.ExemplarValueTypeInt:
 			promExemplar = prompb.Exemplar{
 				Value:     float64(exemplar.IntValue()),
 				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
 			}
-		} else if exemplar.ValueType() == pmetric.ExemplarValueTypeDouble {
+		case pmetric.ExemplarValueTypeDouble:
 			promExemplar = prompb.Exemplar{
 				Value:     exemplar.DoubleValue(),
 				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
