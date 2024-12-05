@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-
 package main
 
 import (
@@ -1280,6 +1278,10 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 						default:
 						}
 					}
+				}
+				if message.RemoteConfigStatus != nil {
+					status := message.RemoteConfigStatus.GetStatus()
+					require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, status)
 				}
 
 				return &protobufs.ServerToAgent{}
