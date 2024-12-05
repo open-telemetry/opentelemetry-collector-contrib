@@ -38,7 +38,7 @@ jobs:
   check-links:
     runs-on: ubuntu-latest
     needs: changedfiles
-    if: needs.changedfiles.outputs.md_files || needs.changedfiles.outputs.yaml_files 
+    if: needs.changedfiles.outputs.md_files || needs.changedfiles.outputs.yaml_files
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,7 +48,7 @@ jobs:
       - name: Run markdown-link-check
         run: |
           if [ -z "${{ needs.changedfiles.outputs.md_files }}" ]; then
-            md="./*.md"
+            md="**/*.md"
           else
             md="${{ needs.changedfiles.outputs.md_files }}"
           fi
