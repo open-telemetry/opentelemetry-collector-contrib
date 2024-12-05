@@ -71,13 +71,13 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		defer func() {
 			_ = statement.Close()
 		}()
-		var serviceName string
 
 		for i := 0; i < ld.ResourceLogs().Len(); i++ {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
 			resURL := logs.SchemaUrl()
 			resAttr := attributesToMap(res.Attributes())
+			var serviceName string
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
 			}

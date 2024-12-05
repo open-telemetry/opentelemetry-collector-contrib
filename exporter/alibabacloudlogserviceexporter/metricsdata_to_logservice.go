@@ -113,7 +113,8 @@ func newMetricLogFromRaw(
 	name string,
 	labels KeyValues,
 	nsec int64,
-	value float64) *sls.Log {
+	value float64,
+) *sls.Log {
 	labels.Sort()
 	return &sls.Log{
 		Time: proto.Uint32(uint32(nsec / 1e9)),

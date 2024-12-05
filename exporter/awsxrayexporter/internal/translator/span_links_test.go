@@ -19,7 +19,7 @@ func TestSpanLinkSimple(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
-	var traceID = newTraceID()
+	traceID := newTraceID()
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(traceID)
@@ -27,7 +27,7 @@ func TestSpanLinkSimple(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	var convertedTraceID, _ = convertToAmazonTraceID(traceID, false)
+	convertedTraceID, _ := convertToAmazonTraceID(traceID, false)
 
 	assert.Len(t, segment.Links, 1)
 	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
@@ -68,7 +68,7 @@ func TestOldSpanLinkError(t *testing.T) {
 	const maxAge = 60 * 60 * 24 * 30
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
-	var traceID = newTraceID()
+	traceID := newTraceID()
 	binary.BigEndian.PutUint32(traceID[0:4], uint32(ExpiredEpoch))
 
 	spanLink := span.Links().AppendEmpty()
@@ -91,14 +91,14 @@ func TestTwoSpanLinks(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
-	var traceID1 = newTraceID()
+	traceID1 := newTraceID()
 
 	spanLink1 := span.Links().AppendEmpty()
 	spanLink1.SetTraceID(traceID1)
 	spanLink1.SetSpanID(newSegmentID())
 	spanLink1.Attributes().PutStr("myKey1", "ABC")
 
-	var traceID2 = newTraceID()
+	traceID2 := newTraceID()
 
 	spanLink2 := span.Links().AppendEmpty()
 	spanLink2.SetTraceID(traceID2)
@@ -107,8 +107,8 @@ func TestTwoSpanLinks(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	var convertedTraceID1, _ = convertToAmazonTraceID(traceID1, false)
-	var convertedTraceID2, _ = convertToAmazonTraceID(traceID2, false)
+	convertedTraceID1, _ := convertToAmazonTraceID(traceID1, false)
+	convertedTraceID2, _ := convertToAmazonTraceID(traceID2, false)
 
 	assert.Len(t, segment.Links, 2)
 	assert.Equal(t, spanLink1.SpanID().String(), *segment.Links[0].SpanID)
@@ -149,23 +149,23 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 	spanLink.Attributes().PutInt("myKey3", 112233)
 	spanLink.Attributes().PutDouble("myKey4", 3.1415)
 
-	var slice1 = spanLink.Attributes().PutEmptySlice("myKey5")
+	slice1 := spanLink.Attributes().PutEmptySlice("myKey5")
 	slice1.AppendEmpty().SetStr("apple")
 	slice1.AppendEmpty().SetStr("pear")
 	slice1.AppendEmpty().SetStr("banana")
 
-	var slice2 = spanLink.Attributes().PutEmptySlice("myKey6")
+	slice2 := spanLink.Attributes().PutEmptySlice("myKey6")
 	slice2.AppendEmpty().SetBool(true)
 	slice2.AppendEmpty().SetBool(false)
 	slice2.AppendEmpty().SetBool(false)
 	slice2.AppendEmpty().SetBool(true)
 
-	var slice3 = spanLink.Attributes().PutEmptySlice("myKey7")
+	slice3 := spanLink.Attributes().PutEmptySlice("myKey7")
 	slice3.AppendEmpty().SetInt(1234)
 	slice3.AppendEmpty().SetInt(5678)
 	slice3.AppendEmpty().SetInt(9012)
 
-	var slice4 = spanLink.Attributes().PutEmptySlice("myKey8")
+	slice4 := spanLink.Attributes().PutEmptySlice("myKey8")
 	slice4.AppendEmpty().SetDouble(2.718)
 	slice4.AppendEmpty().SetDouble(1.618)
 

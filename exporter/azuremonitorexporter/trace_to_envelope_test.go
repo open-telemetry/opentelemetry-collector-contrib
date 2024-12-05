@@ -566,7 +566,8 @@ func commonEnvelopeValidations(
 	t *testing.T,
 	span ptrace.Span,
 	envelope *contracts.Envelope,
-	expectedEnvelopeName string) {
+	expectedEnvelopeName string,
+) {
 	assert.NotNil(t, envelope)
 	assert.Equal(t, expectedEnvelopeName, envelope.Name)
 	assert.Equal(t, toTime(span.StartTimestamp()).Format(time.RFC3339Nano), envelope.Time)
@@ -587,7 +588,8 @@ func commonEnvelopeValidations(
 func commonRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RequestData) {
+	data *contracts.RequestData,
+) {
 	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
@@ -600,7 +602,8 @@ func commonRequestDataValidations(
 func defaultHTTPRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RequestData) {
+	data *contracts.RequestData,
+) {
 	commonRequestDataValidations(t, span, data)
 
 	assert.Equal(t, defaultHTTPStatusCodeAsString, data.ResponseCode)
@@ -612,7 +615,8 @@ func defaultHTTPRequestDataValidations(
 func commonRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
+	data *contracts.RemoteDependencyData,
+) {
 	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
@@ -622,7 +626,8 @@ func commonRemoteDependencyDataValidations(
 func defaultHTTPRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
+	data *contracts.RemoteDependencyData,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultHTTPStatusCodeAsString, data.ResultCode)
@@ -635,7 +640,8 @@ func defaultRPCRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
 	data *contracts.RequestData,
-	expectedDataSource string) {
+	expectedDataSource string,
+) {
 	commonRequestDataValidations(t, span, data)
 
 	assert.Equal(t, defaultRPCStatusCodeAsString, data.ResponseCode)
@@ -649,7 +655,8 @@ func defaultRPCRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
 	data *contracts.RemoteDependencyData,
-	expectedDataTarget string) {
+	expectedDataTarget string,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultRPCStatusCodeAsString, data.ResultCode)
@@ -665,7 +672,8 @@ func defaultRPCRemoteDependencyDataValidations(
 func defaultDatabaseRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
+	data *contracts.RemoteDependencyData,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultDatabaseStatusCodeAsString, data.ResultCode)
@@ -677,7 +685,8 @@ func defaultDatabaseRemoteDependencyDataValidations(
 func defaultMessagingRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RequestData) {
+	data *contracts.RequestData,
+) {
 	commonRequestDataValidations(t, span, data)
 
 	assert.Equal(t, defaultMessagingStatusCodeAsString, data.ResponseCode)
@@ -688,7 +697,8 @@ func defaultMessagingRequestDataValidations(
 func defaultMessagingRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
+	data *contracts.RemoteDependencyData,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultMessagingStatusCodeAsString, data.ResultCode)
@@ -700,7 +710,8 @@ func defaultMessagingRemoteDependencyDataValidations(
 func defaultInternalRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
+	data *contracts.RemoteDependencyData,
+) {
 	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, "InProc", data.Type)
 }
@@ -709,7 +720,8 @@ func defaultInternalRemoteDependencyDataValidations(
 func assertAttributesCopiedToProperties(
 	t *testing.T,
 	attributeMap pcommon.Map,
-	properties map[string]string) {
+	properties map[string]string,
+) {
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		p, exists := properties[k]
 		assert.True(t, exists)

@@ -34,9 +34,11 @@ type healthCheckExtension struct {
 	host          component.Host
 }
 
-var _ component.Component = (*healthCheckExtension)(nil)
-var _ extensioncapabilities.ConfigWatcher = (*healthCheckExtension)(nil)
-var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
+var (
+	_ component.Component                   = (*healthCheckExtension)(nil)
+	_ extensioncapabilities.ConfigWatcher   = (*healthCheckExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
+)
 
 func newExtension(
 	ctx context.Context,

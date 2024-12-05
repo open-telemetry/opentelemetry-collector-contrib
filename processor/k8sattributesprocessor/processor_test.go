@@ -271,8 +271,7 @@ func TestProcessorBadClientProvider(t *testing.T) {
 	}
 
 	newMultiTest(t, NewFactory().CreateDefaultConfig(), func(err error) {
-		require.Error(t, err)
-		assert.Equal(t, "bad client error", err.Error())
+		require.EqualError(t, err, "bad client error")
 	}, withKubeClientProvider(clientProvider))
 }
 
@@ -1192,7 +1191,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 						ByName: map[string]*kube.Container{
 							"app": {
 								Statuses: map[int]kube.ContainerStatus{
-									2: {ImageRepoDigest: "docker.io/otel/collector@sha256:deadbeef02"},
+									2: {ImageRepoDigest: "docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 								},
 							},
 						},
@@ -1206,7 +1205,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
-				containerImageRepoDigests:             []string{"docker.io/otel/collector@sha256:deadbeef02"},
+				containerImageRepoDigests:             []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
 		{
@@ -1520,8 +1519,7 @@ func TestRealClient(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		func(err error) {
-			require.Error(t, err)
-			assert.Equal(t, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined", err.Error())
+			require.EqualError(t, err, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		},
 		withKubeClientProvider(kubeClientProvider),
 		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),

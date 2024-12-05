@@ -88,6 +88,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
+	assert.NotNil(t, httpData.Request.URL)
 
 	assert.Equal(t, "10.8.17.36", *httpData.Request.ClientIP)
 
@@ -458,6 +459,7 @@ func TestSpanWithClientAddrWithoutNetworkPeerAddr(t *testing.T) {
 
 	assert.Equal(t, aws.Bool(true), httpData.Request.XForwardedFor)
 }
+
 func TestSpanWithClientAddrAndNetworkPeerAddr(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[AttributeURLFull] = "https://api.example.com/users/junit"

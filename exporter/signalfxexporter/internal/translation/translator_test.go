@@ -553,8 +553,10 @@ func TestNewMetricTranslator(t *testing.T) {
 	}
 }
 
-var msec = time.Now().Unix() * 1e3
-var gaugeType = sfxpb.MetricType_GAUGE
+var (
+	msec      = time.Now().Unix() * 1e3
+	gaugeType = sfxpb.MetricType_GAUGE
+)
 
 func TestTranslateDataPoints(t *testing.T) {
 	tests := []struct {
@@ -2395,12 +2397,12 @@ func TestCalculateNewMetric_Double(t *testing.T) {
 }
 
 func generateIntPtr(i int) *int64 {
-	var iPtr = int64(i)
+	iPtr := int64(i)
 	return &iPtr
 }
 
 func generateFloatPtr(i float64) *float64 {
-	var iPtr = i
+	iPtr := i
 	return &iPtr
 }
 
@@ -2884,7 +2886,8 @@ func TestDropDimensions(t *testing.T) {
 					},
 				},
 			},
-		}, {
+		},
+		{
 			name: "No op when dimensions do not exist on dp",
 			rules: []Rule{
 				{
