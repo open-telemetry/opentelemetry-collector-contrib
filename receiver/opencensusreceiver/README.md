@@ -31,7 +31,7 @@ The following settings are configurable:
 
 - `endpoint` (default = localhost:55678): host:port to which the receiver is
   going to receive data. The valid syntax is described at
-  https://github.com/grpc/grpc/blob/master/doc/naming.md. You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:55678`. This feature gate will be removed in a future release.
+  https://github.com/grpc/grpc/blob/master/doc/naming.md. See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 
 ## Advanced Configuration
