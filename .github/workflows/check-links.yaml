@@ -13,6 +13,7 @@ env:
   # renovate: datasource=github-releases depName=tcort/markdown-link-check
   MD_LINK_CHECK_VERSION: "3.12.2"
 
+
 jobs:
   changedfiles:
     name: changed files
@@ -48,7 +49,7 @@ jobs:
       - name: Run markdown-link-check
         run: |
           if [ -z "${{ needs.changedfiles.outputs.md_files }}" ]; then
-            md="**/*.md"
+            md=$(find . -type f -name "*.md")
           else
             md="${{ needs.changedfiles.outputs.md_files }}"
           fi
