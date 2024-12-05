@@ -3196,6 +3196,11 @@ func (mb *MetricsBuilder) RecordSplunkHealthDataPoint(ts pcommon.Timestamp, val 
 	mb.metricSplunkHealth.recordDataPoint(mb.startTime, ts, val, splunkFeatureAttributeValue, splunkFeatureHealthAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
+// RecordSplunkHealthDataPoint adds a data point to splunk.health metric.
+func (mb *MetricsBuilder) RecordSplunkHealthDataPoint(ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string) {
+	mb.metricSplunkHealth.recordDataPoint(mb.startTime, ts, val, splunkFeatureAttributeValue, splunkFeatureHealthAttributeValue)
+}
+
 // RecordSplunkIndexerAvgRateDataPoint adds a data point to splunk.indexer.avg.rate metric.
 func (mb *MetricsBuilder) RecordSplunkIndexerAvgRateDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	mb.metricSplunkIndexerAvgRate.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
