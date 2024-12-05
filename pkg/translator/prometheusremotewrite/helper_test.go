@@ -481,7 +481,7 @@ func Test_getPromExemplars(t *testing.T) {
 		},
 		{
 			"with_exemplars_int_value",
-			getHistogramDataPointWithExemplarsInt(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
+			getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
 			[]prompb.Exemplar{
 				{
 					Value:     float64(intVal2),

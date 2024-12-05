@@ -184,39 +184,16 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
+func getHistogramDataPointWithExemplars[V int64 | float64](t *testing.T, time time.Time, value V, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
-	e.SetDoubleValue(value)
-	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	if attributeKey != "" || attributeValue != "" {
-		e.FilteredAttributes().PutStr(attributeKey, attributeValue)
+	switch v := (interface{})(value).(type) {
+	case int64:
+		e.SetIntValue(v)
+	case float64:
+		e.SetDoubleValue(v)
 	}
-
-	if traceID != "" {
-		var traceIDBytes [16]byte
-		traceIDBytesSlice, err := hex.DecodeString(traceID)
-		require.NoErrorf(t, err, "error decoding trace id: %v", err)
-		copy(traceIDBytes[:], traceIDBytesSlice)
-		e.SetTraceID(traceIDBytes)
-	}
-	if spanID != "" {
-		var spanIDBytes [8]byte
-		spanIDBytesSlice, err := hex.DecodeString(spanID)
-		require.NoErrorf(t, err, "error decoding span id: %v", err)
-		copy(spanIDBytes[:], spanIDBytesSlice)
-		e.SetSpanID(spanIDBytes)
-	}
-
-	return h
-}
-
-// getHistogramDataPointWithExemplarsInt returns a HistogramDataPoint populating the exemplar with an int64 value.
-func getHistogramDataPointWithExemplarsInt(t *testing.T, time time.Time, value int64, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
-	h := pmetric.NewHistogramDataPoint()
-	e := h.Exemplars().AppendEmpty()
-	e.SetIntValue(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
 	if attributeKey != "" || attributeValue != "" {
 		e.FilteredAttributes().PutStr(attributeKey, attributeValue)
