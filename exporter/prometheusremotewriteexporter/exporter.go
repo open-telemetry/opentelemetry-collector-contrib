@@ -84,7 +84,6 @@ type prwExporter struct {
 	wal                  *prweWAL
 	exporterSettings     prometheusremotewrite.Settings
 	telemetry            prwTelemetry
-	batchTimeSeriesState batchTimeSeriesState
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -140,7 +139,6 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			SendMetadata:        cfg.SendMetadata,
 		},
 		telemetry:            prwTelemetry,
-		batchTimeSeriesState: newBatchTimeSericesState(),
 	}
 
 	if prwe.exporterSettings.ExportCreatedMetric {
@@ -229,7 +227,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m)
 	if err != nil {
 		return err
 	}
