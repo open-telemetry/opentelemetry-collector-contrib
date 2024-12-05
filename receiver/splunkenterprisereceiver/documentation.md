@@ -43,7 +43,7 @@ Gauge tracking the number of buckets and their searchable status. *Note:** Searc
 
 ### splunk.health
 
-The status (color) of the Splunk server.
+The status (color) of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
