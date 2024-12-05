@@ -63,7 +63,7 @@ The following settings can be optionally configured:
 - `timeout`: send pulsar message timeout (default: 5s)
 - `operation_timeout`: sets producer-create, subscribe and unsubscribe operations timeout (default: 30 seconds)
 - `connection_timeout`: timeout for the establishment of a TCP connection (default: 5 seconds)
-- `map_connections_per_broker`: max number of connections to a single broker that will kept in the pool. (default: 1 connection)
+- `max_connections_per_broker`: max number of connections to a single broker that will kept in the pool. (default: 1 connection)
 - `retry_on_failure`
     - `enabled` (default = true)
     - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`

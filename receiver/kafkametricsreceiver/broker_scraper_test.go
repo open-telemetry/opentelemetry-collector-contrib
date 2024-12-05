@@ -72,7 +72,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
-	_, err = bs.Scrape(context.Background())
+	_, err = bs.ScrapeMetrics(context.Background())
 	assert.Error(t, err)
 }
 

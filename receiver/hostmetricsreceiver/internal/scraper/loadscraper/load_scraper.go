@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
@@ -26,7 +26,7 @@ import (
 const metricsLen = 3
 
 // scraper for Load Metrics
-type scraper struct {
+type loadScraper struct {
 	settings   receiver.Settings
 	config     *Config
 	mb         *metadata.MetricsBuilder
@@ -38,12 +38,12 @@ type scraper struct {
 }
 
 // newLoadScraper creates a set of Load related metrics
-func newLoadScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages}
+func newLoadScraper(_ context.Context, settings receiver.Settings, cfg *Config) *loadScraper {
+	return &loadScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages}
 }
 
 // start
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
+func (s *loadScraper) start(ctx context.Context, _ component.Host) error {
 	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
@@ -69,7 +69,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 }
 
 // shutdown
-func (s *scraper) shutdown(ctx context.Context) error {
+func (s *loadScraper) shutdown(ctx context.Context) error {
 	if s.skipScrape {
 		// We skipped scraping because the sampler failed to start,
 		// so it doesn't need to be shut down.
@@ -79,7 +79,7 @@ func (s *scraper) shutdown(ctx context.Context) error {
 }
 
 // scrape
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *loadScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.skipScrape {
 		return pmetric.NewMetrics(), nil
 	}

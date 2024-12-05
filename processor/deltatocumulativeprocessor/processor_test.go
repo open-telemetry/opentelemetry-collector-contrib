@@ -97,7 +97,7 @@ func config(t *testing.T, file string) *Config {
 	return cfg
 }
 
-func setup(t *testing.T, cfg *Config) State {
+func setup(t testing.TB, cfg *Config) State {
 	t.Helper()
 
 	next := &consumertest.MetricsSink{}
@@ -160,7 +160,5 @@ func TestTelemetry(t *testing.T) {
 	require.NoError(t, err)
 
 	var rm metricdata.ResourceMetrics
-	if err := tt.reader.Collect(context.Background(), &rm); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, tt.reader.Collect(context.Background(), &rm))
 }

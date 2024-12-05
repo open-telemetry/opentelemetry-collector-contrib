@@ -153,3 +153,24 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	assert.Equal(t, "bar", read.AsString())
 	assert.NoError(t, ehHandler.close(context.Background()))
 }
+
+func TestEventhubHandler_closeWithStorageClient(t *testing.T) {
+	config := createDefaultConfig()
+	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+
+	ehHandler := &eventhubHandler{
+		settings:     receivertest.NewNopSettings(),
+		dataConsumer: &mockDataConsumer{},
+		config:       config.(*Config),
+	}
+	ehHandler.hub = &mockHubWrapper{}
+	mockClient := newMockClient()
+	ehHandler.storageClient = mockClient
+
+	assert.NoError(t, ehHandler.run(context.Background(), componenttest.NewNopHost()))
+	require.NotNil(t, ehHandler.storageClient)
+	require.NotNil(t, mockClient.cache)
+	assert.NoError(t, ehHandler.close(context.Background()))
+	require.Nil(t, ehHandler.storageClient)
+	require.Nil(t, mockClient.cache)
+}

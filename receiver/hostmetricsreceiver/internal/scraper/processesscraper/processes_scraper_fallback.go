@@ -10,6 +10,6 @@ const (
 	enableProcessesCreated = false
 )
 
-func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
+func (s *processesScraper) getProcessesMetadata() (processesMetadata, error) {
 	return processesMetadata{}, nil
 }

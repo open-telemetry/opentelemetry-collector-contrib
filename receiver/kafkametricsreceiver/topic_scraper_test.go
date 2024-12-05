@@ -62,7 +62,7 @@ func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
-	_, err = ms.Scrape(context.Background())
+	_, err = ms.ScrapeMetrics(context.Background())
 	assert.Error(t, err)
 }
 

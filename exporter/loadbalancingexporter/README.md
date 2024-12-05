@@ -78,6 +78,8 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 
 Unfortunately, data loss is still possible if all of the exporter's targets remains unavailable once redelivery is exhausted. Due consideration needs to be given to the exporter queue and retry configuration when running in a highly elastic environment.
 
+To avoid a single point of failure, requests can be distributed among multiple Collector instances configured with the `loadbalancingexporter`. The consistent hashing mechanism will ensure a deterministic result between instances sharing the same configuration and resolve an exact list of backend endpoints.
+
 ## Configuration
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the exporter.

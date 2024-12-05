@@ -271,8 +271,7 @@ func TestProcessorBadClientProvider(t *testing.T) {
 	}
 
 	newMultiTest(t, NewFactory().CreateDefaultConfig(), func(err error) {
-		require.Error(t, err)
-		assert.Equal(t, "bad client error", err.Error())
+		require.EqualError(t, err, "bad client error")
 	}, withKubeClientProvider(clientProvider))
 }
 
@@ -1520,8 +1519,7 @@ func TestRealClient(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		func(err error) {
-			require.Error(t, err)
-			assert.Equal(t, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined", err.Error())
+			require.EqualError(t, err, "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 		},
 		withKubeClientProvider(kubeClientProvider),
 		withAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),

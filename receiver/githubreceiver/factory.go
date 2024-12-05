@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
@@ -100,7 +101,7 @@ func createAddScraperOpts(
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraperWithType(metadata.Type, githubScraper))
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, githubScraper))
 	}
 
 	return scraperControllerOptions, nil
@@ -112,13 +113,13 @@ func createGitHubScraper(
 	key string,
 	cfg internal.Config,
 	factories map[string]internal.ScraperFactory,
-) (scraper scraperhelper.Scraper, err error) {
+) (s scraper.Metrics, err error) {
 	factory := factories[key]
 	if factory == nil {
 		return nil, fmt.Errorf("factory not found for scraper %q", key)
 	}
 
-	scraper, err = factory.CreateMetricsScraper(ctx, params, cfg)
+	s, err = factory.CreateMetricsScraper(ctx, params, cfg)
 	if err != nil {
 		return nil, err
 	}
