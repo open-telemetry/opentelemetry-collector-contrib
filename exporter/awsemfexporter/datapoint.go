@@ -280,7 +280,6 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 				labels:      createLabels(metric.Attributes(), instrumentationScopeName),
 				timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
 			})
-
 		}
 	}
 

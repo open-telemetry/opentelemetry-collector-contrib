@@ -431,7 +431,6 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	for name, tc := range testCases {
 		t.Run(name, func(_ *testing.T) {
 			config := &Config{
-
 				// include valid json string, a non-existing key, and keys whose value are not json/string
 				ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName", "spanCounter"},
 				Version:                         tc.emfVersion,
@@ -1335,7 +1334,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 					Dimensions:          [][]string{{}},
 					MetricNameSelectors: []string{"metric(1|3)"},
 				},
-			}, []cWMeasurement{
+			},
+			[]cWMeasurement{
 				{
 					Namespace:  namespace,
 					Dimensions: [][]string{{}},
@@ -2194,123 +2194,121 @@ type logGroupStreamTest struct {
 	outLogStreamName string
 }
 
-var (
-	logGroupStreamTestCases = []logGroupStreamTest{
-		{
-			name: "log_group_stream_expect_same",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			inLogGroupName:   "test-log-group",
-			inLogStreamName:  "test-log-stream",
-			outLogGroupName:  "test-log-group",
-			outLogStreamName: "test-log-stream",
-		},
-		{
-			name: "log_group_pattern_from_resource",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream",
-			outLogGroupName:  "test-log-group-test-cluster",
-			outLogStreamName: "test-log-stream",
-		},
-		{
-			name: "log_stream_pattern_from_resource",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-		{
-			name: "log_group_pattern_from_label",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream",
-			outLogGroupName:  "test-log-group-test-cluster",
-			outLogStreamName: "test-log-stream",
-		},
-		{
-			name: "log_stream_pattern_from_label",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-					"PodName":     "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-		{
-			name: "config_pattern_from_both_attributes",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				resourceAttributeMap: map[string]any{
-					"ClusterName": "test-cluster",
-				},
-				attributeMap: map[string]any{
-					"PodName": "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group-test-cluster",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-		{
-			name: "config_pattern_missing_from_both_attributes",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group-undefined",
-			outLogStreamName: "test-log-stream-undefined",
-		},
-		{
-			name: "config_pattern_group_missing_stream_present",
-			inputMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				attributeMap: map[string]any{
-					"PodName": "test-pod",
-				},
-			}),
-			inLogGroupName:   "test-log-group-{ClusterName}",
-			inLogStreamName:  "test-log-stream-{PodName}",
-			outLogGroupName:  "test-log-group-undefined",
-			outLogStreamName: "test-log-stream-test-pod",
-		},
-	}
-)
+var logGroupStreamTestCases = []logGroupStreamTest{
+	{
+		name: "log_group_stream_expect_same",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		inLogGroupName:   "test-log-group",
+		inLogStreamName:  "test-log-stream",
+		outLogGroupName:  "test-log-group",
+		outLogStreamName: "test-log-stream",
+	},
+	{
+		name: "log_group_pattern_from_resource",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			resourceAttributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream",
+		outLogGroupName:  "test-log-group-test-cluster",
+		outLogStreamName: "test-log-stream",
+	},
+	{
+		name: "log_stream_pattern_from_resource",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			resourceAttributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+	{
+		name: "log_group_pattern_from_label",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			attributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream",
+		outLogGroupName:  "test-log-group-test-cluster",
+		outLogStreamName: "test-log-stream",
+	},
+	{
+		name: "log_stream_pattern_from_label",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			attributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+				"PodName":     "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+	{
+		name: "config_pattern_from_both_attributes",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			resourceAttributeMap: map[string]any{
+				"ClusterName": "test-cluster",
+			},
+			attributeMap: map[string]any{
+				"PodName": "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group-test-cluster",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+	{
+		name: "config_pattern_missing_from_both_attributes",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group-undefined",
+		outLogStreamName: "test-log-stream-undefined",
+	},
+	{
+		name: "config_pattern_group_missing_stream_present",
+		inputMetrics: generateTestMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			attributeMap: map[string]any{
+				"PodName": "test-pod",
+			},
+		}),
+		inLogGroupName:   "test-log-group-{ClusterName}",
+		inLogStreamName:  "test-log-stream-{PodName}",
+		outLogGroupName:  "test-log-group-undefined",
+		outLogStreamName: "test-log-stream-test-pod",
+	},
+}
 
 func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 	for _, test := range logGroupStreamTestCases {
