@@ -160,7 +160,8 @@ func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, boundaries 
 //     upper = math.Exp((index+1) * factor)
 var upperAlgorithm distAlgorithm = func(count uint64,
 	upper, _ float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
+	bucketCountsDst *[]uint64,
+) {
 	// count := bucketCountsSrc.At(index)
 
 	// At this point we know that the upper bound represents the highest value that can be in this bucket, so we take the
@@ -181,7 +182,8 @@ var upperAlgorithm distAlgorithm = func(count uint64,
 // The midpoint is calculated as (upper + lower) / 2.
 var midpointAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
+	bucketCountsDst *[]uint64,
+) {
 	midpoint := (upper + lower) / 2
 
 	for j, boundary := range boundaries {
@@ -200,8 +202,8 @@ var midpointAlgorithm distAlgorithm = func(count uint64,
 // uniformAlgorithm distributes counts from a given set of bucket sounrces into a set of linear boundaries using uniform distribution
 var uniformAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
-
+	bucketCountsDst *[]uint64,
+) {
 	// Find the boundaries that intersect with the bucket range
 	var start, end int
 	for start = 0; start < len(boundaries); start++ {
@@ -242,7 +244,8 @@ var uniformAlgorithm distAlgorithm = func(count uint64,
 // randomAlgorithm distributes counts from a given set of bucket sources into a set of linear boundaries using random distribution
 var randomAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
+	bucketCountsDst *[]uint64,
+) {
 	// Find the boundaries that intersect with the bucket range
 	start := 0
 	for start < len(boundaries) && boundaries[start] < lower {

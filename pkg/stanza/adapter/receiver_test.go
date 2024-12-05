@@ -271,7 +271,7 @@ pipeline:
 		filePath)
 
 	confmapFilePath := filepath.Join(b.TempDir(), "conf.yaml")
-	require.NoError(b, os.WriteFile(confmapFilePath, []byte(pipelineYaml), 0600))
+	require.NoError(b, os.WriteFile(confmapFilePath, []byte(pipelineYaml), 0o600))
 
 	testConfMaps, err := confmaptest.LoadConf(confmapFilePath)
 	require.NoError(b, err)
@@ -322,7 +322,7 @@ pipeline:
 	rcv.emitter = emitter
 
 	// Populate the file that will be consumed
-	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
 	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
 		_, err := file.WriteString("testlog\n")
@@ -384,7 +384,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
-	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
 	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
 		_, err := file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))

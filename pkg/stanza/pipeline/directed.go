@@ -20,8 +20,10 @@ import (
 
 var _ Pipeline = (*DirectedPipeline)(nil)
 
-var alreadyStarted = stanzaerrors.NewError("pipeline already started", "")
-var alreadyStopped = stanzaerrors.NewError("pipeline already stopped", "")
+var (
+	alreadyStarted = stanzaerrors.NewError("pipeline already started", "")
+	alreadyStopped = stanzaerrors.NewError("pipeline already stopped", "")
+)
 
 // DirectedPipeline is a pipeline backed by a directed graph
 type DirectedPipeline struct {

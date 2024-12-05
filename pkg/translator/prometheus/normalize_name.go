@@ -17,7 +17,6 @@ import (
 // Prometheus best practices for units: https://prometheus.io/docs/practices/naming/#base-units
 // OpenMetrics specification for units: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#units-and-base-units
 var unitMap = map[string]string{
-
 	// Time
 	"d":   "days",
 	"h":   "hours",

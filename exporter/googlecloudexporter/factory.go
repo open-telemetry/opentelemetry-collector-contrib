@@ -54,7 +54,8 @@ func createDefaultConfig() component.Config {
 func createLogsExporter(
 	ctx context.Context,
 	params exporter.Settings,
-	cfg component.Config) (exporter.Logs, error) {
+	cfg component.Config,
+) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
 	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.TelemetrySettings.MeterProvider, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
@@ -79,7 +80,8 @@ func createLogsExporter(
 func createTracesExporter(
 	ctx context.Context,
 	params exporter.Settings,
-	cfg component.Config) (exporter.Traces, error) {
+	cfg component.Config,
+) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)
 	tExp, err := collector.NewGoogleCloudTracesExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.TelemetrySettings.MeterProvider, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
@@ -104,7 +106,8 @@ func createTracesExporter(
 func createMetricsExporter(
 	ctx context.Context,
 	params exporter.Settings,
-	cfg component.Config) (exporter.Metrics, error) {
+	cfg component.Config,
+) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
 	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.TelemetrySettings.MeterProvider, params.BuildInfo.Version, eCfg.TimeoutSettings.Timeout)
 	if err != nil {

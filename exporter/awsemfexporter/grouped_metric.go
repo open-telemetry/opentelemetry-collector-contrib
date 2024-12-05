@@ -193,6 +193,11 @@ func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor
 		}
 	}
 	switch unit {
+	case "1":
+		unit = ""
+	case "ns":
+		// CloudWatch doesn't support Nanoseconds
+		unit = ""
 	case "ms":
 		unit = "Milliseconds"
 	case "s":
@@ -201,7 +206,7 @@ func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor
 		unit = "Microseconds"
 	case "By":
 		unit = "Bytes"
-	case "Bi":
+	case "bit":
 		unit = "Bits"
 	}
 	return unit

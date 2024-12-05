@@ -325,6 +325,7 @@ func generateThriftTwoParentsSpan() *jaeger.Span {
 		},
 	}
 }
+
 func unixNanoToMicroseconds(ns pcommon.Timestamp) int64 {
 	return int64(ns / 1000)
 }

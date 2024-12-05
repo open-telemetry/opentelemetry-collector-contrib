@@ -170,7 +170,7 @@ spec:
     - --duration=10s
     - --rate=1
     - --otlp-attributes=k8s.container.name="telemetrygen"
-    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:0.112.0@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096
     name: telemetrygen
 status:
   podIP: 10.244.0.11
@@ -193,9 +193,25 @@ the processor associates the received trace to the pod, based on the connection 
     "k8s.pod.name": "telemetrygen-pod",
     "k8s.pod.uid": "038e2267-b473-489b-b48c-46bafdb852eb",
     "container.image.name": "telemetrygen",
-    "container.image.tag": "latest"
+    "container.image.tag": "0.112.0", 
+    "container.image.repo_digests": ["ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096"]
   }
 }
+```
+
+By default, the processor will be ready as soon as it starts, even if no metadata has been fetched yet.
+If data is sent to this processor before the metadata is synced, there will be no metadata to enrich the data with.
+
+To wait for the metadata to be synced before the processor is ready, set the `wait_for_metadata` option to `true`.
+Then the processor will not be ready until the metadata is fully synced. As a result, the start-up of the Collector will be blocked. If the metadata cannot be synced, the Collector will ultimately fail to start.
+If a timeout is reached, the processor will fail to start and return an error, which will cause the collector to exit.
+The timeout defaults to 10s and can be configured with the `metadata_sync_timeout` option.
+
+example for setting the processor to wait for metadata to be synced before it is ready:
+
+```yaml
+wait_for_metadata: true
+wait_for_metadata_timeout: 10s
 ```
 
 ## Extracting attributes from pod labels and annotations

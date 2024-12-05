@@ -5,10 +5,13 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -31,8 +34,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -291,7 +292,8 @@ func Test_export(t *testing.T) {
 		httpResponseCode    int
 		returnErrorOnCreate bool
 	}{
-		{"success_case",
+		{
+			"success_case",
 			*ts1,
 			true,
 			http.StatusAccepted,
@@ -303,7 +305,8 @@ func Test_export(t *testing.T) {
 			false,
 			http.StatusAccepted,
 			true,
-		}, {
+		},
+		{
 			"error_status_code_case",
 			*ts1,
 			true,
@@ -739,15 +742,8 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					tel := setupTestTelemetry()
 					set := tel.NewSettings()
-					mp := set.LeveledMeterProvider(configtelemetry.LevelBasic)
-					set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
-						// detailed level enables otelhttp client instrumentation which we
-						// dont want to test here
-						if level == configtelemetry.LevelDetailed {
-							return noop.MeterProvider{}
-						}
-						return mp
-					}
+					// detailed level enables otelhttp client instrumentation which we dont want to test here
+					set.MetricsLevel = configtelemetry.LevelBasic
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
@@ -813,32 +809,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,
@@ -850,32 +852,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,
@@ -1173,5 +1181,96 @@ func TestRetries(t *testing.T) {
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
 		})
+	}
+}
+
+func BenchmarkExecute(b *testing.B) {
+	for _, numSample := range []int{100, 1000, 10000} {
+		b.Run(fmt.Sprintf("numSample=%d", numSample), func(b *testing.B) {
+			benchmarkExecute(b, numSample)
+		})
+	}
+}
+
+func benchmarkExecute(b *testing.B, numSample int) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(b, err)
+
+	// Create the prwExporter
+	exporter := &prwExporter{
+		endpointURL: endpointURL,
+		client:      http.DefaultClient,
+	}
+
+	generateSamples := func(n int) []prompb.Sample {
+		samples := make([]prompb.Sample, 0, n)
+		for i := 0; i < n; i++ {
+			samples = append(samples, prompb.Sample{
+				Timestamp: int64(i),
+				Value:     float64(i),
+			})
+		}
+		return samples
+	}
+
+	generateHistograms := func(n int) []prompb.Histogram {
+		histograms := make([]prompb.Histogram, 0, n)
+		for i := 0; i < n; i++ {
+			histograms = append(histograms, prompb.Histogram{
+				Timestamp:      int64(i),
+				Count:          &prompb.Histogram_CountInt{CountInt: uint64(i)},
+				PositiveCounts: []float64{float64(i)},
+			})
+		}
+		return histograms
+	}
+
+	reqs := make([]*prompb.WriteRequest, 0, b.N)
+	const labelValue = "abcdefg'hijlmn234!@#$%^&*()_+~`\"{}[],./<>?hello0123hiOlá你好Dzieńdobry9Zd8ra765v4stvuyte"
+	for n := 0; n < b.N; n++ {
+		num := strings.Repeat(strconv.Itoa(n), 16)
+		req := &prompb.WriteRequest{
+			Metadata: []prompb.MetricMetadata{
+				{
+					Type: prompb.MetricMetadata_COUNTER,
+					Unit: "seconds",
+					Help: "This is a counter",
+				},
+				{
+					Type: prompb.MetricMetadata_HISTOGRAM,
+					Unit: "seconds",
+					Help: "This is a histogram",
+				},
+			},
+			Timeseries: []prompb.TimeSeries{
+				{
+					Samples: generateSamples(numSample),
+					Labels: []prompb.Label{
+						{Name: "__name__", Value: "test_metric"},
+						{Name: "test_label_name_" + num, Value: labelValue + num},
+					},
+				},
+				{
+					Histograms: generateHistograms(numSample),
+					Labels: []prompb.Label{
+						{Name: "__name__", Value: "test_histogram"},
+						{Name: "test_label_name_" + num, Value: labelValue + num},
+					},
+				},
+			},
+		}
+		reqs = append(reqs, req)
+	}
+
+	ctx := context.Background()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for _, req := range reqs {
+		err := exporter.execute(ctx, req)
+		require.NoError(b, err)
 	}
 }

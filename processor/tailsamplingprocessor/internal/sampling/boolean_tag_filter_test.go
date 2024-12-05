@@ -15,7 +15,7 @@ import (
 )
 
 func TestBooleanTagFilter(t *testing.T) {
-	var empty = map[string]any{}
+	empty := map[string]any{}
 	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, false)
 
 	resAttr := map[string]any{}
@@ -54,7 +54,7 @@ func TestBooleanTagFilter(t *testing.T) {
 }
 
 func TestBooleanTagFilterInverted(t *testing.T) {
-	var empty = map[string]any{}
+	empty := map[string]any{}
 	filter := NewBooleanAttributeFilter(componenttest.NewNopTelemetrySettings(), "example", true, true)
 
 	resAttr := map[string]any{}

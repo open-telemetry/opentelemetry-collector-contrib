@@ -36,7 +36,6 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&c.TraceID, "trace-id", "", "TraceID to use as exemplar")
 	fs.StringVar(&c.SpanID, "span-id", "", "SpanID to use as exemplar")
-
 }
 
 // Validate validates the test scenario parameters.

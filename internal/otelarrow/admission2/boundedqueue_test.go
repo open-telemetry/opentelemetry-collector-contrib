@@ -12,23 +12,50 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc/codes"
 	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
+)
+
+const (
+	expectScope        = "github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow"
+	expectInFlightName = "otelcol_otelarrow_admission_in_flight_bytes"
+	expectWaitingName  = "otelcol_otelarrow_admission_waiting_bytes"
 )
 
 type bqTest struct {
-	t *testing.T
+	t        *testing.T
+	reader   *sdkmetric.ManualReader
+	provider *sdkmetric.MeterProvider
 	*BoundedQueue
 }
 
-var noopTelemetry = componenttest.NewNopTelemetrySettings()
-
 func newBQTest(t *testing.T, maxAdmit, maxWait uint64) bqTest {
+	settings := componenttest.NewNopTelemetrySettings()
+
+	reader := sdkmetric.NewManualReader()
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(resource.Empty()),
+		sdkmetric.WithReader(reader),
+	)
+	settings.MeterProvider = provider
+	settings.MetricsLevel = configtelemetry.LevelDetailed
+
+	bq, err := NewBoundedQueue(component.MustNewID("admission_testing"), settings, maxAdmit, maxWait)
+	require.NoError(t, err)
 	return bqTest{
 		t:            t,
-		BoundedQueue: NewBoundedQueue(noopTelemetry, maxAdmit, maxWait).(*BoundedQueue),
+		reader:       reader,
+		provider:     provider,
+		BoundedQueue: bq.(*BoundedQueue),
 	}
 }
 
@@ -67,35 +94,39 @@ func mkRange(from, to uint64) []uint64 {
 
 func TestBoundedQueueLimits(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		maxLimitAdmit uint64
-		maxLimitWait  uint64
-		requestSizes  []uint64
-		timeout       time.Duration
-		expectErrs    map[string]int
+		name           string
+		maxLimitAdmit  uint64
+		maxLimitWait   uint64
+		expectAcquired [2]int64
+		requestSizes   []uint64
+		timeout        time.Duration
+		expectErrs     map[string]int
 	}{
 		{
-			name:          "simple_no_waiters_25",
-			maxLimitAdmit: 1000,
-			maxLimitWait:  0,
-			requestSizes:  mkRepeat(25, 40),
-			timeout:       0,
-			expectErrs:    map[string]int{},
+			name:           "simple_no_waiters_25",
+			maxLimitAdmit:  1000,
+			maxLimitWait:   0,
+			requestSizes:   mkRepeat(25, 40),
+			expectAcquired: [2]int64{1000, 1000},
+			timeout:        0,
+			expectErrs:     map[string]int{},
 		},
 		{
-			name:          "simple_no_waiters_1",
-			maxLimitAdmit: 1000,
-			maxLimitWait:  0,
-			requestSizes:  mkRepeat(1, 1000),
-			timeout:       0,
-			expectErrs:    map[string]int{},
+			name:           "simple_no_waiters_1",
+			maxLimitAdmit:  1000,
+			maxLimitWait:   0,
+			requestSizes:   mkRepeat(1, 1000),
+			expectAcquired: [2]int64{1000, 1000},
+			timeout:        0,
+			expectErrs:     map[string]int{},
 		},
 		{
-			name:          "without_waiting_remainder",
-			maxLimitAdmit: 1000,
-			maxLimitWait:  0,
-			requestSizes:  mkRepeat(30, 40),
-			timeout:       0,
+			name:           "without_waiting_remainder",
+			maxLimitAdmit:  1000,
+			maxLimitWait:   0,
+			requestSizes:   mkRepeat(30, 40),
+			expectAcquired: [2]int64{990, 990},
+			timeout:        0,
 			expectErrs: map[string]int{
 				// 7 failures with a remainder of 10
 				// 30 * (40 - 7) = 990
@@ -103,51 +134,57 @@ func TestBoundedQueueLimits(t *testing.T) {
 			},
 		},
 		{
-			name:          "without_waiting_complete",
-			maxLimitAdmit: 1000,
-			maxLimitWait:  0,
-			requestSizes:  append(mkRepeat(30, 40), 10),
-			timeout:       0,
+			name:           "without_waiting_complete",
+			maxLimitAdmit:  1000,
+			maxLimitWait:   0,
+			requestSizes:   append(mkRepeat(30, 40), 10),
+			expectAcquired: [2]int64{1000, 1000},
+			timeout:        0,
 			expectErrs: map[string]int{
 				// 30*33+10 succeed, 7 failures (as above)
 				ErrTooMuchWaiting.Error(): 7,
 			},
 		},
 		{
-			name:          "with_waiters_timeout",
-			maxLimitAdmit: 1000,
-			maxLimitWait:  1000,
-			requestSizes:  mkRepeat(20, 100),
-			timeout:       time.Second,
+			name:           "with_waiters_timeout",
+			maxLimitAdmit:  1000,
+			maxLimitWait:   1000,
+			requestSizes:   mkRepeat(20, 100),
+			expectAcquired: [2]int64{1000, 1000},
+			timeout:        time.Second,
 			expectErrs: map[string]int{
 				// 20*50=1000 is half of the requests timing out
 				status.Error(grpccodes.Canceled, context.DeadlineExceeded.Error()).Error(): 50,
 			},
 		},
 		{
-			name:          "with_size_exceeded",
-			maxLimitAdmit: 1000,
-			maxLimitWait:  2000,
-			requestSizes:  []uint64{1001},
-			timeout:       0,
+			name:           "with_size_exceeded",
+			maxLimitAdmit:  1000,
+			maxLimitWait:   2000,
+			requestSizes:   []uint64{1001},
+			expectAcquired: [2]int64{0, 0},
+			timeout:        0,
 			expectErrs: map[string]int{
 				ErrRequestTooLarge.Error(): 1,
 			},
 		},
 		{
-			name:          "mixed_sizes",
-			maxLimitAdmit: 45, // 45 is the exact sum of request sizes
-			maxLimitWait:  0,
-			requestSizes:  mkRange(1, 9),
-			timeout:       0,
-			expectErrs:    map[string]int{},
+			name:           "mixed_sizes",
+			maxLimitAdmit:  45, // 45 is the exact sum of request sizes
+			maxLimitWait:   0,
+			requestSizes:   mkRange(1, 9),
+			expectAcquired: [2]int64{45, 45},
+			timeout:        0,
+			expectErrs:     map[string]int{},
 		},
 		{
 			name:          "too_many_mixed_sizes",
 			maxLimitAdmit: 44, // all but one request will succeed
 			maxLimitWait:  0,
 			requestSizes:  mkRange(1, 9),
-			timeout:       0,
+			// worst case is the size=9 fails, so minimum is 44-9+1
+			expectAcquired: [2]int64{36, 44},
+			timeout:        0,
 			expectErrs: map[string]int{
 				ErrTooMuchWaiting.Error(): 1,
 			},
@@ -190,6 +227,12 @@ func TestBoundedQueueLimits(t *testing.T) {
 
 			wait1.Wait()
 
+			// The in-flight bytes are in-range, none waiting.
+			inflight, waiting := bq.verifyMetrics(t)
+			require.LessOrEqual(t, test.expectAcquired[0], inflight)
+			require.GreaterOrEqual(t, test.expectAcquired[1], inflight)
+			require.Equal(t, int64(0), waiting)
+
 			close(releaseChan)
 
 			wait2.Wait()
@@ -214,8 +257,53 @@ func TestBoundedQueueLimits(t *testing.T) {
 
 			// and the final state is all 0.
 			bq.waitForPending(0, 0)
+
+			// metrics are zero
+			inflight, waiting = bq.verifyMetrics(t)
+			require.Equal(t, int64(0), inflight)
+			require.Equal(t, int64(0), waiting)
 		})
 	}
+}
+
+func (bq bqTest) verifyPoint(t *testing.T, m metricdata.Metrics) int64 {
+	switch a := m.Data.(type) {
+	case metricdata.Sum[int64]:
+		require.Len(t, a.DataPoints, 1)
+		dp := a.DataPoints[0]
+		for _, attr := range dp.Attributes.ToSlice() {
+			if attr.Key == netstats.ReceiverKey && attr.Value.AsString() == "admission_testing" {
+				return dp.Value
+			}
+		}
+		t.Errorf("point value not found: %v", m.Data)
+	default:
+		t.Errorf("incorrect metric data type: %T", m.Data)
+	}
+	return -1
+}
+
+func (bq bqTest) verifyMetrics(t *testing.T) (inflight int64, waiting int64) {
+	inflight = -1
+	waiting = -1
+
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, bq.reader.Collect(context.Background(), &rm))
+
+	for _, sm := range rm.ScopeMetrics {
+		if sm.Scope.Name != expectScope {
+			continue
+		}
+		for _, m := range sm.Metrics {
+			switch m.Name {
+			case expectInFlightName:
+				inflight = bq.verifyPoint(t, m)
+			case expectWaitingName:
+				waiting = bq.verifyPoint(t, m)
+			}
+		}
+	}
+	return
 }
 
 func TestBoundedQueueLIFO(t *testing.T) {
@@ -252,6 +340,11 @@ func TestBoundedQueueLIFO(t *testing.T) {
 				notW1 := bq.startWaiter(ctx, secondWait, &relW1)
 				bq.waitForPending(maxAdmit, maxAdmit)
 
+				// The in-flight and waiting bytes are counted.
+				inflight, waiting := bq.verifyMetrics(t)
+				require.Equal(t, int64(maxAdmit), inflight)
+				require.Equal(t, int64(maxAdmit), waiting)
+
 				relFirst()
 
 				// early is true when releasing the first acquired
@@ -278,6 +371,10 @@ func TestBoundedQueueLIFO(t *testing.T) {
 				relW1()
 
 				bq.waitForPending(0, 0)
+
+				inflight, waiting = bq.verifyMetrics(t)
+				require.Equal(t, int64(0), inflight)
+				require.Equal(t, int64(0), waiting)
 			})
 		}
 	}

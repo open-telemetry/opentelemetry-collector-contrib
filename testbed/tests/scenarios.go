@@ -548,6 +548,94 @@ func ScenarioLong(
 	tc.ValidateData()
 }
 
+func ScenarioMemoryLimiterHit(
+	t *testing.T,
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	loadOptions testbed.LoadOptions,
+	resultsSummary testbed.TestResultsSummary,
+	sleepTime int,
+	processors []ProcessorNameAndConfigBody,
+) {
+	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
+	require.NoError(t, err)
+
+	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
+
+	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
+	configCleanup, err := agentProc.PrepareConfig(configStr)
+	require.NoError(t, err)
+	defer configCleanup()
+	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
+	dataChannel := make(chan bool)
+	tc := testbed.NewTestCase(
+		t,
+		dataProvider,
+		sender,
+		receiver,
+		agentProc,
+		&testbed.CorrectnessLogTestValidator{},
+		resultsSummary,
+		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
+	)
+	t.Cleanup(tc.Stop)
+	tc.MockBackend.EnableRecording()
+
+	tc.StartBackend()
+	tc.StartAgent()
+
+	tc.StartLoad(loadOptions)
+
+	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
+
+	var timer *time.Timer
+
+	// check for "Memory usage is above soft limit"
+	tc.WaitForN(func() bool {
+		logFound := tc.AgentLogsContains("Memory usage is above soft limit. Refusing data.")
+		if !logFound {
+			dataChannel <- true
+			return false
+		}
+		// Log found. But keep the collector under stress for 10 more seconds so it starts refusing data
+		if timer == nil {
+			timer = time.NewTimer(10 * time.Second)
+		}
+		select {
+		case <-timer.C:
+		default:
+			return false
+		}
+		close(dataChannel)
+		return logFound
+	}, time.Second*time.Duration(sleepTime), "memory limit not hit")
+
+	// check if data started to be received successfully
+	tc.WaitForN(func() bool {
+		return tc.MockBackend.DataItemsReceived() > 0
+	}, time.Second*time.Duration(sleepTime), "data started to be successfully received")
+
+	// stop sending any more data
+	tc.StopLoad()
+
+	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() == tc.MockBackend.DataItemsReceived() }, time.Second*time.Duration(sleepTime), "all logs received")
+
+	tc.WaitForN(func() bool {
+		// get IDs from logs to retry
+		logsToRetry := getLogsID(tc.MockBackend.LogsToRetry)
+
+		// get IDs from logs received successfully
+		successfulLogs := getLogsID(tc.MockBackend.ReceivedLogs)
+
+		// check if all the logs to retry were actually retried
+		logsWereRetried := allElementsExistInSlice(logsToRetry, successfulLogs)
+		return logsWereRetried
+	}, time.Second*time.Duration(sleepTime), "all logs were retried successfully")
+
+	tc.StopAgent()
+	tc.ValidateData()
+}
+
 func constructLoadOptions(test TestCase) testbed.LoadOptions {
 	options := testbed.LoadOptions{DataItemsPerSecond: 1000, ItemsPerBatch: 10}
 	options.Attributes = make(map[string]string)
