@@ -10,7 +10,7 @@ component: 'splunkenterprisereceiver'
 note: "Added a new `splunk.health` metric."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [1]
+issues: [36695]
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
