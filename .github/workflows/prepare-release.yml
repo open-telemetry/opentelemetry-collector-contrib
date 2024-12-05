@@ -12,6 +12,9 @@ on:
       current-beta:
         required: true
         description: Current version (beta, like 0.69.1)
+env:
+  # renovate: datasource=golang-version depName=go
+  GO_VERSION: "1.22.9"
 jobs:
   # Releasing opentelemetry-collector-contrib
   prepare-release:
@@ -26,7 +29,7 @@ jobs:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: ${{ env.GO_VERSION }}
           cache: false
       - name: Prepare release for contrib
         working-directory: opentelemetry-collector-contrib

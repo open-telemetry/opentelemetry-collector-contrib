@@ -10,7 +10,9 @@
     "schedule": ["every tuesday"],
     "extends": [
       "config:recommended",
-      "customManagers:githubActionsVersions"
+      "schedule:nonOfficeHours",
+      "customManagers:githubActionsVersions",
+      "customManagers:makefileVersions",
     ],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
@@ -20,6 +22,10 @@
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4.lpu",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.4_4lpu",
       "**/receiver/mongodbreceiver/testdata/integration/Dockerfile.mongodb.5_0"
+    ],
+    "postUpdateOptions": [
+      "gomodTidy",
+      "gomodMassage"
     ],
     "packageRules": [
       {
@@ -108,6 +114,10 @@
           "https://github.com/open-telemetry/opentelemetry-go-contrib"
         ],
         "groupName": "All opentelemetry-go-contrib packages"
+      },
+      {
+        "matchDatasources": ["golang-version"],
+        "rangeStrategy": "bump"
       },
       {
         "matchPackageNames": ["google.golang.org/grpc"],
