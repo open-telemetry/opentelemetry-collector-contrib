@@ -9,9 +9,9 @@ import (
 )
 
 func TestResourceBuilder(t *testing.T) {
-	for _, tt := range []string{"default", "all_set", "none_set"} {
-		t.Run(tt, func(t *testing.T) {
-			cfg := loadResourceAttributesConfig(t, tt)
+	for _, test := range []string{"default", "all_set", "none_set"} {
+		t.Run(test, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
 			rb.SetMongodbAtlasClusterName("mongodb_atlas.cluster.name-val")
 			rb.SetMongodbAtlasDbName("mongodb_atlas.db.name-val")
@@ -30,7 +30,7 @@ func TestResourceBuilder(t *testing.T) {
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
-			switch tt {
+			switch test {
 			case "default":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
@@ -39,11 +39,11 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
-				assert.Failf(t, "unexpected test case: %s", tt)
+				assert.Failf(t, "unexpected test case: %s", test)
 			}
 
 			val, ok := res.Attributes().Get("mongodb_atlas.cluster.name")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "mongodb_atlas.cluster.name-val", val.Str())
 			}
@@ -93,17 +93,17 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "mongodb_atlas.project.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.provider.name")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "mongodb_atlas.provider.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.region.name")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "mongodb_atlas.region.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("mongodb_atlas.user.alias")
-			assert.Equal(t, tt == "all_set", ok)
+			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "mongodb_atlas.user.alias-val", val.Str())
 			}
