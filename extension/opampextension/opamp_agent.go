@@ -36,8 +36,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
-var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
-var _ componentstatus.Watcher = (*opampAgent)(nil)
+var (
+	_ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
+	_ componentstatus.Watcher               = (*opampAgent)(nil)
+)
 
 type statusAggregator interface {
 	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
