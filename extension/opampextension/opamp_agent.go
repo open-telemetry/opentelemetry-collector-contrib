@@ -37,6 +37,7 @@ import (
 )
 
 var _ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
+var _ componentstatus.Watcher = (*opampAgent)(nil)
 
 type statusAggregator interface {
 	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
@@ -161,6 +162,7 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	}
 
 	o.statusSubscriptionWg.Wait()
+	o.componentHealthWg.Wait()
 
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient == nil {
