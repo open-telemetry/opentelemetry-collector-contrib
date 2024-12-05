@@ -212,6 +212,34 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 	return h
 }
 
+// getHistogramDataPointWithExemplarsInt returns a HistogramDataPoint populating the exemplar with an int64 value.
+func getHistogramDataPointWithExemplarsInt(t *testing.T, time time.Time, value int64, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
+	h := pmetric.NewHistogramDataPoint()
+	e := h.Exemplars().AppendEmpty()
+	e.SetIntValue(value)
+	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
+	if attributeKey != "" || attributeValue != "" {
+		e.FilteredAttributes().PutStr(attributeKey, attributeValue)
+	}
+
+	if traceID != "" {
+		var traceIDBytes [16]byte
+		traceIDBytesSlice, err := hex.DecodeString(traceID)
+		require.NoErrorf(t, err, "error decoding trace id: %v", err)
+		copy(traceIDBytes[:], traceIDBytesSlice)
+		e.SetTraceID(traceIDBytes)
+	}
+	if spanID != "" {
+		var spanIDBytes [8]byte
+		spanIDBytesSlice, err := hex.DecodeString(spanID)
+		require.NoErrorf(t, err, "error decoding span id: %v", err)
+		copy(spanIDBytes[:], spanIDBytesSlice)
+		e.SetSpanID(spanIDBytes)
+	}
+
+	return h
+}
+
 func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
