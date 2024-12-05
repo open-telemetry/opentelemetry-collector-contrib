@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -86,7 +86,7 @@ func getNamespace(e unstructured.Unstructured) string {
 		return namespace
 	}
 	// try to look up namespace in object.metadata.namespace (for objects reported via watch mode)
-	if namespace, ok, _ := unstructured.NestedString(e.Object, "object", "metadata", "namespace"); ok && namespace != "" {
+	if namespace, ok, _ := unstructured.NestedString(e.Object, "object", "metadata", "namespace"); ok {
 		return namespace
 	}
 	return ""
