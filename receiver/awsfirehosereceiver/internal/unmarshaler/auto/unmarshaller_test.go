@@ -4,12 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog/compression"
@@ -112,27 +108,4 @@ func TestUnmarshal_CW(t *testing.T) {
 		})
 	}
 
-}
-
-func createMetricRecord() []byte {
-	er := pmetricotlp.NewExportRequest()
-	rsm := er.Metrics().ResourceMetrics().AppendEmpty()
-	sm := rsm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	sm.SetName("TestMetric")
-	dp := sm.SetEmptySummary().DataPoints().AppendEmpty()
-	dp.SetCount(1)
-	dp.SetSum(1)
-	qv := dp.QuantileValues()
-	min := qv.AppendEmpty()
-	min.SetQuantile(0)
-	min.SetValue(0)
-	max := qv.AppendEmpty()
-	max.SetQuantile(1)
-	max.SetValue(1)
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-
-	temp, _ := er.MarshalProto()
-	record := proto.EncodeVarint(uint64(len(temp)))
-	record = append(record, temp...)
-	return record
 }
