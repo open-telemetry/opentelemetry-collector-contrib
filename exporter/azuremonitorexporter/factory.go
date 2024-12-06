@@ -29,7 +29,11 @@ var errUnexpectedConfigurationType = errors.New("failed to cast configuration to
 
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() exporter.Factory {
-	f := &factory{}
+	f := &factory{
+		mu:            sync.RWMutex{},
+		hasInitLogger: false,
+		tChannels:     make(map[component.ID]transportChannel),
+	}
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -67,7 +71,7 @@ func (f *factory) createTracesExporter(
 	}
 
 	f.initLogger(set.Logger)
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig, set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig)
 	if errInstrumentationKeyOrConnectionString != nil {
 		return nil, errInstrumentationKeyOrConnectionString
 	}
@@ -87,7 +91,7 @@ func (f *factory) createLogsExporter(
 	}
 
 	f.initLogger(set.Logger)
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig, set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig)
 	if errInstrumentationKeyOrConnectionString != nil {
 		return nil, errInstrumentationKeyOrConnectionString
 	}
@@ -107,7 +111,7 @@ func (f *factory) createMetricsExporter(
 	}
 
 	f.initLogger(set.Logger)
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig, set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig)
 	if errInstrumentationKeyOrConnectionString != nil {
 		return nil, errInstrumentationKeyOrConnectionString
 	}
@@ -130,7 +134,7 @@ func (f *factory) initLogger(logger *zap.Logger) {
 
 // Configures the transport channel.
 // This method is not thread-safe
-func (f *factory) getTransportChannel(id component.ID, exporterConfig *Config, logger *zap.Logger) (transportChannel, error) {
+func (f *factory) getTransportChannel(id component.ID, exporterConfig *Config) (transportChannel, error) {
 	f.mu.RLock()
 	if channel, exists := f.tChannels[id]; exists {
 		f.mu.RUnlock()
