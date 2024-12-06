@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    vcs.ref.revisions_delta:
+      enabled: true
     vcs.repository.change.count:
       enabled: true
     vcs.repository.change.time_open:
@@ -18,10 +20,6 @@ all_set:
     vcs.repository.ref.lines_added:
       enabled: true
     vcs.repository.ref.lines_deleted:
-      enabled: true
-    vcs.repository.ref.revisions_ahead:
-      enabled: true
-    vcs.repository.ref.revisions_behind:
       enabled: true
     vcs.repository.ref.time:
       enabled: true
@@ -32,6 +30,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    vcs.ref.revisions_delta:
+      enabled: false
     vcs.repository.change.count:
       enabled: false
     vcs.repository.change.time_open:
@@ -49,10 +49,6 @@ none_set:
     vcs.repository.ref.lines_added:
       enabled: false
     vcs.repository.ref.lines_deleted:
-      enabled: false
-    vcs.repository.ref.revisions_ahead:
-      enabled: false
-    vcs.repository.ref.revisions_behind:
       enabled: false
     vcs.repository.ref.time:
       enabled: false

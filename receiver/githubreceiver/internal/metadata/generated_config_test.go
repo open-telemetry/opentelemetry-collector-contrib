@@ -25,6 +25,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					VcsRefRevisionsDelta:              MetricConfig{Enabled: true},
 					VcsRepositoryChangeCount:          MetricConfig{Enabled: true},
 					VcsRepositoryChangeTimeOpen:       MetricConfig{Enabled: true},
 					VcsRepositoryChangeTimeToApproval: MetricConfig{Enabled: true},
@@ -34,8 +35,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcsRepositoryRefCount:             MetricConfig{Enabled: true},
 					VcsRepositoryRefLinesAdded:        MetricConfig{Enabled: true},
 					VcsRepositoryRefLinesDeleted:      MetricConfig{Enabled: true},
-					VcsRepositoryRefRevisionsAhead:    MetricConfig{Enabled: true},
-					VcsRepositoryRefRevisionsBehind:   MetricConfig{Enabled: true},
 					VcsRepositoryRefTime:              MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -48,6 +47,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					VcsRefRevisionsDelta:              MetricConfig{Enabled: false},
 					VcsRepositoryChangeCount:          MetricConfig{Enabled: false},
 					VcsRepositoryChangeTimeOpen:       MetricConfig{Enabled: false},
 					VcsRepositoryChangeTimeToApproval: MetricConfig{Enabled: false},
@@ -57,8 +57,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcsRepositoryRefCount:             MetricConfig{Enabled: false},
 					VcsRepositoryRefLinesAdded:        MetricConfig{Enabled: false},
 					VcsRepositoryRefLinesDeleted:      MetricConfig{Enabled: false},
-					VcsRepositoryRefRevisionsAhead:    MetricConfig{Enabled: false},
-					VcsRepositoryRefRevisionsBehind:   MetricConfig{Enabled: false},
 					VcsRepositoryRefTime:              MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{

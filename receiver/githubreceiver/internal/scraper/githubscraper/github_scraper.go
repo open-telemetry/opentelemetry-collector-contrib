@@ -138,8 +138,10 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/githubreceiver/internal/scraper/githubscraper/README.md#github-limitations
 				// for more information as to why `BehindBy` and `AheadBy` are
 				// swapped.
-				ghs.mb.RecordVcsRepositoryRefRevisionsAheadDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, refType)
-				ghs.mb.RecordVcsRepositoryRefRevisionsBehindDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, refType)
+				// ghs.mb.RecordVcsRepositoryRefRevisionsAheadDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, refType)
+				// ghs.mb.RecordVcsRepositoryRefRevisionsBehindDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, refType)
+				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsRevisionDeltaDirectionAhead)
+				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsRevisionDeltaDirectionBehind)
 
 				var additions int
 				var deletions int

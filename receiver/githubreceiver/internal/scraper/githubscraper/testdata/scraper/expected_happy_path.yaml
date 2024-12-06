@@ -10,6 +10,49 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.27.0
     scopeMetrics:
       - metrics:
+          - description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: vcs.ref.head.name
+                      value:
+                        stringValue: main
+                    - key: vcs.ref.head.type
+                      value:
+                        stringValue: branch
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                    - key: vcs.revision_delta.direction
+                      value:
+                        stringValue: ahead
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: vcs.ref.head.name
+                      value:
+                        stringValue: main
+                    - key: vcs.ref.head.type
+                      value:
+                        stringValue: branch
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                    - key: vcs.revision_delta.direction
+                      value:
+                        stringValue: behind
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcs.ref.revisions_delta
+            unit: '{revision}'
           - description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
             gauge:
               dataPoints:
@@ -145,48 +188,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.repository.ref.lines_deleted
             unit: '{line}'
-          - description: The number of revisions (commits) a ref (branch) is ahead of the default branch (trunk).
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: vcs.ref.head.name
-                      value:
-                        stringValue: main
-                    - key: vcs.ref.head.type
-                      value:
-                        stringValue: branch
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: ""
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.ref.revisions_ahead
-            unit: '{revision}'
-          - description: The number of revisions (commits) a ref (branch) is behind the default branch (trunk).
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: vcs.ref.head.name
-                      value:
-                        stringValue: main
-                    - key: vcs.ref.head.type
-                      value:
-                        stringValue: branch
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: ""
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.ref.revisions_behind
-            unit: '{revision}'
           - description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
             gauge:
               dataPoints:

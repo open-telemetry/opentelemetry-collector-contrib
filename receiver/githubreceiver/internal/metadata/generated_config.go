@@ -28,6 +28,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for github metrics.
 type MetricsConfig struct {
+	VcsRefRevisionsDelta              MetricConfig `mapstructure:"vcs.ref.revisions_delta"`
 	VcsRepositoryChangeCount          MetricConfig `mapstructure:"vcs.repository.change.count"`
 	VcsRepositoryChangeTimeOpen       MetricConfig `mapstructure:"vcs.repository.change.time_open"`
 	VcsRepositoryChangeTimeToApproval MetricConfig `mapstructure:"vcs.repository.change.time_to_approval"`
@@ -37,13 +38,14 @@ type MetricsConfig struct {
 	VcsRepositoryRefCount             MetricConfig `mapstructure:"vcs.repository.ref.count"`
 	VcsRepositoryRefLinesAdded        MetricConfig `mapstructure:"vcs.repository.ref.lines_added"`
 	VcsRepositoryRefLinesDeleted      MetricConfig `mapstructure:"vcs.repository.ref.lines_deleted"`
-	VcsRepositoryRefRevisionsAhead    MetricConfig `mapstructure:"vcs.repository.ref.revisions_ahead"`
-	VcsRepositoryRefRevisionsBehind   MetricConfig `mapstructure:"vcs.repository.ref.revisions_behind"`
 	VcsRepositoryRefTime              MetricConfig `mapstructure:"vcs.repository.ref.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		VcsRefRevisionsDelta: MetricConfig{
+			Enabled: true,
+		},
 		VcsRepositoryChangeCount: MetricConfig{
 			Enabled: true,
 		},
@@ -69,12 +71,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcsRepositoryRefLinesDeleted: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryRefRevisionsAhead: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryRefRevisionsBehind: MetricConfig{
 			Enabled: true,
 		},
 		VcsRepositoryRefTime: MetricConfig{

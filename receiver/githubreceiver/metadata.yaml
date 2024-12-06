@@ -42,6 +42,12 @@ attributes:
     enum:
       - open
       - merged
+  vcs.revision_delta.direction:
+    description: The type of revision comparison.
+    type: string
+    enum:
+      - ahead
+      - behind
 
 metrics:
   vcs.repository.count:
@@ -65,20 +71,20 @@ metrics:
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
-  vcs.repository.ref.revisions_ahead:
+  vcs.ref.revisions_delta:
     enabled: true
-    description: The number of revisions (commits) a ref (branch) is ahead of the default branch (trunk).
+    description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
     unit: "{revision}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
-  vcs.repository.ref.revisions_behind:
-    enabled: true
-    description: The number of revisions (commits) a ref (branch) is behind the default branch (trunk).
-    unit: "{revision}"
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.revision_delta.direction]
+  # vcs.repository.ref.revisions_behind:
+  #   enabled: true
+  #   description: The number of revisions (commits) a ref (branch) is behind the default branch (trunk).
+  #   unit: "{revision}"
+  #   gauge:
+  #     value_type: int
+  #   attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
   vcs.repository.ref.lines_added:
     enabled: true
     description: The number of lines added in a ref (branch) relative to the default branch (trunk).
