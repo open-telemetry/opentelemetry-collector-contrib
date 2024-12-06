@@ -36,11 +36,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
-var (
-	_ extensioncapabilities.PipelineWatcher = (*opampAgent)(nil)
-	_ componentstatus.Watcher               = (*opampAgent)(nil)
-)
-
 type statusAggregator interface {
 	Subscribe(scope status.Scope, verbosity status.Verbosity) (<-chan *status.AggregateStatus, status.UnsubscribeFunc)
 	RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event)
@@ -89,6 +84,8 @@ var (
 	_ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
 	_ extensioncapabilities.Dependent              = (*opampAgent)(nil)
 	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
+	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
+	_ componentstatus.Watcher                      = (*opampAgent)(nil)
 )
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
