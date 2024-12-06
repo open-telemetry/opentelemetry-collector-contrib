@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/upload"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -18,23 +19,26 @@ import (
 
 type s3Exporter struct {
 	config     *Config
-	dataWriter dataWriter
+	signalType string
+	uploader   upload.Manager
 	logger     *zap.Logger
 	marshaler  marshaler
 }
 
-func newS3Exporter(config *Config,
+func newS3Exporter(
+	config *Config,
+	signalType string,
 	params exporter.Settings,
 ) *s3Exporter {
 	s3Exporter := &s3Exporter{
 		config:     config,
-		dataWriter: &s3Writer{},
+		signalType: signalType,
 		logger:     params.Logger,
 	}
 	return s3Exporter
 }
 
-func (e *s3Exporter) start(_ context.Context, host component.Host) error {
+func (e *s3Exporter) start(ctx context.Context, host component.Host) error {
 	var m marshaler
 	var err error
 	if e.config.Encoding != nil {
@@ -48,6 +52,12 @@ func (e *s3Exporter) start(_ context.Context, host component.Host) error {
 	}
 
 	e.marshaler = m
+
+	up, err := newUploadManager(ctx, e.config, e.signalType, m.format())
+	if err != nil {
+		return err
+	}
+	e.uploader = up
 	return nil
 }
 
@@ -61,7 +71,7 @@ func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) err
 		return err
 	}
 
-	return e.dataWriter.writeBuffer(ctx, buf, e.config, "metrics", e.marshaler.format())
+	return e.uploader.Upload(ctx, buf)
 }
 
 func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
@@ -70,7 +80,7 @@ func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 		return err
 	}
 
-	return e.dataWriter.writeBuffer(ctx, buf, e.config, "logs", e.marshaler.format())
+	return e.uploader.Upload(ctx, buf)
 }
 
 func (e *s3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
@@ -79,5 +89,5 @@ func (e *s3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) er
 		return err
 	}
 
-	return e.dataWriter.writeBuffer(ctx, buf, e.config, "traces", e.marshaler.format())
+	return e.uploader.Upload(ctx, buf)
 }
