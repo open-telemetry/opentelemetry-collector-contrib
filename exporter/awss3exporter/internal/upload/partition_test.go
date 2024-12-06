@@ -61,7 +61,7 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ts := time.Date(2024, 01, 24, 6, 40, 20, 0, time.Local)
+			ts := time.Date(2024, 0o1, 24, 6, 40, 20, 0, time.Local)
 
 			assert.Equal(t, tc.expect, tc.inputs.Build(ts), "Must match the expected value")
 		})
@@ -99,7 +99,7 @@ func TestPartitionKeyInputsBucketPrefix(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			ts := time.Date(2024, 01, 24, 6, 40, 20, 0, time.Local)
+			ts := time.Date(2024, 0o1, 24, 6, 40, 20, 0, time.Local)
 
 			assert.Equal(t, tc.expect, tc.inputs.bucketKeyPrefix(ts), "Must match the expected partition key")
 		})

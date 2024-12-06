@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
@@ -45,7 +44,7 @@ func TestS3ManagerUpload(t *testing.T) {
 		{
 			name: "successful upload",
 			handler: func(t *testing.T) http.Handler {
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					_, _ = io.Copy(io.Discard, r.Body)
 					_ = r.Body.Close()
 
@@ -64,7 +63,7 @@ func TestS3ManagerUpload(t *testing.T) {
 		{
 			name: "successful compression upload",
 			handler: func(t *testing.T) http.Handler {
-				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					assert.Equal(
 						t,
 						"/my-bucket/telemetry/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics.gz",
@@ -73,11 +72,13 @@ func TestS3ManagerUpload(t *testing.T) {
 					)
 
 					gr, err := gzip.NewReader(r.Body)
-					require.NoError(t, err, "Must not error creating gzip reader")
+					if !assert.NoError(t, err, "Must not error creating gzip reader") {
+						return
+					}
 
 					data, err := io.ReadAll(gr)
 					assert.Equal(t, []byte("hello world"), data, "Must match the expected data")
-					require.NoError(t, err, "Must not error reading data from reader")
+					assert.NoError(t, err, "Must not error reading data from reader")
 
 					_ = gr.Close()
 					_ = r.Body.Close()
@@ -103,7 +104,7 @@ func TestS3ManagerUpload(t *testing.T) {
 		},
 		{
 			name: "failed upload",
-			handler: func(t *testing.T) http.Handler {
+			handler: func(_ *testing.T) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					_, _ = io.Copy(io.Discard, r.Body)
 					_ = r.Body.Close()
@@ -142,7 +143,7 @@ func TestS3ManagerUpload(t *testing.T) {
 
 			// Using a mocked virtual clock to fix the timestamp used
 			// to reduce the potential of flakey tests
-			mc := clock.NewMock(time.Date(2024, 01, 10, 10, 30, 40, 100, time.Local))
+			mc := clock.NewMock(time.Date(2024, 0o1, 10, 10, 30, 40, 100, time.Local))
 
 			err := sm.Upload(
 				clock.Context(context.Background(), mc),

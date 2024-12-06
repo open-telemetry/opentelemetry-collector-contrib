@@ -12,11 +12,9 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
-var (
-	compressionFileExtensions = map[configcompression.Type]string{
-		configcompression.TypeGzip: ".gz",
-	}
-)
+var compressionFileExtensions = map[configcompression.Type]string{
+	configcompression.TypeGzip: ".gz",
+}
 
 type PartitionKeyBuilder struct {
 	// PartitionPrefix defines the S3 directory (key)
@@ -38,7 +36,7 @@ type PartitionKeyBuilder struct {
 	// Compression defines algorithm used on the
 	// body before uploaded.
 	Compression configcompression.Type
-	// UniqueKeyFunc allows for overwritting the default behaviour of
+	// UniqueKeyFunc allows for overwritting the default behavior of
 	// generating a new unique string to avoid collosions on file upload
 	// across many different instances.
 	//
@@ -64,9 +62,7 @@ func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time) string {
 }
 
 func (pki *PartitionKeyBuilder) fileName() string {
-	var (
-		suffix string
-	)
+	var suffix string
 
 	if pki.FileFormat != "" {
 		suffix = "." + pki.FileFormat
