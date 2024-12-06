@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.115.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.115.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/oauth2 v0.23.0
+	golang.org/x/oauth2 v0.24.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53
 )
 
