@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/configtcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
@@ -40,9 +39,9 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					TCPClientSettings: configtcp.TCPClientSettings{
-						Timeout: 10 * time.Second,
-					},
+					//TCPClientSettings: configtcp.TCPClientSettings{
+					//	Timeout: 10 * time.Second,
+					//},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 
@@ -73,7 +72,7 @@ func TestNewFactory(t *testing.T) {
 					nil,
 					consumertest.NewNop(),
 				)
-				require.ErrorIs(t, err, errConfigNotTCPCheck)
+				require.ErrorIs(t, err, errConfigTCPCheck)
 			},
 		},
 	}

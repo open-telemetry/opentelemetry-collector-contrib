@@ -61,15 +61,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTcpcheckDurationDataPoint(ts, 1, "tcp.endpoint-val")
+			mb.RecordTcpcheckDurationDataPoint(ts, 1, "tcpcheck.endpoint-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcp.endpoint-val", "error.message-val")
+			mb.RecordTcpcheckErrorDataPoint(ts, 1, "tcpcheck.endpoint-val", "error.code-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTcpcheckStatusDataPoint(ts, 1, "tcp.endpoint-val")
+			mb.RecordTcpcheckStatusDataPoint(ts, 1, "tcpcheck.endpoint-val")
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -99,15 +99,15 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Measures the duration of TCP connection.", ms.At(i).Description())
-					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, "ms", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tcp.endpoint")
+					attrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "tcp.endpoint-val", attrVal.Str())
+					assert.EqualValues(t, "tcpcheck.endpoint-val", attrVal.Str())
 				case "tcpcheck.error":
 					assert.False(t, validatedMetrics["tcpcheck.error"], "Found a duplicate in the metrics slice: tcpcheck.error")
 					validatedMetrics["tcpcheck.error"] = true
@@ -122,12 +122,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tcp.endpoint")
+					attrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "tcp.endpoint-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("error.message")
+					assert.EqualValues(t, "tcpcheck.endpoint-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("error.code")
 					assert.True(t, ok)
-					assert.EqualValues(t, "error.message-val", attrVal.Str())
+					assert.EqualValues(t, "error.code-val", attrVal.Str())
 				case "tcpcheck.status":
 					assert.False(t, validatedMetrics["tcpcheck.status"], "Found a duplicate in the metrics slice: tcpcheck.status")
 					validatedMetrics["tcpcheck.status"] = true
@@ -140,9 +140,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("tcp.endpoint")
+					attrVal, ok := dp.Attributes().Get("tcpcheck.endpoint")
 					assert.True(t, ok)
-					assert.EqualValues(t, "tcp.endpoint-val", attrVal.Str())
+					assert.EqualValues(t, "tcpcheck.endpoint-val", attrVal.Str())
 				}
 			}
 		})

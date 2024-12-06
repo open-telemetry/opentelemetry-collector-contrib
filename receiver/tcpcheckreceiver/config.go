@@ -5,36 +5,77 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
+	"fmt"
 	"net"
+	"strconv"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
+
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/configtcp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
 // Predefined error responses for configuration validation failures
 var (
-	errMissingEndpoint   = errors.New(`"endpoint" not specified in config`)
-	errInvalidEndpoint   = errors.New(`"endpoint" is invalid`)
-	errConfigNotTCPCheck = errors.New("config was not a TCP check receiver config")
+	errInvalidEndpoint = errors.New(`"Endpoint" must be in the form of <hostname>:<port>`)
+	errMissingTargets  = errors.New(`No targets specified`)
+	errConfigTCPCheck  = errors.New(`Invalid Config`)
 )
 
+// Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	configtcp.TCPClientSettings    `mapstructure:",squash"`
-	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
 }
 
-func (c Config) Validate() (err error) {
-	if c.TCPClientSettings.Endpoint == "" {
-		err = multierr.Append(err, errMissingEndpoint)
-	} else if strings.Contains(c.TCPClientSettings.Endpoint, " ") {
-		err = multierr.Append(err, errInvalidEndpoint)
-	} else if _, _, splitErr := net.SplitHostPort(c.TCPClientSettings.Endpoint); splitErr != nil {
-		err = multierr.Append(splitErr, errInvalidEndpoint)
+func validatePort(port string) error {
+	portNum, err := strconv.Atoi(port)
+	if err != nil {
+		return fmt.Errorf("provided port is not a number: %s", port)
 	}
-	return
+	if portNum < 1 || portNum > 65535 {
+		return fmt.Errorf("provided port is out of valid range (1-65535): %d", portNum)
+	}
+	return nil
+}
+
+func validateTarget(cfg *confignet.TCPAddrConfig) error {
+	var err error
+
+	if cfg.Endpoint == "" {
+		return errMissingTargets
+	}
+
+	if strings.Contains(cfg.Endpoint, "://") {
+		return fmt.Errorf("endpoint contains a scheme, which is not allowed: %s", cfg.Endpoint)
+	}
+
+	_, port, parseErr := net.SplitHostPort(cfg.Endpoint)
+	if parseErr != nil {
+		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr)
+	}
+
+	portParseErr := validatePort(port)
+	if portParseErr != nil {
+		return fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), portParseErr)
+	}
+
+	return err
+}
+
+func (cfg *Config) Validate() error {
+	var err error
+
+	if len(cfg.Targets) == 0 {
+		err = multierr.Append(err, errMissingTargets)
+	}
+
+	for _, target := range cfg.Targets {
+		err = multierr.Append(err, validateTarget(target))
+	}
+
+	return err
 }

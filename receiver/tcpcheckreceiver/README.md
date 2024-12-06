@@ -6,7 +6,7 @@
 | Stability     | [development]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Ftcpcheck%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Ftcpcheck) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Ftcpcheck%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Ftcpcheck) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@yanfeng1992](https://www.github.com/yanfeng1992) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@yanfeng1992](https://www.github.com/yanfeng1992), [@michael-burt](https://www.github.com/michael-burt), [@ZenoCC-Peng](https://www.github.com/ZenoCC-Peng) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -20,22 +20,26 @@ This receiver creates stats by connecting to an TCP server.
 The following settings are required:
 - `endpoint`
 
-
-
 The following settings are optional:
 
 - `collection_interval` (default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
 
+## Example Configuration
 
-### Example Configuration
+Targets are 
 
 ```yaml
 receivers:
-  sshcheck:
-    endpoint: localhost:80
-    collection_interval: 60s
+  tcpcheck:
+    targets:
+      - endpoint: example.com:443
+        dialer: 
+          timeout: 15s
+      - endpoint: foobar.com:8080
+        dialer: 
+          timeout: 15s
+      - endpoint: localhost:10901
 ```
-
 The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). 
 
 ## Metrics

@@ -18,13 +18,13 @@ Measures the duration of TCP connection.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ns | Gauge | Int |
+| ms | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| tcp.endpoint | Full TCP endpoint | Any Str |
+| tcpcheck.endpoint | TCP endpoint | Any Str |
 
 ### tcpcheck.error
 
@@ -38,8 +38,8 @@ Records errors occurring during TCP check.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| tcp.endpoint | Full TCP endpoint | Any Str |
-| error.message | Error message recorded during check | Any Str |
+| tcpcheck.endpoint | TCP endpoint | Any Str |
+| error.code | Error code recorded during check | Any Str |
 
 ### tcpcheck.status
 
@@ -53,4 +53,4 @@ Records errors occurring during TCP check.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| tcp.endpoint | Full TCP endpoint | Any Str |
+| tcpcheck.endpoint | TCP endpoint | Any Str |

@@ -1,5 +1,4 @@
 type: tcpcheck
-scope_name: otelcol/tcpcheckreceiver
 
 status:
   class: receiver
@@ -7,33 +6,33 @@ status:
     development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [atoulme,yanfeng1992]
+    active: [atoulme, yanfeng1992, michael-burt, ZenoCC-Peng]
 
 resource_attributes:
 
 attributes:
-  error.message:
-    description: Error message recorded during check
+  error.code:
+    description: Error code recorded during check
     type: string
-  tcp.endpoint:
-    description: Full TCP endpoint
+  tcpcheck.endpoint:
+    description: TCP endpoint
     type: string
 
 metrics:
+  tcpcheck.duration:
+    description: Measures the duration of TCP connection.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [tcpcheck.endpoint]
   tcpcheck.status:
     description: 1 if the TCP client successfully connected, otherwise 0.
     enabled: true
     gauge:
       value_type: int
     unit: "1"
-    attributes: [tcp.endpoint]
-  tcpcheck.duration:
-    description: Measures the duration of TCP connection.
-    enabled: true
-    gauge:
-      value_type: int
-    unit: ns
-    attributes: [tcp.endpoint]
+    attributes: [tcpcheck.endpoint]
   tcpcheck.error:
     description: Records errors occurring during TCP check.
     enabled: true
@@ -42,4 +41,4 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
     unit: "{error}"
-    attributes: [tcp.endpoint,error.message]
+    attributes: [tcpcheck.endpoint, error.code]

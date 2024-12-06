@@ -5,14 +5,13 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/configtcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
@@ -24,30 +23,53 @@ func NewFactory() receiver.Factory {
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
+//func createDefaultConfig() component.Config {
+//	cfg := scraperhelper.NewDefaultControllerConfig()
+//	// ??
+//	cfg.CollectionInterval = 10 * time.Second
+//
+//	return &Config{
+//		ControllerConfig: cfg,
+//		// do we need to add timeout?
+//		TCPClientSettings: configtcp.TCPClientSettings{
+//			Timeout: 10 * time.Second,
+//		},
+//		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+//	}
+//}
+
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
-	cfg.CollectionInterval = 10 * time.Second
 
 	return &Config{
-		ControllerConfig: cfg,
-		TCPClientSettings: configtcp.TCPClientSettings{
-			Timeout: 10 * time.Second,
-		},
+		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Targets:              []*confignet.TCPAddrConfig{},
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-	cfg, ok := rConf.(*Config)
+func createMetricsReceiver(
+	_ context.Context,
+	settings receiver.Settings,
+	cfg component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	tlsCheckConfig, ok := cfg.(*Config)
 	if !ok {
-		return nil, errConfigNotTCPCheck
+		return nil, errConfigTCPCheck
 	}
 
-	tcpCheckScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, tcpCheckScraper.scrape, scraperhelper.WithStart(tcpCheckScraper.start))
+	mp := newScraper(tlsCheckConfig, settings, getConnectionState)
+	s, err := scraperhelper.NewScraperWithoutType(mp.scrape)
 	if err != nil {
 		return nil, err
 	}
+	opt := scraperhelper.AddScraperWithType(metadata.Type, s)
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(
+		&tlsCheckConfig.ControllerConfig,
+		settings,
+		consumer,
+		opt,
+	)
 }

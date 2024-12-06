@@ -21,12 +21,12 @@ type metricTcpcheckDuration struct {
 func (m *metricTcpcheckDuration) init() {
 	m.data.SetName("tcpcheck.duration")
 	m.data.SetDescription("Measures the duration of TCP connection.")
-	m.data.SetUnit("ns")
+	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTcpcheckDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tcpEndpointAttributeValue string) {
+func (m *metricTcpcheckDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -34,7 +34,7 @@ func (m *metricTcpcheckDuration) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("tcp.endpoint", tcpEndpointAttributeValue)
+	dp.Attributes().PutStr("tcpcheck.endpoint", tcpcheckEndpointAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -79,7 +79,7 @@ func (m *metricTcpcheckError) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTcpcheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tcpEndpointAttributeValue string, errorMessageAttributeValue string) {
+func (m *metricTcpcheckError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string, errorCodeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -87,8 +87,8 @@ func (m *metricTcpcheckError) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("tcp.endpoint", tcpEndpointAttributeValue)
-	dp.Attributes().PutStr("error.message", errorMessageAttributeValue)
+	dp.Attributes().PutStr("tcpcheck.endpoint", tcpcheckEndpointAttributeValue)
+	dp.Attributes().PutStr("error.code", errorCodeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -131,7 +131,7 @@ func (m *metricTcpcheckStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTcpcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tcpEndpointAttributeValue string) {
+func (m *metricTcpcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -139,7 +139,7 @@ func (m *metricTcpcheckStatus) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("tcp.endpoint", tcpEndpointAttributeValue)
+	dp.Attributes().PutStr("tcpcheck.endpoint", tcpcheckEndpointAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -269,7 +269,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/tcpcheckreceiver")
+	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricTcpcheckDuration.emit(ils.Metrics())
@@ -297,18 +297,18 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordTcpcheckDurationDataPoint adds a data point to tcpcheck.duration metric.
-func (mb *MetricsBuilder) RecordTcpcheckDurationDataPoint(ts pcommon.Timestamp, val int64, tcpEndpointAttributeValue string) {
-	mb.metricTcpcheckDuration.recordDataPoint(mb.startTime, ts, val, tcpEndpointAttributeValue)
+func (mb *MetricsBuilder) RecordTcpcheckDurationDataPoint(ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string) {
+	mb.metricTcpcheckDuration.recordDataPoint(mb.startTime, ts, val, tcpcheckEndpointAttributeValue)
 }
 
 // RecordTcpcheckErrorDataPoint adds a data point to tcpcheck.error metric.
-func (mb *MetricsBuilder) RecordTcpcheckErrorDataPoint(ts pcommon.Timestamp, val int64, tcpEndpointAttributeValue string, errorMessageAttributeValue string) {
-	mb.metricTcpcheckError.recordDataPoint(mb.startTime, ts, val, tcpEndpointAttributeValue, errorMessageAttributeValue)
+func (mb *MetricsBuilder) RecordTcpcheckErrorDataPoint(ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string, errorCodeAttributeValue string) {
+	mb.metricTcpcheckError.recordDataPoint(mb.startTime, ts, val, tcpcheckEndpointAttributeValue, errorCodeAttributeValue)
 }
 
 // RecordTcpcheckStatusDataPoint adds a data point to tcpcheck.status metric.
-func (mb *MetricsBuilder) RecordTcpcheckStatusDataPoint(ts pcommon.Timestamp, val int64, tcpEndpointAttributeValue string) {
-	mb.metricTcpcheckStatus.recordDataPoint(mb.startTime, ts, val, tcpEndpointAttributeValue)
+func (mb *MetricsBuilder) RecordTcpcheckStatusDataPoint(ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string) {
+	mb.metricTcpcheckStatus.recordDataPoint(mb.startTime, ts, val, tcpcheckEndpointAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
