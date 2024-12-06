@@ -10,6 +10,24 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.27.0
     scopeMetrics:
       - metrics:
+          - description: The number of refs of type branch in a repository.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: vcs.ref.head.type
+                      value:
+                        stringValue: branch
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: repo1
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcs.ref.count
+            unit: '{ref}'
           - description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
             gauge:
               dataPoints:
@@ -53,6 +71,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.ref.revisions_delta
             unit: '{revision}'
+          - description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
+            gauge:
+              dataPoints:
+                - asInt: "86400"
+                  attributes:
+                    - key: vcs.ref.head.name
+                      value:
+                        stringValue: main
+                    - key: vcs.ref.head.type
+                      value:
+                        stringValue: branch
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcs.ref.time
+            unit: s
           - description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
             gauge:
               dataPoints:
@@ -128,24 +167,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.repository.count
             unit: '{repository}'
-          - description: The number of refs of type branch in a repository.
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: vcs.ref.head.type
-                      value:
-                        stringValue: branch
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: repo1
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.ref.count
-            unit: '{ref}'
           - description: The number of lines added in a ref (branch) relative to the default branch (trunk).
             gauge:
               dataPoints:
@@ -188,27 +209,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.repository.ref.lines_deleted
             unit: '{line}'
-          - description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
-            gauge:
-              dataPoints:
-                - asInt: "86400"
-                  attributes:
-                    - key: vcs.ref.head.name
-                      value:
-                        stringValue: main
-                    - key: vcs.ref.head.type
-                      value:
-                        stringValue: branch
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: ""
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.ref.time
-            unit: s
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
           version: latest

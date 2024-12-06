@@ -28,22 +28,28 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for github metrics.
 type MetricsConfig struct {
+	VcsRefCount                       MetricConfig `mapstructure:"vcs.ref.count"`
 	VcsRefRevisionsDelta              MetricConfig `mapstructure:"vcs.ref.revisions_delta"`
+	VcsRefTime                        MetricConfig `mapstructure:"vcs.ref.time"`
 	VcsRepositoryChangeCount          MetricConfig `mapstructure:"vcs.repository.change.count"`
 	VcsRepositoryChangeTimeOpen       MetricConfig `mapstructure:"vcs.repository.change.time_open"`
 	VcsRepositoryChangeTimeToApproval MetricConfig `mapstructure:"vcs.repository.change.time_to_approval"`
 	VcsRepositoryChangeTimeToMerge    MetricConfig `mapstructure:"vcs.repository.change.time_to_merge"`
 	VcsRepositoryContributorCount     MetricConfig `mapstructure:"vcs.repository.contributor.count"`
 	VcsRepositoryCount                MetricConfig `mapstructure:"vcs.repository.count"`
-	VcsRepositoryRefCount             MetricConfig `mapstructure:"vcs.repository.ref.count"`
 	VcsRepositoryRefLinesAdded        MetricConfig `mapstructure:"vcs.repository.ref.lines_added"`
 	VcsRepositoryRefLinesDeleted      MetricConfig `mapstructure:"vcs.repository.ref.lines_deleted"`
-	VcsRepositoryRefTime              MetricConfig `mapstructure:"vcs.repository.ref.time"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		VcsRefCount: MetricConfig{
+			Enabled: true,
+		},
 		VcsRefRevisionsDelta: MetricConfig{
+			Enabled: true,
+		},
+		VcsRefTime: MetricConfig{
 			Enabled: true,
 		},
 		VcsRepositoryChangeCount: MetricConfig{
@@ -64,16 +70,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcsRepositoryCount: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryRefCount: MetricConfig{
-			Enabled: true,
-		},
 		VcsRepositoryRefLinesAdded: MetricConfig{
 			Enabled: true,
 		},
 		VcsRepositoryRefLinesDeleted: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryRefTime: MetricConfig{
 			Enabled: true,
 		},
 	}

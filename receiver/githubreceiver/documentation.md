@@ -12,6 +12,22 @@ metrics:
     enabled: false
 ```
 
+### vcs.ref.count
+
+The number of refs of type branch in a repository.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ref} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
+| vcs.repository.name | The name of the VCS repository. | Any Str |
+| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
+
 ### vcs.ref.revisions_delta
 
 The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
@@ -29,6 +45,23 @@ The number of revisions (commits) a ref (branch) is ahead/behind the branch from
 | vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
 | vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
 | vcs.revision_delta.direction | The type of revision comparison. | Str: ``ahead``, ``behind`` |
+
+### vcs.ref.time
+
+Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
+| vcs.repository.name | The name of the VCS repository. | Any Str |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
 
 ### vcs.repository.change.count
 
@@ -102,22 +135,6 @@ The number of repositories in an organization.
 | ---- | ----------- | ---------- |
 | {repository} | Gauge | Int |
 
-### vcs.repository.ref.count
-
-The number of refs of type branch in a repository.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {ref} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
-
 ### vcs.repository.ref.lines_added
 
 The number of lines added in a ref (branch) relative to the default branch (trunk).
@@ -142,23 +159,6 @@ The number of lines deleted in a ref (branch) relative to the default branch (tr
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {line} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
-
-### vcs.repository.ref.time
-
-Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
 
 #### Attributes
 

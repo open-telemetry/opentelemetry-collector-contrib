@@ -122,7 +122,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			mux.Lock()
 
 			refType := metadata.AttributeVcsRefHeadTypeBranch
-			ghs.mb.RecordVcsRepositoryRefCountDataPoint(now, int64(count), url, name, refType)
+			ghs.mb.RecordVcsRefCountDataPoint(now, int64(count), url, name, refType)
 
 			// Iterate through the refs (branches) populating the Branch focused
 			// metrics
@@ -153,7 +153,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					continue
 				}
 
-				ghs.mb.RecordVcsRepositoryRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, refType)
+				ghs.mb.RecordVcsRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, refType)
 				ghs.mb.RecordVcsRepositoryRefLinesAddedDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, refType)
 				ghs.mb.RecordVcsRepositoryRefLinesDeletedDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, refType)
 			}

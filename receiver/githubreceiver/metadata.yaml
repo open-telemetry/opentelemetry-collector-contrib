@@ -57,14 +57,14 @@ metrics:
     gauge:
       value_type: int
     attributes: []
-  vcs.repository.ref.count:
+  vcs.ref.count:
     enabled: true
     description: The number of refs of type branch in a repository.
     unit: "{ref}"
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.type]
-  vcs.repository.ref.time:
+  vcs.ref.time:
     enabled: true
     description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
     unit: s
@@ -78,13 +78,6 @@ metrics:
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.revision_delta.direction]
-  # vcs.repository.ref.revisions_behind:
-  #   enabled: true
-  #   description: The number of revisions (commits) a ref (branch) is behind the default branch (trunk).
-  #   unit: "{revision}"
-  #   gauge:
-  #     value_type: int
-  #   attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
   vcs.repository.ref.lines_added:
     enabled: true
     description: The number of lines added in a ref (branch) relative to the default branch (trunk).

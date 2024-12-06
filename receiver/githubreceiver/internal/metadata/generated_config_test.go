@@ -25,17 +25,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					VcsRefCount:                       MetricConfig{Enabled: true},
 					VcsRefRevisionsDelta:              MetricConfig{Enabled: true},
+					VcsRefTime:                        MetricConfig{Enabled: true},
 					VcsRepositoryChangeCount:          MetricConfig{Enabled: true},
 					VcsRepositoryChangeTimeOpen:       MetricConfig{Enabled: true},
 					VcsRepositoryChangeTimeToApproval: MetricConfig{Enabled: true},
 					VcsRepositoryChangeTimeToMerge:    MetricConfig{Enabled: true},
 					VcsRepositoryContributorCount:     MetricConfig{Enabled: true},
 					VcsRepositoryCount:                MetricConfig{Enabled: true},
-					VcsRepositoryRefCount:             MetricConfig{Enabled: true},
 					VcsRepositoryRefLinesAdded:        MetricConfig{Enabled: true},
 					VcsRepositoryRefLinesDeleted:      MetricConfig{Enabled: true},
-					VcsRepositoryRefTime:              MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					OrganizationName: ResourceAttributeConfig{Enabled: true},
@@ -47,17 +47,17 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					VcsRefCount:                       MetricConfig{Enabled: false},
 					VcsRefRevisionsDelta:              MetricConfig{Enabled: false},
+					VcsRefTime:                        MetricConfig{Enabled: false},
 					VcsRepositoryChangeCount:          MetricConfig{Enabled: false},
 					VcsRepositoryChangeTimeOpen:       MetricConfig{Enabled: false},
 					VcsRepositoryChangeTimeToApproval: MetricConfig{Enabled: false},
 					VcsRepositoryChangeTimeToMerge:    MetricConfig{Enabled: false},
 					VcsRepositoryContributorCount:     MetricConfig{Enabled: false},
 					VcsRepositoryCount:                MetricConfig{Enabled: false},
-					VcsRepositoryRefCount:             MetricConfig{Enabled: false},
 					VcsRepositoryRefLinesAdded:        MetricConfig{Enabled: false},
 					VcsRepositoryRefLinesDeleted:      MetricConfig{Enabled: false},
-					VcsRepositoryRefTime:              MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					OrganizationName: ResourceAttributeConfig{Enabled: false},

@@ -70,7 +70,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordVcsRefCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", AttributeVcsRefHeadTypeBranch)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordVcsRefRevisionsDeltaDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch, AttributeVcsRevisionDeltaDirectionAhead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcsRefTimeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -97,19 +105,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryRefCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", AttributeVcsRefHeadTypeBranch)
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordVcsRepositoryRefLinesAddedDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRepositoryRefLinesDeletedDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcsRepositoryRefTimeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch)
 
 			rb := mb.NewResourceBuilder()
 			rb.SetOrganizationName("organization.name-val")
@@ -136,6 +136,27 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "vcs.ref.count":
+					assert.False(t, validatedMetrics["vcs.ref.count"], "Found a duplicate in the metrics slice: vcs.ref.count")
+					validatedMetrics["vcs.ref.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of refs of type branch in a repository.", ms.At(i).Description())
+					assert.Equal(t, "{ref}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "branch", attrVal.Str())
 				case "vcs.ref.revisions_delta":
 					assert.False(t, validatedMetrics["vcs.ref.revisions_delta"], "Found a duplicate in the metrics slice: vcs.ref.revisions_delta")
 					validatedMetrics["vcs.ref.revisions_delta"] = true
@@ -163,6 +184,30 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("vcs.revision_delta.direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "ahead", attrVal.Str())
+				case "vcs.ref.time":
+					assert.False(t, validatedMetrics["vcs.ref.time"], "Found a duplicate in the metrics slice: vcs.ref.time")
+					validatedMetrics["vcs.ref.time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "branch", attrVal.Str())
 				case "vcs.repository.change.count":
 					assert.False(t, validatedMetrics["vcs.repository.change.count"], "Found a duplicate in the metrics slice: vcs.repository.change.count")
 					validatedMetrics["vcs.repository.change.count"] = true
@@ -277,27 +322,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "vcs.repository.ref.count":
-					assert.False(t, validatedMetrics["vcs.repository.ref.count"], "Found a duplicate in the metrics slice: vcs.repository.ref.count")
-					validatedMetrics["vcs.repository.ref.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of refs of type branch in a repository.", ms.At(i).Description())
-					assert.Equal(t, "{ref}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
-					assert.True(t, ok)
-					assert.EqualValues(t, "branch", attrVal.Str())
 				case "vcs.repository.ref.lines_added":
 					assert.False(t, validatedMetrics["vcs.repository.ref.lines_added"], "Found a duplicate in the metrics slice: vcs.repository.ref.lines_added")
 					validatedMetrics["vcs.repository.ref.lines_added"] = true
@@ -329,30 +353,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The number of lines deleted in a ref (branch) relative to the default branch (trunk).", ms.At(i).Description())
 					assert.Equal(t, "{line}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
-					assert.True(t, ok)
-					assert.EqualValues(t, "branch", attrVal.Str())
-				case "vcs.repository.ref.time":
-					assert.False(t, validatedMetrics["vcs.repository.ref.time"], "Found a duplicate in the metrics slice: vcs.repository.ref.time")
-					validatedMetrics["vcs.repository.ref.time"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
