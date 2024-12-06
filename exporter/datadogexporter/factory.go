@@ -270,13 +270,10 @@ func (f *factory) createMetricsExporter(
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
 	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
 
-	// These variables are referenced below, but only used if HostMetadata.Enabled
-	var (
-		pcfg             hostmetadata.PusherConfig
-		metadataReporter *inframetadata.Reporter
-	)
+	pcfg := newMetadataConfigfromConfig(cfg)
+	// Don't start a `Reporter` if host metadata is disabled.
+	var metadataReporter *inframetadata.Reporter
 	if cfg.HostMetadata.Enabled {
-		pcfg = newMetadataConfigfromConfig(cfg)
 		metadataReporter, err = f.Reporter(set, pcfg)
 		if err != nil {
 			cancel()
@@ -284,7 +281,7 @@ func (f *factory) createMetricsExporter(
 		}
 	}
 
-	if cfg.OnlyMetadata {
+	if cfg.OnlyMetadata { // implies HostMetadata.Enabled
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
 			f.onceMetadata.Do(func() {
@@ -382,13 +379,10 @@ func (f *factory) createTracesExporter(
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
 	}
 
-	// These variables are referenced below, but only used if HostMetadata.Enabled
-	var (
-		pcfg             hostmetadata.PusherConfig
-		metadataReporter *inframetadata.Reporter
-	)
+	pcfg := newMetadataConfigfromConfig(cfg)
+	// Don't start a `Reporter` if host metadata is disabled.
+	var metadataReporter *inframetadata.Reporter
 	if cfg.HostMetadata.Enabled {
-		pcfg = newMetadataConfigfromConfig(cfg)
 		metadataReporter, err = f.Reporter(set, pcfg)
 		if err != nil {
 			cancel()
@@ -396,7 +390,7 @@ func (f *factory) createTracesExporter(
 		}
 	}
 
-	if cfg.OnlyMetadata {
+	if cfg.OnlyMetadata { // implies HostMetadata.Enabled
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td ptrace.Traces) error {
 			f.onceMetadata.Do(func() {
@@ -477,13 +471,10 @@ func (f *factory) createLogsExporter(
 	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
 
-	// These variables are referenced below, but only used if HostMetadata.Enabled
-	var (
-		pcfg             hostmetadata.PusherConfig
-		metadataReporter *inframetadata.Reporter
-	)
+	pcfg := newMetadataConfigfromConfig(cfg)
+	// Don't start a `Reporter` if host metadata is disabled.
+	var metadataReporter *inframetadata.Reporter
 	if cfg.HostMetadata.Enabled {
-		pcfg = newMetadataConfigfromConfig(cfg)
 		metadataReporter, err = f.Reporter(set, pcfg)
 		if err != nil {
 			cancel()
@@ -498,7 +489,7 @@ func (f *factory) createLogsExporter(
 	}
 
 	switch {
-	case cfg.OnlyMetadata:
+	case cfg.OnlyMetadata: // implies HostMetadata.Enabled
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
 			f.onceMetadata.Do(func() {
