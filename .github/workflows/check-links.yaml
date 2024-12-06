@@ -13,7 +13,6 @@ env:
   # renovate: datasource=github-releases depName=tcort/markdown-link-check
   MD_LINK_CHECK_VERSION: "3.12.2"
 
-
 jobs:
   changedfiles:
     name: changed files
@@ -48,8 +47,9 @@ jobs:
         run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
       - name: Run markdown-link-check
         run: |
+          shopt -s globstar
           if [ -z "${{ needs.changedfiles.outputs.md_files }}" ]; then
-            md=$(find . -type f -name "*.md")
+            md="**/*.md"
           else
             md="${{ needs.changedfiles.outputs.md_files }}"
           fi
