@@ -15,7 +15,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: change.state
+                    - key: vcs.change.state
                       value:
                         stringValue: merged
                     - key: vcs.repository.name
@@ -28,7 +28,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asInt: "1"
                   attributes:
-                    - key: change.state
+                    - key: vcs.change.state
                       value:
                         stringValue: open
                     - key: vcs.repository.name

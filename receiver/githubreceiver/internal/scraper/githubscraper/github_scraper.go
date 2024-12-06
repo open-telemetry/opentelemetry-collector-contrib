@@ -194,8 +194,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			}
 
-			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(open), url, metadata.AttributeChangeStateOpen, name)
-			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(merged), url, metadata.AttributeChangeStateMerged, name)
+			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(open), url, metadata.AttributeVcsChangeStateOpen, name)
+			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(merged), url, metadata.AttributeVcsChangeStateMerged, name)
 			mux.Unlock()
 		}()
 	}

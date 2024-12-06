@@ -13,30 +13,30 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
-// AttributeChangeState specifies the a value change.state attribute.
-type AttributeChangeState int
+// AttributeVcsChangeState specifies the a value vcs.change.state attribute.
+type AttributeVcsChangeState int
 
 const (
-	_ AttributeChangeState = iota
-	AttributeChangeStateOpen
-	AttributeChangeStateMerged
+	_ AttributeVcsChangeState = iota
+	AttributeVcsChangeStateOpen
+	AttributeVcsChangeStateMerged
 )
 
-// String returns the string representation of the AttributeChangeState.
-func (av AttributeChangeState) String() string {
+// String returns the string representation of the AttributeVcsChangeState.
+func (av AttributeVcsChangeState) String() string {
 	switch av {
-	case AttributeChangeStateOpen:
+	case AttributeVcsChangeStateOpen:
 		return "open"
-	case AttributeChangeStateMerged:
+	case AttributeVcsChangeStateMerged:
 		return "merged"
 	}
 	return ""
 }
 
-// MapAttributeChangeState is a helper map of string to AttributeChangeState attribute value.
-var MapAttributeChangeState = map[string]AttributeChangeState{
-	"open":   AttributeChangeStateOpen,
-	"merged": AttributeChangeStateMerged,
+// MapAttributeVcsChangeState is a helper map of string to AttributeVcsChangeState attribute value.
+var MapAttributeVcsChangeState = map[string]AttributeVcsChangeState{
+	"open":   AttributeVcsChangeStateOpen,
+	"merged": AttributeVcsChangeStateMerged,
 }
 
 // AttributeVcsRefHeadType specifies the a value vcs.ref.head.type attribute.
@@ -80,7 +80,7 @@ func (m *metricVcsRepositoryChangeCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryChangeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, changeStateAttributeValue string, vcsRepositoryNameAttributeValue string) {
+func (m *metricVcsRepositoryChangeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsChangeStateAttributeValue string, vcsRepositoryNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -89,7 +89,7 @@ func (m *metricVcsRepositoryChangeCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("change.state", changeStateAttributeValue)
+	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
 }
 
@@ -890,8 +890,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordVcsRepositoryChangeCountDataPoint adds a data point to vcs.repository.change.count metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeCountDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, changeStateAttributeValue AttributeChangeState, vcsRepositoryNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, changeStateAttributeValue.String(), vcsRepositoryNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeCountDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsChangeStateAttributeValue AttributeVcsChangeState, vcsRepositoryNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsChangeStateAttributeValue.String(), vcsRepositoryNameAttributeValue)
 }
 
 // RecordVcsRepositoryChangeTimeOpenDataPoint adds a data point to vcs.repository.change.time_open metric.

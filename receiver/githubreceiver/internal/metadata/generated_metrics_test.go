@@ -70,7 +70,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryChangeCountDataPoint(ts, 1, "vcs.repository.url.full-val", AttributeChangeStateOpen, "vcs.repository.name-val")
+			mb.RecordVcsRepositoryChangeCountDataPoint(ts, 1, "vcs.repository.url.full-val", AttributeVcsChangeStateOpen, "vcs.repository.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -155,7 +155,7 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
 					assert.True(t, ok)
 					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("change.state")
+					attrVal, ok = dp.Attributes().Get("vcs.change.state")
 					assert.True(t, ok)
 					assert.EqualValues(t, "open", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("vcs.repository.name")

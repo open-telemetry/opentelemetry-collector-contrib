@@ -36,7 +36,7 @@ attributes:
     enum:
       - branch
       - tag
-  change.state:
+  vcs.change.state:
     description: The state of a change (pull request)
     type: string
     enum:
@@ -127,7 +127,7 @@ metrics:
     gauge:
       value_type: int
     unit: "{change}"
-    attributes: [vcs.repository.url.full, change.state, vcs.repository.name]
+    attributes: [vcs.repository.url.full, vcs.change.state, vcs.repository.name]
 
 tests:
   config:

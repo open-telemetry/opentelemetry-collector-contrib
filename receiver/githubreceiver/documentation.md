@@ -25,7 +25,7 @@ The number of changes (pull requests) in a repository, categorized by their stat
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
+| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
 | vcs.repository.name | The name of the VCS repository. | Any Str |
 
 ### vcs.repository.change.time_open
