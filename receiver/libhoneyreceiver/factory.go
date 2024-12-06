@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package libhoneyreceiver // import "go.opentelemetry.io/collector/receiver/otlpreceiver"
+package libhoneyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver"
 
 import (
 	"context"
