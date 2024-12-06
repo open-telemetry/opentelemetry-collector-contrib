@@ -1,4 +1,7 @@
-package libhoneyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package libhoneyreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver"
 
 import (
 	"context"
@@ -72,6 +75,7 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 
 	if r.nextTraces != nil {
 		// initialize routes
+		r.settings.Logger.Debug("r.nextTraces found and ready to go")
 	} else {
 		r.settings.Logger.Debug("r.nextTraces is nil for some reason")
 	}

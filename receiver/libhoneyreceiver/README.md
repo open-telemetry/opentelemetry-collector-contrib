@@ -27,7 +27,7 @@ The following settings are required:
   - `endpoint` must set an endpoint. Defaults to `127.0.0.1:8080`
 - `resources`: if the `service.name` field is different, map it here.
 - `scopes`: to get the `library.name` and `library.version` set in the scope section, set them here.
-- `attributes`: if the other trace-related data have different keys, map them here, defautls are otlp-like field names.
+- `attributes`: if the other trace-related data have different keys, map them here, defaults are otlp-like field names.
 
 The following setting is required for refinery traffic since:
 
