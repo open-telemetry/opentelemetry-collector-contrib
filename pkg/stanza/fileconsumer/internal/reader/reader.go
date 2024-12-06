@@ -197,7 +197,15 @@ func (r *Reader) readContents(ctx context.Context) {
 			} else if r.deleteAtEOF {
 				r.delete()
 			}
-			break
+
+			if len(tokens) > 0 {
+				err := r.emitFunc(ctx, tokens)
+				if err != nil {
+					r.set.Logger.Error("failed to emit token", zap.Error(err))
+				}
+				r.Offset = s.Pos()
+			}
+			return
 		}
 
 		token, err := r.decoder.Decode(s.Bytes())
@@ -222,14 +230,6 @@ func (r *Reader) readContents(ctx context.Context) {
 			tokens = tokens[:0]
 			r.Offset = s.Pos()
 		}
-	}
-
-	if len(tokens) > 0 {
-		err := r.emitFunc(ctx, tokens)
-		if err != nil {
-			r.set.Logger.Error("failed to emit token", zap.Error(err))
-		}
-		r.Offset = s.Pos()
 	}
 }
 
