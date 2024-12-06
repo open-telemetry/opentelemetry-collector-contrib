@@ -483,7 +483,7 @@ type metricSplunkHealth struct {
 // init fills splunk.health metric with initial data.
 func (m *metricSplunkHealth) init() {
 	m.data.SetName("splunk.health")
-	m.data.SetDescription("The status (color) of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.")
+	m.data.SetDescription("The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.")
 	m.data.SetUnit("{status}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

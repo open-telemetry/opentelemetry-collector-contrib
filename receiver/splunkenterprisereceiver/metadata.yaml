@@ -353,8 +353,8 @@ metrics:
     attributes: [splunk.host]
   #`services/server/health/splunkd/details`
   splunk.health:
-    enabled: True
-    description: The status (color) of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
+    enabled: false
+    description: The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
     unit: "{status}"
     gauge:
       value_type: int
