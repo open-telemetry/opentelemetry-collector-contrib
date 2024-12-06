@@ -228,6 +228,11 @@ var (
 	}
 )
 
+type DimensionsConfig struct {
+	Enabled   *bool                          `mapstructure:"enabled"`
+	Overrides map[string]map[string][]string `mapstructure:"overrides"`
+}
+
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig    `mapstructure:",squash"`
@@ -246,6 +251,7 @@ type Config struct {
 	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	MaximumNumberOfRecordsPerResource int32                         `mapstructure:"maximum_number_of_records_per_resource"`
 	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
+	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
 }
 
 const (
