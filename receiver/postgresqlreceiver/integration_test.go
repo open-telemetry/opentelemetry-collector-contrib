@@ -52,7 +52,7 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Image: "postgres:9.6.24",
+				Image: "postgres:13.18",
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
@@ -79,6 +79,13 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Metrics.PostgresqlWalDelay.Enabled = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
+				rCfg.Metrics.PostgresqlTupUpdated.Enabled = true
+				rCfg.Metrics.PostgresqlTupReturned.Enabled = true
+				rCfg.Metrics.PostgresqlTupFetched.Enabled = true
+				rCfg.Metrics.PostgresqlTupInserted.Enabled = true
+				rCfg.Metrics.PostgresqlTupDeleted.Enabled = true
+				rCfg.Metrics.PostgresqlBlksHit.Enabled = true
+				rCfg.Metrics.PostgresqlBlksRead.Enabled = true
 				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
 				rCfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 			}),
