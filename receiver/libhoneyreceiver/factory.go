@@ -43,7 +43,7 @@ func createDefaultConfig() component.Config {
 			},
 			TracesURLPaths: defaultTracesURLPaths,
 		},
-		AuthApi: "",
+		AuthAPI: "",
 		Resources: ResourcesConfig{
 			ServiceName: "service.name",
 		},
@@ -52,9 +52,9 @@ func createDefaultConfig() component.Config {
 			LibraryVersion: "library.version",
 		},
 		Attributes: AttributesConfig{
-			TraceId:        "trace.trace_id",
-			SpanId:         "trace.span_id",
-			ParentId:       "trace.parent_id",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
 			Name:           "name",
 			Error:          "error",
 			SpanKind:       "span.kind",
