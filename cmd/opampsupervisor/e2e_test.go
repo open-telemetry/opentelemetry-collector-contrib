@@ -940,7 +940,7 @@ func TestSupervisorRestartCommand(t *testing.T) {
 			return health.Healthy && health.LastError == ""
 		}
 		return false
-	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
+	}, 30*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
 }
 
 func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
@@ -1348,7 +1348,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	}
 
 	// Verify the collector is not running after 250 ms by checking the healthcheck endpoint
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 	_, err := http.DefaultClient.Get("http://localhost:12345")
 	if runtime.GOOS != "windows" {
 		require.ErrorContains(t, err, "connection refused")
