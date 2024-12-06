@@ -28,6 +28,24 @@ The number of refs of type branch in a repository.
 | vcs.repository.name | The name of the VCS repository. | Any Str |
 | vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
 
+### vcs.ref.lines_delta
+
+The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {line} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
+| vcs.repository.name | The name of the VCS repository. | Any Str |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
+| vcs.line_change.type | The type of line change being measured on a ref (branch). | Str: ``added``, ``removed`` |
+
 ### vcs.ref.revisions_delta
 
 The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
@@ -134,40 +152,6 @@ The number of repositories in an organization.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {repository} | Gauge | Int |
-
-### vcs.repository.ref.lines_added
-
-The number of lines added in a ref (branch) relative to the default branch (trunk).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {line} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
-
-### vcs.repository.ref.lines_deleted
-
-The number of lines deleted in a ref (branch) relative to the default branch (trunk).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {line} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
 
 ## Optional Metrics
 

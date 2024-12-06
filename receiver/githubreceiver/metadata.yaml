@@ -48,6 +48,12 @@ attributes:
     enum:
       - ahead
       - behind
+  vcs.line_change.type:
+    description: The type of line change being measured on a ref (branch).
+    type: string
+    enum:
+      - added
+      - removed
 
 metrics:
   vcs.repository.count:
@@ -78,20 +84,13 @@ metrics:
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.revision_delta.direction]
-  vcs.repository.ref.lines_added:
+  vcs.ref.lines_delta:
     enabled: true
-    description: The number of lines added in a ref (branch) relative to the default branch (trunk).
+    description: The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
     unit: "{line}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
-  vcs.repository.ref.lines_deleted:
-    enabled: true
-    description: The number of lines deleted in a ref (branch) relative to the default branch (trunk).
-    unit: "{line}"
-    gauge:
-      value_type: int
-    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.line_change.type]
   vcs.repository.contributor.count:
     enabled: false
     description: The number of unique contributors to a repository.

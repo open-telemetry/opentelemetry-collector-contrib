@@ -28,6 +28,49 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.ref.count
             unit: '{ref}'
+          - description: The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  attributes:
+                    - key: vcs.line_change.type
+                      value:
+                        stringValue: added
+                    - key: vcs.ref.head.name
+                      value:
+                        stringValue: main
+                    - key: vcs.ref.head.type
+                      value:
+                        stringValue: branch
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "9"
+                  attributes:
+                    - key: vcs.line_change.type
+                      value:
+                        stringValue: removed
+                    - key: vcs.ref.head.name
+                      value:
+                        stringValue: main
+                    - key: vcs.ref.head.type
+                      value:
+                        stringValue: branch
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcs.ref.lines_delta
+            unit: '{line}'
           - description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
             gauge:
               dataPoints:
@@ -167,48 +210,6 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.repository.count
             unit: '{repository}'
-          - description: The number of lines added in a ref (branch) relative to the default branch (trunk).
-            gauge:
-              dataPoints:
-                - asInt: "10"
-                  attributes:
-                    - key: vcs.ref.head.name
-                      value:
-                        stringValue: main
-                    - key: vcs.ref.head.type
-                      value:
-                        stringValue: branch
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: ""
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.ref.lines_added
-            unit: '{line}'
-          - description: The number of lines deleted in a ref (branch) relative to the default branch (trunk).
-            gauge:
-              dataPoints:
-                - asInt: "9"
-                  attributes:
-                    - key: vcs.ref.head.name
-                      value:
-                        stringValue: main
-                    - key: vcs.ref.head.type
-                      value:
-                        stringValue: branch
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: ""
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.ref.lines_deleted
-            unit: '{line}'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
           version: latest

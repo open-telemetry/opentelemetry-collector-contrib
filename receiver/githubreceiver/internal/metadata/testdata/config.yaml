@@ -3,6 +3,8 @@ all_set:
   metrics:
     vcs.ref.count:
       enabled: true
+    vcs.ref.lines_delta:
+      enabled: true
     vcs.ref.revisions_delta:
       enabled: true
     vcs.ref.time:
@@ -18,10 +20,6 @@ all_set:
     vcs.repository.contributor.count:
       enabled: true
     vcs.repository.count:
-      enabled: true
-    vcs.repository.ref.lines_added:
-      enabled: true
-    vcs.repository.ref.lines_deleted:
       enabled: true
   resource_attributes:
     organization.name:
@@ -32,6 +30,8 @@ none_set:
   metrics:
     vcs.ref.count:
       enabled: false
+    vcs.ref.lines_delta:
+      enabled: false
     vcs.ref.revisions_delta:
       enabled: false
     vcs.ref.time:
@@ -47,10 +47,6 @@ none_set:
     vcs.repository.contributor.count:
       enabled: false
     vcs.repository.count:
-      enabled: false
-    vcs.repository.ref.lines_added:
-      enabled: false
-    vcs.repository.ref.lines_deleted:
       enabled: false
   resource_attributes:
     organization.name:

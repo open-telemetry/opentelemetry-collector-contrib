@@ -154,8 +154,8 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 
 				ghs.mb.RecordVcsRefTimeDataPoint(now, age, url, branch.Repository.Name, branch.Name, refType)
-				ghs.mb.RecordVcsRepositoryRefLinesAddedDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, refType)
-				ghs.mb.RecordVcsRepositoryRefLinesDeletedDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, refType)
+				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(additions), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsLineChangeTypeAdded)
+				ghs.mb.RecordVcsRefLinesDeltaDataPoint(now, int64(deletions), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsLineChangeTypeRemoved)
 			}
 
 			// Get the contributor count for each of the repositories

@@ -26,6 +26,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					VcsRefCount:                       MetricConfig{Enabled: true},
+					VcsRefLinesDelta:                  MetricConfig{Enabled: true},
 					VcsRefRevisionsDelta:              MetricConfig{Enabled: true},
 					VcsRefTime:                        MetricConfig{Enabled: true},
 					VcsRepositoryChangeCount:          MetricConfig{Enabled: true},
@@ -34,8 +35,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcsRepositoryChangeTimeToMerge:    MetricConfig{Enabled: true},
 					VcsRepositoryContributorCount:     MetricConfig{Enabled: true},
 					VcsRepositoryCount:                MetricConfig{Enabled: true},
-					VcsRepositoryRefLinesAdded:        MetricConfig{Enabled: true},
-					VcsRepositoryRefLinesDeleted:      MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					OrganizationName: ResourceAttributeConfig{Enabled: true},
@@ -48,6 +47,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					VcsRefCount:                       MetricConfig{Enabled: false},
+					VcsRefLinesDelta:                  MetricConfig{Enabled: false},
 					VcsRefRevisionsDelta:              MetricConfig{Enabled: false},
 					VcsRefTime:                        MetricConfig{Enabled: false},
 					VcsRepositoryChangeCount:          MetricConfig{Enabled: false},
@@ -56,8 +56,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcsRepositoryChangeTimeToMerge:    MetricConfig{Enabled: false},
 					VcsRepositoryContributorCount:     MetricConfig{Enabled: false},
 					VcsRepositoryCount:                MetricConfig{Enabled: false},
-					VcsRepositoryRefLinesAdded:        MetricConfig{Enabled: false},
-					VcsRepositoryRefLinesDeleted:      MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					OrganizationName: ResourceAttributeConfig{Enabled: false},
