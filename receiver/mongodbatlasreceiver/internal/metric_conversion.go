@@ -46,9 +46,7 @@ func calculateTotalMetrics(
 
 	for _, meas := range measurements {
 		switch meas.Name {
-		case "DISK_PARTITION_THROUGHPUT_READ":
-			fallthrough
-		case "DISK_PARTITION_THROUGHPUT_WRITE":
+		case "DISK_PARTITION_THROUGHPUT_READ", "DISK_PARTITION_THROUGHPUT_WRITE":
 			if dptTotalMeas == nil {
 				dptTotalMeas = cloneMeasurement(meas)
 				dptTotalMeas.Name = "DISK_PARTITION_THROUGHPUT_TOTAL"
