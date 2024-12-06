@@ -16,7 +16,7 @@ import (
 // Config represents the receiver config settings within the collector's config.yaml
 type Config struct {
 	HTTP       *HTTPConfig      `mapstructure:"http"`
-	AuthApi    string           `mapstructure:"auth_api"`
+	AuthAPI    string           `mapstructure:"auth_api"`
 	Wrapper    string           `mapstructure:"wrapper"`
 	Resources  ResourcesConfig  `mapstructure:"resources"`
 	Scopes     ScopesConfig     `mapstructure:"scopes"`
@@ -40,9 +40,9 @@ type ScopesConfig struct {
 }
 
 type AttributesConfig struct {
-	TraceId        string   `mapstructure:"trace_id"`
-	ParentId       string   `mapstructure:"parent_id"`
-	SpanId         string   `mapstructure:"span_id"`
+	TraceID        string   `mapstructure:"trace_id"`
+	ParentID       string   `mapstructure:"parent_id"`
+	SpanID         string   `mapstructure:"span_id"`
 	Name           string   `mapstructure:"name"`
 	Error          string   `mapstructure:"error"`
 	SpanKind       string   `mapstructure:"spankind"`
@@ -74,8 +74,8 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 			}
 		}
 	}
-	if cleanUrl, err := url.Parse(cfg.AuthApi); err != nil {
-		cfg.AuthApi = cleanUrl.String()
+	if cleanURL, err := url.Parse(cfg.AuthAPI); err != nil {
+		cfg.AuthAPI = cleanURL.String()
 	} else {
 		return err
 	}
