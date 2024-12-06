@@ -24,8 +24,8 @@ attributes:
   vcs.repository.url.full:
     description: The canonical URL of the repository providing the complete HTTPS address.
     type: string
-  repository.name:
-    description: The name of a VCS repository
+  vcs.repository.name:
+    description: The name of a VCS repository.
     type: string
   ref.name:
     description: The name of a VCS branch
@@ -57,77 +57,77 @@ metrics:
     unit: "{ref}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.type]
   vcs.repository.ref.time:
     enabled: true
     description: Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.
     unit: s
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name, ref.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name, ref.type]
   vcs.repository.ref.revisions_ahead:
     enabled: true
     description: The number of revisions (commits) a ref (branch) is ahead of the default branch (trunk).
     unit: "{revision}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name, ref.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name, ref.type]
   vcs.repository.ref.revisions_behind:
     enabled: true
     description: The number of revisions (commits) a ref (branch) is behind the default branch (trunk).
     unit: "{revision}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name, ref.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name, ref.type]
   vcs.repository.ref.lines_added:
     enabled: true
     description: The number of lines added in a ref (branch) relative to the default branch (trunk).
     unit: "{line}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name, ref.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name, ref.type]
   vcs.repository.ref.lines_deleted:
     enabled: true
     description: The number of lines deleted in a ref (branch) relative to the default branch (trunk).
     unit: "{line}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name, ref.type]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name, ref.type]
   vcs.repository.contributor.count:
     enabled: false
     description: The number of unique contributors to a repository.
     unit: "{contributor}"
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name]
+    attributes: [vcs.repository.url.full, vcs.repository.name]
   vcs.repository.change.time_open:
     enabled: true
     description: The amount of time a change (pull request) has been open.
     unit: s
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name]
   vcs.repository.change.time_to_merge:
     enabled: true
     description: The amount of time it took a change (pull request) to go from open to merged.
     unit: s
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name]
   vcs.repository.change.time_to_approval:
     enabled: true
     description: The amount of time it took a change (pull request) to go from open to approved.
     unit: s
     gauge:
       value_type: int
-    attributes: [vcs.repository.url.full, repository.name, ref.name]
+    attributes: [vcs.repository.url.full, vcs.repository.name, ref.name]
   vcs.repository.change.count:
     description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
     enabled: true
     gauge:
       value_type: int
     unit: "{change}"
-    attributes: [vcs.repository.url.full, change.state, repository.name]
+    attributes: [vcs.repository.url.full, change.state, vcs.repository.name]
 
 tests:
   config:

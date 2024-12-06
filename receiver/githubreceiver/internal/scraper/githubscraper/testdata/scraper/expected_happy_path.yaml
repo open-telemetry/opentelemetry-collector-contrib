@@ -18,7 +18,7 @@ resourceMetrics:
                     - key: change.state
                       value:
                         stringValue: merged
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: repo1
                     - key: vcs.repository.url.full
@@ -31,7 +31,7 @@ resourceMetrics:
                     - key: change.state
                       value:
                         stringValue: open
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: repo1
                     - key: vcs.repository.url.full
@@ -49,7 +49,7 @@ resourceMetrics:
                     - key: ref.name
                       value:
                         stringValue: ""
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: repo1
                     - key: vcs.repository.url.full
@@ -67,7 +67,7 @@ resourceMetrics:
                     - key: ref.name
                       value:
                         stringValue: ""
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: repo1
                     - key: vcs.repository.url.full
@@ -93,7 +93,7 @@ resourceMetrics:
                     - key: ref.type
                       value:
                         stringValue: branch
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: repo1
                     - key: vcs.repository.url.full
@@ -114,7 +114,7 @@ resourceMetrics:
                     - key: ref.type
                       value:
                         stringValue: branch
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: ""
                     - key: vcs.repository.url.full
@@ -135,7 +135,7 @@ resourceMetrics:
                     - key: ref.type
                       value:
                         stringValue: branch
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: ""
                     - key: vcs.repository.url.full
@@ -156,7 +156,7 @@ resourceMetrics:
                     - key: ref.type
                       value:
                         stringValue: branch
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: ""
                     - key: vcs.repository.url.full
@@ -177,7 +177,7 @@ resourceMetrics:
                     - key: ref.type
                       value:
                         stringValue: branch
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: ""
                     - key: vcs.repository.url.full
@@ -198,7 +198,7 @@ resourceMetrics:
                     - key: ref.type
                       value:
                         stringValue: branch
-                    - key: repository.name
+                    - key: vcs.repository.name
                       value:
                         stringValue: ""
                     - key: vcs.repository.url.full
