@@ -48,7 +48,7 @@ func (u *udsServer) Close() error {
 func prepareSocket(socketPath string) error {
 	if _, err := os.Stat(socketPath); err == nil {
 		// File exists, remove it
-		if err := os.Remove(socketPath); err != nil {
+		if err = os.Remove(socketPath); err != nil {
 			return fmt.Errorf("failed to remove existing socket file: %w", err)
 		}
 	} else if !os.IsNotExist(err) {
