@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "primary"),
 			expected: &Config{
-				Broker: []string{"myHost:5671"},
+				Broker: "myHost:5671",
 				Auth: Authentication{
 					PlainText: &SaslPlainTextConfig{
 						Username: "otel",
