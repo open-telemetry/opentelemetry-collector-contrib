@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gosnmp/gosnmp"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 )
 

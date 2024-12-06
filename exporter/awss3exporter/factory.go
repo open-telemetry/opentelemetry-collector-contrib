@@ -39,7 +39,7 @@ func createLogsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Logs, error) {
-	s3Exporter := newS3Exporter(config.(*Config), params)
+	s3Exporter := newS3Exporter(config.(*Config), "logs", params)
 
 	return exporterhelper.NewLogs(ctx, params,
 		config,
@@ -51,7 +51,7 @@ func createMetricsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
-	s3Exporter := newS3Exporter(config.(*Config), params)
+	s3Exporter := newS3Exporter(config.(*Config), "metrics", params)
 
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, fmt.Errorf("metrics are not supported by sumo_ic output format")
@@ -67,7 +67,7 @@ func createTracesExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
-	s3Exporter := newS3Exporter(config.(*Config), params)
+	s3Exporter := newS3Exporter(config.(*Config), "traces", params)
 
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, fmt.Errorf("traces are not supported by sumo_ic output format")
