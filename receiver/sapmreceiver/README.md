@@ -25,7 +25,7 @@ The following settings are required:
 
 - `endpoint` (default = `localhost:7276`): Address and port that the SAPM
   receiver should bind to.
-  You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:7276`. This feature gate will be removed in a future release.
+  See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 The following setting are optional:
 
