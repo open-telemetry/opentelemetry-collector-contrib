@@ -15,8 +15,13 @@ Your proposal likely will be accepted if:
 - The proposed functionality is missing,
 - The proposed solution significantly improves user experience and readability for very common use cases,
 - The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
+- The proposed solution makes use of packages from the Go standard library to offer functionality possible through an existing option in a more standard or reliable manner.
 
-It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
+It will be up for discussion if:
+
+- Your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
+- The proposed functionality is not obviously applicable to the needs of a significant number of OTTL users.
+- Your proposal extracts data into a structure with enumerable keys or values and OpenTelemetry semantic conventions do not cover the shape or values for this data.
 
 Your proposal likely won't be accepted if:
 
