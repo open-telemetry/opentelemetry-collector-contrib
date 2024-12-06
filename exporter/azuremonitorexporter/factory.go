@@ -8,6 +8,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
@@ -35,7 +36,9 @@ func NewFactory() exporter.Factory {
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
 type factory struct {
-	tChannel transportChannel
+	mu            sync.RWMutex
+	hasInitLogger bool
+	tChannels     map[component.ID]transportChannel
 }
 
 func createDefaultConfig() component.Config {
@@ -58,7 +61,8 @@ func (f *factory) createTracesExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
+	f.initLogger(set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig, set.Logger)
 	if errInstrumentationKeyOrConnectionString != nil {
 		return nil, errInstrumentationKeyOrConnectionString
 	}
@@ -77,7 +81,8 @@ func (f *factory) createLogsExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
+	f.initLogger(set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig, set.Logger)
 	if errInstrumentationKeyOrConnectionString != nil {
 		return nil, errInstrumentationKeyOrConnectionString
 	}
@@ -96,7 +101,8 @@ func (f *factory) createMetricsExporter(
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
+	f.initLogger(set.Logger)
+	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(set.ID, exporterConfig, set.Logger)
 	if errInstrumentationKeyOrConnectionString != nil {
 		return nil, errInstrumentationKeyOrConnectionString
 	}
@@ -104,35 +110,56 @@ func (f *factory) createMetricsExporter(
 	return newMetricsExporter(exporterConfig, tc, set)
 }
 
+func (f *factory) initLogger(logger *zap.Logger) {
+	if f.hasInitLogger {
+		return
+	}
+	if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
+		appinsights.NewDiagnosticsMessageListener(func(msg string) error {
+			logger.Debug(msg)
+			return nil
+		})
+	}
+	f.hasInitLogger = true
+}
+
 // Configures the transport channel.
 // This method is not thread-safe
-func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) (transportChannel, error) {
-	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
-	// This default channel handles batching, appropriate retries, and is backed by memory.
-	if f.tChannel == nil {
-		connectionVars, err := parseConnectionString(exporterConfig)
-		if err != nil {
-			return nil, err
-		}
+func (f *factory) getTransportChannel(id component.ID, exporterConfig *Config, logger *zap.Logger) (transportChannel, error) {
+	f.mu.RLock()
+	if channel, exists := f.tChannels[id]; exists {
+		f.mu.RUnlock()
+		return channel, nil
+	}
+	f.mu.RUnlock()
 
-		exporterConfig.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
-		exporterConfig.Endpoint = connectionVars.IngestionURL
-		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
-		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
-		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
-		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval
-		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
-		f.tChannel = telemetryClient.Channel()
-
-		// Don't even bother enabling the AppInsights diagnostics listener unless debug logging is enabled
-		if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
-			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
-				logger.Debug(msg)
-				return nil
-			})
-		}
+	// Double-check locking to prevent redundant channel creation
+	if channel, exists := f.tChannels[id]; exists {
+		return channel, nil
 	}
 
-	return f.tChannel, nil
+	connectionVars, err := parseConnectionString(exporterConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	exporterConfig.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
+	exporterConfig.Endpoint = connectionVars.IngestionURL
+	telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
+	telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
+	telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
+	telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval
+
+	telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
+	tChannel := telemetryClient.Channel()
+
+	if f.tChannels == nil {
+		f.tChannels = make(map[component.ID]transportChannel)
+	}
+	f.tChannels[id] = tChannel
+
+	return tChannel, nil
 }
