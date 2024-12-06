@@ -62,22 +62,10 @@ func TestUnmarshal(t *testing.T) {
 			records := [][]byte{compressedRecord}
 
 			got, err := unmarshaler.Unmarshal(records)
-			if testCase.wantErr != nil {
-				require.Error(t, err)
-				require.Equal(t, testCase.wantErr, err)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, got)
-				require.Equal(t, testCase.wantResourceCount, got.ResourceLogs().Len())
-				gotLogCount := 0
-				for i := 0; i < got.ResourceLogs().Len(); i++ {
-					rm := got.ResourceLogs().At(i)
-					require.Equal(t, 1, rm.ScopeLogs().Len())
-					ilm := rm.ScopeLogs().At(0)
-					gotLogCount += ilm.LogRecords().Len()
-				}
-				require.Equal(t, testCase.wantLogCount, gotLogCount)
-			}
+			require.Equal(t, testCase.wantErr, err)
+			require.NotNil(t, got)
+			require.Equal(t, testCase.wantResourceCount, got.ResourceLogs().Len())
+			require.Equal(t, testCase.wantLogCount, got.LogRecordCount())
 		})
 	}
 }

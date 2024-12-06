@@ -45,7 +45,7 @@ func TestToSemConvAttributeKey(t *testing.T) {
 
 func TestMetricBuilder(t *testing.T) {
 	t.Run("WithSingleMetric", func(t *testing.T) {
-		metric := cWMetric{
+		metric := CWMetric{
 			MetricName: "name",
 			Unit:       "unit",
 			Timestamp:  time.Now().UnixMilli(),
@@ -72,7 +72,7 @@ func TestMetricBuilder(t *testing.T) {
 	})
 	t.Run("WithTimestampCollision", func(t *testing.T) {
 		timestamp := time.Now().UnixMilli()
-		metrics := []cWMetric{
+		metrics := []CWMetric{
 			{
 				Timestamp: timestamp,
 				Value:     testCWMetricValue(),
@@ -136,21 +136,21 @@ func TestResourceMetricsBuilder(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			metric := cWMetric{
+			metric := CWMetric{
 				MetricName: "name",
 				Unit:       "unit",
 				Timestamp:  time.Now().UnixMilli(),
 				Value:      testCWMetricValue(),
 				Dimensions: map[string]string{},
 			}
-			attrs := resourceAttributes{
-				metricStreamName: testStreamName,
-				accountID:        testAccountID,
-				region:           testRegion,
-				namespace:        testCase.namespace,
+			attrs := ResourceAttributes{
+				MetricStreamName: testStreamName,
+				AccountID:        testAccountID,
+				Region:           testRegion,
+				Namespace:        testCase.namespace,
 			}
 			gots := pmetric.NewMetrics()
-			rmb := newResourceMetricsBuilder(gots, attrs)
+			rmb := NewResourceMetricsBuilder(gots, attrs)
 			rmb.AddMetric(metric)
 			require.Equal(t, 1, gots.ResourceMetrics().Len())
 			got := gots.ResourceMetrics().At(0)
@@ -167,7 +167,7 @@ func TestResourceMetricsBuilder(t *testing.T) {
 		})
 	}
 	t.Run("WithSameMetricDifferentDimensions", func(t *testing.T) {
-		metrics := []cWMetric{
+		metrics := []CWMetric{
 			{
 				MetricName: "name",
 				Unit:       "unit",
@@ -185,14 +185,14 @@ func TestResourceMetricsBuilder(t *testing.T) {
 				},
 			},
 		}
-		attrs := resourceAttributes{
-			metricStreamName: testStreamName,
-			accountID:        testAccountID,
-			region:           testRegion,
-			namespace:        "AWS/EC2",
+		attrs := ResourceAttributes{
+			MetricStreamName: testStreamName,
+			AccountID:        testAccountID,
+			Region:           testRegion,
+			Namespace:        "AWS/EC2",
 		}
 		gots := pmetric.NewMetrics()
-		rmb := newResourceMetricsBuilder(gots, attrs)
+		rmb := NewResourceMetricsBuilder(gots, attrs)
 		for _, metric := range metrics {
 			rmb.AddMetric(metric)
 		}

@@ -35,11 +35,11 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 }
 
 // Unmarshal deserializes the records into cWLogs and uses the
-// resourceLogsBuilder to group them into a single plog.Logs.
-// Skips invalid cWLogs received in the record and
+// ResourceLogsBuilder to group them into a single plog.Logs.
+// Skips invalid cWLogs received in the record.
 func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 	md := plog.NewLogs()
-	builders := make(map[resourceAttributes]*resourceLogsBuilder)
+	builders := make(map[ResourceAttributes]*ResourceLogsBuilder)
 	for recordIndex, compressedRecord := range records {
 		record, err := compression.Unzip(compressedRecord)
 		if err != nil {
@@ -51,38 +51,40 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 		}
 		// Multiple logs in each record separated by newline character
 		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
-			if len(datum) > 0 {
-				var log cWLog
-				err := json.Unmarshal(datum, &log)
-				if err != nil {
-					u.logger.Error(
-						"Unable to unmarshal input",
-						zap.Error(err),
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
-				}
-				if !u.isValid(log) {
-					u.logger.Error(
-						"Invalid log",
-						zap.Int("datum_index", datumIndex),
-						zap.Int("record_index", recordIndex),
-					)
-					continue
-				}
-				attrs := resourceAttributes{
-					owner:     log.Owner,
-					logGroup:  log.LogGroup,
-					logStream: log.LogStream,
-				}
-				lb, ok := builders[attrs]
-				if !ok {
-					lb = newResourceLogsBuilder(md, attrs)
-					builders[attrs] = lb
-				}
-				lb.AddLog(log)
+			if len(datum) == 0 {
+				continue
 			}
+
+			var log CWLog
+			err := json.Unmarshal(datum, &log)
+			if err != nil {
+				u.logger.Error(
+					"Unable to unmarshal input",
+					zap.Error(err),
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			if !u.isValid(log) {
+				u.logger.Error(
+					"Invalid log",
+					zap.Int("datum_index", datumIndex),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			attrs := ResourceAttributes{
+				Owner:     log.Owner,
+				LogGroup:  log.LogGroup,
+				LogStream: log.LogStream,
+			}
+			lb, ok := builders[attrs]
+			if !ok {
+				lb = NewResourceLogsBuilder(md, attrs)
+				builders[attrs] = lb
+			}
+			lb.AddLog(log)
 		}
 	}
 
@@ -93,8 +95,8 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
 	return md, nil
 }
 
-// isValid validates that the cWLog has been unmarshalled correctly.
-func (u Unmarshaler) isValid(log cWLog) bool {
+// isValid validates that the CWLog has been unmarshalled correctly.
+func (u Unmarshaler) isValid(log CWLog) bool {
 	return log.Owner != "" && log.LogGroup != "" && log.LogStream != ""
 }
 

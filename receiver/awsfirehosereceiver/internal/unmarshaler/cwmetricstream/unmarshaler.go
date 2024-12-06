@@ -37,16 +37,16 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 }
 
 // Unmarshal deserializes the records into cWMetrics and uses the
-// resourceMetricsBuilder to group them into a single pmetric.Metrics.
+// ResourceMetricsBuilder to group them into a single pmetric.Metrics.
 // Skips invalid cWMetrics received in the record and
 func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
-	builders := make(map[resourceAttributes]*resourceMetricsBuilder)
+	builders := make(map[ResourceAttributes]*ResourceMetricsBuilder)
 	for recordIndex, record := range records {
 		// Multiple metrics in each record separated by newline character
 		for datumIndex, datum := range bytes.Split(record, []byte(recordDelimiter)) {
 			if len(datum) > 0 {
-				var metric cWMetric
+				var metric CWMetric
 				err := json.Unmarshal(datum, &metric)
 				if err != nil {
 					u.logger.Error(
@@ -65,15 +65,15 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
 					)
 					continue
 				}
-				attrs := resourceAttributes{
-					metricStreamName: metric.MetricStreamName,
-					namespace:        metric.Namespace,
-					accountID:        metric.AccountID,
-					region:           metric.Region,
+				attrs := ResourceAttributes{
+					MetricStreamName: metric.MetricStreamName,
+					Namespace:        metric.Namespace,
+					AccountID:        metric.AccountID,
+					Region:           metric.Region,
 				}
 				mb, ok := builders[attrs]
 				if !ok {
-					mb = newResourceMetricsBuilder(md, attrs)
+					mb = NewResourceMetricsBuilder(md, attrs)
 					builders[attrs] = mb
 				}
 				mb.AddMetric(metric)
@@ -88,8 +88,8 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-// isValid validates that the cWMetric has been unmarshalled correctly.
-func (u Unmarshaler) isValid(metric cWMetric) bool {
+// isValid validates that the CWMetric has been unmarshalled correctly.
+func (u Unmarshaler) isValid(metric CWMetric) bool {
 	return metric.MetricName != "" && metric.Namespace != "" && metric.Unit != "" && metric.Value != nil
 }
 
