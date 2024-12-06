@@ -269,7 +269,6 @@ func (f *factory) createMetricsExporter(
 	statsIn := make(chan []byte, 1000)
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
 	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
-
 	pcfg := newMetadataConfigfromConfig(cfg)
 	// Don't start a `Reporter` if host metadata is disabled.
 	var metadataReporter *inframetadata.Reporter
@@ -281,7 +280,7 @@ func (f *factory) createMetricsExporter(
 		}
 	}
 
-	if cfg.OnlyMetadata { // implies HostMetadata.Enabled
+	if cfg.OnlyMetadata {
 		pushMetricsFn = func(_ context.Context, md pmetric.Metrics) error {
 			// only sending metadata use only metrics
 			f.onceMetadata.Do(func() {
@@ -390,7 +389,7 @@ func (f *factory) createTracesExporter(
 		}
 	}
 
-	if cfg.OnlyMetadata { // implies HostMetadata.Enabled
+	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td ptrace.Traces) error {
 			f.onceMetadata.Do(func() {
@@ -489,7 +488,7 @@ func (f *factory) createLogsExporter(
 	}
 
 	switch {
-	case cfg.OnlyMetadata: // implies HostMetadata.Enabled
+	case cfg.OnlyMetadata:
 		// only host metadata needs to be sent, once.
 		pusher = func(_ context.Context, td plog.Logs) error {
 			f.onceMetadata.Do(func() {

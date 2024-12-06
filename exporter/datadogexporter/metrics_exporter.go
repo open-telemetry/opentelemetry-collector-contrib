@@ -56,7 +56,7 @@ type metricsExporter struct {
 	retrier          *clientutil.Retrier
 	onceMetadata     *sync.Once
 	sourceProvider   source.Provider
-	metadataReporter *inframetadata.Reporter // will be nil if host metadata is disabled
+	metadataReporter *inframetadata.Reporter
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
 	getPushTime func() uint64

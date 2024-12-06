@@ -44,7 +44,7 @@ type logsExporter struct {
 	sender           *logs.Sender
 	onceMetadata     *sync.Once
 	sourceProvider   source.Provider
-	metadataReporter *inframetadata.Reporter // will be nil if host metadata is disabled
+	metadataReporter *inframetadata.Reporter
 }
 
 // newLogsExporter creates a new instance of logsExporter

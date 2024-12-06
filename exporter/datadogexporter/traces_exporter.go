@@ -51,7 +51,7 @@ type traceExporter struct {
 	onceMetadata     *sync.Once              // onceMetadata ensures that metadata is sent only once across all exporters
 	agent            *agent.Agent            // agent processes incoming traces
 	sourceProvider   source.Provider         // is able to source the origin of a trace (hostname, container, etc)
-	metadataReporter *inframetadata.Reporter // reports host metadata from resource attributes and metrics (will be nil if host metadata is disabled)
+	metadataReporter *inframetadata.Reporter // reports host metadata from resource attributes and metrics
 	retrier          *clientutil.Retrier     // retrier handles retries on requests
 }
 

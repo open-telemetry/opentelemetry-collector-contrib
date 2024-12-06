@@ -31,8 +31,6 @@ import (
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -60,7 +58,7 @@ func TestNewExporter(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: config.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
 			HostnameSource: HostnameSourceFirstResource,
@@ -442,7 +440,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: config.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
 			HostnameSource: HostnameSourceFirstResource,
