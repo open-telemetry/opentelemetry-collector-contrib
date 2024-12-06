@@ -46,7 +46,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "9223372036"
                   attributes:
-                    - key: ref.name
+                    - key: vcs.ref.head.name
                       value:
                         stringValue: ""
                     - key: vcs.repository.name
@@ -64,7 +64,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: ref.name
+                    - key: vcs.ref.head.name
                       value:
                         stringValue: ""
                     - key: vcs.repository.name
@@ -90,7 +90,7 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -108,10 +108,10 @@ resourceMetrics:
               dataPoints:
                 - asInt: "10"
                   attributes:
-                    - key: ref.name
+                    - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -129,10 +129,10 @@ resourceMetrics:
               dataPoints:
                 - asInt: "9"
                   attributes:
-                    - key: ref.name
+                    - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -150,10 +150,10 @@ resourceMetrics:
               dataPoints:
                 - asInt: "1"
                   attributes:
-                    - key: ref.name
+                    - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -171,10 +171,10 @@ resourceMetrics:
               dataPoints:
                 - asInt: "0"
                   attributes:
-                    - key: ref.name
+                    - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name
@@ -187,15 +187,15 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.repository.ref.revisions_behind
             unit: '{revision}'
-          - description: Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.
+          - description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
             gauge:
               dataPoints:
                 - asInt: "86400"
                   attributes:
-                    - key: ref.name
+                    - key: vcs.ref.head.name
                       value:
                         stringValue: main
-                    - key: ref.type
+                    - key: vcs.ref.head.type
                       value:
                         stringValue: branch
                     - key: vcs.repository.name

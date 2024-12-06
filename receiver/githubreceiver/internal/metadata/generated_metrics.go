@@ -39,30 +39,30 @@ var MapAttributeChangeState = map[string]AttributeChangeState{
 	"merged": AttributeChangeStateMerged,
 }
 
-// AttributeRefType specifies the a value ref.type attribute.
-type AttributeRefType int
+// AttributeVcsRefHeadType specifies the a value vcs.ref.head.type attribute.
+type AttributeVcsRefHeadType int
 
 const (
-	_ AttributeRefType = iota
-	AttributeRefTypeBranch
-	AttributeRefTypeTag
+	_ AttributeVcsRefHeadType = iota
+	AttributeVcsRefHeadTypeBranch
+	AttributeVcsRefHeadTypeTag
 )
 
-// String returns the string representation of the AttributeRefType.
-func (av AttributeRefType) String() string {
+// String returns the string representation of the AttributeVcsRefHeadType.
+func (av AttributeVcsRefHeadType) String() string {
 	switch av {
-	case AttributeRefTypeBranch:
+	case AttributeVcsRefHeadTypeBranch:
 		return "branch"
-	case AttributeRefTypeTag:
+	case AttributeVcsRefHeadTypeTag:
 		return "tag"
 	}
 	return ""
 }
 
-// MapAttributeRefType is a helper map of string to AttributeRefType attribute value.
-var MapAttributeRefType = map[string]AttributeRefType{
-	"branch": AttributeRefTypeBranch,
-	"tag":    AttributeRefTypeTag,
+// MapAttributeVcsRefHeadType is a helper map of string to AttributeVcsRefHeadType attribute value.
+var MapAttributeVcsRefHeadType = map[string]AttributeVcsRefHeadType{
+	"branch": AttributeVcsRefHeadTypeBranch,
+	"tag":    AttributeVcsRefHeadTypeTag,
 }
 
 type metricVcsRepositoryChangeCount struct {
@@ -133,7 +133,7 @@ func (m *metricVcsRepositoryChangeTimeOpen) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryChangeTimeOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string) {
+func (m *metricVcsRepositoryChangeTimeOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -143,7 +143,7 @@ func (m *metricVcsRepositoryChangeTimeOpen) recordDataPoint(start pcommon.Timest
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -186,7 +186,7 @@ func (m *metricVcsRepositoryChangeTimeToApproval) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryChangeTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string) {
+func (m *metricVcsRepositoryChangeTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -196,7 +196,7 @@ func (m *metricVcsRepositoryChangeTimeToApproval) recordDataPoint(start pcommon.
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -239,7 +239,7 @@ func (m *metricVcsRepositoryChangeTimeToMerge) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryChangeTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string) {
+func (m *metricVcsRepositoryChangeTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -249,7 +249,7 @@ func (m *metricVcsRepositoryChangeTimeToMerge) recordDataPoint(start pcommon.Tim
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -393,7 +393,7 @@ func (m *metricVcsRepositoryRefCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryRefCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refTypeAttributeValue string) {
+func (m *metricVcsRepositoryRefCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -403,7 +403,7 @@ func (m *metricVcsRepositoryRefCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -446,7 +446,7 @@ func (m *metricVcsRepositoryRefLinesAdded) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryRefLinesAdded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+func (m *metricVcsRepositoryRefLinesAdded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -456,8 +456,8 @@ func (m *metricVcsRepositoryRefLinesAdded) recordDataPoint(start pcommon.Timesta
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
-	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -500,7 +500,7 @@ func (m *metricVcsRepositoryRefLinesDeleted) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryRefLinesDeleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+func (m *metricVcsRepositoryRefLinesDeleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -510,8 +510,8 @@ func (m *metricVcsRepositoryRefLinesDeleted) recordDataPoint(start pcommon.Times
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
-	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -554,7 +554,7 @@ func (m *metricVcsRepositoryRefRevisionsAhead) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryRefRevisionsAhead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+func (m *metricVcsRepositoryRefRevisionsAhead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -564,8 +564,8 @@ func (m *metricVcsRepositoryRefRevisionsAhead) recordDataPoint(start pcommon.Tim
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
-	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -608,7 +608,7 @@ func (m *metricVcsRepositoryRefRevisionsBehind) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryRefRevisionsBehind) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+func (m *metricVcsRepositoryRefRevisionsBehind) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -618,8 +618,8 @@ func (m *metricVcsRepositoryRefRevisionsBehind) recordDataPoint(start pcommon.Ti
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
-	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -656,13 +656,13 @@ type metricVcsRepositoryRefTime struct {
 // init fills vcs.repository.ref.time metric with initial data.
 func (m *metricVcsRepositoryRefTime) init() {
 	m.data.SetName("vcs.repository.ref.time")
-	m.data.SetDescription("Time a ref (branch) created from the default branch (trunk) has existed. The `ref.type` attribute will always be `branch`.")
+	m.data.SetDescription("Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryRefTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue string) {
+func (m *metricVcsRepositoryRefTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -672,8 +672,8 @@ func (m *metricVcsRepositoryRefTime) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("ref.name", refNameAttributeValue)
-	dp.Attributes().PutStr("ref.type", refTypeAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.type", vcsRefHeadTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -895,18 +895,18 @@ func (mb *MetricsBuilder) RecordVcsRepositoryChangeCountDataPoint(ts pcommon.Tim
 }
 
 // RecordVcsRepositoryChangeTimeOpenDataPoint adds a data point to vcs.repository.change.time_open metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeOpenDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeTimeOpen.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeOpenDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeTimeOpen.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
 }
 
 // RecordVcsRepositoryChangeTimeToApprovalDataPoint adds a data point to vcs.repository.change.time_to_approval metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeTimeToApproval.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeTimeToApproval.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
 }
 
 // RecordVcsRepositoryChangeTimeToMergeDataPoint adds a data point to vcs.repository.change.time_to_merge metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeTimeToMerge.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+	mb.metricVcsRepositoryChangeTimeToMerge.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
 }
 
 // RecordVcsRepositoryContributorCountDataPoint adds a data point to vcs.repository.contributor.count metric.
@@ -920,33 +920,33 @@ func (mb *MetricsBuilder) RecordVcsRepositoryCountDataPoint(ts pcommon.Timestamp
 }
 
 // RecordVcsRepositoryRefCountDataPoint adds a data point to vcs.repository.ref.count metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryRefCountDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
-	mb.metricVcsRepositoryRefCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcsRepositoryRefCountDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadTypeAttributeValue AttributeVcsRefHeadType) {
+	mb.metricVcsRepositoryRefCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadTypeAttributeValue.String())
 }
 
 // RecordVcsRepositoryRefLinesAddedDataPoint adds a data point to vcs.repository.ref.lines_added metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryRefLinesAddedDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
-	mb.metricVcsRepositoryRefLinesAdded.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcsRepositoryRefLinesAddedDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue AttributeVcsRefHeadType) {
+	mb.metricVcsRepositoryRefLinesAdded.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsRefHeadTypeAttributeValue.String())
 }
 
 // RecordVcsRepositoryRefLinesDeletedDataPoint adds a data point to vcs.repository.ref.lines_deleted metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryRefLinesDeletedDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
-	mb.metricVcsRepositoryRefLinesDeleted.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcsRepositoryRefLinesDeletedDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue AttributeVcsRefHeadType) {
+	mb.metricVcsRepositoryRefLinesDeleted.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsRefHeadTypeAttributeValue.String())
 }
 
 // RecordVcsRepositoryRefRevisionsAheadDataPoint adds a data point to vcs.repository.ref.revisions_ahead metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryRefRevisionsAheadDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
-	mb.metricVcsRepositoryRefRevisionsAhead.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcsRepositoryRefRevisionsAheadDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue AttributeVcsRefHeadType) {
+	mb.metricVcsRepositoryRefRevisionsAhead.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsRefHeadTypeAttributeValue.String())
 }
 
 // RecordVcsRepositoryRefRevisionsBehindDataPoint adds a data point to vcs.repository.ref.revisions_behind metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryRefRevisionsBehindDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
-	mb.metricVcsRepositoryRefRevisionsBehind.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcsRepositoryRefRevisionsBehindDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue AttributeVcsRefHeadType) {
+	mb.metricVcsRepositoryRefRevisionsBehind.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsRefHeadTypeAttributeValue.String())
 }
 
 // RecordVcsRepositoryRefTimeDataPoint adds a data point to vcs.repository.ref.time metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryRefTimeDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, refNameAttributeValue string, refTypeAttributeValue AttributeRefType) {
-	mb.metricVcsRepositoryRefTime.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, refNameAttributeValue, refTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcsRepositoryRefTimeDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue AttributeVcsRefHeadType) {
+	mb.metricVcsRepositoryRefTime.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsRefHeadTypeAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

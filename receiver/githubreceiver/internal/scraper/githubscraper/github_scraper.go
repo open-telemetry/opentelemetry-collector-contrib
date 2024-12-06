@@ -121,7 +121,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// SetStartTimestamp call from having a nil pointer panic
 			mux.Lock()
 
-			refType := metadata.AttributeRefTypeBranch
+			refType := metadata.AttributeVcsRefHeadTypeBranch
 			ghs.mb.RecordVcsRepositoryRefCountDataPoint(now, int64(count), url, name, refType)
 
 			// Iterate through the refs (branches) populating the Branch focused
