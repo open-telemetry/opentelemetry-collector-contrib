@@ -163,7 +163,7 @@ metrics:
     enabled: true
 ```
 
-### vcs.repository.contributor.count
+### vcs.contributor.count
 
 The number of unique contributors to a repository.
 

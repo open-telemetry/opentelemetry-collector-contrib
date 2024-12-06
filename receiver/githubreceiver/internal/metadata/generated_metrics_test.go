@@ -68,6 +68,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			allMetricsCount++
+			mb.RecordVcsContributorCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRefCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", AttributeVcsRefHeadTypeBranch)
@@ -100,9 +103,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
 
-			allMetricsCount++
-			mb.RecordVcsRepositoryContributorCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val")
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRepositoryCountDataPoint(ts, 1)
@@ -132,6 +132,24 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "vcs.contributor.count":
+					assert.False(t, validatedMetrics["vcs.contributor.count"], "Found a duplicate in the metrics slice: vcs.contributor.count")
+					validatedMetrics["vcs.contributor.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of unique contributors to a repository.", ms.At(i).Description())
+					assert.Equal(t, "{contributor}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
 				case "vcs.ref.count":
 					assert.False(t, validatedMetrics["vcs.ref.count"], "Found a duplicate in the metrics slice: vcs.ref.count")
 					validatedMetrics["vcs.ref.count"] = true
@@ -315,24 +333,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
-				case "vcs.repository.contributor.count":
-					assert.False(t, validatedMetrics["vcs.repository.contributor.count"], "Found a duplicate in the metrics slice: vcs.repository.contributor.count")
-					validatedMetrics["vcs.repository.contributor.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of unique contributors to a repository.", ms.At(i).Description())
-					assert.Equal(t, "{contributor}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
 				case "vcs.repository.count":
 					assert.False(t, validatedMetrics["vcs.repository.count"], "Found a duplicate in the metrics slice: vcs.repository.count")
 					validatedMetrics["vcs.repository.count"] = true

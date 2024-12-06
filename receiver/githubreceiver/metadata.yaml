@@ -91,7 +91,7 @@ metrics:
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.line_change.type]
-  vcs.repository.contributor.count:
+  vcs.contributor.count:
     enabled: false
     description: The number of unique contributors to a repository.
     unit: "{contributor}"

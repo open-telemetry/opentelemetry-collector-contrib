@@ -163,7 +163,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			if err != nil {
 				ghs.logger.Sugar().Errorf("error getting contributor count: %v", zap.Error(err))
 			}
-			ghs.mb.RecordVcsRepositoryContributorCountDataPoint(now, int64(contribs), url, name)
+			ghs.mb.RecordVcsContributorCountDataPoint(now, int64(contribs), url, name)
 
 			// Get change (pull request) data
 			prs, err := ghs.getPullRequests(ctx, genClient, name)

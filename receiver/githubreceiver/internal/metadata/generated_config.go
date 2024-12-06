@@ -28,6 +28,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for github metrics.
 type MetricsConfig struct {
+	VcsContributorCount               MetricConfig `mapstructure:"vcs.contributor.count"`
 	VcsRefCount                       MetricConfig `mapstructure:"vcs.ref.count"`
 	VcsRefLinesDelta                  MetricConfig `mapstructure:"vcs.ref.lines_delta"`
 	VcsRefRevisionsDelta              MetricConfig `mapstructure:"vcs.ref.revisions_delta"`
@@ -36,12 +37,14 @@ type MetricsConfig struct {
 	VcsRepositoryChangeTimeOpen       MetricConfig `mapstructure:"vcs.repository.change.time_open"`
 	VcsRepositoryChangeTimeToApproval MetricConfig `mapstructure:"vcs.repository.change.time_to_approval"`
 	VcsRepositoryChangeTimeToMerge    MetricConfig `mapstructure:"vcs.repository.change.time_to_merge"`
-	VcsRepositoryContributorCount     MetricConfig `mapstructure:"vcs.repository.contributor.count"`
 	VcsRepositoryCount                MetricConfig `mapstructure:"vcs.repository.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		VcsContributorCount: MetricConfig{
+			Enabled: false,
+		},
 		VcsRefCount: MetricConfig{
 			Enabled: true,
 		},
@@ -65,9 +68,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcsRepositoryChangeTimeToMerge: MetricConfig{
 			Enabled: true,
-		},
-		VcsRepositoryContributorCount: MetricConfig{
-			Enabled: false,
 		},
 		VcsRepositoryCount: MetricConfig{
 			Enabled: true,

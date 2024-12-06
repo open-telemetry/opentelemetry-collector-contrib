@@ -1,6 +1,8 @@
 default:
 all_set:
   metrics:
+    vcs.contributor.count:
+      enabled: true
     vcs.ref.count:
       enabled: true
     vcs.ref.lines_delta:
@@ -16,8 +18,6 @@ all_set:
     vcs.repository.change.time_to_approval:
       enabled: true
     vcs.repository.change.time_to_merge:
-      enabled: true
-    vcs.repository.contributor.count:
       enabled: true
     vcs.repository.count:
       enabled: true
@@ -28,6 +28,8 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    vcs.contributor.count:
+      enabled: false
     vcs.ref.count:
       enabled: false
     vcs.ref.lines_delta:
@@ -43,8 +45,6 @@ none_set:
     vcs.repository.change.time_to_approval:
       enabled: false
     vcs.repository.change.time_to_merge:
-      enabled: false
-    vcs.repository.contributor.count:
       enabled: false
     vcs.repository.count:
       enabled: false
