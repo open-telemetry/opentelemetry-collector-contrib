@@ -449,6 +449,11 @@ exporters:
       #
       # tags: ["team:infra", "<TAG_KEY>:<TAG_VALUE>"]
 
+      ## @param reporter_period - duration - optional - default: 30m
+      ## The period at which the host metadata reporter sends host metadata to Datadog.
+      ## The default is 30 minutes.
+      # reporter_period: 30m
+
     ## @param logs - custom object - optional
     ## Logs exporter specific configuration.
     #

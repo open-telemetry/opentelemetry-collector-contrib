@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
@@ -51,10 +52,10 @@ func createMetricsReceiver(
 	}
 	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
 
-	scraper, err := scraperhelper.NewScraperWithoutType(
+	s, err := scraper.NewMetrics(
 		vr.scrape,
-		scraperhelper.WithStart(vr.Start),
-		scraperhelper.WithShutdown(vr.Shutdown),
+		scraper.WithStart(vr.Start),
+		scraper.WithShutdown(vr.Shutdown),
 	)
 	if err != nil {
 		return nil, err
@@ -64,6 +65,6 @@ func createMetricsReceiver(
 		&cfg.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraperWithType(metadata.Type, scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }

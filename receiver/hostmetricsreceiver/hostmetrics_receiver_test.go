@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -223,7 +224,7 @@ func (m *mockConfig) SetEnvMap(_ common.EnvMap) {}
 type errFactory struct{}
 
 func (m *errFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *errFactory) CreateMetricsScraper(context.Context, receiver.Settings, internal.Config) (scraperhelper.Scraper, error) {
+func (m *errFactory) CreateMetricsScraper(context.Context, receiver.Settings, internal.Config) (scraper.Metrics, error) {
 	return nil, errors.New("err1")
 }
 
