@@ -268,6 +268,21 @@ The status of a rolling restart.
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str | false |
 | splunk.splunkd.version | The splunkd version number | Any Str | false |
 
+### splunk.health
+
+The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.feature | The Feature name from the Splunk Health Introspection Endpoint | Any Str |
+| splunk.feature.health | The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint | Any Str |
+
 ### splunk.indexer.throughput
 
 Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
