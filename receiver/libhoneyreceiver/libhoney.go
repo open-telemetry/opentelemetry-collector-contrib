@@ -75,6 +75,7 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 
 	if r.nextTraces != nil {
 		// initialize routes
+		r.settings.Logger.Debug("r.nextTraces found and ready to go")
 	} else {
 		r.settings.Logger.Debug("r.nextTraces is nil for some reason")
 	}
