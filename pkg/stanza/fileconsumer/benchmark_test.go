@@ -189,11 +189,8 @@ func BenchmarkFileInput(b *testing.B) {
 
 			doneChan := make(chan bool, len(files))
 			callback := func(_ context.Context, tokens []emit.Token) error {
-				for _, token := range tokens {
-					if len(token.Body) == 0 {
-						doneChan <- true
-						break
-					}
+				if len(tokens) > 0 && len(tokens[len(tokens)-1].Body) == 0 {
+					doneChan <- true
 				}
 				return nil
 			}
