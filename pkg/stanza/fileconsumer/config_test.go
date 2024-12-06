@@ -220,6 +220,23 @@ func TestUnmarshal(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "sort_by_group_by",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						Regex:   `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
+						SortBy: []matcher.Sort{
+							{
+								SortType: "numeric",
+								RegexKey: "file_num",
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
 				Name: "poll_interval_no_units",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()

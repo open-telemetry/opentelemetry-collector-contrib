@@ -129,7 +129,6 @@ func createTracesExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +197,6 @@ func createLogsExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}

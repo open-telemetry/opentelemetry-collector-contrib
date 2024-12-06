@@ -18,9 +18,10 @@ import (
 // Statement holds a top level Statement for processing telemetry data. A Statement is a combination of a function
 // invocation and the boolean expression to match telemetry for invoking the function.
 type Statement[K any] struct {
-	function  Expr[K]
-	condition BoolExpr[K]
-	origText  string
+	function          Expr[K]
+	condition         BoolExpr[K]
+	origText          string
+	telemetrySettings component.TelemetrySettings
 }
 
 // Execute is a function that will execute the statement's function if the statement's condition is met.
@@ -29,6 +30,11 @@ type Statement[K any] struct {
 // In addition, the functions return value is always returned.
 func (s *Statement[K]) Execute(ctx context.Context, tCtx K) (any, bool, error) {
 	condition, err := s.condition.Eval(ctx, tCtx)
+	defer func() {
+		if s.telemetrySettings.Logger != nil {
+			s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", s.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+		}
+	}()
 	if err != nil {
 		return nil, false, err
 	}
@@ -150,9 +156,10 @@ func (p *Parser[K]) ParseStatement(statement string) (*Statement[K], error) {
 		return nil, err
 	}
 	return &Statement[K]{
-		function:  function,
-		condition: expression,
-		origText:  statement,
+		function:          function,
+		condition:         expression,
+		origText:          statement,
+		telemetrySettings: p.telemetrySettings,
 	}, nil
 }
 
@@ -332,10 +339,9 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
-	s.telemetrySettings.Logger.Debug("initial TransformContext", zap.Any("TransformContext", tCtx))
+	s.telemetrySettings.Logger.Debug("initial TransformContext before executing StatementSequence", zap.Any("TransformContext", tCtx))
 	for _, statement := range s.statements {
-		_, condition, err := statement.Execute(ctx, tCtx)
-		s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", statement.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
+		_, _, err := statement.Execute(ctx, tCtx)
 		if err != nil {
 			if s.errorMode == PropagateError {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
