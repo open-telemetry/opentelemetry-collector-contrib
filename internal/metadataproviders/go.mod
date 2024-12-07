@@ -8,7 +8,7 @@ require (
 	github.com/docker/docker v27.3.1+incompatible
 	github.com/hashicorp/consul/api v1.30.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.115.0
-	github.com/shirou/gopsutil/v4 v4.24.10
+	github.com/shirou/gopsutil/v4 v4.24.11
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/semconv v0.115.0
 	go.opentelemetry.io/otel v1.32.0
