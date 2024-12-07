@@ -1,10 +1,14 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package sampling
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"testing"
 )
 
 func TestSetAttrOnScopeSpans_Empty(t *testing.T) {
@@ -17,7 +21,6 @@ func TestSetAttrOnScopeSpans_Empty(t *testing.T) {
 }
 
 func TestSetAttrOnScopeSpans_Many(t *testing.T) {
-
 	assertAttrExists := func(t *testing.T, attrs pcommon.Map, key string, value string) {
 		v, ok := attrs.Get(key)
 		assert.True(t, ok)

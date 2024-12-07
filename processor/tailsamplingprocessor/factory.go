@@ -7,8 +7,9 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
