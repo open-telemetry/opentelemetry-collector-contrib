@@ -105,7 +105,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	for _, repo := range repos {
 		repo := repo
 		name := repo.Name
-        url := repo.Url
+		url := repo.Url
 		trunk := repo.DefaultBranchRef.Name
 		now := now
 
