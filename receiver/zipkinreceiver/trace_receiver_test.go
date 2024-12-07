@@ -58,8 +58,10 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: tt.args.address,
+				Protocols: ProtocolTypes{
+					HTTP: confighttp.ServerConfig{
+						Endpoint: tt.args.address,
+					},
 				},
 			}
 			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopSettings())
@@ -80,8 +82,10 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:" + portStr,
+		Protocols: ProtocolTypes{
+			HTTP: confighttp.ServerConfig{
+				Endpoint: "localhost:" + portStr,
+			},
 		},
 	}
 	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
@@ -128,8 +132,10 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "localhost:0",
+				Protocols: ProtocolTypes{
+					HTTP: confighttp.ServerConfig{
+						Endpoint: "localhost:0",
+					},
 				},
 			}
 			zr, err := newReceiver(cfg, sink, receivertest.NewNopSettings())
@@ -221,8 +227,10 @@ func TestReceiverContentTypes(t *testing.T) {
 
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "",
+				Protocols: ProtocolTypes{
+					HTTP: confighttp.ServerConfig{
+						Endpoint: "",
+					},
 				},
 			}
 			zr, err := newReceiver(cfg, next, receivertest.NewNopSettings())
@@ -248,8 +256,10 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "",
+		Protocols: ProtocolTypes{
+			HTTP: confighttp.ServerConfig{
+				Endpoint: "",
+			},
 		},
 	}
 	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopSettings())
@@ -270,8 +280,10 @@ func TestReceiverConsumerError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:9411",
+		Protocols: ProtocolTypes{
+			HTTP: confighttp.ServerConfig{
+				Endpoint: "localhost:9411",
+			},
 		},
 	}
 	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopSettings())
@@ -292,8 +304,10 @@ func TestReceiverConsumerPermanentError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:9411",
+		Protocols: ProtocolTypes{
+			HTTP: confighttp.ServerConfig{
+				Endpoint: "localhost:9411",
+			},
 		},
 	}
 	zr, err := newReceiver(cfg, consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer error"))), receivertest.NewNopSettings())
@@ -418,8 +432,10 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 
 	next := new(consumertest.TracesSink)
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "",
+		Protocols: ProtocolTypes{
+			HTTP: confighttp.ServerConfig{
+				Endpoint: "",
+			},
 		},
 		ParseStringTags: true,
 	}
@@ -459,8 +475,10 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "",
+		Protocols: ProtocolTypes{
+			HTTP: confighttp.ServerConfig{
+				Endpoint: "",
+			},
 		},
 		ParseStringTags: true,
 	}
