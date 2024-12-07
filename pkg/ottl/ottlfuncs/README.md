@@ -393,6 +393,8 @@ The `truncate_all` function truncates all string values in a `pcommon.Map` so th
 
 `target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer.
 
+If truncating at exactly the length results in a broken UTF-8 encoding, `truncate_all` will be truncated before the last UTF-8 character begins.
+
 The map will be mutated such that the number of characters in all string values is less than or equal to the limit. Non-string values are ignored.
 
 Examples:
