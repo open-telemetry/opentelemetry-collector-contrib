@@ -1,0 +1,63 @@
+signaltometrics:
+  spans:
+    - name: span.exp_histogram
+      description: Exponential histogram
+      unit: us
+      include_resource_attributes:
+        - key: key.1
+          default_value: foo
+      attributes:
+        - key: key.2
+          default_value: bar
+      conditions:
+        - attributes["some.optional.1"] != nil
+        - resource.attributes["some.optional.2"] != nil
+      exponential_histogram:
+        max_size: 10
+        value: Microseconds(end_time - start_time)
+        count: "1"
+    - name: span.histogram
+      description: Histogram
+      unit: us
+      include_resource_attributes:
+        - key: key.1
+          default_value: foo
+      attributes:
+        - key: key.2
+          default_value: bar
+      conditions:
+        - attributes["some.optional.1"] != nil
+        - resource.attributes["some.optional.2"] != nil
+      histogram:
+        buckets: [1.1, 11.1, 111.1]
+        value: Microseconds(end_time - start_time)
+        count: "1"
+  datapoints:
+    - name: dp.sum
+      description: Sum
+      unit: ms
+      include_resource_attributes:
+        - key: key.1
+          default_value: foo
+      attributes:
+        - key: key.2
+          default_value: bar
+      conditions:
+        - attributes["some.optional.1"] != nil
+        - IsDouble(attributes["some.optional.1"])
+      sum:
+        value: attributes["some.optional.1"]
+  logs:
+    - name: log.sum
+      description: Sum
+      unit: "1"
+      include_resource_attributes:
+        - key: key.1
+          default_value: foo
+      attributes:
+        - key: key.2
+          default_value: bar
+      conditions:
+        - attributes["some.optional.1"] != nil
+      sum:
+        value: "1"
