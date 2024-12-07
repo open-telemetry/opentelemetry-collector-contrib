@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-func TestSetAttrOnScopeSpans_Empty(t *testing.T) {
+func TestSetAttrOnScopeSpans_Empty(_ *testing.T) {
 	traces := ptrace.NewTraces()
 	traceData := &TraceData{
 		ReceivedBatches: traces,
@@ -61,7 +61,6 @@ func TestSetAttrOnScopeSpans_Many(t *testing.T) {
 
 func BenchmarkSetAttrOnScopeSpans(b *testing.B) {
 	for n := 0; n < b.N; n++ {
-
 		traces := ptrace.NewTraces()
 
 		for i := 0; i < 5; i++ {
