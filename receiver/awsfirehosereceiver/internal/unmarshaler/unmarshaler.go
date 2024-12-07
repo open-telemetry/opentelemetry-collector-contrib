@@ -25,3 +25,12 @@ type LogsUnmarshaler interface {
 	// Type of the serialized messages.
 	Type() string
 }
+
+// Unmarshaler deserializes the message body
+type Unmarshaler interface {
+	// Unmarshal deserializes the records into metrics or logs.
+	Unmarshal(records [][]byte) (pmetric.Metrics, plog.Logs, error)
+
+	// Type of the serialized messages.
+	Type() string
+}
