@@ -86,6 +86,31 @@ func Test_flatten(t *testing.T) {
 			},
 		},
 		{
+			name: "combination with mixed nested slices",
+			target: map[string]any{
+				"name": "test",
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+				"occupants": []any{
+					"user 1",
+					map[string]any{
+						"name": "user 2",
+					},
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"name":             "test",
+				"address.street":   "first",
+				"address.house":    int64(1234),
+				"occupants.0":      "user 1",
+				"occupants.1.name": "user 2",
+			},
+		},
+		{
 			name: "deep nesting",
 			target: map[string]any{
 				"1": map[string]any{
