@@ -45,3 +45,43 @@ func (c *prometheusConverterV2) addGaugeNumberDataPoints(dataPoints pmetric.Numb
 		c.addSample(sample, labels)
 	}
 }
+
+func (c *prometheusConverterV2) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
+	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string) {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		lbls := createAttributes(
+			resource,
+			pt.Attributes(),
+			settings.ExternalLabels,
+			nil,
+			true,
+			model.MetricNameLabel,
+			name,
+		)
+		sample := &writev2.Sample{
+			// convert ns to ms
+			Timestamp: convertTimeStamp(pt.Timestamp()),
+		}
+		switch pt.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			sample.Value = float64(pt.IntValue())
+		case pmetric.NumberDataPointValueTypeDouble:
+			sample.Value = pt.DoubleValue()
+		}
+		if pt.Flags().NoRecordedValue() {
+			sample.Value = math.Float64frombits(value.StaleNaN)
+		}
+		ts := c.addSample(sample, lbls)
+
+		// TODO handle exemplars
+
+		if metric.Sum().IsMonotonic() {
+			startTimestamp := pt.StartTimestamp()
+			if startTimestamp == 0 {
+				return
+			}
+			ts.CreatedTimestamp = convertTimeStamp(startTimestamp)
+		}
+	}
+}
