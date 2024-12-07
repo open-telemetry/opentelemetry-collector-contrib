@@ -47,7 +47,7 @@ func newReceiver(
 	}
 
 	mp := newScraper(tlsCheckConfig, settings, getConnectionState)
-	s, err := scraperhelper.NewScraperWithoutType(mp.scrape)
+	s, err := scraperhelper.NewScraper(mp.scrape)
 	if err != nil {
 		return nil, err
 	}
