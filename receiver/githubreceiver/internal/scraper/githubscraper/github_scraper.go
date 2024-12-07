@@ -8,7 +8,7 @@ package githubscraper // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"fmt"
+	// "fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -105,7 +105,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	for _, repo := range repos {
 		repo := repo
 		name := repo.Name
-		url := fmt.Sprint(repo.Url)
+        url := repo.Url
 		trunk := repo.DefaultBranchRef.Name
 		now := now
 

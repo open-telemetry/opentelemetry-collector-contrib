@@ -23,7 +23,7 @@ resourceMetrics:
                         stringValue: repo1
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "1"
@@ -36,7 +36,7 @@ resourceMetrics:
                         stringValue: repo1
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcs.change.count
@@ -57,7 +57,7 @@ resourceMetrics:
                         stringValue: repo1
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcs.change.duration
@@ -75,7 +75,7 @@ resourceMetrics:
                         stringValue: repo1
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcs.change.time_to_merge
@@ -93,7 +93,7 @@ resourceMetrics:
                         stringValue: repo1
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcs.ref.count
@@ -117,7 +117,7 @@ resourceMetrics:
                         stringValue: ""
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
                 - asInt: "9"
@@ -136,7 +136,7 @@ resourceMetrics:
                         stringValue: ""
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcs.ref.lines_delta
@@ -157,7 +157,7 @@ resourceMetrics:
                         stringValue: ""
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                     - key: vcs.revision_delta.direction
                       value:
                         stringValue: ahead
@@ -176,7 +176,7 @@ resourceMetrics:
                         stringValue: ""
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                     - key: vcs.revision_delta.direction
                       value:
                         stringValue: behind
@@ -200,7 +200,7 @@ resourceMetrics:
                         stringValue: ""
                     - key: vcs.repository.url.full
                       value:
-                        stringValue: '{      false false   }'
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcs.ref.time

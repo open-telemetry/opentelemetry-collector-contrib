@@ -12,5 +12,5 @@ bindings:
     DateTime:
         type: time.Time
     URI:
-        type: net/url.URL
+        type: string
 
