@@ -528,6 +528,16 @@ sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy)
 
 As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" decision from another policy would still discard the trace.
 
+### Tracking sampling policy
+To better understand _which_ sampling policy made the decision to include a trace, you can enable tracking the policy responsible for sampling a trace via the `processor.tailsamplingprocessor.recordpolicy` feature gate.
+
+When this feature gate is set, this will add additional attributes on each sampled span scope:
+
+| Attribute                       | Description                                                               | Present?                   |
+|---------------------------------|---------------------------------------------------------------------------|----------------------------|
+| `tailsampling.policy`           | Records the configured name of the policy that sampled a trace            | Always                     |
+| `tailsampling.composite_policy` | Records the configured name of a composite subpolicy that sampled a trace | When composite policy used |
+
 ### Policy Evaluation Errors
 
 ```
