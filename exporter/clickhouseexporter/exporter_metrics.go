@@ -77,7 +77,7 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 	metricsMap := internal.NewMetricsModel(e.tablesConfig)
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		metrics := md.ResourceMetrics().At(i)
-		resAttr := attributesToMap(metrics.Resource().Attributes())
+		resAttr := metrics.Resource().Attributes()
 		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
 			rs := metrics.ScopeMetrics().At(j).Metrics()
 			scopeInstr := metrics.ScopeMetrics().At(j).Scope()
