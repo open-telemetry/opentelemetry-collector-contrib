@@ -160,7 +160,7 @@ func validateClientConfig(cfg confighttp.ClientConfig) error {
 	if cfg.Endpoint != "" {
 		unsupported = append(unsupported, "endpoint")
 	}
-	if cfg.Compression != "" {
+	if cfg.Compression.Type != "" {
 		unsupported = append(unsupported, "compression")
 	}
 	if len(cfg.Headers) > 0 {

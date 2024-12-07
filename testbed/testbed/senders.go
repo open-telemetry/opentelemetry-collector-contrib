@@ -78,7 +78,7 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
-	compression configcompression.Type
+	compression configcompression.TypeWithLevel
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {

@@ -438,3 +438,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ..
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../internal/exp/metrics
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../internal/pdatautil
+
+replace go.opentelemetry.io/collector/config/configcompression => github.com/rnishtala-sumo/opentelemetry-collector/config/configcompression v0.0.0-20241118202008-518d136b719c
+
+replace go.opentelemetry.io/collector/config/confighttp => github.com/rnishtala-sumo/opentelemetry-collector/config/confighttp v0.0.0-20241118202008-518d136b719c

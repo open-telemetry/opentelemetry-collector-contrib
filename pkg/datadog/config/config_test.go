@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -183,7 +184,7 @@ func TestValidate(t *testing.T) {
 				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint:             "endpoint",
-					Compression:          "gzip",
+					Compression:          configcompression.TypeWithLevel{Type: configcompression.TypeGzip, Level: -1},
 					Auth:                 &auth,
 					Headers:              map[string]configopaque.String{"key": "val"},
 					HTTP2ReadIdleTimeout: 250,
