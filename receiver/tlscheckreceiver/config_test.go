@@ -25,7 +25,7 @@ func TestValidate(t *testing.T) {
 				Targets:          []*confignet.TCPAddrConfig{},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
-			expectedErr: ErrMissingTargets,
+			expectedErr: errMissingTargets,
 		},
 		{
 			desc: "invalid endpoint",

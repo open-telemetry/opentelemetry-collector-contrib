@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
 
-var ErrMissingTargets = errors.New(`No targets specified`)
+var errMissingTargets = errors.New(`No targets specified`)
 
 type scraper struct {
 	cfg                *Config
@@ -67,7 +67,7 @@ func (s *scraper) scrapeEndpoint(endpoint string, wg *sync.WaitGroup, mux *sync.
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	if s.cfg == nil || len(s.cfg.Targets) == 0 {
-		return pmetric.NewMetrics(), ErrMissingTargets
+		return pmetric.NewMetrics(), errMissingTargets
 	}
 
 	var wg sync.WaitGroup

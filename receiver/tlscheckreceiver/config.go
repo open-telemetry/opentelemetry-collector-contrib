@@ -18,9 +18,7 @@ import (
 )
 
 // Predefined error responses for configuration validation failures
-var (
-	errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <hostname>:<port>`)
-)
+var errInvalidEndpoint = errors.New(`"endpoint" must be in the form of <hostname>:<port>`)
 
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
@@ -44,7 +42,7 @@ func validateTarget(cfg *confignet.TCPAddrConfig) error {
 	var err error
 
 	if cfg.Endpoint == "" {
-		return ErrMissingTargets
+		return errMissingTargets
 	}
 
 	if strings.Contains(cfg.Endpoint, "://") {
@@ -68,7 +66,7 @@ func (cfg *Config) Validate() error {
 	var err error
 
 	if len(cfg.Targets) == 0 {
-		err = multierr.Append(err, ErrMissingTargets)
+		err = multierr.Append(err, errMissingTargets)
 	}
 
 	for _, target := range cfg.Targets {
