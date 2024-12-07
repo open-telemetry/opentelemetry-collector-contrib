@@ -5,7 +5,6 @@ package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry
 
 // Config is the configuration for the processor.
 type Config struct {
-
 	// GroupByKeys describes the attribute names that are going to be used for grouping.
 	// Empty value is allowed, since processor in such case can compact data
 	GroupByKeys []string `mapstructure:"keys"`

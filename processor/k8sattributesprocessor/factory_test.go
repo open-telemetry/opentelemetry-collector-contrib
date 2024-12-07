@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -41,6 +42,10 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
+	pp, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	assert.NotNil(t, pp)
+	assert.NoError(t, err)
+
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
@@ -54,6 +59,10 @@ func TestCreateProcessor(t *testing.T) {
 
 	lp, err = factory.CreateLogs(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
+	assert.NoError(t, err)
+
+	pp, err = factory.(processorprofiles.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 
 	// Switch it back so other tests run afterwards will not fail on unexpected state

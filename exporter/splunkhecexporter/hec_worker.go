@@ -32,7 +32,7 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 	nb := make([]byte, buf.Len())
 	copy(nb, buf.Bytes())
 	bodyBuf := bytes.NewReader(nb)
-	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), bodyBuf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, hec.url.String(), bodyBuf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}

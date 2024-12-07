@@ -68,7 +68,7 @@ func TestHTTPExporterOptions_TLS(t *testing.T) {
 				err := os.WriteFile(caFile, pem.EncodeToMemory(&pem.Block{
 					Type:  "CERTIFICATE",
 					Bytes: srv.TLS.Certificates[0].Certificate[0],
-				}), 0600)
+				}), 0o600)
 				require.NoError(t, err)
 				cfg.CaFile = caFile
 			}

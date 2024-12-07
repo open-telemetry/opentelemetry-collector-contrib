@@ -133,8 +133,10 @@ func TagMetricSource(metric CIMetric) {
 }
 
 func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]any) {
-	needMoveToKubernetes := map[string]string{ci.ContainerNamekey: "container_name", ci.K8sPodNameKey: "pod_name",
-		ci.PodIDKey: "pod_id"}
+	needMoveToKubernetes := map[string]string{
+		ci.ContainerNamekey: "container_name", ci.K8sPodNameKey: "pod_name",
+		ci.PodIDKey: "pod_id",
+	}
 
 	needCopyToKubernetes := map[string]string{ci.K8sNamespace: "namespace_name", ci.TypeService: "service_name", ci.NodeNameKey: "host"}
 

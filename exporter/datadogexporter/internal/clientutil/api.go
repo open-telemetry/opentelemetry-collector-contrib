@@ -6,6 +6,7 @@ package clientutil // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
@@ -45,7 +46,7 @@ func ValidateAPIKey(ctx context.Context, apiKey string, logger *zap.Logger, apiC
 		return nil
 	}
 	if err != nil {
-		if httpresp != nil && httpresp.StatusCode == 403 {
+		if httpresp != nil && httpresp.StatusCode == http.StatusForbidden {
 			return WrapError(ErrInvalidAPI, httpresp)
 		}
 		logger.Warn("Error while validating API key", zap.Error(err))

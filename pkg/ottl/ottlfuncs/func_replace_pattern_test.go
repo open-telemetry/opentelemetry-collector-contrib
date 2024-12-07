@@ -35,7 +35,6 @@ func createTestFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 }
 
 func hashString[K any](target ottl.StringGetter[K]) ottl.ExprFunc[K] {
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
@@ -245,7 +244,6 @@ func Test_replacePattern(t *testing.T) {
 			tt.want(expected)
 
 			assert.Equal(t, expected, scenarioValue)
-
 		})
 	}
 }

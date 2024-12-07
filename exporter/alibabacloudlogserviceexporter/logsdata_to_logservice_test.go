@@ -88,7 +88,6 @@ func TestLogsDataToLogService(t *testing.T) {
 			})
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
-
 	}
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
@@ -98,7 +97,6 @@ func TestLogsDataToLogService(t *testing.T) {
 		return
 	}
 	for j := 0; j < validLogCount; j++ {
-
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
 		assert.Equal(t, wantLogs[j], gotLogPairs[j])

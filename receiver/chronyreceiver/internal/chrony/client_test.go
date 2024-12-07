@@ -211,7 +211,7 @@ func TestGettingTrackingData(t *testing.T) {
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
 
-			client, err := New(fmt.Sprintf("unix://%s", t.TempDir()), tc.timeout, func(c *client) {
+			client, err := New("unix://"+t.TempDir(), tc.timeout, func(c *client) {
 				c.dialer = func(context.Context, string, string) (net.Conn, error) {
 					if tc.dialTime > tc.timeout {
 						return nil, os.ErrDeadlineExceeded

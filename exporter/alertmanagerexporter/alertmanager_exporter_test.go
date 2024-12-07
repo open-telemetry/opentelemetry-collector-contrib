@@ -190,7 +190,6 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 
 	ls = model.LabelSet{"event_name": "unittest-event", "severity": "info"}
 	assert.Equal(t, ls, alerts[1].Labels)
-
 }
 
 func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
@@ -221,7 +220,6 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 
 	ls := model.LabelSet{"event_name": "unittest-event", "severity": "info"}
 	assert.Equal(t, ls, alerts[0].Labels)
-
 }
 
 func TestAlertManagerExporterAlertPayload(t *testing.T) {
@@ -267,7 +265,6 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	assert.Equal(t, expect.Labels, got[0].Labels)
 	assert.Equal(t, expect.Annotations, got[0].Annotations)
 	assert.Equal(t, expect.GeneratorURL, got[0].GeneratorURL)
-
 }
 
 func TestAlertManagerTracesExporterNoErrors(t *testing.T) {

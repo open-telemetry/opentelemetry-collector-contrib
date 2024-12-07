@@ -143,7 +143,6 @@ func benchmarkCompressor(b *testing.B, format string, length int) {
 // current implementation creates a new context on each compression request
 // this is a test to check no exceptions are raised for executing concurrent compressions
 func TestCompressorConcurrent(t *testing.T) {
-
 	timeout := time.After(15 * time.Second)
 	done := make(chan bool)
 	go func() {
@@ -157,7 +156,6 @@ func TestCompressorConcurrent(t *testing.T) {
 		t.Fatal("Test didn't finish in time")
 	case <-done:
 	}
-
 }
 
 func concurrentCompressFunc(t *testing.T) {
@@ -174,7 +172,6 @@ func concurrentCompressFunc(t *testing.T) {
 	// any single format would do it here, since each exporter can be set to use only one at a time
 	// and the concurrent issue that was present in the past was independent of the format
 	compressFunc, err := compress.NewCompressor("gzip")
-
 	if err != nil {
 		errCh <- err
 		return
@@ -250,7 +247,6 @@ func decompressZlib(input []byte) ([]byte, error) {
 }
 
 func decompressFlate(input []byte) ([]byte, error) {
-
 	r := flate.NewReader(bytes.NewReader(input))
 	defer r.Close()
 

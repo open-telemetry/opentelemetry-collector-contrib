@@ -64,7 +64,7 @@ func (ds *databaseStorage) GetClient(ctx context.Context, kind component.Kind, e
 		fullName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
 	fullName = strings.ReplaceAll(fullName, " ", "")
-	return newClient(ctx, ds.db, fullName)
+	return newClient(ctx, ds.driverName, ds.db, fullName)
 }
 
 func kindString(k component.Kind) string {

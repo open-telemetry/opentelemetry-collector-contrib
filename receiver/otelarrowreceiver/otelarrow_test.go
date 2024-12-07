@@ -575,7 +575,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 		headerBuf.Reset()
 		err := hpd.WriteField(hpack.HeaderField{
 			Name:  "seq",
-			Value: fmt.Sprint(i),
+			Value: strconv.Itoa(i),
 		})
 		require.NoError(t, err)
 		err = hpd.WriteField(hpack.HeaderField{
@@ -584,7 +584,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 		})
 		require.NoError(t, err)
 		expectMDs = append(expectMDs, metadata.MD{
-			"seq":  []string{fmt.Sprint(i)},
+			"seq":  []string{strconv.Itoa(i)},
 			"test": []string{"value"},
 		})
 
@@ -668,7 +668,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 		map[component.ID]component.Component{
 			authID: newTestAuthExtension(t, func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 				if ctx.Value(inStreamCtx{}) != nil {
-					return ctx, fmt.Errorf(errorString)
+					return ctx, errors.New(errorString)
 				}
 				return context.WithValue(ctx, inStreamCtx{}, t), nil
 			}),
@@ -760,7 +760,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 				headerBuf.Reset()
 				err := hpd.WriteField(hpack.HeaderField{
 					Name:  "seq",
-					Value: fmt.Sprint(i),
+					Value: strconv.Itoa(i),
 				})
 				assert.NoError(t, err)
 

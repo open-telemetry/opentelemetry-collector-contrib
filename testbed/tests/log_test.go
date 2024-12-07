@@ -159,10 +159,13 @@ func TestLog10kDPS(t *testing.T) {
 		},
 	}
 
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
+		},
 	}
 
 	for _, test := range tests {
@@ -175,6 +178,7 @@ func TestLog10kDPS(t *testing.T) {
 				performanceResultsSummary,
 				processors,
 				test.extensions,
+				nil,
 			)
 		})
 	}
@@ -238,7 +242,6 @@ func TestLogOtlpSendingQueue(t *testing.T) {
 			nil,
 			nil)
 	})
-
 }
 
 func TestLogLargeFiles(t *testing.T) {
@@ -247,6 +250,7 @@ func TestLogLargeFiles(t *testing.T) {
 		sender       testbed.DataSender
 		receiver     testbed.DataReceiver
 		loadOptions  testbed.LoadOptions
+		resourceSpec testbed.ResourceSpec
 		sleepSeconds int
 	}{
 		{
@@ -262,6 +266,10 @@ func TestLogLargeFiles(t *testing.T) {
 				DataItemsPerSecond: 200000,
 				ItemsPerBatch:      1,
 				Parallel:           100,
+			},
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 150,
 			},
 			sleepSeconds: 100,
 		},
@@ -279,13 +287,21 @@ func TestLogLargeFiles(t *testing.T) {
 				ItemsPerBatch:      10,
 				Parallel:           10,
 			},
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 100,
+				ExpectedMaxRAM: 150,
+			},
 			sleepSeconds: 200,
 		},
 	}
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
-`}
+`,
+		},
+	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ScenarioLong(
@@ -302,10 +318,13 @@ func TestLogLargeFiles(t *testing.T) {
 }
 
 func TestLargeFileOnce(t *testing.T) {
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
+		},
 	}
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
@@ -349,4 +368,44 @@ func TestLargeFileOnce(t *testing.T) {
 
 	tc.StopAgent()
 	tc.ValidateData()
+}
+
+func TestMemoryLimiterHit(t *testing.T) {
+	otlpreceiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+	otlpreceiver.WithRetry(`
+    retry_on_failure:
+      enabled: true
+      max_interval: 5s
+`)
+	otlpreceiver.WithQueue(`
+    sending_queue:
+      enabled: true
+      queue_size: 100000
+      num_consumers: 20
+`)
+	otlpreceiver.WithTimeout(`
+    timeout: 0s
+`)
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "memory_limiter",
+			Body: `
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 300
+    spike_limit_mib: 150
+`,
+		},
+	}
+	ScenarioMemoryLimiterHit(
+		t,
+		testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		otlpreceiver,
+		testbed.LoadOptions{
+			DataItemsPerSecond: 100000,
+			ItemsPerBatch:      1000,
+			Parallel:           1,
+			MaxDelay:           20 * time.Second,
+		},
+		performanceResultsSummary, 100, processors)
 }

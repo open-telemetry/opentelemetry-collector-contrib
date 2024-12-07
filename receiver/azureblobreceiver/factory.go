@@ -24,9 +24,7 @@ const (
 	defaultCloud        = AzureCloudType
 )
 
-var (
-	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
-)
+var errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
 
 type blobReceiverFactory struct {
 	receivers *sharedcomponent.SharedComponents
@@ -60,9 +58,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-
 	receiver, err := f.getReceiver(set, cfg)
-
 	if err != nil {
 		set.Logger.Error(err.Error())
 		return nil, err
@@ -79,9 +75,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
 	receiver, err := f.getReceiver(set, cfg)
-
 	if err != nil {
 		set.Logger.Error(err.Error())
 		return nil, err
@@ -93,8 +87,8 @@ func (f *blobReceiverFactory) createTracesReceiver(
 
 func (f *blobReceiverFactory) getReceiver(
 	set receiver.Settings,
-	cfg component.Config) (component.Component, error) {
-
+	cfg component.Config,
+) (component.Component, error) {
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)

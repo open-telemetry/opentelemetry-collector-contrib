@@ -130,10 +130,13 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 	}
 
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
+		},
 	}
 
 	for _, test := range tests {
@@ -145,6 +148,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.resourceSpec,
 				performanceResultsSummary,
 				processors,
+				nil,
 				nil,
 			)
 		})
@@ -164,28 +168,33 @@ func TestTrace10kSPSJaegerGRPC(t *testing.T) {
 			ExpectedMaxRAM: 100,
 		},
 		performanceResultsSummary,
-		map[string]string{
-			"batch": `
+		[]ProcessorNameAndConfigBody{
+			{
+				Name: "batch",
+				Body: `
   batch:
 `,
+			},
 		},
 		nil,
 	)
 }
 
 func TestTraceNoBackend10kSPS(t *testing.T) {
-
-	limitProcessors := map[string]string{
-		"memory_limiter": `
+	limitProcessors := []ProcessorNameAndConfigBody{
+		{
+			Name: "memory_limiter",
+			Body: `
   memory_limiter:
    check_interval: 100ms
    limit_mib: 20
 `,
+		},
 	}
 
-	noLimitProcessors := map[string]string{}
+	noLimitProcessors := []ProcessorNameAndConfigBody{}
 
-	var processorsConfig = []processorConfig{
+	processorsConfig := []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
@@ -268,7 +277,6 @@ func verifySingleSpan(
 	spanName string,
 	verifyReceived func(span ptrace.Span),
 ) {
-
 	// Clear previously received traces.
 	tc.MockBackend.ClearReceivedItems()
 	startCounter := tc.MockBackend.DataItemsReceived()
@@ -330,11 +338,16 @@ func TestTraceAttributesProcessor(t *testing.T) {
 			require.NoError(t, err)
 
 			// Use processor to add attributes to certain spans.
-			processors := map[string]string{
-				"batch": `
+			processors := []ProcessorNameAndConfigBody{
+				{
+					Name: "batch",
+					Body: `
   batch:
 `,
-				"attributes": `
+				},
+				{
+					Name: "attributes",
+					Body: `
   attributes:
     include:
       match_type: regexp
@@ -345,6 +358,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
         key: "new_attr"
         value: "string value"
 `,
+				},
 			}
 
 			agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
@@ -416,11 +430,16 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 	require.NoError(t, err)
 
 	// Use processor to add attributes to certain spans.
-	processors := map[string]string{
-		"batch": `
+	processors := []ProcessorNameAndConfigBody{
+		{
+			Name: "batch",
+			Body: `
   batch:
 `,
-		"attributes": `
+		},
+		{
+			Name: "attributes",
+			Body: `
   attributes:
     include:
       match_type: regexp
@@ -431,6 +450,7 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
         key: "new_attr"
         value: "string value"
 `,
+		},
 	}
 
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))

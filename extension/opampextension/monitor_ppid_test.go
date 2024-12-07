@@ -79,9 +79,7 @@ func TestMonitorPPID(t *testing.T) {
 		case <-time.After(5 * time.Second):
 			t.Fatalf("Timed out waiting for command to stop")
 		}
-
 	})
-
 }
 
 func longRunningComand(ctx context.Context) *exec.Cmd {

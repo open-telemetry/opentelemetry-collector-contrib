@@ -86,7 +86,7 @@ func writeMetrics(filePath string, metrics pmetric.Metrics, opts ...WriteMetrics
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filePath, b, 0600)
+	return os.WriteFile(filePath, b, 0o600)
 }
 
 // ReadLogs reads a plog.Logs from the specified YAML or JSON file.
@@ -137,7 +137,7 @@ func writeLogs(filePath string, logs plog.Logs) error {
 	if err := enc.Encode(jsonVal); err != nil {
 		return err
 	}
-	return os.WriteFile(filePath, b.Bytes(), 0600)
+	return os.WriteFile(filePath, b.Bytes(), 0o600)
 }
 
 // ReadTraces reads a ptrace.Traces from the specified YAML or JSON file.
@@ -188,5 +188,5 @@ func writeTraces(filePath string, traces ptrace.Traces) error {
 	if err := enc.Encode(jsonVal); err != nil {
 		return err
 	}
-	return os.WriteFile(filePath, b.Bytes(), 0600)
+	return os.WriteFile(filePath, b.Bytes(), 0o600)
 }

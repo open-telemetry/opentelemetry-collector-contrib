@@ -28,7 +28,6 @@ import (
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
 func TestE2E(t *testing.T) {
-
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)

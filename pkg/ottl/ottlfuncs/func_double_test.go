@@ -76,7 +76,6 @@ func Test_Double(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			exprFunc := doubleFunc[any](&ottl.StandardFloatLikeGetter[any]{
-
 				Getter: func(context.Context, any) (any, error) {
 					return test.value, nil
 				},

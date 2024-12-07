@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	createTable     = "create table if not exists %s (key text primary key, value blob)"
-	getQueryText    = "select value from %s where key=?"
-	setQueryText    = "insert into %s(key, value) values(?,?) on conflict(key) do update set value=?"
-	deleteQueryText = "delete from %s where key=?"
+	createTableSqlite = "create table if not exists %s (key text primary key, value blob)"
+	createTable       = "create table if not exists %s (key text primary key, value text)"
+	getQueryText      = "select value from %s where key=$1"
+	setQueryText      = "insert into %s(key, value) values($1,$2) on conflict(key) do update set value=$3"
+	deleteQueryText   = "delete from %s where key=$1"
 )
 
 type dbStorageClient struct {
@@ -30,9 +31,13 @@ type dbStorageClient struct {
 	deleteQuery *sql.Stmt
 }
 
-func newClient(ctx context.Context, db *sql.DB, tableName string) (*dbStorageClient, error) {
+func newClient(ctx context.Context, driverName string, db *sql.DB, tableName string) (*dbStorageClient, error) {
+	createTableSQL := createTable
+	if driverName == "sqlite" {
+		createTableSQL = createTableSqlite
+	}
 	var err error
-	_, err = db.ExecContext(ctx, fmt.Sprintf(createTable, tableName))
+	_, err = db.ExecContext(ctx, fmt.Sprintf(createTableSQL, tableName))
 	if err != nil {
 		return nil, err
 	}

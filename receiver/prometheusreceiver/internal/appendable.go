@@ -39,7 +39,8 @@ func NewAppendable(
 	useCreatedMetric bool,
 	enableNativeHistograms bool,
 	externalLabels labels.Labels,
-	trimSuffixes bool) (storage.Appendable, error) {
+	trimSuffixes bool,
+) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
 		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)

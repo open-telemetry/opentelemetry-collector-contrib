@@ -15,16 +15,20 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/provider"
 )
 
-var _ provider.ClusterNameProvider = (*StringProvider)(nil)
-var _ nodeNameProvider = (*StringProvider)(nil)
+var (
+	_ provider.ClusterNameProvider = (*StringProvider)(nil)
+	_ nodeNameProvider             = (*StringProvider)(nil)
+)
 
 type StringProvider string
 
 func (p StringProvider) ClusterName(context.Context) (string, error) { return string(p), nil }
 func (p StringProvider) NodeName(context.Context) (string, error)    { return string(p), nil }
 
-var _ provider.ClusterNameProvider = (*ErrorProvider)(nil)
-var _ nodeNameProvider = (*ErrorProvider)(nil)
+var (
+	_ provider.ClusterNameProvider = (*ErrorProvider)(nil)
+	_ nodeNameProvider             = (*ErrorProvider)(nil)
+)
 
 type ErrorProvider string
 

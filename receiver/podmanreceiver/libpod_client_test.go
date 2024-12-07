@@ -8,7 +8,6 @@ package podmanreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -60,7 +59,7 @@ func TestStats(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -116,7 +115,7 @@ func TestStatsError(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -150,7 +149,7 @@ func TestList(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -158,7 +157,6 @@ func TestList(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedContainer := container{
-
 		AutoRemove: false,
 		Command:    []string{"nginx", "-g", "daemon off;"},
 		Created:    "2022-05-28T11:25:35.999277074+02:00",
@@ -221,7 +219,7 @@ func TestEvents(t *testing.T) {
 	defer srv.Close()
 
 	config := &Config{
-		Endpoint: fmt.Sprintf("unix://%s", addr),
+		Endpoint: "unix://" + addr,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -238,7 +236,6 @@ func TestEvents(t *testing.T) {
 
 loop:
 	for {
-
 		select {
 		case err := <-errs:
 			if err != nil && !errors.Is(err, io.EOF) {
@@ -252,5 +249,4 @@ loop:
 	}
 
 	assert.Equal(t, expectedEvents, actualEvents)
-
 }

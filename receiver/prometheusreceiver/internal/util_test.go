@@ -30,12 +30,18 @@ var testMetadata = map[string]scrape.MetricMetadata{
 	"poor_name":       {Metric: "poor_name", Type: model.MetricTypeGauge, Help: "", Unit: ""},
 	"poor_name_count": {Metric: "poor_name_count", Type: model.MetricTypeCounter, Help: "", Unit: ""},
 	"scrape_foo":      {Metric: "scrape_foo", Type: model.MetricTypeCounter, Help: "", Unit: ""},
-	"example_process_start_time_seconds": {Metric: "example_process_start_time_seconds",
-		Type: model.MetricTypeGauge, Help: "", Unit: ""},
-	"process_start_time_seconds": {Metric: "process_start_time_seconds",
-		Type: model.MetricTypeGauge, Help: "", Unit: ""},
-	"subprocess_start_time_seconds": {Metric: "subprocess_start_time_seconds",
-		Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"example_process_start_time_seconds": {
+		Metric: "example_process_start_time_seconds",
+		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+	},
+	"process_start_time_seconds": {
+		Metric: "process_start_time_seconds",
+		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+	},
+	"subprocess_start_time_seconds": {
+		Metric: "subprocess_start_time_seconds",
+		Type:   model.MetricTypeGauge, Help: "", Unit: "",
+	},
 }
 
 func TestTimestampFromMs(t *testing.T) {

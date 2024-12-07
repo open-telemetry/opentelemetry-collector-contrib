@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -29,16 +30,14 @@ const (
 	resourceArrayKey  = "array.key"
 )
 
-var (
-	testWriters = newWriterPool(2048)
-)
+var testWriters = newWriterPool(2048)
 
 func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -71,7 +70,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -103,7 +102,7 @@ func TestClientSpanWithPeerService(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -126,7 +125,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
@@ -153,7 +152,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
@@ -260,7 +259,7 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -280,7 +279,7 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -299,7 +298,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	spanName := "GET /com.foo.AnimalService/GetCats"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -318,7 +317,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 func TestSpanWithInvalidTraceId(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "ipv6"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -353,7 +352,7 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -1069,7 +1068,7 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -1098,7 +1097,7 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 	user := "testingT"
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeRPCService] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS.SDK.DynamoDb"
@@ -1126,7 +1125,7 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	user := "testingT"
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeRPCService] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS::DynamoDB"
@@ -1153,7 +1152,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -1200,7 +1199,7 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -1233,7 +1232,7 @@ func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segmen
 	assert.Equal(t, parentID, *segment.ParentID)
 	assert.Equal(t, expectedTraceID, *segment.TraceID)
 	assert.NotNil(t, segment.HTTP)
-	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Equal(t, http.MethodPost, *segment.HTTP.Request.Method)
 	assert.Len(t, segment.Annotations, 2)
 	assert.Nil(t, segment.Annotations[awsRemoteService])
 	assert.Nil(t, segment.Annotations[remoteTarget])
@@ -1292,7 +1291,7 @@ func validateLocalRootServiceSegment(t *testing.T, segment *awsxray.Segment, spa
 func getBasicAttributes() map[string]any {
 	attributes := make(map[string]any)
 
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeMessagingOperation] = "receive"
 
 	attributes["otel.resource.attributes"] = "service.name=myTest"
@@ -1395,7 +1394,7 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 	assert.Len(t, segments[0].Links, 1)
 	assert.Equal(t, expectedTraceID, *segments[0].TraceID)
 	assert.NotNil(t, segments[0].HTTP)
-	assert.Equal(t, "POST", *segments[0].HTTP.Request.Method)
+	assert.Equal(t, http.MethodPost, *segments[0].HTTP.Request.Method)
 	assert.Len(t, segments[0].Annotations, 1)
 	assert.Equal(t, "myAnnotationValue", segments[0].Annotations["myAnnotationKey"])
 	assert.Len(t, segments[0].Metadata["default"], 7)
@@ -1476,7 +1475,7 @@ func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
 	attributes := getBasicAttributes()
 	attributes[awsSpanKind] = "LOCAL_ROOT"
 	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeRPCService] = "SQS"
 	attributes[awsRemoteService] = "AWS.SDK.SQS"
@@ -1538,12 +1537,12 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 	assert.Equal(t, span.ParentSpanID().String(), *segment.ParentID)
 	assert.Len(t, segment.Links, 1)
 	assert.Equal(t, expectedTraceID, *segment.TraceID)
-	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Equal(t, http.MethodPost, *segment.HTTP.Request.Method)
 	assert.Len(t, segment.Annotations, 2)
 	assert.Equal(t, "myRemoteService", segment.Annotations["aws_remote_service"])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
-	var numberOfMetadataKeys = 8
+	numberOfMetadataKeys := 8
 
 	if span.Kind() == ptrace.SpanKindServer {
 		numberOfMetadataKeys = 30

@@ -7,4 +7,16 @@ import (
 	"context"
 )
 
-type Callback func(ctx context.Context, token []byte, attrs map[string]any) error
+type Callback func(ctx context.Context, token Token) error
+
+type Token struct {
+	Body       []byte
+	Attributes map[string]any
+}
+
+func NewToken(body []byte, attrs map[string]any) Token {
+	return Token{
+		Body:       body,
+		Attributes: attrs,
+	}
+}

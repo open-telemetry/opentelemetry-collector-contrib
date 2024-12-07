@@ -26,9 +26,7 @@ const (
 	errCodeThrottlingException = "ThrottlingException"
 )
 
-var (
-	containerInsightsRegexPattern = regexp.MustCompile(`^/aws/.*containerinsights/.*/(performance|prometheus)$`)
-)
+var containerInsightsRegexPattern = regexp.MustCompile(`^/aws/.*containerinsights/.*/(performance|prometheus)$`)
 
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
@@ -53,10 +51,12 @@ func WithUserAgentExtras(userAgentExtras ...string) ClientOption {
 
 // Create a log client based on the actual cloudwatch logs client.
 func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, logger *zap.Logger) *Client {
-	logClient := &Client{svc: svc,
+	logClient := &Client{
+		svc:          svc,
 		logRetention: logRetention,
 		tags:         tags,
-		logger:       logger}
+		logger:       logger,
+	}
 	return logClient
 }
 
@@ -122,10 +122,9 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 				client.logger.Error("cwlog_client: Error occurs in PutLogEvents", zap.Error(awsErr))
 				return err
 			}
-
 		}
 
-		//TODO: Should have metrics to provide visibility of these failures
+		// TODO: Should have metrics to provide visibility of these failures
 		if response != nil {
 			if response.RejectedLogEventsInfo != nil {
 				rejectedLogEventsInfo := response.RejectedLogEventsInfo

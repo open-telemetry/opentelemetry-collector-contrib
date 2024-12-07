@@ -127,7 +127,6 @@ func buildAttributes(dimensions map[string]any) pcommon.Map {
 	attributes := pcommon.NewMap()
 	attributes.EnsureCapacity(len(dimensions))
 	for key, val := range dimensions {
-
 		if strings.HasPrefix(key, "metric_name") || key == "_value" {
 			continue
 		}

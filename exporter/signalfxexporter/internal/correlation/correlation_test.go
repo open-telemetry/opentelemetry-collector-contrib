@@ -44,7 +44,6 @@ func TestTrackerAddSpans(t *testing.T) {
 }
 
 func TestTrackerStart(t *testing.T) {
-
 	tests := []struct {
 		name    string
 		config  *Config

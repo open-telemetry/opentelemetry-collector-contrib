@@ -136,7 +136,7 @@ func TestAttributes_FilterLogs(t *testing.T) {
 	}
 	oCfg.Include = &filterconfig.MatchProperties{
 		Resources: []filterconfig.Attribute{{Key: "name", Value: "^[^i].*"}},
-		//Libraries: []filterconfig.InstrumentationLibrary{{Name: "^[^i].*"}},
+		// Libraries: []filterconfig.InstrumentationLibrary{{Name: "^[^i].*"}},
 		Config: *createConfig(filterset.Regexp),
 	}
 	oCfg.Exclude = &filterconfig.MatchProperties{

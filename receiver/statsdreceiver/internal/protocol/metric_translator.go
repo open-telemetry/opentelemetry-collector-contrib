@@ -13,9 +13,7 @@ import (
 	"gonum.org/v1/gonum/stat"
 )
 
-var (
-	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
-)
+var statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
 
 func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmetric.ScopeMetrics {
 	ilm := pmetric.NewScopeMetrics()

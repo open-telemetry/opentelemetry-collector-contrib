@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -89,7 +89,6 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.False(t, ok)
 		assert.Equal(t, 1, rl.ScopeLogs().Len())
 		assert.Equal(t, 3, logRecords.Len())
-
 	})
 
 	t.Run("Test event.name in watch events", func(t *testing.T) {
@@ -129,7 +128,6 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		eventName, ok := attrs.Get("event.name")
 		require.True(t, ok)
 		assert.EqualValues(t, "generic-name", eventName.AsRaw())
-
 	})
 
 	t.Run("Test event observed timestamp is present", func(t *testing.T) {
@@ -168,5 +166,4 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Positive(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix())
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
-
 }

@@ -49,7 +49,8 @@ func NewMetricsConverter(
 	includes []dpfilters.MetricFilter,
 	nonAlphanumericDimChars string,
 	dropHistogramBuckets bool,
-	processHistograms bool) (*MetricsConverter, error) {
+	processHistograms bool,
+) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err

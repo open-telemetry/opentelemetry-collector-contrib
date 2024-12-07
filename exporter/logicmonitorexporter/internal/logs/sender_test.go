@@ -21,7 +21,6 @@ import (
 )
 
 func TestSendLogs(t *testing.T) {
-
 	t.Run("should not return error", func(t *testing.T) {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			response := lmsdklogs.LMLogIngestResponse{

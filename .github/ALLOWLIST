@@ -24,3 +24,6 @@ internal/common
 ## DEPRECATED components
 
 ## UNMAINTAINED components
+exporter/opensearchexporter/
+extension/observer/ecstaskobserver/
+receiver/jmxreceiver/

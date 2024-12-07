@@ -79,7 +79,6 @@ func (e *logsExporter) shutdown(context.Context) error {
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		resourceLog := rss.At(i)

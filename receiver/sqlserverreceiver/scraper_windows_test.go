@@ -109,9 +109,11 @@ func TestSqlServerScraper(t *testing.T) {
 	require.NoError(t, err)
 }
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
-var goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
-var dbInstance = "db-instance"
+var (
+	goldenScrapePath              = filepath.Join("testdata", "golden_scrape.yaml")
+	goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
+	dbInstance                    = "db-instance"
+)
 
 func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {

@@ -113,6 +113,7 @@ func (m mockAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper,
 		base:   base,
 	}, nil
 }
+
 func (mockAuthClient) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return nil, nil
 }

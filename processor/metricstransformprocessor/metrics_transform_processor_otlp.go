@@ -368,7 +368,6 @@ func canBeCombined(metrics []pmetric.Metric) error {
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.Histogram().AggregationTemporality(), metric.Name(),
 					metric.Histogram().AggregationTemporality())
-
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			if firstMetric.ExponentialHistogram().AggregationTemporality() != metric.ExponentialHistogram().AggregationTemporality() {
@@ -376,7 +375,6 @@ func canBeCombined(metrics []pmetric.Metric) error {
 					"metrics cannot be combined as they have different aggregation temporalities: %v (%v) and %v (%v)",
 					firstMetric.Name(), firstMetric.ExponentialHistogram().AggregationTemporality(), metric.Name(),
 					metric.ExponentialHistogram().AggregationTemporality())
-
 			}
 		}
 	}

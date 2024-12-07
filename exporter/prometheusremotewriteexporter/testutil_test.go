@@ -321,7 +321,8 @@ func getExpHistogramMetric(
 }
 
 func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum *float64, count uint64, bounds []float64,
-	buckets []uint64) pmetric.Metric {
+	buckets []uint64,
+) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

@@ -19,9 +19,7 @@ const (
 	TypeStr = "otlp_v1"
 )
 
-var (
-	errInvalidOTLPFormatStart = errors.New("unable to decode data length from message")
-)
+var errInvalidOTLPFormatStart = errors.New("unable to decode data length from message")
 
 // Unmarshaler for the CloudWatch Metric Stream OpenTelemetry record format.
 //
@@ -42,7 +40,7 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	for recordIndex, record := range records {
-		var dataLen, pos = len(record), 0
+		dataLen, pos := len(record), 0
 		for pos < dataLen {
 			n, nLen := proto.DecodeVarint(record)
 			if nLen == 0 && n == 0 {

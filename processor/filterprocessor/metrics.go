@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/multierr"
@@ -29,7 +30,7 @@ type filterMetricProcessor struct {
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[ottldatapoint.TransformContext]
-	telemetry         *filterProcessorTelemetry
+	telemetry         *filterTelemetry
 	logger            *zap.Logger
 }
 
@@ -39,7 +40,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 		logger: set.Logger,
 	}
 
-	fpt, err := newfilterProcessorTelemetry(set)
+	fpt, err := newFilterTelemetry(set, pipeline.SignalMetrics)
 	if err != nil {
 		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
@@ -173,7 +174,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	})
 
 	metricDataPointCountAfterFilters := md.DataPointCount()
-	fmp.telemetry.record(triggerMetricDataPointsDropped, int64(metricDataPointCountBeforeFilters-metricDataPointCountAfterFilters))
+	fmp.telemetry.record(ctx, int64(metricDataPointCountBeforeFilters-metricDataPointCountAfterFilters))
 
 	if errors != nil {
 		fmp.logger.Error("failed processing metrics", zap.Error(errors))

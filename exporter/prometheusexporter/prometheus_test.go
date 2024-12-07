@@ -135,11 +135,6 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = httpClient.Get("https://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -196,11 +191,6 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -280,11 +270,6 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -359,11 +344,6 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -441,11 +421,6 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
-		// trigger a get so that the server cleans up our keepalive socket
-		var resp *http.Response
-		resp, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err, "Failed to perform a scrape")
-		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)

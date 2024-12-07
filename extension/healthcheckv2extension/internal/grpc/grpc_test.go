@@ -741,7 +741,6 @@ func TestCheck(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestWatch(t *testing.T) {

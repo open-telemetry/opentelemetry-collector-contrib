@@ -71,7 +71,7 @@ func TestBodyMarshalerWithMapType(t *testing.T) {
 	m.PutDouble("foobardouble", 0.006)
 	m.PutInt("foobarint", 1)
 
-	var expect = `{"bar":"bar","foo":"foo","foobar":false,"foobardouble":0.006,"foobarint":1}`
+	expect := `{"bar":"bar","foo":"foo","foobar":false,"foobardouble":0.006,"foobarint":1}`
 
 	marshaler := &bodyMarshaler{}
 	require.NotNil(t, marshaler)

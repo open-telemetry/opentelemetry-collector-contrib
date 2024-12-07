@@ -408,6 +408,69 @@ func TestRecombineProcess(t *testing.T) {
 	}
 }
 
+func TestProcessWithDockerTime(t *testing.T) {
+	cases := []struct {
+		name           string
+		op             func() (operator.Operator, error)
+		input          *entry.Entry
+		expectedOutput *entry.Entry
+	}{
+		{
+			"docker",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			&entry.Entry{
+				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
+				Attributes: map[string]any{
+					"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+				},
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"log.iostream":  "stdout",
+					"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+				},
+				Body: "INFO: log line here",
+				Resource: map[string]any{
+					"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+					"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+					"k8s.container.name":          "kube-scheduler44",
+					"k8s.container.restart_count": "1",
+					"k8s.namespace.name":          "some",
+				},
+				Timestamp: time.Date(2029, time.March, 30, 8, 31, 20, 545192187, time.UTC),
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			op, err := tc.op()
+			require.NoError(t, err)
+			defer func() { require.NoError(t, op.Stop()) }()
+			r := op.(*Parser)
+
+			fake := testutil.NewFakeOutput(t)
+			r.OutputOperators = ([]operator.Operator{fake})
+
+			require.NoError(t, r.Process(ctx, tc.input))
+
+			fake.ExpectEntry(t, tc.expectedOutput)
+
+			select {
+			case e := <-fake.Received:
+				require.FailNow(t, "Received unexpected entry: ", e)
+			default:
+			}
+		})
+	}
+}
+
 func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 	cases := []struct {
 		name           string
@@ -570,7 +633,6 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 }
 
 func TestProcessWithTimeRemovalFlagDisabled(t *testing.T) {
-
 	require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), false))
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), true))

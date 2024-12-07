@@ -10,7 +10,7 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
@@ -200,7 +200,7 @@ func (v *vcenterMetricScraper) buildHostMetrics(
 	}
 
 	if hs.Config == nil || hs.Config.VsanHostConfig == nil || hs.Config.VsanHostConfig.ClusterInfo == nil {
-		v.logger.Info(fmt.Sprintf("couldn't determine UUID necessary for vSAN metrics for host %s", hs.Name))
+		v.logger.Info("couldn't determine UUID necessary for vSAN metrics for host " + hs.Name)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 		return vmRefToComputeRef, nil
 	}
@@ -383,7 +383,7 @@ func (v *vcenterMetricScraper) buildClusterMetrics(
 	v.recordClusterStats(ts, cr, vmGroupInfo)
 	vSANConfig := cr.ConfigurationEx.(*types.ClusterConfigInfoEx).VsanConfigInfo
 	if vSANConfig == nil || vSANConfig.Enabled == nil || !*vSANConfig.Enabled || vSANConfig.DefaultConfig == nil {
-		v.logger.Info(fmt.Sprintf("couldn't determine UUID necessary for vSAN metrics for cluster %s", cr.Name))
+		v.logger.Info("couldn't determine UUID necessary for vSAN metrics for cluster " + cr.Name)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 		return err
 	}

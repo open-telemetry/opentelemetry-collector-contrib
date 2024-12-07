@@ -20,7 +20,6 @@ func NewAnd(
 	logger *zap.Logger,
 	subpolicies []PolicyEvaluator,
 ) PolicyEvaluator {
-
 	return &And{
 		subpolicies: subpolicies,
 		logger:      logger,
@@ -30,16 +29,15 @@ func NewAnd(
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
-	// If any subpolicy returns NotSampled or InvertNotSampled it returns that
+	// If any subpolicy returns NotSampled or InvertNotSampled, it returns NotSampled Decision.
 	for _, sub := range c.subpolicies {
 		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
 			return Unspecified, err
 		}
 		if decision == NotSampled || decision == InvertNotSampled {
-			return decision, nil
+			return NotSampled, nil
 		}
-
 	}
 	return Sampled, nil
 }

@@ -46,7 +46,8 @@ type DataCollector struct {
 
 // NewDataCollector returns a DataCollector.
 func NewDataCollector(set receiver.Settings, ms *metadata.Store,
-	metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
+	metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string,
+) *DataCollector {
 	return &DataCollector{
 		settings:                 set,
 		metadataStore:            ms,

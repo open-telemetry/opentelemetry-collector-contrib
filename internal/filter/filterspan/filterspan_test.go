@@ -304,7 +304,6 @@ func TestServiceNameForResource(t *testing.T) {
 	resource := td.ResourceSpans().At(0).Resource()
 	name = serviceNameForResource(resource)
 	require.Equal(t, "<nil-service-name>", name)
-
 }
 
 func Test_NewSkipExpr_With_Bridge(t *testing.T) {

@@ -4,158 +4,232 @@
 package plogutil_test
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestMoveResourcesIf(t *testing.T) {
 	testCases := []struct {
-		name      string
-		condition func(plog.ResourceLogs) bool
+		name       string
+		moveIf     func(plog.ResourceLogs) bool
+		from       plog.Logs
+		to         plog.Logs
+		expectFrom plog.Logs
+		expectTo   plog.Logs
 	}{
 		{
 			name: "move_none",
-			condition: func(plog.ResourceLogs) bool {
+			moveIf: func(plog.ResourceLogs) bool {
 				return false
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectTo:   plog.NewLogs(),
 		},
 		{
 			name: "move_all",
-			condition: func(plog.ResourceLogs) bool {
+			moveIf: func(plog.ResourceLogs) bool {
 				return true
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plog.NewLogs(),
+			expectTo:   plogutiltest.NewLogs("AB", "CD", "EF"),
 		},
 		{
 			name: "move_one",
-			condition: func(rl plog.ResourceLogs) bool {
+			moveIf: func(rl plog.ResourceLogs) bool {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceA"
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogs("B", "CD", "EF"),
+			expectTo:   plogutiltest.NewLogs("A", "CD", "EF"),
 		},
 		{
 			name: "move_to_preexisting",
-			condition: func(rl plog.ResourceLogs) bool {
+			moveIf: func(rl plog.ResourceLogs) bool {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB"
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plogutiltest.NewLogs("1", "2", "3"),
+			expectFrom: plogutiltest.NewLogs("A", "CD", "EF"),
+			expectTo: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("1",
+					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
+				),
+				plogutiltest.Resource("B",
+					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+				),
+			),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			// Load up a fresh copy of the input for each test, since it may be modified in place.
-			from, err := golden.ReadLogs(filepath.Join("testdata", "resource", tt.name, "from.yaml"))
-			require.NoError(t, err)
-
-			to, err := golden.ReadLogs(filepath.Join("testdata", "resource", tt.name, "to.yaml"))
-			require.NoError(t, err)
-
-			fromModifed, err := golden.ReadLogs(filepath.Join("testdata", "resource", tt.name, "from_modified.yaml"))
-			require.NoError(t, err)
-
-			toModified, err := golden.ReadLogs(filepath.Join("testdata", "resource", tt.name, "to_modified.yaml"))
-			require.NoError(t, err)
-
-			plogutil.MoveResourcesIf(from, to, tt.condition)
-
-			assert.NoError(t, plogtest.CompareLogs(fromModifed, from), "from not modified as expected")
-			assert.NoError(t, plogtest.CompareLogs(toModified, to), "to not as expected")
+			plogutil.MoveResourcesIf(tt.from, tt.to, tt.moveIf)
+			assert.NoError(t, plogtest.CompareLogs(tt.expectFrom, tt.from), "from not modified as expected")
+			assert.NoError(t, plogtest.CompareLogs(tt.expectTo, tt.to), "to not as expected")
 		})
 	}
 }
 
 func TestMoveRecordsWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name      string
-		condition func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool
+		name       string
+		moveIf     func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool
+		from       plog.Logs
+		to         plog.Logs
+		expectFrom plog.Logs
+		expectTo   plog.Logs
 	}{
 		{
 			name: "move_none",
-			condition: func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool {
+			moveIf: func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool {
 				return false
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogs("AB", "CD", "EF"),
+			expectTo:   plog.NewLogs(),
 		},
 		{
 			name: "move_all",
-			condition: func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool {
+			moveIf: func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool {
 				return true
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plog.NewLogs(),
+			expectTo:   plogutiltest.NewLogs("AB", "CD", "EF"),
 		},
 		{
 			name: "move_all_from_one_resource",
-			condition: func(rl plog.ResourceLogs, _ plog.ScopeLogs, _ plog.LogRecord) bool {
+			moveIf: func(rl plog.ResourceLogs, _ plog.ScopeLogs, _ plog.LogRecord) bool {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
 				return ok && rname.AsString() == "resourceB"
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogs("A", "CD", "EF"),
+			expectTo:   plogutiltest.NewLogs("B", "CD", "EF"),
 		},
 		{
 			name: "move_all_from_one_scope",
-			condition: func(rl plog.ResourceLogs, sl plog.ScopeLogs, _ plog.LogRecord) bool {
+			moveIf: func(rl plog.ResourceLogs, sl plog.ScopeLogs, _ plog.LogRecord) bool {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
-				return ok && rname.AsString() == "resourceB" && sl.Scope().Name() == "scopeA"
+				return ok && rname.AsString() == "resourceB" && sl.Scope().Name() == "scopeC"
 			},
+			from: plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:   plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("A",
+					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+				),
+				plogutiltest.Resource("B",
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+				),
+			),
+			expectTo: plogutiltest.NewLogs("B", "C", "EF"),
 		},
 		{
 			name: "move_all_from_one_scope_in_each_resource",
-			condition: func(_ plog.ResourceLogs, sl plog.ScopeLogs, _ plog.LogRecord) bool {
-				return sl.Scope().Name() == "scopeB"
+			moveIf: func(_ plog.ResourceLogs, sl plog.ScopeLogs, _ plog.LogRecord) bool {
+				return sl.Scope().Name() == "scopeD"
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogs("AB", "C", "EF"),
+			expectTo:   plogutiltest.NewLogs("AB", "D", "EF"),
 		},
 		{
 			name: "move_one",
-			condition: func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
+			moveIf: func(rl plog.ResourceLogs, sl plog.ScopeLogs, lr plog.LogRecord) bool {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
-				return ok && rname.AsString() == "resourceA" && sl.Scope().Name() == "scopeB" && lr.Body().AsString() == "logB"
+				return ok && rname.AsString() == "resourceA" && sl.Scope().Name() == "scopeD" && lr.Body().AsString() == "logF"
 			},
+			from: plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:   plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("A",
+					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E")),
+				),
+				plogutiltest.Resource("B",
+					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+				),
+			),
+			expectTo: plogutiltest.NewLogs("A", "D", "F"),
 		},
 		{
 			name: "move_one_from_each_scope",
-			condition: func(_ plog.ResourceLogs, _ plog.ScopeLogs, lr plog.LogRecord) bool {
-				return lr.Body().AsString() == "logA"
+			moveIf: func(_ plog.ResourceLogs, _ plog.ScopeLogs, lr plog.LogRecord) bool {
+				return lr.Body().AsString() == "logE"
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogs("AB", "CD", "F"),
+			expectTo:   plogutiltest.NewLogs("AB", "CD", "E"),
 		},
 		{
 			name: "move_one_from_each_scope_in_one_resource",
-			condition: func(rl plog.ResourceLogs, _ plog.ScopeLogs, lr plog.LogRecord) bool {
+			moveIf: func(rl plog.ResourceLogs, _ plog.ScopeLogs, lr plog.LogRecord) bool {
 				rname, ok := rl.Resource().Attributes().Get("resourceName")
-				return ok && rname.AsString() == "resourceB" && lr.Body().AsString() == "logA"
+				return ok && rname.AsString() == "resourceB" && lr.Body().AsString() == "logE"
 			},
+			from: plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:   plog.NewLogs(),
+			expectFrom: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("A",
+					plogutiltest.Scope("C", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+				),
+				plogutiltest.Resource("B",
+					plogutiltest.Scope("C", plogutiltest.LogRecord("F")),
+					plogutiltest.Scope("D", plogutiltest.LogRecord("F")),
+				),
+			),
+			expectTo: plogutiltest.NewLogs("B", "CD", "E"),
 		},
 		{
 			name: "move_some_to_preexisting",
-			condition: func(_ plog.ResourceLogs, sl plog.ScopeLogs, _ plog.LogRecord) bool {
-				return sl.Scope().Name() == "scopeB"
+			moveIf: func(_ plog.ResourceLogs, sl plog.ScopeLogs, _ plog.LogRecord) bool {
+				return sl.Scope().Name() == "scopeD"
 			},
+			from:       plogutiltest.NewLogs("AB", "CD", "EF"),
+			to:         plogutiltest.NewLogs("1", "2", "3"),
+			expectFrom: plogutiltest.NewLogs("AB", "C", "EF"),
+			expectTo: plogutiltest.NewLogsFromOpts(
+				plogutiltest.Resource("1",
+					plogutiltest.Scope("2", plogutiltest.LogRecord("3")),
+				),
+				plogutiltest.Resource("A",
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+				),
+				plogutiltest.Resource("B",
+					plogutiltest.Scope("D", plogutiltest.LogRecord("E"), plogutiltest.LogRecord("F")),
+				),
+			),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			// Load up a fresh copy of the input for each test, since it may be modified in place.
-			from, err := golden.ReadLogs(filepath.Join("testdata", "record", tt.name, "from.yaml"))
-			require.NoError(t, err)
-
-			to, err := golden.ReadLogs(filepath.Join("testdata", "record", tt.name, "to.yaml"))
-			require.NoError(t, err)
-
-			fromModifed, err := golden.ReadLogs(filepath.Join("testdata", "record", tt.name, "from_modified.yaml"))
-			require.NoError(t, err)
-
-			toModified, err := golden.ReadLogs(filepath.Join("testdata", "record", tt.name, "to_modified.yaml"))
-			require.NoError(t, err)
-
-			plogutil.MoveRecordsWithContextIf(from, to, tt.condition)
-
-			assert.NoError(t, plogtest.CompareLogs(fromModifed, from), "from not modified as expected")
-			assert.NoError(t, plogtest.CompareLogs(toModified, to), "to not as expected")
+			plogutil.MoveRecordsWithContextIf(tt.from, tt.to, tt.moveIf)
+			assert.NoError(t, plogtest.CompareLogs(tt.expectFrom, tt.from), "from not modified as expected")
+			assert.NoError(t, plogtest.CompareLogs(tt.expectTo, tt.to), "to not as expected")
 		})
 	}
 }

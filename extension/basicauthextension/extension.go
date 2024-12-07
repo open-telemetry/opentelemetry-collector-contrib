@@ -44,7 +44,6 @@ func newClientAuthExtension(cfg *Config) auth.Client {
 }
 
 func newServerAuthExtension(cfg *Config) (auth.Server, error) {
-
 	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "") {
 		return nil, errNoCredentialSource
 	}

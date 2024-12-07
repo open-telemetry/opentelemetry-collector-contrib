@@ -116,7 +116,8 @@ func instrumentationLibraryToLogContents(scope pcommon.InstrumentationScope) []*
 
 func mapLogRecordToLogService(lr plog.LogRecord,
 	resourceContents,
-	instrumentationLibraryContents []*cls.Log_Content) *cls.Log {
+	instrumentationLibraryContents []*cls.Log_Content,
+) *cls.Log {
 	if lr.Body().Type() == pcommon.ValueTypeEmpty {
 		return nil
 	}

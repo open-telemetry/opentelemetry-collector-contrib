@@ -5,7 +5,6 @@ package oidcauthextension // import "github.com/open-telemetry/opentelemetry-col
 
 // Config has the configuration for the OIDC Authenticator extension.
 type Config struct {
-
 	// The attribute (header name) to look for auth data. Optional, default value: "authorization".
 	Attribute string `mapstructure:"attribute"`
 

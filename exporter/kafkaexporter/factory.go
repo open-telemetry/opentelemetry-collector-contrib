@@ -90,8 +90,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-type kafkaExporterFactory struct {
-}
+type kafkaExporterFactory struct{}
 
 func (f *kafkaExporterFactory) createTracesExporter(
 	ctx context.Context,

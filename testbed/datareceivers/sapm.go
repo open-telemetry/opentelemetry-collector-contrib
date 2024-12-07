@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -36,7 +35,6 @@ func (sr *SapmDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ cons
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf("127.0.0.1:%d", sr.Port),
 		},
-		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{AccessTokenPassthrough: true},
 	}
 	var err error
 	params := receivertest.NewNopSettings()

@@ -61,7 +61,8 @@ func createLogsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	next consumer.Logs) (processor.Logs, error) {
+	next consumer.Logs,
+) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 
 	red, err := newRedaction(ctx, oCfg, set.Logger)
@@ -83,7 +84,8 @@ func createMetricsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	next consumer.Metrics) (processor.Metrics, error) {
+	next consumer.Metrics,
+) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 
 	red, err := newRedaction(ctx, oCfg, set.Logger)

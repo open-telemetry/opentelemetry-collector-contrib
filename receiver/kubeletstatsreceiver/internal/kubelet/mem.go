@@ -16,7 +16,8 @@ func addMemoryMetrics(
 	s *stats.MemoryStats,
 	currentTime pcommon.Timestamp,
 	r resources,
-	nodeMemoryLimit float64) {
+	nodeMemoryLimit float64,
+) {
 	if s == nil {
 		return
 	}

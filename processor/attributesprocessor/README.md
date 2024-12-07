@@ -9,7 +9,7 @@
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fattributes) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@boostchicken](https://www.github.com/boostchicken) |
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
@@ -60,7 +60,8 @@ For the actions `insert`, `update` and `upsert`,
   action: {insert, update, upsert}
   # FromContext specifies the context value to use to populate the attribute value. 
   # If the key is prefixed with `metadata.`, the values are searched
-  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers. 
+  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers
+  # (be sure to set `include_metadata: true` on the receiver).
   # If the key is prefixed with `auth.`, the values are searched
   # in the authentication information set by the server authenticator.
   # Refer to the server authenticator's documentation part of your pipeline for more information about which attributes are available.

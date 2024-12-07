@@ -55,8 +55,7 @@ type jaegerSpanMarshaler interface {
 	encoding() string
 }
 
-type jaegerProtoSpanMarshaler struct {
-}
+type jaegerProtoSpanMarshaler struct{}
 
 var _ jaegerSpanMarshaler = (*jaegerProtoSpanMarshaler)(nil)
 

@@ -17,7 +17,6 @@ import (
 )
 
 func TestIdleMode(t *testing.T) {
-
 	options := testbed.LoadOptions{DataItemsPerSecond: 10_000, ItemsPerBatch: 10}
 	dataProvider := testbed.NewPerfTestDataProvider(options)
 

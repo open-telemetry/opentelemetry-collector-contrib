@@ -24,6 +24,12 @@ func newTestInput() *Input {
 	})
 }
 
+// TestInputCreate_Stop ensures the input correctly shuts down even if it was never started.
+func TestInputCreate_Stop(t *testing.T) {
+	input := newTestInput()
+	assert.NoError(t, input.Stop())
+}
+
 // TestInputStart_LocalSubscriptionError ensures the input correctly handles local subscription errors.
 func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	persister := testutil.NewMockPersister("")

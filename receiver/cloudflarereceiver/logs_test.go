@@ -197,7 +197,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "No secret provided",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
 			},
@@ -208,7 +208,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Invalid payload",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"`)),
 				Header: map[string][]string{
@@ -222,7 +222,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Consumer fails",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
 				Header: map[string][]string{
@@ -236,7 +236,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Consumer fails - permanent error",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1"}`)),
 				Header: map[string][]string{
@@ -251,7 +251,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Request succeeds",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`{"ClientIP": "127.0.0.1", "MyTimestamp": "2023-03-03T05:29:06Z"}`)),
 				Header: map[string][]string{
@@ -265,7 +265,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Request succeeds with gzip",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(gzippedMessage(`{"ClientIP": "127.0.0.1", "MyTimestamp": "2023-03-03T05:29:06Z"}`))),
 				Header: map[string][]string{
@@ -281,7 +281,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "Request fails to unzip gzip",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`thisisnotvalidzippedcontent`)),
 				Header: map[string][]string{
@@ -297,7 +297,7 @@ func TestHandleRequest(t *testing.T) {
 		{
 			name: "test message passes",
 			request: &http.Request{
-				Method: "POST",
+				Method: http.MethodPost,
 				URL:    &url.URL{},
 				Body:   io.NopCloser(bytes.NewBufferString(`test`)),
 				Header: map[string][]string{
@@ -317,7 +317,6 @@ func TestHandleRequest(t *testing.T) {
 				consumer = consumertest.NewErr(errors.New("consumer failed"))
 				if tc.permanentFailure {
 					consumer = consumertest.NewErr(consumererror.NewPermanent(errors.New("consumer failed")))
-
 				}
 			} else {
 				consumer = &consumertest.LogsSink{}

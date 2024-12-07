@@ -53,7 +53,6 @@ func (e extractor) extractFromContext(ctx context.Context) string {
 }
 
 func (e extractor) extractFromGRPCContext(ctx context.Context) ([]string, bool) {
-
 	md, ok := metadata.FromIncomingContext(ctx)
 
 	if !ok {

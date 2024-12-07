@@ -20,6 +20,7 @@ func TestInit(t *testing.T) {
 	require.True(t, ok, "expected time_parser to be registered")
 	require.Equal(t, "trace_parser", builder().Type())
 }
+
 func TestDefaultParser(t *testing.T) {
 	traceParserConfig := NewConfig()
 	set := componenttest.NewNopTelemetrySettings()

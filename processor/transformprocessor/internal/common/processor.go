@@ -20,10 +20,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
-var _ consumer.Traces = &resourceStatements{}
-var _ consumer.Metrics = &resourceStatements{}
-var _ consumer.Logs = &resourceStatements{}
-var _ baseContext = &resourceStatements{}
+var (
+	_ consumer.Traces  = &resourceStatements{}
+	_ consumer.Metrics = &resourceStatements{}
+	_ consumer.Logs    = &resourceStatements{}
+	_ baseContext      = &resourceStatements{}
+)
 
 type resourceStatements struct {
 	ottl.StatementSequence[ottlresource.TransformContext]
@@ -90,10 +92,12 @@ func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	return nil
 }
 
-var _ consumer.Traces = &scopeStatements{}
-var _ consumer.Metrics = &scopeStatements{}
-var _ consumer.Logs = &scopeStatements{}
-var _ baseContext = &scopeStatements{}
+var (
+	_ consumer.Traces  = &scopeStatements{}
+	_ consumer.Metrics = &scopeStatements{}
+	_ consumer.Logs    = &scopeStatements{}
+	_ baseContext      = &scopeStatements{}
+)
 
 type scopeStatements struct {
 	ottl.StatementSequence[ottlscope.TransformContext]
@@ -212,11 +216,11 @@ func (pc parserCollection) parseCommonContextStatements(contextStatement Context
 }
 
 func parseGlobalExpr[K any](
-	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (expr.BoolExpr[K], error),
+	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (*ottl.ConditionSequence[K], error),
 	conditions []string,
 	pc parserCollection,
-	standardFuncs map[string]ottl.Factory[K]) (expr.BoolExpr[K], error) {
-
+	standardFuncs map[string]ottl.Factory[K],
+) (expr.BoolExpr[K], error) {
 	if len(conditions) > 0 {
 		return boolExprFunc(conditions, standardFuncs, pc.errorMode, pc.settings)
 	}

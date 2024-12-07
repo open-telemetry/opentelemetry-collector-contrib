@@ -48,7 +48,8 @@ func createMetricsReceiver(
 	ctx context.Context,
 	params receiver.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	c := cfg.(*Config)
 	r, err := newMetricsReceiver(ctx, *c, params, nextConsumer)
 	if err != nil {

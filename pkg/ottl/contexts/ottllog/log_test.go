@@ -181,7 +181,6 @@ func Test_newPathGetSetter(t *testing.T) {
 				fmt.Println(log.Body().Slice().At(0).AsString())
 				newBodySlice.CopyTo(log.Body().Slice())
 				fmt.Println(log.Body().Slice().At(0).AsString())
-
 			},
 			bodyType: "slice",
 		},

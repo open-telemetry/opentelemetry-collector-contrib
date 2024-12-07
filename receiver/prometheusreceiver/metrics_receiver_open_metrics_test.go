@@ -92,7 +92,6 @@ func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics)
 
 // Test open metrics negative test cases
 func TestOpenMetricsFail(t *testing.T) {
-
 	targetsMap := getOpenMetricsFailTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
@@ -127,7 +126,6 @@ func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetri
 }
 
 func TestOpenMetricsInvalid(t *testing.T) {
-
 	targetsMap := getOpenMetricsInvalidTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
@@ -229,7 +227,6 @@ func TestInfoStatesetMetrics(t *testing.T) {
 	}
 
 	testComponent(t, targets, nil)
-
 }
 
 func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

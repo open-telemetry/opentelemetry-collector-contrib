@@ -317,7 +317,8 @@ func Test_swSpanToSpan_ParentSpanId(t *testing.T) {
 				Refs: []*agentV3.SegmentReference{{
 					ParentTraceSegmentId: "4f2f27748b8e44ecaf18fe0347194e86.33.16560607369950066",
 					ParentSpanId:         123,
-				}}}},
+				}},
+			}},
 			want: [8]byte{233, 196, 85, 168, 37, 66, 48, 106},
 		},
 		{

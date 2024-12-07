@@ -64,7 +64,6 @@ func generateLog(t *testing.T, log Log) (pcommon.Resource, plog.LogRecord, error
 }
 
 func TestTranslateLogEntry(t *testing.T) {
-
 	tests := []struct {
 		input string
 		want  Log

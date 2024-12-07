@@ -45,7 +45,6 @@ func newLogsConnector(
 		cfg.DefaultPipelines,
 		lr.Consumer,
 		set.TelemetrySettings)
-
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +64,7 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	if c.config.MatchOnce {
 		return c.switchLogs(ctx, ld)
 	}
-	return c.matchAll(ctx, ld)
+	return c.matchAllLogs(ctx, ld)
 }
 
 // switchLogs removes items from the original plog.Logs as they are matched,
@@ -73,9 +72,15 @@ func (c *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 func (c *logsConnector) switchLogs(ctx context.Context, ld plog.Logs) error {
 	groups := make(map[consumer.Logs]plog.Logs)
 	var errs error
-	for _, route := range c.router.routeSlice {
+	for i := 0; i < len(c.router.routeSlice) && ld.ResourceLogs().Len() > 0; i++ {
+		route := c.router.routeSlice[i]
 		matchedLogs := plog.NewLogs()
 		switch route.statementContext {
+		case "request":
+			if route.requestCondition.matchRequest(ctx) {
+				groupAllLogs(groups, route.consumer, ld)
+				ld = plog.NewLogs() // all logs have been routed
+			}
 		case "", "resource":
 			plogutil.MoveResourcesIf(ld, matchedLogs,
 				func(rl plog.ResourceLogs) bool {
@@ -99,19 +104,19 @@ func (c *logsConnector) switchLogs(ctx context.Context, ld plog.Logs) error {
 			if c.config.ErrorMode == ottl.PropagateError {
 				return errs
 			}
-			groupAll(groups, c.router.defaultConsumer, matchedLogs)
+			groupAllLogs(groups, c.router.defaultConsumer, matchedLogs)
 		}
-		groupAll(groups, route.consumer, matchedLogs)
+		groupAllLogs(groups, route.consumer, matchedLogs)
 	}
 	// anything left wasn't matched by any route. Send to default consumer
-	groupAll(groups, c.router.defaultConsumer, ld)
+	groupAllLogs(groups, c.router.defaultConsumer, ld)
 	for consumer, group := range groups {
 		errs = errors.Join(errs, consumer.ConsumeLogs(ctx, group))
 	}
 	return errs
 }
 
-func (c *logsConnector) matchAll(ctx context.Context, ld plog.Logs) error {
+func (c *logsConnector) matchAllLogs(ctx context.Context, ld plog.Logs) error {
 	// routingEntry is used to group plog.ResourceLogs that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
@@ -128,17 +133,17 @@ func (c *logsConnector) matchAll(ctx context.Context, ld plog.Logs) error {
 				if c.config.ErrorMode == ottl.PropagateError {
 					return err
 				}
-				group(groups, c.router.defaultConsumer, rlogs)
+				groupLogs(groups, c.router.defaultConsumer, rlogs)
 				continue
 			}
 			if isMatch {
 				noRoutesMatch = false
-				group(groups, route.consumer, rlogs)
+				groupLogs(groups, route.consumer, rlogs)
 			}
 		}
 		if noRoutesMatch {
 			// no route conditions are matched, add resource logs to default exporters group
-			group(groups, c.router.defaultConsumer, rlogs)
+			groupLogs(groups, c.router.defaultConsumer, rlogs)
 		}
 	}
 	for consumer, group := range groups {
@@ -147,17 +152,17 @@ func (c *logsConnector) matchAll(ctx context.Context, ld plog.Logs) error {
 	return errs
 }
 
-func groupAll(
+func groupAllLogs(
 	groups map[consumer.Logs]plog.Logs,
 	cons consumer.Logs,
 	logs plog.Logs,
 ) {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
-		group(groups, cons, logs.ResourceLogs().At(i))
+		groupLogs(groups, cons, logs.ResourceLogs().At(i))
 	}
 }
 
-func group(
+func groupLogs(
 	groups map[consumer.Logs]plog.Logs,
 	cons consumer.Logs,
 	logs plog.ResourceLogs,

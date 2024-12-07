@@ -496,7 +496,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
-
 		})
 	}
 }

@@ -43,5 +43,4 @@ func TestLoadConfig(t *testing.T) {
 		},
 		cfg.Connectors[component.NewID(metadata.Type)],
 	)
-
 }

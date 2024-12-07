@@ -39,7 +39,6 @@ func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err e
 }
 
 func newGitHubScraper(
-	_ context.Context,
 	settings receiver.Settings,
 	cfg *Config,
 ) *githubScraper {
@@ -153,7 +152,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				ghs.mb.RecordVcsRepositoryRefTimeDataPoint(now, age, branch.Repository.Name, branch.Name, refType)
 				ghs.mb.RecordVcsRepositoryRefLinesAddedDataPoint(now, int64(additions), branch.Repository.Name, branch.Name, refType)
 				ghs.mb.RecordVcsRepositoryRefLinesDeletedDataPoint(now, int64(deletions), branch.Repository.Name, branch.Name, refType)
-
 			}
 
 			// Get the contributor count for each of the repositories
@@ -179,7 +177,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 					age := getAge(pr.CreatedAt, pr.MergedAt)
 
 					ghs.mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(now, age, name, pr.HeadRefName)
-
 				} else {
 					open++
 

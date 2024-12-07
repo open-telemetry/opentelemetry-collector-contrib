@@ -50,7 +50,8 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]ptrace.Trace
 //
 // The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
 func appendResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader, resourceSpansSlice ptrace.ResourceSpansSlice) error {
+	random io.Reader, resourceSpansSlice ptrace.ResourceSpansSlice,
+) error {
 	resourceSpan := resourceSpansSlice.AppendEmpty()
 	err := appendScopeSpans(tracingInputs, spanPairsFile, random, resourceSpan.ScopeSpans())
 	if err != nil {
@@ -61,7 +62,8 @@ func appendResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
 }
 
 func appendScopeSpans(tracingInputs *PICTTracingInputs, spanPairsFile string,
-	random io.Reader, scopeSpansSlice ptrace.ScopeSpansSlice) error {
+	random io.Reader, scopeSpansSlice ptrace.ScopeSpansSlice,
+) error {
 	var count int
 	switch tracingInputs.InstrumentationLibrary {
 	case LibraryNone:

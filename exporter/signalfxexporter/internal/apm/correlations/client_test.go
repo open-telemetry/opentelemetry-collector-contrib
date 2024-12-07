@@ -24,9 +24,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 )
 
-var getPathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)`)                    // /dimName/dimVal
-var putPathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)`)            // /dimName/dimVal/{service,environment}
-var deletePathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)/([^/]+)`) // /dimName/dimValue/{service,environment}/value
+var (
+	getPathRegexp    = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)`)                 // /dimName/dimVal
+	putPathRegexp    = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)`)         // /dimName/dimVal/{service,environment}
+	deletePathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)/([^/]+)`) // /dimName/dimValue/{service,environment}/value
+)
 
 func waitForCors(corCh <-chan *request, count, waitSeconds int) []*request { // nolint: unparam
 	cors := make([]*request, 0, count)
@@ -64,7 +66,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodGet:
 			match := getPathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 3 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			corCh <- &request{
@@ -79,13 +81,13 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodPut:
 			match := putPathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 4 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
-				rw.WriteHeader(400)
+				rw.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			cor = &request{
@@ -101,7 +103,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 		case http.MethodDelete:
 			match := deletePathRegexp.FindStringSubmatch(r.URL.Path)
 			if len(match) < 5 {
-				rw.WriteHeader(404)
+				rw.WriteHeader(http.StatusNotFound)
 				return
 			}
 			cor = &request{
@@ -114,13 +116,13 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 				},
 			}
 		default:
-			rw.WriteHeader(404)
+			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
 
 		corCh <- cor
 
-		rw.WriteHeader(200)
+		rw.WriteHeader(http.StatusOK)
 	})
 }
 

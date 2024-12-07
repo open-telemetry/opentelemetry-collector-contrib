@@ -218,7 +218,6 @@ func SetDecoderConfig(cfg DecoderConfig) error {
 		updateOne(&staticInstances.byLevel[level].dec)
 	}
 	return nil
-
 }
 
 func (cfg EncoderConfig) options() (opts []zstdlib.EOption) {

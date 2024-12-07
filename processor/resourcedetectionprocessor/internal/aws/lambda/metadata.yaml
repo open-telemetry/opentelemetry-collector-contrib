@@ -2,11 +2,6 @@ type: resourcedetectionprocessor/lambda
 
 parent: resourcedetection
 
-status:
-  class: pkg
-  codeowners:
-    active:
-
 resource_attributes:
   cloud.provider:
     description: The cloud.provider

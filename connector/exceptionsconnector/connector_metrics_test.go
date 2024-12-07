@@ -108,7 +108,6 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		assert.NotEmpty(t, metrics)
 		verifyBadMetricsOkay(t, metrics[len(metrics)-1])
 	})
-
 }
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
@@ -205,7 +204,6 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 		assert.NotZero(t, exemplar.Timestamp())
 		assert.NotZero(t, exemplar.TraceID())
 		assert.NotZero(t, exemplar.SpanID())
-
 	}
 	return true
 }

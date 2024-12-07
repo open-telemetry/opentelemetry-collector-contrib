@@ -40,7 +40,8 @@ type ec2ClientBuilder struct{}
 func (e *ec2ClientBuilder) buildClient(region string, client *http.Client) (ec2iface.EC2API, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:     aws.String(region),
-		HTTPClient: client},
+		HTTPClient: client,
+	},
 	)
 	if err != nil {
 		return nil, err

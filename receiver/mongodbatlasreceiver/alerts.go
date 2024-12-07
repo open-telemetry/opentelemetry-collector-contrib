@@ -498,7 +498,6 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 
 		attrs.PutStr("net.peer.name", host)
 		attrs.PutInt("net.peer.port", port)
-
 	}
 
 	return logs, nil
@@ -550,12 +549,12 @@ func (a *alertsReceiver) writeCheckpoint(ctx context.Context) error {
 func (a *alertsReceiver) applyFilters(pConf *ProjectConfig, alerts []mongodbatlas.Alert) []mongodbatlas.Alert {
 	filtered := []mongodbatlas.Alert{}
 
-	var lastRecordedTime = pcommon.Timestamp(0).AsTime()
+	lastRecordedTime := pcommon.Timestamp(0).AsTime()
 	if a.record.LastRecordedTime != nil {
 		lastRecordedTime = *a.record.LastRecordedTime
 	}
 	// we need to maintain two timestamps in order to not conflict while iterating
-	var latestInPayload = pcommon.Timestamp(0).AsTime()
+	latestInPayload := pcommon.Timestamp(0).AsTime()
 
 	for _, alert := range alerts {
 		updatedTime, err := time.Parse(time.RFC3339, alert.Updated)

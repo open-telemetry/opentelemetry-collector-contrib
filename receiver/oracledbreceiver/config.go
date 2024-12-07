@@ -41,7 +41,6 @@ func (c Config) Validate() error {
 
 	// If DataSource is defined it takes precedence over the rest of the connection options.
 	if c.DataSource == "" {
-
 		if c.Endpoint == "" {
 			allErrs = multierr.Append(allErrs, errEmptyEndpoint)
 		}

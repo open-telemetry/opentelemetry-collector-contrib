@@ -65,5 +65,4 @@ func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, 
 	}
 	pmd := SwMetricsToMetrics(collection)
 	return nextConsumer.ConsumeMetrics(ctx, pmd)
-
 }

@@ -58,7 +58,7 @@ func TestRegionEnv(t *testing.T) {
 	region := "us-east-1"
 	t.Setenv("AWS_REGION", region)
 
-	var m = &mockConn{}
+	m := &mockConn{}
 	var expectedSession *session.Session
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession

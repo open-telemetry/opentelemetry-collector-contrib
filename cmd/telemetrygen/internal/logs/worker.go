@@ -53,7 +53,6 @@ func (w worker) simulateLogs(res *resource.Resource, exporterFunc func() (sdklog
 	}()
 
 	for w.running.Load() {
-
 		var tid trace.TraceID
 		var sid trace.SpanID
 

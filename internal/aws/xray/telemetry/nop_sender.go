@@ -12,8 +12,7 @@ func NewNopSender() Sender {
 
 var nopSenderInstance Sender = &nopSender{}
 
-type nopSender struct {
-}
+type nopSender struct{}
 
 func (n nopSender) Rotate() *xray.TelemetryRecord {
 	return nil

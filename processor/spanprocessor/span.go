@@ -187,7 +187,7 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		var sb strings.Builder
 
 		// Index in the oldName until which we traversed.
-		var oldNameIndex = 0
+		oldNameIndex := 0
 
 		attrs := span.Attributes()
 
@@ -213,7 +213,9 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 		}
 
 		// Set new span name.
-		span.SetName(sb.String())
+		if !sp.config.Rename.ToAttributes.KeepOriginalName {
+			span.SetName(sb.String())
+		}
 
 		if sp.config.Rename.ToAttributes.BreakAfterMatch {
 			// Stop processing, break after first match is requested.

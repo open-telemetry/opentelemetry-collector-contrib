@@ -52,7 +52,7 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 			ils := resSpans.ScopeSpans().At(i)
 			for s := 0; s < ils.Spans().Len(); s++ {
 				span := ils.Spans().At(s)
-				var newSpan = pb.Span{
+				newSpan := pb.Span{
 					Service:  "test",
 					Name:     "test",
 					Resource: "test",
@@ -87,7 +87,7 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 		return consumererror.NewPermanent(fmt.Errorf("failed to encode msgp: %w", err))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", dd.endpoint, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, dd.endpoint, &buf)
 	if err != nil {
 		return fmt.Errorf("failed to push trace data via DD exporter: %w", err)
 	}

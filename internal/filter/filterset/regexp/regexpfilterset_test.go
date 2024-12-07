@@ -10,18 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	validRegexpFilters = []string{
-		"prefix/.*",
-		"prefix_.*",
-		".*/suffix",
-		".*_suffix",
-		".*/contains/.*",
-		".*_contains_.*",
-		"full/name/match",
-		"full_name_match",
-	}
-)
+var validRegexpFilters = []string{
+	"prefix/.*",
+	"prefix_.*",
+	".*/suffix",
+	".*_suffix",
+	".*/contains/.*",
+	".*_contains_.*",
+	"full/name/match",
+	"full_name_match",
+}
 
 func TestNewRegexpFilterSet(t *testing.T) {
 	tests := []struct {

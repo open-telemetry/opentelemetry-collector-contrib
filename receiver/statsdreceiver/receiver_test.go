@@ -75,7 +75,7 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 	rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
-	var metrics = pmetric.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	assert.NoError(t, r.Flush(ctx, metrics, nextConsumer))
 	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 	assert.NoError(t, r.Shutdown(ctx))

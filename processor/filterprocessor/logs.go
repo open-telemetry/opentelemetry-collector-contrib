@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/multierr"
@@ -22,7 +23,7 @@ import (
 
 type filterLogProcessor struct {
 	skipExpr  expr.BoolExpr[ottllog.TransformContext]
-	telemetry *filterProcessorTelemetry
+	telemetry *filterTelemetry
 	logger    *zap.Logger
 }
 
@@ -31,7 +32,7 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 		logger: set.Logger,
 	}
 
-	fpt, err := newfilterProcessorTelemetry(set)
+	fpt, err := newFilterTelemetry(set, pipeline.SignalLogs)
 	if err != nil {
 		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
@@ -92,7 +93,7 @@ func (flp *filterLogProcessor) processLogs(ctx context.Context, ld plog.Logs) (p
 	})
 
 	logCountAfterFilters := ld.LogRecordCount()
-	flp.telemetry.record(triggerLogsDropped, int64(logCountBeforeFilters-logCountAfterFilters))
+	flp.telemetry.record(ctx, int64(logCountBeforeFilters-logCountAfterFilters))
 
 	if errors != nil {
 		flp.logger.Error("failed processing logs", zap.Error(errors))

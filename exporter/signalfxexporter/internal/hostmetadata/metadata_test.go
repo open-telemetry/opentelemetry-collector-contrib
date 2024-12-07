@@ -265,7 +265,6 @@ func TestSyncMetadata(t *testing.T) {
 			for i, log := range logs.All() {
 				assert.Equal(t, tt.wantLogs[i], log.Message)
 			}
-
 		})
 	}
 }

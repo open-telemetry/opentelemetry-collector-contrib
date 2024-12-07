@@ -78,7 +78,6 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	// Collect metrics for each queue
 	for _, queue := range queues {
-
 		r.collectQueue(queue, now)
 	}
 

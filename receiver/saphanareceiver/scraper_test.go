@@ -16,10 +16,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-const fullExpectedMetricsPath = "./testdata/expected_metrics/full.yaml"
-const partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.yaml"
-const allQueryMetrics = "./testdata/mocked_queries/all_query_results.json"
-const mostlyDisabledQueryMetrics = "./testdata/mocked_queries/mostly_disabled_results.json"
+const (
+	fullExpectedMetricsPath    = "./testdata/expected_metrics/full.yaml"
+	partialExpectedMetricsPath = "./testdata/expected_metrics/mostly_disabled.yaml"
+	allQueryMetrics            = "./testdata/mocked_queries/all_query_results.json"
+	mostlyDisabledQueryMetrics = "./testdata/mocked_queries/mostly_disabled_results.json"
+)
 
 func TestScraper(t *testing.T) {
 	t.Parallel()
@@ -33,7 +35,7 @@ func TestScraper(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.Scrape(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
@@ -100,7 +102,7 @@ func TestDisabledMetrics(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)
 	require.NoError(t, err)
 
-	actualMetrics, err := sc.Scrape(context.Background())
+	actualMetrics, err := sc.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,

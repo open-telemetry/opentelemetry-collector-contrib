@@ -391,7 +391,7 @@ func TestFailToBind(t *testing.T) {
 		t.Errorf("failed to find a free port between %d and %d", minPort, maxPort)
 	}
 
-	var startTCP = func(int) (*Input, error) {
+	startTCP := func(int) (*Input, error) {
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 		set := componenttest.NewNopTelemetrySettings()

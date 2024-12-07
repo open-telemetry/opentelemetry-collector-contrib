@@ -5,9 +5,11 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
@@ -43,24 +45,28 @@ type listerHandleWrapper interface {
 }
 
 type eventhubHandler struct {
-	hub          hubWrapper
-	dataConsumer dataConsumer
-	config       *Config
-	settings     receiver.Settings
-	cancel       context.CancelFunc
+	hub           hubWrapper
+	dataConsumer  dataConsumer
+	config        *Config
+	settings      receiver.Settings
+	cancel        context.CancelFunc
+	storageClient storage.Client
 }
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
 
-	storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
-	if err != nil {
-		h.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))
-		return err
+	if h.storageClient == nil { // set manually for testing.
+		storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
+		if err != nil {
+			h.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))
+			return err
+		}
+		h.storageClient = storageClient
 	}
 
 	if h.hub == nil { // set manually for testing.
-		hub, newHubErr := eventhub.NewHubFromConnectionString(h.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: storageClient}))
+		hub, newHubErr := eventhub.NewHubFromConnectionString(h.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: h.storageClient}))
 		if newHubErr != nil {
 			h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
 			return newHubErr
@@ -72,8 +78,7 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 
 	if h.config.Partition == "" {
 		// listen to each partition of the Event Hub
-		var runtimeInfo *eventhub.HubRuntimeInformation
-		runtimeInfo, err = h.hub.GetRuntimeInformation(ctx)
+		runtimeInfo, err := h.hub.GetRuntimeInformation(ctx)
 		if err != nil {
 			h.settings.Logger.Debug("Error getting Runtime Information", zap.Error(err))
 			return err
@@ -87,7 +92,7 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 			}
 		}
 	} else {
-		err = h.setUpOnePartition(ctx, h.config.Partition, true)
+		err := h.setUpOnePartition(ctx, h.config.Partition, true)
 		if err != nil {
 			h.settings.Logger.Debug("Error setting up partition", zap.Error(err))
 			return err
@@ -123,7 +128,6 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 }
 
 func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-
 	receiverOptions := []eventhub.ReceiveOption{}
 	if applyOffset && h.config.Offset != "" {
 		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
@@ -151,7 +155,6 @@ func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID str
 }
 
 func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
-
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
 		h.settings.Logger.Error("error decoding message", zap.Error(err))
@@ -162,11 +165,18 @@ func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub
 }
 
 func (h *eventhubHandler) close(ctx context.Context) error {
+	var errs error
+	if h.storageClient != nil {
+		if err := h.storageClient.Close(ctx); err != nil {
+			errs = errors.Join(errs, err)
+		}
+		h.storageClient = nil
+	}
 
 	if h.hub != nil {
 		err := h.hub.Close(ctx)
 		if err != nil {
-			return err
+			errs = errors.Join(errs, err)
 		}
 		h.hub = nil
 	}
@@ -174,16 +184,14 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 		h.cancel()
 	}
 
-	return nil
+	return errs
 }
 
 func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
-
 	h.dataConsumer = dataConsumer
 }
 
 func newEventhubHandler(config *Config, settings receiver.Settings) *eventhubHandler {
-
 	return &eventhubHandler{
 		config:   config,
 		settings: settings,

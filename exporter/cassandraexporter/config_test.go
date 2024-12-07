@@ -15,8 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter/internal/metadata"
 )
 
-const defaultDSN = "127.0.0.1"
-const defaultPort = 9042
+const (
+	defaultDSN  = "127.0.0.1"
+	defaultPort = 9042
+)
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -32,7 +34,6 @@ func TestLoadConfig(t *testing.T) {
 		id       component.ID
 		expected component.Config
 	}{
-
 		{
 			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: defaultCfg,

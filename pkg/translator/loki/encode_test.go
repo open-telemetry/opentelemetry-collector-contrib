@@ -13,7 +13,6 @@ import (
 )
 
 func exampleLog() (plog.LogRecord, pcommon.Resource, pcommon.InstrumentationScope) {
-
 	buffer := plog.NewLogRecord()
 	buffer.Body().SetStr("Example log")
 	buffer.SetSeverityText("error")
@@ -66,7 +65,6 @@ func TestEncodeJsonWithInstrumentationScopeAttributes(t *testing.T) {
 }
 
 func TestSerializeComplexBody(t *testing.T) {
-
 	arrayval := pcommon.NewValueSlice()
 	arrayval.Slice().AppendEmpty().SetStr("a")
 	arrayval.Slice().AppendEmpty().SetStr("b")

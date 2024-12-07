@@ -15,9 +15,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-var (
-	defaultConfig = createDefaultConfig().(*Config)
-)
+var defaultConfig = createDefaultConfig().(*Config)
 
 // Tests the export onTraceData callback with no Spans
 func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
@@ -118,6 +116,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 func getMockTransportChannel() *mockTransportChannel {
 	transportChannelMock := mockTransportChannel{}
 	transportChannelMock.On("Send", mock.Anything)
+	transportChannelMock.On("Flush", mock.Anything)
 	return &transportChannelMock
 }
 

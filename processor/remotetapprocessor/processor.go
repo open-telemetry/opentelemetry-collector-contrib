@@ -32,9 +32,11 @@ type wsprocessor struct {
 	limiter           *rate.Limiter
 }
 
-var logMarshaler = &plog.JSONMarshaler{}
-var metricMarshaler = &pmetric.JSONMarshaler{}
-var traceMarshaler = &ptrace.JSONMarshaler{}
+var (
+	logMarshaler    = &plog.JSONMarshaler{}
+	metricMarshaler = &pmetric.JSONMarshaler{}
+	traceMarshaler  = &ptrace.JSONMarshaler{}
+)
 
 func newProcessor(settings processor.Settings, config *Config) *wsprocessor {
 	return &wsprocessor{

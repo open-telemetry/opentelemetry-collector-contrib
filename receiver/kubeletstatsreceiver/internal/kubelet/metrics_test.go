@@ -16,8 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-type fakeRestClient struct {
-}
+type fakeRestClient struct{}
 
 func (f fakeRestClient) StatsSummary() ([]byte, error) {
 	return os.ReadFile("../../testdata/stats-summary.json")

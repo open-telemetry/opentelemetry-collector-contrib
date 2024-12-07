@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
@@ -21,22 +22,26 @@ const (
 )
 
 var (
-	_ encoding.TracesMarshalerExtension    = (*otlpExtension)(nil)
-	_ encoding.TracesUnmarshalerExtension  = (*otlpExtension)(nil)
-	_ encoding.LogsMarshalerExtension      = (*otlpExtension)(nil)
-	_ encoding.LogsUnmarshalerExtension    = (*otlpExtension)(nil)
-	_ encoding.MetricsMarshalerExtension   = (*otlpExtension)(nil)
-	_ encoding.MetricsUnmarshalerExtension = (*otlpExtension)(nil)
+	_ encoding.TracesMarshalerExtension     = (*otlpExtension)(nil)
+	_ encoding.TracesUnmarshalerExtension   = (*otlpExtension)(nil)
+	_ encoding.LogsMarshalerExtension       = (*otlpExtension)(nil)
+	_ encoding.LogsUnmarshalerExtension     = (*otlpExtension)(nil)
+	_ encoding.MetricsMarshalerExtension    = (*otlpExtension)(nil)
+	_ encoding.MetricsUnmarshalerExtension  = (*otlpExtension)(nil)
+	_ encoding.ProfilesMarshalerExtension   = (*otlpExtension)(nil)
+	_ encoding.ProfilesUnmarshalerExtension = (*otlpExtension)(nil)
 )
 
 type otlpExtension struct {
-	config            *Config
-	traceMarshaler    ptrace.Marshaler
-	traceUnmarshaler  ptrace.Unmarshaler
-	logMarshaler      plog.Marshaler
-	logUnmarshaler    plog.Unmarshaler
-	metricMarshaler   pmetric.Marshaler
-	metricUnmarshaler pmetric.Unmarshaler
+	config             *Config
+	traceMarshaler     ptrace.Marshaler
+	traceUnmarshaler   ptrace.Unmarshaler
+	logMarshaler       plog.Marshaler
+	logUnmarshaler     plog.Unmarshaler
+	metricMarshaler    pmetric.Marshaler
+	metricUnmarshaler  pmetric.Unmarshaler
+	profileMarshaler   pprofile.Marshaler
+	profileUnmarshaler pprofile.Unmarshaler
 }
 
 func newExtension(config *Config) (*otlpExtension, error) {
@@ -46,23 +51,27 @@ func newExtension(config *Config) (*otlpExtension, error) {
 	switch protocol {
 	case otlpProto:
 		ex = &otlpExtension{
-			config:            config,
-			traceMarshaler:    &ptrace.ProtoMarshaler{},
-			traceUnmarshaler:  &ptrace.ProtoUnmarshaler{},
-			logMarshaler:      &plog.ProtoMarshaler{},
-			logUnmarshaler:    &plog.ProtoUnmarshaler{},
-			metricMarshaler:   &pmetric.ProtoMarshaler{},
-			metricUnmarshaler: &pmetric.ProtoUnmarshaler{},
+			config:             config,
+			traceMarshaler:     &ptrace.ProtoMarshaler{},
+			traceUnmarshaler:   &ptrace.ProtoUnmarshaler{},
+			logMarshaler:       &plog.ProtoMarshaler{},
+			logUnmarshaler:     &plog.ProtoUnmarshaler{},
+			metricMarshaler:    &pmetric.ProtoMarshaler{},
+			metricUnmarshaler:  &pmetric.ProtoUnmarshaler{},
+			profileMarshaler:   &pprofile.ProtoMarshaler{},
+			profileUnmarshaler: &pprofile.ProtoUnmarshaler{},
 		}
 	case otlpJSON:
 		ex = &otlpExtension{
-			config:            config,
-			traceMarshaler:    &ptrace.JSONMarshaler{},
-			traceUnmarshaler:  &ptrace.JSONUnmarshaler{},
-			logMarshaler:      &plog.JSONMarshaler{},
-			logUnmarshaler:    &plog.JSONUnmarshaler{},
-			metricMarshaler:   &pmetric.JSONMarshaler{},
-			metricUnmarshaler: &pmetric.JSONUnmarshaler{},
+			config:             config,
+			traceMarshaler:     &ptrace.JSONMarshaler{},
+			traceUnmarshaler:   &ptrace.JSONUnmarshaler{},
+			logMarshaler:       &plog.JSONMarshaler{},
+			logUnmarshaler:     &plog.JSONUnmarshaler{},
+			metricMarshaler:    &pmetric.JSONMarshaler{},
+			metricUnmarshaler:  &pmetric.JSONUnmarshaler{},
+			profileMarshaler:   &pprofile.JSONMarshaler{},
+			profileUnmarshaler: &pprofile.JSONUnmarshaler{},
 		}
 	default:
 		err = fmt.Errorf("unsupported protocol: %q", protocol)
@@ -93,6 +102,16 @@ func (ex *otlpExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 func (ex *otlpExtension) MarshalLogs(logs plog.Logs) ([]byte, error) {
 	return ex.logMarshaler.MarshalLogs(logs)
+}
+
+// UnmarshalProfiles implements encoding.ProfilesUnmarshalerExtension.
+func (ex *otlpExtension) UnmarshalProfiles(buf []byte) (pprofile.Profiles, error) {
+	return ex.profileUnmarshaler.UnmarshalProfiles(buf)
+}
+
+// MarshalProfiles implements encoding.ProfilesMarshalerExtension.
+func (ex *otlpExtension) MarshalProfiles(profiles pprofile.Profiles) ([]byte, error) {
+	return ex.profileMarshaler.MarshalProfiles(profiles)
 }
 
 func (ex *otlpExtension) Start(_ context.Context, _ component.Host) error {

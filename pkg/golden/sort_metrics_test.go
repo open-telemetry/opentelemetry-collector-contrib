@@ -42,7 +42,6 @@ func TestSortAttributes(t *testing.T) {
 			t.Errorf("Incorrect key at index %d. Expected: %s, Actual: %s", i, key, actualKeys[i])
 		}
 	}
-
 }
 
 func TestSortMetricsResourceAndScope(t *testing.T) {
@@ -56,5 +55,4 @@ func TestSortMetricsResourceAndScope(t *testing.T) {
 	after, err := ReadMetrics(afterPath)
 	require.NoError(t, err)
 	require.Equal(t, before, after)
-
 }

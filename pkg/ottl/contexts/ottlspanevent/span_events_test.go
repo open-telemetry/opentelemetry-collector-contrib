@@ -17,9 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
-var (
-	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
-)
+var spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 
 func Test_newPathGetSetter(t *testing.T) {
 	refSpanEvent, refSpan, refIS, refResource := createTelemetry()

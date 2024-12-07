@@ -159,18 +159,22 @@ func TestScaperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
-				cfg.Targets = []*targetConfig{{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: tc.endpoint,
-					}},
+				cfg.Targets = []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: tc.endpoint,
+						},
+					},
 				}
 			} else {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
-				cfg.Targets = []*targetConfig{{
-					ClientConfig: confighttp.ClientConfig{
-						Endpoint: ms.URL,
-					}},
+				cfg.Targets = []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: ms.URL,
+						},
+					},
 				}
 			}
 			scraper := newScraper(cfg, receivertest.NewNopSettings())
@@ -195,7 +199,6 @@ func TestNilClient(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
-
 }
 
 func TestScraperMultipleTargets(t *testing.T) {

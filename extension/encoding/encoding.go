@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -44,4 +45,16 @@ type TracesMarshalerExtension interface {
 type TracesUnmarshalerExtension interface {
 	extension.Extension
 	ptrace.Unmarshaler
+}
+
+// ProfilesMarshalerExtension is an extension that marshals profiles.
+type ProfilesMarshalerExtension interface {
+	extension.Extension
+	pprofile.Marshaler
+}
+
+// ProfilesUnmarshalerExtension is an extension that unmarshals Profiles.
+type ProfilesUnmarshalerExtension interface {
+	extension.Extension
+	pprofile.Unmarshaler
 }

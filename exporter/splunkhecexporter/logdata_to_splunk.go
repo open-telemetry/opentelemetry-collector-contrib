@@ -150,7 +150,6 @@ func mergeValue(dst map[string]any, k string, v any) {
 	default:
 		dst[k] = v
 	}
-
 }
 
 func isArrayFlat(array []any) bool {

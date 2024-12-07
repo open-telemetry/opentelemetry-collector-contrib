@@ -13,7 +13,6 @@ import (
 var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
 
 type Config struct {
-
 	// Google Cloud Project ID where the Pubsub client will connect to
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service

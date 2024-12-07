@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
@@ -75,7 +75,6 @@ func ToTraces(rawSeg []byte, recorder telemetry.Recorder) (ptrace.Traces, int, e
 }
 
 func segToSpans(seg awsxray.Segment, traceID, parentID *string, spans ptrace.SpanSlice) (ptrace.Span, error) {
-
 	span := spans.AppendEmpty()
 
 	err := populateSpan(&seg, traceID, parentID, span)
@@ -111,7 +110,6 @@ func segToSpans(seg awsxray.Segment, traceID, parentID *string, spans ptrace.Spa
 }
 
 func populateSpan(seg *awsxray.Segment, traceID, parentID *string, span ptrace.Span) error {
-
 	attrs := span.Attributes()
 	attrs.Clear()
 	attrs.EnsureCapacity(initAttrCapacity)
@@ -129,13 +127,11 @@ func populateSpan(seg *awsxray.Segment, traceID, parentID *string, span ptrace.S
 		if err != nil {
 			return err
 		}
-
 	} else {
 		traceIDBytes, err = decodeXRayTraceID(seg.TraceID)
 		if err != nil {
 			return err
 		}
-
 	}
 
 	// decode parent id

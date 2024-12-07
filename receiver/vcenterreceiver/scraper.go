@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
@@ -92,13 +92,15 @@ func (v *vcenterMetricScraper) Start(ctx context.Context, _ component.Host) erro
 	connectErr := v.client.EnsureConnection(ctx)
 	// don't fail to start if we cannot establish connection, just log an error
 	if connectErr != nil {
-		v.logger.Error(fmt.Sprintf("unable to establish a connection to the vSphere SDK %s", connectErr.Error()))
+		v.logger.Error("unable to establish a connection to the vSphere SDK " + connectErr.Error())
 	}
 	return nil
 }
+
 func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 	return v.client.Disconnect(ctx)
 }
+
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
 		v.client = newVcenterClient(v.logger, v.config)

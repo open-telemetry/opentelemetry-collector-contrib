@@ -37,7 +37,7 @@ func TestInvalidMarshal(t *testing.T) {
 	p := plog.NewLogs()
 	p.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("NOT A MAP")
 	_, err := e.MarshalLogs(p)
-	assert.ErrorContains(t, err, "Marshal: Expected 'Map' found 'Str'")
+	assert.ErrorContains(t, err, "marshal: expected 'Map' found 'Str'")
 }
 
 func TestInvalidUnmarshal(t *testing.T) {

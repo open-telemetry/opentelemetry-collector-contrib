@@ -76,7 +76,6 @@ func New(opts ...Option) *Batch {
 }
 
 func (b *Batch) AddRecord(raw []byte, key string) error {
-
 	compressor, err := compress.NewCompressor(b.compressionType)
 	if err != nil {
 		return err

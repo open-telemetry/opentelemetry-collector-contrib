@@ -150,6 +150,7 @@ var _ zipkinreporter.Reporter = (*mockZipkinReporter)(nil)
 func (r *mockZipkinReporter) Send(span zipkinmodel.SpanModel) {
 	r.batch = append(r.batch, &span)
 }
+
 func (r *mockZipkinReporter) Close() error {
 	return nil
 }
@@ -175,7 +176,7 @@ func (r *mockZipkinReporter) Flush() error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", r.url, bytes.NewReader(body))
+	req, err := http.NewRequest(http.MethodPost, r.url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

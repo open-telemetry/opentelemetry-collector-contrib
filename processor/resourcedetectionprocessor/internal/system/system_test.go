@@ -178,7 +178,6 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
-
 }
 
 func TestFallbackHostname(t *testing.T) {
@@ -368,7 +367,6 @@ func TestDetectCPUInfo(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
-
 }
 
 func newTestDetector(mock *mockMetadata, hostnameSources []string, resCfg metadata.ResourceAttributesConfig) *Detector {

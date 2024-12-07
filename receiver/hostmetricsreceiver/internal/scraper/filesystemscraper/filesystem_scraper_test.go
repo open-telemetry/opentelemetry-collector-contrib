@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -488,7 +488,8 @@ func assertFileSystemUsageMetricValid(
 	t *testing.T,
 	metric pmetric.Metric,
 	expectedDeviceDataPoints int,
-	expectedDeviceAttributes []map[string]pcommon.Value) {
+	expectedDeviceAttributes []map[string]pcommon.Value,
+) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)

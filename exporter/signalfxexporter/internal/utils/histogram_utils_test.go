@@ -220,7 +220,8 @@ func TestHistogramsAreRetrieved(t *testing.T) {
 				ilm1.Metrics().AppendEmpty()
 				buildHistogram(ilm1.Metrics().At(1), "histogram_2_s2", ts, 2)
 				return out
-			}},
+			},
+		},
 		{
 			name: "mixed_type_multiple_resources",
 			inMetricsFunc: func() pmetric.Metrics {
@@ -292,7 +293,8 @@ func TestHistogramsAreRetrieved(t *testing.T) {
 				buildHistogram(ilm0r1.Metrics().At(0), "histogram_s0_r2", ts, 1)
 
 				return out
-			}},
+			},
+		},
 		{
 			name: "remove_access_token",
 			inMetricsFunc: func() pmetric.Metrics {

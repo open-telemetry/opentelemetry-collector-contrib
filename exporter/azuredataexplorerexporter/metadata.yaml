@@ -6,7 +6,8 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [asaharn, ag-ramachandran]
+    active: [ag-ramachandran]
+    emeritus: [asaharn]
 
 # TODO: Update the exporter to pass the tests
 tests:

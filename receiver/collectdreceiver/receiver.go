@@ -41,8 +41,8 @@ func newCollectdReceiver(
 	cfg *Config,
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics,
-	createSettings receiver.Settings) (receiver.Metrics, error) {
-
+	createSettings receiver.Settings,
+) (receiver.Metrics, error) {
 	r := &collectdReceiver{
 		logger:             logger,
 		nextConsumer:       nextConsumer,
@@ -95,7 +95,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx = cdr.obsrecv.StartMetricsOp(ctx)
 
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		cdr.obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, errors.New("invalid http verb"))
 		w.WriteHeader(http.StatusBadRequest)
 		return

@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -115,6 +116,11 @@ func TestLoadConfig(t *testing.T) {
 					Names:  []string{"test2", "test3"},
 					Config: filterset.Config{MatchType: "regexp"},
 				}
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			})(),
+			systemscraper.TypeStr: (func() internal.Config {
+				cfg := (&systemscraper.Factory{}).CreateDefaultConfig()
 				cfg.SetEnvMap(common.EnvMap{})
 				return cfg
 			})(),

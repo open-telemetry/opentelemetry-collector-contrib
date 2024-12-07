@@ -67,7 +67,7 @@ func sendToCollector(endpoint string, contentType string, contentEncoding string
 		}
 	}
 
-	req, err := http.NewRequest("POST", endpoint, &buf)
+	req, err := http.NewRequest(http.MethodPost, endpoint, &buf)
 	if err != nil {
 		return err
 	}
@@ -365,7 +365,6 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 }
 
 func TestExpectedStatus(t *testing.T) {
-
 	testcases := []struct {
 		name              string
 		err               error

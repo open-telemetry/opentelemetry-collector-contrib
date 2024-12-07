@@ -29,4 +29,4 @@ protocols:
     memory_limit_mib: 123
 admission:
   request_limit_mib: 80
-  waiter_limit: 100
+  waiting_limit_mib: 100

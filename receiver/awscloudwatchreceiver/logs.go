@@ -295,7 +295,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 	}
 
 	numGroups := 0
-	var nextToken = aws.String("")
+	nextToken := aws.String("")
 	for nextToken != nil {
 		if numGroups >= auto.Limit {
 			break

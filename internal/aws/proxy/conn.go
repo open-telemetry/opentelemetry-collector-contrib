@@ -60,7 +60,6 @@ var newAWSSession = func(roleArn string, region string, log *zap.Logger) (*sessi
 	sess, err := session.NewSession(&aws.Config{
 		Credentials: stsCreds,
 	})
-
 	if err != nil {
 		return nil, err
 	}

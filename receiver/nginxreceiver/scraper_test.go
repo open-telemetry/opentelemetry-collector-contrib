@@ -53,11 +53,11 @@ func TestScraper(t *testing.T) {
 func TestScraperError(t *testing.T) {
 	nginxMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/status" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, _ = rw.Write([]byte(`Bad status page`))
 			return
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 	t.Run("404", func(t *testing.T) {
 		sc := newNginxScraper(receivertest.NewNopSettings(), &Config{
@@ -103,7 +103,7 @@ func TestScraperFailedStart(t *testing.T) {
 func newMockServer(t *testing.T) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == "/status" {
-			rw.WriteHeader(200)
+			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write([]byte(`Active connections: 291
 server accepts handled requests
  16630948 16630946 31070465
@@ -112,6 +112,6 @@ Reading: 6 Writing: 179 Waiting: 106
 			assert.NoError(t, err)
 			return
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 	}))
 }

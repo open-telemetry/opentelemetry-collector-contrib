@@ -87,7 +87,7 @@ func setupMockIControlServer(t *testing.T) *httptest.Server {
 			var body loginBody
 			err = json.NewDecoder(r.Body).Decode(&body)
 			assert.NoError(t, err)
-			if body.Username == "" || body.Password == "" || r.Method != "POST" {
+			if body.Username == "" || body.Password == "" || r.Method != http.MethodPost {
 				w.WriteHeader(http.StatusUnauthorized)
 			} else {
 				_, err = w.Write(mockLoginResponse)

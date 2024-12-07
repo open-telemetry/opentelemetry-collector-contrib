@@ -106,10 +106,6 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 		}
 	}
 
-	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
-		return nil
-	}
-
 	return err
 }
 

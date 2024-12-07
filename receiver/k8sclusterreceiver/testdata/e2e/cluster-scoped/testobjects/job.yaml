@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-k8scluster-receiver-job
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+        - name: alpine
+          image: alpine
+          args:
+            - /bin/sh
+            - -c
+            - "echo Hello from Job; sleep 600"
+      restartPolicy: Never
+  backoffLimit: 3

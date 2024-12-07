@@ -141,7 +141,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
-	require.NoError(t, err)
+	require.Error(t, err)
 	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
 
 	// Test output logs
@@ -231,7 +231,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
-	require.NoError(t, err)
+	require.Error(t, err)
 	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
 
 	// Test output logs

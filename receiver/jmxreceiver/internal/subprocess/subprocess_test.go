@@ -65,5 +65,4 @@ func TestPidAccessors(t *testing.T) {
 	subprocess.pid.setPid(123)
 	require.Equal(t, 123, subprocess.pid.getPid())
 	require.Equal(t, 123, subprocess.Pid())
-
 }

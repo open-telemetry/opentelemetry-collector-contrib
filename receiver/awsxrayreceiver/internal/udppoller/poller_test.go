@@ -430,7 +430,8 @@ func (m *mockSocketConn) Close() error { return nil }
 func createAndOptionallyStartPoller(
 	t *testing.T,
 	start bool,
-	set receiver.Settings) (string, Poller, *observer.ObservedLogs) {
+	set receiver.Settings,
+) (string, Poller, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
 	assert.NoError(t, err, "there should be address available")
 

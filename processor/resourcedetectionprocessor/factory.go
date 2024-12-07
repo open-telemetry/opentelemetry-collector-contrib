@@ -12,8 +12,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
@@ -70,12 +73,13 @@ func NewFactory() processor.Factory {
 		providers:               map[component.ID]*internal.ResourceProvider{},
 	}
 
-	return processor.NewFactory(
+	return processorprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
-		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
-		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability))
+		processorprofiles.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		processorprofiles.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		processorprofiles.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		processorprofiles.WithProfiles(f.createProfilesProcessor, metadata.ProfilesStability))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -162,6 +166,27 @@ func (f *factory) createLogsProcessor(
 		rdp.processLogs,
 		processorhelper.WithCapabilities(consumerCapabilities),
 		processorhelper.WithStart(rdp.Start))
+}
+
+func (f *factory) createProfilesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer consumerprofiles.Profiles,
+) (processorprofiles.Profiles, error) {
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelperprofiles.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		rdp.processProfiles,
+		processorhelperprofiles.WithCapabilities(consumerCapabilities),
+		processorhelperprofiles.WithStart(rdp.Start))
 }
 
 func (f *factory) getResourceDetectionProcessor(

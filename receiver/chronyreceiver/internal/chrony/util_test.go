@@ -4,7 +4,6 @@
 package chrony
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -46,7 +45,7 @@ func TestSplitNetworkEndpoint(t *testing.T) {
 		},
 		{
 			scenario: "A valid UNIX network",
-			in:       fmt.Sprintf("unix://%s", path),
+			in:       "unix://" + path,
 			network:  "unixgram",
 			endpoint: path,
 			err:      nil,

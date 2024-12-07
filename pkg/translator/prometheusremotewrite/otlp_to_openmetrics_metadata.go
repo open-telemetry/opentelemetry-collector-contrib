@@ -53,7 +53,7 @@ func OtelMetricsToMetadata(md pmetric.Metrics, addMetricSuffixes bool) []*prompb
 		}
 	}
 
-	var metadata = make([]*prompb.MetricMetadata, 0, metadataLength)
+	metadata := make([]*prompb.MetricMetadata, 0, metadataLength)
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
 		scopeMetricsSlice := resourceMetrics.ScopeMetrics()

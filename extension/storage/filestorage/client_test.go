@@ -122,7 +122,6 @@ func TestClientBatchOperations(t *testing.T) {
 	for i := range testGetEntries {
 		require.Equal(t, testGetEntries[i].Key, testEntriesDelete[i].Key)
 		require.Nil(t, testGetEntries[i].Value)
-
 	}
 }
 
@@ -175,7 +174,6 @@ func TestNewClientTransactionErrors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			tempDir := t.TempDir()
 			dbFile := filepath.Join(tempDir, "my_db")
 

@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -123,7 +123,6 @@ func TestScrape(t *testing.T) {
 		// and the other failure comes from a row that fails to parse as a number
 		require.Equal(t, 5, partialError.Failed, "Expected partial error count to be 5")
 	})
-
 }
 
 var _ client = (*mockClient)(nil)
@@ -140,7 +139,7 @@ type mockClient struct {
 }
 
 func readFile(fname string) (map[string]string, error) {
-	var stats = map[string]string{}
+	stats := map[string]string{}
 	file, err := os.Open(filepath.Join("testdata", "scraper", fname+".txt"))
 	if err != nil {
 		return nil, err
@@ -194,7 +193,6 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 		stats = append(stats, s)
 	}
 	return stats, nil
-
 }
 
 func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {

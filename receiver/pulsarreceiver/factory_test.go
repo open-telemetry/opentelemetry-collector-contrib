@@ -174,14 +174,11 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 	})
 }
 
-type customTracesUnmarshaler struct {
-}
+type customTracesUnmarshaler struct{}
 
-type customMetricsUnmarshaler struct {
-}
+type customMetricsUnmarshaler struct{}
 
-type customLogsUnmarshaler struct {
-}
+type customLogsUnmarshaler struct{}
 
 func (c customTracesUnmarshaler) Unmarshal([]byte) (ptrace.Traces, error) {
 	panic("implement me")

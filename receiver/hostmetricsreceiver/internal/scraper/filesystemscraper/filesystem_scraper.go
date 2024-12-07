@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
@@ -28,8 +28,8 @@ const (
 	metricsLen         = standardMetricsLen + systemSpecificMetricsLen
 )
 
-// scraper for FileSystem Metrics
-type scraper struct {
+// filesystemsScraper for FileSystem Metrics
+type filesystemsScraper struct {
 	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
@@ -47,17 +47,17 @@ type deviceUsage struct {
 }
 
 // newFileSystemScraper creates a FileSystem Scraper
-func newFileSystemScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*scraper, error) {
+func newFileSystemScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*filesystemsScraper, error) {
 	fsFilter, err := cfg.createFilter()
 	if err != nil {
 		return nil, err
 	}
 
-	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter}
+	scraper := &filesystemsScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, partitions: disk.PartitionsWithContext, usage: disk.UsageWithContext, fsFilter: *fsFilter}
 	return scraper, nil
 }
 
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
+func (s *filesystemsScraper) start(ctx context.Context, _ component.Host) error {
 	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
@@ -68,7 +68,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *filesystemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 

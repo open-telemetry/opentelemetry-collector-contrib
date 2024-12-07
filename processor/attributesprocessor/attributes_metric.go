@@ -62,7 +62,6 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetr
 // Attributes are provided for each log and trace, but not at the metric level
 // Need to process attributes for every data point within a metric.
 func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context, m pmetric.Metric) {
-
 	// This is a lot of repeated code, but since there is no single parent superclass
 	// between metric data types, we can't use polymorphism.
 	//exhaustive:enforce

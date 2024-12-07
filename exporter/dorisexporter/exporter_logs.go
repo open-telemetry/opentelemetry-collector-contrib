@@ -115,9 +115,7 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 				logs = append(logs, log)
 			}
-
 		}
-
 	}
 
 	return e.pushLogDataInternal(ctx, logs)

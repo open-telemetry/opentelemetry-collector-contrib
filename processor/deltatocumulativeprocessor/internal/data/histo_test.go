@@ -13,7 +13,7 @@ import (
 
 func TestHistoAdd(t *testing.T) {
 	type histdp = histotest.Histogram
-	var obs = histotest.Bounds(histo.DefaultBounds).Observe
+	obs := histotest.Bounds(histo.DefaultBounds).Observe
 
 	cases := []struct {
 		name   string

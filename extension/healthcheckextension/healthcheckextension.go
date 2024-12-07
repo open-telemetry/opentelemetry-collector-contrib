@@ -29,7 +29,6 @@ type healthCheckExtension struct {
 var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
 
 func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
-
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
 	ln, err := hc.config.ToListener(ctx)
 	if err != nil {

@@ -33,7 +33,8 @@ func newAWSECSContainermetrics(
 	logger *zap.Logger,
 	config *Config,
 	nextConsumer consumer.Metrics,
-	rest ecsutil.RestClient) (receiver.Metrics, error) {
+	rest ecsutil.RestClient,
+) (receiver.Metrics, error) {
 	r := &awsEcsContainerMetricsReceiver{
 		logger:       logger,
 		nextConsumer: nextConsumer,
@@ -74,7 +75,6 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
 	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient, aecmr.logger)
 	stats, metadata, err := aecmr.provider.GetStats()
-
 	if err != nil {
 		aecmr.logger.Error("Failed to collect stats", zap.Error(err))
 		return err

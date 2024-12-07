@@ -57,12 +57,11 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 
-	request := &http.Request{Method: "Get"}
+	request := &http.Request{Method: http.MethodGet}
 	resp, err := c.RoundTrip(request)
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(cfg.BearerToken)))
-
 }
 
 func TestBearerAuthenticator(t *testing.T) {
@@ -128,7 +127,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.True(t, credential.RequireTransportSecurity())
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
@@ -137,7 +136,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 
 	// change file content back
-	assert.NoError(t, os.WriteFile(bauth.filename, token, 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, token, 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
@@ -171,32 +170,32 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, rt)
 
-	request := &http.Request{Method: "Get"}
+	request := &http.Request{Method: http.MethodGet}
 	resp, err := rt.RoundTrip(request)
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
 	time.Sleep(5 * time.Second)
 
 	tokenNew, err := os.ReadFile(bauth.filename)
 	assert.NoError(t, err)
 
 	// check if request is updated with the new token
-	request = &http.Request{Method: "Get"}
+	request = &http.Request{Method: http.MethodGet}
 	resp, err = rt.RoundTrip(request)
 	assert.NoError(t, err)
 	authHeaderValue = resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(tokenNew)))
 
 	// change file content back
-	assert.NoError(t, os.WriteFile(bauth.filename, token, 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, token, 0o600))
 	time.Sleep(5 * time.Second)
 
 	// check if request is updated with the old token
-	request = &http.Request{Method: "Get"}
+	request = &http.Request{Method: http.MethodGet}
 	resp, err = rt.RoundTrip(request)
 	assert.NoError(t, err)
 	authHeaderValue = resp.Header.Get("Authorization")

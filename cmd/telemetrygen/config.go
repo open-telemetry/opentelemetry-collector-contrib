@@ -76,7 +76,6 @@ func init() {
 	// Disabling completion command for end user
 	// https://github.com/spf13/cobra/blob/master/shell_completions.md
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
-
 }
 
 // Execute tries to run the input command

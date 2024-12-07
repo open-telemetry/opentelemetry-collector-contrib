@@ -36,7 +36,6 @@ func newRouter[E component.Component, K any](
 	defaultExporterIDs []string,
 	settings component.TelemetrySettings,
 	parser ottl.Parser[K],
-
 ) router[E, K] {
 	return router[E, K]{
 		logger: settings.Logger,

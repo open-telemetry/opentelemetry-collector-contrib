@@ -58,8 +58,10 @@ func validateRecordType(recordType string) error {
 // unmarshalers.
 func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.MetricsUnmarshaler {
 	cwmsu := cwmetricstream.NewUnmarshaler(logger)
+	otlpv1msu := otlpmetricstream.NewUnmarshaler(logger)
 	return map[string]unmarshaler.MetricsUnmarshaler{
-		cwmsu.Type(): cwmsu,
+		cwmsu.Type():     cwmsu,
+		otlpv1msu.Type(): otlpv1msu,
 	}
 }
 

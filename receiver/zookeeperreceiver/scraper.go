@@ -95,7 +95,6 @@ func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 
 func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string) ([]string, error) {
 	conn, err := z.config.Dial(context.Background())
-
 	if err != nil {
 		z.logger.Error("failed to establish connection",
 			zap.String("endpoint", z.config.Endpoint),
@@ -164,7 +163,7 @@ func (z *zookeeperMetricsScraper) processMntr(response []string) {
 			int64Val, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
 				z.logger.Debug(
-					fmt.Sprintf("non-integer value from %s", mntrCommand),
+					"non-integer value from "+mntrCommand,
 					zap.String("value", metricValue),
 				)
 				continue

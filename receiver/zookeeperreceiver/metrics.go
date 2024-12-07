@@ -111,7 +111,6 @@ func (m *metricCreator) generateComputedMetrics(logger *zap.Logger, ts pcommon.T
 	if err := m.computeNotSyncedFollowersMetric(ts); err != nil {
 		logger.Debug("metric computation failed", zap.Error(err))
 	}
-
 }
 
 func (m *metricCreator) computeNotSyncedFollowersMetric(ts pcommon.Timestamp) error {

@@ -38,9 +38,7 @@ const (
 	metricNamePattern = "^metric_name:([A-Za-z\\.:][A-Za-z0-9_\\.:]*)$"
 )
 
-var (
-	metricNameRegexp = regexp.MustCompile(metricNamePattern)
-)
+var metricNameRegexp = regexp.MustCompile(metricNamePattern)
 
 // AccessTokenPassthroughConfig configures passing through access tokens.
 type AccessTokenPassthroughConfig struct {

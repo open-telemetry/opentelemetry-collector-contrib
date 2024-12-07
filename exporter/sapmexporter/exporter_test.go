@@ -370,7 +370,7 @@ func TestCompression(t *testing.T) {
 							err = sapm.Unmarshal(payload)
 							assert.NoError(t, err)
 
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 							tracesReceived = true
 						},
 					),

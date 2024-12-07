@@ -26,7 +26,7 @@ func TestScrape(t *testing.T) {
 		config            *Config
 		expectedStartTime pcommon.Timestamp
 		initializationErr string
-		mutateScraper     func(*scraper)
+		mutateScraper     func(*pagingScraper)
 	}
 
 	config := metadata.DefaultMetricsBuilderConfig()
@@ -44,7 +44,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:   "Validate Start Time",
 			config: &Config{MetricsBuilderConfig: config},
-			mutateScraper: func(s *scraper) {
+			mutateScraper: func(s *pagingScraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 			},
 			expectedStartTime: 100 * 1e9,
@@ -52,7 +52,7 @@ func TestScrape(t *testing.T) {
 		{
 			name:   "Boot Time Error",
 			config: &Config{MetricsBuilderConfig: config},
-			mutateScraper: func(s *scraper) {
+			mutateScraper: func(s *pagingScraper) {
 				s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
 			},
 			initializationErr: "err1",
@@ -189,7 +189,6 @@ func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetri
 }
 
 func assertPagingOperationsMetricValid(t *testing.T, pagingMetric []pmetric.Metric, startTime pcommon.Timestamp, removeAttribute bool) {
-
 	type test struct {
 		name        string
 		description string

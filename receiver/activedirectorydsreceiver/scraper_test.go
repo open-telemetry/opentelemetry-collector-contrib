@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -21,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
-var partialScrapePath = filepath.Join("testdata", "partial_scrape.yaml")
+var (
+	goldenScrapePath  = filepath.Join("testdata", "golden_scrape.yaml")
+	partialScrapePath = filepath.Join("testdata", "partial_scrape.yaml")
+)
 
 func TestScrape(t *testing.T) {
 	t.Run("Fully successful scrape", func(t *testing.T) {

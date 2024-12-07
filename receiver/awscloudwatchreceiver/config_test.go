@@ -87,7 +87,8 @@ func TestValidate(t *testing.T) {
 						AutodiscoverConfig: &AutodiscoverConfig{
 							Limit: -10000,
 						},
-					}},
+					},
+				},
 			},
 			expectedErr: errInvalidAutodiscoverLimit,
 		},

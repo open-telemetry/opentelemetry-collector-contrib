@@ -159,7 +159,6 @@ func spanKindToOCAttribute(kind ptrace.SpanKind) *octrace.AttributeValue {
 	case ptrace.SpanKindServer: // explicitly handled as SpanKind
 	case ptrace.SpanKindClient: // explicitly handled as SpanKind
 	default:
-
 	}
 
 	if string(ocKind) == "" {

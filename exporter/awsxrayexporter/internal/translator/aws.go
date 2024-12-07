@@ -230,7 +230,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	case logGroups != (pcommon.Slice{}) && logGroups.Len() > 0:
 		cwl = getLogGroupMetadata(logGroups, false)
 	case logGroupNames != nil:
-		var configSlice = pcommon.NewSlice()
+		configSlice := pcommon.NewSlice()
 		configSlice.EnsureCapacity(len(logGroupNames))
 
 		for _, s := range logGroupNames {

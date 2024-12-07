@@ -85,7 +85,6 @@ func TestHeaderExtractionTraces(t *testing.T) {
 	}
 	cancelFunc()
 	wg.Wait()
-
 }
 
 func TestHeaderExtractionLogs(t *testing.T) {
@@ -147,7 +146,6 @@ func TestHeaderExtractionLogs(t *testing.T) {
 	}
 	cancelFunc()
 	wg.Wait()
-
 }
 
 func TestHeaderExtractionMetrics(t *testing.T) {
@@ -210,7 +208,6 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	}
 	cancelFunc()
 	wg.Wait()
-
 }
 
 func validateHeader(t *testing.T, rs pcommon.Resource, headerKey string, headerValue string) {

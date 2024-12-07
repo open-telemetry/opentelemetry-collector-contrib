@@ -4,10 +4,10 @@
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
 )
@@ -156,12 +156,12 @@ func getValueFromBody(keys []string, body map[string]any) (any, error) {
 	for _, key := range keys {
 		currentBody, ok := currentValue.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("could not find key in body")
+			return nil, errors.New("could not find key in body")
 		}
 
 		currentValue, ok = currentBody[key]
 		if !ok {
-			return nil, fmt.Errorf("could not find key in body")
+			return nil, errors.New("could not find key in body")
 		}
 	}
 	return currentValue, nil
@@ -174,12 +174,12 @@ func (c *couchdbScraper) parseInt(value any) (int64, error) {
 	case float64:
 		return int64(i), nil
 	}
-	return 0, fmt.Errorf("could not parse value as int")
+	return 0, errors.New("could not parse value as int")
 }
 
 func (c *couchdbScraper) parseFloat(value any) (float64, error) {
 	if f, ok := value.(float64); ok {
 		return f, nil
 	}
-	return 0, fmt.Errorf("could not parse value as float")
+	return 0, errors.New("could not parse value as float")
 }

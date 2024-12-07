@@ -14,8 +14,8 @@ import (
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	devents "github.com/docker/docker/api/types/events"
+	ctypes "github.com/docker/docker/api/types/container"
+	etypes "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
 	"go.uber.org/zap"
@@ -35,7 +35,7 @@ type Container struct {
 // Client provides the core metric gathering functionality from the Docker Daemon.
 // It retrieves container information in two forms to produce metric data: dtypes.ContainerJSON
 // from client.ContainerInspect() for container information (id, name, hostname, labels, and env)
-// and dtypes.StatsJSON from client.ContainerStats() for metric values.
+// and ctypes.StatsResponse from client.ContainerStats() for metric values.
 type Client struct {
 	client               *docker.Client
 	config               *Config
@@ -99,7 +99,7 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 	// Build initial container maps before starting loop
 	filters := dfilters.NewArgs()
 	filters.Add("status", "running")
-	options := container.ListOptions{
+	options := ctypes.ListOptions{
 		Filters: filters,
 	}
 
@@ -135,7 +135,7 @@ func (dc *Client) LoadContainerList(ctx context.Context) error {
 func (dc *Client) FetchContainerStatsAsJSON(
 	ctx context.Context,
 	container Container,
-) (*dtypes.StatsJSON, error) {
+) (*ctypes.StatsResponse, error) {
 	containerStats, err := dc.FetchContainerStats(ctx, container)
 	if err != nil {
 		return nil, err
@@ -154,7 +154,7 @@ func (dc *Client) FetchContainerStatsAsJSON(
 func (dc *Client) FetchContainerStats(
 	ctx context.Context,
 	container Container,
-) (dtypes.ContainerStats, error) {
+) (ctypes.StatsResponseReader, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
 	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)
@@ -179,10 +179,10 @@ func (dc *Client) FetchContainerStats(
 }
 
 func (dc *Client) toStatsJSON(
-	containerStats dtypes.ContainerStats,
+	containerStats ctypes.StatsResponseReader,
 	container *Container,
-) (*dtypes.StatsJSON, error) {
-	var statsJSON dtypes.StatsJSON
+) (*ctypes.StatsResponse, error) {
+	var statsJSON ctypes.StatsResponse
 	err := json.NewDecoder(containerStats.Body).Decode(&statsJSON)
 	containerStats.Body.Close()
 	if err != nil {
@@ -204,7 +204,7 @@ func (dc *Client) toStatsJSON(
 // Events exposes the underlying Docker clients Events channel.
 // Caller should close the events channel by canceling the context.
 // If an error occurs, processing stops and caller must reinvoke this method.
-func (dc *Client) Events(ctx context.Context, options dtypes.EventsOptions) (<-chan devents.Message, <-chan error) {
+func (dc *Client) Events(ctx context.Context, options etypes.ListOptions) (<-chan etypes.Message, <-chan error) {
 	return dc.client.Events(ctx, options)
 }
 
@@ -224,7 +224,7 @@ func (dc *Client) ContainerEventLoop(ctx context.Context) {
 
 EVENT_LOOP:
 	for {
-		options := dtypes.EventsOptions{
+		options := etypes.ListOptions{
 			Filters: filters,
 			Since:   lastTime.Format(time.RFC3339Nano),
 		}

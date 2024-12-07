@@ -54,7 +54,7 @@ func TestFileProfilesReceiver(t *testing.T) {
 	b, err := marshaler.MarshalProfiles(pd)
 	assert.NoError(t, err)
 	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "profiles.json"), b, 0600)
+	err = os.WriteFile(filepath.Join(tempFolder, "profiles.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
@@ -81,7 +81,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	b, err := marshaler.MarshalTraces(td)
 	assert.NoError(t, err)
 	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0600)
+	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
@@ -108,7 +108,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
 	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
+	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
@@ -138,7 +138,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
 	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
+	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0o600)
 	assert.NoError(t, err)
 
 	// Wait for the first poll to complete.
@@ -173,7 +173,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	b, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
 	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0600)
+	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
@@ -271,7 +271,7 @@ func TestFileMixedSignals(t *testing.T) {
 	b = append(b, '\n')
 	b = append(b, b4...)
 	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
+	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 

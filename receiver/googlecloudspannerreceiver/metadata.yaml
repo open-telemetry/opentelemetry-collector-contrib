@@ -1,0 +1,14 @@
+type: googlecloudspanner
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [dashpole, dsimil, KiranmayiB, harishbohara11]
+    emeritus: [architjugran, varunraiko]
+tests:
+  config:
+  goleak:
+    skip: true

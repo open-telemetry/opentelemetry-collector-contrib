@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -184,7 +185,7 @@ func constructResource() pcommon.Resource {
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
@@ -211,7 +212,7 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[conventions.AttributeHTTPStatusCode] = 200

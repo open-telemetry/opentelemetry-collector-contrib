@@ -56,8 +56,7 @@ func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component
 	}
 }
 
-type encodingExtension struct {
-}
+type encodingExtension struct{}
 
 func (e encodingExtension) Start(_ context.Context, _ component.Host) error {
 	panic("unsupported")

@@ -45,5 +45,4 @@ func createLogsExporter(_ context.Context, params exporter.Settings, config comp
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")
 	}
 	return newCwLogsExporter(expConfig, params)
-
 }

@@ -12,6 +12,7 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - atoulme
+    - ChrsMark
     # - crobert-1 on leave
     - dashpole
     - mwear

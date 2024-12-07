@@ -90,6 +90,7 @@ func (r *awss3Receiver) Start(ctx context.Context, host component.Host) error {
 	}()
 	return nil
 }
+
 func (r *awss3Receiver) Shutdown(ctx context.Context) error {
 	if r.notifier != nil {
 		if err := r.notifier.Shutdown(ctx); err != nil {

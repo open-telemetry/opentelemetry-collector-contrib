@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
@@ -33,7 +33,7 @@ const (
 )
 
 // scraper for Paging Metrics
-type scraper struct {
+type pagingScraper struct {
 	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
@@ -47,8 +47,8 @@ type scraper struct {
 }
 
 // newPagingScraper creates a Paging Scraper
-func newPagingScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
-	return &scraper{
+func newPagingScraper(_ context.Context, settings receiver.Settings, cfg *Config) *pagingScraper {
+	return &pagingScraper{
 		settings:           settings,
 		config:             cfg,
 		perfCounterScraper: &perfcounters.PerfLibScraper{},
@@ -57,7 +57,7 @@ func newPagingScraper(_ context.Context, settings receiver.Settings, cfg *Config
 	}
 }
 
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
+func (s *pagingScraper) start(ctx context.Context, _ component.Host) error {
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -72,7 +72,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (s *pagingScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if s.skipScrape {
 		return pmetric.NewMetrics(), nil
 	}
@@ -92,7 +92,7 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), errors.Combine()
 }
 
-func (s *scraper) scrapePagingUsageMetric() error {
+func (s *pagingScraper) scrapePagingUsageMetric() error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	pageFiles, err := s.pageFileStats()
 	if err != nil {
@@ -105,21 +105,21 @@ func (s *scraper) scrapePagingUsageMetric() error {
 	return nil
 }
 
-func (s *scraper) recordPagingUsageDataPoints(now pcommon.Timestamp, pageFiles []*pageFileStats) {
+func (s *pagingScraper) recordPagingUsageDataPoints(now pcommon.Timestamp, pageFiles []*pageFileStats) {
 	for _, pageFile := range pageFiles {
 		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.usedBytes), pageFile.deviceName, metadata.AttributeStateUsed)
 		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.freeBytes), pageFile.deviceName, metadata.AttributeStateFree)
 	}
 }
 
-func (s *scraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp, pageFiles []*pageFileStats) {
+func (s *pagingScraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp, pageFiles []*pageFileStats) {
 	for _, pageFile := range pageFiles {
 		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeStateUsed)
 		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeStateFree)
 	}
 }
 
-func (s *scraper) scrapePagingOperationsMetric() error {
+func (s *pagingScraper) scrapePagingOperationsMetric() error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
@@ -143,7 +143,7 @@ func (s *scraper) scrapePagingOperationsMetric() error {
 	return nil
 }
 
-func (s *scraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
+func (s *pagingScraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
 	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
 	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
 }

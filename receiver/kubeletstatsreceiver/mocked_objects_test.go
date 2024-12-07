@@ -59,9 +59,11 @@ func getNodeWithMemoryCapacity(nodeName string, memoryCap string) *v1.Node {
 	}
 }
 
-var volumeClaim1 = getPVC("volume_claim_1", "kube-system", "storage-provisioner-token-qzlx6")
-var volumeClaim2 = getPVC("volume_claim_2", "kube-system", "kube-proxy")
-var volumeClaim3 = getPVC("volume_claim_3", "kube-system", "coredns-token-dzc5t")
+var (
+	volumeClaim1 = getPVC("volume_claim_1", "kube-system", "storage-provisioner-token-qzlx6")
+	volumeClaim2 = getPVC("volume_claim_2", "kube-system", "kube-proxy")
+	volumeClaim3 = getPVC("volume_claim_3", "kube-system", "coredns-token-dzc5t")
+)
 
 func getPVC(claimName, namespace, volumeName string) *v1.PersistentVolumeClaim {
 	return &v1.PersistentVolumeClaim{

@@ -3,7 +3,7 @@ type: ecs_task_observer
 status:
   class: extension
   stability:
-    beta: [extension]
+    unmaintained: [extension]
   distributions: [contrib]
   codeowners:
     active: []

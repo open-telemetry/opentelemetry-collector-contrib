@@ -60,48 +60,6 @@
     "system.network.tcp_connections": null
   },
   {
-    "k8s.cronjob.active_jobs": null
-  },
-  {
-    "k8s.job.active_pods": null
-  },
-  {
-    "k8s.job.desired_successful_pods": null
-  },
-  {
-    "k8s.job.failed_pods": null
-  },
-  {
-    "k8s.job.max_parallel_pods": null
-  },
-  {
-    "k8s.job.successful_pods": null
-  },
-  {
-    "k8s.statefulset.desired_pods": null
-  },
-  {
-    "k8s.statefulset.current_pods": null
-  },
-  {
-    "k8s.statefulset.ready_pods": null
-  },
-  {
-    "k8s.statefulset.updated_pods": null
-  },
-  {
-    "k8s.hpa.max_replicas": null
-  },
-  {
-    "k8s.hpa.min_replicas": null
-  },
-  {
-    "k8s.hpa.current_replicas": null
-  },
-  {
-    "k8s.hpa.desired_replicas": null
-  },
-  {
     "k8s.container.ephemeral-storage_limit": null
   },
   {

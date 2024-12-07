@@ -97,7 +97,6 @@ func TestLoadingConfigStrict(t *testing.T) {
 
 // TestLoadingConfigStrictLogs tests loading testdata/config_logs_strict.yaml
 func TestLoadingConfigStrictLogs(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
@@ -180,7 +179,6 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 
 // TestLoadingConfigSeverityLogsStrict tests loading testdata/config_logs_severity_strict.yaml
 func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType:  strictType,
 		SeverityTexts: []string{"INFO"},
@@ -305,7 +303,6 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 
 // TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_strict.yaml
 func TestLoadingConfigBodyLogsStrict(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType: strictType,
 		LogBodies:    []string{"This is an important event"},
@@ -368,7 +365,6 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 
 // TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_regexp.yaml
 func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
-
 	testDataLogPropertiesInclude := &LogMatchProperties{
 		LogMatchType: regexpType,
 		LogBodies:    []string{"^IMPORTANT:"},
@@ -832,7 +828,6 @@ func TestLogSeverity_severityValidate(t *testing.T) {
 }
 
 func TestLoadingConfigOTTL(t *testing.T) {
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_ottl.yaml"))
 	require.NoError(t, err)
 

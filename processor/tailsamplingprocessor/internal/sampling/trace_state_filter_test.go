@@ -20,7 +20,6 @@ type TestTraceStateCfg struct {
 }
 
 func TestTraceStateFilter(t *testing.T) {
-
 	cases := []struct {
 		Desc      string
 		Trace     *TraceData

@@ -21,7 +21,6 @@ var (
 
 // Config stores the configuration for OAuth2 Client Credentials (2-legged OAuth2 flow) setup.
 type Config struct {
-
 	// ClientID is the application's ID.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
 	ClientID string `mapstructure:"client_id"`

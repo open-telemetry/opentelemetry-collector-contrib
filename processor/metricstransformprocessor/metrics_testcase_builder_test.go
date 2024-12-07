@@ -85,7 +85,8 @@ func (b builder) addNumberDatapoint(start, ts pcommon.Timestamp, attrValues []st
 }
 
 func (b builder) addHistogramDatapoint(start, ts pcommon.Timestamp, count uint64, sum float64, bounds []float64,
-	buckets []uint64, attrValues ...string) builder {
+	buckets []uint64, attrValues ...string,
+) builder {
 	if b.metric.Type() != pmetric.MetricTypeHistogram {
 		panic(b.metric.Type().String())
 	}
@@ -101,7 +102,8 @@ func (b builder) addHistogramDatapoint(start, ts pcommon.Timestamp, count uint64
 }
 
 func (b builder) addHistogramDatapointWithMinMaxAndExemplars(start, ts pcommon.Timestamp, count uint64, sum, min, max float64,
-	bounds []float64, buckets []uint64, exemplarValues []float64, attrValues ...string) builder {
+	bounds []float64, buckets []uint64, exemplarValues []float64, attrValues ...string,
+) builder {
 	if b.metric.Type() != pmetric.MetricTypeHistogram {
 		panic(b.metric.Type().String())
 	}
