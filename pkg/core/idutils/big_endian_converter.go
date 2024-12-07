@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package idutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+package idutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils"
 
 import (
 	"encoding/binary"
