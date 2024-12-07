@@ -90,7 +90,6 @@ func TestCompositeEvaluatorSampled(t *testing.T) {
 }
 
 func TestCompositeEvaluatorSampled_RecordSubPolicy(t *testing.T) {
-
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", 0, 100, false)
 	n2 := NewAlwaysSample(componenttest.NewNopTelemetrySettings())
@@ -183,7 +182,6 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
 }
 
 func TestCompositeEvaluatorInverseSampled_AlwaysSampled_RecordSubPolicy(t *testing.T) {
-
 	// The first policy does not match, the second matches through invert
 	n1 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, false)
 	n2 := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), "tag", []string{"foo"}, false, 0, true)
