@@ -8,7 +8,6 @@ package githubscraper // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	// "fmt"
 	"net/http"
 	"sync"
 	"time"
