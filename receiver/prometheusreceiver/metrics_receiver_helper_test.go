@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -77,7 +77,7 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	defer mp.mu.Unlock()
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	index := int(iptr.Load())
@@ -87,7 +87,7 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		if index == len(pages) {
 			mp.wg.Done()
 		}
-		rw.WriteHeader(404)
+		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 	switch {
@@ -185,7 +185,6 @@ func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.M
 					// only count target pages that are not 404, matching mock ServerHTTP func response logic
 					want++
 				}
-
 			}
 			if len(scrapes) < want {
 				// If we don't have enough scrapes yet lets return false and wait for another tick
@@ -385,6 +384,7 @@ func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	}
 	return false
 }
+
 func isExtraScrapeMetrics(m pmetric.Metric) bool {
 	switch m.Name() {
 	case "scrape_body_size_bytes", "scrape_sample_limit", "scrape_timeout_seconds":
@@ -394,11 +394,13 @@ func isExtraScrapeMetrics(m pmetric.Metric) bool {
 	}
 }
 
-type metricTypeComparator func(*testing.T, pmetric.Metric)
-type numberPointComparator func(*testing.T, pmetric.NumberDataPoint)
-type histogramPointComparator func(*testing.T, pmetric.HistogramDataPoint)
-type summaryPointComparator func(*testing.T, pmetric.SummaryDataPoint)
-type exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
+type (
+	metricTypeComparator           func(*testing.T, pmetric.Metric)
+	numberPointComparator          func(*testing.T, pmetric.NumberDataPoint)
+	histogramPointComparator       func(*testing.T, pmetric.HistogramDataPoint)
+	summaryPointComparator         func(*testing.T, pmetric.SummaryDataPoint)
+	exponentialHistogramComparator func(*testing.T, pmetric.ExponentialHistogramDataPoint)
+)
 
 type dataPointExpectation struct {
 	numberPointComparator          []numberPointComparator
@@ -626,7 +628,7 @@ func compareDoubleValue(doubleVal float64) numberPointComparator {
 
 func assertNormalNan() numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.True(t, math.Float64bits(numberDataPoint.DoubleValue()) == value.NormalNaN,
+		assert.Equal(t, value.NormalNaN, math.Float64bits(numberDataPoint.DoubleValue()),
 			"Metric double value is not normalNaN as expected")
 	}
 }
@@ -663,7 +665,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 				assert.Equal(t, quantiles[i][0], summaryDataPoint.QuantileValues().At(i).Quantile(),
 					"Summary quantile do not match")
 				if math.IsNaN(quantiles[i][1]) {
-					assert.True(t, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()) == value.NormalNaN,
+					assert.Equal(t, value.NormalNaN, math.Float64bits(summaryDataPoint.QuantileValues().At(i).Value()),
 						"Summary quantile value is not normalNaN as expected")
 				} else {
 					assert.Equal(t, quantiles[i][1], summaryDataPoint.QuantileValues().At(i).Value(),
@@ -681,7 +683,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 	for _, cfgMut := range cfgMuts {
 		cfgMut(cfg)
 	}
-	require.Nilf(t, err, "Failed to create Prometheus config: %v", err)
+	require.NoErrorf(t, err, "Failed to create Prometheus config: %v", err)
 	defer mp.Close()
 
 	config := &Config{
@@ -702,7 +704,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 		// verify state after shutdown is called
 		assert.Lenf(t, flattenTargets(receiver.scrapeManager.TargetsAll()), len(targets), "expected %v targets to be running", len(targets))
 		require.NoError(t, receiver.Shutdown(context.Background()))
-		assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
+		assert.Empty(t, flattenTargets(receiver.scrapeManager.TargetsAll()), "expected scrape manager to have no targets")
 	})
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen

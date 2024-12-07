@@ -18,8 +18,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const exportSeparatorDefault = "."
-const exportDistinguishingSuffix = "_"
+const (
+	exportSeparatorDefault     = "."
+	exportDistinguishingSuffix = "_"
+)
 
 // exportSettings configures separator and distinguishing suffixes for all exported fields
 type exportSettings struct {
@@ -52,12 +54,14 @@ func newDefaultTracesSettings() TracesSettings {
 	}
 }
 
-const logsExportResourceInfoDefault = false
-const logsExportResourcePrefixDefault = "resource.attributes."
-const logsExportScopeInfoDefault = true
-const logsExportScopePrefixDefault = "scope.attributes."
-const logsDecomposeComplexMessageFieldDefault = false
-const logsDecomposedComplexMessageFieldPrefixDefault = "body.map."
+const (
+	logsExportResourceInfoDefault                  = false
+	logsExportResourcePrefixDefault                = "resource.attributes."
+	logsExportScopeInfoDefault                     = true
+	logsExportScopePrefixDefault                   = "scope.attributes."
+	logsDecomposeComplexMessageFieldDefault        = false
+	logsDecomposedComplexMessageFieldPrefixDefault = "body.map."
+)
 
 type LogsSettings struct {
 	// ExportResourceInfo is optional flag to signal that the resource info is being exported to DataSet while exporting Logs.
@@ -105,13 +109,15 @@ func newDefaultLogsSettings() LogsSettings {
 	}
 }
 
-const bufferMaxLifetime = 5 * time.Second
-const bufferPurgeOlderThan = 30 * time.Second
-const bufferRetryInitialInterval = 5 * time.Second
-const bufferRetryMaxInterval = 30 * time.Second
-const bufferRetryMaxElapsedTime = 300 * time.Second
-const bufferRetryShutdownTimeout = 30 * time.Second
-const bufferMaxParallelOutgoing = 100
+const (
+	bufferMaxLifetime          = 5 * time.Second
+	bufferPurgeOlderThan       = 30 * time.Second
+	bufferRetryInitialInterval = 5 * time.Second
+	bufferRetryMaxInterval     = 30 * time.Second
+	bufferRetryMaxElapsedTime  = 300 * time.Second
+	bufferRetryShutdownTimeout = 30 * time.Second
+	bufferMaxParallelOutgoing  = 100
+)
 
 type BufferSettings struct {
 	MaxLifetime          time.Duration `mapstructure:"max_lifetime"`
@@ -154,16 +160,16 @@ func newDefaultServerHostSettings() ServerHostSettings {
 const debugDefault = false
 
 type Config struct {
-	DatasetURL                     string              `mapstructure:"dataset_url"`
-	APIKey                         configopaque.String `mapstructure:"api_key"`
-	Debug                          bool                `mapstructure:"debug"`
-	BufferSettings                 `mapstructure:"buffer"`
-	TracesSettings                 `mapstructure:"traces"`
-	LogsSettings                   `mapstructure:"logs"`
-	ServerHostSettings             `mapstructure:"server_host"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
+	DatasetURL                string              `mapstructure:"dataset_url"`
+	APIKey                    configopaque.String `mapstructure:"api_key"`
+	Debug                     bool                `mapstructure:"debug"`
+	BufferSettings            `mapstructure:"buffer"`
+	TracesSettings            `mapstructure:"traces"`
+	LogsSettings              `mapstructure:"logs"`
+	ServerHostSettings        `mapstructure:"server_host"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:"timeout"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

@@ -14,13 +14,15 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -37,6 +39,10 @@ type Config struct {
 	// TracesTableName is the table name for traces. default is `otel_traces`.
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
+	//
+	// Deprecated: MetricsTableName exists for historical compatibility
+	// and should not be used. To set the metrics tables name,
+	// use the MetricsTables parameter instead.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
 	TTL time.Duration `mapstructure:"ttl"`
@@ -52,6 +58,21 @@ type Config struct {
 	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
 	// Async inserts may still be overridden server-side.
 	AsyncInsert bool `mapstructure:"async_insert"`
+	// MetricsTables defines the table names for metric types.
+	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
+}
+
+type MetricTablesConfig struct {
+	// Gauge is the table name for gauge metric type. default is `otel_metrics_gauge`.
+	Gauge internal.MetricTypeConfig `mapstructure:"gauge"`
+	// Sum is the table name for sum metric type. default is `otel_metrics_sum`.
+	Sum internal.MetricTypeConfig `mapstructure:"sum"`
+	// Summary is the table name for summary metric type. default is `otel_metrics_summary`.
+	Summary internal.MetricTypeConfig `mapstructure:"summary"`
+	// Histogram is the table name for histogram metric type. default is `otel_metrics_histogram`.
+	Histogram internal.MetricTypeConfig `mapstructure:"histogram"`
+	// ExponentialHistogram is the table name for exponential histogram metric type. default is `otel_metrics_exponential_histogram`.
+	ExponentialHistogram internal.MetricTypeConfig `mapstructure:"exponential_histogram"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -60,8 +81,16 @@ type TableEngine struct {
 	Params string `mapstructure:"params"`
 }
 
-const defaultDatabase = "default"
-const defaultTableEngineName = "MergeTree"
+const (
+	defaultDatabase           = "default"
+	defaultTableEngineName    = "MergeTree"
+	defaultMetricTableName    = "otel_metrics"
+	defaultGaugeSuffix        = "_gauge"
+	defaultSumSuffix          = "_sum"
+	defaultSummarySuffix      = "_summary"
+	defaultHistogramSuffix    = "_histogram"
+	defaultExpHistogramSuffix = "_exponential_histogram"
+)
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
@@ -77,6 +106,8 @@ func (cfg *Config) Validate() (err error) {
 	if e != nil {
 		err = errors.Join(err, e)
 	}
+
+	cfg.buildMetricTableNames()
 
 	// Validate DSN with clickhouse driver.
 	// Last chance to catch invalid config.
@@ -151,6 +182,38 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 // shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
 func (cfg *Config) shouldCreateSchema() bool {
 	return cfg.CreateSchema
+}
+
+func (cfg *Config) buildMetricTableNames() {
+	tableName := defaultMetricTableName
+
+	if len(cfg.MetricsTableName) != 0 && !cfg.areMetricTableNamesSet() {
+		tableName = cfg.MetricsTableName
+	}
+
+	if len(cfg.MetricsTables.Gauge.Name) == 0 {
+		cfg.MetricsTables.Gauge.Name = tableName + defaultGaugeSuffix
+	}
+	if len(cfg.MetricsTables.Sum.Name) == 0 {
+		cfg.MetricsTables.Sum.Name = tableName + defaultSumSuffix
+	}
+	if len(cfg.MetricsTables.Summary.Name) == 0 {
+		cfg.MetricsTables.Summary.Name = tableName + defaultSummarySuffix
+	}
+	if len(cfg.MetricsTables.Histogram.Name) == 0 {
+		cfg.MetricsTables.Histogram.Name = tableName + defaultHistogramSuffix
+	}
+	if len(cfg.MetricsTables.ExponentialHistogram.Name) == 0 {
+		cfg.MetricsTables.ExponentialHistogram.Name = tableName + defaultExpHistogramSuffix
+	}
+}
+
+func (cfg *Config) areMetricTableNamesSet() bool {
+	return len(cfg.MetricsTables.Gauge.Name) != 0 ||
+		len(cfg.MetricsTables.Sum.Name) != 0 ||
+		len(cfg.MetricsTables.Summary.Name) != 0 ||
+		len(cfg.MetricsTables.Histogram.Name) != 0 ||
+		len(cfg.MetricsTables.ExponentialHistogram.Name) != 0
 }
 
 // tableEngineString generates the ENGINE string.

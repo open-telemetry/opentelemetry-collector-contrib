@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -32,12 +33,17 @@ import (
 )
 
 const (
-	// TestLogsIndex is used by the mock ES data receiver to indentify log events.
+	// TestLogsIndex is used by the mock ES data receiver to identify log events.
 	// Exporter LogsIndex configuration must be configured with TestLogsIndex for
 	// the data receiver to work properly
 	TestLogsIndex = "logs-test-idx"
 
-	// TestTracesIndex is used by the mock ES data receiver to indentify trace
+	// TestMetricsIndex is used by the mock ES data receiver to identify metric events.
+	// Exporter MetricsIndex configuration must be configured with TestMetricsIndex for
+	// the data receiver to work properly
+	TestMetricsIndex = "metrics-test-idx"
+
+	// TestTracesIndex is used by the mock ES data receiver to identify trace
 	// events. Exporter TracesIndex configuration must be configured with
 	// TestTracesIndex for the data receiver to work properly
 	TestTracesIndex = "traces-test-idx"
@@ -79,11 +85,12 @@ func withBatcherEnabled(enabled bool) dataReceiverOption {
 	}
 }
 
-func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
+func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
 		component.MustNewType("mockelasticsearch"),
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
+		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
 		receiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
 	)
 	esURL, err := url.Parse(es.endpoint)
@@ -97,17 +104,22 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
+	logsReceiver, err := factory.CreateLogs(context.Background(), set, cfg, lc)
 	if err != nil {
 		return fmt.Errorf("failed to create logs receiver: %w", err)
 	}
-	tracesReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+	metricsReceiver, err := factory.CreateMetrics(context.Background(), set, cfg, mc)
+	if err != nil {
+		return fmt.Errorf("failed to create metrics receiver: %w", err)
+	}
+	tracesReceiver, err := factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {
 		return fmt.Errorf("failed to create traces receiver: %w", err)
 	}
 
 	// Since we use SharedComponent both receivers should be same
 	require.Same(es.t, logsReceiver, tracesReceiver)
+	require.Same(es.t, logsReceiver, metricsReceiver)
 	es.receiver = logsReceiver
 
 	return es.receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -126,7 +138,14 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
   elasticsearch:
     endpoints: [%s]
     logs_index: %s
+    logs_dynamic_index:
+      enabled: false
+    metrics_index: %s
+    metrics_dynamic_index:
+      enabled: false
     traces_index: %s
+    traces_dynamic_index:
+      enabled: false
     sending_queue:
       enabled: true
     retry:
@@ -134,7 +153,7 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       initial_interval: 100ms
       max_interval: 1s
       max_requests: 10000`,
-		es.endpoint, TestLogsIndex, TestTracesIndex,
+		es.endpoint, TestLogsIndex, TestMetricsIndex, TestTracesIndex,
 	)
 
 	if es.batcherEnabled == nil {
@@ -189,6 +208,19 @@ func createLogsReceiver(
 	return receiver, nil
 }
 
+func createMetricsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	rawCfg component.Config,
+	next consumer.Metrics,
+) (receiver.Metrics, error) {
+	receiver := receivers.GetOrAdd(rawCfg, func() component.Component {
+		return newMockESReceiver(params, rawCfg.(*config))
+	})
+	receiver.Unwrap().(*mockESReceiver).metricsConsumer = next
+	return receiver, nil
+}
+
 func createTracesReceiver(
 	_ context.Context,
 	params receiver.Settings,
@@ -206,8 +238,9 @@ type mockESReceiver struct {
 	params receiver.Settings
 	config *config
 
-	tracesConsumer consumer.Traces
-	logsConsumer   consumer.Logs
+	tracesConsumer  consumer.Traces
+	logsConsumer    consumer.Logs
+	metricsConsumer consumer.Metrics
 
 	server *http.Server
 }
@@ -231,10 +264,12 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 
 	// Ideally bulk request items should be converted to the corresponding event record
 	// however, since we only assert count for now there is no need to do the actual
-	// translation. Instead we use a pre-initialized empty logs and traces model to
+	// translation. Instead we use a pre-initialized empty models to
 	// reduce allocation impact on tests and benchmarks.
 	emptyLogs := plog.NewLogs()
 	emptyLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	emptyMetrics := pmetric.NewMetrics()
+	emptyMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
 	emptyTrace := ptrace.NewTraces()
 	emptyTrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 
@@ -260,6 +295,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 				switch item.Index {
 				case TestLogsIndex:
 					consumeErr = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
+				case TestMetricsIndex:
+					consumeErr = es.metricsConsumer.ConsumeMetrics(context.Background(), emptyMetrics)
 				case TestTracesIndex:
 					consumeErr = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
 				}

@@ -4,6 +4,7 @@
 package filter
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -122,6 +123,9 @@ func TestItemCardinalityFilter_Shutdown(t *testing.T) {
 }
 
 func TestItemCardinalityFilter_Filter(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32397")
+	}
 	items := initialItems(t)
 	logger := zaptest.NewLogger(t)
 	filter, err := NewItemCardinalityFilter(metricName, totalLimit, limitByTimestamp, itemActivityPeriod, logger)
@@ -140,10 +144,10 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 	require.NoError(t, err)
 
 	// Cache timeout hasn't been reached, so filtered out all items
-	assert.Len(t, filteredItems, 0)
+	assert.Empty(t, filteredItems)
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
-	syncChannel := make(chan bool)
+	syncChannel := make(chan bool, 10)
 
 	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
@@ -175,6 +179,9 @@ func TestItemCardinalityFilter_Filter(t *testing.T) {
 }
 
 func TestItemCardinalityFilter_FilterItems(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32397")
+	}
 	items := initialItemsWithSameTimestamp(t)
 	logger := zaptest.NewLogger(t)
 	filter, err := NewItemCardinalityFilter(metricName, totalLimit, limitByTimestamp, itemActivityPeriod, logger)
@@ -201,7 +208,7 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 	assert.Len(t, filteredItems, totalLimit)
 
 	// Doing this to avoid of relying on timeouts and sleeps(avoid potential flaky tests)
-	syncChannel := make(chan bool)
+	syncChannel := make(chan bool, 10)
 
 	filterCasted.cache.SetExpirationCallback(func(string, any) {
 		if filterCasted.cache.Count() > 0 {
@@ -233,6 +240,9 @@ func TestItemCardinalityFilter_FilterItems(t *testing.T) {
 }
 
 func TestItemCardinalityFilter_IncludeItem(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32397")
+	}
 	timestamp := time.Now().UTC()
 	item1 := &Item{SeriesKey: key1, Timestamp: timestamp}
 	item2 := &Item{SeriesKey: key2, Timestamp: timestamp}

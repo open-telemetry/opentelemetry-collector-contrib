@@ -195,7 +195,7 @@ func TestSubmitLogs(t *testing.T) {
 			if err := s.SubmitLogs(context.Background(), tt.payload); err != nil {
 				t.Fatal(err)
 			}
-			assert.True(t, calls == tt.numRequests)
+			assert.Equal(t, calls, tt.numRequests)
 		})
 	}
 }

@@ -181,7 +181,6 @@ func Test_newPathGetSetter(t *testing.T) {
 				fmt.Println(log.Body().Slice().At(0).AsString())
 				newBodySlice.CopyTo(log.Body().Slice())
 				fmt.Println(log.Body().Slice().At(0).AsString())
-
 			},
 			bodyType: "slice",
 		},
@@ -855,7 +854,7 @@ func Test_ParseEnum(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			actual, err := parseEnum((*ottl.EnumSymbol)(ottltest.Strp(tt.name)))
 			assert.NoError(t, err)
-			assert.Equal(t, *actual, tt.want)
+			assert.Equal(t, tt.want, *actual)
 		})
 	}
 }

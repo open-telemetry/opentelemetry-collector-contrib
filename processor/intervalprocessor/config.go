@@ -10,9 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var (
-	ErrInvalidIntervalValue = errors.New("invalid interval value")
-)
+var ErrInvalidIntervalValue = errors.New("invalid interval value")
 
 var _ component.Config = (*Config)(nil)
 
@@ -20,12 +18,18 @@ var _ component.Config = (*Config)(nil)
 type Config struct {
 	// Interval is the time interval at which the processor will aggregate metrics.
 	Interval time.Duration `mapstructure:"interval"`
-	// GaugePassThrough is a flag that determines whether gauge metrics should be passed through
+	// PassThrough is a configuration that determines whether gauge and summary metrics should be passed through
 	// as they are or aggregated.
-	GaugePassThrough bool `mapstructure:"gauge_pass_through"`
-	// SummaryPassThrough is a flag that determines whether summary metrics should be passed through
+	PassThrough PassThrough `mapstructure:"pass_through"`
+}
+
+type PassThrough struct {
+	// Gauge is a flag that determines whether gauge metrics should be passed through
 	// as they are or aggregated.
-	SummaryPassThrough bool `mapstructure:"summary_pass_through"`
+	Gauge bool `mapstructure:"gauge"`
+	// Summary is a flag that determines whether summary metrics should be passed through
+	// as they are or aggregated.
+	Summary bool `mapstructure:"summary"`
 }
 
 // Validate checks whether the input configuration has all of the required fields for the processor.

@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
@@ -203,7 +203,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 			attrs[val.Str()] = point.IntValue()
 		}
 
-		assert.Equal(t, attrs, map[string]int64{
+		assert.Equal(t, map[string]int64{
 			metadata.AttributeStatusBlocked.String():  3,
 			metadata.AttributeStatusPaging.String():   1,
 			metadata.AttributeStatusRunning.String():  2,
@@ -211,7 +211,7 @@ func validateFakeData(t *testing.T, metrics pmetric.MetricSlice) {
 			metadata.AttributeStatusStopped.String():  5,
 			metadata.AttributeStatusUnknown.String():  9,
 			metadata.AttributeStatusZombies.String():  6,
-		})
+		}, attrs)
 	}
 
 	if expectProcessesCreatedMetric {

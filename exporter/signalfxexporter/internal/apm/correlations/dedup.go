@@ -21,7 +21,7 @@ type deduplicator struct {
 }
 
 func (d *deduplicator) purgeCreates() {
-	var elem = d.pendingCreates.Front()
+	elem := d.pendingCreates.Front()
 	for {
 		if elem == nil {
 			return
@@ -38,7 +38,7 @@ func (d *deduplicator) purgeCreates() {
 }
 
 func (d *deduplicator) purgeDeletes() {
-	var elem = d.pendingDeletes.Front()
+	elem := d.pendingDeletes.Front()
 	for {
 		if elem == nil {
 			return
@@ -60,7 +60,7 @@ func (d *deduplicator) purge() {
 }
 
 func (d *deduplicator) evictPendingDelete() {
-	var elem = d.pendingDeletes.Back()
+	elem := d.pendingDeletes.Back()
 	if elem != nil {
 		req, ok := elem.Value.(*request)
 		if ok {
@@ -72,14 +72,13 @@ func (d *deduplicator) evictPendingDelete() {
 }
 
 func (d *deduplicator) evictPendingCreate() {
-	var elem = d.pendingCreates.Back()
+	elem := d.pendingCreates.Back()
 	if elem != nil {
 		req, ok := elem.Value.(*request)
 		if ok {
 			req.cancel()
 			d.pendingCreates.Remove(elem)
 			delete(d.pendingCreateKeys, *req.Correlation)
-
 		}
 	}
 }

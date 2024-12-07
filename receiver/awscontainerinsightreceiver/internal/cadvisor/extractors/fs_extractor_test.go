@@ -47,7 +47,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
 
-	assert.Len(t, cMetrics, 0)
+	assert.Empty(t, cMetrics)
 
 	// node type for eks
 
@@ -135,5 +135,4 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	assert.Equal(t, "tmpfs", cMetrics[0].tags["device"])
 	assert.Equal(t, "/dev/xvda1", cMetrics[1].tags["device"])
 	assert.Equal(t, "overlay", cMetrics[2].tags["device"])
-
 }

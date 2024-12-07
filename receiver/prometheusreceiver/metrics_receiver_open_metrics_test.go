@@ -46,7 +46,7 @@ var skippedTests = map[string]struct{}{
 }
 
 func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetrics) {
-	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
 	// if we only have one ResourceMetrics, then we should have a non-default metric in there
@@ -85,14 +85,13 @@ func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics)
 		t.Skip("skipping failing negative OpenMetrics parser tests")
 	}
 
-	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 0, metrics)
 }
 
 // Test open metrics negative test cases
 func TestOpenMetricsFail(t *testing.T) {
-
 	targetsMap := getOpenMetricsFailTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
@@ -118,7 +117,7 @@ func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetri
 		t.Skip("skipping failing negative OpenMetrics parser tests")
 	}
 
-	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
+	require.NotEmpty(t, mds, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 
 	// The Prometheus scrape parser accepted the sample, but the receiver dropped it due to incompatibility with the Otel schema.
@@ -127,7 +126,6 @@ func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetri
 }
 
 func TestOpenMetricsInvalid(t *testing.T) {
-
 	targetsMap := getOpenMetricsInvalidTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
@@ -229,7 +227,6 @@ func TestInfoStatesetMetrics(t *testing.T) {
 	}
 
 	testComponent(t, targets, nil)
-
 }
 
 func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

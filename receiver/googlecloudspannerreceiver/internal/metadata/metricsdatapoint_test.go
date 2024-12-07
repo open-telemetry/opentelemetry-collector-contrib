@@ -4,8 +4,8 @@
 package metadata
 
 import (
-	"fmt"
 	"hash/fnv"
+	"strconv"
 	"testing"
 	"time"
 
@@ -119,10 +119,10 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPII(t *testing.T) {
 	hashFunction := fnv.New32a()
 	hashFunction.Reset()
 	hashFunction.Write([]byte("23"))
-	hashOf23 := fmt.Sprint(hashFunction.Sum32())
+	hashOf23 := strconv.FormatUint(uint64(hashFunction.Sum32()), 10)
 	hashFunction.Reset()
 	hashFunction.Write([]byte("hello"))
-	hashOfHello := fmt.Sprint(hashFunction.Sum32())
+	hashOfHello := strconv.FormatUint(uint64(hashFunction.Sum32()), 10)
 
 	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
 
@@ -169,7 +169,7 @@ func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
 	metricsDataPoint.TruncateQueryText(6)
 
 	assert.Len(t, metricsDataPoint.labelValues, 1)
-	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "SELECT")
+	assert.Equal(t, "SELECT", metricsDataPoint.labelValues[0].Value())
 }
 
 func allPossibleLabelValues() []LabelValue {

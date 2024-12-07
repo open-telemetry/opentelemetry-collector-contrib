@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-github/v63/github"
+	"github.com/google/go-github/v67/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,7 +27,7 @@ func TestNewGitHubScraper(t *testing.T) {
 	factory := Factory{}
 	defaultConfig := factory.CreateDefaultConfig()
 
-	s := newGitHubScraper(context.Background(), receiver.Settings{}, defaultConfig.(*Config))
+	s := newGitHubScraper(receiver.Settings{}, defaultConfig.(*Config))
 
 	assert.NotNil(t, s)
 }
@@ -134,7 +134,6 @@ func TestScrape(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Now().AddDate(0, 0, -1),
 										Additions:     10,
 										Deletions:     9,
@@ -166,7 +165,7 @@ func TestScrape(t *testing.T) {
 
 			cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 
-			ghs := newGitHubScraper(context.Background(), receivertest.NewNopSettings(), cfg)
+			ghs := newGitHubScraper(receivertest.NewNopSettings(), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
 			ghs.cfg.ClientConfig.Endpoint = server.URL
 
@@ -196,7 +195,6 @@ func TestScrape(t *testing.T) {
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
 			))
-
 		})
 	}
 }

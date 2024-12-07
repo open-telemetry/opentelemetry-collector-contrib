@@ -28,7 +28,7 @@ Releases that are suspected to have been incomplete
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| <nil> | Sum | Int | true |
+| {releases} | Sum | Int | true |
 
 ### otelcol_processor_groupbytrace_num_events_in_queue
 

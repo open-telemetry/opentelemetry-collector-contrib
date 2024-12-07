@@ -130,7 +130,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateTracesProcessor(
+			fmp, err := factory.CreateTraces(
 				ctx,
 				processortest.NewNopSettings(),
 				cfg,
@@ -145,12 +145,12 @@ func TestFilterTraceProcessor(t *testing.T) {
 			require.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeTraces(ctx, test.inTraces)
-			require.Nil(t, cErr)
+			require.NoError(t, cErr)
 			got := next.AllTraces()
 
 			// If all traces got filtered you shouldn't even have ResourceSpans
 			if test.allTracesFiltered {
-				require.Len(t, got, 0)
+				require.Empty(t, got)
 			} else {
 				require.Equal(t, test.spanCountExpected, got[0].SpanCount())
 			}
@@ -273,7 +273,6 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructTraces()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
@@ -315,6 +314,7 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	}
 
 	tel.assertMetrics(t, want)
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructTraces() ptrace.Traces {

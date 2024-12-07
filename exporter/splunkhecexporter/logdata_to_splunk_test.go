@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -187,14 +187,13 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				config.SourceType = "sourcetype"
 				return config
 			},
-			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("", 0, map[string]any{}, "unknown", "source", "sourcetype"),
-			},
+			wantSplunkEvents: []*splunk.Event{},
 		},
 		{
 			name: "with span and trace id",
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("foo")
 				logRecord.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 50})
 				logRecord.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100})
 				return logRecord
@@ -207,7 +206,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: func() []*splunk.Event {
-				event := commonLogSplunkEvent("", 0, map[string]any{}, "unknown", "source", "sourcetype")
+				event := commonLogSplunkEvent("foo", 0, map[string]any{}, "unknown", "source", "sourcetype")
 				event.Fields["span_id"] = "0000000000000032"
 				event.Fields["trace_id"] = "00000000000000000000000000000064"
 				return []*splunk.Event{event}
@@ -329,10 +328,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				config.SourceType = "sourcetype"
 				return config
 			},
-			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("", ts, map[string]any{"custom": "custom"},
-					"myhost", "myapp", "myapp-type"),
-			},
+			wantSplunkEvents: []*splunk.Event{},
 		},
 		{
 			name: "with array body",
@@ -449,13 +445,7 @@ func commonLogSplunkEvent(
 
 func Test_emptyLogRecord(t *testing.T) {
 	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{})
-	assert.Zero(t, event.Time)
-	assert.Equal(t, event.Host, "unknown")
-	assert.Zero(t, event.Source)
-	assert.Zero(t, event.SourceType)
-	assert.Zero(t, event.Index)
-	assert.Equal(t, "", event.Event)
-	assert.Empty(t, event.Fields)
+	assert.Nil(t, event)
 }
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
@@ -531,5 +521,4 @@ func Test_mergeValue(t *testing.T) {
 			assert.Equal(t, tt.expected, fields)
 		})
 	}
-
 }

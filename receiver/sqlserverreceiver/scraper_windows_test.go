@@ -90,7 +90,7 @@ func TestSqlServerScraper(t *testing.T) {
 	s := newSQLServerPCScraper(settings, cfg)
 
 	assert.NoError(t, s.start(context.Background(), nil))
-	assert.Len(t, s.watcherRecorders, 0)
+	assert.Empty(t, s.watcherRecorders)
 	assert.Equal(t, 21, obsLogs.Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("The specified object was not found on the computer.").Len())
@@ -109,9 +109,11 @@ func TestSqlServerScraper(t *testing.T) {
 	require.NoError(t, err)
 }
 
-var goldenScrapePath = filepath.Join("testdata", "golden_scrape.yaml")
-var goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
-var dbInstance = "db-instance"
+var (
+	goldenScrapePath              = filepath.Join("testdata", "golden_scrape.yaml")
+	goldenNamedInstanceScrapePath = filepath.Join("testdata", "golden_named_instance_scrape.yaml")
+	dbInstance                    = "db-instance"
+)
 
 func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {

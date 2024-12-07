@@ -22,9 +22,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
-var (
-	attrMap = prepareAttributeMap()
-)
+var attrMap = prepareAttributeMap()
 
 func prepareAttributeMap() pcommon.Map {
 	am := pcommon.NewMap()
@@ -366,7 +364,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					metrics := rm.ScopeMetrics().At(j).Metrics()
 					for k := 0; k < metrics.Len(); k++ {
 						metric := metrics.At(k)
-						assert.Equal(t, metric.Histogram().AggregationTemporality(), pmetric.AggregationTemporalityCumulative)
+						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Histogram().AggregationTemporality())
 						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
 							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}
@@ -845,7 +843,6 @@ func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCo
 }
 
 func TestMetricAdvancedGrouping(t *testing.T) {
-
 	// Input:
 	//
 	// Resource {host.name="localhost"}
@@ -1109,7 +1106,7 @@ func Test_GetMetricInInstrumentationLibrary(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, getMetricInInstrumentationLibrary(tt.ilm, tt.searched), tt.want)
+			require.Equal(t, tt.want, getMetricInInstrumentationLibrary(tt.ilm, tt.searched))
 		})
 	}
 }

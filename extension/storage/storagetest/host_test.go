@@ -11,7 +11,7 @@ import (
 )
 
 func TestStorageHostWithNone(t *testing.T) {
-	require.Len(t, NewStorageHost().GetExtensions(), 0)
+	require.Empty(t, NewStorageHost().GetExtensions())
 }
 
 func TestStorageHostWithOne(t *testing.T) {

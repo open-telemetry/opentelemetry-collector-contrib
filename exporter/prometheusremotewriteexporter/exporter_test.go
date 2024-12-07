@@ -5,10 +5,13 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -31,8 +34,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -41,11 +42,11 @@ import (
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
 func Test_NewPRWExporter(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings: exporterhelper.TimeoutSettings{},
+		TimeoutSettings: exporterhelper.TimeoutConfig{},
 		BackOffConfig:   configretry.BackOffConfig{},
 		Namespace:       "",
 		ExternalLabels:  map[string]string{},
-		ClientConfig:    confighttp.ClientConfig{Endpoint: ""},
+		ClientConfig:    confighttp.NewDefaultClientConfig(),
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
@@ -137,7 +138,7 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings:   exporterhelper.TimeoutSettings{},
+		TimeoutSettings:   exporterhelper.TimeoutConfig{},
 		BackOffConfig:     configretry.BackOffConfig{},
 		MaxBatchSizeBytes: 3000000,
 		Namespace:         "",
@@ -155,6 +156,21 @@ func Test_Start(t *testing.T) {
 	}
 	set := exportertest.NewNopSettings()
 	set.BuildInfo = buildInfo
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "https://some.url:9411/api/prom/push"
+	clientConfigTLS := confighttp.NewDefaultClientConfig()
+	clientConfigTLS.Endpoint = "https://some.url:9411/api/prom/push"
+	clientConfigTLS.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "non-existent file",
+			CertFile: "",
+			KeyFile:  "",
+		},
+		Insecure:   false,
+		ServerName: "",
+	}
+
 	tests := []struct {
 		name                 string
 		config               *Config
@@ -173,7 +189,7 @@ func Test_Start(t *testing.T) {
 			concurrency:    5,
 			externalLabels: map[string]string{"Key1": "Val1"},
 			set:            set,
-			clientSettings: confighttp.ClientConfig{Endpoint: "https://some.url:9411/api/prom/push"},
+			clientSettings: clientConfig,
 		},
 		{
 			name:                 "invalid_tls",
@@ -183,18 +199,7 @@ func Test_Start(t *testing.T) {
 			externalLabels:       map[string]string{"Key1": "Val1"},
 			set:                  set,
 			returnErrorOnStartUp: true,
-			clientSettings: confighttp.ClientConfig{
-				Endpoint: "https://some.url:9411/api/prom/push",
-				TLSSetting: configtls.ClientConfig{
-					Config: configtls.Config{
-						CAFile:   "non-existent file",
-						CertFile: "",
-						KeyFile:  "",
-					},
-					Insecure:   false,
-					ServerName: "",
-				},
-			},
+			clientSettings:       clientConfigTLS,
 		},
 	}
 
@@ -287,7 +292,8 @@ func Test_export(t *testing.T) {
 		httpResponseCode    int
 		returnErrorOnCreate bool
 	}{
-		{"success_case",
+		{
+			"success_case",
 			*ts1,
 			true,
 			http.StatusAccepted,
@@ -299,7 +305,8 @@ func Test_export(t *testing.T) {
 			false,
 			http.StatusAccepted,
 			true,
-		}, {
+		},
+		{
 			"error_status_code_case",
 			*ts1,
 			true,
@@ -380,7 +387,6 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
 func Test_PushMetrics(t *testing.T) {
-
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	// success cases
@@ -459,7 +465,7 @@ func Test_PushMetrics(t *testing.T) {
 		require.NoError(t, err)
 		wr := &prompb.WriteRequest{}
 		ok := proto.Unmarshal(dest, wr)
-		require.Nil(t, ok)
+		require.NoError(t, ok)
 		assert.Len(t, wr.Timeseries, expected)
 		if isStaleMarker {
 			assert.True(t, value.IsStaleNaN(wr.Timeseries[0].Samples[0].Value))
@@ -705,14 +711,13 @@ func Test_PushMetrics(t *testing.T) {
 						MaxInterval:     1 * time.Second,        // Shorter max interval
 						MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
 					}
+					clientConfig := confighttp.NewDefaultClientConfig()
+					clientConfig.Endpoint = server.URL
+					clientConfig.ReadBufferSize = 0
+					clientConfig.WriteBufferSize = 512 * 1024
 					cfg := &Config{
-						Namespace: "",
-						ClientConfig: confighttp.ClientConfig{
-							Endpoint: server.URL,
-							// We almost read 0 bytes, so no need to tune ReadBufferSize.
-							ReadBufferSize:  0,
-							WriteBufferSize: 512 * 1024,
-						},
+						Namespace:         "",
+						ClientConfig:      clientConfig,
 						MaxBatchSizeBytes: 3000000,
 						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: &TargetInfo{
@@ -737,15 +742,8 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					tel := setupTestTelemetry()
 					set := tel.NewSettings()
-					mp := set.LeveledMeterProvider(configtelemetry.LevelBasic)
-					set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
-						// detailed level enables otelhttp client instrumentation which we
-						// dont want to test here
-						if level == configtelemetry.LevelDetailed {
-							return noop.MeterProvider{}
-						}
-						return mp
-					}
+					// detailed level enables otelhttp client instrumentation which we dont want to test here
+					set.MetricsLevel = configtelemetry.LevelBasic
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
@@ -811,32 +809,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,
@@ -848,32 +852,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,
@@ -938,11 +948,11 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	// 2. Create the WAL configuration, create the
 	// exporter and export some time series!
 	tempDir := t.TempDir()
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = prweServer.URL
 	cfg := &Config{
-		Namespace: "test_ns",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: prweServer.URL,
-		},
+		Namespace:        "test_ns",
+		ClientConfig:     clientConfig,
 		RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
 		WAL: &WALConfig{
 			Directory:  tempDir,
@@ -1077,7 +1087,6 @@ func assertPermanentConsumerError(t assert.TestingT, err error, _ ...any) bool {
 }
 
 func TestRetries(t *testing.T) {
-
 	tts := []struct {
 		name             string
 		serverErrorCount int // number of times server should return error
@@ -1172,5 +1181,96 @@ func TestRetries(t *testing.T) {
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
 		})
+	}
+}
+
+func BenchmarkExecute(b *testing.B) {
+	for _, numSample := range []int{100, 1000, 10000} {
+		b.Run(fmt.Sprintf("numSample=%d", numSample), func(b *testing.B) {
+			benchmarkExecute(b, numSample)
+		})
+	}
+}
+
+func benchmarkExecute(b *testing.B, numSample int) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(b, err)
+
+	// Create the prwExporter
+	exporter := &prwExporter{
+		endpointURL: endpointURL,
+		client:      http.DefaultClient,
+	}
+
+	generateSamples := func(n int) []prompb.Sample {
+		samples := make([]prompb.Sample, 0, n)
+		for i := 0; i < n; i++ {
+			samples = append(samples, prompb.Sample{
+				Timestamp: int64(i),
+				Value:     float64(i),
+			})
+		}
+		return samples
+	}
+
+	generateHistograms := func(n int) []prompb.Histogram {
+		histograms := make([]prompb.Histogram, 0, n)
+		for i := 0; i < n; i++ {
+			histograms = append(histograms, prompb.Histogram{
+				Timestamp:      int64(i),
+				Count:          &prompb.Histogram_CountInt{CountInt: uint64(i)},
+				PositiveCounts: []float64{float64(i)},
+			})
+		}
+		return histograms
+	}
+
+	reqs := make([]*prompb.WriteRequest, 0, b.N)
+	const labelValue = "abcdefg'hijlmn234!@#$%^&*()_+~`\"{}[],./<>?hello0123hiOlá你好Dzieńdobry9Zd8ra765v4stvuyte"
+	for n := 0; n < b.N; n++ {
+		num := strings.Repeat(strconv.Itoa(n), 16)
+		req := &prompb.WriteRequest{
+			Metadata: []prompb.MetricMetadata{
+				{
+					Type: prompb.MetricMetadata_COUNTER,
+					Unit: "seconds",
+					Help: "This is a counter",
+				},
+				{
+					Type: prompb.MetricMetadata_HISTOGRAM,
+					Unit: "seconds",
+					Help: "This is a histogram",
+				},
+			},
+			Timeseries: []prompb.TimeSeries{
+				{
+					Samples: generateSamples(numSample),
+					Labels: []prompb.Label{
+						{Name: "__name__", Value: "test_metric"},
+						{Name: "test_label_name_" + num, Value: labelValue + num},
+					},
+				},
+				{
+					Histograms: generateHistograms(numSample),
+					Labels: []prompb.Label{
+						{Name: "__name__", Value: "test_histogram"},
+						{Name: "test_label_name_" + num, Value: labelValue + num},
+					},
+				},
+			},
+		}
+		reqs = append(reqs, req)
+	}
+
+	ctx := context.Background()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for _, req := range reqs {
+		err := exporter.execute(ctx, req)
+		require.NoError(b, err)
 	}
 }

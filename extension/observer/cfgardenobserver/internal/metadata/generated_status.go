@@ -8,7 +8,7 @@ import (
 
 var (
 	Type      = component.MustNewType("cfgarden_observer")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver"
+	ScopeName = "otelcol/cfgardenobserver"
 )
 
 const (

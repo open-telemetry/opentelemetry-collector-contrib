@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -258,14 +258,13 @@ func TestSyncMetadata(t *testing.T) {
 				require.Len(t, dimClient.getMetadataUpdates(), 1)
 				require.EqualValues(t, tt.wantMetadataUpdate, dimClient.getMetadataUpdates()[0])
 			} else {
-				require.Len(t, dimClient.getMetadataUpdates(), 0)
+				require.Empty(t, dimClient.getMetadataUpdates())
 			}
 
 			require.Equal(t, len(tt.wantLogs), logs.Len())
 			for i, log := range logs.All() {
 				assert.Equal(t, tt.wantLogs[i], log.Message)
 			}
-
 		})
 	}
 }

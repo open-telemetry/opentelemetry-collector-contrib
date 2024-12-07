@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -298,13 +298,12 @@ func TestSpan_Matching_True(t *testing.T) {
 func TestServiceNameForResource(t *testing.T) {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	name := serviceNameForResource(td.ResourceSpans().At(0).Resource())
-	require.Equal(t, name, "<nil-service-name>")
+	require.Equal(t, "<nil-service-name>", name)
 
 	td = testdata.GenerateTracesOneSpan()
 	resource := td.ResourceSpans().At(0).Resource()
 	name = serviceNameForResource(resource)
-	require.Equal(t, name, "<nil-service-name>")
-
+	require.Equal(t, "<nil-service-name>", name)
 }
 
 func Test_NewSkipExpr_With_Bridge(t *testing.T) {

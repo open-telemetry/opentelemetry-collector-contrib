@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -118,6 +119,11 @@ func TestLoadConfig(t *testing.T) {
 				cfg.SetEnvMap(common.EnvMap{})
 				return cfg
 			})(),
+			systemscraper.TypeStr: (func() internal.Config {
+				cfg := (&systemscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			})(),
 		},
 	}
 
@@ -134,7 +140,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
-	require.Contains(t, err.Error(), "must specify at least one scraper when using hostmetrics receiver")
+	require.ErrorContains(t, err, "must specify at least one scraper when using hostmetrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
@@ -147,5 +153,5 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.Contains(t, err.Error(), "error reading configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
+	require.ErrorContains(t, err, "error reading configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }

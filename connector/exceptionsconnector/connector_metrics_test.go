@@ -20,6 +20,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
@@ -83,7 +85,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 				assert.NoError(t, err)
 
 				metrics := msink.AllMetrics()
-				assert.Greater(t, len(metrics), 0)
+				assert.NotEmpty(t, metrics)
 				tc.verifier(t, metrics[len(metrics)-1])
 			}
 		})
@@ -103,10 +105,9 @@ func TestConnectorConsumeTraces(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := msink.AllMetrics()
-		assert.Greater(t, len(metrics), 0)
+		assert.NotEmpty(t, metrics)
 		verifyBadMetricsOkay(t, metrics[len(metrics)-1])
 	})
-
 }
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
@@ -203,7 +204,6 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 		assert.NotZero(t, exemplar.Timestamp())
 		assert.NotZero(t, exemplar.TraceID())
 		assert.NotZero(t, exemplar.SpanID())
-
 	}
 	return true
 }
@@ -277,7 +277,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	defaultFoo := pcommon.NewValueStr("bar")
 	for _, tc := range []struct {
 		name            string
-		optionalDims    []dimension
+		optionalDims    []pdatautil.Dimension
 		resourceAttrMap map[string]any
 		spanAttrMap     map[string]any
 		wantKey         string
@@ -288,22 +288,22 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "neither span nor resource contains key, dim provides default",
-			optionalDims: []dimension{
-				{name: "foo", value: &defaultFoo},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo", Value: &defaultFoo},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000bar",
 		},
 		{
 			name: "neither span nor resource contains key, dim provides no default",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET",
 		},
 		{
 			name: "span attribute contains dimension",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			spanAttrMap: map[string]any{
 				"foo": 99,
@@ -312,8 +312,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "resource attribute contains dimension",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			resourceAttrMap: map[string]any{
 				"foo": 99,
@@ -322,8 +322,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 		{
 			name: "both span and resource attribute contains dimension, should prefer span attribute",
-			optionalDims: []dimension{
-				{name: "foo"},
+			optionalDims: []pdatautil.Dimension{
+				{Name: "foo"},
 			},
 			spanAttrMap: map[string]any{
 				"foo": 100,

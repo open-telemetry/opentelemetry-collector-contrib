@@ -1,6 +1,6 @@
 ## Fields
 
-A _Field_ is a reference to a value in a log [entry](../types/field.md).
+A _Field_ is a reference to a value in a log [entry](../types/entry.md).
 
 Many [operators](../operators/README.md) use fields in their configurations. For example, parsers use fields to specify which value to parse and where to write a new value.
 

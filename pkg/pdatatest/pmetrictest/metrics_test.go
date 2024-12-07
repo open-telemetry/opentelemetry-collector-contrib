@@ -241,6 +241,13 @@ func TestCompareMetrics(t *testing.T) {
 			withoutOptions: errors.New(`resource "map[]": scope "": metric "gauge.one": datapoint "map[]": double value doesn't match expected: 123.456000, actual: 654.321000`),
 		},
 		{
+			name: "ignore-data-point-value-double-precision",
+			compareOptions: []CompareMetricsOption{
+				IgnoreMetricFloatPrecision(3),
+			},
+			withoutOptions: errors.New(`resource "map[]": scope "": metric "gauge.one": datapoint "map[]": double value doesn't match expected: 654.321110, actual: 654.321000`),
+		},
+		{
 			name: "ignore-data-point-value-int-mismatch",
 			compareOptions: []CompareMetricsOption{
 				IgnoreMetricValues(),

@@ -31,7 +31,7 @@ func TestValidateLogEventWithMutating(t *testing.T) {
 	logEvent.GeneratedTime = time.Now()
 	err := logEvent.Validate(zap.NewNop())
 	assert.NoError(t, err)
-	assert.True(t, *logEvent.InputLogEvent.Timestamp > int64(0))
+	assert.Positive(t, *logEvent.InputLogEvent.Timestamp)
 	assert.Len(t, *logEvent.InputLogEvent.Message, 64-perEventHeaderBytes)
 
 	maxEventPayloadBytes = defaultMaxEventPayloadBytes
@@ -83,7 +83,9 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 	totalEvents := 10
 	logEventBatch := &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
-			LogEvents: make([]*cloudwatchlogs.InputLogEvent, 0, totalEvents)}}
+			LogEvents: make([]*cloudwatchlogs.InputLogEvent, 0, totalEvents),
+		},
+	}
 
 	for i := 0; i < totalEvents; i++ {
 		timestamp := rand.Int()
@@ -99,7 +101,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 	logEvents := logEventBatch.putLogEventsInput.LogEvents
 	for i := 1; i < totalEvents; i++ {
 		fmt.Printf("logEvents[%d].Timestamp=%d, logEvents[%d].Timestamp=%d.\n", i-1, *logEvents[i-1].Timestamp, i, *logEvents[i].Timestamp)
-		assert.True(t, *logEvents[i-1].Timestamp < *logEvents[i].Timestamp, "timestamp is not sorted correctly")
+		assert.Less(t, *logEvents[i-1].Timestamp, *logEvents[i].Timestamp, "timestamp is not sorted correctly")
 	}
 }
 
@@ -120,8 +122,10 @@ func newMockPusher() *logPusher {
 // pusher Tests
 //
 
-var timestampMs = time.Now().UnixNano() / 1e6
-var msg = "test log message"
+var (
+	timestampMs = time.Now().UnixNano() / 1e6
+	msg         = "test log message"
+)
 
 func TestPusher_newLogEventBatch(t *testing.T) {
 	p := newMockPusher()
@@ -133,7 +137,7 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 	assert.Equal(t, int64(0), logEventBatch.maxTimestampMs)
 	assert.Equal(t, int64(0), logEventBatch.minTimestampMs)
 	assert.Equal(t, 0, logEventBatch.byteTotal)
-	assert.Len(t, logEventBatch.putLogEventsInput.LogEvents, 0)
+	assert.Empty(t, logEventBatch.putLogEventsInput.LogEvents)
 	assert.Equal(t, p.logStreamName, logEventBatch.putLogEventsInput.LogStreamName)
 	assert.Equal(t, p.logGroupName, logEventBatch.putLogEventsInput.LogGroupName)
 	assert.Equal(t, (*string)(nil), logEventBatch.putLogEventsInput.SequenceToken)
@@ -172,7 +176,6 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 	p.logEventBatch.byteTotal = 1
 	assert.Nil(t, p.addLogEvent(nil))
 	assert.Len(t, p.logEventBatch.putLogEventsInput.LogEvents, 1)
-
 }
 
 func TestAddLogEventWithValidation(t *testing.T) {
@@ -198,7 +201,7 @@ func TestStreamManager(t *testing.T) {
 	manager := NewLogStreamManager(*svc)
 
 	// Verify that the stream is created in the first time
-	assert.Nil(t, manager.InitStream(StreamKey{
+	assert.NoError(t, manager.InitStream(StreamKey{
 		LogGroupName:  "foo",
 		LogStreamName: "bar",
 	}))
@@ -207,7 +210,7 @@ func TestStreamManager(t *testing.T) {
 	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 1)
 
 	// Verify that the stream is not created in the second time
-	assert.Nil(t, manager.InitStream(StreamKey{
+	assert.NoError(t, manager.InitStream(StreamKey{
 		LogGroupName:  "foo",
 		LogStreamName: "bar",
 	}))
@@ -215,7 +218,7 @@ func TestStreamManager(t *testing.T) {
 	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 1)
 
 	// Verify that a different stream is created
-	assert.Nil(t, manager.InitStream(StreamKey{
+	assert.NoError(t, manager.InitStream(StreamKey{
 		LogGroupName:  "foo",
 		LogStreamName: "bar2",
 	}))
@@ -248,10 +251,10 @@ func TestMultiStreamPusher(t *testing.T) {
 	event.StreamKey.LogStreamName = "bar"
 	event.GeneratedTime = time.Now()
 
-	assert.Nil(t, pusher.AddLogEntry(event))
-	assert.Nil(t, pusher.AddLogEntry(event))
+	assert.NoError(t, pusher.AddLogEntry(event))
+	assert.NoError(t, pusher.AddLogEntry(event))
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 0)
-	assert.Nil(t, pusher.ForceFlush())
+	assert.NoError(t, pusher.ForceFlush())
 
 	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 1)
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 1)
@@ -266,8 +269,8 @@ func TestMultiStreamPusher(t *testing.T) {
 	event2.StreamKey.LogStreamName = "bar2"
 	event2.GeneratedTime = time.Now()
 
-	assert.Nil(t, pusher.AddLogEntry(event2))
-	assert.Nil(t, pusher.ForceFlush())
+	assert.NoError(t, pusher.AddLogEntry(event2))
+	assert.NoError(t, pusher.ForceFlush())
 
 	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 2)
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 2)

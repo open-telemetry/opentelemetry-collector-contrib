@@ -75,7 +75,7 @@ func TestValidateConfig(t *testing.T) {
 	assert.Equal(t, "cache_sync_interval must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{Config: docker.Config{Endpoint: "someEndpoint", DockerAPIVersion: version, Timeout: 5 * time.Minute}, CacheSyncInterval: 5 * time.Minute}
-	assert.Nil(t, component.ValidateConfig(cfg))
+	assert.NoError(t, component.ValidateConfig(cfg))
 }
 
 func loadConf(t testing.TB, path string, id component.ID) *confmap.Conf {
@@ -99,8 +99,7 @@ func TestApiVersionCustomError(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := sub.Unmarshal(cfg)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(),
+	assert.ErrorContains(t, err,
 		`Hint: You may want to wrap the 'api_version' value in quotes (api_version: "1.40")`,
 	)
 

@@ -29,9 +29,9 @@ In these situations the function will error if it does not know how to do the co
 Use `ErrorMode` to determine how the `Statement` handles these errors.
 See the component-specific guides for how each uses error mode:
 
-- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#ottl)
-- [routingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/routingprocessor#tech-preview-opentelemetry-transformation-language-statements-as-routing-conditions)
-- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor#config)
+- [filterprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md#configuration)
+- [routingconnector](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/connector/routingconnector/README.md#configuration)
+- [transformprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/README.md#config)
 
 ## Editors
 
@@ -410,18 +410,23 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 
 - [Base64Decode](#base64decode)
+- [Decode](#decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ConvertAttributesToElementsXML](#convertattributestoelementsxml)
+- [ConvertTextToElementsXML](#converttexttoelementsxml)
 - [Day](#day)
+- [Double](#double)
+- [Duration](#duration)
 - [ExtractPatterns](#extractpatterns)
 - [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Format](#format)
+- [GetXML](#getxml)
 - [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
-- [Double](#double)
-- [Duration](#duration)
+- [InsertXML](#insertxml)
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
@@ -444,16 +449,21 @@ Available Converters:
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
 - [ParseKeyValue](#parsekeyvalue)
+- [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
+- [RemoveXML](#removexml)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SHA512](#sha512)
+- [SliceToMap](#slicetomap)
+- [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToKeyValueString](#tokeyvaluestring)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
 - [Unix](#unix)
@@ -465,7 +475,9 @@ Available Converters:
 - [UUID](#UUID)
 - [Year](#year)
 
-### Base64Decode
+### Base64Decode (Deprecated)
+
+*This function has been deprecated. Please use the [Decode](#decode) function instead.*
 
 `Base64Decode(value)`
 
@@ -479,6 +491,22 @@ Examples:
 
 
 - `Base64Decode(attributes["encoded field"])`
+
+### Decode
+
+`Decode(value, encoding)`
+
+The `Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
+
+`value` is a valid encoded string or byte array.
+`encoding` is a valid encoding name included in the [IANA encoding index](https://www.iana.org/assignments/character-sets/character-sets.xhtml).
+
+Examples:
+
+- `Decode("aGVsbG8gd29ybGQ=", "base64")`
+
+
+- `Decode(attributes["encoded field"], "us-ascii")`
 
 ### Concat
 
@@ -522,6 +550,61 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### ConvertAttributesToElementsXML
+
+`ConvertAttributesToElementsXML(target, Optional[xpath])`
+
+The `ConvertAttributesToElementsXML` Converter returns an edited version of an XML string where attributes are converted into child elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertAttributesToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Attributes will only be converted within the result(s) of the xpath.
+
+For example, `<a foo="bar"><b>baz</b></a>` will be converted to `<a><b>baz</b><foo>bar</foo></a>`.
+
+Examples:
+
+Convert all attributes in a document
+
+- `ConvertAttributesToElementsXML(body)`
+
+Convert only attributes within "Record" elements
+
+- `ConvertAttributesToElementsXML(body, "/Log/Record")`
+
+### ConvertTextToElementsXML
+
+`ConvertTextToElementsXML(target, Optional[xpath], Optional[elementName])`
+
+The `ConvertTextToElementsXML` Converter returns an edited version of an XML string where all text belongs to a dedicated element.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ConvertTextToElementsXML` will return an error.
+
+`xpath` (optional) is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Content will only be converted within the result(s) of the xpath. The default is `/`.
+
+`elementName` (optional) is a string that is used for any element tags that are created to wrap content.
+The default is `"value"`.
+
+For example, `<a><b>foo</b>bar</a>` will be converted to `<a><b>foo</b><value>bar</value></a>`.
+
+Examples:
+
+Ensure all text content in a document is wrapped in a dedicated element
+
+- `ConvertTextToElementsXML(body)`
+
+Use a custom name for any new elements
+
+- `ConvertTextToElementsXML(body, elementName = "custom")`
+
+Convert only part of the document
+
+- `ConvertTextToElementsXML(body, "/some/part/", "value")`
 
 ### Day
 
@@ -721,6 +804,37 @@ Examples:
 - `Format("%04d-%02d-%02d", [Year(Now()), Month(Now()), Day(Now())])`
 - `Format("%s/%s/%04d-%02d-%02d.log", [attributes["hostname"], body["program"], Year(Now()), Month(Now()), Day(Now())])`
 
+
+### GetXML
+
+`GetXML(target, xpath)`
+
+The `GetXML` Converter returns an XML string with selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `GetXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements. Currently, this converter only supports selecting elements.
+
+Examples:
+
+Get all elements at the root of the document with tag "a"
+
+- `GetXML(body, "/a")`
+
+Gel all elements anywhere in the document with tag "a"
+
+- `GetXML(body, "//a")`
+
+Get the first element at the root of the document with tag "a"
+
+- `GetXML(body, "/a[1]")`
+
+Get all elements in the document with tag "a" that have an attribute "b" with value "c"
+
+- `GetXML(body, "//a[@b='c']")`
+
 ### Hex
 
 `Hex(value)`
@@ -775,6 +889,35 @@ The returned type is `float64`.
 Examples:
 
 - `Hours(Duration("1h"))`
+
+### InsertXML
+
+`InsertXML(target, xpath, value)`
+
+The `InsertXML` Converter returns an edited version of an XML string with child elements added to selected elements.
+
+`target` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be modified. If `target` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements.
+
+`value` is a Getter that returns a string. This string should be in XML format and represents the document which will
+be inserted into `target`. If `value` is not a string, nil, or is not valid xml, `InsertXML` will return an error.
+
+Examples:
+
+Add an element "foo" to the root of the document
+
+- `InsertXML(body, "/", "<foo/>")`
+
+Add an element "bar" to any element called "foo"
+
+- `InsertXML(body, "//foo", "<bar/>")`
+
+Fetch and insert an xml document into another
+
+- `InsertXML(body, "/subdoc", attributes["subdoc"])`
 
 ### Int
 
@@ -1150,7 +1293,7 @@ The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
 
-Unmarshalling is done using [jsoniter](https://github.com/json-iterator/go).
+Unmarshalling is done using [goccy/go-json](https://github.com/goccy/go-json).
 Each JSON type is converted into a `pdata.Value` using the following map:
 
 ```
@@ -1194,6 +1337,132 @@ Examples:
 - `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
 - `ParseKeyValue(attributes["pairs"])`
 
+### ParseSimplifiedXML
+
+`ParseSimplifiedXML(target)`
+
+The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
+
+The goal of this Converter is to produce a more user-friendly representation of XML data than the `ParseXML` Converter.
+This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
+
+This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
+a direct representation of XML data. Users are encouraged to simplify their XML documents prior to using `ParseSimplifiedXML`.
+
+See other functions which may be useful for preparing XML documents:
+
+- `ConvertAttributesToElementsXML`
+- `ConvertTextToElementsXML`
+- `RemoveXML`
+- `InsertXML`
+- `GetXML`
+
+#### Formal Definitions
+
+A "Simplified XML" document contains no attributes and no extraneous text content.
+
+An element has "extraneous text content" when it contains both text and element content. e.g.
+
+```xml
+<foo>
+    bar <!-- extraneous text content -->
+    <hello>world</hello> <!-- element content -->
+</foo>
+```
+
+#### Parsing logic
+
+1. Declaration elements, attributes, comments, and extraneous text content are ignored.
+2. Elements which contain a value are converted into key/value pairs.
+   e.g. `<foo>bar</foo>` becomes `"foo": "bar"`
+3. Elements which contain child elements are converted into a key/value pair where the value is a map.
+   e.g. `<foo> <bar>baz</bar> </foo>` becomes `"foo": { "bar": "baz" }`
+4. Sibling elements that share the same tag will be combined into a slice.
+   e.g. `<a> <b>1</b> <c>2</c> <c>3</c> </foo>` becomes `"a": { "b": "1", "c": [ "2", "3" ] }`.
+5. Empty elements are dropped, but they can determine whether a value should be a slice or map.
+   e.g. `<a> <b>1</b> <b/> </a>` becomes `"a": { "b": [ "1" ] }` instead of `"a": { "b": "1" }`
+
+#### Examples
+
+Parse a Simplified XML document from the body:
+
+```xml
+<event>
+    <id>1</id>
+    <user>jane</user>
+    <details>
+      <time>2021-10-01T12:00:00Z</time>
+      <description>Something happened</description>
+      <cause>unknown</cause>
+    </details>
+</event>
+```
+
+```json
+{
+  "event": {
+    "id": 1,
+    "user": "jane",
+    "details": {
+      "time": "2021-10-01T12:00:00Z",
+      "description": "Something happened",
+      "cause": "unknown"
+    }
+  }
+}
+```
+
+Parse a Simplified XML document with unique child elements:
+
+```xml
+<x>
+  <y>1</y>
+  <z>2</z>
+</x>
+```
+
+```json
+{
+  "x": {
+    "y": "1",
+    "z": "2"
+  }
+}
+```
+
+Parse a Simplified XML document with multiple elements of the same tag:
+
+```xml
+<a>
+  <b>1</b>
+  <b>2</b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
+
+Parse a Simplified XML document with CDATA element:
+
+```xml
+<a>
+  <b>1</b>
+  <b><![CDATA[2]]></b>
+</a>
+```
+
+```json
+{
+  "a": {
+    "b": ["1", "2"]
+  }
+}
+```
 
 ### ParseXML
 
@@ -1265,7 +1534,70 @@ Examples:
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
 
+### RemoveXML
 
+`RemoveXML(target, xpath)`
+
+The `RemoveXML` Converter returns an edited version of an XML string with selected elements removed.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or is not valid xml, `RemoveXML` will return an error.
+
+`xpath` is a string that specifies an [XPath](https://www.w3.org/TR/1999/REC-xpath-19991116/) expression that
+selects one or more elements to remove from the XML document.
+
+For example, the XPath `/Log/Record[./Name/@type="archive"]` applied to the following XML document:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00001</ID>
+    <Name type="archive"></Name>
+    <Data>Some data</Data>
+  </Record>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+will return:
+
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <Record>
+    <ID>00002</ID>
+    <Name type="user"></Name>
+    <Data>Some data</Data>
+  </Record>
+</Log>
+```
+
+Examples:
+
+Delete the attribute "foo" from the elements with tag "a"
+
+- `RemoveXML(body, "/a/@foo")`
+
+Delete all elements with tag "b" that are children of elements with tag "a"
+
+- `RemoveXML(body, "/a/b")`
+
+Delete all elements with tag "b" that are children of elements with tag "a" and have the attribute "foo" with value "bar"
+
+- `RemoveXML(body, "/a/b[@foo='bar']")`
+
+Delete all comments
+
+- `RemoveXML(body, "//comment()")`
+
+Delete text from nodes that contain the word "sensitive"
+
+- `RemoveXML(body, "//*[contains(text(), 'sensitive')]")`
 
 ### Seconds
 
@@ -1318,7 +1650,6 @@ Examples:
 
 - `SHA256(attributes["device.name"])`
 
-
 - `SHA256("name")`
 
 ### SHA512
@@ -1337,6 +1668,95 @@ Examples:
 - `SHA512(attributes["device.name"])`
 
 - `SHA512("name")`
+
+### SliceToMap
+
+`SliceToMap(target, keyPath, Optional[valuePath])`
+
+The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
+
+- `target`: A list of maps containing the entries to be converted.
+- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
+the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
+to a map entry.
+- `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
+`valuePath` is defined, the value of the map entry will be the same as the original slice item.
+
+Examples:
+
+The examples below will convert the following input: 
+
+```yaml
+attributes:
+  hello: world
+  things:
+    - name: foo
+      value: 2
+    - name: bar
+      value: 5
+```
+
+- `SliceToMap(attributes["things"], ["name"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo:
+      name: foo
+      value: 2
+    bar:
+      name: bar
+      value: 5
+```
+
+- `SliceToMap(attributes["things"], ["name"], ["value"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo: 2
+    bar: 5
+```
+
+Once the `SliceToMap` function has been applied to a value, the converted entries are addressable via their keys:
+
+- `set(attributes["thingsMap"], SliceToMap(attributes["things"], ["name"]))`
+- `set(attributes["element_1"], attributes["thingsMap"]["foo'])`
+- `set(attributes["element_2"], attributes["thingsMap"]["bar'])`
+
+### Sort
+
+`Sort(target, Optional[order])`
+
+The `Sort` Converter sorts the `target` array in either ascending or descending order.
+
+`target` is an array or `pcommon.Slice` typed field containing the elements to be sorted. 
+
+`order` is a string specifying the sort order. Must be either `asc` or `desc`. The default value is `asc`.
+
+The Sort Converter preserves the data type of the original elements while sorting. 
+The behavior varies based on the types of elements in the target slice:
+
+| Element Types | Sorting Behavior                    | Return Value |
+|---------------|-------------------------------------|--------------|
+| Integers | Sorts as integers                   | Sorted array of integers |
+| Doubles | Sorts as doubles                    | Sorted array of doubles |
+| Integers and doubles | Converts all to doubles, then sorts | Sorted array of integers and doubles |
+| Strings | Sorts as strings                    | Sorted array of strings |
+| Booleans | Converts all to strings, then sorts | Sorted array of booleans |
+| Mix of integers, doubles, booleans, and strings | Converts all to strings, then sorts | Sorted array of mixed types |
+| Any other types | N/A                                 | Returns an error |
+
+Examples:
+
+- `Sort(attributes["device.tags"])`
+- `Sort(attributes["device.tags"], "desc")`
 
 ### SpanID
 
@@ -1408,11 +1828,11 @@ Examples:
 
 ### Time
 
-`Time(target, format, Optional[location])`
+`Time(target, format, Optional[location], Optional[locale])`
 
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
-`target` is a string. `format` is a string, `location` is an optional string.
+`target` is a string. `format` is a string, `location` is an optional string, `locale` is an optional string.
 
 If either `target` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the `target` and `format` do not follow the parsing rules used by this parser, an error is returned.
 
@@ -1443,6 +1863,10 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
 |`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
 |`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
+|`%i` | Timezone as +/-HH | -07 |
+|`%j` | Timezone as +/-HH:MM | -07:00 |
+|`%k` | Timezone as +/-HH:MM:SS | -07:00:00 |
+|`%w` | Timezone as +/-HHMMSS | -070000 |
 |`%D`, `%x` | Short MM/DD/YYYY date, equivalent to %m/%d/%y | 01/21/2031 |
 |`%F` | Short YYYY-MM-DD date, equivalent to %Y-%m-%d | 2031-01-21 |
 |`%T`,`%X` | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 02:55:02 |
@@ -1471,6 +1895,55 @@ Examples:
 - `Time("1986-10-01T00:17:33 MST", "%Y-%m-%dT%H:%M:%S %Z")`
 - `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
 - `Time("2023-05-26 12:34:56", "%Y-%m-%d %H:%M:%S", "America/New_York")`
+
+`locale` specifies the input language of the `target` value. It is used to interpret timestamp values written in a specific language, 
+ensuring that the function can correctly parse the localized month names, day names, and periods of the day based on the provided language.
+
+The value must be a well-formed BCP 47 language tag, and a known [CLDR](https://cldr.unicode.org) v45 locale.
+If not supplied, English (`en`) is used.
+
+Examples:
+
+- `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
+- `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
+
+### ToKeyValueString
+
+`ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
+
+The `ToKeyValueString` Converter takes a `pcommon.Map` and converts it to a `string` of key value pairs.
+
+- `target` is a Getter that returns a `pcommon.Map`. 
+- `delimiter` is an optional string that is used to join keys and values, the default is `=`. 
+- `pair_delimiter` is an optional string that is used to join key value pairs, the default is a single space (` `).
+- `sort_output` is an optional bool that is used to deterministically sort the keys of the output string. It should only be used if the output is required to be in the same order each time, as it introduces some performance overhead. 
+
+For example, the following map `{"k1":"v1","k2":"v2","k3":"v3"}` will use default delimiters and be converted into the following string:
+
+```
+`k1=v1 k2=v2 k3=v3`
+```
+
+**Note:** Any nested arrays or maps will be represented as a JSON string. It is recommended to [flatten](#flatten) `target` before using this function. 
+
+For example, `{"k1":"v1","k2":{"k3":"v3","k4":["v4","v5"]}}` will be converted to:
+
+```
+`k1=v1 k2={\"k3\":\"v3\",\"k4\":[\"v4\",\"v5\"]}`
+```
+
+**Note:** If any keys or values contain either delimiter, they will be double quoted. If any double quotes are present in the quoted value, they will be escaped.
+
+For example, `{"k1":"v1","k2":"v=2","k3"="\"v=3\""}` will be converted to:
+
+```
+`k1=v1 k2="v=2" k3="\"v=3\""`
+```
+
+Examples:
+
+- `ToKeyValueString(body)`
+- `ToKeyValueString(body, ":", ",", true)`
 
 ### TraceID
 
@@ -1654,35 +2127,3 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
-
-## Function syntax
-
-Functions should be named and formatted according to the following standards.
-
-- Function names MUST start with a verb unless it is a Factory that creates a new type.
-- Converters MUST be UpperCamelCase.
-- Function names that contain multiple words MUST separate those words with `_`.
-- Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
-- Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
-- Functions that change a specific target MUST set the target as the first parameter.
-
-## Adding New Editors/Converters
-
-Before raising a PR with a new Editor or Converter, raise an issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
-
-Your proposal likely will be accepted if:
-- The proposed functionality is missing,
-- The proposed solution significantly improves user experience and readability for very common use cases,
-- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
-
-It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
-
-Your proposal likely won't be accepted if:
-- User experience is worse and assumes a highly technical user,
-- The performance of your proposal very negatively affects the processing pipeline.
-
-As with code, OTTL aims for readability first. This means:
-- Using short, meaningful, and descriptive names,
-- Ensuring naming consistency across Editors and Converters,
-- Avoiding deep nesting to achieve desired transformations,
-- Ensuring Editors and Converters have a single responsibility.

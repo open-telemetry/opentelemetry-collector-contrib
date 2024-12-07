@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -41,10 +41,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
-		assert.Equal(t, logs.LogRecordCount(), 4)
+		assert.Equal(t, 4, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 2)
+		assert.Equal(t, 2, resourceLogs.Len())
 
 		namespaces = []string{"ns1", "ns2"}
 		for i, namespace := range namespaces {
@@ -52,8 +52,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			resourceAttributes := rl.Resource().Attributes()
 			ns, _ := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
 			assert.Equal(t, ns.AsString(), namespace)
-			assert.Equal(t, rl.ScopeLogs().Len(), 1)
-			assert.Equal(t, rl.ScopeLogs().At(0).LogRecords().Len(), 2)
+			assert.Equal(t, 1, rl.ScopeLogs().Len())
+			assert.Equal(t, 2, rl.ScopeLogs().At(0).LogRecords().Len())
 		}
 	})
 
@@ -78,18 +78,17 @@ func TestUnstructuredListToLogData(t *testing.T) {
 
 		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
-		assert.Equal(t, logs.LogRecordCount(), 3)
+		assert.Equal(t, 3, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 1)
+		assert.Equal(t, 1, resourceLogs.Len())
 		rl := resourceLogs.At(0)
 		resourceAttributes := rl.Resource().Attributes()
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
 		_, ok := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
 		assert.False(t, ok)
-		assert.Equal(t, rl.ScopeLogs().Len(), 1)
-		assert.Equal(t, logRecords.Len(), 3)
-
+		assert.Equal(t, 1, rl.ScopeLogs().Len())
+		assert.Equal(t, 3, logRecords.Len())
 	})
 
 	t.Run("Test event.name in watch events", func(t *testing.T) {
@@ -116,20 +115,19 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		logs, err := watchObjectsToLogData(event, time.Now(), config)
 		assert.NoError(t, err)
 
-		assert.Equal(t, logs.LogRecordCount(), 1)
+		assert.Equal(t, 1, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 1)
+		assert.Equal(t, 1, resourceLogs.Len())
 		rl := resourceLogs.At(0)
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
-		assert.Equal(t, rl.ScopeLogs().Len(), 1)
-		assert.Equal(t, logRecords.Len(), 1)
+		assert.Equal(t, 1, rl.ScopeLogs().Len())
+		assert.Equal(t, 1, logRecords.Len())
 
 		attrs := logRecords.At(0).Attributes()
 		eventName, ok := attrs.Get("event.name")
 		require.True(t, ok)
 		assert.EqualValues(t, "generic-name", eventName.AsRaw())
-
 	})
 
 	t.Run("Test event observed timestamp is present", func(t *testing.T) {
@@ -157,16 +155,15 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		logs, err := watchObjectsToLogData(event, observedAt, config)
 		assert.NoError(t, err)
 
-		assert.Equal(t, logs.LogRecordCount(), 1)
+		assert.Equal(t, 1, logs.LogRecordCount())
 
 		resourceLogs := logs.ResourceLogs()
-		assert.Equal(t, resourceLogs.Len(), 1)
+		assert.Equal(t, 1, resourceLogs.Len())
 		rl := resourceLogs.At(0)
 		logRecords := rl.ScopeLogs().At(0).LogRecords()
-		assert.Equal(t, rl.ScopeLogs().Len(), 1)
-		assert.Equal(t, logRecords.Len(), 1)
-		assert.Greater(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), int64(0))
+		assert.Equal(t, 1, rl.ScopeLogs().Len())
+		assert.Equal(t, 1, logRecords.Len())
+		assert.Positive(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix())
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
-
 }

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
@@ -61,12 +62,12 @@ func createMetricsReceiver(
 	}
 
 	snmpScraper := newScraper(params.Logger, snmpConfig, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
+	s, err := scraper.NewMetrics(snmpScraper.scrape, scraper.WithStart(snmpScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
 }
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults

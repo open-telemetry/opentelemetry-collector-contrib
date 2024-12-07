@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -26,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
@@ -36,12 +38,27 @@ func TestLoadConfig(t *testing.T) {
 	assert.Len(t, cfg.Receivers, 2)
 
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
-	defaultConfigGitHubScraper := factory.CreateDefaultConfig()
-	defaultConfigGitHubScraper.(*Config).Scrapers = map[string]internal.Config{
-		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+	defaultConfigGitHubReceiver := factory.CreateDefaultConfig()
+
+	defaultConfigGitHubReceiver.(*Config).Scrapers = map[string]internal.Config{
+		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 
-	assert.Equal(t, defaultConfigGitHubScraper, r0)
+	defaultConfigGitHubReceiver.(*Config).WebHook = WebHook{
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint:     "localhost:8080",
+			ReadTimeout:  500 * time.Millisecond,
+			WriteTimeout: 500 * time.Millisecond,
+		},
+		Path:       "some/path",
+		HealthPath: "health/path",
+		RequiredHeader: RequiredHeader{
+			Key:   "key-present",
+			Value: "value-present",
+		},
+	}
+
+	assert.Equal(t, defaultConfigGitHubReceiver, r0)
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 	expectedConfig := &Config{
@@ -50,7 +67,20 @@ func TestLoadConfig(t *testing.T) {
 			InitialDelay:       1 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
+			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+		},
+		WebHook: WebHook{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint:     "localhost:8080",
+				ReadTimeout:  500 * time.Millisecond,
+				WriteTimeout: 500 * time.Millisecond,
+			},
+			Path:       "some/path",
+			HealthPath: "health/path",
+			RequiredHeader: RequiredHeader{
+				Key:   "key-present",
+				Value: "value-present",
+			},
 		},
 	}
 
@@ -67,7 +97,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
-	require.Contains(t, err.Error(), "must specify at least one scraper")
+	require.ErrorContains(t, err, "must specify at least one scraper")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
@@ -80,7 +110,7 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.Contains(t, err.Error(), "error reading configuration for \"github\": invalid scraper key: \"invalidscraperkey\"")
+	require.ErrorContains(t, err, "error reading configuration for \"github\": invalid scraper key: \"invalidscraperkey\"")
 }
 
 func TestConfig_Unmarshal(t *testing.T) {

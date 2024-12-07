@@ -330,7 +330,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateMetricsProcessor(
+			fmp, err := factory.CreateMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -345,11 +345,11 @@ func TestFilterMetricProcessor(t *testing.T) {
 			assert.NoError(t, fmp.Start(ctx, nil))
 
 			cErr := fmp.ConsumeMetrics(context.Background(), test.inMetrics)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
 			if len(test.outMN) == 0 {
-				require.Len(t, got, 0)
+				require.Empty(t, got)
 				return
 			}
 
@@ -369,7 +369,6 @@ func TestFilterMetricProcessor(t *testing.T) {
 
 func TestFilterMetricProcessorTelemetry(t *testing.T) {
 	tel := setupTestTelemetry()
-	next := new(consumertest.MetricsSink)
 	cfg := &Config{
 		Metrics: MetricFilters{
 			MetricConditions: []string{
@@ -377,24 +376,16 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 			},
 		},
 	}
-	factory := NewFactory()
-	fmp, err := factory.CreateMetricsProcessor(
-		context.Background(),
+	fmp, err := newFilterMetricProcessor(
 		tel.NewSettings(),
 		cfg,
-		next,
 	)
 	assert.NotNil(t, fmp)
 	assert.NoError(t, err)
 
-	caps := fmp.Capabilities()
-	assert.True(t, caps.MutatesData)
-	ctx := context.Background()
-	assert.NoError(t, fmp.Start(ctx, nil))
-
-	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+	_, err = fmp.processMetrics(context.Background(), testResourceMetrics([]metricWithResource{
 		{
-			metricNames: []string{"foo", "bar"},
+			metricNames: []string{"metric1", "metric2"},
 			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
@@ -412,36 +403,6 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      0,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
-		},
-	}
-
-	tel.assertMetrics(t, want)
-
-	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
-		{
-			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]any{
-				"attr1": "attr1/val1",
-			},
-		},
-	}))
-	assert.NoError(t, err)
-
-	want = []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_filter_datapoints.filtered",
-			Description: "Number of metric data points dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
 						Value:      1,
 						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 					},
@@ -450,37 +411,7 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 		},
 	}
 	tel.assertMetrics(t, want)
-
-	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
-		{
-			metricNames: []string{"metric1"},
-			resourceAttributes: map[string]any{
-				"attr1": "attr1/val1",
-			},
-		},
-	}))
-	assert.NoError(t, err)
-
-	want = []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_filter_datapoints.filtered",
-			Description: "Number of metric data points dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
-		},
-	}
-	tel.assertMetrics(t, want)
-
-	assert.NoError(t, fmp.Shutdown(ctx))
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
@@ -535,7 +466,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 		Exclude: mp,
 	}
 	ctx := context.Background()
-	proc, _ := factory.CreateMetricsProcessor(
+	proc, _ := factory.CreateMetrics(
 		ctx,
 		processortest.NewNopSettings(),
 		cfg,
@@ -613,7 +544,7 @@ func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 		},
 	}
 	ctx := context.Background()
-	proc, _ := factory.CreateMetricsProcessor(
+	proc, _ := factory.CreateMetrics(
 		ctx,
 		processortest.NewNopSettings(),
 		cfg,
@@ -853,7 +784,6 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructMetrics()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)

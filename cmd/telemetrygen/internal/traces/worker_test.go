@@ -93,16 +93,16 @@ func TestRateOfSpans(t *testing.T) {
 	}
 
 	// sanity check
-	require.Len(t, syncer.spans, 0)
+	require.Empty(t, syncer.spans)
 
 	// test
 	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans for the rate of 10/sec for half a second
-	assert.True(t, len(syncer.spans) >= 6, "there should have been more than 6 spans, had %d", len(syncer.spans))
+	assert.GreaterOrEqual(t, len(syncer.spans), 6, "there should have been more than 6 spans, had %d", len(syncer.spans))
 	// the maximum acceptable number of spans for the rate of 10/sec for half a second
-	assert.True(t, len(syncer.spans) <= 20, "there should have been less than 20 spans, had %d", len(syncer.spans))
+	assert.LessOrEqual(t, len(syncer.spans), 20, "there should have been less than 20 spans, had %d", len(syncer.spans))
 }
 
 func TestSpanDuration(t *testing.T) {
@@ -125,7 +125,7 @@ func TestSpanDuration(t *testing.T) {
 	}
 
 	// sanity check
-	require.Len(t, syncer.spans, 0)
+	require.Empty(t, syncer.spans)
 
 	// test
 	require.NoError(t, Run(cfg, zap.NewNop()))
@@ -154,14 +154,14 @@ func TestUnthrottled(t *testing.T) {
 	}
 
 	// sanity check
-	require.Len(t, syncer.spans, 0)
+	require.Empty(t, syncer.spans)
 
 	// test
 	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of spans -- the real number should be > 10k, but CI env might be slower
-	assert.True(t, len(syncer.spans) > 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
+	assert.Greater(t, len(syncer.spans), 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
 }
 
 func TestSpanKind(t *testing.T) {
@@ -185,7 +185,7 @@ func TestSpanKind(t *testing.T) {
 
 	// verify that the default Span Kind is being overridden
 	for _, span := range syncer.spans {
-		assert.NotEqual(t, span.SpanKind(), trace.SpanKindInternal)
+		assert.NotEqual(t, trace.SpanKindInternal, span.SpanKind())
 	}
 }
 
@@ -235,7 +235,7 @@ func TestSpanStatuses(t *testing.T) {
 				require.NoError(t, Run(cfg, zap.NewNop()))
 				// verify that the default the span status is set as expected
 				for _, span := range syncer.spans {
-					assert.Equal(t, span.Status().Code, tt.spanStatus, fmt.Sprintf("span status: %v and expected status %v", span.Status().Code, tt.spanStatus))
+					assert.Equalf(t, span.Status().Code, tt.spanStatus, "span status: %v and expected status %v", span.Status().Code, tt.spanStatus)
 				}
 			} else {
 				require.Error(t, Run(cfg, zap.NewNop()))
@@ -310,6 +310,36 @@ func TestSpansWithMultipleAttrs(t *testing.T) {
 	}
 }
 
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		wantErrMessage string
+	}{
+		{
+			name: "No duration or NumTraces",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+			},
+			wantErrMessage: "either `traces` or `duration` must be greater than 0",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			syncer := &mockSyncer{}
+
+			tracerProvider := sdktrace.NewTracerProvider()
+			sp := sdktrace.NewSimpleSpanProcessor(syncer)
+			tracerProvider.RegisterSpanProcessor(sp)
+			otel.SetTracerProvider(tracerProvider)
+			logger, _ := zap.NewDevelopment()
+			require.EqualError(t, Run(tt.cfg, logger), tt.wantErrMessage)
+		})
+	}
+}
+
 var _ sdktrace.SpanExporter = (*mockSyncer)(nil)
 
 type mockSyncer struct {
@@ -361,5 +391,4 @@ func configWithMultipleAttributes(qty int, statusCode string) *Config {
 		NumTraces:  qty,
 		StatusCode: statusCode,
 	}
-
 }

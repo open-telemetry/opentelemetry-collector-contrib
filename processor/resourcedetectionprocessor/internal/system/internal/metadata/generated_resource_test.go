@@ -9,9 +9,9 @@ import (
 )
 
 func TestResourceBuilder(t *testing.T) {
-	for _, test := range []string{"default", "all_set", "none_set"} {
-		t.Run(test, func(t *testing.T) {
-			cfg := loadResourceAttributesConfig(t, test)
+	for _, tt := range []string{"default", "all_set", "none_set"} {
+		t.Run(tt, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetHostArch("host.arch-val")
 			rb.SetHostCPUCacheL2Size(22)
@@ -30,7 +30,7 @@ func TestResourceBuilder(t *testing.T) {
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
-			switch test {
+			switch tt {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
@@ -39,56 +39,56 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
-				assert.Failf(t, "unexpected test case: %s", test)
+				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
 			val, ok := res.Attributes().Get("host.arch")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.arch-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.cpu.cache.l2.size")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, 22, val.Int())
 			}
 			val, ok = res.Attributes().Get("host.cpu.family")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.cpu.family-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.cpu.model.id")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.cpu.model.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.cpu.model.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.cpu.model.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.cpu.stepping")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.cpu.stepping-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.cpu.vendor.id")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.cpu.vendor.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.id")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "host.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.ip")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, []any{"host.ip-item1", "host.ip-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("host.mac")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, []any{"host.mac-item1", "host.mac-item2"}, val.Slice().AsRaw())
 			}
@@ -98,7 +98,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "host.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("os.description")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "os.description-val", val.Str())
 			}

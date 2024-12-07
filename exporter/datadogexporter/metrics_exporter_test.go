@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
@@ -42,7 +43,7 @@ func TestNewExporter(t *testing.T) {
 
 	cfg := &Config{
 		API: APIConfig{
-			Key: "ddog_32_characters_long_api_key1",
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		Metrics: MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
@@ -58,21 +59,22 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 		HostMetadata: HostMetadataConfig{
-			sourceTimeout: 50 * time.Millisecond,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Len(t, server.MetadataChan, 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
@@ -81,7 +83,7 @@ func TestNewExporter(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
@@ -156,6 +158,64 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
 						"tags":      []any{"env:dev"},
+					},
+					map[string]any{
+						"metric":    "otel.datadog_exporter.metrics.running",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(1)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
+		{
+			metrics: createTestMetrics(map[string]string{
+				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				"custom_attribute": "custom_value",
+			}),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: HistogramModeCounters,
+			hostTags:      []string{"key1:value1", "key2:value2"},
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
+						"metric":    "int.gauge",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(222)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric":    "otel.system.filesystem.utilization",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric":    "double.histogram.bucket",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(2)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:-inf", "upper_bound:0", "env:new_env"},
+					},
+					map[string]any{
+						"metric":    "double.histogram.bucket",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(18)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_COUNT),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"lower_bound:0", "upper_bound:inf", "env:new_env"},
+					},
+					map[string]any{
+						"metric":    "system.disk.in_use",
+						"points":    []any{map[string]any{"timestamp": float64(0), "value": float64(333)}},
+						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
+						"resources": []any{map[string]any{"name": "test-host", "type": "host"}},
+						"tags":      []any{"env:new_env"},
 					},
 					map[string]any{
 						"metric":    "otel.datadog_exporter.metrics.running",
@@ -292,9 +352,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once sync.Once
-			)
+			var once sync.Once
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)
@@ -366,7 +424,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 
 	cfg := &Config{
 		API: APIConfig{
-			Key: "ddog_32_characters_long_api_key1",
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		Metrics: MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
@@ -381,19 +439,22 @@ func TestNewExporter_Zorkian(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
+		HostMetadata: HostMetadataConfig{
+			ReporterPeriod: 30 * time.Minute,
+		},
 	}
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
-	assert.Len(t, server.MetadataChan, 0)
+	assert.Empty(t, server.MetadataChan)
 
 	cfg.HostMetadata.Enabled = true
 	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
@@ -402,7 +463,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
@@ -477,6 +538,64 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []any{"env:dev"},
+					},
+					map[string]any{
+						"metric": "otel.datadog_exporter.metrics.running",
+						"points": []any{[]any{float64(0), float64(1)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"version:latest", "command:otelcol"},
+					},
+				},
+			},
+		},
+		{
+			metrics: createTestMetrics(map[string]string{
+				conventions127.AttributeDeploymentEnvironmentName: "new_env",
+				"custom_attribute": "custom_value",
+			}),
+			source: source.Source{
+				Kind:       source.HostnameKind,
+				Identifier: "test-host",
+			},
+			histogramMode: HistogramModeCounters,
+			hostTags:      []string{"key1:value1", "key2:value2"},
+			expectedSeries: map[string]any{
+				"series": []any{
+					map[string]any{
+						"metric": "int.gauge",
+						"points": []any{[]any{float64(0), float64(222)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:new_env"},
+					},
+					map[string]any{
+						"metric": "double.histogram.bucket",
+						"points": []any{[]any{float64(0), float64(2)}},
+						"type":   "count",
+						"host":   "test-host",
+						"tags":   []any{"lower_bound:-inf", "upper_bound:0", "env:new_env"},
+					},
+					map[string]any{
+						"metric": "double.histogram.bucket",
+						"points": []any{[]any{float64(0), float64(18)}},
+						"type":   "count",
+						"host":   "test-host",
+						"tags":   []any{"lower_bound:0", "upper_bound:inf", "env:new_env"},
+					},
+					map[string]any{
+						"metric": "system.disk.in_use",
+						"points": []any{[]any{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []any{"env:new_env"},
 					},
 					map[string]any{
 						"metric": "otel.datadog_exporter.metrics.running",
@@ -677,9 +796,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			)
 			defer server.Close()
 
-			var (
-				once sync.Once
-			)
+			var once sync.Once
 			pusher := newTestPusher(t)
 			reporter, err := inframetadata.NewReporter(zap.NewNop(), pusher, 1*time.Second)
 			require.NoError(t, err)

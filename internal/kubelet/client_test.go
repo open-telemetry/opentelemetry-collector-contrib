@@ -28,9 +28,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-const certPath = "./testdata/testcert.crt"
-const keyFile = "./testdata/testkey.key"
-const errSignedByUnknownCA = "tls: failed to verify certificate: x509: certificate signed by unknown authority"
+const (
+	certPath             = "./testdata/testcert.crt"
+	keyFile              = "./testdata/testkey.key"
+	errSignedByUnknownCA = "tls: failed to verify certificate: x509: certificate signed by unknown authority"
+)
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}
@@ -47,7 +49,7 @@ func TestClient(t *testing.T) {
 	require.Equal(t, baseURL+"/foo", tr.url)
 	require.Len(t, tr.header, 1)
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
-	require.Equal(t, "GET", tr.method)
+	require.Equal(t, http.MethodGet, tr.method)
 }
 
 func TestNewTLSClientProvider(t *testing.T) {
@@ -105,9 +107,9 @@ func TestDefaultTLSClient(t *testing.T) {
 func TestSvcAcctClient(t *testing.T) {
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Check if call is authenticated using token from test file
-		require.Equal(t, req.Header.Get("Authorization"), "Bearer s3cr3t")
+		assert.Equal(t, "Bearer s3cr3t", req.Header.Get("Authorization"))
 		_, err := rw.Write([]byte(`OK`))
-		require.NoError(t, err)
+		assert.NoError(t, err)
 	}))
 	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
 	require.NoError(t, err)
@@ -174,11 +176,11 @@ func TestNewKubeConfigClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 				// Check if call is authenticated using provided kubeconfig
-				require.Equal(t, req.Header.Get("Authorization"), "Bearer my-token")
-				require.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
+				assert.Equal(t, "Bearer my-token", req.Header.Get("Authorization"))
+				assert.Equal(t, "/api/v1/nodes/nodename/proxy/", req.URL.EscapedPath())
 				// Send response to be tested
 				_, err := rw.Write([]byte(`OK`))
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			server.StartTLS()
 			defer server.Close()

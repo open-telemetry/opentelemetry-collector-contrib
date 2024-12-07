@@ -70,8 +70,7 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 	newEntry := entry.New()
 	newEntry.Body = body
 	err = op.Process(context.Background(), newEntry)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "expecting a structured data element id (from 1 to max 32 US-ASCII characters")
+	require.ErrorContains(t, err, "expecting a structured data element id (from 1 to max 32 US-ASCII characters")
 
 	select {
 	case e := <-fake.Received:
@@ -100,8 +99,7 @@ func TestSyslogParseRFC5424_Octet_Counting_MessageTooLong(t *testing.T) {
 	newEntry := entry.New()
 	newEntry.Body = body
 	err = op.Process(context.Background(), newEntry)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "message too long to parse. was size 215, max length 214")
+	require.ErrorContains(t, err, "message too long to parse. was size 215, max length 214")
 
 	select {
 	case e := <-fake.Received:

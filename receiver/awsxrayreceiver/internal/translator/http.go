@@ -5,7 +5,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -51,5 +51,4 @@ func addHTTP(seg *awsxray.Segment, span ptrace.Span) {
 			addInt64(&lengthPointer, conventions.AttributeHTTPResponseContentLength, attrs)
 		}
 	}
-
 }

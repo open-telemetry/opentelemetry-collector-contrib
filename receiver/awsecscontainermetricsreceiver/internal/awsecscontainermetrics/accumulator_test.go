@@ -98,7 +98,7 @@ var (
 
 func TestGetMetricsDataAllValid(t *testing.T) {
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataMissingContainerStats(t *testing.T) {
@@ -106,7 +106,7 @@ func TestGetMetricsDataMissingContainerStats(t *testing.T) {
 		{ContainerName: "container-1", DockerID: "001-Missing", DockerName: "docker-container-1", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 	}
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataForStoppedContainer(t *testing.T) {
@@ -115,7 +115,7 @@ func TestGetMetricsDataForStoppedContainer(t *testing.T) {
 		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31T22:10:29.842610987Z", KnownStatus: "STOPPED", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 	}
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestWrongFormatTimeDataForStoppedContainer(t *testing.T) {
@@ -124,7 +124,7 @@ func TestWrongFormatTimeDataForStoppedContainer(t *testing.T) {
 		{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", CreatedAt: "2020-07-30T22:12:29.842610987Z", StartedAt: "2020-07-30T22:12:31.842610987Z", FinishedAt: "2020-07-31 22:10:29", KnownStatus: "STOPPED", Limits: ecsutil.Limits{CPU: &f, Memory: &v}},
 	}
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataMissingContainerLimit(t *testing.T) {
@@ -133,7 +133,7 @@ func TestGetMetricsDataMissingContainerLimit(t *testing.T) {
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataContainerLimitCpuNil(t *testing.T) {
@@ -142,7 +142,7 @@ func TestGetMetricsDataContainerLimitCpuNil(t *testing.T) {
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataContainerLimitMemoryNil(t *testing.T) {
@@ -151,7 +151,7 @@ func TestGetMetricsDataContainerLimitMemoryNil(t *testing.T) {
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataMissingTaskLimit(t *testing.T) {
@@ -166,7 +166,7 @@ func TestGetMetricsDataMissingTaskLimit(t *testing.T) {
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataTaskLimitCpuNil(t *testing.T) {
@@ -182,7 +182,7 @@ func TestGetMetricsDataTaskLimitCpuNil(t *testing.T) {
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataTaskLimitMemoryNil(t *testing.T) {
@@ -198,7 +198,7 @@ func TestGetMetricsDataTaskLimitMemoryNil(t *testing.T) {
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
 
 func TestGetMetricsDataCpuReservedZero(t *testing.T) {
@@ -214,8 +214,9 @@ func TestGetMetricsDataCpuReservedZero(t *testing.T) {
 	}
 
 	acc.getMetricsData(cstats, tm, logger)
-	require.Less(t, 0, len(acc.mds))
+	require.NotEmpty(t, acc.mds)
 }
+
 func TestIsEmptyStats(t *testing.T) {
 	require.False(t, isEmptyStats(&containerStats))
 	require.True(t, isEmptyStats(cstats["002"]))
@@ -226,7 +227,6 @@ func TestIsEmptyStats(t *testing.T) {
 }
 
 func TestCalculateDuration(t *testing.T) {
-
 	startTime := "2020-10-02T00:15:07.620912337Z"
 	endTime := "2020-10-03T15:14:06.620913372Z"
 	result, err := calculateDuration(startTime, endTime)
@@ -250,5 +250,4 @@ func TestCalculateDuration(t *testing.T) {
 	result, err = calculateDuration(startTime, endTime)
 	require.Error(t, err)
 	require.EqualValues(t, 0, result)
-
 }

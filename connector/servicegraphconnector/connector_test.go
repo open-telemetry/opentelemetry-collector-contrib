@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap/zaptest"
 
@@ -163,7 +163,7 @@ func TestConnectorConsume(t *testing.T) {
 			},
 			sampleTraces:  buildSampleTrace(t, "val"),
 			gates:         []*featuregate.Gate{legacyLatencyUnitMsFeatureGate},
-			verifyMetrics: verifyHappyCaseMetricsWithDuration(2000, 1000),
+			verifyMetrics: verifyHappyCaseLatencyMetrics(),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -226,12 +226,19 @@ func verifyHappyCaseMetricsWithDuration(serverDurationSum, clientDurationSum flo
 		verifyCount(t, mCount)
 
 		mServerDuration := ms.At(1)
-		assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
+		assert.Equal(t, "traces_service_graph_request_server", mServerDuration.Name())
 		verifyDuration(t, mServerDuration, serverDurationSum, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0})
 
 		mClientDuration := ms.At(2)
-		assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
+		assert.Equal(t, "traces_service_graph_request_client", mClientDuration.Name())
 		verifyDuration(t, mClientDuration, clientDurationSum, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0})
+	}
+}
+
+func verifyHappyCaseLatencyMetrics() func(t *testing.T, md pmetric.Metrics) {
+	return func(t *testing.T, md pmetric.Metrics) {
+		verifyHappyCaseMetricsWithDuration(2000, 1000)(t, md)
+		verifyUnit(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Unit(), millisecondsUnit)
 	}
 }
 
@@ -279,6 +286,10 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	v, ok := attrs.Get(k)
 	assert.True(t, ok)
 	assert.Equal(t, expected, v.AsString())
+}
+
+func verifyUnit(t *testing.T, expected, actual string) {
+	assert.Equal(t, expected, actual)
 }
 
 func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
@@ -430,7 +441,6 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		caseStr  string
 		duration float64
 	}{
-
 		{
 			caseStr:  "index 0 latency",
 			duration: 0,
@@ -479,7 +489,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Len(t, p.keyToMetric, 0)
+	assert.Empty(t, p.keyToMetric)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
@@ -539,7 +549,7 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// for dimensions from that series. It's important that it happens this way around,
 	// instead of deleting it from `keyToMetric`, otherwise the metrics collector will try
 	// and fail to find dimensions for a series that is about to be removed.
-	assert.Len(t, p.reqTotal, 0)
+	assert.Empty(t, p.reqTotal)
 	assert.Len(t, p.keyToMetric, 1)
 
 	p.metricMutex.RUnlock()
@@ -574,7 +584,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 		p.keyToMetric[key] = metric
 	}
 	p.cleanCache()
-	assert.Len(t, p.keyToMetric, 0)
+	assert.Empty(t, p.keyToMetric)
 
 	// ConsumeTraces with a trace with different attribute value
 	td = buildSampleTrace(t, "second")
@@ -596,6 +606,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, set.Shutdown(context.Background()))
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {

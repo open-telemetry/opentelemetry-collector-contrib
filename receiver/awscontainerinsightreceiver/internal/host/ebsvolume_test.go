@@ -27,7 +27,8 @@ type mockEBSVolumeClient struct {
 }
 
 func (m *mockEBSVolumeClient) DescribeVolumesWithContext(context.Context, *ec2.DescribeVolumesInput,
-	...request.Option) (*ec2.DescribeVolumesOutput, error) {
+	...request.Option,
+) (*ec2.DescribeVolumesOutput, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.count++
@@ -99,8 +100,7 @@ func (m *mockEBSVolumeClient) DescribeVolumesWithContext(context.Context, *ec2.D
 	}, nil
 }
 
-type mockFileInfo struct {
-}
+type mockFileInfo struct{}
 
 func (m *mockFileInfo) Name() string {
 	return "mockFileInfo"
@@ -180,5 +180,5 @@ func TestEBSVolume(t *testing.T) {
 	e = newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
 	ebsIDs = e.extractEbsIDsUsedByKubernetes()
-	assert.Len(t, ebsIDs, 0)
+	assert.Empty(t, ebsIDs)
 }

@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -52,8 +53,6 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
-	t.Parallel()
-
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
 		InputConfig: func() windows.Config {
@@ -63,13 +62,63 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 		}(),
 	}
 
-	_, err := newFactoryAdapter().CreateLogsReceiver(
+	_, err := newFactoryAdapter().CreateLogs(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
 	require.Error(t, err, "receiver creation should fail if given invalid input config")
+}
+
+// BenchmarkReadWindowsEventLogger benchmarks the performance of reading Windows Event Log events.
+// This benchmark is not good to measure time performance since it uses a "eventually" construct
+// to wait for the logs to be read. However, it is good to evaluate memory usage.
+func BenchmarkReadWindowsEventLogger(b *testing.B) {
+	b.StopTimer()
+
+	tests := []struct {
+		name  string
+		count int
+	}{
+		{
+			name:  "10",
+			count: 10,
+		},
+		{
+			name:  "100",
+			count: 100,
+		},
+		{
+			name:  "1_000",
+			count: 1_000,
+		},
+	}
+	for _, tt := range tests {
+		b.Run(tt.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				// Set up the receiver and sink.
+				ctx := context.Background()
+				factory := newFactoryAdapter()
+				createSettings := receivertest.NewNopSettings()
+				cfg := createTestConfig()
+				cfg.InputConfig.StartAt = "beginning"
+				cfg.InputConfig.MaxReads = tt.count
+				sink := new(consumertest.LogsSink)
+
+				receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
+				require.NoError(b, err)
+
+				_ = receiver.Start(ctx, componenttest.NewNopHost())
+				b.StartTimer()
+				assert.Eventually(b, func() bool {
+					return sink.LogRecordCount() >= tt.count
+				}, 20*time.Second, 250*time.Millisecond)
+				b.StopTimer()
+				_ = receiver.Shutdown(ctx)
+			}
+		})
+	}
 }
 
 func TestReadWindowsEventLogger(t *testing.T) {
@@ -85,7 +134,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
 
-	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 	require.NoError(t, err)
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -103,7 +152,8 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
-	records := requireExpectedLogRecords(t, sink, src, 1)
+	records := assertExpectedLogRecords(t, sink, src, 1)
+	require.Len(t, records, 1)
 	record := records[0]
 	body := record.Body().Map().AsRaw()
 
@@ -138,7 +188,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	cfg.InputConfig.Raw = true
 	sink := new(consumertest.LogsSink)
 
-	receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+	receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 	require.NoError(t, err)
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -156,7 +206,8 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	err = logger.Info(10, logMessage)
 	require.NoError(t, err)
 
-	records := requireExpectedLogRecords(t, sink, src, 1)
+	records := assertExpectedLogRecords(t, sink, src, 1)
+	require.Len(t, records, 1)
 	record := records[0]
 	body := record.Body().AsString()
 	bodyStruct := struct {
@@ -203,7 +254,7 @@ func TestExcludeProvider(t *testing.T) {
 			cfg.InputConfig.ExcludeProviders = []string{excludedSrc}
 			sink := new(consumertest.LogsSink)
 
-			receiver, err := factory.CreateLogsReceiver(ctx, createSettings, cfg, sink)
+			receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
 			require.NoError(t, err)
 
 			err = receiver.Start(ctx, componenttest.NewNopHost())
@@ -223,8 +274,8 @@ func TestExcludeProvider(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			records := requireExpectedLogRecords(t, sink, notExcludedSrc, 1)
-			assert.NotEmpty(t, records)
+			records := assertExpectedLogRecords(t, sink, notExcludedSrc, 1)
+			assert.Len(t, records, 1)
 
 			records = filterAllLogRecordsBySource(t, sink, excludedSrc)
 			assert.Empty(t, records)
@@ -251,6 +302,10 @@ func createTestConfig() *WindowsLogConfig {
 // It returns a function that can be used to uninstall the event source, that function is never nil
 func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSource func(), err error) {
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
+	if err != nil && strings.HasSuffix(err.Error(), " registry key already exists") {
+		// If the event source already exists ignore the error
+		err = nil
+	}
 	uninstallEventSource = func() {
 		assert.NoError(t, eventlog.Remove(src))
 	}
@@ -266,14 +321,20 @@ func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSour
 	return
 }
 
-func requireExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
+func assertExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
 	var actualLogRecords []plog.LogRecord
 
-	// logs sometimes take a while to be written, so a substantial wait buffer is needed
-	require.EventuallyWithT(t, func(c *assert.CollectT) {
+	// We can't use assert.Eventually because the condition function is launched in a separate goroutine
+	// and we want to return the slice filled by the condition function. Use a local condition check
+	// to avoid data race conditions.
+	startTime := time.Now()
+	actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
+	for len(actualLogRecords) != expectedEventCount && time.Since(startTime) < 10*time.Second {
+		time.Sleep(250 * time.Millisecond)
 		actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
-		assert.Len(c, actualLogRecords, expectedEventCount)
-	}, 10*time.Second, 250*time.Millisecond)
+	}
+
+	require.Len(t, actualLogRecords, expectedEventCount)
 
 	return actualLogRecords
 }

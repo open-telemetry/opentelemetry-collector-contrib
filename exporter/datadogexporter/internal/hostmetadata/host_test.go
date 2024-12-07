@@ -18,5 +18,5 @@ func TestHost(t *testing.T) {
 	require.NoError(t, err)
 	src, err := p.Source(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, src.Identifier, "test-host")
+	assert.Equal(t, "test-host", src.Identifier)
 }

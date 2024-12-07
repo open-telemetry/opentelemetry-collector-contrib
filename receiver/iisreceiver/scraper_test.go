@@ -87,7 +87,7 @@ func TestScrapeFailure(t *testing.T) {
 
 	require.Equal(t, 1, obs.Len())
 	log := obs.All()[0]
-	require.Equal(t, log.Level, zapcore.WarnLevel)
+	require.Equal(t, zapcore.WarnLevel, log.Level)
 	require.Equal(t, "error", log.Context[0].Key)
 	require.EqualError(t, log.Context[0].Interface.(error), expectedError)
 }
@@ -121,7 +121,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 	require.Equal(t, 1, obs.Len())
 	log := obs.All()[0]
-	require.Equal(t, log.Level, zapcore.WarnLevel)
+	require.Equal(t, zapcore.WarnLevel, log.Level)
 	require.Equal(t, "error", log.Context[0].Key)
 	require.EqualError(t, log.Context[0].Interface.(error), expectedError)
 }
@@ -155,7 +155,6 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-
 }
 
 type mockPerfCounter struct {

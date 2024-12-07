@@ -12,9 +12,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -22,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -34,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 )
 
 var allMetrics = []string{
@@ -81,6 +81,7 @@ var factories = map[string]internal.ScraperFactory{
 	pagingscraper.TypeStr:     &pagingscraper.Factory{},
 	processesscraper.TypeStr:  &processesscraper.Factory{},
 	processscraper.TypeStr:    &processscraper.Factory{},
+	systemscraper.TypeStr:     &systemscraper.Factory{},
 }
 
 type testEnv struct {
@@ -124,7 +125,7 @@ func TestGatherMetrics_EndToEnd(t *testing.T) {
 		cfg.Scrapers[processscraper.TypeStr] = scraperFactories[processscraper.TypeStr].CreateDefaultConfig()
 	}
 
-	receiver, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+	receiver, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
 
 	require.NoError(t, err, "Failed to create metrics receiver: %v", err)
 
@@ -220,20 +221,11 @@ func (m *mockConfig) SetRootPath(_ string) {}
 
 func (m *mockConfig) SetEnvMap(_ common.EnvMap) {}
 
-type mockFactory struct{ mock.Mock }
-type mockScraper struct{ mock.Mock }
+type errFactory struct{}
 
-func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.Settings, internal.Config) (scraperhelper.Scraper, error) {
-	args := m.MethodCalled("CreateMetricsScraper")
-	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
-}
-
-func (m *mockScraper) ID() component.ID                            { return component.MustNewID("mock_scraper") }
-func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
-func (m *mockScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {
-	return pmetric.NewMetrics(), errors.New("err1")
+func (m *errFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
+func (m *errFactory) CreateMetricsScraper(context.Context, receiver.Settings, internal.Config) (scraper.Metrics, error) {
+	return nil, errors.New("err1")
 }
 
 func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
@@ -245,13 +237,12 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
 
 func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
-	mFactory := &mockFactory{}
-	mFactory.On("CreateMetricsScraper").Return(&mockScraper{}, errors.New("err1"))
+	mFactory := &errFactory{}
 	tmp := scraperFactories
 	scraperFactories = map[string]internal.ScraperFactory{mockTypeStr: mFactory}
 	defer func() {
@@ -260,7 +251,7 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}
-	_, err := NewFactory().CreateMetricsReceiver(context.Background(), creationSet, cfg, sink)
+	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
 	require.Error(t, err)
 }
 
@@ -395,6 +386,19 @@ func Benchmark_ScrapeProcessMetrics(b *testing.B) {
 	benchmarkScrapeMetrics(b, cfg)
 }
 
+func Benchmark_ScrapeUptimeMetrics(b *testing.B) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "windows" {
+		b.Skip("skipping test on non linux/windows")
+	}
+
+	cfg := &Config{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Scrapers:         map[string]internal.Config{systemscraper.TypeStr: (&systemscraper.Factory{}).CreateDefaultConfig()},
+	}
+
+	benchmarkScrapeMetrics(b, cfg)
+}
+
 func Benchmark_ScrapeSystemMetrics(b *testing.B) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -429,6 +433,7 @@ func Benchmark_ScrapeSystemAndProcessMetrics(b *testing.B) {
 			networkscraper.TypeStr:    &networkscraper.Config{},
 			pagingscraper.TypeStr:     (&pagingscraper.Factory{}).CreateDefaultConfig(),
 			processesscraper.TypeStr:  &processesscraper.Config{},
+			systemscraper.TypeStr:     &systemscraper.Config{},
 		},
 	}
 

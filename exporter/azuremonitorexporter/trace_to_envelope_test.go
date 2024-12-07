@@ -5,6 +5,7 @@ package azuremonitorexporter
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -13,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -29,7 +30,7 @@ const (
 	defaultServiceInstance                  = "112345"
 	defaultScopeName                        = "myinstrumentationlib"
 	defaultScopeVersion                     = "1.0"
-	defaultHTTPMethod                       = "GET"
+	defaultHTTPMethod                       = http.MethodGet
 	defaultHTTPServerSpanName               = "/bar"
 	defaultHTTPClientSpanName               = defaultHTTPMethod
 	defaultHTTPStatusCode                   = 200
@@ -105,7 +106,7 @@ var (
 // - a specific SpanStatus as opposed to none
 // - an error http.status_code
 // - http.route is specified which should replace Span name as part of the RequestData name
-// - no  http.client_ip or net.peer.ip specified which causes data.Source to be empty
+// - no http.client_ip or net.peer.ip specified which causes data.Source to be empty
 // - adds a few different types of attributes
 func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 	span := getDefaultHTTPServerSpan()
@@ -565,8 +566,8 @@ func commonEnvelopeValidations(
 	t *testing.T,
 	span ptrace.Span,
 	envelope *contracts.Envelope,
-	expectedEnvelopeName string) {
-
+	expectedEnvelopeName string,
+) {
 	assert.NotNil(t, envelope)
 	assert.Equal(t, expectedEnvelopeName, envelope.Name)
 	assert.Equal(t, toTime(span.StartTimestamp()).Format(time.RFC3339Nano), envelope.Time)
@@ -587,8 +588,8 @@ func commonEnvelopeValidations(
 func commonRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RequestData) {
-
+	data *contracts.RequestData,
+) {
 	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
@@ -601,8 +602,8 @@ func commonRequestDataValidations(
 func defaultHTTPRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RequestData) {
-
+	data *contracts.RequestData,
+) {
 	commonRequestDataValidations(t, span, data)
 
 	assert.Equal(t, defaultHTTPStatusCodeAsString, data.ResponseCode)
@@ -614,8 +615,8 @@ func defaultHTTPRequestDataValidations(
 func commonRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
-
+	data *contracts.RemoteDependencyData,
+) {
 	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, defaultSpanDuration, data.Duration)
@@ -625,8 +626,8 @@ func commonRemoteDependencyDataValidations(
 func defaultHTTPRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
-
+	data *contracts.RemoteDependencyData,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultHTTPStatusCodeAsString, data.ResultCode)
@@ -639,8 +640,8 @@ func defaultRPCRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
 	data *contracts.RequestData,
-	expectedDataSource string) {
-
+	expectedDataSource string,
+) {
 	commonRequestDataValidations(t, span, data)
 
 	assert.Equal(t, defaultRPCStatusCodeAsString, data.ResponseCode)
@@ -654,8 +655,8 @@ func defaultRPCRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
 	data *contracts.RemoteDependencyData,
-	expectedDataTarget string) {
-
+	expectedDataTarget string,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultRPCStatusCodeAsString, data.ResultCode)
@@ -671,8 +672,8 @@ func defaultRPCRemoteDependencyDataValidations(
 func defaultDatabaseRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
-
+	data *contracts.RemoteDependencyData,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultDatabaseStatusCodeAsString, data.ResultCode)
@@ -684,8 +685,8 @@ func defaultDatabaseRemoteDependencyDataValidations(
 func defaultMessagingRequestDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RequestData) {
-
+	data *contracts.RequestData,
+) {
 	commonRequestDataValidations(t, span, data)
 
 	assert.Equal(t, defaultMessagingStatusCodeAsString, data.ResponseCode)
@@ -696,8 +697,8 @@ func defaultMessagingRequestDataValidations(
 func defaultMessagingRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
-
+	data *contracts.RemoteDependencyData,
+) {
 	commonRemoteDependencyDataValidations(t, span, data)
 
 	assert.Equal(t, defaultMessagingStatusCodeAsString, data.ResultCode)
@@ -709,8 +710,8 @@ func defaultMessagingRemoteDependencyDataValidations(
 func defaultInternalRemoteDependencyDataValidations(
 	t *testing.T,
 	span ptrace.Span,
-	data *contracts.RemoteDependencyData) {
-
+	data *contracts.RemoteDependencyData,
+) {
 	assertAttributesCopiedToProperties(t, span.Attributes(), data.Properties)
 	assert.Equal(t, "InProc", data.Type)
 }
@@ -719,8 +720,8 @@ func defaultInternalRemoteDependencyDataValidations(
 func assertAttributesCopiedToProperties(
 	t *testing.T,
 	attributeMap pcommon.Map,
-	properties map[string]string) {
-
+	properties map[string]string,
+) {
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
 		p, exists := properties[k]
 		assert.True(t, exists)

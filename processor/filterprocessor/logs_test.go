@@ -580,7 +580,7 @@ func TestFilterLogProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			flp, err := factory.CreateLogsProcessor(
+			flp, err := factory.CreateLogs(
 				context.Background(),
 				processortest.NewNopSettings(),
 				cfg,
@@ -595,7 +595,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			assert.NoError(t, flp.Start(ctx, nil))
 
 			cErr := flp.ConsumeLogs(context.Background(), test.inLogs)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllLogs()
 
 			require.Len(t, got, 1)
@@ -676,7 +676,7 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 		Exclude: nil,
 	}
 	ctx := context.Background()
-	proc, _ := factory.CreateLogsProcessor(
+	proc, _ := factory.CreateLogs(
 		ctx,
 		processortest.NewNopSettings(),
 		cfg,
@@ -794,7 +794,7 @@ func TestFilterLogProcessorTelemetry(t *testing.T) {
 	}
 
 	tel.assertMetrics(t, want)
-
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructLogs() plog.Logs {
@@ -825,7 +825,6 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "A|B|C")
-
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -836,5 +835,4 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().PutStr("http.path", "/health")
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "C|D")
-
 }

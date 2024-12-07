@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -230,7 +230,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	case logGroups != (pcommon.Slice{}) && logGroups.Len() > 0:
 		cwl = getLogGroupMetadata(logGroups, false)
 	case logGroupNames != nil:
-		var configSlice = pcommon.NewSlice()
+		configSlice := pcommon.NewSlice()
 		configSlice.EnsureCapacity(len(logGroupNames))
 
 		for _, s := range logGroupNames {

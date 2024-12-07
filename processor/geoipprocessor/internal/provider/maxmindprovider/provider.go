@@ -22,8 +22,7 @@ var (
 	geoIP2CityDBType    = "GeoIP2-City"
 	geoLite2CityDBType  = "GeoLite2-City"
 
-	errUnsupportedDB   = errors.New("unsupported geo IP database type")
-	errNoMetadataFound = errors.New("no geo IP metadata found")
+	errUnsupportedDB = errors.New("unsupported geo IP database type")
 )
 
 type maxMindProvider struct {
@@ -51,7 +50,7 @@ func (g *maxMindProvider) Location(_ context.Context, ipAddress net.IP) (attribu
 		if err != nil {
 			return attribute.Set{}, err
 		} else if len(*attrs) == 0 {
-			return attribute.Set{}, errNoMetadataFound
+			return attribute.Set{}, provider.ErrNoMetadataFound
 		}
 		return attribute.NewSet(*attrs...), nil
 	default:

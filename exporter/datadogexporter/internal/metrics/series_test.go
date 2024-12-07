@@ -35,10 +35,10 @@ func TestNewType(t *testing.T) {
 	tags := []string{"tag:value"}
 
 	gauge := NewGauge(name, ts, value, tags)
-	assert.Equal(t, gauge.GetType(), datadogV2.METRICINTAKETYPE_GAUGE)
+	assert.Equal(t, datadogV2.METRICINTAKETYPE_GAUGE, gauge.GetType())
 
 	count := NewCount(name, ts, value, tags)
-	assert.Equal(t, count.GetType(), datadogV2.METRICINTAKETYPE_COUNT)
+	assert.Equal(t, datadogV2.METRICINTAKETYPE_COUNT, count.GetType())
 }
 
 func TestDefaultMetrics(t *testing.T) {

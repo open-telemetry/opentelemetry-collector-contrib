@@ -17,12 +17,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
@@ -51,7 +52,7 @@ type connectorImp struct {
 	metricsConsumer consumer.Metrics
 
 	// Additional dimensions to add to metrics.
-	dimensions []dimension
+	dimensions []utilattri.Dimension
 
 	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
@@ -71,7 +72,7 @@ type connectorImp struct {
 	shutdownOnce sync.Once
 
 	// Event dimensions to add to the events metric.
-	eDimensions []dimension
+	eDimensions []utilattri.Dimension
 
 	events EventsConfig
 
@@ -90,21 +91,16 @@ type resourceMetrics struct {
 	lastSeen time.Time
 }
 
-type dimension struct {
-	name  string
-	value *pcommon.Value
-}
-
-func newDimensions(cfgDims []Dimension) []dimension {
+func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 	if len(cfgDims) == 0 {
 		return nil
 	}
-	dims := make([]dimension, len(cfgDims))
+	dims := make([]utilattri.Dimension, len(cfgDims))
 	for i := range cfgDims {
-		dims[i].name = cfgDims[i].Name
+		dims[i].Name = cfgDims[i].Name
 		if cfgDims[i].Default != nil {
 			val := pcommon.NewValueStr(*cfgDims[i].Default)
-			dims[i].value = &val
+			dims[i].Value = &val
 		}
 	}
 	return dims
@@ -295,14 +291,20 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			return startTime
 		}
 
+		metricsNamespace := p.config.Namespace
+		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
+			metricsNamespace = ""
+		}
+
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
-		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
+		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
 		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
+			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
 			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		}
@@ -310,7 +312,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
+			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
 			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		}
 
@@ -356,7 +358,6 @@ func (p *connectorImp) resetState() {
 				}
 			}
 		})
-
 	}
 }
 
@@ -408,7 +409,6 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					h := histograms.GetOrCreate(key, attributes)
 					p.addExemplar(span, duration, h)
 					h.Observe(duration)
-
 				}
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)
@@ -505,7 +505,7 @@ func contains(elements []string, value string) bool {
 	return false
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []dimension) pcommon.Map {
+func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(4 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -521,8 +521,8 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
 	for _, d := range dimensions {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			v.CopyTo(attr.PutEmpty(d.name))
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+			v.CopyTo(attr.PutEmpty(d.Name))
 		}
 	}
 	return attr
@@ -540,7 +540,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
@@ -556,34 +556,12 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	}
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
 			concatDimensionValue(p.keyBuf, v.AsString(), true)
 		}
 	}
 
 	return metrics.Key(p.keyBuf.String())
-}
-
-// getDimensionValue gets the dimension value for the given configured dimension.
-// It searches through the span's attributes first, being the more specific;
-// falling back to searching in resource attributes if it can't be found in the span.
-// Finally, falls back to the configured default value if provided.
-//
-// The ok flag indicates if a dimension value was fetched in order to differentiate
-// an empty string value from a state where no value was found.
-func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
-	// The more specific span attribute should take precedence.
-	if attr, exists := spanAttr.Get(d.name); exists {
-		return attr, true
-	}
-	if attr, exists := resourceAttr.Get(d.name); exists {
-		return attr, true
-	}
-	// Set the default if configured, otherwise this metric will have no value set for the dimension.
-	if d.value != nil {
-		return *d.value, true
-	}
-	return v, ok
 }
 
 // buildMetricName builds the namespace prefix for the metric name.

@@ -8,12 +8,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	vmsgp "github.com/vmihailenco/msgpack/v4"
+	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"google.golang.org/protobuf/proto"
@@ -28,7 +29,7 @@ var data = [2]any{
 		2:  "elasticsearch.version",
 		3:  "7.0",
 		4:  "my-name",
-		5:  "X",
+		5:  "numeric_attribute",
 		6:  "my-service",
 		7:  "my-resource",
 		8:  "_sampling_priority_v1",
@@ -74,7 +75,6 @@ func getTraces(t *testing.T) (traces pb.Traces) {
 		t.Fatal(err)
 	}
 	return traces
-
 }
 
 func TestTracePayloadV05Unmarshalling(t *testing.T) {
@@ -86,26 +86,27 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshaling content")
 	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
 
-	translated := ToTraces(&pb.TracerPayload{
-		LanguageName:    req.Header.Get(header.Lang),
-		LanguageVersion: req.Header.Get(header.LangVersion),
-		TracerVersion:   req.Header.Get(header.TracerVersion),
-		Chunks:          traceChunksFromTraces(traces),
-	}, req)
+	tracePayloads, _ := HandleTracesPayload(req)
+	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
+	tracePayload := tracePayloads[0]
+	translated := ToTraces(tracePayload, req)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
-	assert.Equal(t, 9, span.Attributes().Len(), "missing attributes")
+	assert.Equal(t, "my-name", span.Name())
+	assert.Equal(t, 10, span.Attributes().Len(), "missing attributes")
 	value, exists := span.Attributes().Get("service.name")
-	serviceVersionValue, _ := span.Attributes().Get("service.version")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name attribute value incorrect")
-	assert.Equal(t, "my-name", span.Name())
+	serviceVersionValue, _ := span.Attributes().Get("service.version")
 	assert.Equal(t, "1.0.1", serviceVersionValue.AsString())
 	spanResource, _ := span.Attributes().Get("dd.span.Resource")
 	assert.Equal(t, "my-resource", spanResource.Str())
 	spanResource1, _ := span.Attributes().Get("sampling.priority")
 	assert.Equal(t, fmt.Sprintf("%f", 1.0), spanResource1.Str())
+	numericAttributeValue, _ := span.Attributes().Get("numeric_attribute")
+	numericAttributeFloat, _ := strconv.ParseFloat(numericAttributeValue.AsString(), 64)
+	assert.Equal(t, 1.2, numericAttributeFloat)
 }
 
 func TestTracePayloadV07Unmarshalling(t *testing.T) {
@@ -177,10 +178,11 @@ func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 	var tracerPayloads []*pb.TracerPayload
 	for i := 0; i < numberOfTraces; i++ {
 		payload := &pb.TracerPayload{
-			LanguageName:    fmt.Sprintf("%d", i),
-			LanguageVersion: fmt.Sprintf("%d", i),
+			LanguageName:    strconv.Itoa(i),
+			LanguageVersion: strconv.Itoa(i),
+			ContainerID:     strconv.Itoa(i),
 			Chunks:          traceChunksFromTraces(*traces),
-			TracerVersion:   fmt.Sprintf("%d", i),
+			TracerVersion:   strconv.Itoa(i),
 		}
 		tracerPayloads = append(tracerPayloads, payload)
 	}
@@ -192,7 +194,7 @@ func agentPayloadFromTraces(traces *pb.Traces) (agentPayload pb.AgentPayload) {
 
 func TestUpsertHeadersAttributes(t *testing.T) {
 	// Test case 1: Datadog-Meta-Tracer-Version is present in headers
-	req1, _ := http.NewRequest("GET", "http://example.com", nil)
+	req1, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
@@ -201,7 +203,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
 	// Test case 2: Datadog-Meta-Lang is present in headers with ".NET"
-	req2, _ := http.NewRequest("GET", "http://example.com", nil)
+	req2, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)

@@ -19,14 +19,14 @@ func TestK8sEventToLogData(t *testing.T) {
 	resourceAttrs := rl.Resource().Attributes()
 	lr := rl.ScopeLogs().At(0)
 	attrs := lr.LogRecords().At(0).Attributes()
-	assert.Equal(t, ld.ResourceLogs().Len(), 1)
-	assert.Equal(t, resourceAttrs.Len(), 7)
-	assert.Equal(t, attrs.Len(), 7)
+	assert.Equal(t, 1, ld.ResourceLogs().Len())
+	assert.Equal(t, 7, resourceAttrs.Len())
+	assert.Equal(t, 7, attrs.Len())
 
 	// Count attribute will not be present in the LogData
 	k8sEvent.Count = 0
 	ld = k8sEventToLogData(zap.NewNop(), k8sEvent)
-	assert.Equal(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), 6)
+	assert.Equal(t, 6, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
 }
 
 func TestK8sEventToLogDataWithApiAndResourceVersion(t *testing.T) {
@@ -59,6 +59,6 @@ func TestUnknownSeverity(t *testing.T) {
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
-	assert.Equal(t, logEntry.SeverityNumber(), plog.SeverityNumberUnspecified)
-	assert.Equal(t, logEntry.SeverityText(), "")
+	assert.Equal(t, plog.SeverityNumberUnspecified, logEntry.SeverityNumber())
+	assert.Equal(t, "", logEntry.SeverityText())
 }

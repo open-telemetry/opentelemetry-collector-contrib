@@ -15,13 +15,17 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-const instanceNameKey = "sql_instance"
+const (
+	computerNameKey = "computer_name"
+	instanceNameKey = "sql_instance"
+)
 
 type sqlServerScraperHelper struct {
 	id                 component.ID
@@ -37,7 +41,7 @@ type sqlServerScraperHelper struct {
 	mb                 *metadata.MetricsBuilder
 }
 
-var _ scraperhelper.Scraper = (*sqlServerScraperHelper)(nil)
+var _ scraper.Metrics = (*sqlServerScraperHelper)(nil)
 
 func newSQLServerScraper(id component.ID,
 	query string,
@@ -47,8 +51,8 @@ func newSQLServerScraper(id component.ID,
 	telemetry sqlquery.TelemetryConfig,
 	dbProviderFunc sqlquery.DbProviderFunc,
 	clientProviderFunc sqlquery.ClientProviderFunc,
-	mb *metadata.MetricsBuilder) *sqlServerScraperHelper {
-
+	mb *metadata.MetricsBuilder,
+) *sqlServerScraperHelper {
 	return &sqlServerScraperHelper{
 		id:                 id,
 		sqlQuery:           query,
@@ -77,17 +81,16 @@ func (s *sqlServerScraperHelper) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *sqlServerScraperHelper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	var err error
 
-	rb := s.mb.NewResourceBuilder()
 	switch s.sqlQuery {
 	case getSQLServerDatabaseIOQuery(s.instanceName):
-		err = s.recordDatabaseIOMetrics(ctx, rb)
+		err = s.recordDatabaseIOMetrics(ctx)
 	case getSQLServerPerformanceCounterQuery(s.instanceName):
-		err = s.recordDatabasePerfCounterMetrics(ctx, rb)
+		err = s.recordDatabasePerfCounterMetrics(ctx)
 	case getSQLServerPropertiesQuery(s.instanceName):
-		err = s.recordDatabaseStatusMetrics(ctx, rb)
+		err = s.recordDatabaseStatusMetrics(ctx)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -96,7 +99,7 @@ func (s *sqlServerScraperHelper) Scrape(ctx context.Context) (pmetric.Metrics, e
 		return pmetric.Metrics{}, err
 	}
 
-	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
+	return s.mb.Emit(), nil
 }
 
 func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
@@ -106,9 +109,7 @@ func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb *metadata.ResourceBuilder) error {
-	// TODO: Move constants out to the package level when other queries are added.
-	const computerNameKey = "computer_name"
+func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context) error {
 	const databaseNameKey = "database_name"
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
@@ -133,11 +134,10 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var val float64
 	for i, row := range rows {
-		if i == 0 {
-			rb.SetSqlserverComputerName(row[computerNameKey])
-			rb.SetSqlserverDatabaseName(row[databaseNameKey])
-			rb.SetSqlserverInstanceName(row[instanceNameKey])
-		}
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverComputerName(row[computerNameKey])
+		rb.SetSqlserverDatabaseName(row[databaseNameKey])
+		rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 		val, err = strconv.ParseFloat(row[readLatencyMsKey], 64)
 		if err != nil {
@@ -159,6 +159,8 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	if len(rows) == 0 {
@@ -168,7 +170,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Context, rb *metadata.ResourceBuilder) error {
+func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Context) error {
 	const counterKey = "counter"
 	const valueKey = "value"
 	// Constants are the columns for metrics from query
@@ -183,7 +185,6 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	const userConnCount = "User Connections"
 
 	rows, err := s.client.QueryRows(ctx)
-
 	if err != nil {
 		if errors.Is(err, sqlquery.ErrNullValueWarning) {
 			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
@@ -195,9 +196,9 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 	var errs []error
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
-		if i == 0 {
-			rb.SetSqlserverInstanceName(row[instanceNameKey])
-		}
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverComputerName(row[computerNameKey])
+		rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 		switch row[counterKey] {
 		case batchRequestRate:
@@ -255,12 +256,14 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				s.mb.RecordSqlserverUserConnectionCountDataPoint(now, val)
 			}
 		}
+
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context, rb *metadata.ResourceBuilder) error {
+func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context) error {
 	// Constants are the column names of the database status
 	const dbOnline = "db_online"
 	const dbRestoring = "db_restoring"
@@ -270,7 +273,6 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	const dbOffline = "db_offline"
 
 	rows, err := s.client.QueryRows(ctx)
-
 	if err != nil {
 		if errors.Is(err, sqlquery.ErrNullValueWarning) {
 			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
@@ -281,10 +283,10 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 	var errs []error
 	now := pcommon.NewTimestampFromTime(time.Now())
-	for i, row := range rows {
-		if i == 0 {
-			rb.SetSqlserverInstanceName(row[instanceNameKey])
-		}
+	for _, row := range rows {
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSqlserverComputerName(row[computerNameKey])
+		rb.SetSqlserverInstanceName(row[instanceNameKey])
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
@@ -293,6 +295,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
 		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
 
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	return errors.Join(errs...)

@@ -253,7 +253,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	err = p.markAsReleased(traceID, p.eventMachine.workers[workerIndexForTraceID(traceID, config.NumWorkers)].fire)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
@@ -290,7 +290,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	err := p.onTraceReceived(tracesWithID{id: traceID, td: batch[0]}, p.eventMachine.workers[0])
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestAddSpansToExistingTrace(t *testing.T) {
@@ -385,7 +385,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
@@ -412,7 +412,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	err := p.onTraceRemoved(traceID)
 
 	// verify
-	assert.True(t, errors.Is(err, expectedError))
+	assert.ErrorIs(t, err, expectedError)
 }
 
 func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
@@ -599,12 +599,15 @@ func (m *mockProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	}
 	return nil
 }
+
 func (m *mockProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
+
 func (m *mockProcessor) Shutdown(context.Context) error {
 	return nil
 }
+
 func (m *mockProcessor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
@@ -625,24 +628,28 @@ func (st *mockStorage) createOrAppend(traceID pcommon.TraceID, trace ptrace.Trac
 	}
 	return nil
 }
+
 func (st *mockStorage) get(traceID pcommon.TraceID) ([]ptrace.ResourceSpans, error) {
 	if st.onGet != nil {
 		return st.onGet(traceID)
 	}
 	return nil, nil
 }
+
 func (st *mockStorage) delete(traceID pcommon.TraceID) ([]ptrace.ResourceSpans, error) {
 	if st.onDelete != nil {
 		return st.onDelete(traceID)
 	}
 	return nil, nil
 }
+
 func (st *mockStorage) start() error {
 	if st.onStart != nil {
 		return st.onStart()
 	}
 	return nil
 }
+
 func (st *mockStorage) shutdown() error {
 	if st.onShutdown != nil {
 		return st.onShutdown()
@@ -659,6 +666,7 @@ var _ consumer.Traces = (*blockingConsumer)(nil)
 func (b *blockingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
+
 func (b *blockingConsumer) ConsumeTraces(context.Context, ptrace.Traces) error {
 	<-b.blockCh
 	return nil

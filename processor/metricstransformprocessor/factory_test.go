@@ -29,7 +29,7 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{})
+	assert.Equal(t, &Config{}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -121,7 +121,7 @@ func TestCreateProcessors(t *testing.T) {
 				require.NoError(t, err)
 				require.NoError(t, sub.Unmarshal(cfg))
 
-				tp, tErr := factory.CreateTracesProcessor(
+				tp, tErr := factory.CreateTraces(
 					context.Background(),
 					processortest.NewNopSettings(),
 					cfg,
@@ -130,7 +130,7 @@ func TestCreateProcessors(t *testing.T) {
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
 
-				mp, mErr := factory.CreateMetricsProcessor(
+				mp, mErr := factory.CreateMetrics(
 					context.Background(),
 					processortest.NewNopSettings(),
 					cfg,
@@ -165,7 +165,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 		},
 	}
 	err := validateConfiguration(&v1)
-	assert.Equal(t, "operation 1: missing required field \"new_label\" while \"action\" is add_label", err.Error())
+	assert.EqualError(t, err, "operation 1: missing required field \"new_label\" while \"action\" is add_label")
 
 	v2 := Config{
 		Transforms: []transform{
@@ -186,7 +186,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 	}
 
 	err = validateConfiguration(&v2)
-	assert.Equal(t, "operation 1: missing required field \"new_value\" while \"action\" is add_label", err.Error())
+	assert.EqualError(t, err, "operation 1: missing required field \"new_value\" while \"action\" is add_label")
 }
 
 func TestCreateProcessorsFilledData(t *testing.T) {

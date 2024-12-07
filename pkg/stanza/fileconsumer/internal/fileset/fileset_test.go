@@ -36,7 +36,7 @@ func pop[T Matchable](expectedErr error, expectedElemet T) func(t *testing.T, fi
 		el, err := fileset.Pop()
 		if expectedErr == nil {
 			require.NoError(t, err)
-			require.Equal(t, el, expectedElemet)
+			require.Equal(t, expectedElemet, el)
 			require.Equal(t, pr-1, fileset.Len())
 		} else {
 			require.ErrorIs(t, err, expectedErr)
@@ -55,7 +55,6 @@ func match[T Matchable](ele T, expect bool) func(t *testing.T, fileset *Fileset[
 			require.Nil(t, r)
 			require.Equal(t, pr, fileset.Len())
 		}
-
 	}
 }
 

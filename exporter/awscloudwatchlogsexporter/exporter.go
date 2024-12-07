@@ -63,7 +63,6 @@ func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, erro
 	// create CWLogs client with aws session config
 	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, expConfig.Tags, session, metadata.Type.String())
 	collectorIdentifier, err := uuid.NewRandom()
-
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +87,7 @@ func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, 
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		context.TODO(),
 		params,
 		config,
@@ -105,13 +104,11 @@ func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	var errs error
 
 	err := pushLogsToCWLogs(e.logger, ld, e.Config, pusher)
-
 	if err != nil {
 		errs = errors.Join(errs, fmt.Errorf("Error pushing logs: %w", err))
 	}
 
 	err = pusher.ForceFlush()
-
 	if err != nil {
 		errs = errors.Join(errs, fmt.Errorf("Error flushing logs: %w", err))
 	}

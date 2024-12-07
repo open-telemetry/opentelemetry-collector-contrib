@@ -48,16 +48,17 @@ type tailSamplingSpanProcessor struct {
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
-	nextConsumer    consumer.Traces
-	maxNumTraces    uint64
-	policies        []*policy
-	idToTrace       sync.Map
-	policyTicker    timeutils.TTicker
-	tickerFrequency time.Duration
-	decisionBatcher idbatcher.Batcher
-	sampledIDCache  cache.Cache[bool]
-	deleteChan      chan pcommon.TraceID
-	numTracesOnMap  *atomic.Uint64
+	nextConsumer      consumer.Traces
+	maxNumTraces      uint64
+	policies          []*policy
+	idToTrace         sync.Map
+	policyTicker      timeutils.TTicker
+	tickerFrequency   time.Duration
+	decisionBatcher   idbatcher.Batcher
+	sampledIDCache    cache.Cache[bool]
+	nonSampledIDCache cache.Cache[bool]
+	deleteChan        chan pcommon.TraceID
+	numTracesOnMap    *atomic.Uint64
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -89,23 +90,32 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	if err != nil {
 		return nil, err
 	}
-	sampledDecisions := cache.NewNopDecisionCache[bool]()
+	nopCache := cache.NewNopDecisionCache[bool]()
+	sampledDecisions := nopCache
+	nonSampledDecisions := nopCache
 	if cfg.DecisionCache.SampledCacheSize > 0 {
 		sampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.SampledCacheSize)
 		if err != nil {
 			return nil, err
 		}
 	}
+	if cfg.DecisionCache.NonSampledCacheSize > 0 {
+		nonSampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.NonSampledCacheSize)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:            ctx,
-		telemetry:      telemetry,
-		nextConsumer:   nextConsumer,
-		maxNumTraces:   cfg.NumTraces,
-		sampledIDCache: sampledDecisions,
-		logger:         telemetrySettings.Logger,
-		numTracesOnMap: &atomic.Uint64{},
-		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
+		ctx:               ctx,
+		telemetry:         telemetry,
+		nextConsumer:      nextConsumer,
+		maxNumTraces:      cfg.NumTraces,
+		sampledIDCache:    sampledDecisions,
+		nonSampledIDCache: nonSampledDecisions,
+		logger:            telemetrySettings.Logger,
+		numTracesOnMap:    &atomic.Uint64{},
+		deleteChan:        make(chan pcommon.TraceID, cfg.NumTraces),
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -188,6 +198,13 @@ func withSampledDecisionCache(c cache.Cache[bool]) Option {
 	}
 }
 
+// withSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
+func withNonSampledDecisionCache(c cache.Cache[bool]) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.nonSampledIDCache = c
+	}
+}
+
 func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
 	case Composite:
@@ -231,7 +248,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewTraceStateFilter(settings, tsfCfg.Key, tsfCfg.Values), nil
 	case BooleanAttribute:
 		bafCfg := cfg.BooleanAttributeCfg
-		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value), nil
+		return sampling.NewBooleanAttributeFilter(settings, bafCfg.Key, bafCfg.Value, bafCfg.InvertMatch), nil
 	case OTTLCondition:
 		ottlfCfg := cfg.OTTLConditionCfg
 		return sampling.NewOTTLConditionFilter(settings, ottlfCfg.SpanConditions, ottlfCfg.SpanEventConditions, ottlfCfg.ErrorMode)
@@ -371,7 +388,15 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 			traceTd := ptrace.NewTraces()
 			appendToTraces(traceTd, resourceSpans, spans)
 			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
-			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(tsp.ctx, int64(len(spans)))
+			metric.WithAttributeSet(attribute.NewSet())
+			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
+				Add(tsp.ctx, int64(len(spans)), attrSampledTrue)
+			continue
+		}
+		// If the trace ID is in the non-sampled cache, short circuit the decision
+		if _, ok := tsp.nonSampledIDCache.Get(id); ok {
+			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.
+				Add(tsp.ctx, int64(len(spans)), attrSampledFalse)
 			continue
 		}
 
@@ -429,6 +454,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				appendToTraces(traceTd, resourceSpans, spans)
 				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
 			case sampling.NotSampled:
+				tsp.nonSampledIDCache.Put(id, true)
 				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 			default:
 				tsp.logger.Warn("Encountered unexpected sampling decision",

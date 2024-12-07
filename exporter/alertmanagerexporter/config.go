@@ -14,9 +14,9 @@ import (
 
 // Config defines configuration for alertmanager exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	BackoffConfig                  configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	BackoffConfig   configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	GeneratorURL            string                   `mapstructure:"generator_url"`
@@ -28,7 +28,6 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-
 	if cfg.ClientConfig.Endpoint == "" {
 		return errors.New("endpoint must be non-empty")
 	}

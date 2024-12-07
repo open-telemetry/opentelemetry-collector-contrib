@@ -18,7 +18,6 @@ import (
 )
 
 func TestECSTaskInfoSuccess(t *testing.T) {
-
 	ctx := context.Background()
 
 	taskReadyC := make(chan bool)
@@ -28,7 +27,7 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 
 	respBody := string(data)
 	httpResponse := &http.Response{
-		StatusCode:    200,
+		StatusCode:    http.StatusOK,
 		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
@@ -48,7 +47,6 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 	assert.Equal(t, int64(1), ecsTaskinfo.getRunningTaskCount())
 
 	assert.NotEmpty(t, ecsTaskinfo.getRunningTasksInfo())
-
 }
 
 func TestECSTaskInfoFail(t *testing.T) {
@@ -62,7 +60,7 @@ func TestECSTaskInfoFail(t *testing.T) {
 
 	httpResponse := &http.Response{
 		Status:        "Bad Request",
-		StatusCode:    400,
+		StatusCode:    http.StatusBadRequest,
 		Body:          io.NopCloser(bytes.NewBufferString(respBody)),
 		Header:        make(http.Header),
 		ContentLength: 5 * 1024,
@@ -75,7 +73,7 @@ func TestECSTaskInfoFail(t *testing.T) {
 	ecsTaskinfo := newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
 	assert.NotNil(t, ecsTaskinfo)
 	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
-	assert.Len(t, ecsTaskinfo.getRunningTasksInfo(), 0)
+	assert.Empty(t, ecsTaskinfo.getRunningTasksInfo())
 
 	data, err := os.ReadFile("./test/ecsinfo/taskinfo_wrong")
 	body := string(data)
@@ -87,6 +85,5 @@ func TestECSTaskInfoFail(t *testing.T) {
 	ecsTaskinfo = newECSTaskInfo(ctx, hostIPProvider, time.Minute, zap.NewNop(), mockHTTP, taskReadyC)
 	assert.NotNil(t, ecsTaskinfo)
 	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
-	assert.Len(t, ecsTaskinfo.getRunningTasksInfo(), 0)
-
+	assert.Empty(t, ecsTaskinfo.getRunningTasksInfo())
 }

@@ -23,7 +23,7 @@ func TestValidateTraceID(t *testing.T) {
 		{
 			name:     "InvalidLength",
 			traceID:  "invalid-length",
-			expected: errInvalidTraceIDLenght,
+			expected: errInvalidTraceIDLength,
 		},
 		{
 			name:     "InvalidTraceID",
@@ -53,7 +53,7 @@ func TestValidateSpanID(t *testing.T) {
 		{
 			name:     "InvalidLength",
 			spanID:   "invalid-length",
-			expected: errInvalidSpanIDLenght,
+			expected: errInvalidSpanIDLength,
 		},
 		{
 			name:     "InvalidTraceID",

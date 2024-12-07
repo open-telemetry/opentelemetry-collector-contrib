@@ -57,7 +57,8 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -93,7 +94,8 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -123,6 +125,53 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	testAllSimpleLogs(t, consumer.AllLogs())
 }
 
+func TestPostgresIntegrationLogsTrackingByTimestampColumnWithoutStorage(t *testing.T) {
+	// Start Postgres container.
+	externalPort := "15432"
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer func() {
+		require.NoError(t, dbContainer.Terminate(context.Background()))
+	}()
+
+	// Start the SQL Query receiver.
+	receiverCreateSettings := receivertest.NewNopSettings()
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
+	config.CollectionInterval = 100 * time.Millisecond
+	config.Queries = []sqlquery.Query{
+		{
+			SQL: "select * from simple_logs where insert_time > $1 order by insert_time asc",
+			Logs: []sqlquery.LogsCfg{
+				{
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
+				},
+			},
+			TrackingColumn:     "insert_time",
+			TrackingStartValue: "2022-06-03 21:00:00+00",
+		},
+	}
+	host := componenttest.NewNopHost()
+	err := receiver.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	// Verify there's 5 logs received.
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.LogRecordCount() > 0
+		},
+		1*time.Minute,
+		500*time.Millisecond,
+		"failed to receive more than 0 logs",
+	)
+	require.Equal(t, 5, consumer.LogRecordCount())
+	testAllSimpleLogs(t, consumer.AllLogs())
+
+	// Stop the SQL Query receiver.
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	// start Postgres container
 	externalPort := "15431"
@@ -145,7 +194,8 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -187,7 +237,8 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -220,7 +271,8 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 			SQL: "select * from simple_logs where id > $1",
 			Logs: []sqlquery.LogsCfg{
 				{
-					BodyColumn: "body",
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
 				},
 			},
 			TrackingColumn:     "id",
@@ -288,7 +340,7 @@ func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiv
 
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
-	receiver, err := factory.CreateLogsReceiver(
+	receiver, err := factory.CreateLogs(
 		context.Background(),
 		receiverCreateSettings,
 		config,
@@ -316,7 +368,7 @@ func printLogs(allLogs []plog.Logs) {
 
 func insertPostgresSimpleLogs(t *testing.T, container testcontainers.Container, existingLogID, newLogCount int) {
 	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
-		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body) values (%d, now(), 'another log %d');", newLogID, newLogID)
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, now(), 'another log %d', 'TLSv1.2');", newLogID, newLogID)
 		returnValue, returnMessageReader, err := container.Exec(context.Background(), []string{
 			"psql", "-U", "otel", "-c", query,
 		})
@@ -610,15 +662,25 @@ func testAllSimpleLogs(t *testing.T, logs []plog.Logs) {
 	assert.Len(t, logs, 1)
 	assert.Equal(t, 1, logs[0].ResourceLogs().Len())
 	assert.Equal(t, 1, logs[0].ResourceLogs().At(0).ScopeLogs().Len())
-	expectedEntries := []string{
+	expectedLogBodies := []string{
 		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6197 4 \"-\" \"-\" 445af8e6c428303f -",
 		"- - - [03/Jun/2022:21:59:26 +0000] \"GET /api/health HTTP/1.1\" 200 6205 5 \"-\" \"-\" 3285f43cd4baa202 -",
 		"- - - [03/Jun/2022:21:59:29 +0000] \"GET /api/health HTTP/1.1\" 200 6233 4 \"-\" \"-\" 579e8362d3185b61 -",
 		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6207 5 \"-\" \"-\" 8c6ac61ae66e509f -",
 		"- - - [03/Jun/2022:21:59:31 +0000] \"GET /api/health HTTP/1.1\" 200 6200 4 \"-\" \"-\" c163495861e873d8 -",
 	}
-	assert.Equal(t, len(expectedEntries), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
-	for i := range expectedEntries {
-		assert.Equal(t, expectedEntries[i], logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i).Body().Str())
+	expectedLogAttributes := []string{
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+		"TLSv1",
+		"TLSv1.2",
+	}
+	assert.Equal(t, len(expectedLogBodies), logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
+	for i := range expectedLogBodies {
+		logRecord := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(i)
+		assert.Equal(t, expectedLogBodies[i], logRecord.Body().Str())
+		logAttribute, _ := logRecord.Attributes().Get("attribute")
+		assert.Equal(t, expectedLogAttributes[i], logAttribute.Str())
 	}
 }

@@ -19,3 +19,13 @@ func Equal[E comparable, S Slice[E]](a, b S) bool {
 	}
 	return true
 }
+
+func All[E any, S Slice[E]](slice S) func(func(E) bool) {
+	return func(yield func(E) bool) {
+		for i := 0; i < slice.Len(); i++ {
+			if !yield(slice.At(i)) {
+				break
+			}
+		}
+	}
+}

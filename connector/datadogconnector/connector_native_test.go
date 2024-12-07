@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -145,6 +145,8 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	td := ptrace.NewTraces()
 	res := td.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().PutStr("service.name", "svc")
+	res.Attributes().PutStr(semconv.AttributeDeploymentEnvironmentName, "my-env")
+
 	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	// Root span
 	s1 := ss.AppendEmpty()
@@ -200,6 +202,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, sp.Stats, 1)
 	assert.Len(t, sp.Stats[0].Stats, 1)
+	assert.Equal(t, "my-env", sp.Stats[0].Env)
 	assert.Len(t, sp.Stats[0].Stats[0].Stats, 3)
 	cgss := sp.Stats[0].Stats[0].Stats
 	sort.Slice(cgss, func(i, j int) bool {
