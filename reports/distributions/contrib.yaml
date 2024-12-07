@@ -28,6 +28,7 @@ components:
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
@@ -62,6 +63,7 @@ components:
         - awsproxy
         - basicauth
         - bearertokenauth
+        - cgroupruntime
         - db_storage
         - docker_observer
         - ecs_observer

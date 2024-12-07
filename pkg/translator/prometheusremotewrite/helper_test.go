@@ -480,6 +480,17 @@ func Test_getPromExemplars(t *testing.T) {
 			},
 		},
 		{
+			"with_exemplars_int_value",
+			getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
+			[]prompb.Exemplar{
+				{
+					Value:     float64(intVal2),
+					Timestamp: timestamp.FromTime(tnow),
+					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
+				},
+			},
+		},
+		{
 			"too_many_runes_drops_labels",
 			getHistogramDataPointWithExemplars(t, tnow, floatVal1, "", "", keyWith129Runes, ""),
 			[]prompb.Exemplar{

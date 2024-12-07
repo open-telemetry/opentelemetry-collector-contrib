@@ -5,14 +5,14 @@ go 1.22.0
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.9.0
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
-	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.114.0
-	go.opentelemetry.io/collector/component/componenttest v0.114.0
-	go.opentelemetry.io/collector/config/configopaque v1.20.0
-	go.opentelemetry.io/collector/confmap v1.20.0
-	go.opentelemetry.io/collector/extension v0.114.0
-	go.opentelemetry.io/collector/extension/auth v0.114.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.114.0
+	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/component v0.115.0
+	go.opentelemetry.io/collector/component/componenttest v0.115.0
+	go.opentelemetry.io/collector/config/configopaque v1.21.0
+	go.opentelemetry.io/collector/confmap v1.21.0
+	go.opentelemetry.io/collector/extension v0.115.0
+	go.opentelemetry.io/collector/extension/auth v0.115.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.115.0
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.67.1
 )
@@ -32,8 +32,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.114.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
@@ -44,7 +44,7 @@ require (
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

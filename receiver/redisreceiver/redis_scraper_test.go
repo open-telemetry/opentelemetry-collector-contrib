@@ -25,7 +25,7 @@ func TestRedisRunnable(t *testing.T) {
 	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)}
 	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
-	md, err := runner.Scrape(context.Background())
+	md, err := runner.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
 	// -2 because maxmemory and slave_repl_offset is by default disabled, so recorder is there, but there won't be data point
