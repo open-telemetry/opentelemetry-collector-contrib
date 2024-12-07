@@ -4,6 +4,7 @@
 package cumulativetodeltaprocessor
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -81,6 +82,45 @@ func TestLoadConfig(t *testing.T) {
 				MaxStaleness: 10 * time.Second,
 				InitialValue: tracking.InitialValueAuto,
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metric_type_filter"),
+			expected: &Config{
+				Include: MatchMetrics{
+					Metrics: []string{
+						"a*",
+					},
+					Config: filterset.Config{
+						MatchType:    "regexp",
+						RegexpConfig: nil,
+					},
+					MetricTypes: []string{
+						"sum",
+					},
+				},
+				Exclude: MatchMetrics{
+					Metrics: []string{
+						"b*",
+					},
+					Config: filterset.Config{
+						MatchType:    "regexp",
+						RegexpConfig: nil,
+					},
+					MetricTypes: []string{
+						"histogram",
+					},
+				},
+				MaxStaleness: 10 * time.Second,
+				InitialValue: tracking.InitialValueAuto,
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_include_metric_type_filter"),
+			errorMessage: fmt.Sprintf("found invalid metric type in include.metric_types: gauge. Valid values are %s", validMetricTypeList),
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_exclude_metric_type_filter"),
+			errorMessage: fmt.Sprintf("found invalid metric type in exclude.metric_types: Invalid. Valid values are %s", validMetricTypeList),
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "missing_match_type"),
