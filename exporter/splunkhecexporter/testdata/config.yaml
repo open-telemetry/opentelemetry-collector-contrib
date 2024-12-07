@@ -33,6 +33,11 @@ splunk_hec/allsettings:
     max_size_items: 10
   splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
   splunk_app_version: "v0.0.1"
+  otel_attrs_to_hec_metadata:
+    source: "mysource"
+    sourcetype: "mysourcetype"
+    index: "myindex"
+    host: "myhost"
   hec_metadata_to_otel_attrs:
     source: "mysource"
     sourcetype: "mysourcetype"
