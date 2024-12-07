@@ -1,0 +1,48 @@
+type: valkey
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: []
+
+resource_attributes:
+  valkey.version:
+    description: Valkey server's version.
+    enabled: true
+    type: string
+  server.address:
+    description: Valkey server's address
+    enabled: false
+    type: string
+  server.port:
+    description: Valkey server's port
+    enabled: false
+    type: string
+
+attributes:
+  valkey.client.connection.state:
+    description: The state of a connection in the pool
+    type: string
+    enum:
+      - used
+      - blocked
+      - tracking
+
+metrics:
+  valkey.client.connection.count:
+    enabled: true
+    description: The number of connections that are currently in state described by the state attribute
+    unit: "{connection}"
+    gauge:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [valkey.client.connection.state]
+
+
+tests:
+  config:
+    endpoint: localhost:6379
