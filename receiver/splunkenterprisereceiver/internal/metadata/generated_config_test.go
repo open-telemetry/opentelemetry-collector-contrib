@@ -34,6 +34,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkDataIndexesExtendedEventCount:         MetricConfig{Enabled: true},
 					SplunkDataIndexesExtendedRawSize:            MetricConfig{Enabled: true},
 					SplunkDataIndexesExtendedTotalSize:          MetricConfig{Enabled: true},
+					SplunkHealth:                                MetricConfig{Enabled: true},
 					SplunkIndexerAvgRate:                        MetricConfig{Enabled: true},
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: true},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: true},
@@ -81,6 +82,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SplunkDataIndexesExtendedEventCount:         MetricConfig{Enabled: false},
 					SplunkDataIndexesExtendedRawSize:            MetricConfig{Enabled: false},
 					SplunkDataIndexesExtendedTotalSize:          MetricConfig{Enabled: false},
+					SplunkHealth:                                MetricConfig{Enabled: false},
 					SplunkIndexerAvgRate:                        MetricConfig{Enabled: false},
 					SplunkIndexerCPUTime:                        MetricConfig{Enabled: false},
 					SplunkIndexerQueueRatio:                     MetricConfig{Enabled: false},
@@ -119,8 +121,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
