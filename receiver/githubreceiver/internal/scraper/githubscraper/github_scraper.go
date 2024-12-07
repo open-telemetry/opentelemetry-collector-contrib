@@ -138,8 +138,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/githubreceiver/internal/scraper/githubscraper/README.md#github-limitations
 				// for more information as to why `BehindBy` and `AheadBy` are
 				// swapped.
-				// ghs.mb.RecordVcsRepositoryRefRevisionsAheadDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, refType)
-				// ghs.mb.RecordVcsRepositoryRefRevisionsBehindDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, refType)
 				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.BehindBy), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsRevisionDeltaDirectionAhead)
 				ghs.mb.RecordVcsRefRevisionsDeltaDataPoint(now, int64(branch.Compare.AheadBy), url, branch.Repository.Name, branch.Name, refType, metadata.AttributeVcsRevisionDeltaDirectionBehind)
 
@@ -180,24 +178,24 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 					age := getAge(pr.CreatedAt, pr.MergedAt)
 
-					ghs.mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(now, age, url, name, pr.HeadRefName)
+					ghs.mb.RecordVcsChangeTimeToMergeDataPoint(now, age, url, name, pr.HeadRefName)
 				} else {
 					open++
 
 					age := getAge(pr.CreatedAt, now.AsTime())
 
-					ghs.mb.RecordVcsRepositoryChangeDurationDataPoint(now, age, url, name, pr.HeadRefName, metadata.AttributeVcsChangeStateOpen)
+					ghs.mb.RecordVcsChangeDurationDataPoint(now, age, url, name, pr.HeadRefName, metadata.AttributeVcsChangeStateOpen)
 
 					if pr.Reviews.TotalCount > 0 {
 						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
 
-						ghs.mb.RecordVcsRepositoryChangeTimeToApprovalDataPoint(now, age, url, name, pr.HeadRefName)
+						ghs.mb.RecordVcsChangeTimeToApprovalDataPoint(now, age, url, name, pr.HeadRefName)
 					}
 				}
 			}
 
-			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(open), url, metadata.AttributeVcsChangeStateOpen, name)
-			ghs.mb.RecordVcsRepositoryChangeCountDataPoint(now, int64(merged), url, metadata.AttributeVcsChangeStateMerged, name)
+			ghs.mb.RecordVcsChangeCountDataPoint(now, int64(open), url, metadata.AttributeVcsChangeStateOpen, name)
+			ghs.mb.RecordVcsChangeCountDataPoint(now, int64(merged), url, metadata.AttributeVcsChangeStateMerged, name)
 			mux.Unlock()
 		}()
 	}

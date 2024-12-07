@@ -117,6 +117,219 @@ var MapAttributeVcsRevisionDeltaDirection = map[string]AttributeVcsRevisionDelta
 	"behind": AttributeVcsRevisionDeltaDirectionBehind,
 }
 
+type metricVcsChangeCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.change.count metric with initial data.
+func (m *metricVcsChangeCount) init() {
+	m.data.SetName("vcs.change.count")
+	m.data.SetDescription("The number of changes (pull requests) in a repository, categorized by their state (either open or merged).")
+	m.data.SetUnit("{change}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsChangeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsChangeStateAttributeValue string, vcsRepositoryNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
+	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsChangeCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsChangeCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsChangeCount(cfg MetricConfig) metricVcsChangeCount {
+	m := metricVcsChangeCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsChangeDuration struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.change.duration metric with initial data.
+func (m *metricVcsChangeDuration) init() {
+	m.data.SetName("vcs.change.duration")
+	m.data.SetDescription("The time duration a change (pull request/merge request/changelist) has been in an open state.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsChangeDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsChangeStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsChangeDuration) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsChangeDuration) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsChangeDuration(cfg MetricConfig) metricVcsChangeDuration {
+	m := metricVcsChangeDuration{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsChangeTimeToApproval struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.change.time_to_approval metric with initial data.
+func (m *metricVcsChangeTimeToApproval) init() {
+	m.data.SetName("vcs.change.time_to_approval")
+	m.data.SetDescription("The amount of time it took a change (pull request) to go from open to approved.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsChangeTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsChangeTimeToApproval) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsChangeTimeToApproval) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsChangeTimeToApproval(cfg MetricConfig) metricVcsChangeTimeToApproval {
+	m := metricVcsChangeTimeToApproval{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcsChangeTimeToMerge struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcs.change.time_to_merge metric with initial data.
+func (m *metricVcsChangeTimeToMerge) init() {
+	m.data.SetName("vcs.change.time_to_merge")
+	m.data.SetDescription("The amount of time it took a change (pull request) to go from open to merged.")
+	m.data.SetUnit("s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcsChangeTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
+	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
+	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcsChangeTimeToMerge) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcsChangeTimeToMerge) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcsChangeTimeToMerge(cfg MetricConfig) metricVcsChangeTimeToMerge {
+	m := metricVcsChangeTimeToMerge{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcsContributorCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -386,219 +599,6 @@ func newMetricVcsRefTime(cfg MetricConfig) metricVcsRefTime {
 	return m
 }
 
-type metricVcsRepositoryChangeCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcs.repository.change.count metric with initial data.
-func (m *metricVcsRepositoryChangeCount) init() {
-	m.data.SetName("vcs.repository.change.count")
-	m.data.SetDescription("The number of changes (pull requests) in a repository, categorized by their state (either open or merged).")
-	m.data.SetUnit("{change}")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcsRepositoryChangeCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsChangeStateAttributeValue string, vcsRepositoryNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcsRepositoryChangeCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcsRepositoryChangeCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcsRepositoryChangeCount(cfg MetricConfig) metricVcsRepositoryChangeCount {
-	m := metricVcsRepositoryChangeCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcsRepositoryChangeDuration struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcs.repository.change.duration metric with initial data.
-func (m *metricVcsRepositoryChangeDuration) init() {
-	m.data.SetName("vcs.repository.change.duration")
-	m.data.SetDescription("The time duration a change (pull request/merge request/changelist) has been in an open state.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcsRepositoryChangeDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsChangeStateAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
-	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcsRepositoryChangeDuration) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcsRepositoryChangeDuration) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcsRepositoryChangeDuration(cfg MetricConfig) metricVcsRepositoryChangeDuration {
-	m := metricVcsRepositoryChangeDuration{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcsRepositoryChangeTimeToApproval struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcs.repository.change.time_to_approval metric with initial data.
-func (m *metricVcsRepositoryChangeTimeToApproval) init() {
-	m.data.SetName("vcs.repository.change.time_to_approval")
-	m.data.SetDescription("The amount of time it took a change (pull request) to go from open to approved.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcsRepositoryChangeTimeToApproval) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcsRepositoryChangeTimeToApproval) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcsRepositoryChangeTimeToApproval) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcsRepositoryChangeTimeToApproval(cfg MetricConfig) metricVcsRepositoryChangeTimeToApproval {
-	m := metricVcsRepositoryChangeTimeToApproval{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcsRepositoryChangeTimeToMerge struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcs.repository.change.time_to_merge metric with initial data.
-func (m *metricVcsRepositoryChangeTimeToMerge) init() {
-	m.data.SetName("vcs.repository.change.time_to_merge")
-	m.data.SetDescription("The amount of time it took a change (pull request) to go from open to merged.")
-	m.data.SetUnit("s")
-	m.data.SetEmptyGauge()
-	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricVcsRepositoryChangeTimeToMerge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
-	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
-	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcsRepositoryChangeTimeToMerge) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcsRepositoryChangeTimeToMerge) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcsRepositoryChangeTimeToMerge(cfg MetricConfig) metricVcsRepositoryChangeTimeToMerge {
-	m := metricVcsRepositoryChangeTimeToMerge{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricVcsRepositoryCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -651,23 +651,23 @@ func newMetricVcsRepositoryCount(cfg MetricConfig) metricVcsRepositoryCount {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                  MetricsBuilderConfig // config of the metrics builder.
-	startTime                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                         int                  // maximum observed number of metrics per resource.
-	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                               component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter          map[string]filter.Filter
-	resourceAttributeExcludeFilter          map[string]filter.Filter
-	metricVcsContributorCount               metricVcsContributorCount
-	metricVcsRefCount                       metricVcsRefCount
-	metricVcsRefLinesDelta                  metricVcsRefLinesDelta
-	metricVcsRefRevisionsDelta              metricVcsRefRevisionsDelta
-	metricVcsRefTime                        metricVcsRefTime
-	metricVcsRepositoryChangeCount          metricVcsRepositoryChangeCount
-	metricVcsRepositoryChangeDuration       metricVcsRepositoryChangeDuration
-	metricVcsRepositoryChangeTimeToApproval metricVcsRepositoryChangeTimeToApproval
-	metricVcsRepositoryChangeTimeToMerge    metricVcsRepositoryChangeTimeToMerge
-	metricVcsRepositoryCount                metricVcsRepositoryCount
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricVcsChangeCount           metricVcsChangeCount
+	metricVcsChangeDuration        metricVcsChangeDuration
+	metricVcsChangeTimeToApproval  metricVcsChangeTimeToApproval
+	metricVcsChangeTimeToMerge     metricVcsChangeTimeToMerge
+	metricVcsContributorCount      metricVcsContributorCount
+	metricVcsRefCount              metricVcsRefCount
+	metricVcsRefLinesDelta         metricVcsRefLinesDelta
+	metricVcsRefRevisionsDelta     metricVcsRefRevisionsDelta
+	metricVcsRefTime               metricVcsRefTime
+	metricVcsRepositoryCount       metricVcsRepositoryCount
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -690,22 +690,22 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricVcsContributorCount:               newMetricVcsContributorCount(mbc.Metrics.VcsContributorCount),
-		metricVcsRefCount:                       newMetricVcsRefCount(mbc.Metrics.VcsRefCount),
-		metricVcsRefLinesDelta:                  newMetricVcsRefLinesDelta(mbc.Metrics.VcsRefLinesDelta),
-		metricVcsRefRevisionsDelta:              newMetricVcsRefRevisionsDelta(mbc.Metrics.VcsRefRevisionsDelta),
-		metricVcsRefTime:                        newMetricVcsRefTime(mbc.Metrics.VcsRefTime),
-		metricVcsRepositoryChangeCount:          newMetricVcsRepositoryChangeCount(mbc.Metrics.VcsRepositoryChangeCount),
-		metricVcsRepositoryChangeDuration:       newMetricVcsRepositoryChangeDuration(mbc.Metrics.VcsRepositoryChangeDuration),
-		metricVcsRepositoryChangeTimeToApproval: newMetricVcsRepositoryChangeTimeToApproval(mbc.Metrics.VcsRepositoryChangeTimeToApproval),
-		metricVcsRepositoryChangeTimeToMerge:    newMetricVcsRepositoryChangeTimeToMerge(mbc.Metrics.VcsRepositoryChangeTimeToMerge),
-		metricVcsRepositoryCount:                newMetricVcsRepositoryCount(mbc.Metrics.VcsRepositoryCount),
-		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricVcsChangeCount:           newMetricVcsChangeCount(mbc.Metrics.VcsChangeCount),
+		metricVcsChangeDuration:        newMetricVcsChangeDuration(mbc.Metrics.VcsChangeDuration),
+		metricVcsChangeTimeToApproval:  newMetricVcsChangeTimeToApproval(mbc.Metrics.VcsChangeTimeToApproval),
+		metricVcsChangeTimeToMerge:     newMetricVcsChangeTimeToMerge(mbc.Metrics.VcsChangeTimeToMerge),
+		metricVcsContributorCount:      newMetricVcsContributorCount(mbc.Metrics.VcsContributorCount),
+		metricVcsRefCount:              newMetricVcsRefCount(mbc.Metrics.VcsRefCount),
+		metricVcsRefLinesDelta:         newMetricVcsRefLinesDelta(mbc.Metrics.VcsRefLinesDelta),
+		metricVcsRefRevisionsDelta:     newMetricVcsRefRevisionsDelta(mbc.Metrics.VcsRefRevisionsDelta),
+		metricVcsRefTime:               newMetricVcsRefTime(mbc.Metrics.VcsRefTime),
+		metricVcsRepositoryCount:       newMetricVcsRepositoryCount(mbc.Metrics.VcsRepositoryCount),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.OrganizationName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["organization.name"] = filter.CreateFilter(mbc.ResourceAttributes.OrganizationName.MetricsInclude)
@@ -789,15 +789,15 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricVcsChangeCount.emit(ils.Metrics())
+	mb.metricVcsChangeDuration.emit(ils.Metrics())
+	mb.metricVcsChangeTimeToApproval.emit(ils.Metrics())
+	mb.metricVcsChangeTimeToMerge.emit(ils.Metrics())
 	mb.metricVcsContributorCount.emit(ils.Metrics())
 	mb.metricVcsRefCount.emit(ils.Metrics())
 	mb.metricVcsRefLinesDelta.emit(ils.Metrics())
 	mb.metricVcsRefRevisionsDelta.emit(ils.Metrics())
 	mb.metricVcsRefTime.emit(ils.Metrics())
-	mb.metricVcsRepositoryChangeCount.emit(ils.Metrics())
-	mb.metricVcsRepositoryChangeDuration.emit(ils.Metrics())
-	mb.metricVcsRepositoryChangeTimeToApproval.emit(ils.Metrics())
-	mb.metricVcsRepositoryChangeTimeToMerge.emit(ils.Metrics())
 	mb.metricVcsRepositoryCount.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -830,6 +830,26 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 	return metrics
 }
 
+// RecordVcsChangeCountDataPoint adds a data point to vcs.change.count metric.
+func (mb *MetricsBuilder) RecordVcsChangeCountDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsChangeStateAttributeValue AttributeVcsChangeState, vcsRepositoryNameAttributeValue string) {
+	mb.metricVcsChangeCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsChangeStateAttributeValue.String(), vcsRepositoryNameAttributeValue)
+}
+
+// RecordVcsChangeDurationDataPoint adds a data point to vcs.change.duration metric.
+func (mb *MetricsBuilder) RecordVcsChangeDurationDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsChangeStateAttributeValue AttributeVcsChangeState) {
+	mb.metricVcsChangeDuration.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsChangeStateAttributeValue.String())
+}
+
+// RecordVcsChangeTimeToApprovalDataPoint adds a data point to vcs.change.time_to_approval metric.
+func (mb *MetricsBuilder) RecordVcsChangeTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+	mb.metricVcsChangeTimeToApproval.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
+}
+
+// RecordVcsChangeTimeToMergeDataPoint adds a data point to vcs.change.time_to_merge metric.
+func (mb *MetricsBuilder) RecordVcsChangeTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+	mb.metricVcsChangeTimeToMerge.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
+}
+
 // RecordVcsContributorCountDataPoint adds a data point to vcs.contributor.count metric.
 func (mb *MetricsBuilder) RecordVcsContributorCountDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string) {
 	mb.metricVcsContributorCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue)
@@ -853,26 +873,6 @@ func (mb *MetricsBuilder) RecordVcsRefRevisionsDeltaDataPoint(ts pcommon.Timesta
 // RecordVcsRefTimeDataPoint adds a data point to vcs.ref.time metric.
 func (mb *MetricsBuilder) RecordVcsRefTimeDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsRefHeadTypeAttributeValue AttributeVcsRefHeadType) {
 	mb.metricVcsRefTime.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsRefHeadTypeAttributeValue.String())
-}
-
-// RecordVcsRepositoryChangeCountDataPoint adds a data point to vcs.repository.change.count metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeCountDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsChangeStateAttributeValue AttributeVcsChangeState, vcsRepositoryNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsChangeStateAttributeValue.String(), vcsRepositoryNameAttributeValue)
-}
-
-// RecordVcsRepositoryChangeDurationDataPoint adds a data point to vcs.repository.change.duration metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeDurationDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsChangeStateAttributeValue AttributeVcsChangeState) {
-	mb.metricVcsRepositoryChangeDuration.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsChangeStateAttributeValue.String())
-}
-
-// RecordVcsRepositoryChangeTimeToApprovalDataPoint adds a data point to vcs.repository.change.time_to_approval metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeTimeToApproval.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
-}
-
-// RecordVcsRepositoryChangeTimeToMergeDataPoint adds a data point to vcs.repository.change.time_to_merge metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeToMergeDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeTimeToMerge.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
 }
 
 // RecordVcsRepositoryCountDataPoint adds a data point to vcs.repository.count metric.

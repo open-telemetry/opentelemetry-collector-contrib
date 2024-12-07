@@ -99,28 +99,28 @@ metrics:
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name]
-  vcs.repository.change.duration:
+  vcs.change.duration:
     enabled: true
     description: The time duration a change (pull request/merge request/changelist) has been in an open state.
     unit: s
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.change.state]
-  vcs.repository.change.time_to_merge:
+  vcs.change.time_to_merge:
     enabled: true
     description: The amount of time it took a change (pull request) to go from open to merged.
     unit: s
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
-  vcs.repository.change.time_to_approval:
+  vcs.change.time_to_approval:
     enabled: true
     description: The amount of time it took a change (pull request) to go from open to approved.
     unit: s
     gauge:
       value_type: int
     attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
-  vcs.repository.change.count:
+  vcs.change.count:
     description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
     enabled: true
     gauge:

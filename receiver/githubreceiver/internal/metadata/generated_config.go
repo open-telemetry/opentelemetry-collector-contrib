@@ -28,20 +28,32 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for github metrics.
 type MetricsConfig struct {
-	VcsContributorCount               MetricConfig `mapstructure:"vcs.contributor.count"`
-	VcsRefCount                       MetricConfig `mapstructure:"vcs.ref.count"`
-	VcsRefLinesDelta                  MetricConfig `mapstructure:"vcs.ref.lines_delta"`
-	VcsRefRevisionsDelta              MetricConfig `mapstructure:"vcs.ref.revisions_delta"`
-	VcsRefTime                        MetricConfig `mapstructure:"vcs.ref.time"`
-	VcsRepositoryChangeCount          MetricConfig `mapstructure:"vcs.repository.change.count"`
-	VcsRepositoryChangeDuration       MetricConfig `mapstructure:"vcs.repository.change.duration"`
-	VcsRepositoryChangeTimeToApproval MetricConfig `mapstructure:"vcs.repository.change.time_to_approval"`
-	VcsRepositoryChangeTimeToMerge    MetricConfig `mapstructure:"vcs.repository.change.time_to_merge"`
-	VcsRepositoryCount                MetricConfig `mapstructure:"vcs.repository.count"`
+	VcsChangeCount          MetricConfig `mapstructure:"vcs.change.count"`
+	VcsChangeDuration       MetricConfig `mapstructure:"vcs.change.duration"`
+	VcsChangeTimeToApproval MetricConfig `mapstructure:"vcs.change.time_to_approval"`
+	VcsChangeTimeToMerge    MetricConfig `mapstructure:"vcs.change.time_to_merge"`
+	VcsContributorCount     MetricConfig `mapstructure:"vcs.contributor.count"`
+	VcsRefCount             MetricConfig `mapstructure:"vcs.ref.count"`
+	VcsRefLinesDelta        MetricConfig `mapstructure:"vcs.ref.lines_delta"`
+	VcsRefRevisionsDelta    MetricConfig `mapstructure:"vcs.ref.revisions_delta"`
+	VcsRefTime              MetricConfig `mapstructure:"vcs.ref.time"`
+	VcsRepositoryCount      MetricConfig `mapstructure:"vcs.repository.count"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		VcsChangeCount: MetricConfig{
+			Enabled: true,
+		},
+		VcsChangeDuration: MetricConfig{
+			Enabled: true,
+		},
+		VcsChangeTimeToApproval: MetricConfig{
+			Enabled: true,
+		},
+		VcsChangeTimeToMerge: MetricConfig{
+			Enabled: true,
+		},
 		VcsContributorCount: MetricConfig{
 			Enabled: false,
 		},
@@ -55,18 +67,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcsRefTime: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryChangeCount: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryChangeDuration: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryChangeTimeToApproval: MetricConfig{
-			Enabled: true,
-		},
-		VcsRepositoryChangeTimeToMerge: MetricConfig{
 			Enabled: true,
 		},
 		VcsRepositoryCount: MetricConfig{

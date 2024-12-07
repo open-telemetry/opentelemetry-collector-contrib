@@ -68,6 +68,22 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcsChangeCountDataPoint(ts, 1, "vcs.repository.url.full-val", AttributeVcsChangeStateOpen, "vcs.repository.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcsChangeDurationDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsChangeStateOpen)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcsChangeTimeToApprovalDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcsChangeTimeToMergeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
+
 			allMetricsCount++
 			mb.RecordVcsContributorCountDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val")
 
@@ -86,22 +102,6 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcsRefTimeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsRefHeadTypeBranch)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcsRepositoryChangeCountDataPoint(ts, 1, "vcs.repository.url.full-val", AttributeVcsChangeStateOpen, "vcs.repository.name-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcsRepositoryChangeDurationDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsChangeStateOpen)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcsRepositoryChangeTimeToApprovalDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcsRepositoryChangeTimeToMergeDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -132,6 +132,93 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "vcs.change.count":
+					assert.False(t, validatedMetrics["vcs.change.count"], "Found a duplicate in the metrics slice: vcs.change.count")
+					validatedMetrics["vcs.change.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of changes (pull requests) in a repository, categorized by their state (either open or merged).", ms.At(i).Description())
+					assert.Equal(t, "{change}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.change.state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "open", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
+				case "vcs.change.duration":
+					assert.False(t, validatedMetrics["vcs.change.duration"], "Found a duplicate in the metrics slice: vcs.change.duration")
+					validatedMetrics["vcs.change.duration"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The time duration a change (pull request/merge request/changelist) has been in an open state.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.change.state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "open", attrVal.Str())
+				case "vcs.change.time_to_approval":
+					assert.False(t, validatedMetrics["vcs.change.time_to_approval"], "Found a duplicate in the metrics slice: vcs.change.time_to_approval")
+					validatedMetrics["vcs.change.time_to_approval"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The amount of time it took a change (pull request) to go from open to approved.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
+				case "vcs.change.time_to_merge":
+					assert.False(t, validatedMetrics["vcs.change.time_to_merge"], "Found a duplicate in the metrics slice: vcs.change.time_to_merge")
+					validatedMetrics["vcs.change.time_to_merge"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The amount of time it took a change (pull request) to go from open to merged.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
 				case "vcs.contributor.count":
 					assert.False(t, validatedMetrics["vcs.contributor.count"], "Found a duplicate in the metrics slice: vcs.contributor.count")
 					validatedMetrics["vcs.contributor.count"] = true
@@ -249,93 +336,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("vcs.ref.head.type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "branch", attrVal.Str())
-				case "vcs.repository.change.count":
-					assert.False(t, validatedMetrics["vcs.repository.change.count"], "Found a duplicate in the metrics slice: vcs.repository.change.count")
-					validatedMetrics["vcs.repository.change.count"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of changes (pull requests) in a repository, categorized by their state (either open or merged).", ms.At(i).Description())
-					assert.Equal(t, "{change}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.change.state")
-					assert.True(t, ok)
-					assert.EqualValues(t, "open", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
-				case "vcs.repository.change.duration":
-					assert.False(t, validatedMetrics["vcs.repository.change.duration"], "Found a duplicate in the metrics slice: vcs.repository.change.duration")
-					validatedMetrics["vcs.repository.change.duration"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The time duration a change (pull request/merge request/changelist) has been in an open state.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.change.state")
-					assert.True(t, ok)
-					assert.EqualValues(t, "open", attrVal.Str())
-				case "vcs.repository.change.time_to_approval":
-					assert.False(t, validatedMetrics["vcs.repository.change.time_to_approval"], "Found a duplicate in the metrics slice: vcs.repository.change.time_to_approval")
-					validatedMetrics["vcs.repository.change.time_to_approval"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time it took a change (pull request) to go from open to approved.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
-				case "vcs.repository.change.time_to_merge":
-					assert.False(t, validatedMetrics["vcs.repository.change.time_to_merge"], "Found a duplicate in the metrics slice: vcs.repository.change.time_to_merge")
-					validatedMetrics["vcs.repository.change.time_to_merge"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time it took a change (pull request) to go from open to merged.", ms.At(i).Description())
-					assert.Equal(t, "s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("vcs.repository.url.full")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.url.full-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
-					assert.True(t, ok)
-					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
 				case "vcs.repository.count":
 					assert.False(t, validatedMetrics["vcs.repository.count"], "Found a duplicate in the metrics slice: vcs.repository.count")
 					validatedMetrics["vcs.repository.count"] = true

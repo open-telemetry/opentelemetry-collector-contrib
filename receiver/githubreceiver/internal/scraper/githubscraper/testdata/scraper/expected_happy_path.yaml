@@ -10,6 +10,76 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.27.0
     scopeMetrics:
       - metrics:
+          - description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: vcs.change.state
+                      value:
+                        stringValue: merged
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: repo1
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: vcs.change.state
+                      value:
+                        stringValue: open
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: repo1
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcs.change.count
+            unit: '{change}'
+          - description: The time duration a change (pull request/merge request/changelist) has been in an open state.
+            gauge:
+              dataPoints:
+                - asInt: "9223372036"
+                  attributes:
+                    - key: vcs.change.state
+                      value:
+                        stringValue: open
+                    - key: vcs.ref.head.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: repo1
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcs.change.duration
+            unit: s
+          - description: The amount of time it took a change (pull request) to go from open to merged.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: vcs.ref.head.name
+                      value:
+                        stringValue: ""
+                    - key: vcs.repository.name
+                      value:
+                        stringValue: repo1
+                    - key: vcs.repository.url.full
+                      value:
+                        stringValue: '{      false false   }'
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcs.change.time_to_merge
+            unit: s
           - description: The number of refs of type branch in a repository.
             gauge:
               dataPoints:
@@ -134,76 +204,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: vcs.ref.time
-            unit: s
-          - description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
-            gauge:
-              dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: vcs.change.state
-                      value:
-                        stringValue: merged
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: repo1
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "1"
-                  attributes:
-                    - key: vcs.change.state
-                      value:
-                        stringValue: open
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: repo1
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.change.count
-            unit: '{change}'
-          - description: The time duration a change (pull request/merge request/changelist) has been in an open state.
-            gauge:
-              dataPoints:
-                - asInt: "9223372036"
-                  attributes:
-                    - key: vcs.change.state
-                      value:
-                        stringValue: open
-                    - key: vcs.ref.head.name
-                      value:
-                        stringValue: ""
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: repo1
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.change.duration
-            unit: s
-          - description: The amount of time it took a change (pull request) to go from open to merged.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: vcs.ref.head.name
-                      value:
-                        stringValue: ""
-                    - key: vcs.repository.name
-                      value:
-                        stringValue: repo1
-                    - key: vcs.repository.url.full
-                      value:
-                        stringValue: '{      false false   }'
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcs.repository.change.time_to_merge
             unit: s
           - description: The number of repositories in an organization.
             gauge:

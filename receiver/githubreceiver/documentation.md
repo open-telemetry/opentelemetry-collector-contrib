@@ -12,6 +12,71 @@ metrics:
     enabled: false
 ```
 
+### vcs.change.count
+
+The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {change} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
+| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
+| vcs.repository.name | The name of the VCS repository. | Any Str |
+
+### vcs.change.duration
+
+The time duration a change (pull request/merge request/changelist) has been in an open state.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
+| vcs.repository.name | The name of the VCS repository. | Any Str |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
+
+### vcs.change.time_to_approval
+
+The amount of time it took a change (pull request) to go from open to approved.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
+| vcs.repository.name | The name of the VCS repository. | Any Str |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+
+### vcs.change.time_to_merge
+
+The amount of time it took a change (pull request) to go from open to merged.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
+| vcs.repository.name | The name of the VCS repository. | Any Str |
+| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+
 ### vcs.ref.count
 
 The number of refs of type branch in a repository.
@@ -80,71 +145,6 @@ Time a ref (branch) created from the default branch (trunk) has existed. The `vc
 | vcs.repository.name | The name of the VCS repository. | Any Str |
 | vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
 | vcs.ref.head.type | The type of the head reference (branch, tag). | Str: ``branch``, ``tag`` |
-
-### vcs.repository.change.count
-
-The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {change} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-
-### vcs.repository.change.duration
-
-The time duration a change (pull request/merge request/changelist) has been in an open state.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
-
-### vcs.repository.change.time_to_approval
-
-The amount of time it took a change (pull request) to go from open to approved.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
-
-### vcs.repository.change.time_to_merge
-
-The amount of time it took a change (pull request) to go from open to merged.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
-| vcs.repository.name | The name of the VCS repository. | Any Str |
-| vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
 
 ### vcs.repository.count
 
