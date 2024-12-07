@@ -39,6 +39,8 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/collector/pdata v1.21.0 h1:PG+UbiFMJ35X/WcAR7Rf/PWmWtRdW0aHlOidsR6c5MA=
 go.opentelemetry.io/collector/pdata v1.21.0/go.mod h1:GKb1/zocKJMvxKbS+sl0W85lxhYBTFJ6h6I1tphVyDU=
+go.opentelemetry.io/collector/pdata/pprofile v0.115.0 h1:NI89hy13vNDw7EOnQf7Jtitks4HJFO0SUWznTssmP94=
+go.opentelemetry.io/collector/pdata/pprofile v0.115.0/go.mod h1:jGzdNfO0XTtfLjXCL/uCC1livg1LlfR+ix2WE/z3RpQ=
 go.opentelemetry.io/collector/semconv v0.115.0 h1:SoqMvg4ZEB3mz2EdAb6XYa+TuMo5Mir5FRBr3nVFUDY=
 go.opentelemetry.io/collector/semconv v0.115.0/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
 go.opentelemetry.io/otel v1.32.0 h1:WnBN+Xjcteh0zdk01SVqV55d/m62NJLJdIyb4y/WO5U=
