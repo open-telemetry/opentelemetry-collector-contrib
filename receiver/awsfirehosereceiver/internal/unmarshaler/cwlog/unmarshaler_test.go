@@ -61,7 +61,7 @@ func TestUnmarshal(t *testing.T) {
 			require.NoError(t, err)
 			records := [][]byte{compressedRecord}
 
-			got, err := unmarshaler.Unmarshal(records)
+			got, err := unmarshaler.Unmarshal(records, nil, "", 0)
 			if testCase.wantErr != nil {
 				require.Error(t, err)
 				require.Equal(t, testCase.wantErr, err)

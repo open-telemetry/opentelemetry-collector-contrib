@@ -19,7 +19,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	for _, configType := range []string{
-		"cwmetrics", "cwlogs", "otlp_v1", "invalid",
+		"cwmetrics", "cwlogs", "otlp_v1", "firehoselogs", "invalid",
 	} {
 		t.Run(configType, func(t *testing.T) {
 			fileName := configType + "_config.yaml"
