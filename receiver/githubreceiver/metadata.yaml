@@ -6,6 +6,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
+    development: [traces]
   distributions: [contrib]
   codeowners:
     active: [adrielp, andrzej-stencel, crobert-1, TylerHelmuth]
@@ -129,3 +130,5 @@ metrics:
 
 tests:
   config:
+    webhook:
+      endpoint: "localhost:8080"

@@ -66,7 +66,7 @@ func (e *kafkaTracesProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaTracesProducer) start(_ context.Context, host component.Host) error {
+func (e *kafkaTracesProducer) start(ctx context.Context, host component.Host) error {
 	// extensions take precedence over internal encodings
 	if marshaler, errExt := loadEncodingExtension[ptrace.Marshaler](
 		host,
@@ -83,7 +83,7 @@ func (e *kafkaTracesProducer) start(_ context.Context, host component.Host) erro
 	if e.marshaler == nil {
 		return errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(e.cfg)
+	producer, err := newSaramaProducer(ctx, e.cfg)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func (e *kafkaMetricsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaMetricsProducer) start(_ context.Context, host component.Host) error {
+func (e *kafkaMetricsProducer) start(ctx context.Context, host component.Host) error {
 	// extensions take precedence over internal encodings
 	if marshaler, errExt := loadEncodingExtension[pmetric.Marshaler](
 		host,
@@ -141,7 +141,7 @@ func (e *kafkaMetricsProducer) start(_ context.Context, host component.Host) err
 	if e.marshaler == nil {
 		return errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(e.cfg)
+	producer, err := newSaramaProducer(ctx, e.cfg)
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (e *kafkaLogsProducer) Close(context.Context) error {
 	return e.producer.Close()
 }
 
-func (e *kafkaLogsProducer) start(_ context.Context, host component.Host) error {
+func (e *kafkaLogsProducer) start(ctx context.Context, host component.Host) error {
 	// extensions take precedence over internal encodings
 	if marshaler, errExt := loadEncodingExtension[plog.Marshaler](
 		host,
@@ -199,7 +199,7 @@ func (e *kafkaLogsProducer) start(_ context.Context, host component.Host) error 
 	if e.marshaler == nil {
 		return errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(e.cfg)
+	producer, err := newSaramaProducer(ctx, e.cfg)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (e *kafkaLogsProducer) start(_ context.Context, host component.Host) error 
 	return nil
 }
 
-func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
+func newSaramaProducer(ctx context.Context, config Config) (sarama.SyncProducer, error) {
 	c := sarama.NewConfig()
 
 	c.ClientID = config.ClientID
@@ -236,7 +236,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 		c.Version = version
 	}
 
-	if err := kafka.ConfigureAuthentication(config.Authentication, c); err != nil {
+	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, c); err != nil {
 		return nil, err
 	}
 

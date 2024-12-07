@@ -46,9 +46,9 @@ The following settings can be optionally configured:
   - `sasl`
     - `username`: The username to use.
     - `password`: The password to use
-    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM or PLAIN)
+    - `mechanism`: The SASL mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
-    - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM mechanism
+    - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
   - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
     - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
