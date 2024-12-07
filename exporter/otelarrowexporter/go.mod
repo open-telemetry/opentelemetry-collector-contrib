@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
+	github.com/apache/arrow/go/v17 v17.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.115.0
 	github.com/open-telemetry/otel-arrow v0.31.0
@@ -39,7 +40,6 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
-	github.com/apache/arrow/go/v17 v17.0.0 // indirect
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
