@@ -97,9 +97,9 @@ The number of changes (pull requests) in a repository, categorized by their stat
 | vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
 | vcs.repository.name | The name of the VCS repository. | Any Str |
 
-### vcs.repository.change.time_open
+### vcs.repository.change.duration
 
-The amount of time a change (pull request) has been open.
+The time duration a change (pull request/merge request/changelist) has been in an open state.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -112,6 +112,7 @@ The amount of time a change (pull request) has been open.
 | vcs.repository.url.full | The canonical URL of the repository providing the complete HTTPS address. | Any Str |
 | vcs.repository.name | The name of the VCS repository. | Any Str |
 | vcs.ref.head.name | The name of the VCS head reference (branch). | Any Str |
+| vcs.change.state | The state of a change (pull request) | Str: ``open``, ``merged`` |
 
 ### vcs.repository.change.time_to_approval
 

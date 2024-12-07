@@ -52,14 +52,14 @@ func TestMetricsBuilder(t *testing.T) {
 			expectEmpty: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 
@@ -93,7 +93,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcsRepositoryChangeTimeOpenDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val")
+			mb.RecordVcsRepositoryChangeDurationDataPoint(ts, 1, "vcs.repository.url.full-val", "vcs.repository.name-val", "vcs.ref.head.name-val", AttributeVcsChangeStateOpen)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -113,7 +113,7 @@ func TestMetricsBuilder(t *testing.T) {
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
-			if tt.expectEmpty {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
@@ -123,10 +123,10 @@ func TestMetricsBuilder(t *testing.T) {
 			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if tt.metricsSet == testDataSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if tt.metricsSet == testDataSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -270,12 +270,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("vcs.repository.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "vcs.repository.name-val", attrVal.Str())
-				case "vcs.repository.change.time_open":
-					assert.False(t, validatedMetrics["vcs.repository.change.time_open"], "Found a duplicate in the metrics slice: vcs.repository.change.time_open")
-					validatedMetrics["vcs.repository.change.time_open"] = true
+				case "vcs.repository.change.duration":
+					assert.False(t, validatedMetrics["vcs.repository.change.duration"], "Found a duplicate in the metrics slice: vcs.repository.change.duration")
+					validatedMetrics["vcs.repository.change.duration"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time a change (pull request) has been open.", ms.At(i).Description())
+					assert.Equal(t, "The time duration a change (pull request/merge request/changelist) has been in an open state.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -291,6 +291,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("vcs.ref.head.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "vcs.ref.head.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("vcs.change.state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "open", attrVal.Str())
 				case "vcs.repository.change.time_to_approval":
 					assert.False(t, validatedMetrics["vcs.repository.change.time_to_approval"], "Found a duplicate in the metrics slice: vcs.repository.change.time_to_approval")
 					validatedMetrics["vcs.repository.change.time_to_approval"] = true

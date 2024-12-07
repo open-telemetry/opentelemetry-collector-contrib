@@ -13,7 +13,7 @@ all_set:
       enabled: true
     vcs.repository.change.count:
       enabled: true
-    vcs.repository.change.time_open:
+    vcs.repository.change.duration:
       enabled: true
     vcs.repository.change.time_to_approval:
       enabled: true
@@ -40,7 +40,7 @@ none_set:
       enabled: false
     vcs.repository.change.count:
       enabled: false
-    vcs.repository.change.time_open:
+    vcs.repository.change.duration:
       enabled: false
     vcs.repository.change.time_to_approval:
       enabled: false

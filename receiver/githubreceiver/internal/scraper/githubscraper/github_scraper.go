@@ -186,7 +186,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 					age := getAge(pr.CreatedAt, now.AsTime())
 
-					ghs.mb.RecordVcsRepositoryChangeTimeOpenDataPoint(now, age, url, name, pr.HeadRefName)
+					ghs.mb.RecordVcsRepositoryChangeDurationDataPoint(now, age, url, name, pr.HeadRefName, metadata.AttributeVcsChangeStateOpen)
 
 					if pr.Reviews.TotalCount > 0 {
 						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)

@@ -34,7 +34,7 @@ type MetricsConfig struct {
 	VcsRefRevisionsDelta              MetricConfig `mapstructure:"vcs.ref.revisions_delta"`
 	VcsRefTime                        MetricConfig `mapstructure:"vcs.ref.time"`
 	VcsRepositoryChangeCount          MetricConfig `mapstructure:"vcs.repository.change.count"`
-	VcsRepositoryChangeTimeOpen       MetricConfig `mapstructure:"vcs.repository.change.time_open"`
+	VcsRepositoryChangeDuration       MetricConfig `mapstructure:"vcs.repository.change.duration"`
 	VcsRepositoryChangeTimeToApproval MetricConfig `mapstructure:"vcs.repository.change.time_to_approval"`
 	VcsRepositoryChangeTimeToMerge    MetricConfig `mapstructure:"vcs.repository.change.time_to_merge"`
 	VcsRepositoryCount                MetricConfig `mapstructure:"vcs.repository.count"`
@@ -60,7 +60,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcsRepositoryChangeCount: MetricConfig{
 			Enabled: true,
 		},
-		VcsRepositoryChangeTimeOpen: MetricConfig{
+		VcsRepositoryChangeDuration: MetricConfig{
 			Enabled: true,
 		},
 		VcsRepositoryChangeTimeToApproval: MetricConfig{

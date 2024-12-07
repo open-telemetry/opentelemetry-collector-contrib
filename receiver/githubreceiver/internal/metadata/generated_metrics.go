@@ -439,22 +439,22 @@ func newMetricVcsRepositoryChangeCount(cfg MetricConfig) metricVcsRepositoryChan
 	return m
 }
 
-type metricVcsRepositoryChangeTimeOpen struct {
+type metricVcsRepositoryChangeDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills vcs.repository.change.time_open metric with initial data.
-func (m *metricVcsRepositoryChangeTimeOpen) init() {
-	m.data.SetName("vcs.repository.change.time_open")
-	m.data.SetDescription("The amount of time a change (pull request) has been open.")
+// init fills vcs.repository.change.duration metric with initial data.
+func (m *metricVcsRepositoryChangeDuration) init() {
+	m.data.SetName("vcs.repository.change.duration")
+	m.data.SetDescription("The time duration a change (pull request/merge request/changelist) has been in an open state.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcsRepositoryChangeTimeOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
+func (m *metricVcsRepositoryChangeDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsChangeStateAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -465,17 +465,18 @@ func (m *metricVcsRepositoryChangeTimeOpen) recordDataPoint(start pcommon.Timest
 	dp.Attributes().PutStr("vcs.repository.url.full", vcsRepositoryURLFullAttributeValue)
 	dp.Attributes().PutStr("vcs.repository.name", vcsRepositoryNameAttributeValue)
 	dp.Attributes().PutStr("vcs.ref.head.name", vcsRefHeadNameAttributeValue)
+	dp.Attributes().PutStr("vcs.change.state", vcsChangeStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcsRepositoryChangeTimeOpen) updateCapacity() {
+func (m *metricVcsRepositoryChangeDuration) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcsRepositoryChangeTimeOpen) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcsRepositoryChangeDuration) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -483,8 +484,8 @@ func (m *metricVcsRepositoryChangeTimeOpen) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricVcsRepositoryChangeTimeOpen(cfg MetricConfig) metricVcsRepositoryChangeTimeOpen {
-	m := metricVcsRepositoryChangeTimeOpen{config: cfg}
+func newMetricVcsRepositoryChangeDuration(cfg MetricConfig) metricVcsRepositoryChangeDuration {
+	m := metricVcsRepositoryChangeDuration{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -663,31 +664,23 @@ type MetricsBuilder struct {
 	metricVcsRefRevisionsDelta              metricVcsRefRevisionsDelta
 	metricVcsRefTime                        metricVcsRefTime
 	metricVcsRepositoryChangeCount          metricVcsRepositoryChangeCount
-	metricVcsRepositoryChangeTimeOpen       metricVcsRepositoryChangeTimeOpen
+	metricVcsRepositoryChangeDuration       metricVcsRepositoryChangeDuration
 	metricVcsRepositoryChangeTimeToApproval metricVcsRepositoryChangeTimeToApproval
 	metricVcsRepositoryChangeTimeToMerge    metricVcsRepositoryChangeTimeToMerge
 	metricVcsRepositoryCount                metricVcsRepositoryCount
 }
 
-// MetricBuilderOption applies changes to default metrics builder.
-type MetricBuilderOption interface {
-	apply(*MetricsBuilder)
-}
-
-type metricBuilderOptionFunc func(mb *MetricsBuilder)
-
-func (mbof metricBuilderOptionFunc) apply(mb *MetricsBuilder) {
-	mbof(mb)
-}
+// metricBuilderOption applies changes to default metrics builder.
+type metricBuilderOption func(*MetricsBuilder)
 
 // WithStartTime sets startTime on the metrics builder.
-func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
-	return metricBuilderOptionFunc(func(mb *MetricsBuilder) {
+func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
 		mb.startTime = startTime
-	})
+	}
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
@@ -699,7 +692,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcsRefRevisionsDelta:              newMetricVcsRefRevisionsDelta(mbc.Metrics.VcsRefRevisionsDelta),
 		metricVcsRefTime:                        newMetricVcsRefTime(mbc.Metrics.VcsRefTime),
 		metricVcsRepositoryChangeCount:          newMetricVcsRepositoryChangeCount(mbc.Metrics.VcsRepositoryChangeCount),
-		metricVcsRepositoryChangeTimeOpen:       newMetricVcsRepositoryChangeTimeOpen(mbc.Metrics.VcsRepositoryChangeTimeOpen),
+		metricVcsRepositoryChangeDuration:       newMetricVcsRepositoryChangeDuration(mbc.Metrics.VcsRepositoryChangeDuration),
 		metricVcsRepositoryChangeTimeToApproval: newMetricVcsRepositoryChangeTimeToApproval(mbc.Metrics.VcsRepositoryChangeTimeToApproval),
 		metricVcsRepositoryChangeTimeToMerge:    newMetricVcsRepositoryChangeTimeToMerge(mbc.Metrics.VcsRepositoryChangeTimeToMerge),
 		metricVcsRepositoryCount:                newMetricVcsRepositoryCount(mbc.Metrics.VcsRepositoryCount),
@@ -720,7 +713,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 
 	for _, op := range options {
-		op.apply(mb)
+		op(mb)
 	}
 	return mb
 }
@@ -738,28 +731,20 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption interface {
-	apply(pmetric.ResourceMetrics)
-}
-
-type resourceMetricsOptionFunc func(pmetric.ResourceMetrics)
-
-func (rmof resourceMetricsOptionFunc) apply(rm pmetric.ResourceMetrics) {
-	rmof(rm)
-}
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
 // WithResource sets the provided resource on the emitted ResourceMetrics.
 // It's recommended to use ResourceBuilder to create the resource.
 func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		res.CopyTo(rm.Resource())
-	})
+	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return resourceMetricsOptionFunc(func(rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -773,7 +758,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 				dps.At(j).SetStartTimestamp(start)
 			}
 		}
-	})
+	}
 }
 
 // EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
@@ -781,7 +766,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // needs to emit metrics from several resources. Otherwise calling this function is not required,
 // just `Emit` function can be called instead.
 // Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
@@ -794,13 +779,13 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricVcsRefRevisionsDelta.emit(ils.Metrics())
 	mb.metricVcsRefTime.emit(ils.Metrics())
 	mb.metricVcsRepositoryChangeCount.emit(ils.Metrics())
-	mb.metricVcsRepositoryChangeTimeOpen.emit(ils.Metrics())
+	mb.metricVcsRepositoryChangeDuration.emit(ils.Metrics())
 	mb.metricVcsRepositoryChangeTimeToApproval.emit(ils.Metrics())
 	mb.metricVcsRepositoryChangeTimeToMerge.emit(ils.Metrics())
 	mb.metricVcsRepositoryCount.emit(ils.Metrics())
 
-	for _, op := range options {
-		op.apply(rm)
+	for _, op := range rmo {
+		op(rm)
 	}
 	for attr, filter := range mb.resourceAttributeIncludeFilter {
 		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
@@ -822,8 +807,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(options...)
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
@@ -859,9 +844,9 @@ func (mb *MetricsBuilder) RecordVcsRepositoryChangeCountDataPoint(ts pcommon.Tim
 	mb.metricVcsRepositoryChangeCount.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsChangeStateAttributeValue.String(), vcsRepositoryNameAttributeValue)
 }
 
-// RecordVcsRepositoryChangeTimeOpenDataPoint adds a data point to vcs.repository.change.time_open metric.
-func (mb *MetricsBuilder) RecordVcsRepositoryChangeTimeOpenDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string) {
-	mb.metricVcsRepositoryChangeTimeOpen.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue)
+// RecordVcsRepositoryChangeDurationDataPoint adds a data point to vcs.repository.change.duration metric.
+func (mb *MetricsBuilder) RecordVcsRepositoryChangeDurationDataPoint(ts pcommon.Timestamp, val int64, vcsRepositoryURLFullAttributeValue string, vcsRepositoryNameAttributeValue string, vcsRefHeadNameAttributeValue string, vcsChangeStateAttributeValue AttributeVcsChangeState) {
+	mb.metricVcsRepositoryChangeDuration.recordDataPoint(mb.startTime, ts, val, vcsRepositoryURLFullAttributeValue, vcsRepositoryNameAttributeValue, vcsRefHeadNameAttributeValue, vcsChangeStateAttributeValue.String())
 }
 
 // RecordVcsRepositoryChangeTimeToApprovalDataPoint adds a data point to vcs.repository.change.time_to_approval metric.
@@ -881,9 +866,9 @@ func (mb *MetricsBuilder) RecordVcsRepositoryCountDataPoint(ts pcommon.Timestamp
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
 // and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...MetricBuilderOption) {
+func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op.apply(mb)
+		op(mb)
 	}
 }

@@ -166,11 +166,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcs.repository.change.count
             unit: '{change}'
-          - description: The amount of time a change (pull request) has been open.
+          - description: The time duration a change (pull request/merge request/changelist) has been in an open state.
             gauge:
               dataPoints:
                 - asInt: "9223372036"
                   attributes:
+                    - key: vcs.change.state
+                      value:
+                        stringValue: open
                     - key: vcs.ref.head.name
                       value:
                         stringValue: ""
@@ -182,7 +185,7 @@ resourceMetrics:
                         stringValue: '{      false false   }'
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: vcs.repository.change.time_open
+            name: vcs.repository.change.duration
             unit: s
           - description: The amount of time it took a change (pull request) to go from open to merged.
             gauge:
