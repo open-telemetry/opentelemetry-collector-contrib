@@ -6,6 +6,8 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -22,10 +24,11 @@ func getNewCompositePolicy(settings component.TelemetrySettings, config *Composi
 		evalParams := sampling.SubPolicyEvalParams{
 			Evaluator:         policy,
 			MaxSpansPerSecond: int64(rateAllocationsMap[policyCfg.Name]),
+			Name:              policyCfg.Name,
 		}
 		subPolicyEvalParams[i] = evalParams
 	}
-	return sampling.NewComposite(settings.Logger, config.MaxTotalSpansPerSecond, subPolicyEvalParams, sampling.MonotonicClock{}), nil
+	return sampling.NewComposite(settings.Logger, config.MaxTotalSpansPerSecond, subPolicyEvalParams, sampling.MonotonicClock{}, telemetry.IsRecordPolicyEnabled()), nil
 }
 
 // Apply rate allocations to the sub-policies
