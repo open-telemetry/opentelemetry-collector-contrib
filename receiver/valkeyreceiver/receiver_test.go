@@ -16,7 +16,7 @@ func TestScrape(t *testing.T) {
 	scraper, err := newValkeyScraper(cfg, settings)
 	require.NoError(t, err)
 
-	metrics, err := scraper.Scrape(context.Background())
+	metrics, err := scraper.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
 
 	fmt.Printf("%#v", metrics)

@@ -6,55 +6,40 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/valkey-io/valkey-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/valkeyreceiver/internal/metadata"
+	"github.com/valkey-io/valkey-go"
 )
 
 type valkeyScraper struct {
 	client     client
 	settings   component.TelemetrySettings
+	cfg        *Config
 	mb         *metadata.MetricsBuilder
 	configInfo configInfo
 }
 
-func newValkeyScraper(cfg *Config, settings receiver.Settings) (scraperhelper.Scraper, error) {
-	opts := valkey.ClientOption{
-		InitAddress: []string{cfg.Endpoint},
-		Username:    cfg.Username,
-		Password:    string(cfg.Password),
-	}
-
-	var err error
-	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(context.Background()); err != nil {
-		return nil, err
-	}
-	client, err := newValkeyClient(opts)
-	if err != nil {
-		return nil, err
-	}
-
+func newValkeyScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
 	configInfo, err := newConfigInfo(cfg)
 	if err != nil {
 		return nil, err
 	}
 
 	vs := &valkeyScraper{
-		client:     client,
+		cfg:        cfg,
 		settings:   settings.TelemetrySettings,
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		configInfo: configInfo,
 	}
-	return scraperhelper.NewScraper(
-		metadata.Type.String(),
-		scraperhelper.ScrapeFunc(vs.scrape),
+	return scraper.NewMetrics(
+		scraper.ScrapeMetricsFunc(vs.scrape),
 
-		scraperhelper.WithShutdown(vs.shutdown),
+		scraper.WithShutdown(vs.shutdown),
 	)
 }
 
@@ -66,6 +51,23 @@ func (vs *valkeyScraper) shutdown(context.Context) error {
 }
 
 func (vs *valkeyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	if vs.client == nil {
+		opts := valkey.ClientOption{
+			InitAddress: []string{vs.cfg.Endpoint},
+			Username:    vs.cfg.Username,
+			Password:    string(vs.cfg.Password),
+		}
+
+		var err error
+		if opts.TLSConfig, err = vs.cfg.TLS.LoadTLSConfig(context.Background()); err != nil {
+			return pmetric.Metrics{}, err
+		}
+		vs.client, err = newValkeyClient(opts)
+		if err != nil {
+			return pmetric.Metrics{}, err
+		}
+	}
+
 	result, err := vs.client.retrieveInfo(ctx)
 	if err != nil {
 		return pmetric.Metrics{}, err
