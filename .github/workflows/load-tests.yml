@@ -119,7 +119,7 @@ jobs:
           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
 
   update-benchmarks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [loadtest]
     if: github.event_name != 'pull_request'
     steps:

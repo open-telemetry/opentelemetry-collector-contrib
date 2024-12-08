@@ -44,7 +44,7 @@ const (
 
 var exportCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewriteexporter.deprecateCreatedMetric",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Feature gate used to control the deprecation of created metrics."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003"),
 )
@@ -301,9 +301,18 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		exemplar := pt.Exemplars().At(i)
 		exemplarRunes := 0
 
-		promExemplar := prompb.Exemplar{
-			Value:     exemplar.DoubleValue(),
-			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+		var promExemplar prompb.Exemplar
+		switch exemplar.ValueType() {
+		case pmetric.ExemplarValueTypeInt:
+			promExemplar = prompb.Exemplar{
+				Value:     float64(exemplar.IntValue()),
+				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+			}
+		case pmetric.ExemplarValueTypeDouble:
+			promExemplar = prompb.Exemplar{
+				Value:     exemplar.DoubleValue(),
+				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+			}
 		}
 		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
 			val := hex.EncodeToString(traceID[:])

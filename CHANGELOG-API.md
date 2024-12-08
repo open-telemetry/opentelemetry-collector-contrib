@@ -7,6 +7,13 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/datadog`: Refactor the API that provides metrics translator (#36474)
+  This is API change only and does not affect end users
+
 ## v0.114.0
 
 ### 🛑 Breaking changes 🛑

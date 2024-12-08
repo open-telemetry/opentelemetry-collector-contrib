@@ -142,15 +142,19 @@ func Scenario10kItemsPerSecond(
 	resultsSummary testbed.TestResultsSummary,
 	processors []ProcessorNameAndConfigBody,
 	extensions map[string]string,
+	loadOptions *testbed.LoadOptions,
 ) {
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
 
-	options := testbed.LoadOptions{
-		DataItemsPerSecond: 10_000,
-		ItemsPerBatch:      100,
-		Parallel:           1,
+	if loadOptions == nil {
+		loadOptions = &testbed.LoadOptions{
+			ItemsPerBatch: 100,
+			Parallel:      1,
+		}
 	}
+	loadOptions.DataItemsPerSecond = 10_000
+
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
@@ -158,7 +162,7 @@ func Scenario10kItemsPerSecond(
 	require.NoError(t, err)
 	defer configCleanup()
 
-	dataProvider := testbed.NewPerfTestDataProvider(options)
+	dataProvider := testbed.NewPerfTestDataProvider(*loadOptions)
 	tc := testbed.NewTestCase(
 		t,
 		dataProvider,
@@ -174,7 +178,7 @@ func Scenario10kItemsPerSecond(
 	tc.StartBackend()
 	tc.StartAgent()
 
-	tc.StartLoad(options)
+	tc.StartLoad(*loadOptions)
 
 	tc.WaitFor(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, "load generator started")
 

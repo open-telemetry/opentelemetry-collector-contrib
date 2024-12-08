@@ -178,6 +178,7 @@ func TestLog10kDPS(t *testing.T) {
 				performanceResultsSummary,
 				processors,
 				test.extensions,
+				nil,
 			)
 		})
 	}

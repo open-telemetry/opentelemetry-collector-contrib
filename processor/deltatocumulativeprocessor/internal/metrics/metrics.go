@@ -75,7 +75,6 @@ var (
 type Any interface {
 	Len() int
 	Ident() identity.Metric
-
 	SetAggregationTemporality(pmetric.AggregationTemporality)
 }
 

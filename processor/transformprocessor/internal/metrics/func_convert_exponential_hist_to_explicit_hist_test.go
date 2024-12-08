@@ -751,8 +751,7 @@ func Test_convertExponentialHistToExplicitHist_validate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := convertExponentialHistToExplicitHist("random", tt.sliceExplicitBoundsArgs)
-			assert.Error(t, err)
-			assert.Contains(t, err.Error(), "explicit bounds cannot be empty")
+			assert.ErrorContains(t, err, "explicit bounds cannot be empty")
 		})
 	}
 }

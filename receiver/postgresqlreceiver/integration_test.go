@@ -52,7 +52,7 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Image: "postgres:9.6.24",
+				Image: "postgres:13.18",
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
