@@ -10,6 +10,8 @@ azuremonitor/2:
   maxbatchsize: 100
   # maxbatchinterval is the maximum time to wait before calling the configured endpoint.
   maxbatchinterval: 10s
+  # shutdown channel timeout
+  shutdown_timeout: 2s
 
   sending_queue:
     # queue_size is the maximum number of items that can be queued before dropping data
