@@ -9,6 +9,7 @@ Contains tests for logexporter.go and log_to_envelope.go
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -185,6 +186,7 @@ func getLogsExporter(config *Config, transportChannel appinsights.TelemetryChann
 		transportChannel,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
+		sync.Once{},
 	}
 }
 
