@@ -136,6 +136,17 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
+		// Appends token.Attributes
+		for i := 0; i < m.ResourceMetrics().Len(); i++ {
+			resourceMetric := m.ResourceMetrics().At(i)
+			for j := 0; j < resourceMetric.ScopeMetrics().Len(); j++ {
+				ScopeMetric := resourceMetric.ScopeMetrics().At(j)
+				for k := 0; k < ScopeMetric.Metrics().Len(); k++ {
+					metric := ScopeMetric.Metrics().At(k)
+					appendToMap(token, metric.Metadata())
+				}
+			}
+		}
 		if err != nil {
 			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 		} else {

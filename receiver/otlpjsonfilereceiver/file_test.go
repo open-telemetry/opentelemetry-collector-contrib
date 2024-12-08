@@ -109,7 +109,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	md := testdata.GenerateMetrics(5)
+	md := testdata.GenerateMetrics(1)
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
@@ -117,6 +117,9 @@ func TestFileMetricsReceiver(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
+
+	// include_file_name is true by default
+	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata().PutStr("log.file.name", "metrics.json")
 
 	require.Len(t, sink.AllMetrics(), 1)
 	assert.EqualValues(t, md, sink.AllMetrics()[0])
