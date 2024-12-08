@@ -26,9 +26,9 @@ var errUnexpectedConfigurationType = errors.New("failed to cast configuration to
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() exporter.Factory {
 	f := &factory{
-		mu:            sync.RWMutex{},
-		hasInitLogger: false,
-		tChannels:     make(map[component.ID]transportChannel),
+		mu:             sync.RWMutex{},
+		loggerInitOnce: sync.Once{},
+		tChannels:      make(map[component.ID]transportChannel),
 	}
 	return exporter.NewFactory(
 		metadata.Type,
@@ -40,9 +40,9 @@ func NewFactory() exporter.Factory {
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
 type factory struct {
-	mu            sync.RWMutex
-	hasInitLogger bool
-	tChannels     map[component.ID]transportChannel
+	mu             sync.RWMutex
+	loggerInitOnce sync.Once
+	tChannels      map[component.ID]transportChannel
 }
 
 func createDefaultConfig() component.Config {
@@ -115,16 +115,14 @@ func (f *factory) createMetricsExporter(
 }
 
 func (f *factory) initLogger(logger *zap.Logger) {
-	if f.hasInitLogger {
-		return
-	}
-	if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
-		appinsights.NewDiagnosticsMessageListener(func(msg string) error {
-			logger.Debug(msg)
-			return nil
-		})
-	}
-	f.hasInitLogger = true
+	f.loggerInitOnce.Do(func() {
+		if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
+			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
+				logger.Debug(msg)
+				return nil
+			})
+		}
+	})
 }
 
 // Configures the transport channel.
