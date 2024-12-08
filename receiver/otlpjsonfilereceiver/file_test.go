@@ -49,7 +49,7 @@ func TestFileProfilesReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
 
-	pd := testdata.GenerateProfiles(5)
+	pd := testdata.GenerateProfiles(1)
 	marshaler := &pprofile.JSONMarshaler{}
 	b, err := marshaler.MarshalProfiles(pd)
 	assert.NoError(t, err)
@@ -57,6 +57,9 @@ func TestFileProfilesReceiver(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempFolder, "profiles.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
+
+	// include_file_name is true by default
+	pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Attributes().PutStr("log.file.name", "profiles.json")
 
 	require.Len(t, sink.AllProfiles(), 1)
 	assert.EqualValues(t, pd, sink.AllProfiles()[0])
@@ -76,7 +79,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
 
-	td := testdata.GenerateTraces(2)
+	td := testdata.GenerateTraces(1)
 	marshaler := &ptrace.JSONMarshaler{}
 	b, err := marshaler.MarshalTraces(td)
 	assert.NoError(t, err)
@@ -84,6 +87,9 @@ func TestFileTracesReceiver(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
+
+	// include_file_name is true by default
+	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("log.file.name", "traces.json")
 
 	require.Len(t, sink.AllTraces(), 1)
 	assert.EqualValues(t, td, sink.AllTraces()[0])
@@ -168,7 +174,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
 
-	ld := testdata.GenerateLogs(5)
+	ld := testdata.GenerateLogs(1)
 	marshaler := &plog.JSONMarshaler{}
 	b, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
@@ -176,6 +182,9 @@ func TestFileLogsReceiver(t *testing.T) {
 	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0o600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
+
+	// include_file_name is true by default
+	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("log.file.name", "logs.json")
 
 	require.Len(t, sink.AllLogs(), 1)
 	assert.EqualValues(t, ld, sink.AllLogs()[0])
@@ -226,6 +235,7 @@ func TestFileMixedSignals(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
+	cfg.IncludeFileName = false
 	cs := receivertest.NewNopSettings()
 	ms := new(consumertest.MetricsSink)
 	mr, err := factory.CreateMetrics(context.Background(), cs, cfg, ms)
