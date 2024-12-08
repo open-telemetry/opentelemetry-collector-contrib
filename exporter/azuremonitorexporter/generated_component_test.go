@@ -71,6 +71,44 @@ func TestComponentLifecycle(t *testing.T) {
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
+		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
+			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
+			require.NoError(t, err)
+			host := componenttest.NewNopHost()
+			err = c.Start(context.Background(), host)
+			require.NoError(t, err)
+			require.NotPanics(t, func() {
+				switch tt.name {
+				case "logs":
+					e, ok := c.(exporter.Logs)
+					require.True(t, ok)
+					logs := generateLifecycleTestLogs()
+					if !e.Capabilities().MutatesData {
+						logs.MarkReadOnly()
+					}
+					err = e.ConsumeLogs(context.Background(), logs)
+				case "metrics":
+					e, ok := c.(exporter.Metrics)
+					require.True(t, ok)
+					metrics := generateLifecycleTestMetrics()
+					if !e.Capabilities().MutatesData {
+						metrics.MarkReadOnly()
+					}
+					err = e.ConsumeMetrics(context.Background(), metrics)
+				case "traces":
+					e, ok := c.(exporter.Traces)
+					require.True(t, ok)
+					traces := generateLifecycleTestTraces()
+					if !e.Capabilities().MutatesData {
+						traces.MarkReadOnly()
+					}
+					err = e.ConsumeTraces(context.Background(), traces)
+				}
+			})
+
+			err = c.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
 	}
 }
 

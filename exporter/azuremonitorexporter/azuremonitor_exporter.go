@@ -5,6 +5,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
@@ -24,35 +25,41 @@ type azureMonitorExporter struct {
 	transportChannel appinsights.TelemetryChannel
 	logger           *zap.Logger
 	packer           *metricPacker
+	startOnce        sync.Once
+	endOnce          sync.Once
 }
 
-func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host) error {
-	connectionVars, err := parseConnectionString(exporter.config)
-	if err != nil {
-		return err
-	}
+func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host) (err error) {
+	exporter.startOnce.Do(func() {
+		connectionVars, err := parseConnectionString(exporter.config)
+		if err != nil {
+			return
+		}
 
-	exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
-	exporter.config.Endpoint = connectionVars.IngestionURL
-	telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
-	telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
-	telemetryConfiguration.MaxBatchSize = exporter.config.MaxBatchSize
-	telemetryConfiguration.MaxBatchInterval = exporter.config.MaxBatchInterval
+		exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
+		exporter.config.Endpoint = connectionVars.IngestionURL
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
+		telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
+		telemetryConfiguration.MaxBatchSize = exporter.config.MaxBatchSize
+		telemetryConfiguration.MaxBatchInterval = exporter.config.MaxBatchInterval
 
-	telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
-	exporter.transportChannel = telemetryClient.Channel()
+		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
+		exporter.transportChannel = telemetryClient.Channel()
+	})
 
 	return nil
 }
 
-func (exporter *azureMonitorExporter) Shutdown(_ context.Context) error {
-	if exporter.transportChannel != nil {
-		select {
-		case <-exporter.transportChannel.Close(exporter.config.ShutdownTimeout):
-		case <-time.After(exporter.config.ShutdownTimeout):
-			exporter.transportChannel.Stop()
+func (exporter *azureMonitorExporter) Shutdown(_ context.Context) (err error) {
+	exporter.startOnce.Do(func() {
+		if exporter.transportChannel != nil {
+			select {
+			case <-exporter.transportChannel.Close(exporter.config.ShutdownTimeout):
+			case <-time.After(exporter.config.ShutdownTimeout):
+				exporter.transportChannel.Stop()
+			}
 		}
-	}
+	})
 
 	return nil
 }
@@ -149,8 +156,10 @@ func (exporter *azureMonitorExporter) consumeTraces(_ context.Context, traceData
 // Returns a new instance of the log exporter
 func newAzureMonitorExporter(config *Config, set exporter.Settings) AzureMonitorExporter {
 	return &azureMonitorExporter{
-		config: config,
-		logger: set.Logger,
-		packer: newMetricPacker(set.Logger),
+		config:    config,
+		logger:    set.Logger,
+		packer:    newMetricPacker(set.Logger),
+		startOnce: sync.Once{},
+		endOnce:   sync.Once{},
 	}
 }
