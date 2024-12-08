@@ -4,6 +4,7 @@
 package azuremonitorexporter
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
@@ -127,5 +128,7 @@ func getExporter(config *Config, transportChannel appinsights.TelemetryChannel) 
 		transportChannel,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
+		sync.Once{},
+		sync.Once{},
 	}
 }
