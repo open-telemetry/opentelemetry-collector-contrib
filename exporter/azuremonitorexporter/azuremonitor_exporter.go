@@ -5,6 +5,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
@@ -24,25 +25,30 @@ type azureMonitorExporter struct {
 	transportChannel appinsights.TelemetryChannel
 	logger           *zap.Logger
 	packer           *metricPacker
+	startOnce        sync.Once
 }
 
 func (exporter *azureMonitorExporter) Start(_ context.Context, _ component.Host) error {
-	connectionVars, err := parseConnectionString(exporter.config)
-	if err != nil {
-		return err
-	}
+	var err error
+	exporter.startOnce.Do(func() {
 
-	exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
-	exporter.config.Endpoint = connectionVars.IngestionURL
-	telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
-	telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
-	telemetryConfiguration.MaxBatchSize = exporter.config.MaxBatchSize
-	telemetryConfiguration.MaxBatchInterval = exporter.config.MaxBatchInterval
+		connectionVars, err := parseConnectionString(exporter.config)
+		if err != nil {
+			return
+		}
 
-	telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
-	exporter.transportChannel = telemetryClient.Channel()
+		exporter.config.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
+		exporter.config.Endpoint = connectionVars.IngestionURL
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(connectionVars.InstrumentationKey)
+		telemetryConfiguration.EndpointUrl = connectionVars.IngestionURL
+		telemetryConfiguration.MaxBatchSize = exporter.config.MaxBatchSize
+		telemetryConfiguration.MaxBatchInterval = exporter.config.MaxBatchInterval
 
-	return nil
+		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
+		exporter.transportChannel = telemetryClient.Channel()
+	})
+
+	return err
 }
 
 func (exporter *azureMonitorExporter) Shutdown(_ context.Context) error {
@@ -149,8 +155,9 @@ func (exporter *azureMonitorExporter) consumeTraces(_ context.Context, traceData
 // Returns a new instance of the log exporter
 func newAzureMonitorExporter(config *Config, set exporter.Settings) AzureMonitorExporter {
 	return &azureMonitorExporter{
-		config: config,
-		logger: set.Logger,
-		packer: newMetricPacker(set.Logger),
+		config:    config,
+		logger:    set.Logger,
+		packer:    newMetricPacker(set.Logger),
+		startOnce: sync.Once{},
 	}
 }

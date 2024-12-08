@@ -28,7 +28,7 @@ func (_m *mockTransportChannel) Stop() {
 
 func (_m *mockTransportChannel) IsThrottled() bool {
 	_m.Called()
-	return false;
+	return false
 }
 
 func (_m *mockTransportChannel) Close(retryTimeout ...time.Duration) <-chan struct{} {
