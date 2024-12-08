@@ -9,7 +9,6 @@ Contains tests for metricexporter.go and metric_to_envelopes.go
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
@@ -145,7 +144,6 @@ func getAzureMonitorExporter(config *Config, transportChannel appinsights.Teleme
 		transportChannel,
 		zap.NewNop(),
 		newMetricPacker(zap.NewNop()),
-		sync.Once{},
 	}
 }
 
