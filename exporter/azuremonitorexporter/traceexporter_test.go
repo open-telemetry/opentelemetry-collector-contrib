@@ -6,6 +6,7 @@ package azuremonitorexporter
 import (
 	"testing"
 
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -24,7 +25,7 @@ func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
 
 	traces := ptrace.NewTraces()
 
-	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
 }
@@ -47,7 +48,7 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
 }
@@ -79,7 +80,7 @@ func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
 }
@@ -106,7 +107,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	err := exporter.onTraceData(context.Background(), traces)
+	err := exporter.consumeTraces(context.Background(), traces)
 	assert.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
 
@@ -120,10 +121,11 @@ func getMockTransportChannel() *mockTransportChannel {
 	return &transportChannelMock
 }
 
-func getExporter(config *Config, transportChannel transportChannel) *traceExporter {
-	return &traceExporter{
+func getExporter(config *Config, transportChannel appinsights.TelemetryChannel) *azureMonitorExporter {
+	return &azureMonitorExporter{
 		config,
 		transportChannel,
 		zap.NewNop(),
+		newMetricPacker(zap.NewNop()),
 	}
 }
