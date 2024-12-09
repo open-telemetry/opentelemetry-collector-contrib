@@ -27,7 +27,7 @@ import (
 
 func BenchmarkExporter(b *testing.B) {
 	for _, eventType := range []string{"logs", "metrics", "traces"} {
-		for _, mappingMode := range []string{"none", "ecs", "raw"} {
+		for _, mappingMode := range []string{"none", "ecs", "raw", "otel"} {
 			for _, tc := range []struct {
 				name      string
 				batchSize int
