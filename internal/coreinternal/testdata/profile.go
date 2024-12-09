@@ -12,9 +12,7 @@ import (
 
 var (
 	TestProfileStartTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestProfileEndTime        = time.Date(2020, 2, 11, 20, 28, 13, 789, time.UTC)
 	TestProfileStartTimestamp = pcommon.NewTimestampFromTime(TestProfileStartTime)
-	TestProfileEndTimestamp   = pcommon.NewTimestampFromTime(TestProfileEndTime)
 )
 
 func GenerateProfilesOneEmptyResourceProfiles() pprofile.Profiles {
