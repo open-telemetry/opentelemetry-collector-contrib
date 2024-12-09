@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
@@ -205,6 +207,34 @@ func (u *Unmarshaler) unmarshalJSONLogs(records [][]byte) (plog.Logs, error) {
 	return ld, nil
 }
 
+func (u *Unmarshaler) unmarshallProtobufMetrics(records [][]byte) (pmetric.Metrics, error) {
+	md := pmetric.NewMetrics()
+	for recordIndex, record := range records {
+		dataLen, pos := len(record), 0
+		for pos < dataLen {
+			n, nLen := proto.DecodeVarint(record)
+			if nLen == 0 && n == 0 {
+				return md, errInvalidFormatStart
+			}
+			req := pmetricotlp.NewExportRequest()
+			pos += nLen
+			err := req.UnmarshalProto(record[pos : pos+int(n)])
+			pos += int(n)
+			if err != nil {
+				u.logger.Error(
+					"Unable to unmarshal input",
+					zap.Error(err),
+					zap.Int("record_index", recordIndex),
+				)
+				continue
+			}
+			req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		}
+	}
+
+	return md, nil
+}
+
 func (u *Unmarshaler) UnmarshalLogs(contentType string, records [][]byte) (plog.Logs, error) {
 	switch contentType {
 	case "application/json":
@@ -218,7 +248,8 @@ func (u *Unmarshaler) UnmarshalMetrics(contentType string, records [][]byte) (pm
 	switch contentType {
 	case "application/json":
 		return u.unmarshalJSONMetrics(records)
-	//TODO case "application/x-protobuf":
+	case "application/x-protobuf":
+		return u.unmarshallProtobufMetrics(records)
 	default:
 		return pmetric.NewMetrics(), errUnsupportedContentType
 	}
