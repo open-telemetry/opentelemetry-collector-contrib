@@ -80,11 +80,8 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
 		httpConfig.TLSConfig = configutil.TLSConfig{
 			CAFile:             h.tlsSettings.CAFile,
-			CA:                 h.tlsSettings.CAPem.String(),
 			CertFile:           h.tlsSettings.CertFile,
-			Cert:               h.tlsSettings.CertPem.String(),
 			KeyFile:            h.tlsSettings.KeyFile,
-			Key:                configutil.Secret(h.tlsSettings.KeyPem),
 			InsecureSkipVerify: h.tlsSettings.InsecureSkipVerify,
 			ServerName:         h.tlsSettings.ServerName,
 		}
