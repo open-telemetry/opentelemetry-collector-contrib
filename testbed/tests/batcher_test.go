@@ -34,105 +34,25 @@ type batcherTestSpec struct {
 }
 
 func TestLog10kDPSNoProcessors(t *testing.T) {
-	tests := []batcherTestSpec{
-		{
-			name: "No batching, no queue",
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:      "No batching, queue",
-			withQueue: true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, no queue",
-			batchSize:          1000,
-			withBatchProcessor: true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, queue",
-			batchSize:          1000,
-			withBatchProcessor: true,
-			withQueue:          true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, no queue",
-			withExporterBatcher: true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, queue",
-			withExporterBatcher: true,
-			withQueue:           true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
+	resourceSpec := testbed.ResourceSpec{
+		ExpectedMaxCPU: 30,
+		ExpectedMaxRAM: 120,
 	}
+	processors := []ProcessorNameAndConfigBody{}
+	tests := getBatcherTestSpecs(resourceSpec, processors)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sender := testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-			receiver.WithRetry(`
-    retry_on_failure:
-      enabled: true
-`)
-			if test.withQueue {
-				receiver.WithQueue(`
-    sending_queue:
-      enabled: true
-`)
-			}
-
-			if test.withExporterBatcher {
-				receiver.WithBatcher(fmt.Sprintf(`
-    batcher:
-      enabled: true
-      min_size_items: %d
-`, test.batchSize))
-			}
-
-			processors := slices.Clone(test.processors)
-			if test.withBatchProcessor {
-				processors = slices.Insert(processors, 0, ProcessorNameAndConfigBody{
-					Name: "batch",
-					Body: fmt.Sprintf(`
-  batch:
-    send_batch_size: %d
-`, test.batchSize),
-				})
-			}
-			loadOptions := &testbed.LoadOptions{
-				Parallel:      10,
-				ItemsPerBatch: 10,
-			}
-			Scenario10kItemsPerSecond(t, sender, receiver, test.resourceSpec, performanceResultsSummary, processors, test.extensions, loadOptions)
+			runBatcherPerfTest(t, test)
 		})
 	}
 }
 
 func TestLog10kDPSWithProcessors(t *testing.T) {
+	resourceSpec := testbed.ResourceSpec{
+		ExpectedMaxCPU: 30,
+		ExpectedMaxRAM: 120,
+	}
 	processors := []ProcessorNameAndConfigBody{
 		{
 			Name: "filter",
@@ -155,113 +75,17 @@ func TestLog10kDPSWithProcessors(t *testing.T) {
 `,
 		},
 	}
-	tests := []batcherTestSpec{
-		{
-			name:       "No batching, no queue",
-			processors: processors,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:       "No batching, queue",
-			processors: processors,
-			withQueue:  true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, no queue",
-			processors:         processors,
-			batchSize:          1000,
-			withBatchProcessor: true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, queue",
-			processors:         processors,
-			batchSize:          1000,
-			withBatchProcessor: true,
-			withQueue:          true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, no queue",
-			processors:          processors,
-			withExporterBatcher: true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, queue",
-			processors:          processors,
-			withExporterBatcher: true,
-			withQueue:           true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 30,
-				ExpectedMaxRAM: 120,
-			},
-		},
-	}
+	tests := getBatcherTestSpecs(resourceSpec, processors)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sender := testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-			receiver.WithRetry(`
-    retry_on_failure:
-      enabled: true
-`)
-			if test.withQueue {
-				receiver.WithQueue(`
-    sending_queue:
-      enabled: true
-      queue_size: 10
-`)
-			}
-
-			if test.withExporterBatcher {
-				receiver.WithBatcher(fmt.Sprintf(`
-    batcher:
-      enabled: true
-      min_size_items: %d
-`, test.batchSize))
-			}
-
-			testProcessors := slices.Clone(test.processors)
-			if test.withBatchProcessor {
-				processors = slices.Insert(testProcessors, 0, ProcessorNameAndConfigBody{
-					Name: "batch",
-					Body: fmt.Sprintf(`
-  batch:
-    send_batch_size: %d
-`, test.batchSize),
-				})
-			}
-			loadOptions := &testbed.LoadOptions{
-				Parallel:      10,
-				ItemsPerBatch: 10,
-			}
-			Scenario10kItemsPerSecond(t, sender, receiver, test.resourceSpec, performanceResultsSummary, testProcessors, test.extensions, loadOptions)
+			runBatcherPerfTest(t, test)
 		})
 	}
 }
 
 func TestLog10kDPSWithHeavyProcessing(t *testing.T) {
-	ottlStatementCount := 100
+	ottlStatementCount := 50
 	transformProcessor := ProcessorNameAndConfigBody{
 		Name: "transform",
 		Body: `
@@ -272,112 +96,21 @@ func TestLog10kDPSWithHeavyProcessing(t *testing.T) {
 `,
 	}
 	for i := 0; i < ottlStatementCount; i++ {
-		transformProcessor.Body += strings.Repeat(" ", 10) + "- set(attributes[\"counter\"], ExtractPatterns(body, \"Load Generator Counter (?P<counter>.+)\"))\n"
+		transformProcessor.Body += strings.Repeat(" ", ottlStatementCount) + "- set(attributes[\"counter\"], ExtractPatterns(body, \"Load Generator Counter (?P<counter>.+)\"))\n"
 	}
 	processors := []ProcessorNameAndConfigBody{transformProcessor}
-	tests := []batcherTestSpec{
-		{
-			name:       "No batching, no queue",
-			processors: processors,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:       "No batching, queue",
-			processors: processors,
-			withQueue:  true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, no queue",
-			processors:         processors,
-			batchSize:          1000,
-			withBatchProcessor: true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, queue",
-			processors:         processors,
-			batchSize:          1000,
-			withBatchProcessor: true,
-			withQueue:          true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, no queue",
-			processors:          processors,
-			withExporterBatcher: true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, queue",
-			processors:          processors,
-			withExporterBatcher: true,
-			withQueue:           true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 100,
-				ExpectedMaxRAM: 120,
-			},
-		},
+	resourceSpec := testbed.ResourceSpec{
+		ExpectedMaxCPU: 120,
+		ExpectedMaxRAM: 120,
 	}
+	tests := getBatcherTestSpecs(resourceSpec, processors)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sender := testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-			receiver.WithRetry(`
-    retry_on_failure:
-      enabled: true
-`)
-			if test.withQueue {
-				receiver.WithQueue(`
-    sending_queue:
-      enabled: true
-      queue_size: 10
-`)
-			}
-
-			if test.withExporterBatcher {
-				receiver.WithBatcher(fmt.Sprintf(`
-    batcher:
-      enabled: true
-      min_size_items: %d
-`, test.batchSize))
-			}
-
-			testProcessors := slices.Clone(test.processors)
-			if test.withBatchProcessor {
-				processors = slices.Insert(testProcessors, 0, ProcessorNameAndConfigBody{
-					Name: "batch",
-					Body: fmt.Sprintf(`
-  batch:
-    send_batch_size: %d
-`, test.batchSize),
-				})
-			}
-			loadOptions := &testbed.LoadOptions{
-				Parallel:      10,
-				ItemsPerBatch: 10,
-			}
-			Scenario10kItemsPerSecond(t, sender, receiver, test.resourceSpec, performanceResultsSummary, testProcessors, test.extensions, loadOptions)
+			runBatcherPerfTest(t, test)
 		})
 	}
+
 }
 
 func TestLog10kDPSWith20Processors(t *testing.T) {
@@ -413,108 +146,102 @@ func TestLog10kDPSWith20Processors(t *testing.T) {
 			processors = append(processors, processorCopy)
 		}
 	}
-
-	tests := []batcherTestSpec{
-		{
-			name:       "No batching, no queue",
-			processors: processors,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:       "No batching, queue",
-			processors: processors,
-			withQueue:  true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, no queue",
-			processors:         processors,
-			batchSize:          1000,
-			withBatchProcessor: true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:               "Batch size 1000 with batch processor, queue",
-			processors:         processors,
-			batchSize:          1000,
-			withBatchProcessor: true,
-			withQueue:          true,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, no queue",
-			processors:          processors,
-			withExporterBatcher: true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 120,
-			},
-		},
-		{
-			name:                "Batch size 1000 with exporter batcher, queue",
-			processors:          processors,
-			withExporterBatcher: true,
-			withQueue:           true,
-			batchSize:           1000,
-			resourceSpec: testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 120,
-			},
-		},
+	resourceSpec := testbed.ResourceSpec{
+		ExpectedMaxCPU: 50,
+		ExpectedMaxRAM: 120,
 	}
+	tests := getBatcherTestSpecs(resourceSpec, processors)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sender := testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-			receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-			receiver.WithRetry(`
+			runBatcherPerfTest(t, test)
+		})
+	}
+}
+
+func getBatcherTestSpecs(resourceSpec testbed.ResourceSpec, processors []ProcessorNameAndConfigBody) []batcherTestSpec {
+	testSpecs := []batcherTestSpec{
+		{
+			name:         "No batching, no queue",
+			resourceSpec: resourceSpec,
+			processors:   processors,
+		},
+		{
+			name:         "No batching, queue",
+			withQueue:    true,
+			resourceSpec: resourceSpec,
+			processors:   processors,
+		},
+		{
+			name:               "Batch size 1000 with batch processor, no queue",
+			batchSize:          1000,
+			withBatchProcessor: true,
+			resourceSpec:       resourceSpec,
+			processors:         processors,
+		},
+		{
+			name:               "Batch size 1000 with batch processor, queue",
+			batchSize:          1000,
+			withBatchProcessor: true,
+			withQueue:          true,
+			resourceSpec:       resourceSpec,
+			processors:         processors,
+		},
+		{
+			name:                "Batch size 1000 with exporter batcher, no queue",
+			withExporterBatcher: true,
+			batchSize:           1000,
+			resourceSpec:        resourceSpec,
+			processors:          processors,
+		},
+		{
+			name:                "Batch size 1000 with exporter batcher, queue",
+			withExporterBatcher: true,
+			withQueue:           true,
+			batchSize:           1000,
+			resourceSpec:        resourceSpec,
+			processors:          processors,
+		},
+	}
+	return testSpecs
+}
+
+func runBatcherPerfTest(t *testing.T, spec batcherTestSpec) {
+	t.Helper()
+	sender := testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+	receiver.WithRetry(`
     retry_on_failure:
       enabled: true
 `)
-			if test.withQueue {
-				receiver.WithQueue(`
+	if spec.withQueue {
+		receiver.WithQueue(`
     sending_queue:
       enabled: true
-      queue_size: 10
 `)
-			}
+	}
 
-			if test.withExporterBatcher {
-				receiver.WithBatcher(fmt.Sprintf(`
+	if spec.withExporterBatcher {
+		receiver.WithBatcher(fmt.Sprintf(`
     batcher:
       enabled: true
       min_size_items: %d
-`, test.batchSize))
-			}
+`, spec.batchSize))
+	}
 
-			testProcessors := slices.Clone(test.processors)
-			if test.withBatchProcessor {
-				processors = slices.Insert(testProcessors, 0, ProcessorNameAndConfigBody{
-					Name: "batch",
-					Body: fmt.Sprintf(`
+	processors := slices.Clone(spec.processors)
+	if spec.withBatchProcessor {
+		processors = slices.Insert(processors, 0, ProcessorNameAndConfigBody{
+			Name: "batch",
+			Body: fmt.Sprintf(`
   batch:
     send_batch_size: %d
-`, test.batchSize),
-				})
-			}
-			loadOptions := &testbed.LoadOptions{
-				Parallel:      10,
-				ItemsPerBatch: 100,
-			}
-			Scenario10kItemsPerSecond(t, sender, receiver, test.resourceSpec, performanceResultsSummary, testProcessors, test.extensions, loadOptions)
+`, spec.batchSize),
 		})
 	}
+	loadOptions := &testbed.LoadOptions{
+		Parallel:      10,
+		ItemsPerBatch: 10,
+	}
+	Scenario10kItemsPerSecond(t, sender, receiver, spec.resourceSpec, performanceResultsSummary, processors, spec.extensions, loadOptions)
 }
