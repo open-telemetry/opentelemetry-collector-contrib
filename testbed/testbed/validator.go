@@ -91,16 +91,18 @@ func (v *PerfTestValidator) RecordResults(tc *TestCase) {
 	testName := tc.t.Name()[4:]
 
 	tc.resultsSummary.Add(tc.t.Name(), &PerformanceTestResult{
-		testName:          testName,
-		result:            result,
-		receivedSpanCount: tc.MockBackend.DataItemsReceived(),
-		sentSpanCount:     tc.LoadGenerator.DataItemsSent(),
-		duration:          time.Since(tc.startTime),
-		cpuPercentageAvg:  rc.CPUPercentAvg,
-		cpuPercentageMax:  rc.CPUPercentMax,
-		ramMibAvg:         rc.RAMMiBAvg,
-		ramMibMax:         rc.RAMMiBMax,
-		errorCause:        tc.errorCause,
+		testName:           testName,
+		result:             result,
+		receivedSpanCount:  tc.MockBackend.DataItemsReceived(),
+		sentSpanCount:      tc.LoadGenerator.DataItemsSent(),
+		duration:           time.Since(tc.startTime),
+		cpuPercentageAvg:   rc.CPUPercentAvg,
+		cpuPercentageMax:   rc.CPUPercentMax,
+		cpuPercentageLimit: rc.CPUPercentLimit,
+		ramMibAvg:          rc.RAMMiBAvg,
+		ramMibMax:          rc.RAMMiBMax,
+		ramMibLimit:        rc.RAMMiBLimit,
+		errorCause:         tc.errorCause,
 	})
 }
 
