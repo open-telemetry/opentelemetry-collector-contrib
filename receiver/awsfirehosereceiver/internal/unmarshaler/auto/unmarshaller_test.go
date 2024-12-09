@@ -164,6 +164,8 @@ func createMetricRecord() []byte {
 }
 
 func TestUnmarshal(t *testing.T) {
+	t.Parallel()
+
 	unmarshaler := NewUnmarshaler(zap.NewNop())
 	testCases := map[string]struct {
 		records            [][]byte
