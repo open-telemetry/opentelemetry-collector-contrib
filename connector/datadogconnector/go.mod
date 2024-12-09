@@ -390,4 +390,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog =>
 // pin github.com/DataDog/datadog-api-client-go/v2 version, it will be removed soon
 replace github.com/DataDog/datadog-api-client-go/v2 => github.com/DataDog/datadog-api-client-go/v2 v2.31.0
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core => ../../pkg/core
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils => ../../pkg/core/idutils

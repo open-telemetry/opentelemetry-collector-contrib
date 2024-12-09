@@ -426,7 +426,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/e
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core => ../../pkg/core
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils => ../../pkg/core/idutils
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core
+module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils
 
 go 1.22.0
 
