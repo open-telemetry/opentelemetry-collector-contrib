@@ -66,7 +66,6 @@ MISSPELL_CORRECTION := $(TOOLS_BIN_DIR)/misspell -w
 LINT                := $(TOOLS_BIN_DIR)/golangci-lint
 MULTIMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
-GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
@@ -208,9 +207,7 @@ checklinks:
 		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
-fmt: $(GOFUMPT) $(GOIMPORTS)
-	$(GOFUMPT) -l -w .
-	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+fmt: gofumpt gci
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
@@ -245,13 +242,18 @@ moddownload:
 .PHONY: testifylint
 testifylint: $(TESTIFYLINT)
 	@echo "running $(TESTIFYLINT)"
-	$(TESTIFYLINT) $(TESTIFYLINT_OPT) ./...
+	@$(TESTIFYLINT) $(TESTIFYLINT_OPT) ./...
 
 .PHONY: testifylint-fix
 testifylint-fix:
 	@$(MAKE) testifylint TESTIFYLINT_OPT="${TESTIFYLINT_OPT} --fix"
 
+.PHONY: gofumpt
+gofumpt: $(GOFUMPT)
+	@echo "running $(GOFUMPT)"
+	@$(GOFUMPT) -l -w .
+
 .PHONY: gci
-gci: $(TOOLS_BIN_DIR)/gci
+gci: $(GCI)
 	@echo "running $(GCI)"
-	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" $(ALL_SRC_AND_DOC)
+	@$(GCI) write -s standard -s default -s "prefix(github.com/open-telemetry/opentelemetry-collector-contrib)" .
