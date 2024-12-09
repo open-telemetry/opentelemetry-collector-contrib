@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
@@ -58,9 +59,9 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := scraperhelper.NewScraperWithoutType(
+	scrp, err := scraper.NewMetrics(
 		zms.scrape,
-		scraperhelper.WithShutdown(zms.shutdown),
+		scraper.WithShutdown(zms.shutdown),
 	)
 	if err != nil {
 		return nil, err
@@ -70,6 +71,6 @@ func createMetricsReceiver(
 		&rConfig.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraperWithType(metadata.Type, scrp),
+		scraperhelper.AddScraper(metadata.Type, scrp),
 	)
 }

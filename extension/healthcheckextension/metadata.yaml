@@ -6,7 +6,7 @@ status:
     beta: [extension]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [jpkrohling]
+    active: []
 
 tests:
   config:
