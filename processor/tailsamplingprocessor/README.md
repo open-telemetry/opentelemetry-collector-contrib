@@ -531,7 +531,7 @@ As a reminder, a policy voting to sample the trace does not guarantee sampling; 
 ### Tracking sampling policy
 To better understand _which_ sampling policy made the decision to include a trace, you can enable tracking the policy responsible for sampling a trace via the `processor.tailsamplingprocessor.recordpolicy` feature gate.
 
-When this feature gate is set, this will add additional attributes on each sampled span scope:
+When this feature gate is set, this will add additional attributes on each sampled span:
 
 | Attribute                       | Description                                                               | Present?                   |
 |---------------------------------|---------------------------------------------------------------------------|----------------------------|

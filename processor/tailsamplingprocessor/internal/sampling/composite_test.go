@@ -108,9 +108,7 @@ func TestCompositeEvaluatorSampled_RecordSubPolicy(t *testing.T) {
 	expected := Sampled
 	assert.Equal(t, expected, decision)
 	val, ok := trace.ReceivedBatches.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.composite_policy")
-	if !ok {
-		assert.FailNow(t, "Did not find expected key")
-	}
+	assert.True(t, ok, "Did not find expected key")
 	assert.Equal(t, "eval-2", val.AsString())
 }
 
@@ -205,9 +203,7 @@ func TestCompositeEvaluatorInverseSampled_AlwaysSampled_RecordSubPolicy(t *testi
 		expected := Sampled
 		assert.Equal(t, expected, decision)
 		val, ok := trace.ReceivedBatches.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().Get("tailsampling.composite_policy")
-		if !ok {
-			assert.FailNow(t, "Did not find expected key")
-		}
+		assert.True(t, ok, "Did not find expected key")
 		assert.Equal(t, "eval-2", val.AsString())
 	}
 }
