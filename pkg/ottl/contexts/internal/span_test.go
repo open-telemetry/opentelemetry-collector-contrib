@@ -600,6 +600,17 @@ func TestSpanPathGetSetter(t *testing.T) {
 				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
+		{
+			name: "flags",
+			path: &TestPath[*spanContext]{
+				N: "flags",
+			},
+			orig:   0x01,
+			newVal: 0x00,
+			modified: func(span ptrace.Span) {
+				span.SetFlags(0x00)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -674,6 +685,7 @@ func createSpan() ptrace.Span {
 
 	span.Status().SetCode(ptrace.StatusCodeOk)
 	span.Status().SetMessage("good span")
+	span.SetFlags(0x01)
 
 	return span
 }
