@@ -18,6 +18,7 @@ func Test_trim(t *testing.T) {
 		target      ottl.StringGetter[any]
 		replacement ottl.Optional[string]
 		expected    any
+		shouldError bool
 	}{
 		{
 			name: "trim string",
@@ -28,6 +29,7 @@ func Test_trim(t *testing.T) {
 			},
 			replacement: ottl.NewTestingOptional[string](" "),
 			expected:    "this is a test",
+			shouldError: false,
 		},
 		{
 			name: "trim empty string",
@@ -38,22 +40,39 @@ func Test_trim(t *testing.T) {
 			},
 			replacement: ottl.NewTestingOptional[string](" "),
 			expected:    "",
+			shouldError: false,
 		},
 		{
-			name: "trim empty replacement string",
+			name: "No replacement string",
 			target: &ottl.StandardStringGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return " this is a test ", nil
 				},
 			},
 			replacement: ottl.Optional[string]{},
-			expected:    "this is a test",
+			expected:    " this is a test ",
+			shouldError: false,
+		},
+		{
+			name: "Set replacement string to \"\"",
+			target: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return " this is a test ", nil
+				},
+			},
+			replacement: ottl.NewTestingOptional[string](""),
+			expected:    " this is a test ",
+			shouldError: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := trim(tt.target, tt.replacement)
 			result, err := exprFunc(nil, nil)
+			if tt.shouldError {
+				assert.Error(t, err)
+				return
+			}
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
 		})
