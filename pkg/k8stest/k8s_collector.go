@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string) []*unstructured.Unstructured {
+func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string, templateValues map[string]string) []*unstructured.Unstructured {
 	if manifestsDir == "" {
 		manifestsDir = filepath.Join(".", "testdata", "e2e", "collector")
 	}
@@ -36,11 +36,15 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, mani
 	for _, manifestFile := range manifestFiles {
 		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
 		manifest := &bytes.Buffer{}
-		require.NoError(t, tmpl.Execute(manifest, map[string]string{
+		defaultTemplateValues := map[string]string{
 			"Name":         "otelcol-" + testID,
 			"HostEndpoint": host,
 			"TestID":       testID,
-		}))
+		}
+		for key, value := range templateValues {
+			defaultTemplateValues[key] = value
+		}
+		require.NoError(t, tmpl.Execute(manifest, defaultTemplateValues))
 		obj, err := CreateObject(client, manifest.Bytes())
 		require.NoErrorf(t, err, "failed to create collector object from manifest %s", manifestFile.Name())
 		objKind := obj.GetKind()
