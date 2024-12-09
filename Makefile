@@ -119,6 +119,10 @@ gogci:
 gotidy:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
 
+.PHONY: topotidy
+topotidy:
+	@python ./internal/buildscripts/topotidy.py
+
 .PHONY: remove-toolchain
 remove-toolchain:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="toolchain"
