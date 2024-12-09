@@ -8,6 +8,9 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"go.opentelemetry.io/collector/component"
 	"net/http"
 	"sync"
 	"time"
@@ -23,6 +26,10 @@ type Detector interface {
 	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
+type ExposeHandlerDetector interface {
+	Detector // Embed the existing Detector interface
+	ExposeHandlers(ctx context.Context) *request.Handlers
+}
 type DetectorConfig any
 
 type ResourceDetectorConfig interface {
@@ -114,6 +121,14 @@ func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resour
 	})
 
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
+}
+
+func (p *ResourceProvider) ConfigureHandlers(ctx context.Context, host component.Host, middlewareId component.ID) {
+	for _, detector := range p.detectors {
+		if handlerDetector, ok := detector.(ExposeHandlerDetector); ok {
+			awsmiddleware.TryConfigure(p.logger, host, middlewareId, awsmiddleware.SDKv1(handlerDetector.ExposeHandlers(ctx)))
+		}
+	}
 }
 
 func (p *ResourceProvider) detectResource(ctx context.Context) {

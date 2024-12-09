@@ -6,6 +6,7 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"net/http"
 	"regexp"
 
@@ -120,6 +121,10 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 	return res, conventions.SchemaURL, nil
+}
+
+func (d *Detector) ExposeHandlers(ctx context.Context) (handlers *request.Handlers) {
+	return d.metadataProvider.GetHandlers(ctx)
 }
 
 func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {

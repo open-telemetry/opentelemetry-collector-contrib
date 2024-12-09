@@ -17,6 +17,7 @@ import (
 )
 
 type resourceDetectionProcessor struct {
+	config             *Config
 	provider           *internal.ResourceProvider
 	resource           pcommon.Resource
 	schemaURL          string
@@ -30,6 +31,7 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 	client, _ := rdp.httpClientSettings.ToClient(ctx, host, rdp.telemetrySettings)
 	ctx = internal.ContextWithClient(ctx, client)
 	var err error
+	rdp.provider.ConfigureHandlers(ctx, host, *rdp.config.MiddlewareID) //configuring middleware in all clients of detectors
 	rdp.resource, rdp.schemaURL, err = rdp.provider.Get(ctx, client)
 	return err
 }

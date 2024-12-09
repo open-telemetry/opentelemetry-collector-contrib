@@ -164,7 +164,7 @@ func TestEBSVolume(t *testing.T) {
 		}
 	}
 
-	e := newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
+	e := newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(), nil,
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
 
 	<-mockVolumeClient.success
@@ -180,7 +180,7 @@ func TestEBSVolume(t *testing.T) {
 	hostMountsOption = func(e *ebsVolume) {
 		e.hostMounts = "/an-invalid-path"
 	}
-	e = newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
+	e = newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(), nil,
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
 	ebsIDs = e.extractEbsIDsUsedByKubernetes()
 	assert.Equal(t, 0, len(ebsIDs))

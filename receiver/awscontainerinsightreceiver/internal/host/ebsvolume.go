@@ -7,6 +7,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -56,7 +58,7 @@ type ebsVolume struct {
 type ebsVolumeOption func(*ebsVolume)
 
 func newEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
-	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) ebsVolumeProvider {
+	refreshInterval time.Duration, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ebsVolumeOption) ebsVolumeProvider {
 	e := &ebsVolume{
 		dev2Vol:         make(map[string]string),
 		instanceID:      instanceID,
@@ -69,7 +71,14 @@ func newEBSVolume(ctx context.Context, session *session.Session, instanceID stri
 		osLstat:         os.Lstat,
 		evalSymLinks:    filepath.EvalSymlinks,
 	}
-
+	if configurer != nil {
+		err := configurer.Configure(awsmiddleware.SDKv1(&e.client.(*ec2.EC2).Handlers))
+		if err != nil {
+			log.Println("There was a problem configuring middleware on ec2 client")
+		} else {
+			log.Println("Successfully configured sdk with middleware handlers")
+		}
+	}
 	for _, opt := range options {
 		opt(e)
 	}

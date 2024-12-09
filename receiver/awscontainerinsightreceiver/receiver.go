@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"os"
 	"runtime"
 	"time"
@@ -78,8 +79,13 @@ func newAWSContainerInsightReceiver(
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(ctx)
+	var configurer *awsmiddleware.Configurer
+	if acir.config != nil && acir.config.MiddlewareID != nil {
+		configurer, _ = awsmiddleware.GetConfigurer(host.GetExtensions(), *acir.config.MiddlewareID)
+	}
+
 	hostInfo, hostInfoErr := hostinfo.NewInfo(acir.config.AWSSessionSettings, acir.config.ContainerOrchestrator,
-		acir.config.CollectionInterval, acir.settings.Logger, hostinfo.WithClusterName(acir.config.ClusterName),
+		acir.config.CollectionInterval, acir.settings.Logger, configurer, hostinfo.WithClusterName(acir.config.ClusterName),
 		hostinfo.WithSystemdEnabled(acir.config.RunOnSystemd))
 	if hostInfoErr != nil {
 		return hostInfoErr

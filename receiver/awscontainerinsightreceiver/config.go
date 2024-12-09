@@ -4,6 +4,7 @@
 package awscontainerinsightreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -72,4 +73,6 @@ type Config struct {
 
 	// RunOnSystemd is an optional attribute to run the receiver in an EC2 environment
 	RunOnSystemd bool `mapstructure:"run_on_systemd,omitempty"`
+
+	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
 }

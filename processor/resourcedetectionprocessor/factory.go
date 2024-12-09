@@ -178,6 +178,7 @@ func (f *factory) getResourceDetectionProcessor(
 	}
 
 	return &resourceDetectionProcessor{
+		config:             oCfg,
 		provider:           provider,
 		override:           oCfg.Override,
 		httpClientSettings: oCfg.ClientConfig,

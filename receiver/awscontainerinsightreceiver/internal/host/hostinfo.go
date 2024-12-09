@@ -6,13 +6,12 @@ package host // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
-	"time"
-
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
+	"go.uber.org/zap"
+	"time"
 )
 
 // Info contains information about a host
@@ -63,8 +62,12 @@ func WithSystemdEnabled(enabled bool) Option {
 	}
 }
 
+func withConfigurer[T any](configurer *awsmiddleware.Configurer, creator func(configurer *awsmiddleware.Configurer) T) T {
+	return creator(configurer)
+}
+
 // NewInfo creates a new Info struct
-func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...Option) (*Info, error) {
+func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...Option) (*Info, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	mInfo := &Info{
 		cancel:           cancel,
@@ -76,9 +79,21 @@ func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrato
 		containerOrchestrator: containerOrchestrator,
 		awsSessionCreator:     awsutil.GetAWSConfigSession,
 		nodeCapacityCreator:   newNodeCapacity,
-		ec2MetadataCreator:    newEC2Metadata,
-		ebsVolumeCreator:      newEBSVolume,
-		ec2TagsCreator:        newEC2Tags,
+		ec2MetadataCreator: withConfigurer(configurer, func(c *awsmiddleware.Configurer) func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider {
+			return func(ctx context.Context, session *session.Session, refreshInterval time.Duration, instanceIDReadyC, instanceIPReadyC chan bool, localMode bool, imdsRetries int, logger *zap.Logger, options ...ec2MetadataOption) ec2MetadataProvider {
+				return newEC2Metadata(ctx, session, refreshInterval, instanceIDReadyC, instanceIPReadyC, localMode, imdsRetries, logger, c, options...)
+			}
+		}),
+		ebsVolumeCreator: withConfigurer(configurer, func(c *awsmiddleware.Configurer) func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider {
+			return func(ctx context.Context, session *session.Session, instanceID, region string, refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) ebsVolumeProvider {
+				return newEBSVolume(ctx, session, instanceID, region, refreshInterval, logger, c, options...)
+			}
+		}),
+		ec2TagsCreator: withConfigurer(configurer, func(c *awsmiddleware.Configurer) func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider {
+			return func(ctx context.Context, session *session.Session, instanceID, region, containerOrchestrator string, refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption) ec2TagsProvider {
+				return newEC2Tags(ctx, session, instanceID, region, containerOrchestrator, refreshInterval, logger, c, options...)
+			}
+		}),
 
 		// used in test only
 		ebsVolumeReadyC: make(chan bool),
