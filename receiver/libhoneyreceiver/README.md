@@ -12,12 +12,13 @@
 
 ### The purpose and use-cases of the new component
 
-The Libhoney receiver will accept data for either Trace or Logs signals that are emitted from applications that were instrumented using Libhoney libraries. 
-
+The Libhoney receiver will accept data for either Trace or Logs signals that are emitted from applications that were
+instrumented using [Libhoney](https://docs.honeycomb.io/send-data/logs/structured/libhoney/) libraries.
 
 ## Configuration
 
-The configuration has 2 parts, One is the HTTP receiver configuration and the rest is about mapping attributes from the freeform libhoney format into the more structured OpenTelemetry objects.
+The configuration has 2 parts, One is the HTTP receiver configuration and the rest is about mapping attributes from the
+freeform libhoney format into the more structured OpenTelemetry objects.
 
 ### Example configuration for the component
 
@@ -62,16 +63,8 @@ The following setting is required for refinery traffic since:
 
 ### Telemetry data types supported
 
-It will subscribe to the Traces and Logs signals but accept traffic destined for either pipeline using one http receiver component. Libhoney does not differentiate between the two so the receiver will identify which pipeline to deliver the spans or log records to. 
+It will subscribe to the Traces and Logs signals but accept traffic destined for either pipeline using one http receiver
+component. Libhoney doesnot differentiate between the two so the receiver will identify which pipeline to deliver the 
+spans or log records to.
 
 No support for metrics since they'd look just like logs.
-
-### Code Owner(s)
-
-Tyler Helmuth, Mike Terhar
-
-### Sponsor (optional)
-
-Tyler Helmuth
-
-### Additional context
