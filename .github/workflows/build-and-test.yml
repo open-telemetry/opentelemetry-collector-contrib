@@ -20,7 +20,7 @@ concurrency:
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
   check-collector-module-version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   check-codeowners:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +88,7 @@ jobs:
           - cmd-0
           - cmd-1
           - other
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment, lint-matrix]
     steps:
       - name: Print result
@@ -156,7 +156,7 @@ jobs:
           - pkg
           - cmd-0
           - cmd-1
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout Repo
@@ -182,7 +182,7 @@ jobs:
       - name: Run `govulncheck`
         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -229,11 +229,6 @@ jobs:
         run: |
           make gendistributions
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
-      - name: Gen CODEOWNERS
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
-        run: |
-          GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} make gengithub
-          git diff -s --exit-code || (echo 'Generated code is out of date, please apply this diff and commit the changes in this PR.' && git diff && exit 1)
       - name: CodeGen
         run: |
           make -j2 generate
@@ -252,7 +247,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version: ["1.23.0", "1.22.8"] # 1.20 is interpreted as 1.2 without quotes
-        runner: [ubuntu-latest]
+        runner: [ubuntu-24.04]
         group:
           - receiver-0
           - receiver-1
@@ -313,7 +308,7 @@ jobs:
           path: ${{ matrix.group }}-coverage.txt
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment, unittest-matrix]
     steps:
       - name: Print result
@@ -328,7 +323,7 @@ jobs:
             false
           fi
   coverage:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [unittest]
     steps:
       - uses: actions/checkout@v4
@@ -362,7 +357,7 @@ jobs:
           - pkg
           - cmd-0
           - cmd-1
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -385,7 +380,7 @@ jobs:
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment, integration-tests-matrix]
     steps:
       - name: Print result
@@ -401,7 +396,7 @@ jobs:
           fi
 
   correctness-traces:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -428,7 +423,7 @@ jobs:
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -456,7 +451,7 @@ jobs:
         run: make -C testbed run-correctness-metrics-tests
 
   build-examples:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -465,7 +460,7 @@ jobs:
         run: make build-examples
 
   cross-compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     strategy:
       fail-fast: false
@@ -535,7 +530,7 @@ jobs:
           path: ./bin/*
 
   publish-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
     steps:
       - uses: actions/checkout@v4
@@ -549,7 +544,7 @@ jobs:
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
   publish-dev:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
@@ -612,7 +607,7 @@ jobs:
           docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
           docker push otel/opentelemetry-collector-contrib-dev:latest
   publish-stable:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
@@ -630,7 +625,7 @@ jobs:
     # This job updates the "next release" milestone
     # to the latest released version and creates a new milestone
     # named "next release" in its place
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [publish-stable]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:

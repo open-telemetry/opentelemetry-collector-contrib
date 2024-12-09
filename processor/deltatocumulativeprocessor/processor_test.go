@@ -160,7 +160,5 @@ func TestTelemetry(t *testing.T) {
 	require.NoError(t, err)
 
 	var rm metricdata.ResourceMetrics
-	if err := tt.reader.Collect(context.Background(), &rm); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, tt.reader.Collect(context.Background(), &rm))
 }

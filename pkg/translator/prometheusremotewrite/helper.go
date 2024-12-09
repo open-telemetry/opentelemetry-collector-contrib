@@ -301,9 +301,18 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		exemplar := pt.Exemplars().At(i)
 		exemplarRunes := 0
 
-		promExemplar := prompb.Exemplar{
-			Value:     exemplar.DoubleValue(),
-			Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+		var promExemplar prompb.Exemplar
+		switch exemplar.ValueType() {
+		case pmetric.ExemplarValueTypeInt:
+			promExemplar = prompb.Exemplar{
+				Value:     float64(exemplar.IntValue()),
+				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+			}
+		case pmetric.ExemplarValueTypeDouble:
+			promExemplar = prompb.Exemplar{
+				Value:     exemplar.DoubleValue(),
+				Timestamp: timestamp.FromTime(exemplar.Timestamp().AsTime()),
+			}
 		}
 		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
 			val := hex.EncodeToString(traceID[:])
