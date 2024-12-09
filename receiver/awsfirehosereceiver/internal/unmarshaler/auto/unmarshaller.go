@@ -20,7 +20,10 @@ const (
 	recordDelimiter = "\n"
 )
 
-var errInvalidRecords = errors.New("record format invalid")
+var (
+	errInvalidRecords         = errors.New("record format invalid")
+	errUnsupportedContentType = errors.New("content type not supported")
+)
 
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
@@ -65,13 +68,56 @@ func isCloudwatchMetrics(data []byte) bool {
 	return true
 }
 
-func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, plog.Logs, error) {
-	ld := plog.NewLogs()
+func (u *Unmarshaler) addCloudwatchLog(
+	record []byte,
+	resourceLogs map[cwlog.ResourceAttributes]*cwlog.ResourceLogsBuilder,
+	ld plog.Logs,
+) error {
+	var log cwlog.CWLog
+	if err := json.Unmarshal(record, &log); err != nil {
+		return err
+	}
+	attrs := cwlog.ResourceAttributes{
+		Owner:     log.Owner,
+		LogGroup:  log.LogGroup,
+		LogStream: log.LogStream,
+	}
+	lb, exists := resourceLogs[attrs]
+	if !exists {
+		lb = cwlog.NewResourceLogsBuilder(ld, attrs)
+		resourceLogs[attrs] = lb
+	}
+	lb.AddLog(log)
+	return nil
+}
+
+func (u *Unmarshaler) addCloudwatchMetric(
+	record []byte,
+	resourceMetrics map[cwmetricstream.ResourceAttributes]*cwmetricstream.ResourceMetricsBuilder,
+	md pmetric.Metrics,
+) error {
+	var metric cwmetricstream.CWMetric
+	if err := json.Unmarshal(record, &metric); err != nil {
+		return err
+	}
+	attrs := cwmetricstream.ResourceAttributes{
+		MetricStreamName: metric.MetricStreamName,
+		Namespace:        metric.Namespace,
+		AccountID:        metric.AccountID,
+		Region:           metric.Region,
+	}
+	mb, exists := resourceMetrics[attrs]
+	if !exists {
+		mb = cwmetricstream.NewResourceMetricsBuilder(md, attrs)
+		resourceMetrics[attrs] = mb
+	}
+	mb.AddMetric(metric)
+	return nil
+}
+
+func (u *Unmarshaler) unmarshalJSON(md pmetric.Metrics, ld plog.Logs, records [][]byte) error {
 	resourceLogs := make(map[cwlog.ResourceAttributes]*cwlog.ResourceLogsBuilder)
-
-	md := pmetric.NewMetrics()
 	resourceMetrics := make(map[cwmetricstream.ResourceAttributes]*cwmetricstream.ResourceMetricsBuilder)
-
 	for i, compressed := range records {
 		record, err := compression.Unzip(compressed)
 		if err != nil {
@@ -88,8 +134,7 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, plog.Logs, er
 			}
 
 			if isCloudWatchLog(single) {
-				var log cwlog.CWLog
-				if err = json.Unmarshal(single, &log); err != nil {
+				if err = u.addCloudwatchLog(single, resourceLogs, ld); err != nil {
 					u.logger.Error(
 						"Unable to unmarshal record to cloudwatch log",
 						zap.Error(err),
@@ -98,22 +143,10 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, plog.Logs, er
 					)
 					continue
 				}
-				attrs := cwlog.ResourceAttributes{
-					Owner:     log.Owner,
-					LogGroup:  log.LogGroup,
-					LogStream: log.LogStream,
-				}
-				lb, exists := resourceLogs[attrs]
-				if !exists {
-					lb = cwlog.NewResourceLogsBuilder(ld, attrs)
-					resourceLogs[attrs] = lb
-				}
-				lb.AddLog(log)
 			}
 
 			if isCloudwatchMetrics(single) {
-				var metric cwmetricstream.CWMetric
-				if err = json.Unmarshal(single, &metric); err != nil {
+				if err = u.addCloudwatchMetric(single, resourceMetrics, md); err != nil {
 					u.logger.Error(
 						"Unable to unmarshal input",
 						zap.Error(err),
@@ -122,29 +155,31 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, plog.Logs, er
 					)
 					continue
 				}
-				attrs := cwmetricstream.ResourceAttributes{
-					MetricStreamName: metric.MetricStreamName,
-					Namespace:        metric.Namespace,
-					AccountID:        metric.AccountID,
-					Region:           metric.Region,
-				}
-				mb, exists := resourceMetrics[attrs]
-				if !exists {
-					mb = cwmetricstream.NewResourceMetricsBuilder(md, attrs)
-					resourceMetrics[attrs] = mb
-				}
-				mb.AddMetric(metric)
 			}
 		}
 	}
 
 	if len(resourceLogs) == 0 && len(resourceMetrics) == 0 {
-		return md, ld, errInvalidRecords
+		return errInvalidRecords
 	}
-
-	return md, ld, nil
+	return nil
 }
 
-func (u Unmarshaler) Type() string {
+func (u *Unmarshaler) Unmarshal(contentType string, records [][]byte) (pmetric.Metrics, plog.Logs, error) {
+	ld := plog.NewLogs()
+	md := pmetric.NewMetrics()
+	switch contentType {
+	case "application/json":
+		return md, ld, u.unmarshalJSON(md, ld, records)
+	case "application/x-protobuf":
+		// TODO implement this
+		return md, ld, nil
+	default:
+		return md, ld, errUnsupportedContentType
+	}
+
+}
+
+func (u *Unmarshaler) Type() string {
 	return TypeStr
 }

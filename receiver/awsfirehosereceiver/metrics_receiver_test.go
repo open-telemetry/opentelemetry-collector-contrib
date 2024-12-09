@@ -101,7 +101,7 @@ func TestMetricsConsumer(t *testing.T) {
 				unmarshaler: unmarshalertest.NewErrMetrics(testCase.unmarshalerErr),
 				consumer:    consumertest.NewErr(testCase.consumerErr),
 			}
-			gotStatus, gotErr := mc.Consume(context.TODO(), nil, nil)
+			gotStatus, gotErr := mc.Consume(context.TODO(), "", nil, nil)
 			require.Equal(t, testCase.wantStatus, gotStatus)
 			require.Equal(t, testCase.wantErr, gotErr)
 		})
@@ -115,7 +115,7 @@ func TestMetricsConsumer(t *testing.T) {
 			unmarshaler: unmarshalertest.NewWithMetrics(base),
 			consumer:    &rc,
 		}
-		gotStatus, gotErr := mc.Consume(context.TODO(), nil, map[string]string{
+		gotStatus, gotErr := mc.Consume(context.TODO(), "", nil, map[string]string{
 			"CommonAttributes": "Test",
 		})
 		require.Equal(t, http.StatusOK, gotStatus)

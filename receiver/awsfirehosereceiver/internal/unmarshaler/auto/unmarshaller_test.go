@@ -17,9 +17,10 @@ func TestType(t *testing.T) {
 }
 
 // Unmarshall cloudwatch metrics and logs
-func TestUnmarshal_CW(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+func TestUnmarshal_JSON(t *testing.T) {
+	t.Parallel()
 
+	unmarshaler := NewUnmarshaler(zap.NewNop())
 	testCases := map[string]struct {
 		dir                  string
 		filename             string
@@ -96,7 +97,7 @@ func TestUnmarshal_CW(t *testing.T) {
 			require.NoError(t, err)
 			records := [][]byte{compressedRecord}
 
-			metrics, logs, err := unmarshaler.Unmarshal(records)
+			metrics, logs, err := unmarshaler.Unmarshal("application/json", records)
 			require.Equal(t, testCase.err, err)
 
 			require.Equal(t, testCase.logResourceCount, logs.ResourceLogs().Len())

@@ -57,28 +57,11 @@ func TestUnmarshal(t *testing.T) {
 			records := [][]byte{record}
 
 			got, err := unmarshaler.Unmarshal(records)
-			if testCase.wantErr != nil {
-				require.Error(t, err)
-				require.Equal(t, testCase.wantErr, err)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, got)
-				require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())
-				gotMetricCount := 0
-				gotDatapointCount := 0
-				for i := 0; i < got.ResourceMetrics().Len(); i++ {
-					rm := got.ResourceMetrics().At(i)
-					require.Equal(t, 1, rm.ScopeMetrics().Len())
-					ilm := rm.ScopeMetrics().At(0)
-					gotMetricCount += ilm.Metrics().Len()
-					for j := 0; j < ilm.Metrics().Len(); j++ {
-						metric := ilm.Metrics().At(j)
-						gotDatapointCount += metric.Summary().DataPoints().Len()
-					}
-				}
-				require.Equal(t, testCase.wantMetricCount, gotMetricCount)
-				require.Equal(t, testCase.wantDatapointCount, gotDatapointCount)
-			}
+			require.Equal(t, testCase.wantErr, err)
+			require.NotNil(t, got)
+			require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())
+			require.Equal(t, testCase.wantMetricCount, got.MetricCount())
+			require.Equal(t, testCase.wantDatapointCount, got.DataPointCount())
 		})
 	}
 }

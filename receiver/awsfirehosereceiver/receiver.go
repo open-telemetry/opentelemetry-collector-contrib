@@ -12,7 +12,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -41,7 +40,7 @@ var (
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
 	// Consume unmarshalls and consumes the records.
-	Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error)
+	Consume(ctx context.Context, contentType string, records [][]byte, commonAttributes map[string]string) (int, error)
 }
 
 // firehoseReceiver
@@ -154,6 +153,7 @@ func (fmr *firehoseReceiver) Shutdown(context.Context) error {
 func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	// extract and validate request id
 	requestID := r.Header.Get(headerFirehoseRequestID)
 	if requestID == "" {
 		fmr.settings.Logger.Error(
@@ -165,6 +165,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	fmr.settings.Logger.Debug("Processing Firehose request", zap.String("RequestID", requestID))
 
+	// validate access key
 	if statusCode, err := fmr.validate(r); err != nil {
 		fmr.settings.Logger.Error(
 			"Invalid Firehose request",
@@ -174,18 +175,21 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// parse the body
 	body, err := fmr.getBody(r)
 	if err != nil {
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
 
+	// unmarshall request
 	var fr firehoseRequest
 	if err = json.Unmarshal(body, &fr); err != nil {
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
 
+	// validate request id
 	if fr.RequestID == "" {
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, errInBodyMissingRequestID)
 		return
@@ -194,24 +198,14 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	records := make([][]byte, 0, len(fr.Records))
-	for index, record := range fr.Records {
-		if record.Data != "" {
-			var decoded []byte
-			decoded, err = base64.StdEncoding.DecodeString(record.Data)
-			if err != nil {
-				fmr.sendResponse(
-					w,
-					requestID,
-					http.StatusBadRequest,
-					fmt.Errorf("unable to base64 decode the record at index %d: %w", index, err),
-				)
-				return
-			}
-			records = append(records, decoded)
-		}
+	// decode records
+	records, err := fmr.decodeRecords(fr.Records)
+	if err != nil {
+		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
+		return
 	}
 
+	// extract common attributes
 	commonAttributes, err := fmr.getCommonAttributes(r)
 	if err != nil {
 		fmr.settings.Logger.Error(
@@ -220,7 +214,9 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	statusCode, err := fmr.consumer.Consume(ctx, records, commonAttributes)
+	// consume telemetry
+	contentType := r.Header.Get(headerContentType)
+	statusCode, err := fmr.consumer.Consume(ctx, contentType, records, commonAttributes)
 	if err != nil {
 		fmr.settings.Logger.Error(
 			"Unable to consume records",
@@ -231,6 +227,21 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmr.sendResponse(w, requestID, http.StatusOK, nil)
+}
+
+func (fmr *firehoseReceiver) decodeRecords(records []firehoseRecord) ([][]byte, error) {
+	decodedRecords := make([][]byte, 0, len(records))
+	for index, record := range records {
+		if record.Data == "" {
+			continue
+		}
+		decoded, err := base64.StdEncoding.DecodeString(record.Data)
+		if err != nil {
+			return nil, fmt.Errorf("unable to base64 decode the record at index %d: %w", index, err)
+		}
+		decodedRecords = append(decodedRecords, decoded)
+	}
+	return decodedRecords, nil
 }
 
 // validate checks the Firehose access key in the header against
@@ -252,11 +263,7 @@ func (fmr *firehoseReceiver) getBody(r *http.Request) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = r.Body.Close()
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
+	return body, r.Body.Close()
 }
 
 // getCommonAttributes unmarshalls the common attributes from the request header
@@ -285,7 +292,6 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	}
 	payload, _ := json.Marshal(body)
 	w.Header().Set(headerContentType, "application/json")
-	w.Header().Set(headerContentLength, strconv.Itoa(len(payload)))
 	w.WriteHeader(statusCode)
 	if _, err = w.Write(payload); err != nil {
 		fmr.settings.Logger.Error("Failed to send response", zap.Error(err))
