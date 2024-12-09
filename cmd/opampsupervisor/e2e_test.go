@@ -1279,10 +1279,6 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 						}
 					}
 				}
-				if message.RemoteConfigStatus != nil {
-					status := message.RemoteConfigStatus.GetStatus()
-					require.Equal(t, protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, status)
-				}
 
 				return &protobufs.ServerToAgent{}
 			},
@@ -1564,6 +1560,23 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED
 	}, 15*time.Second, 100*time.Millisecond, "Remote config status was not set to FAILED for bad config")
+
+	// Test with nop configuration
+	emptyHash := sha256.Sum256([]byte{})
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{},
+			},
+			ConfigHash: emptyHash[:],
+		},
+	})
+
+	// Check that the status is set to APPLIED
+	require.Eventually(t, func() bool {
+		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
+		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
+	}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
 }
 
 func TestSupervisorOpAmpServerPort(t *testing.T) {
