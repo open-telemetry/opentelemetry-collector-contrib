@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.22.0
 
 require (
-	cloud.google.com/go/spanner v1.70.0
+	cloud.google.com/go/spanner v1.73.0
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/stretchr/testify v1.10.0
