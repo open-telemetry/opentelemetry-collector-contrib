@@ -696,7 +696,10 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					TracesConfig: TracesConfig{
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						ComputeStatsBySpanKind: true,
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
 					},
 				},
 				Logs: LogsConfig{
