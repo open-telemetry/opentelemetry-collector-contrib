@@ -467,4 +467,4 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experiment
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog => ../../../pkg/datadog/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core => ../../../pkg/core
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils => ../../../pkg/core/idutils
