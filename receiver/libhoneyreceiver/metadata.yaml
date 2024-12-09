@@ -1,0 +1,8 @@
+type: libhoney
+
+status:
+  class: receiver
+  stability:
+    development: [traces, logs]
+  codeowners:
+    active: [TylerHelmuth]
