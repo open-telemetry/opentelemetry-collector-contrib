@@ -52,7 +52,6 @@ func GenerateProfilesTwoProfilesSameResource() pprofile.Profiles {
 
 func fillProfileOne(profile pprofile.Profile) {
 	profile.SetStartTime(TestProfileStartTimestamp)
-	profile.SetEndTime(TestProfileEndTimestamp)
 	profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04})
 
 	attrs := profile.Attributes()
@@ -62,7 +61,6 @@ func fillProfileOne(profile pprofile.Profile) {
 
 func fillProfileTwo(profile pprofile.Profile) {
 	profile.SetStartTime(TestProfileStartTimestamp)
-	profile.SetEndTime(TestProfileEndTimestamp)
 	profile.SetProfileID([16]byte{0x05, 0x06, 0x07, 0x08})
 
 	attrs := profile.Attributes()
