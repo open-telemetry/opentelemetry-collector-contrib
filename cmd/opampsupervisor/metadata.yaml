@@ -3,4 +3,4 @@ type: opampsupervisor
 status:
   class: cmd
   codeowners:
-    active: [evan-bradley, atoulme, tigrannajaryan, BinaryFissionGames]
+    active: [evan-bradley, atoulme, tigrannajaryan]

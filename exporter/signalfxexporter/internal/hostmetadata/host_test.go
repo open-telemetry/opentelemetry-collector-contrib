@@ -274,5 +274,4 @@ func TestEtcPath(t *testing.T) {
 			assert.Equal(t, tt.want, etcPath())
 		})
 	}
-
 }

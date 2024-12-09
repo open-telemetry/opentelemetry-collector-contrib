@@ -26,7 +26,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraces(t *testing.T) {
-
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -48,7 +47,7 @@ func TestGenerateUrl(t *testing.T) {
 		region   string
 		expected string
 	}
-	var generateURLTests = []generateURLTest{
+	generateURLTests := []generateURLTest{
 		{"", "us", "https://listener.logz.io:8071/?token=token"},
 		{"", "", "https://listener.logz.io:8071/?token=token"},
 		{"https://doesnotexist.com", "", "https://doesnotexist.com"},
@@ -77,7 +76,7 @@ func TestGetListenerURL(t *testing.T) {
 		arg1     string
 		expected string
 	}
-	var getListenerURLTests = []getListenerURLTest{
+	getListenerURLTests := []getListenerURLTest{
 		{"us", "https://listener.logz.io:8071"},
 		{"eu", "https://listener-eu.logz.io:8071"},
 		{"au", "https://listener-au.logz.io:8071"},

@@ -5,6 +5,7 @@ package receivercreator // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -44,7 +45,7 @@ type host interface {
 func (rc *receiverCreator) Start(_ context.Context, h component.Host) error {
 	rcHost, ok := h.(host)
 	if !ok {
-		return fmt.Errorf("the receivercreator is not compatible with the provided component.host")
+		return errors.New("the receivercreator is not compatible with the provided component.host")
 	}
 
 	rc.observerHandler = &observerHandler{

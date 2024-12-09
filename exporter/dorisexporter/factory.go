@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter/internal/metadata"
 )
@@ -84,12 +83,18 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
+	c := cfg.(*Config)
+	exporter := newMetricsExporter(set.Logger, c, set.TelemetrySettings)
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
-		func(_ context.Context, _ pmetric.Metrics) error {
-			return nil
-		},
+		exporter.pushMetricData,
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
+		// we config the timeout option in http client, so we don't need to set timeout here
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
 	)
 }

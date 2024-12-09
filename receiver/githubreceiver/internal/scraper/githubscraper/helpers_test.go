@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v65/github"
+	"github.com/google/go-github/v67/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -262,10 +262,10 @@ func TestGetAge(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			min := time.Now()
-			max := min.Add(tc.hrsAdd).Add(tc.minsAdd)
+			start := time.Now()
+			end := start.Add(tc.hrsAdd).Add(tc.minsAdd)
 
-			actual := getAge(min, max)
+			actual := getAge(start, end)
 
 			assert.Equal(t, int64(tc.expected), actual)
 		})
@@ -332,7 +332,7 @@ func TestCheckOwnerExists(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 
@@ -446,7 +446,7 @@ func TestGetPullRequests(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
@@ -549,7 +549,7 @@ func TestGetRepos(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
@@ -653,7 +653,7 @@ func TestGetBranches(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
@@ -705,7 +705,7 @@ func TestGetContributors(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			ghs.cfg.GitHubOrg = tc.org
 
 			server := httptest.NewServer(tc.server)
@@ -797,7 +797,6 @@ func TestEvalCommits(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 										Additions:     10,
 										Deletions:     9,
@@ -831,7 +830,6 @@ func TestEvalCommits(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 										Additions:     10,
 										Deletions:     9,
@@ -843,7 +841,6 @@ func TestEvalCommits(t *testing.T) {
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
 								Nodes: []CommitNode{
 									{
-
 										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
 										Additions:     1,
 										Deletions:     1,
@@ -893,7 +890,7 @@ func TestEvalCommits(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopSettings()
-			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)

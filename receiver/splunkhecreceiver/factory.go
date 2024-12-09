@@ -68,7 +68,7 @@ func createMetricsReceiver(
 	var recv receiver.Metrics
 	rCfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		recv, err = newMetricsReceiver(params, *rCfg, consumer)
+		recv, err = newReceiver(params, *rCfg)
 		return recv
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func createLogsReceiver(
 	var recv receiver.Logs
 	rCfg := cfg.(*Config)
 	r := receivers.GetOrAdd(cfg, func() component.Component {
-		recv, err = newLogsReceiver(params, *rCfg, consumer)
+		recv, err = newReceiver(params, *rCfg)
 		return recv
 	})
 	if err != nil {

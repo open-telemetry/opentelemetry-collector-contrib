@@ -7,6 +7,217 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `awsfirehosereceiver`: Follow receiver contract based on type of error (#5909)
+- `elasticsearchexporter`: Respect `flush::bytes` in sync bulk indexer, `flush::bytes` measures uncompressed size, change default `batcher::max_size_items` to `0` (#36163)
+  Limit the bulk request size to roughly `flush::bytes` for sync bulk indexer. Sync bulk indexer is used when `batcher::enabled` is either true or false. In order words, sync bulk indexer is not used when batcher config is undefined. Change `flush::bytes` to always measure in uncompressed bytes. Change default `batcher::max_size_items` to `0` as bulk request size limit is now more effectively enforced by `flush::bytes`.
+- `k8sattributesprocessor`: Move k8sattr.fieldExtractConfigRegex.disallow feature gate to Beta. (#25128)
+  Disable the `k8sattr.fieldExtractConfigRegex.disallow` feature gate to get the old behavior.
+- `internal`: Remove stable gate `component.UseLocalHostAsDefaultHost` (#36589)
+- `cmd/opampsupervisor`: Update default logger output paths to stderr (#36072)
+  The default output paths for the opamp supervisor logger have been updated to stderr from [stdout, stderr].
+  
+- `opampsupervisor`: Enable strict unmarshalling of the OpAMP Supervisor config file. An error will now be returned if an invalid config key is set. (#35838)
+
+### 🚩 Deprecations 🚩
+
+- `postgresqlreceiver`: Minimal supported PostgreSQL version updated from 9.6 to 13.0 (#30923)
+  Aligning on the supported versions as can be seen [in the PostgreSQL releases section](https://www.postgresql.org/support/versioning)
+- `exporter/prometheusremotewrite`: Change `exporter.prometheusremotewriteexporter.deprecateCreatedMetric` feature gate from Alpha to Beta version. (#35003)
+  The `export_created_metric` configuration parameter is now ignored by default.
+
+### 🚀 New components 🚀
+
+- `signaltometricsconnector`: New component for generating metrics from raw signals using user defined OTTL expressions. (#35930)
+- `extension/cgroupruntime`: Initial implementation for cgroupruntime extension. (#30289)
+- `huaweicloudcesreceiver`: Introduce new receiver fetching data from huawei Cloud Eye Service. (#34953)
+- `netflowreceiver`: Introduce the netflow receiver (#32732)
+
+### 💡 Enhancements 💡
+
+- `datadogexporter`: Add a configurable `reporter_period` parameter to the Datadog exporter’s host metadata configuration to allow users to specify the frequency at which host metadata is sent to Datadog. (#36450)
+- `awsemfexporter`: Add support for 1 second metric resolution in CloudWatch Embedded Metrics Format based on metric attributes (#29506)
+- `awsemfexporter`: Improvement unit conversion during EMF log translation (#35937)
+- `sumologicexporter`: adding new products for auto discovery (#35622)
+- `postgresqlreceiver`: Added new postgresql metrics to acheive parity with Telegraf (#36528)
+- `loadbalancingexporter`: Adding sending_queue, retry_on_failure and timeout settings to loadbalancing exporter configuration (#35378, #16826)
+  When switching to top-level sending_queue configuration - users should carefully review queue size
+  In some rare cases setting top-level queue size to n*queueSize might be not enough to prevent data loss
+  
+- `pkg/stanza`: Introduce active file grouping mechanism. (#23787)
+- `receivercreator`: Add support for starting receivers/scrapers based on provided annotations' hints for metrics' collection (#34427)
+- `tailsamplingprocessor`: Adds decision cache for non-sampled trace IDs (#31583)
+- `cmd/opampsupervisor`: Support environment variable expansion in the OpAMP supervisor config. (#36269)
+- `pkg/ottl`: Move debug log to `Statement.Execute` so that components using it instead of `StatementSequence` also get debug logs. (#36456)
+- `routingconnector`: Add abiilty to route by 'datapoint' context (#36523)
+- `signalfxreceiver`: Follow receiver contract based on type of error (#5909)
+  Use 503 error code for retryable and 400 error code for not-retryable errors instead of responding with a 500 unconditionally.
+
+### 🧰 Bug fixes 🧰
+
+- `cmd/opampsupervisor`: Do not log err if the last received doesn't exist (#36013)
+- `receiver/azureeventhub`: When using a storage extension, the component will call Close on the client during component shutdown. This fixes a bug that resulted in a file potentially remaining locked after component shutdown. (#36238)
+- `azuremonitorexporter`: Fixes an issue where the Azure Monitor exporter was not sending data to App Insights due to the Telemetry Channel not being flushed. (#35037)
+- `exporter/pulsarexporter`: Change configuration option `map_connections_per_broker`, rename to `max_connections_per_broker`. (#36579)
+- `failoverconnector`: Resolves a bug that prevents proper recovery when disabling max retries (#36587)
+- `googlecloudpubsubexporter`: Fix a goroutine leak during shutdown. (#30438)
+  A goroutine leak was found in the googlecloudpubsubexporter. 
+  The goroutine leak was caused by the exporter not closing the underlying created gRPC client when using an insecure custom endpoint.
+  
+- `processor/k8sattribute`: fixes parsing of k8s image names to support images with tags and digests. (#36131)
+- `clickhouseexporter`: Fix incorrect Resource Attribute `service.name` translation to ClickHouse ServiceName field for Logs Records (#36349)
+- `awsfirehosereceiver`: fix timestamp when ingesting logs from CloudWatch through firehose (#36122)
+- `pkg/ottl`: Allow indexing []int64, []float64, []bool, and []byte slices (#29441)
+  It should now be possible to index all slice types
+- `opencensusreceiver`: Do not report error message when OpenCensus receiver is shutdown cleanly. (#36622)
+- `loadbalancingexporter`: The k8sresolver in loadbalancingexporter was triggering exporter churn in the way the change event was handled. (#35658)
+- `vcenterreceiver`: The existing code did not honor TLS settings beyond 'insecure'. All TLS client config should now be honored. (#36482)
+
+## v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Stop prefixing `http_server_duration`, `http_server_request_size` and `http_server_response_size` with `otelcol` (#36265)
+  These metrics can be from SDKs rather than collector. Stop prefixing them to be consistent with https://opentelemetry.io/docs/collector/internal-telemetry/#lists-of-internal-metrics
+- `otelarrowreceiver`: New admission control metrics are consistent across Arrow and OTLP data paths. (#36334)
+  `otelcol_otelarrow_admission_in_flight_bytes` new, replaces `otelcol_otel_arrow_receiver_in_flight_bytes`
+  `otelcol_otelarrow_admission_waiting_bytes`: new, describes waiting requests
+  `otelcol_otel_arrow_receiver_in_flight_items`: removed
+  `otelcol_otel_arrow_receiver_in_flight_requests`: removed
+  
+
+### 🚩 Deprecations 🚩
+
+- `exporter/prometheusremotewrite`: Deprecate configuration option `export_created metric` (#35003)
+  Disable the exporter.prometheusremotewriteexporter.deprecateCreatedMetric feature gate to temporarily re-enable the created metric.
+
+### 💡 Enhancements 💡
+
+- `datadogreceiver`: Add json handling for the `api/v2/series` endpoint in the datadogreceiver (#36079)
+- `googlemanagedprometheus`: Add `CumulativeNormalization` config option to allow users to configure to specify whether to report normalized or un-normalized points. Defaults to normalized. (#36357)
+- `elasticsearchexporter`: Translate `k8s.*.name` resource attributes in ECS mode (#36233)
+  Translate `k8s.job.name`, `k8s.cronjob.name`, `k8s.statefulset.name`, `k8s.replicaset.name`, `k8s.daemonset.name`, `k8s.container.name` to `kubernetes.*.name`. Translate `k8s.cluster.name` to `orchestrator.cluster.name`.
+- `encodingextension`: Add support for profiles signal to encodingextension (#36008)
+- `k8sattributesprocessor`: Add support for profiles signal (#35983)
+- `cmd/githubgen`: Adds a flag to skip checking GitHub organization membership for CODEOWNERS (#36263)
+- `container`: Set non root group permissions for container image (#35179)
+- `k8sclusterreceiver`: Add support for limiting observed resources to a specific namespace. (#9401)
+  This change allows to make use of this receiver with `Roles`/`RoleBindings`, as opposed to giving the collector cluster-wide read access.
+- `opampextension`: Add content type to opamp extension when reporting EffectiveConfig (#36327)
+  Add EffectiveConfig.ConfigMap.ConfigMap[*].ContentType as "text/yaml" to the opamp extension when reporting EffectiveConfig.
+- `otelarrowreceiver`: Admission control improvements (LIFO); admission.waiter_limit is deprecated, replaced with admission.waiting_limit_mib. (#36074)
+- `otelarrowreceiver`: Add a new LIFO-based bounded queue. (#36074)
+- `connector/otlpjson`: Throw error on invalid otlp payload. (#35738, #35739)
+- `prometheusremotewriteexporter`: reduce allocation when serializing protobuf (#35185)
+- `resourcedetectionprocessor`: Introduce support for Profiles signal type. (#35980)
+- `routingconnector`: Add ability to route by metric context (#36236)
+- `routingconnector`: Add ability to route by span context (#36276)
+- `processor/spanprocessor`: Add a new configuration option to keep the original span name when extracting attributes from the span name. (#36120)
+- `splunkenterprisereceiver`: Add new metrics for Splunk Enterprise dispatch artifacts caches (#36181)
+
+### 🧰 Bug fixes 🧰
+
+- `pkg/stanza`: Ensure that time parsing happens before entry is sent to downstream operators (#36213)
+- `prometheusexporter`: Fixes a race condition between the exporter start and shutdown functions. (#36139)
+- `processor/k8sattributes`: Block when starting until the metadata have been synced, to fix that some data couldn't be associated with metadata when the agent was just started. (#32556)
+- `exporter/loadbalancing`: Shutdown exporters during collector shutdown. This fixes a memory leak. (#36024)
+- `pkg/ottl`: Respect the `depth` option when flattening slices using `flatten` (#36161)
+  The `depth` option is also now required to be at least `1`.
+- `prometheusexporter`: reject metrics whose types have changed, use pre-existing descriptions when help strings change (#28617)
+- `pkg/stanza`: Synchronous handling of entries passed from the log emitter to the receiver adapter (#35453)
+- `prometheusreceiver`: Fix prometheus receiver to support static scrape config with Target Allocator (#36062)
+
+## v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `sapmreceiver`: Remove the deprecated access_token_passthrough from SAPM receiver. (#35972)
+  Please use `include_metadata` instead with the following config option applied to the batch processor:
+  batch:
+    metadata_keys: [X-Sf-Token]
+  
+- `pkg/ottl`: Promote `processor.transform.ConvertBetweenSumAndGaugeMetricContext` feature gate to Stable (#36216)
+  This gate can no longer be disabled. The `convert_sum_to_gauge` and `convert_gauge_to_sum` may now only be used with the `metric` context.
+
+### 🚩 Deprecations 🚩
+
+- `opensearchexporter`: The OpenSearch exporter is now marked as unmaintained and will be removed in 6 months. (#35781)
+  Any codeowners can reinstate the component by submitting a PR to revert the change or commenting on https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35781.
+  
+
+### 🚀 New components 🚀
+
+- `dorisexporter`: metrics implementation (#33479)
+- `extensions/observer/cfgardenobserver`: Implemented the observer, the second PR in the 3 PR process for new components (#33618)
+
+### 💡 Enhancements 💡
+
+- `splunkenterprisereceiver`: Add telemetry around the Splunk Enterprise kv-store. (#35445)
+- `journaldreceiver`: adds ability to parse journald's MESSAGE field as a string if desired (#36005)
+- `journaldreceiver`: allows querying a journald namespace (#36031)
+- `hostmetricsreceiver`: Add the system.uptime metric in the hostmetrics receiver (#31627)
+  This metric is provided by the new `system` scraper.
+- `azuredataexplorerexporter`: Add new configuration option `use_default_auth` to enable default authentication for Azure Data Explorer. This option allows users to leverage workload identity for authentication. (#33667)
+- `awss3receiver`: Mark the AWS S3 receiver as Alpha. (#30750)
+- `opampsupervisor`: Makes the Supervisor's OpAmp server port configurable with 'agent::opamp_server_port'. (#36001)
+- `datadogreceiver`: Follow receiver contract based on type of error (#5909)
+- `hostmetrics`: Adjust scraper creation to make it so the scraper name is reported with hostmetrics scraper errors. (#35814)
+- `pkg/translator/prometheusremotewrite`: `FromMetricsV2` now transforms attributes into labels. (#33661)
+- `ntpreceiver`: Move NTP receiver to alpha (#36152)
+- `opampsupervisor`: Supervisor waits for configurable healthchecks to report remote config status. (#21079)
+- `otelarrowreceiver`: Enable unlimited admission control when request_limit_mib is set to 0. (#36074)
+- `pkg/ottl`: Add SliceToMap function (#35256)
+- `receiver/prometheusremotewrite`: Implement body unmarshaling for Prometheus Remote Write requests (#35624)
+  Warning - The HTTP Server still doesn't do anything. It's just a placeholder for now.
+- `receiver/prometheusremotewrite`: Implement Content-Type negotiation for Prometheus Remote Write requests (#35565)
+  Warning - The HTTP Server still doesn't do anything. It's just a placeholder for now.
+- `otlpjsonfilereceiver`: Add support for profiles signal (#35977)
+- `journaldreceiver`: Restart journalctl if it exits unexpectedly (#35635)
+- `routingconnector`: Add ability to route by request metadata. (#19738)
+- `exporter/signalfx`: Enabling retrying for dimension properties update without tags in case of 400 response error. (#36044)
+  Property and tag updates are done using the same API call. After this change, the exporter will retry once to sync
+  properties in case of 400 response error.
+  
+- `signalfxexporter`: Add more default metrics related to Kubernetes cronjobs, jobs, statefulset, and hpa (#36026)
+- `simpleprometheusreceiver`: Support to set `job_name` in config (#31502)
+- `solacereceiver`: Add support to the Solace Receiver to convert the new `Move to Dead Message Queue` and new `Delete` spans generated by Solace Event Broker to OTLP. (#36071)
+- `routingconnector`: Add ability to route log records individually using OTTL log record context. (#35939)
+- `splunkenterprisereceiver`: Add new metrics for Splunk Enterprise dispatch artifacts (#35950)
+
+### 🧰 Bug fixes 🧰
+
+- `awsfirehosereceiver`: make otlp_v1 a valid record type (#35750, #36125)
+- `datadogreceiver`: Return a json reponse instead of "OK" when a trace is received with a newer protocol version. (#35705)
+- `datadogreceiver`: Changes response message for `/api/v1/check_run` 202 response to be JSON and on par with Datadog API spec (#36027)
+- `receiver/windowseventlog`: Fix panic when rendering long event messages. (#36179)
+- `hostmetricsreceiver`: Do not set the default value of HOST_PROC_MOUNTINFO to respect root_path (#35990)
+- `prometheusexporter`: Fixes an issue where the prometheus exporter would not shut down the server when the collector was stopped. (#35464)
+- `k8sobserver`: Enable observation of ingress objects if the `ObserveIngresses` config option is set to true (#35324)
+- `pkg/stanza`: Fixed bug causing Operators with DropOnErrorQuiet to send log entries to the next operator. (#35010)
+  This issue was introduced by a bug fix meant to ensure Silent Operators are not logging errors (#35010). With this fix,
+  this side effect bug has been resolved.
+  
+- `otelarrowreceiver`: Simplify receiver admission control logic (#36074)
+- `otelarrowreceiver`: Avoid breaking telemetry when admission control fails in OTLP handlers. (#36074)
+- `dbstorage`: Add postgresql support (#35692)
+- `splunkhecreceiver`: Avoid a memory leak by changing how we record obsreports for logs and metrics. (#35294)
+- `receiver/filelog`: fix record counting with header (#35869)
+- `connector/routing`: Fix detection of duplicate conditions in routing table. (#35962)
+- `solacereceiver`: The Solace receiver may unexpectedly terminate on reporting traces when used with a memory limiter processor and under high load (#35958)
+- `pkg/stanza/operator`: Retain Operator should propagate the severity field (#35832)
+  The retain operator should propagate the severity field like it does with timestamps. 
+  
+- `pkg/stanza`: Handle error of callback function of `ParserOperator.ProcessWithCallback` (#35769)
+  `ProcessWithCallback` of `ParserOperator` first calls the `ParseWith` method
+  which properly handles errors with `HandleEntryError`.
+  Then the callback function is called and its returned error should also
+  be handled by the `HandleEntryError` ensuring a consistent experience.
+  
+- `webhookeventreceiver`: Pass the consumer error to EndLogsOp (#35844)
+
 ## v0.112.0
 
 ### 🛑 Breaking changes 🛑
@@ -280,7 +491,7 @@ arrow.waiter_limit -> admission.waiter_limit
   https://github.com/open-telemetry/opentelemetry-collector/pull/6250
   
 - `spanmetricsconnector`: Improve consistency between metrics generated by spanmetricsconnector. Added traces.span.metrics as default namespace (#33227, #32818)
-  Default namespace for the generated metrics is traces.span.metrics now. | The deprecated metrics are: calls, duration and events. | The feature flag connector.spanmetrics.legacyLatencyMetricNames was added to revert the behavior.
+  Default namespace for the generated metrics is traces.span.metrics now. | The deprecated metrics are: calls, duration and events. | The feature flag connector.spanmetrics.legacyMetricNames was added to revert the behavior.
 - `servicegraphconnector`: Fix histogram metrics miss unit (#34511)
   All metrics will remove the suffix `_seconds`. It will not introduce breaking change if users use | `prometheusexporter` or `prometheusremotewriteexporter` to exporter metrics in pipeline. | In some cases, like using `clickhouseexporter`(save data in native OTLP format), it will be a breaking change. | Users can use `transformprocessor` to add back this suffix.
 - `gitproviderreceiver`: The Git Provider Receiver has been renamed to GitHub Receiver. (#34731)
@@ -4942,7 +5153,7 @@ This version has been skipped.
 
 ### 🚀 New components 🚀
 - `telemetryquerylanguage`: Expose the telemetry query language as a package. (#11751)
-- `chronyreceiver`: -| This component is a pure go implementation for capturing data from [chrony](https://chrony.tuxfamily.org/) (#11789)
+- `chronyreceiver`: -| This component is a pure go implementation for capturing data from [chrony](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/ch-configuring_ntp_using_the_chrony_suite) (#11789)
 - `otlpjsonfilereceiver`: Add a new file receiver reading JSON-encoded OTLP data, after [serialization specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/file-exporter.md#json-file-serialization) (#10836)
 - `pulsarexporter`: Add Apache Pulsar exporter (#9795)
 - `solacereceiver`: Add Solace receiver to receive trace data from a Solace PubSub+ Event Broker. (#10572)

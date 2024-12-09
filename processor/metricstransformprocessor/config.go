@@ -42,14 +42,12 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-
 	// transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []transform `mapstructure:"transforms"`
 }
 
 // transform defines the transformation applied to the specific metric
 type transform struct {
-
 	// --- SPECIFY WHICH METRIC(S) TO MATCH ---
 
 	// MetricIncludeFilter is used to select the metric(s) to operate on.

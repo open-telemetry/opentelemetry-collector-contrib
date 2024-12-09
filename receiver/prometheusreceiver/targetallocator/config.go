@@ -5,6 +5,7 @@ package targetallocator // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -37,7 +38,7 @@ func (cfg *Config) Validate() error {
 	}
 	// ensure valid collectorID without variables
 	if cfg.CollectorID == "" || strings.Contains(cfg.CollectorID, "${") {
-		return fmt.Errorf("CollectorID is not a valid ID")
+		return errors.New("CollectorID is not a valid ID")
 	}
 
 	return nil
@@ -87,7 +88,6 @@ func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
 		return err
 	}
 	return nil
-
 }
 
 func checkFile(fn string) error {

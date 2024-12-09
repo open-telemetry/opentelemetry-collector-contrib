@@ -28,6 +28,7 @@ components:
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
@@ -62,6 +63,7 @@ components:
         - awsproxy
         - basicauth
         - bearertokenauth
+        - cgroupruntime
         - db_storage
         - docker_observer
         - ecs_observer
@@ -110,6 +112,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awss3
         - awsxray
         - azureblob
         - azureeventhub
@@ -131,6 +134,7 @@ components:
         - fluentforward
         - github
         - googlecloudmonitoring
+        - googlecloudspanner
         - haproxy
         - hostmetrics
         - httpcheck

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
@@ -123,7 +124,6 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
-
 	if r.server != nil {
 		return nil
 	}
@@ -196,7 +196,7 @@ func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, re
 
 func (r *sfxReceiver) writeResponse(ctx context.Context, resp http.ResponseWriter, err error) {
 	if err != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, err)
+		r.failRequest(ctx, resp, errorutil.GetHTTPStatusCodeFromError(err), errNextConsumerRespBody, err)
 		return
 	}
 

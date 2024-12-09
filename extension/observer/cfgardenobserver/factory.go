@@ -15,10 +15,11 @@ import (
 
 const (
 	defaultCollectionInterval = 1 * time.Minute
-	defaultEndpoint           = "unix:///var/vcap/data/garden/garden.sock"
+	defaultCacheSyncInterval  = 5 * time.Minute
+	defaultEndpoint           = "/var/vcap/data/garden/garden.sock"
 )
 
-// NewFactory creates a factory for HostObserver extension.
+// NewFactory creates a factory for CfGardenObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
 		metadata.Type,
@@ -30,15 +31,18 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		RefreshInterval: defaultCollectionInterval,
-		Endpoint:        defaultEndpoint,
+		RefreshInterval:   defaultCollectionInterval,
+		CacheSyncInterval: defaultCacheSyncInterval,
+		Garden: GardenConfig{
+			Endpoint: defaultEndpoint,
+		},
 	}
 }
 
 func createExtension(
 	_ context.Context,
-	params extension.Settings,
+	settings extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
-	return newObserver(params, cfg.(*Config))
+	return newObserver(cfg.(*Config), settings.Logger)
 }

@@ -73,7 +73,7 @@ func TestHandlerHappyCase(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", strings.NewReader(`{"NextToken": null}`))
 	rec := httptest.NewRecorder()
 	handler(rec, req)
@@ -99,7 +99,7 @@ func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 
 	expectedErr := errors.New("expected mockReadCloser error")
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", &mockReadCloser{
 			readErr: expectedErr,
 		})
@@ -127,7 +127,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
 	rec := httptest.NewRecorder()
 	handler(rec, req)
@@ -151,7 +151,7 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", strings.NewReader(`{}`))
 	rec := httptest.NewRecorder()
 	handler(rec, req)

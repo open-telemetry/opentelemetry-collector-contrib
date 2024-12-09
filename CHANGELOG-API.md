@@ -7,6 +7,37 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/datadog`: Refactor the API that provides metrics translator (#36474)
+  This is API change only and does not affect end users
+
+## v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Changed signature of `emit.Callback` function in `pkg/stanza/fileconsumer/emit` package by introducing `emit.Token` struct that encapsulates the token's body and attributes. (#36260)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: Expose an API `TranslatorFromConfig` that creates a new metrics translator (#36300)
+  This is only code refactor and has no user-facing impact
+
+## v0.113.0
+
+### 🛑 Breaking changes 🛑
+
+- `testbed`: `scenarios.createConfigYaml()` and `utils.CreateConfigYaml()` functions now take processor configs as a struct slice argument instead of `map[string]string`. (#33003)
+  - This is to preserve processor order. `ProcessorNameAndConfigBody` is the newly created struct.
+  
+
+### 💡 Enhancements 💡
+
+- `receiver/prometheusremotewrite`: Implement body unmarshaling for Prometheus Remote Write requests (#35624)
+  Warning - The HTTP Server still doesn't do anything. It's just a placeholder for now.
+
 ## v0.112.0
 
 ### 🛑 Breaking changes 🛑

@@ -70,7 +70,6 @@ func newNodeNameProvider() nodeNameProvider {
 	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
 		AuthType: k8sconfig.AuthTypeServiceAccount,
 	})
-
 	if err != nil {
 		return &nodeNameUnavailable{err: err}
 	}

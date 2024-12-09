@@ -273,7 +273,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 
 func TestFailContactingOAuth(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("not-json"))
 		assert.NoError(t, err)
 	}))
@@ -306,7 +306,7 @@ func TestFailContactingOAuth(t *testing.T) {
 		Transport: roundTripper,
 	}
 
-	req, err := http.NewRequest("POST", "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)

@@ -132,7 +132,7 @@ func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs
 }
 
 func repeat(what int, times int) []int {
-	var result = make([]int, times)
+	result := make([]int, times)
 	for i := range result {
 		result[i] = what
 	}
@@ -397,10 +397,12 @@ func TestReceiveTracesBatches(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"start_time":1`,
+					{
+						`"start_time":1`,
 						`"start_time":2`,
 						`start_time":3`,
-						`start_time":4`},
+						`start_time":4`,
+					},
 				},
 				numBatches: 1,
 			},
@@ -570,10 +572,12 @@ func TestReceiveLogs(t *testing.T) {
 			}(),
 			want: wantType{
 				batches: [][]string{
-					{`"otel.log.name":"0_0_0"`,
+					{
+						`"otel.log.name":"0_0_0"`,
 						`"otel.log.name":"0_0_1"`,
 						`otel.log.name":"0_0_2`,
-						`otel.log.name":"0_0_3`},
+						`otel.log.name":"0_0_3`,
+					},
 				},
 				numBatches: 1,
 			},
@@ -1211,7 +1215,6 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 		}
 		t.Run(test.name, testFn(false))
 		t.Run(test.name+"_MultiMetric", testFn(true))
-
 	}
 }
 
@@ -1541,7 +1544,6 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func Test_pushLogData_InvalidLog(t *testing.T) {
@@ -2105,5 +2107,4 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	for _, e := range expected {
 		assert.Contains(t, string(p), e)
 	}
-
 }

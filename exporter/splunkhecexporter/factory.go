@@ -64,17 +64,19 @@ func createDefaultConfig() component.Config {
 
 	defaultMaxConns := defaultMaxIdleCons
 	defaultIdleConnTimeout := defaultIdleConnTimeout
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultHTTPTimeout
+	clientConfig.IdleConnTimeout = &defaultIdleConnTimeout
+	clientConfig.MaxIdleConnsPerHost = &defaultMaxConns
+	clientConfig.MaxIdleConns = &defaultMaxConns
+	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
+	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
+
 	return &Config{
-		LogDataEnabled:       true,
-		ProfilingDataEnabled: true,
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:              defaultHTTPTimeout,
-			IdleConnTimeout:      &defaultIdleConnTimeout,
-			MaxIdleConnsPerHost:  &defaultMaxConns,
-			MaxIdleConns:         &defaultMaxConns,
-			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
-			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
-		},
+		LogDataEnabled:          true,
+		ProfilingDataEnabled:    true,
+		ClientConfig:            clientConfig,
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
 		QueueSettings:           exporterhelper.NewDefaultQueueConfig(),
@@ -127,7 +129,6 @@ func createTracesExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +197,6 @@ func createLogsExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}

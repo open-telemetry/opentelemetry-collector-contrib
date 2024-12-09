@@ -50,7 +50,6 @@ func TestNewMessageHangdler(t *testing.T) {
 	logsDataConsumer.AssertNumberOfCalls(t, "consumeLogsJSON", 1)
 	tracesDataConsumer.AssertNumberOfCalls(t, "consumeTracesJSON", 1)
 	blobClient.AssertNumberOfCalls(t, "readBlob", 2)
-
 }
 
 func getEvent(eventData []byte) *eventhub.Event {

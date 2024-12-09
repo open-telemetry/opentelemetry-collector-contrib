@@ -26,7 +26,6 @@ type PageLimit struct {
 	DescribeServiceInput           int // max 10
 	DescribeContainerInstanceInput int // max 100
 	DescribeInstanceOutput         int // max 1000
-
 }
 
 func DefaultPageLimit() PageLimit {

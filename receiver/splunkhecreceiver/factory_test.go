@@ -41,24 +41,6 @@ func TestFactoryType(t *testing.T) {
 	assert.Equal(t, metadata.Type, NewFactory().Type())
 }
 
-func TestCreateNilNextConsumerMetrics(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-
-	mReceiver, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
-	assert.EqualError(t, err, "nil metricsConsumer")
-	assert.Nil(t, mReceiver, "receiver creation failed")
-}
-
-func TestCreateNilNextConsumerLogs(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1"
-
-	mReceiver, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
-	assert.EqualError(t, err, "nil logsConsumer")
-	assert.Nil(t, mReceiver, "receiver creation failed")
-}
-
 func TestMultipleLogsReceivers(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1"
