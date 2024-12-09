@@ -850,8 +850,6 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 		}
 	}
 
-	s.logger.Debug("effective config str", zap.String("", cfgStr))
-
 	cfg := &protobufs.EffectiveConfig{
 		ConfigMap: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
