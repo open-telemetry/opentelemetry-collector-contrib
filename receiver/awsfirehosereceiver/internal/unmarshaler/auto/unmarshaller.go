@@ -23,6 +23,7 @@ const (
 var (
 	errInvalidRecords         = errors.New("record format invalid")
 	errUnsupportedContentType = errors.New("content type not supported")
+	errInvalidFormatStart     = errors.New("unable to decode data length from message")
 )
 
 // Unmarshaler for the CloudWatch Log JSON record format.
@@ -115,8 +116,8 @@ func (u *Unmarshaler) addCloudwatchMetric(
 	return nil
 }
 
-func (u *Unmarshaler) unmarshalJSON(md pmetric.Metrics, ld plog.Logs, records [][]byte) error {
-	resourceLogs := make(map[cwlog.ResourceAttributes]*cwlog.ResourceLogsBuilder)
+func (u *Unmarshaler) unmarshalJSONMetrics(records [][]byte) (pmetric.Metrics, error) {
+	md := pmetric.NewMetrics()
 	resourceMetrics := make(map[cwmetricstream.ResourceAttributes]*cwmetricstream.ResourceMetricsBuilder)
 	for i, compressed := range records {
 		record, err := compression.Unzip(compressed)
@@ -127,7 +128,51 @@ func (u *Unmarshaler) unmarshalJSON(md pmetric.Metrics, ld plog.Logs, records []
 			)
 			continue
 		}
-		// Multiple metrics/logs in each record separated by newline character
+		for j, single := range bytes.Split(record, []byte(recordDelimiter)) {
+			if len(single) == 0 {
+				continue
+			}
+
+			if isCloudwatchMetrics(single) {
+				if err = u.addCloudwatchMetric(single, resourceMetrics, md); err != nil {
+					u.logger.Error(
+						"Unable to unmarshal input",
+						zap.Error(err),
+						zap.Int("single_index", j),
+						zap.Int("record_index", i),
+					)
+					continue
+				}
+			} else {
+				u.logger.Error(
+					"Unsupported metric type",
+					zap.Int("record_index", i),
+					zap.Int("single_index", j),
+				)
+				continue
+			}
+		}
+	}
+
+	if len(resourceMetrics) == 0 {
+		return md, errInvalidRecords
+	}
+	return md, nil
+}
+
+func (u *Unmarshaler) unmarshalJSONLogs(records [][]byte) (plog.Logs, error) {
+	ld := plog.NewLogs()
+	resourceLogs := make(map[cwlog.ResourceAttributes]*cwlog.ResourceLogsBuilder)
+	for i, compressed := range records {
+		record, err := compression.Unzip(compressed)
+		if err != nil {
+			u.logger.Error("Failed to unzip record",
+				zap.Error(err),
+				zap.Int("record_index", i),
+			)
+			continue
+		}
+
 		for j, single := range bytes.Split(record, []byte(recordDelimiter)) {
 			if len(single) == 0 {
 				continue
@@ -143,41 +188,40 @@ func (u *Unmarshaler) unmarshalJSON(md pmetric.Metrics, ld plog.Logs, records []
 					)
 					continue
 				}
-			}
-
-			if isCloudwatchMetrics(single) {
-				if err = u.addCloudwatchMetric(single, resourceMetrics, md); err != nil {
-					u.logger.Error(
-						"Unable to unmarshal input",
-						zap.Error(err),
-						zap.Int("single_index", j),
-						zap.Int("record_index", i),
-					)
-					continue
-				}
+			} else {
+				u.logger.Error(
+					"Unsupported log type",
+					zap.Int("record_index", i),
+					zap.Int("single_index", j),
+				)
+				continue
 			}
 		}
 	}
 
-	if len(resourceLogs) == 0 && len(resourceMetrics) == 0 {
-		return errInvalidRecords
+	if len(resourceLogs) == 0 {
+		return ld, errInvalidRecords
 	}
-	return nil
+	return ld, nil
 }
 
-func (u *Unmarshaler) Unmarshal(contentType string, records [][]byte) (pmetric.Metrics, plog.Logs, error) {
-	ld := plog.NewLogs()
-	md := pmetric.NewMetrics()
+func (u *Unmarshaler) UnmarshalLogs(contentType string, records [][]byte) (plog.Logs, error) {
 	switch contentType {
 	case "application/json":
-		return md, ld, u.unmarshalJSON(md, ld, records)
-	case "application/x-protobuf":
-		// TODO implement this
-		return md, ld, nil
+		return u.unmarshalJSONLogs(records)
 	default:
-		return md, ld, errUnsupportedContentType
+		return plog.NewLogs(), errUnsupportedContentType
 	}
+}
 
+func (u *Unmarshaler) UnmarshalMetrics(contentType string, records [][]byte) (pmetric.Metrics, error) {
+	switch contentType {
+	case "application/json":
+		return u.unmarshalJSONMetrics(records)
+	//TODO case "application/x-protobuf":
+	default:
+		return pmetric.NewMetrics(), errUnsupportedContentType
+	}
 }
 
 func (u *Unmarshaler) Type() string {

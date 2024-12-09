@@ -27,19 +27,19 @@ func NewNopMetrics() *NopMetricsUnmarshaler {
 }
 
 // NewWithMetrics provides a nop metrics unmarshaler with the passed
-// in metrics as the result of the Unmarshal and no error.
+// in metrics as the result of the UnmarshalMetrics and no error.
 func NewWithMetrics(metrics pmetric.Metrics) *NopMetricsUnmarshaler {
 	return &NopMetricsUnmarshaler{metrics: metrics}
 }
 
 // NewErrMetrics provides a nop metrics unmarshaler with the passed
-// in error as the Unmarshal error.
+// in error as the UnmarshalMetrics error.
 func NewErrMetrics(err error) *NopMetricsUnmarshaler {
 	return &NopMetricsUnmarshaler{err: err}
 }
 
-// Unmarshal deserializes the records into metrics.
-func (u *NopMetricsUnmarshaler) Unmarshal([][]byte) (pmetric.Metrics, error) {
+// UnmarshalMetrics deserializes the records into metrics.
+func (u *NopMetricsUnmarshaler) UnmarshalMetrics(string, [][]byte) (pmetric.Metrics, error) {
 	return u.metrics, u.err
 }
 

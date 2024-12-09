@@ -25,19 +25,19 @@ func NewNopLogs() *NopLogsUnmarshaler {
 }
 
 // NewWithLogs provides a nop logs unmarshaler with the passed
-// in logs as the result of the Unmarshal and no error.
+// in logs as the result of the UnmarshalLogs and no error.
 func NewWithLogs(logs plog.Logs) *NopLogsUnmarshaler {
 	return &NopLogsUnmarshaler{logs: logs}
 }
 
 // NewErrLogs provides a nop logs unmarshaler with the passed
-// in error as the Unmarshal error.
+// in error as the UnmarshalLogs error.
 func NewErrLogs(err error) *NopLogsUnmarshaler {
 	return &NopLogsUnmarshaler{err: err}
 }
 
-// Unmarshal deserializes the records into logs.
-func (u *NopLogsUnmarshaler) Unmarshal([][]byte) (plog.Logs, error) {
+// UnmarshalLogs deserializes the records into logs.
+func (u *NopLogsUnmarshaler) UnmarshalLogs(string, [][]byte) (plog.Logs, error) {
 	return u.logs, u.err
 }
 

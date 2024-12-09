@@ -61,7 +61,7 @@ func TestUnmarshal(t *testing.T) {
 			require.NoError(t, err)
 			records := [][]byte{compressedRecord}
 
-			got, err := unmarshaler.Unmarshal(records)
+			got, err := unmarshaler.UnmarshalLogs("", records)
 			require.Equal(t, testCase.wantErr, err)
 			require.NotNil(t, got)
 			require.Equal(t, testCase.wantResourceCount, got.ResourceLogs().Len())
@@ -79,7 +79,7 @@ func TestLogTimestamp(t *testing.T) {
 	require.NoError(t, err)
 	records := [][]byte{compressedRecord}
 
-	got, err := unmarshaler.Unmarshal(records)
+	got, err := unmarshaler.UnmarshalLogs("", records)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, 1, got.ResourceLogs().Len())

@@ -56,7 +56,7 @@ func TestUnmarshal(t *testing.T) {
 
 			records := [][]byte{record}
 
-			got, err := unmarshaler.Unmarshal(records)
+			got, err := unmarshaler.UnmarshalMetrics("", records)
 			require.Equal(t, testCase.wantErr, err)
 			require.NotNil(t, got)
 			require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())

@@ -70,7 +70,7 @@ func (mc *metricsConsumer) Consume(
 	records [][]byte,
 	commonAttributes map[string]string,
 ) (int, error) {
-	md, err := mc.unmarshaler.Unmarshal(records)
+	md, err := mc.unmarshaler.UnmarshalMetrics(contentType, records)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}

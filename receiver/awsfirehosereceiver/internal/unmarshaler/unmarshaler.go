@@ -10,8 +10,8 @@ import (
 
 // MetricsUnmarshaler deserializes the message body
 type MetricsUnmarshaler interface {
-	// Unmarshal deserializes the records into metrics.
-	Unmarshal(records [][]byte) (pmetric.Metrics, error)
+	// UnmarshalMetrics deserializes the records into metrics.
+	UnmarshalMetrics(contentType string, records [][]byte) (pmetric.Metrics, error)
 
 	// Type of the serialized messages.
 	Type() string
@@ -19,8 +19,8 @@ type MetricsUnmarshaler interface {
 
 // LogsUnmarshaler deserializes the message body
 type LogsUnmarshaler interface {
-	// Unmarshal deserializes the records into logs.
-	Unmarshal(records [][]byte) (plog.Logs, error)
+	// UnmarshalLogs deserializes the records into logs.
+	UnmarshalLogs(contentType string, records [][]byte) (plog.Logs, error)
 
 	// Type of the serialized messages.
 	Type() string
@@ -28,8 +28,11 @@ type LogsUnmarshaler interface {
 
 // Unmarshaler deserializes the message body
 type Unmarshaler interface {
-	// Unmarshal deserializes the records into metrics or logs.
-	Unmarshal(contentType string, records [][]byte) (pmetric.Metrics, plog.Logs, error)
+	// UnmarshalMetrics deserializes the records into metrics.
+	UnmarshalMetrics(contentType string, records [][]byte) (pmetric.Metrics, error)
+
+	// UnmarshalLogs deserializes the records into logs.
+	UnmarshalLogs(contentType string, records [][]byte) (plog.Logs, error)
 
 	// Type of the serialized messages.
 	Type() string

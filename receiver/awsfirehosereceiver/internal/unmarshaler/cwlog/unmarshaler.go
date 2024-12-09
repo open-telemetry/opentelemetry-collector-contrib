@@ -34,10 +34,10 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 	return &Unmarshaler{logger}
 }
 
-// Unmarshal deserializes the records into cWLogs and uses the
+// UnmarshalLogs deserializes the records into CWLog and uses the
 // ResourceLogsBuilder to group them into a single plog.Logs.
-// Skips invalid cWLogs received in the record.
-func (u Unmarshaler) Unmarshal(records [][]byte) (plog.Logs, error) {
+// Skips invalid CWLog received in the record.
+func (u Unmarshaler) UnmarshalLogs(_ string, records [][]byte) (plog.Logs, error) {
 	md := plog.NewLogs()
 	builders := make(map[ResourceAttributes]*ResourceLogsBuilder)
 	for recordIndex, compressedRecord := range records {

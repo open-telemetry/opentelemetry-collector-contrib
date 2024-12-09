@@ -36,10 +36,10 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 	return &Unmarshaler{logger}
 }
 
-// Unmarshal deserializes the records into cWMetrics and uses the
+// UnmarshalMetrics deserializes the records into CWMetric and uses the
 // ResourceMetricsBuilder to group them into a single pmetric.Metrics.
-// Skips invalid cWMetrics received in the record and
-func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
+// Skips invalid CWMetric received in the record.
+func (u Unmarshaler) UnmarshalMetrics(_ string, records [][]byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	builders := make(map[ResourceAttributes]*ResourceMetricsBuilder)
 	for recordIndex, record := range records {

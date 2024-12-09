@@ -61,17 +61,21 @@ func validateRecordType(recordType string) error {
 func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.MetricsUnmarshaler {
 	cwmsu := cwmetricstream.NewUnmarshaler(logger)
 	otlpv1msu := otlpmetricstream.NewUnmarshaler(logger)
+	autoUnmarshaler := auto.NewUnmarshaler(logger)
 	return map[string]unmarshaler.MetricsUnmarshaler{
 		cwmsu.Type():     cwmsu,
 		otlpv1msu.Type(): otlpv1msu,
+		auto.TypeStr:     autoUnmarshaler,
 	}
 }
 
 // defaultLogsUnmarshalers creates a map of the available logs unmarshalers.
 func defaultLogsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.LogsUnmarshaler {
 	u := cwlog.NewUnmarshaler(logger)
+	autoUnmarshaler := auto.NewUnmarshaler(logger)
 	return map[string]unmarshaler.LogsUnmarshaler{
-		u.Type(): u,
+		u.Type():     u,
+		auto.TypeStr: autoUnmarshaler,
 	}
 }
 

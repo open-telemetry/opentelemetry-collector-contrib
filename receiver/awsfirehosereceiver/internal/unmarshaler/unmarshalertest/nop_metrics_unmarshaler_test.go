@@ -13,7 +13,7 @@ import (
 
 func TestNewNopMetrics(t *testing.T) {
 	unmarshaler := NewNopMetrics()
-	got, err := unmarshaler.Unmarshal(nil)
+	got, err := unmarshaler.UnmarshalMetrics("", nil)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, typeStr, unmarshaler.Type())
@@ -23,7 +23,7 @@ func TestNewWithMetrics(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().AppendEmpty()
 	unmarshaler := NewWithMetrics(metrics)
-	got, err := unmarshaler.Unmarshal(nil)
+	got, err := unmarshaler.UnmarshalMetrics("", nil)
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	require.Equal(t, metrics, got)
@@ -33,7 +33,7 @@ func TestNewWithMetrics(t *testing.T) {
 func TestNewErrMetrics(t *testing.T) {
 	wantErr := errors.New("test error")
 	unmarshaler := NewErrMetrics(wantErr)
-	got, err := unmarshaler.Unmarshal(nil)
+	got, err := unmarshaler.UnmarshalMetrics("", nil)
 	require.Error(t, err)
 	require.Equal(t, wantErr, err)
 	require.NotNil(t, got)
