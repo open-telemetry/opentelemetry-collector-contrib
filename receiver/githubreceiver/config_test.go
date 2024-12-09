@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfigGitHubReceiver := factory.CreateDefaultConfig()
 
 	defaultConfigGitHubReceiver.(*Config).Scrapers = map[string]internal.Config{
-		metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+		githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
 	}
 
 	defaultConfigGitHubReceiver.(*Config).WebHook = WebHook{
@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 			InitialDelay:       1 * time.Second,
 		},
 		Scrapers: map[string]internal.Config{
-			metadata.Type.String(): (&githubscraper.Factory{}).CreateDefaultConfig(),
+			githubscraper.TypeStr: (&githubscraper.Factory{}).CreateDefaultConfig(),
 		},
 		WebHook: WebHook{
 			ServerConfig: confighttp.ServerConfig{
