@@ -71,6 +71,8 @@ func isCloudwatchMetrics(data []byte) bool {
 	return true
 }
 
+// addCloudwatchLog unmarshalls the record to a cwlog.CWLog and adds
+// it to the logs
 func (u *Unmarshaler) addCloudwatchLog(
 	record []byte,
 	resourceLogs map[cwlog.ResourceAttributes]*cwlog.ResourceLogsBuilder,
@@ -94,6 +96,8 @@ func (u *Unmarshaler) addCloudwatchLog(
 	return nil
 }
 
+// addCloudwatchMetric unmarshalls the record to a cwmetric.CWMetric and adds
+// it to the metrics
 func (u *Unmarshaler) addCloudwatchMetric(
 	record []byte,
 	resourceMetrics map[cwmetricstream.ResourceAttributes]*cwmetricstream.ResourceMetricsBuilder,
@@ -118,6 +122,8 @@ func (u *Unmarshaler) addCloudwatchMetric(
 	return nil
 }
 
+// unmarshalJSONMetrics tries to unmarshal each JSON record as a metric
+// and returns all valid metrics
 func (u *Unmarshaler) unmarshalJSONMetrics(records [][]byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	resourceMetrics := make(map[cwmetricstream.ResourceAttributes]*cwmetricstream.ResourceMetricsBuilder)
@@ -162,6 +168,8 @@ func (u *Unmarshaler) unmarshalJSONMetrics(records [][]byte) (pmetric.Metrics, e
 	return md, nil
 }
 
+// unmarshalJSONLogs tries to unmarshal each JSON record as a log
+// and returns all valid logs
 func (u *Unmarshaler) unmarshalJSONLogs(records [][]byte) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	resourceLogs := make(map[cwlog.ResourceAttributes]*cwlog.ResourceLogsBuilder)
@@ -207,6 +215,8 @@ func (u *Unmarshaler) unmarshalJSONLogs(records [][]byte) (plog.Logs, error) {
 	return ld, nil
 }
 
+// unmarshallProtobufMetrics tries to unmarshal every record and
+// returns all valid metrics from these records
 func (u *Unmarshaler) unmarshallProtobufMetrics(records [][]byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	for recordIndex, record := range records {
