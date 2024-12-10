@@ -101,7 +101,8 @@ func createProfilesProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextConsumer consumerprofiles.Profiles) (processorprofiles.Profiles, error) {
+	nextConsumer consumerprofiles.Profiles,
+) (processorprofiles.Profiles, error) {
 	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
