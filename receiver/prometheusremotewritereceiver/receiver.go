@@ -32,7 +32,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		settings:         settings,
 		nextConsumer:     nextConsumer,
 		config:           cfg,
-		jobInstanceCache: make(map[uint64]pmetric.ResourceMetrics),
+		jobInstanceCache: make(map[uint64]pcommon.Resource),
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
@@ -43,7 +43,7 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	jobInstanceCache map[uint64]pmetric.ResourceMetrics
+	jobInstanceCache map[uint64]pcommon.Resource
 	config           *Config
 	server           *http.Server
 }
@@ -182,14 +182,15 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		cacheEntry, ok := prw.jobInstanceCache[hashedJobAndInstance]
 		if ok {
 			rm = pmetric.NewResourceMetrics()
-			cacheEntry.CopyTo(rm)
+			cacheEntry.CopyTo(rm.Resource())
 		} else {
 			// A remote-write request can have multiple timeseries with the same instance and job labels.
 			// While they are different timeseries in Prometheus, we're handling it as the same OTLP metric
 			// until we support 'target_info'.
+			// TODO: Use 'target_info' to populate the resource attributes instead of caching job and instance.
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			prw.jobInstanceCache[hashedJobAndInstance] = rm
+			prw.jobInstanceCache[hashedJobAndInstance] = rm.Resource()
 		}
 
 		switch ts.Metadata.Type {
