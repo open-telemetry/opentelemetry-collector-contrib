@@ -25,7 +25,7 @@ import (
 )
 
 var writeV2RequestFixture = &writev2.Request{
-	Symbols: []string{"", "__name__", "test_metric1", "job", "test", "instance", "service-x/107cn001", "d", "e", "foo", "bar", "f", "g", "h", "i", "Test gauge for test purposes", "Maybe op/sec who knows (:", "Test counter for test purposes"},
+	Symbols: []string{"", "__name__", "test_metric1", "job", "service-x/test", "instance", "107cn001", "d", "e", "foo", "bar", "f", "g", "h", "i", "Test gauge for test purposes", "Maybe op/sec who knows (:", "Test counter for test purposes"},
 	Timeseries: []writev2.TimeSeries{
 		{
 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
@@ -176,8 +176,8 @@ func TestTranslateV2(t *testing.T) {
 				expected := pmetric.NewMetrics()
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "test")
-				rmAttributes1.PutStr("service.name", "service-x")
+				rmAttributes1.PutStr("service.namespace", "service-x")
+				rmAttributes1.PutStr("service.name", "test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 				mAttributes1 := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 				mAttributes1.PutStr("d", "e")
@@ -185,8 +185,8 @@ func TestTranslateV2(t *testing.T) {
 
 				rm2 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes2 := rm2.Resource().Attributes()
-				rmAttributes2.PutStr("service.namespace", "foo")
-				rmAttributes2.PutStr("service.name", "bar")
+				rmAttributes2.PutStr("service.name", "foo")
+				rmAttributes2.PutStr("service.instance.id", "bar")
 				mAttributes2 := rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
 				mAttributes2.PutStr("d", "e")
 				mAttributes2.PutStr("foo", "bar")
