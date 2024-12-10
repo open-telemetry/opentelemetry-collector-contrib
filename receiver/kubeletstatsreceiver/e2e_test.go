@@ -41,7 +41,7 @@ func TestE2E(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "", map[string]string{})
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, "", map[string]string{}, "")
 
 	defer func() {
 		for _, obj := range append(collectorObjs) {
