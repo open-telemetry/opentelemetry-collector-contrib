@@ -6,9 +6,9 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.115.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.1-0.20241206185113-3f3e208e71b8
@@ -155,7 +155,7 @@ retract (
 	v0.65.0
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest => ../../pkg/k8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 

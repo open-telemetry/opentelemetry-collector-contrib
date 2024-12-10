@@ -439,7 +439,7 @@ replace github.com/DataDog/datadog-api-client-go/v2 => github.com/DataDog/datado
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest => ../../../pkg/k8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../../../receiver/dockerstatsreceiver
 
