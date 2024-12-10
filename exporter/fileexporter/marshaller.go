@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -29,10 +30,16 @@ var logsMarshalers = map[string]plog.Marshaler{
 	formatTypeProto: &plog.ProtoMarshaler{},
 }
 
+var profilesMarshalers = map[string]pprofile.Marshaler{
+	formatTypeJSON:  &pprofile.JSONMarshaler{},
+	formatTypeProto: &pprofile.ProtoMarshaler{},
+}
+
 type marshaller struct {
-	tracesMarshaler  ptrace.Marshaler
-	metricsMarshaler pmetric.Marshaler
-	logsMarshaler    plog.Marshaler
+	tracesMarshaler   ptrace.Marshaler
+	metricsMarshaler  pmetric.Marshaler
+	logsMarshaler     plog.Marshaler
+	profilesMarshaler pprofile.Marshaler
 
 	compression string
 	compressor  compressFunc
@@ -48,23 +55,26 @@ func newMarshaller(conf *Config, host component.Host) (*marshaller, error) {
 		}
 		// cast with ok to avoid panics.
 		tm, _ := encoding.(ptrace.Marshaler)
-		pm, _ := encoding.(pmetric.Marshaler)
+		mm, _ := encoding.(pmetric.Marshaler)
 		lm, _ := encoding.(plog.Marshaler)
+		pm, _ := encoding.(pprofile.Marshaler)
 		return &marshaller{
-			tracesMarshaler:  tm,
-			metricsMarshaler: pm,
-			logsMarshaler:    lm,
-			compression:      conf.Compression,
-			compressor:       buildCompressor(conf.Compression),
+			tracesMarshaler:   tm,
+			metricsMarshaler:  mm,
+			logsMarshaler:     lm,
+			profilesMarshaler: pm,
+			compression:       conf.Compression,
+			compressor:        buildCompressor(conf.Compression),
 		}, nil
 	}
 	return &marshaller{
-		formatType:       conf.FormatType,
-		tracesMarshaler:  tracesMarshalers[conf.FormatType],
-		metricsMarshaler: metricsMarshalers[conf.FormatType],
-		logsMarshaler:    logsMarshalers[conf.FormatType],
-		compression:      conf.Compression,
-		compressor:       buildCompressor(conf.Compression),
+		formatType:        conf.FormatType,
+		tracesMarshaler:   tracesMarshalers[conf.FormatType],
+		metricsMarshaler:  metricsMarshalers[conf.FormatType],
+		logsMarshaler:     logsMarshalers[conf.FormatType],
+		profilesMarshaler: profilesMarshalers[conf.FormatType],
+		compression:       conf.Compression,
+		compressor:        buildCompressor(conf.Compression),
 	}, nil
 }
 
@@ -97,6 +107,18 @@ func (m *marshaller) marshalLogs(ld plog.Logs) ([]byte, error) {
 		return nil, errors.New("logs are not supported by encoding")
 	}
 	buf, err := m.logsMarshaler.MarshalLogs(ld)
+	if err != nil {
+		return nil, err
+	}
+	buf = m.compressor(buf)
+	return buf, nil
+}
+
+func (m *marshaller) marshalProfiles(pd pprofile.Profiles) ([]byte, error) {
+	if m.profilesMarshaler == nil {
+		return nil, errors.New("profiles are not supported by encoding")
+	}
+	buf, err := m.profilesMarshaler.MarshalProfiles(pd)
 	if err != nil {
 		return nil, err
 	}
