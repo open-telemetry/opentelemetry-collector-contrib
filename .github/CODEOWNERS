@@ -244,7 +244,7 @@ receiver/k8sobjectsreceiver/                      @open-telemetry/collector-cont
 receiver/kafkametricsreceiver/                    @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 receiver/kubeletstatsreceiver/                    @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
-receiver/libhoneyreceiver/                        @open-telemetry/collector-contrib-approvers @TylerHelmuth 
+receiver/libhoneyreceiver/                        @open-telemetry/collector-contrib-approvers @TylerHelmuth
 receiver/lokireceiver/                            @open-telemetry/collector-contrib-approvers @mar4uk
 receiver/memcachedreceiver/                       @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                    @open-telemetry/collector-contrib-approvers @schmikei
