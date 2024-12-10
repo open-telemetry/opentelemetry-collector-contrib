@@ -18,15 +18,19 @@ import (
 )
 
 func TestPerRPCAuth(t *testing.T) {
-	metadata := map[string]string{
-		"authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 	// test meta data is properly
-	perRPCAuth := &PerRPCAuth{metadata: metadata}
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+	perRPCAuth := &PerRPCAuth{auth: bauth}
 	md, err := perRPCAuth.GetRequestMetadata(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, md, metadata)
+	expectedMetadata := map[string]string{
+		"authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+	}
+	assert.Equal(t, md, expectedMetadata)
 
 	// always true
 	ok := perRPCAuth.RequireTransportSecurity()
