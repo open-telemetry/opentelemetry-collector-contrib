@@ -178,6 +178,10 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// parse the body
 	body, err := fmr.getBody(r)
 	if err != nil {
+		fmr.settings.Logger.Error(
+			"Failed to parse the request body",
+			zap.Error(err),
+		)
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
@@ -185,15 +189,29 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// unmarshall request
 	var fr firehoseRequest
 	if err = json.Unmarshal(body, &fr); err != nil {
+		fmr.settings.Logger.Error(
+			"Failed to unmarshall firehose request",
+			zap.Error(err),
+		)
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
 
 	// validate request id
 	if fr.RequestID == "" {
+		fmr.settings.Logger.Error(
+			"Missing firehose request ID",
+			zap.Error(err),
+		)
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, errInBodyMissingRequestID)
 		return
 	} else if fr.RequestID != requestID {
+		fmr.settings.Logger.Error(
+			"Firehose request ID does not match the one in the header",
+			zap.Error(err),
+			zap.String(headerFirehoseRequestID, requestID),
+			zap.String("requestID", fr.RequestID),
+		)
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, errInBodyDiffRequestID)
 		return
 	}
@@ -201,6 +219,10 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// decode records
 	records, err := fmr.decodeRecords(fr.Records)
 	if err != nil {
+		fmr.settings.Logger.Error(
+			"Failed decoding the records",
+			zap.Error(err),
+		)
 		fmr.sendResponse(w, requestID, http.StatusBadRequest, err)
 		return
 	}
