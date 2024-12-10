@@ -191,8 +191,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("core")
 					assert.True(t, ok)
 					assert.EqualValues(t, "core-val", attrVal.Str())
@@ -208,8 +208,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "container.cpu.usage.total":
 					assert.False(t, validatedMetrics["container.cpu.usage.total"], "Found a duplicate in the metrics slice: container.cpu.usage.total")
 					validatedMetrics["container.cpu.usage.total"] = true
@@ -222,8 +222,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "container.memory.percent":
 					assert.False(t, validatedMetrics["container.memory.percent"], "Found a duplicate in the metrics slice: container.memory.percent")
 					validatedMetrics["container.memory.percent"] = true
