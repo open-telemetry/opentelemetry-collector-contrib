@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
