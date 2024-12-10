@@ -47,7 +47,7 @@ jobs:
         run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
       - name: Run markdown-link-check
         run: |
-          if [ -z "${{ needs.changedfiles.outputs.md_files }}" ]; then
+          if [ -n "${{ needs.changedfiles.outputs.yaml_files }}" ]; then
             md=$(find . -type f -name "*.md")
           else
             md="${{ needs.changedfiles.outputs.md_files }}"
