@@ -741,8 +741,11 @@ func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 		e, err := v.Name()
 		if err != nil {
 			if runtime.GOOS == "windows" {
-				// On Windows, we can't get some special process names, so we skip them.
-				se.logger.Warn("Failed to get executable name, skipping process", zap.Int32("pid", v.Pid), zap.Error(err))
+				// On Windows, if we can't get a process name, it is likely a zombie process, assume that and skip them.
+				se.logger.Warn(
+					"Failed to get executable name, it is likely a zombie process, skipping it",
+					zap.Int32("pid", v.Pid),
+					zap.Error(err))
 				continue
 			}
 
