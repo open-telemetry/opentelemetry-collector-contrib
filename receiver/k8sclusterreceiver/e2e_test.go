@@ -63,7 +63,7 @@ func TestE2EClusterScoped(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "cluster-scoped", "collector"), map[string]string{})
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "cluster-scoped", "collector"), map[string]string{}, "")
 
 	t.Cleanup(func() {
 		for _, obj := range append(collectorObjs) {
@@ -147,7 +147,7 @@ func TestE2ENamespaceScoped(t *testing.T) {
 	defer shutdownSink()
 
 	testID := uuid.NewString()[:8]
-	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "namespace-scoped", "collector"), map[string]string{})
+	collectorObjs := k8stest.CreateCollectorObjects(t, k8sClient, testID, filepath.Join(".", "testdata", "e2e", "namespace-scoped", "collector"), map[string]string{}, "")
 
 	t.Cleanup(func() {
 		for _, obj := range append(collectorObjs) {

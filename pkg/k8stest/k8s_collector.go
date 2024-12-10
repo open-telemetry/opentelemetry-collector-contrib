@@ -20,15 +20,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string, templateValues map[string]string) []*unstructured.Unstructured {
+func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, manifestsDir string, templateValues map[string]string, host string) []*unstructured.Unstructured {
 	if manifestsDir == "" {
 		manifestsDir = filepath.Join(".", "testdata", "e2e", "collector")
 	}
 	manifestFiles, err := os.ReadDir(manifestsDir)
 	require.NoErrorf(t, err, "failed to read collector manifests directory %s", manifestsDir)
-	host := HostEndpoint(t)
 	if host == "" {
-		require.Fail(t, "host endpoint cannot be empty")
+		host = HostEndpoint(t)
 	}
 	var podNamespace string
 	var podLabels map[string]any
