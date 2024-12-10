@@ -33,6 +33,7 @@ The following exporter configuration parameters are supported.
 | `endpoint`                | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                   |             |
 | `storage_class`         | [S3 storageclass](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html) | STANDARD   |
 | `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
+| `storage_class`         | [S3 storageclass](https://docs.aws.amazon.com/AmazonS3/latest/userguide/sc-howtoset.html) | STANDARD
 | `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                    | false       |
 | `compression`             | should the file be compressed                                                                                                              | none        |
 | `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled    |
