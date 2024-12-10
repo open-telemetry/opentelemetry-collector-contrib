@@ -47,7 +47,11 @@ func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.M
 
 // Load loads the most recent set of files to the database
 func Load(ctx context.Context, persister operator.Persister) ([]*reader.Metadata, error) {
-	encoded, err := persister.Get(ctx, knownFilesKey)
+	return LoadKey(ctx, persister, knownFilesKey)
+}
+
+func LoadKey(ctx context.Context, persister operator.Persister, key string) ([]*reader.Metadata, error) {
+	encoded, err := persister.Get(ctx, key)
 	if err != nil {
 		return nil, err
 	}
