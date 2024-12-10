@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/firehoselog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 )
 
@@ -32,6 +33,7 @@ var (
 		cwmetricstream.TypeStr:   true,
 		cwlog.TypeStr:            true,
 		otlpmetricstream.TypeStr: true,
+		firehoselog.TypeStr:      true,
 	}
 )
 
@@ -67,9 +69,11 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.Metri
 
 // defaultLogsUnmarshalers creates a map of the available logs unmarshalers.
 func defaultLogsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.LogsUnmarshaler {
-	u := cwlog.NewUnmarshaler(logger)
+	cwlogu := cwlog.NewUnmarshaler(logger)
+	firehoselogu := firehoselog.NewUnmarshaler(logger)
 	return map[string]unmarshaler.LogsUnmarshaler{
-		u.Type(): u,
+		cwlogu.Type():       cwlogu,
+		firehoselogu.Type(): firehoselogu,
 	}
 }
 
