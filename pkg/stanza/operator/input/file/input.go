@@ -5,6 +5,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -37,14 +38,41 @@ func (i *Input) Stop() error {
 	return i.fileConsumer.Stop()
 }
 
-func (i *Input) emit(ctx context.Context, token emit.Token) error {
-	if len(token.Body) == 0 {
-		return nil
+func (i *Input) emitBatch(ctx context.Context, tokens []emit.Token) error {
+	entries, conversionError := i.convertTokens(tokens)
+	if conversionError != nil {
+		conversionError = fmt.Errorf("convert tokens: %w", conversionError)
 	}
 
+	consumeError := i.WriteBatch(ctx, entries)
+	if consumeError != nil {
+		consumeError = fmt.Errorf("consume entries: %w", consumeError)
+	}
+
+	return errors.Join(conversionError, consumeError)
+}
+
+func (i *Input) convertTokens(tokens []emit.Token) ([]*entry.Entry, error) {
+	entries := make([]*entry.Entry, 0, len(tokens))
+	var errs []error
+	for _, token := range tokens {
+		if len(token.Body) == 0 {
+			continue
+		}
+		entry, err := i.convertToken(token)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		entries = append(entries, entry)
+	}
+	return entries, errors.Join(errs...)
+}
+
+func (i *Input) convertToken(token emit.Token) (*entry.Entry, error) {
 	ent, err := i.NewEntry(i.toBody(token.Body))
 	if err != nil {
-		return fmt.Errorf("create entry: %w", err)
+		return nil, fmt.Errorf("create entry: %w", err)
 	}
 
 	for k, v := range token.Attributes {
@@ -52,5 +80,5 @@ func (i *Input) emit(ctx context.Context, token emit.Token) error {
 			i.Logger().Error("set attribute", zap.Error(err))
 		}
 	}
-	return i.Write(ctx, ent)
+	return ent, nil
 }

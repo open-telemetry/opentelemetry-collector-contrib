@@ -83,18 +83,20 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
-		ctx = obsrecv.StartLogsOp(ctx)
-		var l plog.Logs
-		l, err = logsUnmarshaler.UnmarshalLogs(token.Body)
-		if err != nil {
-			obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
-		} else {
-			logRecordCount := l.LogRecordCount()
-			if logRecordCount != 0 {
-				err = logs.ConsumeLogs(ctx, l)
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+		for _, token := range tokens {
+			ctx = obsrecv.StartLogsOp(ctx)
+			var l plog.Logs
+			l, err = logsUnmarshaler.UnmarshalLogs(token.Body)
+			if err != nil {
+				obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
+			} else {
+				logRecordCount := l.LogRecordCount()
+				if logRecordCount != 0 {
+					err = logs.ConsumeLogs(ctx, l)
+				}
+				obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 			}
-			obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 		}
 		return nil
 	}, opts...)
@@ -120,17 +122,19 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
-		ctx = obsrecv.StartMetricsOp(ctx)
-		var m pmetric.Metrics
-		m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
-		if err != nil {
-			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
-		} else {
-			if m.ResourceMetrics().Len() != 0 {
-				err = metrics.ConsumeMetrics(ctx, m)
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+		for _, token := range tokens {
+			ctx = obsrecv.StartMetricsOp(ctx)
+			var m pmetric.Metrics
+			m, err = metricsUnmarshaler.UnmarshalMetrics(token.Body)
+			if err != nil {
+				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
+			} else {
+				if m.ResourceMetrics().Len() != 0 {
+					err = metrics.ConsumeMetrics(ctx, m)
+				}
+				obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), err)
 			}
-			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), err)
 		}
 		return nil
 	}, opts...)
@@ -156,17 +160,19 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
-		ctx = obsrecv.StartTracesOp(ctx)
-		var t ptrace.Traces
-		t, err = tracesUnmarshaler.UnmarshalTraces(token.Body)
-		if err != nil {
-			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
-		} else {
-			if t.ResourceSpans().Len() != 0 {
-				err = traces.ConsumeTraces(ctx, t)
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+		for _, token := range tokens {
+			ctx = obsrecv.StartTracesOp(ctx)
+			var t ptrace.Traces
+			t, err = tracesUnmarshaler.UnmarshalTraces(token.Body)
+			if err != nil {
+				obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
+			} else {
+				if t.ResourceSpans().Len() != 0 {
+					err = traces.ConsumeTraces(ctx, t)
+				}
+				obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
 			}
-			obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
 		}
 		return nil
 	}, opts...)
@@ -184,10 +190,12 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
-		p, _ := profilesUnmarshaler.UnmarshalProfiles(token.Body)
-		if p.ResourceProfiles().Len() != 0 {
-			_ = profiles.ConsumeProfiles(ctx, p)
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, tokens []emit.Token) error {
+		for _, token := range tokens {
+			p, _ := profilesUnmarshaler.UnmarshalProfiles(token.Body)
+			if p.ResourceProfiles().Len() != 0 {
+				_ = profiles.ConsumeProfiles(ctx, p)
+			}
 		}
 		return nil
 	}, opts...)
