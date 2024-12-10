@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiver/prometheusremotewrite
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Parse labels from Prometheus Remote Write requests into Resource and Scope Attributes
+note: Parse labels from Prometheus Remote Write requests into Resource and Metric Attributes.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [35656]
