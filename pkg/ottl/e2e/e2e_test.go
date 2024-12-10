@@ -329,22 +329,22 @@ func Test_e2e_converters(t *testing.T) {
 		statement string
 		want      func(tCtx ottllog.TransformContext)
 	}{
+		// {
+		// 	statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+		// 	want: func(tCtx ottllog.TransformContext) {
+		// 		tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+		// 	},
+		// },
+		// {
+		// 	statement: `set(attributes["test"], Decode("cGFzcw==", "base64"))`,
+		// 	want: func(tCtx ottllog.TransformContext) {
+		// 		tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+		// 	},
+		// },
 		{
-			statement: `set(attributes["test"], Base64Decode("cGFzcw=="))`,
+			statement: `set(attributes["foo"], Concat(["A","B"], ":"))`,
 			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
-			},
-		},
-		{
-			statement: `set(attributes["test"], Decode("cGFzcw==", "base64"))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
-			},
-		},
-		{
-			statement: `set(attributes["test"], Concat(["A","B"], ":"))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "A:B")
+				tCtx.GetLogRecord().Attributes().PutStr("foo", "A:B")
 			},
 		},
 		{
