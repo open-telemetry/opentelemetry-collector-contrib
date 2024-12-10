@@ -149,6 +149,7 @@ func TestTrace10kSPS(t *testing.T) {
 				performanceResultsSummary,
 				processors,
 				nil,
+				nil,
 			)
 		})
 	}

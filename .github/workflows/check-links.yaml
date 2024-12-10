@@ -16,7 +16,7 @@ env:
 jobs:
   changedfiles:
     name: changed files
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       md_files: ${{ steps.changed-files.outputs.md_all_changed_files }}
@@ -36,7 +36,7 @@ jobs:
               - .github/workflows/check-links.yaml
 
   check-links:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: changedfiles
     if: needs.changedfiles.outputs.md_files || needs.changedfiles.outputs.yaml_files
     steps:
