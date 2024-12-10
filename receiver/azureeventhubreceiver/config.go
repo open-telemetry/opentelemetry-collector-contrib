@@ -6,6 +6,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Azure/azure-amqp-common-go/v4/conn"
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +33,20 @@ type Config struct {
 	Format                   string        `mapstructure:"format"`
 	ConsumerGroup            string        `mapstructure:"group"`
 	ApplySemanticConventions bool          `mapstructure:"apply_semantic_conventions"`
+	TimeFormat               TimeFormat    `mapstructure:"time_format"`
+	TimeOffset               TimeOffset    `mapstructure:"time_offset"`
+}
+
+type TimeFormat struct {
+	Logs    []string `mapstructure:"logs"`
+	Metrics []string `mapstructure:"metrics"`
+	Traces  []string `mapstructure:"traces"`
+}
+
+type TimeOffset struct {
+	Logs    time.Duration `mapstructure:"logs"`
+	Metrics time.Duration `mapstructure:"metrics"`
+	Traces  time.Duration `mapstructure:"traces"`
 }
 
 func isValidFormat(format string) bool {

@@ -110,21 +110,21 @@ func (f *eventhubReceiverFactory) getReceiver(
 			if logFormat(receiverConfig.Format) == rawLogFormat {
 				logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
 			} else {
-				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.ApplySemanticConventions)
+				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.ApplySemanticConventions, receiverConfig.TimeFormat.Logs, receiverConfig.TimeOffset.Logs)
 			}
 		case pipeline.SignalMetrics:
 			if logFormat(receiverConfig.Format) == rawLogFormat {
 				metricsUnmarshaler = nil
 				err = errors.New("raw format not supported for Metrics")
 			} else {
-				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger)
+				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.TimeFormat.Metrics, receiverConfig.TimeOffset.Metrics)
 			}
 		case pipeline.SignalTraces:
 			if logFormat(receiverConfig.Format) == rawLogFormat {
 				tracesUnmarshaler = nil
 				err = errors.New("raw format not supported for Traces")
 			} else {
-				tracesUnmarshaler = newAzureTracesUnmarshaler(settings.BuildInfo, settings.Logger)
+				tracesUnmarshaler = newAzureTracesUnmarshaler(settings.BuildInfo, settings.Logger, receiverConfig.TimeFormat.Traces, receiverConfig.TimeOffset.Traces)
 			}
 		}
 

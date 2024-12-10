@@ -5,6 +5,7 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -23,11 +24,16 @@ import (
 
 const (
 	azureResourceID = "azure.resource.id"
+	ISO8601         = "iso8601"
 )
 
+var errNotSupportedTimeFormat = errors.New("not supported time format")
+
 type azureResourceMetricsUnmarshaler struct {
-	buildInfo component.BuildInfo
-	logger    *zap.Logger
+	buildInfo  component.BuildInfo
+	logger     *zap.Logger
+	TimeFormat []string
+	TimeOffset time.Duration
 }
 
 // azureMetricRecords represents an array of Azure metric records
@@ -50,10 +56,12 @@ type azureMetricRecord struct {
 	Average    float64 `json:"average"`
 }
 
-func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventMetricsUnmarshaler {
+func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string, timeOffset time.Duration) eventMetricsUnmarshaler {
 	return azureResourceMetricsUnmarshaler{
-		buildInfo: buildInfo,
-		logger:    logger,
+		buildInfo:  buildInfo,
+		logger:     logger,
+		TimeFormat: timeFormat,
+		TimeOffset: timeOffset,
 	}
 }
 
@@ -90,7 +98,7 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 			resourceID = azureMetric.ResourceID
 		}
 
-		nanos, err := asTimestamp(azureMetric.Time)
+		nanos, err := asTimestamp(azureMetric.Time, r.TimeFormat, r.TimeOffset)
 		if err != nil {
 			r.logger.Warn("Invalid Timestamp", zap.String("time", azureMetric.Time))
 			continue
@@ -152,10 +160,31 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
-func asTimestamp(s string) (pcommon.Timestamp, error) {
-	t, err := iso8601.ParseString(s)
+func asTimestamp(s string, format []string, offset time.Duration) (pcommon.Timestamp, error) {
+	var err error
+	var t time.Time
+	if format != nil {
+		for _, v := range format {
+			if v == ISO8601 {
+				t, err = iso8601.ParseString(s)
+			} else {
+				t, err = time.Parse(v, s)
+			}
+			if err == nil {
+				break
+			}
+		}
+		if t == (time.Time{}) {
+			err = errNotSupportedTimeFormat
+		}
+	} else {
+		t, err = iso8601.ParseString(s)
+	}
 	if err != nil {
 		return 0, err
 	}
-	return pcommon.Timestamp(t.UnixNano()), nil
+
+	timestamp := t.Add(offset * time.Hour).UnixNano()
+
+	return pcommon.Timestamp(timestamp), nil
 }
