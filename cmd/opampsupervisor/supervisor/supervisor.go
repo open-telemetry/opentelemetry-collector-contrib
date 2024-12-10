@@ -1013,14 +1013,17 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 		s.logger.Info("No config present, not starting agent.")
 		// need to manually trigger updating effective config
 		s.effectiveConfig.Store(s.cfgState.Load().(*configState).mergedConfig)
-		s.opampClient.UpdateEffectiveConfig(context.Background())
+		err := s.opampClient.UpdateEffectiveConfig(context.Background())
+		if err != nil {
+			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+		}
 		return agentNotStarting, nil
 	}
 
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
-		startErr := fmt.Errorf("Cannot start the agent: %v", err)
+		startErr := fmt.Errorf("Cannot start the agent: %w", err)
 		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: startErr.Error()})
 		if err != nil {
 			s.logger.Error("Failed to report OpAMP client health", zap.Error(err))
