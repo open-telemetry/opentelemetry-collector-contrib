@@ -178,7 +178,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		var rm pmetric.ResourceMetrics
 		// This cache should be populated by the metric 'target_info', but we're not handling it yet.
-		hashedJobAndInstance := xxhash.Sum64String(ls.Get("job") + ls.Get("instance"))
+		hashedJobAndInstance := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 		cacheEntry, ok := prw.jobInstanceCache[hashedJobAndInstance]
 		if ok {
 			rm = pmetric.NewResourceMetrics()
