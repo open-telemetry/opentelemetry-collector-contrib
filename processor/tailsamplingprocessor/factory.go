@@ -9,6 +9,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -38,5 +40,10 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	tCfg := cfg.(*Config)
-	return newTracesProcessor(ctx, params, nextConsumer, *tCfg)
+	opts := []Option{}
+
+	if telemetry.IsRecordPolicyEnabled() {
+		opts = append(opts, withRecordPolicy())
+	}
+	return newTracesProcessor(ctx, params, nextConsumer, *tCfg, opts...)
 }
