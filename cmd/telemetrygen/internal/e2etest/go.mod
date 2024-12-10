@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetryge
 
 go 1.22.7
 
-toolchain go1.22.8
+toolchain go1.23.4
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen v0.114.0
