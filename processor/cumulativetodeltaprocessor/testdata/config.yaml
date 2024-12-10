@@ -42,6 +42,49 @@ cumulativetodelta/regexp:
       - b*
   max_staleness: 10s
 
+cumulativetodelta/metric_type_filter:
+  include:
+    match_type: regexp
+    metrics:
+      - a*
+    metric_types:
+      - sum
+  exclude:
+    match_type: regexp
+    metrics:
+      - b*
+    metric_types:
+      - histogram
+  max_staleness: 10s
+
+cumulativetodelta/invalid_include_metric_type_filter:
+  include:
+    match_type: regexp
+    metrics:
+      - a*
+    metric_types:
+      - gauge
+  exclude:
+    match_type: regexp
+    metrics:
+      - b*
+    metric_types:
+      - histogram
+  max_staleness: 10s
+
+cumulativetodelta/invalid_exclude_metric_type_filter:
+  include:
+    match_type: regexp
+    metrics:
+      - a*
+  exclude:
+    match_type: regexp
+    metrics:
+      - b*
+    metric_types:
+      - Invalid
+  max_staleness: 10s
+
 cumulativetodelta/auto:
   initial_value: auto
 
