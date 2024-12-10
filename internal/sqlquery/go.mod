@@ -6,7 +6,7 @@ require (
 	github.com/SAP/go-hdb v1.12.6
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/lib/pq v1.10.9
-	github.com/microsoft/go-mssqldb v1.7.2
+	github.com/microsoft/go-mssqldb v1.8.0
 	github.com/sijms/go-ora/v2 v2.8.22
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/stretchr/testify v1.10.0
@@ -23,8 +23,8 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.8.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
