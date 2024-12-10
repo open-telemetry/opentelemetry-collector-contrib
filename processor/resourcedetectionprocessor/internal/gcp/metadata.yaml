@@ -71,3 +71,15 @@ resource_attributes:
     description: The hostname of the GCE instance.
     type: string
     enabled: false
+  gcp.gce.instance.group.manager.name:
+    description: The name of an instanceGroupManager.
+    type: string
+    enabled: true
+  gcp.gce.instance.group.manager.zone:
+    description: The zone of a zonal instanceGroupManager.
+    type: string
+    enabled: true
+  gcp.gce.instance.group.manager.region:
+    description: The region of a regional instanceGroupManager.
+    type: string
+    enabled: true
