@@ -445,6 +445,7 @@ Available Converters:
 - [Minutes](#minutes)
 - [Month](#month)
 - [Nanoseconds](#nanoseconds)
+- [NetworkDirection](#networkdirection)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
@@ -1238,6 +1239,32 @@ The returned type is `int64`.
 Examples:
 
 - `Nanoseconds(Duration("1h"))`
+
+### NetworkDirection
+
+`NetworkDirection(sourceIP, destinationIP, Optional[[]internal_networks])`
+
+`NetworkDirection` function calculates the network direction given a source IP address, destination IP address, and a list of internal networks.
+Returned value is one of following strings: `internal`,`external`,`inbound`,`outbound`.
+
+`sourceIP` is a getter that returns string, `destinationIP` is a getter that returns string and `internal_networks` is an optional array of strings.
+
+The named ranges supported for the `internal_networks` option are:
+
+- `loopback` - Matches loopback addresses in the range of 127.0.0.0/8 or ::1/128.
+- `unicast` or `global_unicast` - Matches global unicast addresses defined in RFC 1122, RFC 4632, and RFC 4291 with the exception of the IPv4 broadcast address (255.255.255.255). This includes private address ranges.
+- `multicast` - Matches multicast addresses.
+- `interface_local_multicast` - Matches IPv6 interface-local multicast addresses.
+- `link_local_unicast` - Matches link-local unicast addresses.
+- `link_local_multicast` - Matches link-local multicast addresses.
+- `private` - Matches private address ranges defined in RFC 1918 (IPv4) and RFC 4193 (IPv6).
+- `public` - Matches addresses that are not loopback, unspecified, IPv4 broadcast, link local unicast, link local multicast, interface local multicast, or private.
+- `unspecified` - Matches unspecified addresses (either the IPv4 address "0.0.0.0" or the IPv6 address "::").
+
+- `NetworkDirection("192.168.1.1", "192.168.1.2", ["private"])`
+- `NetworkDirection("192.168.1.1", "192.168.1.2", ["public"])`
+- `NetworkDirection("0.0.0.0", "0.0.0.0", ["unspecified"])`
+- `NetworkDirection("192.168.1.1", "10.0.1.1", ["10.0.0.0/8"])`
 
 ### Now
 
