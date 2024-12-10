@@ -1012,7 +1012,6 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 		// Don't start the agent if there is no config to run
 		s.logger.Info("No config present, not starting agent.")
 		// need to manually trigger updating effective config
-		s.effectiveConfig.Store(s.cfgState.Load().(*configState).mergedConfig)
 		err := s.opampClient.UpdateEffectiveConfig(context.Background())
 		if err != nil {
 			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
