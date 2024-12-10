@@ -57,7 +57,7 @@ func TestExtension(t *testing.T) {
 				"header": "value",
 			},
 			clientRequestArgs: clientRequestArgs{
-				method: "GET",
+				method: http.MethodGet,
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
 				headers: map[string]string{
 					"client_header": "val1",
@@ -83,7 +83,7 @@ func TestExtension(t *testing.T) {
 				"header": "value",
 			},
 			clientRequestArgs: clientRequestArgs{
-				method: "PUT",
+				method: http.MethodPut,
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
 			},
 		},
@@ -123,7 +123,7 @@ func TestExtension(t *testing.T) {
 			expectedBackendResponseBody: []byte("\n"),
 			requestErrorAtForwarder:     true,
 			clientRequestArgs: clientRequestArgs{
-				method: "GET",
+				method: http.MethodGet,
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
 			},
 		},
@@ -266,7 +266,7 @@ func readBody(body io.ReadCloser) []byte {
 }
 
 func getParsedURL(t *testing.T, rawURL string) *url.URL {
-	var url, err = url.Parse(rawURL)
+	url, err := url.Parse(rawURL)
 	require.NoError(t, err)
 	return url
 }

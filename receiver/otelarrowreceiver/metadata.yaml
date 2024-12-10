@@ -7,29 +7,3 @@ status:
   distributions: [contrib, k8s]
   codeowners:
     active: [jmacd, moh-osman3]
-
-telemetry:
-  metrics:
-    otel_arrow_receiver_in_flight_bytes:
-      description: Number of bytes in flight
-      unit: By
-      enabled: true
-      sum:
-        monotonic: false
-        value_type: int
-
-    otel_arrow_receiver_in_flight_items:
-      description: Number of items in flight
-      enabled: true
-      unit: "1"
-      sum:
-        monotonic: false
-        value_type: int
-
-    otel_arrow_receiver_in_flight_requests:
-      description: Number of requests in flight
-      enabled: true
-      unit: "1"
-      sum:
-        monotonic: false
-        value_type: int

@@ -17,13 +17,13 @@ resource_attributes:
 
 attributes:
   service_type:
-    description: Service type associateed with metric query
+    description: Service type associateed with metric query.
     type: string
   error_message:
-    description: Error message reported by query if present
+    description: Error message reported by query if present.
     type: string 
   reported_client_type:
-    description: Client type used for attempt
+    description: Client type used for attempt.
     type: string
   is_success:
     description: Login status (success or failure).
@@ -164,14 +164,14 @@ metrics:
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.local.avg:
-    description: Avergae bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.
+    description: Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.
     unit: By 
     gauge:
       value_type: double
     enabled: false 
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.remote.avg:
-    description: Avergae bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.
+    description: Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.
     unit: By
     gauge:
       value_type: double

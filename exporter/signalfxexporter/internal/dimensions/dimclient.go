@@ -230,7 +230,6 @@ func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate 
 	)
 
 	req, err = dc.makePatchRequest(ctx, dimUpdate)
-
 	if err != nil {
 		return err
 	}

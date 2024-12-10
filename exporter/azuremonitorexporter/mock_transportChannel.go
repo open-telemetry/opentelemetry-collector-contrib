@@ -19,3 +19,7 @@ type mockTransportChannel struct {
 func (_m *mockTransportChannel) Send(_a0 *contracts.Envelope) {
 	_m.Called(_a0)
 }
+
+func (_m *mockTransportChannel) Flush() {
+	_m.Called()
+}

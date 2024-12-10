@@ -144,6 +144,39 @@ func Test_flatten(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "max depth with slice",
+			target: map[string]any{
+				"0": map[string]any{
+					"1": map[string]any{
+						"2": map[string]any{
+							"3": "value",
+						},
+					},
+				},
+				"1": map[string]any{
+					"1": []any{
+						map[string]any{
+							"1": "value",
+						},
+					},
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.NewTestingOptional[int64](1),
+			expected: map[string]any{
+				"0.1": map[string]any{
+					"2": map[string]any{
+						"3": "value",
+					},
+				},
+				"1.1": []any{
+					map[string]any{
+						"1": "value",
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -179,11 +212,29 @@ func Test_flatten_bad_target(t *testing.T) {
 }
 
 func Test_flatten_bad_depth(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, _ any) (any, error) {
-			return pcommon.NewMap(), nil
+	tests := []struct {
+		name  string
+		depth ottl.Optional[int64]
+	}{
+		{
+			name:  "negative depth",
+			depth: ottl.NewTestingOptional[int64](-1),
+		},
+		{
+			name:  "zero depth",
+			depth: ottl.NewTestingOptional[int64](0),
 		},
 	}
-	_, err := flatten[any](target, ottl.Optional[string]{}, ottl.NewTestingOptional[int64](-1))
-	assert.Error(t, err)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			target := &ottl.StandardPMapGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return pcommon.NewMap(), nil
+				},
+			}
+			_, err := flatten[any](target, ottl.Optional[string]{}, tt.depth)
+			assert.Error(t, err)
+		})
+	}
 }

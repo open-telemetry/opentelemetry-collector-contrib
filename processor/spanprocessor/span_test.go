@@ -414,8 +414,9 @@ func TestSpanProcessor_NilName(t *testing.T) {
 // TestSpanProcessor_ToAttributes
 func TestSpanProcessor_ToAttributes(t *testing.T) {
 	testCases := []struct {
-		rules           []string
-		breakAfterMatch bool
+		rules            []string
+		breakAfterMatch  bool
+		keepOriginalName bool
 		testCase
 	}{
 		{
@@ -460,6 +461,23 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 
 		{
 			rules: []string{
+				`^\/api\/.*\/document\/(?P<documentId>.*)\/update\/3$`,
+				`^\/api\/(?P<version>.*)\/document\/.*\/update\/3$`,
+			},
+			testCase: testCase{
+				inputName:  "/api/v1/document/321083210/update/3",
+				outputName: "/api/v1/document/321083210/update/3",
+				outputAttributes: map[string]any{
+					"documentId": "321083210",
+					"version":    "v1",
+				},
+			},
+			breakAfterMatch:  false,
+			keepOriginalName: true,
+		},
+
+		{
+			rules: []string{
 				`^\/api\/v1\/document\/(?P<documentId>.*)\/update\/4$`,
 				`^\/api\/(?P<version>.*)\/document\/(?P<documentId>.*)\/update\/4$`,
 			},
@@ -491,6 +509,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 	for _, tc := range testCases {
 		oCfg.Rename.ToAttributes.Rules = tc.rules
 		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
+		oCfg.Rename.ToAttributes.KeepOriginalName = tc.keepOriginalName
 		tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
 		require.NoError(t, err)
 		require.NotNil(t, tp)

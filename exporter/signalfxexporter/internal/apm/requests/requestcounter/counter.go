@@ -17,9 +17,11 @@ const (
 	resetRequestCountKey     key = 3
 )
 
-type getRequestCount func() uint32
-type incrementRequestCount func()
-type resetRequestCount func()
+type (
+	getRequestCount       func() uint32
+	incrementRequestCount func()
+	resetRequestCount     func()
+)
 
 // checks if a counter already exists on the context
 func counterExists(ctx context.Context) (exists bool) {

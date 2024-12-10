@@ -5,6 +5,7 @@ package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -168,7 +169,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 	body.PutStr(conventions.AttributeCloudRegion, "West US")
 
 	properties := body.PutEmptyMap(azureProperties)
-	properties.PutStr("method", "GET")
+	properties.PutStr("method", http.MethodGet)
 	properties.PutStr("url", "https://api.azure-api.net/sessions")
 	properties.PutDouble("backendResponseCode", 200)
 	properties.PutDouble("responseCode", 200)
@@ -184,7 +185,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 	properties.PutStr("backendProtocol", "HTTP/1.1")
 	properties.PutStr("apiRevision", "1")
 	properties.PutStr("clientTlsVersion", "1.2")
-	properties.PutStr("backendMethod", "GET")
+	properties.PutStr("backendMethod", http.MethodGet)
 	properties.PutStr("backendUrl", "https://api.azurewebsites.net/sessions")
 	return lr
 }()
@@ -207,7 +208,7 @@ var badTimeLogRecord = func() plog.LogRecord {
 	properties.PutStr("instanceId", "appgw_2")
 	properties.PutStr("clientIP", "185.42.129.24")
 	properties.PutDouble("clientPort", 45057)
-	properties.PutStr("httpMethod", "GET")
+	properties.PutStr("httpMethod", http.MethodGet)
 	properties.PutStr("originalRequestUriWithArgs", "/")
 	properties.PutStr("requestUri", "/")
 	properties.PutStr("requestQuery", "")
@@ -578,7 +579,7 @@ func TestAzureCdnAccessLog(t *testing.T) {
 
 	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
-	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, http.MethodGet, record["http.request.method"])
 	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
 	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
 	assert.Equal(t, "https://test.net/", record["url.full"])
@@ -600,7 +601,7 @@ func TestFrontDoorAccessLog(t *testing.T) {
 
 	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
-	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, http.MethodGet, record["http.request.method"])
 	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
 	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
 	assert.Equal(t, "https://test.net/", record["url.full"])
@@ -628,7 +629,7 @@ func TestFrontDoorHealthProbeLog(t *testing.T) {
 
 	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Map().AsRaw()
 
-	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, http.MethodGet, record["http.request.method"])
 	assert.Equal(t, int64(200), record["http.response.status_code"])
 	assert.Equal(t, "https://probe.net/health", record["url.full"])
 	assert.Equal(t, "42.42.42.42", record["server.address"])
@@ -701,7 +702,7 @@ func TestAppServiceHTTPLog(t *testing.T) {
 	assert.Equal(t, int64(80), record["server.port"])
 	assert.Equal(t, "/api/test/", record["url.path"])
 	assert.Equal(t, "foo=42", record["url.query"])
-	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, http.MethodGet, record["http.request.method"])
 	assert.Equal(t, 0.42, record["http.server.request.duration"])
 	assert.Equal(t, int64(200), record["http.response.status_code"])
 	assert.Equal(t, int64(4242), record["http.request.body.size"])

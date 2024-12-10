@@ -30,11 +30,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
+	cfg := factory.CreateDefaultConfig().(*Config)
 
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
-	assert.Equal(t, err, pipeline.ErrSignalNotSupported)
-	assert.Nil(t, tReceiver)
+	assert.NoError(t, err)
+	assert.NotNil(t, tReceiver)
 
 	mReceiver, err := factory.CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
