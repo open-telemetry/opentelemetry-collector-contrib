@@ -38,6 +38,18 @@ const (
 )
 
 func TestNewClient(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+
+	clientConfigNonExistentCA := confighttp.NewDefaultClientConfig()
+	clientConfigNonExistentCA.Endpoint = defaultEndpoint
+	clientConfigNonExistentCA.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
 	testCase := []struct {
 		desc        string
 		cfg         *Config
@@ -49,14 +61,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
-						},
-					},
-				},
+				ClientConfig: clientConfigNonExistentCA,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -66,10 +71,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{},
-					Endpoint:   defaultEndpoint,
-				},
+				ClientConfig: clientConfig,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -83,7 +85,7 @@ func TestNewClient(t *testing.T) {
 			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -135,7 +137,7 @@ func TestGetNewToken(t *testing.T) {
 				tc := createTestClient(t, ts.URL)
 
 				err := tc.GetNewToken(context.Background())
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 				hasToken := tc.HasToken()
 				require.False(t, hasToken)
 			},
@@ -215,7 +217,7 @@ func TestGetVirtualServers(t *testing.T) {
 
 				pools, err := tc.GetPools(context.Background())
 				require.Nil(t, pools)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{
@@ -413,7 +415,7 @@ func TestGetPools(t *testing.T) {
 
 				pools, err := tc.GetPools(context.Background())
 				require.Nil(t, pools)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{
@@ -541,7 +543,8 @@ func TestGetPoolMembers(t *testing.T) {
 				require.EqualError(t, err, errors.New("non 200 code returned 401").Error())
 				require.Equal(t, expected, poolMembers)
 			},
-		}, {
+		},
+		{
 			desc: "Successful call empty body for some",
 			testFunc: func(t *testing.T) {
 				// Setup test server
@@ -666,7 +669,7 @@ func TestGetNodes(t *testing.T) {
 
 				nodes, err := tc.GetNodes(context.Background())
 				require.Nil(t, nodes)
-				require.Contains(t, err.Error(), "failed to decode response payload")
+				require.ErrorContains(t, err, "failed to decode response payload")
 			},
 		},
 		{

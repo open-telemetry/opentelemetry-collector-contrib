@@ -163,9 +163,8 @@ func TestPayloadToLogRecord(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			logs, err := payloadToLogs(now, []byte(tc.payload))
 			if tc.expectedErr != "" {
-				require.Error(t, err)
 				require.Nil(t, logs)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
@@ -240,12 +239,10 @@ func TestVerifyHMACSignature(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			err := verifyHMACSignature(tc.secret, tc.payload, tc.signatureHeader)
 			if tc.expectedErr != "" {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expectedErr)
+				require.ErrorContains(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
 			}
-
 		})
 	}
 }
@@ -262,7 +259,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "No ContentLength set",
 			request: &http.Request{
 				ContentLength: -1,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -277,7 +274,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "ContentLength too large",
 			request: &http.Request{
 				ContentLength: maxContentLength + 1,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -292,7 +289,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "ContentLength is incorrect for payload",
 			request: &http.Request{
 				ContentLength: 1,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -307,7 +304,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "ContentLength is larger than actual payload",
 			request: &http.Request{
 				ContentLength: 32,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -322,7 +319,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "No HMAC signature",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 			},
@@ -334,7 +331,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Incorrect HMAC signature",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -349,7 +346,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Invalid payload",
 			request: &http.Request{
 				ContentLength: 14,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"`)),
 				Header: map[string][]string{
@@ -364,7 +361,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Consumer fails",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{
@@ -379,7 +376,7 @@ func TestHandleRequest(t *testing.T) {
 			name: "Request succeeds",
 			request: &http.Request{
 				ContentLength: 15,
-				Method:        "POST",
+				Method:        http.MethodPost,
 				URL:           &url.URL{},
 				Body:          io.NopCloser(bytes.NewBufferString(`{"id": "an-id"}`)),
 				Header: map[string][]string{

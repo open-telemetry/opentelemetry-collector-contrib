@@ -4,6 +4,7 @@
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 
 import (
+	"fmt"
 	"net"
 	"os/exec"
 	"runtime"
@@ -144,4 +145,9 @@ func GetAvailablePort(t testing.TB) int {
 	require.NoError(t, err)
 
 	return portInt
+}
+
+// EndpointForPort gets the endpoint for a given port using localhost.
+func EndpointForPort(port int) string {
+	return fmt.Sprintf("localhost:%d", port)
 }

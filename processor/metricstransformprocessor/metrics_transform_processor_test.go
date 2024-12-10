@@ -27,7 +27,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				logger:     zap.NewExample(),
 			}
 
-			mtp, err := processorhelper.NewMetricsProcessor(
+			mtp, err := processorhelper.NewMetrics(
 				context.Background(),
 				processortest.NewNopSettings(),
 				&Config{},

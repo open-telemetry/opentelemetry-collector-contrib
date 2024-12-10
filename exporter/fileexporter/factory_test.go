@@ -22,7 +22,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsExporterError(t *testing.T) {
+func TestCreateMetricsError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
@@ -35,7 +35,7 @@ func TestCreateMetricsExporterError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 		Path:       tempFileName(t),
@@ -49,7 +49,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 		Path:       tempFileName(t),
@@ -63,7 +63,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestCreateTracesExporterError(t *testing.T) {
+func TestCreateTracesError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
@@ -76,7 +76,7 @@ func TestCreateTracesExporterError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 		Path:       tempFileName(t),
@@ -90,11 +90,38 @@ func TestCreateLogsExporter(t *testing.T) {
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestCreateLogsExporterError(t *testing.T) {
+func TestCreateLogsError(t *testing.T) {
 	cfg := &Config{
 		FormatType: formatTypeJSON,
 	}
 	e, err := createLogsExporter(
+		context.Background(),
+		exportertest.NewNopSettings(),
+		cfg)
+	require.NoError(t, err)
+	err = e.Start(context.Background(), componenttest.NewNopHost())
+	assert.Error(t, err)
+}
+
+func TestCreateProfiles(t *testing.T) {
+	cfg := &Config{
+		FormatType: formatTypeJSON,
+		Path:       tempFileName(t),
+	}
+	exp, err := createProfilesExporter(
+		context.Background(),
+		exportertest.NewNopSettings(),
+		cfg)
+	assert.NoError(t, err)
+	require.NotNil(t, exp)
+	assert.NoError(t, exp.Shutdown(context.Background()))
+}
+
+func TestCreateProfilesError(t *testing.T) {
+	cfg := &Config{
+		FormatType: formatTypeJSON,
+	}
+	e, err := createProfilesExporter(
 		context.Background(),
 		exportertest.NewNopSettings(),
 		cfg)

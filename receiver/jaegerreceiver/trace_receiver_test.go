@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -55,7 +55,7 @@ func jaegerBatchToHTTPBody(b *jaegerthrift.Batch) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	r := httptest.NewRequest("POST", "/api/traces", bytes.NewReader(body))
+	r := httptest.NewRequest(http.MethodPost, "/api/traces", bytes.NewReader(body))
 	r.Header.Add("content-type", "application/x-thrift")
 	return r, nil
 }
@@ -95,8 +95,7 @@ func TestReception(t *testing.T) {
 	_, port, _ := net.SplitHostPort(addr)
 	collectorAddr := fmt.Sprintf("http://localhost:%s/api/traces", port)
 	td := generateTraceData()
-	batches, err := jaeger.ProtoFromTraces(td)
-	require.NoError(t, err)
+	batches := jaeger.ProtoFromTraces(td)
 	for _, batch := range batches {
 		require.NoError(t, sendToCollector(collectorAddr, modelToThrift(batch)))
 	}
@@ -306,8 +305,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1,
 					Duration:      d1,
 					Tags: []model.KeyValue{
-						model.String(conventions.OtelStatusDescription, "Stale indices"),
-						model.Int64(conventions.OtelStatusCode, int64(ptrace.StatusCodeError)),
+						model.String(conventions.AttributeOTelStatusDescription, "Stale indices"),
+						model.Int64(conventions.AttributeOTelStatusCode, int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 					References: []model.SpanRef{
@@ -325,8 +324,8 @@ func grpcFixture(t *testing.T, t1 time.Time, d1, d2 time.Duration) *api_v2.PostS
 					StartTime:     t1.Add(d1),
 					Duration:      d2,
 					Tags: []model.KeyValue{
-						model.String(conventions.OtelStatusDescription, "Frontend crash"),
-						model.Int64(conventions.OtelStatusCode, int64(ptrace.StatusCodeError)),
+						model.String(conventions.AttributeOTelStatusDescription, "Frontend crash"),
+						model.Int64(conventions.AttributeOTelStatusCode, int64(ptrace.StatusCodeError)),
 						model.Bool("error", true),
 					},
 				},
@@ -389,7 +388,7 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(buf))
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}

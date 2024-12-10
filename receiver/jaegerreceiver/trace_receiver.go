@@ -83,12 +83,10 @@ const (
 	protobufFormat = "protobuf"
 )
 
-var (
-	acceptedThriftFormats = map[string]struct{}{
-		"application/x-thrift":                 {},
-		"application/vnd.apache.thrift.binary": {},
-	}
-)
+var acceptedThriftFormats = map[string]struct{}{
+	"application/x-thrift":                 {},
+	"application/vnd.apache.thrift.binary": {},
+}
 
 // newJaegerReceiver creates a TracesReceiver that receives traffic as a Jaeger collector, and
 // also as a Jaeger agent.
@@ -169,11 +167,13 @@ func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.T
 	return len(batch.Spans), consumer.ConsumeTraces(ctx, td)
 }
 
-var _ agent.Agent = (*agentHandler)(nil)
-var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
-var _ configmanager.ClientConfigManager = (*notImplementedConfigManager)(nil)
+var (
+	_ agent.Agent                       = (*agentHandler)(nil)
+	_ api_v2.CollectorServiceServer     = (*jReceiver)(nil)
+	_ configmanager.ClientConfigManager = (*notImplementedConfigManager)(nil)
+)
 
-var errNotImplemented = fmt.Errorf("not implemented")
+var errNotImplemented = errors.New("not implemented")
 
 type notImplementedConfigManager struct{}
 
@@ -399,7 +399,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 
 	if jr.config.GRPCServerConfig.NetAddr.Endpoint != "" {
 		var err error
-		jr.grpc, err = jr.config.GRPCServerConfig.ToServerWithOptions(ctx, host, jr.settings.TelemetrySettings)
+		jr.grpc, err = jr.config.GRPCServerConfig.ToServer(ctx, host, jr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Jaeger gRPC Collector: %w", err)
 		}

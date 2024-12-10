@@ -722,7 +722,6 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 				},
 			},
 		})(t, rms[0])
-
 }
 
 const targetResourceAttsInTargetInfo = `

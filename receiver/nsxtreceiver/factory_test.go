@@ -30,9 +30,9 @@ func TestDefaultConfig(t *testing.T) {
 	require.ErrorContains(t, err, "no manager endpoint was specified")
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		&Config{
@@ -46,9 +46,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateMetricsReceiverNotNSX(t *testing.T) {
+func TestCreateMetricsNotNSX(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		receivertest.NewNopFactory().CreateDefaultConfig(),

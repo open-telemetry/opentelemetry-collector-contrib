@@ -87,7 +87,7 @@ func TestOpenTelemetryTraceStateRValuePValue(t *testing.T) {
 	require.Equal(t, "", otts.RValue())
 
 	// The error is oblivious to the old r-value, but that's ok.
-	require.Contains(t, err.Error(), "14 hex digits")
+	require.ErrorContains(t, err, "14 hex digits")
 
 	require.Equal(t, []KV{{"p", "2"}}, otts.ExtraValues())
 

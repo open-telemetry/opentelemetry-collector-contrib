@@ -20,7 +20,7 @@ import (
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receiver.Settings{
 			ID:                component.NewID(metadata.Type),

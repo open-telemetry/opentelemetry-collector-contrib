@@ -52,7 +52,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, host c
 	if err != nil {
 		return err
 	}
-	extension.conn, err = extension.config.ClientConfig.ToClientConnWithOptions(ctx, host, extension.telemetrySettings, configgrpc.WithGrpcDialOption(grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool}))))
+	extension.conn, err = extension.config.ClientConfig.ToClientConn(ctx, host, extension.telemetrySettings, configgrpc.WithGrpcDialOption(grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{RootCAs: systemCertPool}))))
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 		if content, err := json.Marshal(settings); err != nil {
 			extension.telemetrySettings.Logger.Error("unable to marshal setting JSON[] byte from settings", zap.Error(err))
 		} else {
-			if err := os.WriteFile(filename, content, 0600); err != nil {
+			if err := os.WriteFile(filename, content, 0o600); err != nil {
 				extension.telemetrySettings.Logger.Error("unable to write "+filename, zap.Error(err))
 			} else {
 				if len(response.GetWarning()) > 0 {

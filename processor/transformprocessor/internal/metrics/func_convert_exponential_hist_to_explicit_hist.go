@@ -46,7 +46,6 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 
 	if _, ok := distributionFnMap[args.DistributionFn]; !ok {
 		return nil, fmt.Errorf("invalid conversion function: %s, must be one of [upper, midpoint, random, uniform]", args.DistributionFn)
-
 	}
 
 	return convertExponentialHistToExplicitHist(args.DistributionFn, args.ExplicitBounds)
@@ -54,7 +53,6 @@ func createconvertExponentialHistToExplicitHistFunction(_ ottl.FunctionContext, 
 
 // convertExponentialHistToExplicitHist converts an exponential histogram to a bucketed histogram
 func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds []float64) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-
 	if len(explicitBounds) == 0 {
 		return nil, fmt.Errorf("explicit bounds cannot be empty: %v", explicitBounds)
 	}
@@ -72,7 +70,13 @@ func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds 
 			return nil, nil
 		}
 
-		explicitHist := pmetric.NewHistogram()
+		// create new metric and override metric
+		newMetric := pmetric.NewMetric()
+		newMetric.SetName(metric.Name())
+		newMetric.SetDescription(metric.Description())
+		newMetric.SetUnit(metric.Unit())
+		explicitHist := newMetric.SetEmptyHistogram()
+
 		dps := metric.ExponentialHistogram().DataPoints()
 		explicitHist.SetAggregationTemporality(metric.ExponentialHistogram().AggregationTemporality())
 
@@ -87,19 +91,13 @@ func convertExponentialHistToExplicitHist(distributionFn string, explicitBounds 
 			explicitHistDp.SetSum(expDataPoint.Sum())
 			explicitHistDp.SetMin(expDataPoint.Min())
 			explicitHistDp.SetMax(expDataPoint.Max())
-			expDataPoint.Exemplars().CopyTo(explicitHistDp.Exemplars())
+			expDataPoint.Exemplars().MoveAndAppendTo(explicitHistDp.Exemplars())
 			explicitHistDp.ExplicitBounds().FromRaw(explicitBounds)
 			explicitHistDp.BucketCounts().FromRaw(bucketCounts)
-			expDataPoint.Attributes().CopyTo(explicitHistDp.Attributes())
+			expDataPoint.Attributes().MoveTo(explicitHistDp.Attributes())
 		}
 
-		// create new metric and override metric
-		newMetric := pmetric.NewMetric()
-		newMetric.SetName(metric.Name())
-		newMetric.SetDescription(metric.Description())
-		newMetric.SetUnit(metric.Unit())
-		explicitHist.CopyTo(newMetric.SetEmptyHistogram())
-		newMetric.CopyTo(metric)
+		newMetric.MoveTo(metric)
 
 		return nil, nil
 	}, nil
@@ -162,7 +160,8 @@ func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, boundaries 
 //     upper = math.Exp((index+1) * factor)
 var upperAlgorithm distAlgorithm = func(count uint64,
 	upper, _ float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
+	bucketCountsDst *[]uint64,
+) {
 	// count := bucketCountsSrc.At(index)
 
 	// At this point we know that the upper bound represents the highest value that can be in this bucket, so we take the
@@ -183,7 +182,8 @@ var upperAlgorithm distAlgorithm = func(count uint64,
 // The midpoint is calculated as (upper + lower) / 2.
 var midpointAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
+	bucketCountsDst *[]uint64,
+) {
 	midpoint := (upper + lower) / 2
 
 	for j, boundary := range boundaries {
@@ -202,8 +202,8 @@ var midpointAlgorithm distAlgorithm = func(count uint64,
 // uniformAlgorithm distributes counts from a given set of bucket sounrces into a set of linear boundaries using uniform distribution
 var uniformAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
-
+	bucketCountsDst *[]uint64,
+) {
 	// Find the boundaries that intersect with the bucket range
 	var start, end int
 	for start = 0; start < len(boundaries); start++ {
@@ -244,7 +244,8 @@ var uniformAlgorithm distAlgorithm = func(count uint64,
 // randomAlgorithm distributes counts from a given set of bucket sources into a set of linear boundaries using random distribution
 var randomAlgorithm distAlgorithm = func(count uint64,
 	upper, lower float64, boundaries []float64,
-	bucketCountsDst *[]uint64) {
+	bucketCountsDst *[]uint64,
+) {
 	// Find the boundaries that intersect with the bucket range
 	start := 0
 	for start < len(boundaries) && boundaries[start] < lower {

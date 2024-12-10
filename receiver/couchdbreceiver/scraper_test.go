@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -158,7 +158,7 @@ func TestMetricSettings(t *testing.T) {
 		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
 	}
 	cfg := &Config{
-		ClientConfig:         confighttp.ClientConfig{},
+		ClientConfig:         confighttp.NewDefaultClientConfig(),
 		MetricsBuilderConfig: mbc,
 	}
 	scraper := newCouchdbScraper(receivertest.NewNopSettings(), cfg)

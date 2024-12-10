@@ -4,7 +4,6 @@
 package operatortest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -37,7 +36,7 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			testConfMap, err := testConfMaps.Sub(tc.Name)
 			require.NoError(t, err)
-			require.NotEmpty(t, testConfMap.AllKeys(), fmt.Sprintf("config not found: '%s'", tc.Name))
+			require.NotEmpty(t, testConfMap.AllKeys(), "config not found: '%s'", tc.Name)
 
 			cfg := newAnyOpConfig(c.DefaultConfig)
 			err = testConfMap.Unmarshal(cfg)

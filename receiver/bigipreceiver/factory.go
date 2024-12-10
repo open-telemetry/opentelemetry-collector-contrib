@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/metadata"
 )
@@ -29,14 +30,14 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates a config for Big-IP with as many default values as possible
 func createDefaultConfig() component.Config {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
+	clientConfig.Timeout = 10 * time.Second
 	return &Config{
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 		},
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
-		},
+		ClientConfig:         clientConfig,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
@@ -49,10 +50,10 @@ func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf co
 	}
 
 	bigipScraper := newScraper(params.Logger, cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, bigipScraper.scrape, scraperhelper.WithStart(bigipScraper.start))
+	s, err := scraper.NewMetrics(bigipScraper.scrape, scraper.WithStart(bigipScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, s))
 }

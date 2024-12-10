@@ -28,6 +28,7 @@ components:
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
@@ -35,7 +36,6 @@ components:
         - googlemanagedprometheus
         - honeycombmarker
         - influxdb
-        - instana
         - kafka
         - loadbalancing
         - logicmonitor
@@ -44,6 +44,7 @@ components:
         - mezmo
         - opencensus
         - opensearch
+        - otelarrow
         - prometheus
         - prometheusremotewrite
         - pulsar
@@ -62,6 +63,7 @@ components:
         - awsproxy
         - basicauth
         - bearertokenauth
+        - cgroupruntime
         - db_storage
         - docker_observer
         - ecs_observer
@@ -70,6 +72,7 @@ components:
         - headers_setter
         - health_check
         - host_observer
+        - http_forwarder
         - jaegerremotesampling
         - k8s_observer
         - oauth2client
@@ -82,12 +85,13 @@ components:
         - cumulativetodelta
         - deltatocumulative
         - deltatorate
-        - experimental_metricsgeneration
         - filter
         - geoip
         - groupbyattrs
         - groupbytrace
         - k8sattributes
+        - logdedup
+        - metricsgeneration
         - metricstransform
         - probabilistic_sampler
         - redaction
@@ -108,6 +112,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awss3
         - awsxray
         - azureblob
         - azureeventhub
@@ -180,6 +185,7 @@ components:
         - statsd
         - syslog
         - tcplog
+        - tlscheck
         - udplog
         - vcenter
         - wavefront

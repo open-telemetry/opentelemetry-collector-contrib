@@ -80,7 +80,6 @@ func (s *ObjStore) Update(obj any) error {
 // Delete implements the Delete method of the store interface.
 // Delete deletes an existing entry in the ObjStore.
 func (s *ObjStore) Delete(obj any) error {
-
 	o, err := meta.Accessor(obj)
 	if err != nil {
 		return err

@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -64,17 +64,19 @@ func createDefaultConfig() component.Config {
 
 	defaultMaxConns := defaultMaxIdleCons
 	defaultIdleConnTimeout := defaultIdleConnTimeout
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultHTTPTimeout
+	clientConfig.IdleConnTimeout = &defaultIdleConnTimeout
+	clientConfig.MaxIdleConnsPerHost = &defaultMaxConns
+	clientConfig.MaxIdleConns = &defaultMaxConns
+	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
+	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
+
 	return &Config{
-		LogDataEnabled:       true,
-		ProfilingDataEnabled: true,
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:              defaultHTTPTimeout,
-			IdleConnTimeout:      &defaultIdleConnTimeout,
-			MaxIdleConnsPerHost:  &defaultMaxConns,
-			MaxIdleConns:         &defaultMaxConns,
-			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
-			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
-		},
+		LogDataEnabled:          true,
+		ProfilingDataEnabled:    true,
+		ClientConfig:            clientConfig,
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
 		QueueSettings:           exporterhelper.NewDefaultQueueConfig(),
@@ -114,7 +116,7 @@ func createTracesExporter(
 
 	c := newTracesClient(set, cfg)
 
-	e, err := exporterhelper.NewTracesExporter(
+	e, err := exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
@@ -127,7 +129,6 @@ func createTracesExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +150,7 @@ func createMetricsExporter(
 
 	c := newMetricsClient(set, cfg)
 
-	e, err := exporterhelper.NewMetricsExporter(
+	e, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
@@ -183,7 +184,7 @@ func createLogsExporter(
 
 	c := newLogsClient(set, cfg)
 
-	logsExporter, err := exporterhelper.NewLogsExporter(
+	logsExporter, err := exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -196,7 +197,6 @@ func createLogsExporter(
 		exporterhelper.WithShutdown(c.stop),
 		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	)
-
 	if err != nil {
 		return nil, err
 	}

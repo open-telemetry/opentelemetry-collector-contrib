@@ -27,7 +27,7 @@ func (mt *MetricsTranslator) TranslateServices(services []ServiceCheck) pmetric.
 	bt.Metrics = pmetric.NewMetrics()
 
 	for _, service := range services {
-		metricProperties := parseSeriesProperties("service_check", "service_check", service.Tags, service.HostName, mt.buildInfo.Version, mt.stringPool)
+		metricProperties := parseSeriesProperties(service.Check, "service_check", service.Tags, service.HostName, mt.buildInfo.Version, mt.stringPool)
 		metric, metricID := bt.Lookup(metricProperties) // TODO(alexg): proper name
 
 		dps := metric.Gauge().DataPoints()

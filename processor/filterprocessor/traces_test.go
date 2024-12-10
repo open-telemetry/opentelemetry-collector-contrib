@@ -130,7 +130,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 				},
 			}
 			factory := NewFactory()
-			fmp, err := factory.CreateTracesProcessor(
+			fmp, err := factory.CreateTraces(
 				ctx,
 				processortest.NewNopSettings(),
 				cfg,
@@ -273,7 +273,6 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructTraces()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)
@@ -315,6 +314,7 @@ func TestFilterTraceProcessorTelemetry(t *testing.T) {
 	}
 
 	tel.assertMetrics(t, want)
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func constructTraces() ptrace.Traces {

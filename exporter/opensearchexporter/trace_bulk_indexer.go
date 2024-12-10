@@ -128,7 +128,7 @@ func attributesToMapString(attributes pcommon.Map) map[string]string {
 }
 
 func shouldRetryEvent(status int) bool {
-	var retryOnStatus = []int{500, 502, 503, 504, 429}
+	retryOnStatus := []int{500, 502, 503, 504, 429}
 	for _, retryable := range retryOnStatus {
 		if status == retryable {
 			return true

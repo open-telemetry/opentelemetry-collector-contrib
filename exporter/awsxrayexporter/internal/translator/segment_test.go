@@ -7,7 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"strings"
+	"net/http"
 	"testing"
 	"time"
 
@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -30,16 +30,14 @@ const (
 	resourceArrayKey  = "array.key"
 )
 
-var (
-	testWriters = newWriterPool(2048)
-)
+var testWriters = newWriterPool(2048)
 
 func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -61,10 +59,10 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
-	assert.True(t, strings.Contains(jsonStr, "GetItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDB")
+	assert.Contains(t, jsonStr, "GetItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
@@ -72,7 +70,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -94,17 +92,17 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
-	assert.True(t, strings.Contains(jsonStr, "GetItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDB")
+	assert.Contains(t, jsonStr, "GetItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestClientSpanWithPeerService(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -127,7 +125,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
@@ -154,7 +152,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 	userAgent := "PostmanRuntime/7.21.0"
 	enduser := "go.tester@example.com"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[conventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
@@ -253,15 +251,15 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	require.NoError(t, w.Encode(segment))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, spanName))
-	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
+	assert.Contains(t, jsonStr, spanName)
+	assert.Contains(t, jsonStr, enterpriseAppID)
 }
 
 func TestClientSpanWithHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -281,7 +279,7 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	spanName := "GET /"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -300,7 +298,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	spanName := "GET /com.foo.AnimalService/GetCats"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -319,7 +317,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 func TestSpanWithInvalidTraceId(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
 	attributes[conventions.AttributeHTTPScheme] = "ipv6"
 	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[conventions.AttributeNetPeerPort] = "9443"
@@ -354,7 +352,7 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -376,9 +374,9 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, jsonStr)
-	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "ProducerService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestSpanWithExpiredTraceIdWithoutTimestampValidation(t *testing.T) {
@@ -1070,7 +1068,7 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -1088,9 +1086,9 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "PaymentService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "PaymentService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
@@ -1099,7 +1097,7 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 	user := "testingT"
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeRPCService] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS.SDK.DynamoDb"
@@ -1115,10 +1113,10 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
-	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDb")
+	assert.NotContains(t, jsonStr, "DynamoDb.PutItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1127,7 +1125,7 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	user := "testingT"
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeRPCService] = "DynamoDb"
 	attributes[awsRemoteService] = "AWS::DynamoDB"
@@ -1143,10 +1141,10 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
-	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "DynamoDb")
+	assert.NotContains(t, jsonStr, "DynamoDb.PutItem")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1154,7 +1152,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -1172,9 +1170,9 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "ProducerService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
@@ -1191,9 +1189,9 @@ func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "ConsumerService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "ConsumerService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
@@ -1201,7 +1199,7 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
 	attributes[conventions.AttributeHTTPTarget] = "/"
@@ -1219,9 +1217,9 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "PaymentLocalService"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
+	assert.Contains(t, jsonStr, "PaymentLocalService")
+	assert.NotContains(t, jsonStr, user)
+	assert.NotContains(t, jsonStr, "user")
 }
 
 func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segment, span ptrace.Span, parentID string) {
@@ -1234,7 +1232,7 @@ func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segmen
 	assert.Equal(t, parentID, *segment.ParentID)
 	assert.Equal(t, expectedTraceID, *segment.TraceID)
 	assert.NotNil(t, segment.HTTP)
-	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Equal(t, http.MethodPost, *segment.HTTP.Request.Method)
 	assert.Len(t, segment.Annotations, 2)
 	assert.Nil(t, segment.Annotations[awsRemoteService])
 	assert.Nil(t, segment.Annotations[remoteTarget])
@@ -1293,7 +1291,7 @@ func validateLocalRootServiceSegment(t *testing.T, segment *awsxray.Segment, spa
 func getBasicAttributes() map[string]any {
 	attributes := make(map[string]any)
 
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeMessagingOperation] = "receive"
 
 	attributes["otel.resource.attributes"] = "service.name=myTest"
@@ -1396,7 +1394,7 @@ func TestNonLocalRootConsumerProcess(t *testing.T) {
 	assert.Len(t, segments[0].Links, 1)
 	assert.Equal(t, expectedTraceID, *segments[0].TraceID)
 	assert.NotNil(t, segments[0].HTTP)
-	assert.Equal(t, "POST", *segments[0].HTTP.Request.Method)
+	assert.Equal(t, http.MethodPost, *segments[0].HTTP.Request.Method)
 	assert.Len(t, segments[0].Annotations, 1)
 	assert.Equal(t, "myAnnotationValue", segments[0].Annotations["myAnnotationKey"])
 	assert.Len(t, segments[0].Metadata["default"], 7)
@@ -1477,7 +1475,7 @@ func TestLocalRootClientAwsServiceMetrics(t *testing.T) {
 	attributes := getBasicAttributes()
 	attributes[awsSpanKind] = "LOCAL_ROOT"
 	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPScheme] = "https"
 	attributes[conventions.AttributeRPCService] = "SQS"
 	attributes[awsRemoteService] = "AWS.SDK.SQS"
@@ -1539,12 +1537,12 @@ func validateLocalRootWithoutDependency(t *testing.T, segment *awsxray.Segment, 
 	assert.Equal(t, span.ParentSpanID().String(), *segment.ParentID)
 	assert.Len(t, segment.Links, 1)
 	assert.Equal(t, expectedTraceID, *segment.TraceID)
-	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
+	assert.Equal(t, http.MethodPost, *segment.HTTP.Request.Method)
 	assert.Len(t, segment.Annotations, 2)
 	assert.Equal(t, "myRemoteService", segment.Annotations["aws_remote_service"])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 
-	var numberOfMetadataKeys = 8
+	numberOfMetadataKeys := 8
 
 	if span.Kind() == ptrace.SpanKindServer {
 		numberOfMetadataKeys = 30

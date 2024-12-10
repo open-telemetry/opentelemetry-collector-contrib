@@ -305,8 +305,7 @@ func testTransactionAppendDuplicateLabels(t *testing.T, enableNativeHistograms b
 	)
 
 	_, err := tr.Append(0, dupLabels, 1917, 1.0)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: "a"`)
+	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
@@ -539,8 +538,7 @@ func testAppendExemplarWithDuplicateLabels(t *testing.T, enableNativeHistograms 
 		"a", "c",
 	)
 	_, err := tr.AppendExemplar(0, labels, exemplar.Exemplar{Value: 0})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: "a"`)
+	assert.ErrorContains(t, err, `invalid sample: non-unique label names: "a"`)
 }
 
 func TestAppendExemplarWithoutAddingMetric(t *testing.T) {
@@ -1744,7 +1742,6 @@ func TestMetricBuilderSummary(t *testing.T) {
 			})
 		}
 	}
-
 }
 
 func TestMetricBuilderNativeHistogram(t *testing.T) {
@@ -2005,5 +2002,4 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 			assert.EqualValues(t, wmap, gmap)
 		}
 	}
-
 }

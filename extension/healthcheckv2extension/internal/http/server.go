@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 type Server struct {
@@ -35,8 +35,10 @@ type Server struct {
 	doneCh         chan struct{}
 }
 
-var _ component.Component = (*Server)(nil)
-var _ extensioncapabilities.ConfigWatcher = (*Server)(nil)
+var (
+	_ component.Component                 = (*Server)(nil)
+	_ extensioncapabilities.ConfigWatcher = (*Server)(nil)
+)
 
 func NewServer(
 	config *Config,

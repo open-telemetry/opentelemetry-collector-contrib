@@ -5,12 +5,14 @@ package mezmoexporter
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -24,6 +26,13 @@ func TestType(t *testing.T) {
 	assert.Equal(t, pType, metadata.Type)
 }
 
+var (
+	defaultMaxIdleConns        = http.DefaultTransport.(*http.Transport).MaxIdleConns
+	defaultMaxIdleConnsPerHost = http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost
+	defaultMaxConnsPerHost     = http.DefaultTransport.(*http.Transport).MaxConnsPerHost
+	defaultIdleConnTimeout     = http.DefaultTransport.(*http.Transport).IdleConnTimeout
+)
+
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -33,7 +42,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 		IngestKey: "",
 
 		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
+			Timeout:             5 * time.Second,
+			MaxIdleConns:        &defaultMaxIdleConns,
+			MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
+			MaxConnsPerHost:     &defaultMaxConnsPerHost,
+			IdleConnTimeout:     &defaultIdleConnTimeout,
+			Headers:             map[string]configopaque.String{},
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
@@ -49,7 +63,7 @@ func TestIngestUrlMustConform(t *testing.T) {
 	assert.Error(t, cfg.Validate(), `"ingest_url" must contain a valid host`)
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.IngestURL = "https://example.com:8088/otel/ingest/rest"
 	cfg.IngestKey = "1234-1234"
@@ -59,7 +73,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateLogsExporterNoConfig(t *testing.T) {
+func TestCreateLogsNoConfig(t *testing.T) {
 	params := exportertest.NewNopSettings()
 	_, err := createLogsExporter(context.Background(), params, nil)
 	assert.Error(t, err)

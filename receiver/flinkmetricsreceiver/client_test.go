@@ -48,6 +48,18 @@ const (
 )
 
 func TestNewClient(t *testing.T) {
+	clientConfigNoCA := confighttp.NewDefaultClientConfig()
+	clientConfigNoCA.Endpoint = defaultEndpoint
+	clientConfigNoCA.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile: "/non/existent",
+		},
+	}
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+	clientConfig.Endpoint = defaultEndpoint
+
 	testCase := []struct {
 		desc        string
 		cfg         *Config
@@ -59,14 +71,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile: "/non/existent",
-						},
-					},
-				},
+				ClientConfig: clientConfigNoCA,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -76,10 +81,7 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					TLSSetting: configtls.ClientConfig{},
-					Endpoint:   defaultEndpoint,
-				},
+				ClientConfig: clientConfig,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),
@@ -93,7 +95,7 @@ func TestNewClient(t *testing.T) {
 			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
-				require.Contains(t, err.Error(), tc.expectError.Error())
+				require.ErrorContains(t, err, tc.expectError.Error())
 			} else {
 				require.NoError(t, err)
 
@@ -151,7 +153,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 
 				metrics, err := tc.GetJobmanagerMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -220,7 +222,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 
 				metrics, err := tc.GetTaskmanagersMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body:")
+				require.ErrorContains(t, err, "failed to unmarshal response body:")
 			},
 		},
 		{
@@ -243,7 +245,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 
 				metrics, err := tc.GetTaskmanagersMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body:")
+				require.ErrorContains(t, err, "failed to unmarshal response body:")
 			},
 		},
 		{
@@ -321,7 +323,7 @@ func TestGetJobsMetrics(t *testing.T) {
 
 				metrics, err := tc.GetJobsMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -343,7 +345,7 @@ func TestGetJobsMetrics(t *testing.T) {
 
 				metrics, err := tc.GetJobsMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -423,7 +425,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -445,7 +447,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -473,7 +475,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{
@@ -507,7 +509,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				metrics, err := tc.GetSubtasksMetrics(context.Background())
 				require.Nil(t, metrics)
-				require.Contains(t, err.Error(), "failed to unmarshal response body")
+				require.ErrorContains(t, err, "failed to unmarshal response body")
 			},
 		},
 		{

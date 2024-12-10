@@ -41,6 +41,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-mod-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -80,3 +82,48 @@ jobs:
         run: |
           cd cmd/opampsupervisor
           go test -v --tags=e2e
+
+  windows-supervisor-service-test:
+    runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    needs: [collector-build]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ~1.22.8
+          cache: false
+      - name: Cache Go
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-go-modules
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Ensure required ports in the dynamic range are available
+        run: |
+          & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
+      - name: Download Collector Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: collector-binary
+          path: bin/
+      - name: Build supervisor
+        run: cd cmd/opampsupervisor; go build
+      - name: Install supervisor as a service
+        run: |
+          New-Service -Name "opampsupervisor" -StartupType "Manual" -BinaryPathName "${PWD}\cmd\opampsupervisor --config ${PWD}\cmd\opampsupervisor\supervisor\testdata\supervisor_windows_service_test_config.yaml\"
+          eventcreate.exe /t information /id 1 /l application /d "Creating event provider for 'opampsupervisor'" /so opampsupervisor
+      - name: Test supervisor service
+        working-directory: ${{ github.workspace }}/cmd/opampsupervisor
+        run: |
+          go test -timeout 90s -run ^TestSupervisorAsService$ -v -tags=win32service
+      - name: Remove opampsupervisor service
+        if: always()
+        run: |
+          Remove-Service opampsupervisor
+          Remove-Item HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Application\opampsupervisor

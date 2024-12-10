@@ -79,7 +79,7 @@ func buildGCAttrs(gc *agent.GC) pcommon.Map {
 	return attrs
 }
 
-// memoryPoolMetricToMetrics  translate memoryPool metrics
+// memoryPoolMetricToMetrics translate memoryPool metrics
 func memoryPoolMetricToMetrics(timestamp int64, memoryPools []*agent.MemoryPool, sm pmetric.ScopeMetrics) {
 	PoolNameArr := []string{MemoryPoolInitName, MemoryPoolUsedName, MemoryPoolMaxName, MemoryPoolCommittedName}
 	dpsMp := make(map[string]pmetric.NumberDataPointSlice)
@@ -96,7 +96,6 @@ func memoryPoolMetricToMetrics(timestamp int64, memoryPools []*agent.MemoryPool,
 		fillNumberDataPointIntValue(timestamp, memoryPool.Used, dpsMp[MemoryPoolUsedName].AppendEmpty(), attrs)
 		fillNumberDataPointIntValue(timestamp, memoryPool.Committed, dpsMp[MemoryPoolCommittedName].AppendEmpty(), attrs)
 	}
-
 }
 
 func buildMemoryPoolAttrs(pool *agent.MemoryPool) pcommon.Map {
@@ -110,7 +109,6 @@ func buildMemoryPoolAttrs(pool *agent.MemoryPool) pcommon.Map {
 	case agent.PoolType_NEWGEN_USAGE, agent.PoolType_OLDGEN_USAGE, agent.PoolType_SURVIVOR_USAGE:
 		memoryType = "heap"
 	default:
-
 	}
 	attrs.PutStr("jvm.memory.type", memoryType)
 	return attrs

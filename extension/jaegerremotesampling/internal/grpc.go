@@ -57,7 +57,7 @@ type SamplingGRPCServer struct {
 }
 
 func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) error {
-	server, err := s.settings.ToServerWithOptions(ctx, host, s.telemetry)
+	server, err := s.settings.ToServer(ctx, host, s.telemetry)
 	if err != nil {
 		return err
 	}

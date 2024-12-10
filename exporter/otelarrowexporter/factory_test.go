@@ -38,26 +38,26 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, configcompression.TypeZstd, ocfg.Compression)
 	assert.Equal(t, ArrowConfig{
 		Disabled:           false,
-		NumStreams:         runtime.NumCPU(),
-		MaxStreamLifetime:  time.Hour,
-		PayloadCompression: "",
+		NumStreams:         max(1, runtime.NumCPU()/2),
+		MaxStreamLifetime:  30 * time.Second,
+		PayloadCompression: "zstd",
 		Zstd:               zstd.DefaultEncoderConfig(),
 		Prioritizer:        arrow.DefaultPrioritizer,
 	}, ocfg.Arrow)
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
-	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name             string
@@ -188,7 +188,7 @@ func TestCreateTracesExporter(t *testing.T) {
 			factory := NewFactory()
 			set := exportertest.NewNopSettings()
 			cfg := tt.config
-			consumer, err := factory.CreateTracesExporter(context.Background(), set, &cfg)
+			consumer, err := factory.CreateTraces(context.Background(), set, &cfg)
 			if tt.mustFailOnCreate {
 				assert.Error(t, err)
 				return
@@ -212,13 +212,13 @@ func TestCreateTracesExporter(t *testing.T) {
 	}
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings()
-	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }
@@ -231,7 +231,7 @@ func TestCreateArrowTracesExporter(t *testing.T) {
 		NumStreams: 1,
 	}
 	set := exportertest.NewNopSettings()
-	oexp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	oexp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }

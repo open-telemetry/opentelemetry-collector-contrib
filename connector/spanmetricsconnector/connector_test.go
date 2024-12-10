@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
@@ -102,7 +102,6 @@ func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
 
 		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
 		for ismC := 0; ismC < ism.Len(); ismC++ {
-
 			m := ism.At(ismC).Metrics()
 
 			for mC := 0; mC < m.Len(); mC++ {
@@ -1055,7 +1054,6 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 }
 
 func TestExcludeDimensionsConsumeTraces(t *testing.T) {
-
 	testcases := []struct {
 		dsc                string
 		featureGateEnabled bool
@@ -1109,7 +1107,6 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 									for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
 										assert.NotContains(t, excludeDimensions, attributeKey)
 									}
-
 								}
 							}
 						case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
@@ -1121,16 +1118,12 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 									}
 								}
 							}
-
 						}
-
 					}
 				}
 			}
-
 		})
 	}
-
 }
 
 func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
@@ -1551,6 +1544,7 @@ func TestSpanMetrics_Events(t *testing.T) {
 		})
 	}
 }
+
 func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
 	tests := []struct {
 		name            string

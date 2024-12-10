@@ -77,6 +77,7 @@ func TestLoadConfig(t *testing.T) {
 						Regex: "host.id",
 					},
 				},
+				CumulativeNormalization: false,
 			},
 		},
 		QueueSettings: exporterhelper.QueueConfig{

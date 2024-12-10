@@ -51,7 +51,7 @@ func TestSendTracesWithMetadata(t *testing.T) {
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	bg := context.Background()
-	exp, err := factory.CreateTracesExporter(bg, set, cfg)
+	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -121,9 +121,8 @@ func TestDuplicateMetadataKeys(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.MetadataKeys = []string{"myTOKEN", "mytoken"}
 	err := cfg.Validate()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "duplicate")
-	require.Contains(t, err.Error(), "mytoken")
+	require.ErrorContains(t, err, "duplicate")
+	require.ErrorContains(t, err, "mytoken")
 }
 
 func TestMetadataExporterCardinalityLimit(t *testing.T) {
@@ -158,7 +157,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	cfg.MetadataKeys = []string{"key1", "key2"}
 	set := exportertest.NewNopSettings()
 	bg := context.Background()
-	exp, err := factory.CreateTracesExporter(bg, set, cfg)
+	exp, err := factory.CreateTraces(bg, set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -196,7 +195,7 @@ func TestMetadataExporterCardinalityLimit(t *testing.T) {
 	err = exp.ConsumeTraces(ctx, td)
 	require.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err))
-	assert.Contains(t, err.Error(), "too many")
+	assert.ErrorContains(t, err, "too many")
 
 	assert.Eventually(t, func() bool {
 		return rcv.requestCount.Load() == int32(cardLimit)

@@ -25,9 +25,7 @@ import (
 	metadata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
-var (
-	errNotStarted = errors.New("exporter has not started")
-)
+var errNotStarted = errors.New("exporter has not started")
 
 // TODO: Find a place for this to be shared.
 type baseMetricsExporter struct {
@@ -184,7 +182,6 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 		logger:            createSettings.Logger,
 		telemetrySettings: createSettings.TelemetrySettings,
 	}, nil
-
 }
 
 func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) error {

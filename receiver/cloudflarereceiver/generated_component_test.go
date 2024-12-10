@@ -34,7 +34,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogsReceiver(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}

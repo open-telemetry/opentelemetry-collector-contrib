@@ -6,7 +6,7 @@ status:
     development: [traces]
   distributions: []
   codeowners:
-    active: [jpkrohling, sokoide, mcube8]
+    active: [sokoide, mcube8]
 
 tests:
   config:

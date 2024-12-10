@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -74,8 +74,8 @@ func createMaxLogData() plog.Logs {
 	rl.ScopeLogs().AppendEmpty() // Add an empty ScopeLogs
 	sl := rl.ScopeLogs().AppendEmpty()
 
-	var lineLen = maxMessageSize
-	var lineCnt = (maxBodySize / lineLen) * 2
+	lineLen := maxMessageSize
+	lineCnt := (maxBodySize / lineLen) * 2
 
 	for i := 0; i < lineCnt; i++ {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
@@ -109,11 +109,13 @@ type testServer struct {
 	url      string
 }
 
-type httpAssertionCallback func(req *http.Request, body mezmoLogBody) (int, string)
-type testServerParams struct {
-	t                  *testing.T
-	assertionsCallback httpAssertionCallback
-}
+type (
+	httpAssertionCallback func(req *http.Request, body mezmoLogBody) (int, string)
+	testServerParams      struct {
+		t                  *testing.T
+		assertionsCallback httpAssertionCallback
+	}
+)
 
 // Creates an HTTP server to test log delivery payloads by applying a set of
 // assertions through the assertCB function.
@@ -185,19 +187,19 @@ func TestLogsExporter(t *testing.T) {
 	exporter := createExporter(t, config, log)
 
 	t.Run("Test simple log data", func(t *testing.T) {
-		var logs = createSimpleLogData(3)
+		logs := createSimpleLogData(3)
 		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max message size", func(t *testing.T) {
-		var logs = createSizedPayloadLogData(maxMessageSize)
+		logs := createSizedPayloadLogData(maxMessageSize)
 		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
 
 	t.Run("Test max body size", func(t *testing.T) {
-		var logs = createMaxLogData()
+		logs := createMaxLogData()
 		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
@@ -268,5 +270,5 @@ func Test404IngestError(t *testing.T) {
 
 	responseField := logLine.Context[0]
 	assert.Equal(t, "response", responseField.Key)
-	assert.Equal(t, `{"foo":"bar"}`, responseField.String)
+	assert.JSONEq(t, `{"foo":"bar"}`, responseField.String)
 }

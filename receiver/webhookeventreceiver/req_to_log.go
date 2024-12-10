@@ -18,7 +18,20 @@ import (
 func reqToLog(sc *bufio.Scanner,
 	query url.Values,
 	_ *Config,
-	settings receiver.Settings) (plog.Logs, int) {
+	settings receiver.Settings,
+) (plog.Logs, int) {
+	// we simply dont split the data passed into scan (i.e. scan the whole thing)
+	// the downside to this approach is that only 1 log per request can be handled.
+	// NOTE: logs will contain these newline characters which could have formatting
+	// consequences downstream.
+	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if !atEOF {
+			return 0, nil, nil
+		}
+		return 0, data, bufio.ErrFinalToken
+	}
+	sc.Split(split)
+
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
 	appendMetadata(resourceLog, query)
@@ -46,5 +59,4 @@ func appendMetadata(resourceLog plog.ResourceLogs, query url.Values) {
 			resourceLog.Resource().Attributes().PutStr(k, query.Get(k))
 		}
 	}
-
 }

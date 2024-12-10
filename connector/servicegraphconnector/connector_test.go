@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap/zaptest"
 
@@ -441,7 +441,6 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		caseStr  string
 		duration float64
 	}{
-
 		{
 			caseStr:  "index 0 latency",
 			duration: 0,
@@ -607,6 +606,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, set.Shutdown(context.Background()))
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {

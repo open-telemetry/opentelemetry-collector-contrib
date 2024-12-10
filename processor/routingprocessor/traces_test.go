@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -40,11 +41,11 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			otlpID: otlpExp,
 		},
 	})
@@ -70,8 +71,8 @@ func TestTraces_InvalidExporter(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewID("otlp"): &mockComponent{},
 		},
 	})
@@ -87,8 +88,8 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
@@ -143,8 +144,8 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
@@ -236,8 +237,8 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
@@ -291,8 +292,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	defaultExp := &mockTracesExporter{}
 	tExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "2"): tExp,
 		},
@@ -338,8 +339,8 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	firstExp := &mockTracesExporter{}
 	secondExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "1"): firstExp,
 			component.MustNewIDWithName("otlp", "2"): secondExp,
@@ -463,8 +464,8 @@ func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
 	firstExp := &mockTracesExporter{}
 
-	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeTraces: {
+	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalTraces: {
 			component.MustNewID("otlp"):              defaultExp,
 			component.MustNewIDWithName("otlp", "1"): firstExp,
 		},
@@ -496,7 +497,6 @@ func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	// verify
 	assert.Len(t, defaultExp.AllTraces(), 1)
 	assert.Empty(t, firstExp.AllTraces())
-
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {

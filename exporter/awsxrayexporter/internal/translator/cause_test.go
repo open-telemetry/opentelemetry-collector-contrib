@@ -4,6 +4,7 @@
 package translator
 
 import (
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 )
 
 func TestCauseWithExceptions(t *testing.T) {
@@ -93,7 +94,7 @@ func TestMakeCauseAwsSdkSpan(t *testing.T) {
 }
 
 func TestCauseExceptionWithoutError(t *testing.T) {
-	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
+	nonErrorStatusCodes := []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
 
 	for _, element := range nonErrorStatusCodes {
 		ExceptionWithoutErrorHelper(t, element)
@@ -103,7 +104,7 @@ func TestCauseExceptionWithoutError(t *testing.T) {
 func ExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.StatusCode) {
 	errorMsg := "this is a test"
 
-	var exceptionStack = `java.lang.IllegalStateException: state is not legal
+	exceptionStack := `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
@@ -139,7 +140,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument`
 }
 
 func TestEventWithoutExceptionWithoutError(t *testing.T) {
-	var nonErrorStatusCodes = []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
+	nonErrorStatusCodes := []ptrace.StatusCode{ptrace.StatusCodeUnset, ptrace.StatusCodeOk}
 
 	for _, element := range nonErrorStatusCodes {
 		EventWithoutExceptionWithoutErrorHelper(t, element)
@@ -174,7 +175,7 @@ func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.Sta
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	span := constructExceptionServerSpan(attributes, ptrace.StatusCodeError)
@@ -193,13 +194,13 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, errorMsg))
+	assert.Contains(t, jsonStr, errorMsg)
 }
 
 func TestCauseWithHttpStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	attributes["http.status_text"] = errorMsg
@@ -218,13 +219,13 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	require.NoError(t, w.Encode(cause))
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, errorMsg))
+	assert.Contains(t, jsonStr, errorMsg)
 }
 
 func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 500
 	attributes["http.status_text"] = errorMsg
@@ -248,7 +249,7 @@ func TestCauseWithZeroStatusMessageAndFaultHttpCode(t *testing.T) {
 func TestNonHttpUnsetCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
 
@@ -271,7 +272,7 @@ func TestNonHttpUnsetCodeSpan(t *testing.T) {
 func TestNonHttpOkCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
 
@@ -294,7 +295,7 @@ func TestNonHttpOkCodeSpan(t *testing.T) {
 func TestNonHttpErrCodeSpan(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes["http.status_text"] = errorMsg
 
@@ -317,7 +318,7 @@ func TestNonHttpErrCodeSpan(t *testing.T) {
 func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 400
 	attributes["http.status_text"] = errorMsg
@@ -341,7 +342,7 @@ func TestCauseWithZeroStatusMessageAndFaultErrorCode(t *testing.T) {
 func TestCauseWithClientErrorMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 499
 	attributes["http.status_text"] = errorMsg
@@ -362,7 +363,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 func TestCauseWithThrottled(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPMethod] = http.MethodPost
 	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[conventions.AttributeHTTPStatusCode] = 429
 	attributes["http.status_text"] = errorMsg

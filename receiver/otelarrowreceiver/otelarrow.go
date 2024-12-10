@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow"
@@ -43,8 +43,9 @@ type otelArrowReceiver struct {
 	arrowReceiver   *arrow.Receiver
 	shutdownWG      sync.WaitGroup
 
-	obsrepGRPC  *receiverhelper.ObsReport
-	netReporter *netstats.NetworkReporter
+	obsrepGRPC   *receiverhelper.ObsReport
+	netReporter  *netstats.NetworkReporter
+	boundedQueue admission2.Queue
 
 	settings receiver.Settings
 }
@@ -53,14 +54,32 @@ type otelArrowReceiver struct {
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceiver, error) {
+	if cfg.Arrow.DeprecatedAdmissionLimitMiB != 0 {
+		set.Logger.Warn("arrow.admission_limit_mib is deprecated, using admission.request_limit_mib instead.")
+	}
+
+	if cfg.Arrow.DeprecatedWaiterLimit != 0 {
+		set.Logger.Warn("arrow.waiter_limit is deprecated, using admission.waiter_limit instead.")
+	}
+
 	netReporter, err := netstats.NewReceiverNetworkReporter(set)
 	if err != nil {
 		return nil, err
 	}
+	var bq admission2.Queue
+	if cfg.Admission.RequestLimitMiB == 0 {
+		bq = admission2.NewUnboundedQueue()
+	} else {
+		bq, err = admission2.NewBoundedQueue(set.ID, set.TelemetrySettings, cfg.Admission.RequestLimitMiB<<20, cfg.Admission.WaitingLimitMiB<<20)
+		if err != nil {
+			return nil, err
+		}
+	}
 	r := &otelArrowReceiver{
-		cfg:         cfg,
-		settings:    set,
-		netReporter: netReporter,
+		cfg:          cfg,
+		settings:     set,
+		netReporter:  netReporter,
+		boundedQueue: bq,
 	}
 	if err = zstd.SetDecoderConfig(cfg.Arrow.Zstd); err != nil {
 		return nil, err
@@ -103,7 +122,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 	if r.netReporter != nil {
 		serverOpts = append(serverOpts, configgrpc.WithGrpcServerOption(grpc.StatsHandler(r.netReporter.Handler())))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServerWithOptions(ctx, host, r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.GRPC.ToServer(ctx, host, r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}
@@ -115,7 +134,6 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			return err
 		}
 	}
-	bq := admission.NewBoundedQueue(r.settings.TracerProvider, int64(r.cfg.Arrow.AdmissionLimitMiB<<20), r.cfg.Arrow.WaiterLimit)
 
 	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
 		var opts []arrowRecord.Option
@@ -127,8 +145,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider, r.settings.TelemetrySettings.MetricsLevel))
 		}
 		return arrowRecord.NewConsumer(opts...)
-	}, bq, r.netReporter)
-
+	}, r.boundedQueue, r.netReporter)
 	if err != nil {
 		return err
 	}
@@ -178,15 +195,15 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 }
 
 func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
-	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
+	r.tracesReceiver = trace.New(r.settings.Logger, tc, r.obsrepGRPC, r.boundedQueue)
 }
 
 func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
-	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
+	r.metricsReceiver = metrics.New(r.settings.Logger, mc, r.obsrepGRPC, r.boundedQueue)
 }
 
 func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
-	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
+	r.logsReceiver = logs.New(r.settings.Logger, lc, r.obsrepGRPC, r.boundedQueue)
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}

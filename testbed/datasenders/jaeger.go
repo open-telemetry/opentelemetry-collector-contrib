@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -112,7 +111,7 @@ func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (export
 		clientSettings:            &cfg.ClientConfig,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
@@ -146,21 +145,16 @@ func (s *protoGRPCSender) pushTraces(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
-
-	batches, err := jaeger.ProtoFromTraces(td)
-	if err != nil {
-		return consumererror.NewPermanent(fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err))
-	}
+	batches := jaeger.ProtoFromTraces(td)
 
 	if s.metadata.Len() > 0 {
 		ctx = metadata.NewOutgoingContext(ctx, s.metadata)
 	}
 
 	for _, batch := range batches {
-		_, err = s.client.PostSpans(
+		_, err := s.client.PostSpans(
 			ctx,
 			&jaegerproto.PostSpansRequest{Batch: *batch}, grpc.WaitForReady(s.waitForReady))
-
 		if err != nil {
 			s.settings.Logger.Debug("failed to push trace data to Jaeger", zap.Error(err))
 			return fmt.Errorf("failed to push trace data via Jaeger exporter: %w", err)
@@ -182,7 +176,7 @@ func (s *protoGRPCSender) start(ctx context.Context, host component.Host) error 
 	if s.clientSettings == nil {
 		return fmt.Errorf("client settings not found")
 	}
-	conn, err := s.clientSettings.ToClientConnWithOptions(ctx, host, s.settings)
+	conn, err := s.clientSettings.ToClientConn(ctx, host, s.settings)
 	if err != nil {
 		return err
 	}

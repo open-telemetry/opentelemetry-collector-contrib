@@ -82,8 +82,7 @@ func TestOAuthClientSettings(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			rc, err := newClientAuthenticator(test.settings, zap.NewNop())
 			if test.shouldError {
-				assert.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectedError)
+				assert.ErrorContains(t, err, test.expectedError)
 				return
 			}
 			assert.NoError(t, err)
@@ -274,7 +273,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 
 func TestFailContactingOAuth(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("not-json"))
 		assert.NoError(t, err)
 	}))
@@ -296,7 +295,7 @@ func TestFailContactingOAuth(t *testing.T) {
 
 	_, err = credential.GetRequestMetadata(context.Background())
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), serverURL.String())
+	assert.ErrorContains(t, err, serverURL.String())
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	baseRoundTripper := (http.RoundTripper)(transport)
@@ -307,9 +306,9 @@ func TestFailContactingOAuth(t *testing.T) {
 		Transport: roundTripper,
 	}
 
-	req, err := http.NewRequest("POST", "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodPost, "http://example.com/", nil)
 	require.NoError(t, err)
 	_, err = client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
-	assert.Contains(t, err.Error(), serverURL.String())
+	assert.ErrorContains(t, err, serverURL.String())
 }

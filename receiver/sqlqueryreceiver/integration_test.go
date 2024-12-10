@@ -125,6 +125,53 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 	testAllSimpleLogs(t, consumer.AllLogs())
 }
 
+func TestPostgresIntegrationLogsTrackingByTimestampColumnWithoutStorage(t *testing.T) {
+	// Start Postgres container.
+	externalPort := "15432"
+	dbContainer := startPostgresDbContainer(t, externalPort)
+	defer func() {
+		require.NoError(t, dbContainer.Terminate(context.Background()))
+	}()
+
+	// Start the SQL Query receiver.
+	receiverCreateSettings := receivertest.NewNopSettings()
+	receiver, config, consumer := createTestLogsReceiverForPostgres(t, externalPort, receiverCreateSettings)
+	config.CollectionInterval = 100 * time.Millisecond
+	config.Queries = []sqlquery.Query{
+		{
+			SQL: "select * from simple_logs where insert_time > $1 order by insert_time asc",
+			Logs: []sqlquery.LogsCfg{
+				{
+					BodyColumn:       "body",
+					AttributeColumns: []string{"attribute"},
+				},
+			},
+			TrackingColumn:     "insert_time",
+			TrackingStartValue: "2022-06-03 21:00:00+00",
+		},
+	}
+	host := componenttest.NewNopHost()
+	err := receiver.Start(context.Background(), host)
+	require.NoError(t, err)
+
+	// Verify there's 5 logs received.
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.LogRecordCount() > 0
+		},
+		1*time.Minute,
+		500*time.Millisecond,
+		"failed to receive more than 0 logs",
+	)
+	require.Equal(t, 5, consumer.LogRecordCount())
+	testAllSimpleLogs(t, consumer.AllLogs())
+
+	// Stop the SQL Query receiver.
+	err = receiver.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
 func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	// start Postgres container
 	externalPort := "15431"
@@ -293,7 +340,7 @@ func createTestLogsReceiverForPostgres(t *testing.T, externalPort string, receiv
 
 	consumer := &consumertest.LogsSink{}
 	receiverCreateSettings.Logger = zap.NewExample()
-	receiver, err := factory.CreateLogsReceiver(
+	receiver, err := factory.CreateLogs(
 		context.Background(),
 		receiverCreateSettings,
 		config,

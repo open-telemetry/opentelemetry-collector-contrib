@@ -131,19 +131,15 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 	texp := newTracesExporter(c, exportertest.NewNopSettings())
 	require.NotNil(t, texp)
 	err := texp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
 	require.NotNil(t, mexp)
 	err = mexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	lexp := newLogsExporter(c, exportertest.NewNopSettings())
 	require.NotNil(t, lexp)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
-
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewExporter_err_compression(t *testing.T) {
@@ -157,7 +153,7 @@ func TestNewExporter_err_compression(t *testing.T) {
 	require.NotNil(t, texp)
 	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+	assert.ErrorContains(t, err, "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
 }
 
 func TestTracesExporter_encoding_extension(t *testing.T) {
@@ -249,8 +245,7 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 	}
 	td := testdata.GenerateTraces(2)
 	err := p.tracesPusher(context.Background(), td)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 func TestMetricsDataPusher(t *testing.T) {
@@ -331,8 +326,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 	}
 	md := testdata.GenerateMetrics(2)
 	err := p.metricsDataPusher(context.Background(), md)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 func TestLogsDataPusher(t *testing.T) {
@@ -413,8 +407,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 	}
 	ld := testdata.GenerateLogs(1)
 	err := p.logsDataPusher(context.Background(), ld)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 type tracesErrorMarshaler struct {

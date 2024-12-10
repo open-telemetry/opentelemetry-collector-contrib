@@ -48,12 +48,12 @@ type logsExporter struct {
 func (e *logsExporter) start(ctx context.Context, host component.Host) (err error) {
 	switch {
 	case !isEmpty(e.config.Logs.Endpoint):
-		if e.clientConn, err = e.config.Logs.ToClientConnWithOptions(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	case !isEmpty(e.config.Domain):
 
-		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConnWithOptions(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))); err != nil {
 			return err
 		}
 	}
@@ -79,7 +79,6 @@ func (e *logsExporter) shutdown(context.Context) error {
 }
 
 func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
-
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		resourceLog := rss.At(i)

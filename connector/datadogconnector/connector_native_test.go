@@ -18,8 +18,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
-	semconv "go.opentelemetry.io/collector/semconv/v1.5.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -146,7 +145,7 @@ func TestMeasuredAndClientKindNative(t *testing.T) {
 	td := ptrace.NewTraces()
 	res := td.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().PutStr("service.name", "svc")
-	res.Attributes().PutStr(conventions127.AttributeDeploymentEnvironmentName, "my-env")
+	res.Attributes().PutStr(semconv.AttributeDeploymentEnvironmentName, "my-env")
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	// Root span

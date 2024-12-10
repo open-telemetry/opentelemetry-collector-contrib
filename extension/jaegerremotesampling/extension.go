@@ -59,7 +59,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	}
 
 	if jrse.cfg.Source.Remote != nil {
-		conn, err := jrse.cfg.Source.Remote.ToClientConnWithOptions(ctx, host, jrse.telemetry)
+		conn, err := jrse.cfg.Source.Remote.ToClientConn(ctx, host, jrse.telemetry)
 		if err != nil {
 			return fmt.Errorf("failed to create the remote strategy store: %w", err)
 		}

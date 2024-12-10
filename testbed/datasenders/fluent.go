@@ -54,7 +54,7 @@ func NewFluentLogsForwarder(t *testing.T, port int) *FluentLogsForwarder {
 	// file FLUENT_DATA_SENDER_DATA_FILE and forward data to FLUENT_DATA_SENDER_RECEIVER_PORT
 	// on 127.0.0.1.
 	if dataFileName := os.Getenv(fluentDatafileVar); dataFileName != "" {
-		f.dataFile, err = os.OpenFile(dataFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+		f.dataFile, err = os.OpenFile(dataFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 		require.NoError(t, err)
 	} else {
 		logger, err := fluent.New(fluent.Config{FluentPort: port, Async: true})

@@ -109,12 +109,16 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 	}
 
 	if err = p.ParseWith(ctx, entry, parse); err != nil {
+		if p.OnError == DropOnErrorQuiet || p.OnError == SendOnErrorQuiet {
+			return nil
+		}
+
 		return err
 	}
 	if cb != nil {
 		err = cb(entry)
 		if err != nil {
-			return err
+			return p.HandleEntryError(ctx, entry, err)
 		}
 	}
 

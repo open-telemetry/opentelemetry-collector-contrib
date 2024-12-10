@@ -49,6 +49,7 @@ func (st *memoryStorage) createOrAppend(traceID pcommon.TraceID, td ptrace.Trace
 
 	return nil
 }
+
 func (st *memoryStorage) get(traceID pcommon.TraceID) ([]ptrace.ResourceSpans, error) {
 	st.RLock()
 	rss, ok := st.content[traceID]

@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -46,6 +46,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: make genoteltestbedcol
       - run: make oteltestbedcol
       - name: Upload Testbed Binaries
         uses: actions/upload-artifact@v4
@@ -66,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.7"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -118,7 +119,7 @@ jobs:
           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
 
   update-benchmarks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [loadtest]
     if: github.event_name != 'pull_request'
     steps:

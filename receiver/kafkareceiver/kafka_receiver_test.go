@@ -76,7 +76,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
@@ -96,6 +96,7 @@ func TestTracesReceiverStart(t *testing.T) {
 	c := kafkaTracesConsumer{
 		config:           Config{Encoding: defaultEncoding},
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(),
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: nopTelemetryBuilder(t),
@@ -110,6 +111,7 @@ func TestTracesReceiverStartConsume(t *testing.T) {
 	require.NoError(t, err)
 	c := kafkaTracesConsumer{
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(),
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: telemetryBuilder,
@@ -117,11 +119,11 @@ func TestTracesReceiverStartConsume(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
 	require.NoError(t, c.Shutdown(context.Background()))
-	err = c.consumeLoop(ctx, &tracesConsumerGroupHandler{
+	c.consumeLoopWG.Add(1)
+	c.consumeLoop(ctx, &tracesConsumerGroupHandler{
 		ready:            make(chan bool),
 		telemetryBuilder: telemetryBuilder,
 	})
-	assert.EqualError(t, err, context.Canceled.Error())
 }
 
 func TestTracesReceiver_error(t *testing.T) {
@@ -134,6 +136,7 @@ func TestTracesReceiver_error(t *testing.T) {
 	c := kafkaTracesConsumer{
 		config:           Config{Encoding: defaultEncoding},
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
 		telemetryBuilder: nopTelemetryBuilder(t),
@@ -186,6 +189,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
@@ -230,6 +234,7 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
@@ -328,6 +333,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -375,6 +381,7 @@ func TestTracesReceiver_encoding_extension(t *testing.T) {
 	c := kafkaTracesConsumer{
 		config:           Config{Encoding: "traces_encoding"},
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
 		telemetryBuilder: nopTelemetryBuilder(t),
@@ -428,8 +435,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
@@ -450,6 +456,7 @@ func TestMetricsReceiverStartConsume(t *testing.T) {
 	require.NoError(t, err)
 	c := kafkaMetricsConsumer{
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(),
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: telemetryBuilder,
@@ -457,11 +464,11 @@ func TestMetricsReceiverStartConsume(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
 	require.NoError(t, c.Shutdown(context.Background()))
-	err = c.consumeLoop(ctx, &logsConsumerGroupHandler{
+	c.consumeLoopWG.Add(1)
+	c.consumeLoop(ctx, &logsConsumerGroupHandler{
 		ready:            make(chan bool),
 		telemetryBuilder: telemetryBuilder,
 	})
-	assert.EqualError(t, err, context.Canceled.Error())
 }
 
 func TestMetricsReceiver_error(t *testing.T) {
@@ -474,6 +481,7 @@ func TestMetricsReceiver_error(t *testing.T) {
 	c := kafkaMetricsConsumer{
 		config:           Config{Encoding: defaultEncoding},
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
 		telemetryBuilder: nopTelemetryBuilder(t),
@@ -526,6 +534,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
@@ -569,6 +578,7 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
@@ -667,6 +677,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -713,6 +724,7 @@ func TestMetricsReceiver_encoding_extension(t *testing.T) {
 	c := kafkaMetricsConsumer{
 		config:           Config{Encoding: "metrics_encoding"},
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
 		telemetryBuilder: nopTelemetryBuilder(t),
@@ -768,8 +780,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
@@ -789,6 +800,7 @@ func TestLogsReceiverStart(t *testing.T) {
 	c := kafkaLogsConsumer{
 		config:           *createDefaultConfig().(*Config),
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(),
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: nopTelemetryBuilder(t),
@@ -803,6 +815,7 @@ func TestLogsReceiverStartConsume(t *testing.T) {
 	require.NoError(t, err)
 	c := kafkaLogsConsumer{
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(),
 		consumerGroup:    &testConsumerGroup{},
 		telemetryBuilder: telemetryBuilder,
@@ -810,11 +823,11 @@ func TestLogsReceiverStartConsume(t *testing.T) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancelFunc
 	require.NoError(t, c.Shutdown(context.Background()))
-	err = c.consumeLoop(ctx, &logsConsumerGroupHandler{
+	c.consumeLoopWG.Add(1)
+	c.consumeLoop(ctx, &logsConsumerGroupHandler{
 		ready:            make(chan bool),
 		telemetryBuilder: telemetryBuilder,
 	})
-	assert.EqualError(t, err, context.Canceled.Error())
 }
 
 func TestLogsReceiver_error(t *testing.T) {
@@ -826,6 +839,7 @@ func TestLogsReceiver_error(t *testing.T) {
 	expectedErr := errors.New("handler error")
 	c := kafkaLogsConsumer{
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
 		config:           *createDefaultConfig().(*Config),
@@ -879,6 +893,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
@@ -922,6 +937,7 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
@@ -1020,6 +1036,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
@@ -1168,7 +1185,7 @@ func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
 	}
 }
 
-func TestCreateLogsReceiver_encoding_text_error(t *testing.T) {
+func TestCreateLogs_encoding_text_error(t *testing.T) {
 	cfg := Config{
 		Encoding: "text_uft-8",
 	}
@@ -1190,6 +1207,7 @@ func TestLogsReceiver_encoding_extension(t *testing.T) {
 	c := kafkaLogsConsumer{
 		config:           Config{Encoding: "logs_encoding"},
 		nextConsumer:     consumertest.NewNop(),
+		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
 		telemetryBuilder: nopTelemetryBuilder(t),

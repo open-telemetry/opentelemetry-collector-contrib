@@ -4,9 +4,9 @@ status:
   class: connector
   stability:
     alpha: [traces_to_traces, metrics_to_metrics, logs_to_logs]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
-    active: [akats7, djaglowski, fatsheep9146]
+    active: [akats7, fatsheep9146]
 
 tests:
   skip_lifecycle: true

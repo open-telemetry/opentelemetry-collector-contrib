@@ -459,7 +459,6 @@ type SummaryScopeAttribute struct {
 //	@param tableDataMap - a map from table name to the relevant data
 //	@return error
 func (kiwriter *KiWriter) writeMetric(metricType string, tableDataMap *orderedmap.OrderedMap[string, []any]) error {
-
 	kiwriter.logger.Debug("Writing metric", zap.String("Type", metricType))
 
 	var errs []error
@@ -479,7 +478,6 @@ func (kiwriter *KiWriter) writeMetric(metricType string, tableDataMap *orderedma
 			}
 			wg.Done()
 		}(tableName, data, wg)
-
 	}
 	wg.Wait()
 
@@ -506,7 +504,6 @@ func (kiwriter *KiWriter) persistGaugeRecord(gaugeRecords []kineticaGaugeRecord)
 	var exemplarAttributes []any
 
 	for _, gaugerecord := range gaugeRecords {
-
 		gauges = append(gauges, *gaugerecord.gauge)
 
 		for _, gr := range gaugerecord.resourceAttribute {
@@ -532,7 +529,6 @@ func (kiwriter *KiWriter) persistGaugeRecord(gaugeRecords []kineticaGaugeRecord)
 		for _, geattr := range gaugerecord.exemplarAttribute {
 			exemplarAttributes = append(exemplarAttributes, geattr)
 		}
-
 	}
 
 	tableDataMap := orderedmap.New[string, []any]()
@@ -564,7 +560,6 @@ func (kiwriter *KiWriter) persistSumRecord(sumRecords []kineticaSumRecord) error
 	var exemplarAttributes []any
 
 	for _, sumrecord := range sumRecords {
-
 		sums = append(sums, *sumrecord.sum)
 
 		for _, sr := range sumrecord.sumResourceAttribute {
@@ -590,7 +585,6 @@ func (kiwriter *KiWriter) persistSumRecord(sumRecords []kineticaSumRecord) error
 		for _, seattr := range sumrecord.exemplarAttribute {
 			exemplarAttributes = append(exemplarAttributes, seattr)
 		}
-
 	}
 
 	tableDataMap := orderedmap.New[string, []any]()
@@ -624,7 +618,6 @@ func (kiwriter *KiWriter) persistHistogramRecord(histogramRecords []kineticaHist
 	var exemplarAttributes []any
 
 	for _, histogramrecord := range histogramRecords {
-
 		histograms = append(histograms, *histogramrecord.histogram)
 
 		for _, ra := range histogramrecord.histogramResourceAttribute {
@@ -693,7 +686,6 @@ func (kiwriter *KiWriter) persistExponentialHistogramRecord(exponentialHistogram
 	var exemplarAttributes []any
 
 	for _, histogramrecord := range exponentialHistogramRecords {
-
 		histograms = append(histograms, *histogramrecord.histogram)
 
 		for _, ra := range histogramrecord.histogramResourceAttribute {
@@ -759,7 +751,6 @@ func (kiwriter *KiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryR
 	var datapointQuantiles []any
 
 	for _, summaryrecord := range summaryRecords {
-
 		summaries = append(summaries, *summaryrecord.summary)
 
 		for _, ra := range summaryrecord.summaryResourceAttribute {
@@ -795,11 +786,9 @@ func (kiwriter *KiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryR
 	errs = append(errs, kiwriter.writeMetric(pmetric.MetricTypeSummary.String(), tableDataMap))
 
 	return multierr.Combine(errs...)
-
 }
 
 func (kiwriter *KiWriter) doChunkedInsert(_ context.Context, tableName string, records []any) error {
-
 	// Build the final table name with the schema prepended
 	var finalTable string
 	if len(kiwriter.cfg.Schema) != 0 {

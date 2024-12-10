@@ -55,11 +55,13 @@ func TestValidateService(t *testing.T) {
 		"Valid Service": {
 			MetricConfig{
 				MetricName: "metric_name",
-			}, false},
+			}, false,
+		},
 		"Empty MetricName": {
 			MetricConfig{
 				MetricName: "",
-			}, true},
+			}, true,
+		},
 	}
 
 	for name, testCase := range testCases {

@@ -44,7 +44,6 @@ func parseSwapsFile(r io.Reader) ([]*pageFileStats, error) {
 			return nil, fmt.Errorf("couldn't read file %q: %w", swapsFilePath, err)
 		}
 		return nil, fmt.Errorf("unexpected end-of-file in %q", swapsFilePath)
-
 	}
 
 	// Check header headerFields are as expected

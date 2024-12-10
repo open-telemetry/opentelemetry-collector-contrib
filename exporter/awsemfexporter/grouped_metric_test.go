@@ -405,7 +405,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
 	})
-
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {
@@ -435,7 +434,7 @@ func TestAddKubernetesWrapper(t *testing.T) {
 
 		jsonBytes, _ := json.Marshal(expectedCreatedObj)
 		addKubernetesWrapper(inputs)
-		assert.Equal(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
+		assert.JSONEq(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
 	})
 }
 
@@ -489,10 +488,12 @@ func TestTranslateUnit(t *testing.T) {
 	translateUnitCases := map[string]string{
 		"Count": "Count",
 		"ms":    "Milliseconds",
+		"ns":    "",
+		"1":     "",
 		"s":     "Seconds",
 		"us":    "Microseconds",
 		"By":    "Bytes",
-		"Bi":    "Bits",
+		"bit":   "Bits",
 	}
 	for input, output := range translateUnitCases {
 		t.Run(input, func(_ *testing.T) {

@@ -94,7 +94,6 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 		}
 	}
 	return fmt.Sprint(sdElements)
-
 }
 
 func (f *rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {

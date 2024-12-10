@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := &Config{
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
@@ -92,8 +92,7 @@ func TestFilterToken(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			traces := buildTestTraces(tt.useToken)
-			batches, err := jaeger.ProtoFromTraces(traces)
-			require.NoError(t, err)
+			batches := jaeger.ProtoFromTraces(traces)
 			assert.Equal(t, tt.useToken, hasToken(batches))
 			filterToken(batches)
 			assert.False(t, hasToken(batches))
@@ -371,7 +370,7 @@ func TestCompression(t *testing.T) {
 							err = sapm.Unmarshal(payload)
 							assert.NoError(t, err)
 
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 							tracesReceived = true
 						},
 					),

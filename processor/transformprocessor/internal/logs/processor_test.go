@@ -536,7 +536,6 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "A|B|C")
 	log.Attributes().PutStr("total.string", "123456789")
-
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -548,5 +547,4 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().PutStr("http.url", "http://localhost/health")
 	log.Attributes().PutStr("flags", "C|D")
 	log.Attributes().PutStr("total.string", "345678")
-
 }

@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, k8s]
   codeowners:
     active: [dmitryax, TylerHelmuth, ChrsMark]
 
@@ -100,7 +100,7 @@ metrics:
     enabled: true
     description: "Node CPU utilization"
     warnings:
-      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
+      if_enabled: "This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
     unit: "1"
     gauge:
       value_type: double
@@ -372,7 +372,7 @@ metrics:
     enabled: true
     description: "Container CPU utilization"
     warnings:
-      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead."
+      if_enabled: "This metric will be disabled in a future release. Use metric container.cpu.usage instead."
     unit: "1"
     gauge:
       value_type: double
