@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: test-k8scluster-receiver-statefulset
+  namespace: my-namespace
+spec:
+  serviceName: "test-k8scluster-receiver-statefulset-service"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-k8scluster-receiver-statefulset
+  template:
+    metadata:
+      labels:
+        app: test-k8scluster-receiver-statefulset
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
+  volumeClaimTemplates:
+    - metadata:
+        name: test-k8scluster-receiver-statefulset-pvc
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Mi

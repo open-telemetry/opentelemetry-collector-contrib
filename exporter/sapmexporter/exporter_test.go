@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cfg := &Config{
 		Endpoint:           "test-endpoint",
 		AccessToken:        "abcd1234",
@@ -370,7 +370,7 @@ func TestCompression(t *testing.T) {
 							err = sapm.Unmarshal(payload)
 							assert.NoError(t, err)
 
-							w.WriteHeader(200)
+							w.WriteHeader(http.StatusOK)
 							tracesReceived = true
 						},
 					),

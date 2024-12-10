@@ -82,6 +82,9 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("strip_outer_array", "true")
+	if cfg.ClientConfig.Timeout != 0 {
+		req.Header.Set("timeout", fmt.Sprintf("%d", cfg.ClientConfig.Timeout/time.Second))
+	}
 	req.SetBasicAuth(cfg.Username, string(cfg.Password))
 
 	return req, nil

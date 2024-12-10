@@ -108,13 +108,20 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metric := tt.metric()
+			settings := Settings{
+				Namespace:           "",
+				ExternalLabels:      nil,
+				DisableTargetInfo:   false,
+				ExportCreatedMetric: false,
+				AddMetricSuffixes:   false,
+				SendMetadata:        false,
+			}
 			converter := newPrometheusConverterV2()
-			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), metric.Name())
+			converter.addGaugeNumberDataPoints(metric.Gauge().DataPoints(), pcommon.NewResource(), settings, metric.Name())
 			w := tt.want()
 
 			diff := cmp.Diff(w, converter.unique, cmpopts.EquateNaNs())
 			assert.Empty(t, diff)
-
 		})
 	}
 }
@@ -150,10 +157,18 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 		}
 	}
 
+	settings := Settings{
+		Namespace:           "",
+		ExternalLabels:      nil,
+		DisableTargetInfo:   false,
+		ExportCreatedMetric: false,
+		AddMetricSuffixes:   false,
+		SendMetadata:        false,
+	}
+
 	converter := newPrometheusConverterV2()
-	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), metric1.Name())
-	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), metric2.Name())
+	converter.addGaugeNumberDataPoints(metric1.Gauge().DataPoints(), pcommon.NewResource(), settings, metric1.Name())
+	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name())
 
 	assert.Equal(t, want(), converter.unique)
-
 }

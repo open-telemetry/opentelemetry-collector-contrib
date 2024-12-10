@@ -57,5 +57,4 @@ func TestUnitWordToUCUM(t *testing.T) {
 			assert.Equal(t, tc.expected, got)
 		})
 	}
-
 }

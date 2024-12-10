@@ -22,11 +22,11 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	ext, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	ext, err := factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.Error(t, err)
 	require.Nil(t, ext)
 }

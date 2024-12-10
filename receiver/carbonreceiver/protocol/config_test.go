@@ -38,7 +38,8 @@ func TestLoadParserConfig(t *testing.T) {
 				Config: &RegexParserConfig{
 					Rules: []*RegexRule{
 						{Regexp: "(?<key_test>.*test)"},
-					}},
+					},
+				},
 			},
 		},
 		{

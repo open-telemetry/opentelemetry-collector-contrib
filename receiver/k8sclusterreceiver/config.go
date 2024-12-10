@@ -39,6 +39,11 @@ type Config struct {
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
+	// Namespace to fetch resources from. If this is set, certain cluster-wide resources such as Nodes or Namespaces
+	// will not be able to be observed. Setting this option is recommended in environments where due to security restrictions
+	// the collector can not be granted cluster-wide permissions.
+	Namespace string `mapstructure:"namespace"`
 }
 
 func (cfg *Config) Validate() error {
@@ -48,5 +53,6 @@ func (cfg *Config) Validate() error {
 	default:
 		return fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", cfg.Distribution)
 	}
+
 	return nil
 }

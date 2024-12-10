@@ -28,6 +28,7 @@ components:
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
@@ -43,6 +44,7 @@ components:
         - mezmo
         - opencensus
         - opensearch
+        - otelarrow
         - prometheus
         - prometheusremotewrite
         - pulsar
@@ -61,6 +63,7 @@ components:
         - awsproxy
         - basicauth
         - bearertokenauth
+        - cgroupruntime
         - db_storage
         - docker_observer
         - ecs_observer
@@ -69,6 +72,7 @@ components:
         - headers_setter
         - health_check
         - host_observer
+        - http_forwarder
         - jaegerremotesampling
         - k8s_observer
         - oauth2client
@@ -86,6 +90,7 @@ components:
         - groupbyattrs
         - groupbytrace
         - k8sattributes
+        - logdedup
         - metricsgeneration
         - metricstransform
         - probabilistic_sampler
@@ -107,6 +112,7 @@ components:
         - awscontainerinsightreceiver
         - awsecscontainermetrics
         - awsfirehose
+        - awss3
         - awsxray
         - azureblob
         - azureeventhub

@@ -141,7 +141,6 @@ type Config struct {
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
-
 	out, err = url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return out, err

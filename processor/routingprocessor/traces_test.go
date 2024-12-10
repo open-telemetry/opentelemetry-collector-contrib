@@ -41,7 +41,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTraces(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[pipeline.Signal]map[component.ID]component.Component{
@@ -497,7 +497,6 @@ func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	// verify
 	assert.Len(t, defaultExp.AllTraces(), 1)
 	assert.Empty(t, firstExp.AllTraces())
-
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {

@@ -69,7 +69,6 @@ func newAMQPMessagingServiceFactory(cfg *Config, logger *zap.Logger) (messagingS
 			logger:         logger,
 		}
 	}, nil
-
 }
 
 type amqpConnectConfig struct {

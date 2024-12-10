@@ -4,7 +4,6 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 
@@ -70,7 +69,7 @@ func translateDatadogTagToKeyValuePair(tag string) (key string, value string) {
 		// to only support key:value pairs.
 		// The following is a workaround to map unnamed inputTags to key:value pairs and its subject to future
 		// changes if OTel supports unnamed inputTags in the future or if there is a better way to do this.
-		key = fmt.Sprintf("unnamed_%s", tag)
+		key = "unnamed_" + tag
 		val = tag
 	}
 	return key, val

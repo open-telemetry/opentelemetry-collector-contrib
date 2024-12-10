@@ -120,6 +120,7 @@ func (stma *startTimeMetricAdjuster) getStartTime(metrics pmetric.Metrics) (floa
 	}
 	return 0.0, errNoStartTimeMetrics
 }
+
 func (stma *startTimeMetricAdjuster) matchStartTimeMetric(metricName string) bool {
 	if stma.startTimeMetricRegex != nil {
 		return stma.startTimeMetricRegex.MatchString(metricName)
