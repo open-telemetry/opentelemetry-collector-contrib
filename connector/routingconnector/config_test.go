@@ -251,6 +251,22 @@ func TestValidateConfig(t *testing.T) {
 			error: `"metric" context is not supported with "match_once: false"`,
 		},
 		{
+			name: "datapoint context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "datapoint",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"datapoint" context is not supported with "match_once: false"`,
+		},
+		{
 			name: "log context with match_once false",
 			config: &Config{
 				MatchOnce: false,
