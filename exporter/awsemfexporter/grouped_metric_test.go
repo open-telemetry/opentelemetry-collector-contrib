@@ -406,6 +406,42 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
 	})
 
+	t.Run("Duplicate metric names with different metricIndex", func(t *testing.T) {
+		emfCalcs := setupEmfCalculators()
+		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+		groupedMetrics := make(map[any]*groupedMetric)
+		generateMetrics := []pmetric.Metrics{
+			generateTestExponentialHistogramMetricWithLongBuckets("test_multiBucket_metric"),
+		}
+		finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
+
+		rms := finalOtelMetrics.ResourceMetrics()
+		ilms := rms.At(0).ScopeMetrics()
+		metrics := ilms.At(0).Metrics()
+		assert.Equal(t, 1, metrics.Len())
+
+		for i := 0; i < metrics.Len(); i++ {
+			err := addToGroupedMetric(metrics.At(i),
+				groupedMetrics,
+				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
+				true,
+				nil,
+				testCfg,
+				emfCalcs,
+			)
+			assert.NoError(t, err)
+		}
+		assert.Len(t, groupedMetrics, 2)
+		expectedLabels := map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"}
+		idx := 0
+		for _, v := range groupedMetrics {
+			assert.Len(t, v.metrics, 1)
+			assert.Len(t, v.labels, 2)
+			assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type(), idx), v.metadata)
+			assert.Equal(t, expectedLabels, v.labels)
+			idx++
+		}
+	})
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {
@@ -435,7 +471,7 @@ func TestAddKubernetesWrapper(t *testing.T) {
 
 		jsonBytes, _ := json.Marshal(expectedCreatedObj)
 		addKubernetesWrapper(inputs)
-		assert.Equal(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
+		assert.JSONEq(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
 	})
 }
 
@@ -489,10 +525,12 @@ func TestTranslateUnit(t *testing.T) {
 	translateUnitCases := map[string]string{
 		"Count": "Count",
 		"ms":    "Milliseconds",
+		"ns":    "",
+		"1":     "",
 		"s":     "Seconds",
 		"us":    "Microseconds",
 		"By":    "Bytes",
-		"Bi":    "Bits",
+		"bit":   "Bits",
 	}
 	for input, output := range translateUnitCases {
 		t.Run(input, func(_ *testing.T) {
@@ -508,7 +546,11 @@ func TestTranslateUnit(t *testing.T) {
 	assert.Equal(t, "Count", v)
 }
 
-func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationScopeName string, metricType pmetric.MetricType) cWMetricMetadata {
+func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, logStreamName, instrumentationScopeName string, metricType pmetric.MetricType, batchIndex ...int) cWMetricMetadata {
+	mIndex := 0
+	if len(batchIndex) > 0 {
+		mIndex = batchIndex[0]
+	}
 	return cWMetricMetadata{
 		receiver: prometheusReceiver,
 		groupedMetricMetadata: groupedMetricMetadata{
@@ -517,6 +559,7 @@ func generateTestMetricMetadata(namespace string, timestamp int64, logGroup, log
 			logGroup:       logGroup,
 			logStream:      logStreamName,
 			metricDataType: metricType,
+			batchIndex:     mIndex,
 		},
 		instrumentationScopeName: instrumentationScopeName,
 	}

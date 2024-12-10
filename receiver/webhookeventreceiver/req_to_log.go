@@ -18,7 +18,8 @@ import (
 func reqToLog(sc *bufio.Scanner,
 	query url.Values,
 	_ *Config,
-	settings receiver.Settings) (plog.Logs, int) {
+	settings receiver.Settings,
+) (plog.Logs, int) {
 	// we simply dont split the data passed into scan (i.e. scan the whole thing)
 	// the downside to this approach is that only 1 log per request can be handled.
 	// NOTE: logs will contain these newline characters which could have formatting
@@ -58,5 +59,4 @@ func appendMetadata(resourceLog plog.ResourceLogs, query url.Values) {
 			resourceLog.Resource().Attributes().PutStr(k, query.Get(k))
 		}
 	}
-
 }

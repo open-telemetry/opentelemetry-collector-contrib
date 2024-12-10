@@ -21,8 +21,6 @@ processors:
 connectors:
   datadog/connector:
     traces:
-      compute_stats_by_span_kind: true
-      peer_tags_aggregation: true
       peer_tags: ["extra_peer_tag"]
 
 exporters:
@@ -30,7 +28,7 @@ exporters:
     verbosity: detailed
   datadog:
     api:
-      key: "key"
+      key: "aaa"
     tls:
       insecure_skip_verify: true
     host_metadata:

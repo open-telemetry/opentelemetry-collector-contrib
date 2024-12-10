@@ -35,7 +35,7 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	case pcommon.ValueTypeMap:
 		raw = logRecord.Map().AsRaw()
 	default:
-		return nil, fmt.Errorf("Marshal: Expected 'Map' found '%v'", logRecord.Type().String())
+		return nil, fmt.Errorf("marshal: expected 'Map' found '%v'", logRecord.Type().String())
 	}
 	buf, err := jsoniter.Marshal(raw)
 	if err != nil {
@@ -73,7 +73,7 @@ func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 }
 
 func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
-	logs := make([]logBody, ld.ResourceLogs().Len()-1)
+	logs := make([]logBody, 0, ld.LogRecordCount())
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {

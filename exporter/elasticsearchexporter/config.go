@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
@@ -169,8 +170,12 @@ type RetrySettings struct {
 	// Enabled allows users to disable retry without having to comment out all settings.
 	Enabled bool `mapstructure:"enabled"`
 
-	// MaxRequests configures how often an HTTP request is retried before it is assumed to be failed.
+	// MaxRequests configures how often an HTTP request is attempted before it is assumed to be failed.
+	// Deprecated: use MaxRetries instead.
 	MaxRequests int `mapstructure:"max_requests"`
+
+	// MaxRetries configures how many times an HTTP request is retried.
+	MaxRetries int `mapstructure:"max_retries"`
 
 	// InitialInterval configures the initial waiting time if a request failed.
 	InitialInterval time.Duration `mapstructure:"initial_interval"`
@@ -207,6 +212,7 @@ const (
 	MappingECS
 	MappingOTel
 	MappingRaw
+	MappingBodyMap
 )
 
 var (
@@ -224,6 +230,8 @@ func (m MappingMode) String() string {
 		return "otel"
 	case MappingRaw:
 		return "raw"
+	case MappingBodyMap:
+		return "bodymap"
 	default:
 		return ""
 	}
@@ -236,6 +244,7 @@ var mappingModes = func() map[string]MappingMode {
 		MappingECS,
 		MappingOTel,
 		MappingRaw,
+		MappingBodyMap,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
@@ -265,10 +274,20 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
-	if cfg.Compression != "" {
-		// TODO support confighttp.ClientConfig.Compression
-		return errors.New("compression is not currently configurable")
+	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
+		return errors.New("compression must be one of [none, gzip]")
 	}
+
+	if cfg.Retry.MaxRequests != 0 && cfg.Retry.MaxRetries != 0 {
+		return errors.New("must not specify both retry::max_requests and retry::max_retries")
+	}
+	if cfg.Retry.MaxRequests < 0 {
+		return errors.New("retry::max_requests should be non-negative")
+	}
+	if cfg.Retry.MaxRetries < 0 {
+		return errors.New("retry::max_retries should be non-negative")
+	}
+
 	return nil
 }
 
@@ -351,11 +370,16 @@ func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
 }
 
-func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
+func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	if cfg.Mapping.Dedup != nil {
 		logger.Warn("dedup is deprecated, and is always enabled")
 	}
 	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
+	}
+	if cfg.Retry.MaxRequests != 0 {
+		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
+		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
+		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
 	}
 }

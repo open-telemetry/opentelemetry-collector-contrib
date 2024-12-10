@@ -107,7 +107,7 @@ func TestReceiveUnmarshallerMapClientSpanData(t *testing.T) {
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic) receive")
+				span.SetName("(unknown) receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 			},
 		},
@@ -134,7 +134,7 @@ func TestReceiveUnmarshallerMapClientSpanData(t *testing.T) {
 				span.Status().SetMessage("some error")
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic) receive")
+				span.SetName("(unknown) receive")
 			},
 		},
 	}
@@ -386,7 +386,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 					"messaging.solace.partition_number":     345,
 				})
@@ -406,7 +406,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "sometopic enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":      "topic-endpoint",
+					"messaging.solace.destination.type":      "topic-endpoint",
 					"messaging.solace.enqueue_error_message": someErrorString,
 					"messaging.solace.rejects_all_enqueues":  true,
 				})
@@ -428,11 +428,11 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
-					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.destination.type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 			},
@@ -584,11 +584,11 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
-					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.destination.type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": true,
 				})
 				populateEvent(t, span, "rollback_only", 123456789, map[string]any{

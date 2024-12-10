@@ -81,6 +81,131 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with bodymap encoding", func(t *testing.T) {
+		tableTests := []struct {
+			name     string
+			body     func() pcommon.Value
+			expected string
+		}{
+			{
+				name: "flat",
+				body: func() pcommon.Value {
+					body := pcommon.NewValueMap()
+					m := body.Map()
+					m.PutStr("@timestamp", "2024-03-12T20:00:41.123456789Z")
+					m.PutInt("id", 1)
+					m.PutStr("key", "value")
+					return body
+				},
+				expected: `{"@timestamp":"2024-03-12T20:00:41.123456789Z","id":1,"key":"value"}`,
+			},
+			{
+				name: "dotted key",
+				body: func() pcommon.Value {
+					body := pcommon.NewValueMap()
+					m := body.Map()
+					m.PutInt("a", 1)
+					m.PutInt("a.b", 2)
+					m.PutInt("a.b.c", 3)
+					return body
+				},
+				expected: `{"a":1,"a.b":2,"a.b.c":3}`,
+			},
+			{
+				name: "slice",
+				body: func() pcommon.Value {
+					body := pcommon.NewValueMap()
+					m := body.Map()
+					s := m.PutEmptySlice("a")
+					for i := 0; i < 2; i++ {
+						s.AppendEmpty().SetInt(int64(i))
+					}
+					return body
+				},
+				expected: `{"a":[0,1]}`,
+			},
+			{
+				name: "inner map",
+				body: func() pcommon.Value {
+					body := pcommon.NewValueMap()
+					m := body.Map()
+					m1 := m.PutEmptyMap("a")
+					m1.PutInt("b", 1)
+					m1.PutInt("c", 2)
+					return body
+				},
+				expected: `{"a":{"b":1,"c":2}}`,
+			},
+			{
+				name: "nested map",
+				body: func() pcommon.Value {
+					body := pcommon.NewValueMap()
+					m := body.Map()
+					m1 := m.PutEmptyMap("a")
+					m2 := m1.PutEmptyMap("b")
+					m2.PutInt("c", 1)
+					m2.PutInt("d", 2)
+					return body
+				},
+				expected: `{"a":{"b":{"c":1,"d":2}}}`,
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					assert.JSONEq(t, tt.expected, string(docs[0].Document))
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = "bodymap"
+				})
+				logs := plog.NewLogs()
+				resourceLogs := logs.ResourceLogs().AppendEmpty()
+				scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+				logRecords := scopeLogs.LogRecords()
+				logRecord := logRecords.AppendEmpty()
+				tt.body().CopyTo(logRecord.Body())
+
+				mustSendLogs(t, exporter, logs)
+				rec.WaitItems(1)
+			})
+		}
+	})
+
+	t.Run("drops log records for bodymap mode if body is not a map", func(t *testing.T) {
+		logs := plog.NewLogs()
+		resourceLogs := logs.ResourceLogs().AppendEmpty()
+		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+		logRecords := scopeLogs.LogRecords()
+
+		// Invalid body type should be dropped.
+		logRecords.AppendEmpty().Body().SetEmptySlice()
+
+		// We should still process the valid records in the batch.
+		bodyMap := logRecords.AppendEmpty().Body().SetEmptyMap()
+		bodyMap.PutInt("a", 42)
+
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			defer rec.Record(docs)
+			assert.Len(t, docs, 1)
+			assert.JSONEq(t, `{"a":42}`, string(docs[0].Document))
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "bodymap"
+		})
+
+		err := exporter.ConsumeLogs(context.Background(), logs)
+		assert.NoError(t, err)
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with dedot", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -108,7 +233,7 @@ func TestExporterLogs(t *testing.T) {
 	t.Run("publish with dedup", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			assert.Equal(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope":{"name":"","value":"value","version":""},"SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
+			assert.JSONEq(t, `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Scope":{"name":"","value":"value","version":""},"SeverityNumber":0,"TraceFlags":0}`, string(docs[0].Document))
 			rec.Record(docs)
 			return itemsAllOK(docs)
 		})
@@ -173,7 +298,6 @@ func TestExporterLogs(t *testing.T) {
 	})
 
 	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
-
 		rec := newBulkRecorder()
 		var (
 			prefix = "resprefix-"
@@ -380,7 +504,6 @@ func TestExporterLogs(t *testing.T) {
 			)
 			tc.body.CopyTo(logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
 			mustSendLogs(t, exporter, logs)
-			rec.WaitItems(1)
 
 			expected := []itemRequest{
 				{
@@ -389,9 +512,8 @@ func TestExporterLogs(t *testing.T) {
 				},
 			}
 
-			assertItemsEqual(t, expected, rec.Items(), false)
+			assertRecordedItems(t, expected, rec, false)
 		}
-
 	})
 
 	t.Run("retry http request", func(t *testing.T) {
@@ -415,14 +537,10 @@ func TestExporterLogs(t *testing.T) {
 
 	t.Run("no retry", func(t *testing.T) {
 		configurations := map[string]func(*Config){
-			"max_requests limited": func(cfg *Config) {
-				cfg.Retry.MaxRequests = 1
-				cfg.Retry.InitialInterval = 1 * time.Millisecond
-				cfg.Retry.MaxInterval = 10 * time.Millisecond
-			},
 			"retry.enabled is false": func(cfg *Config) {
 				cfg.Retry.Enabled = false
-				cfg.Retry.MaxRequests = 10
+				cfg.Retry.RetryOnStatus = []int{429}
+				cfg.Retry.MaxRetries = 10
 				cfg.Retry.InitialInterval = 1 * time.Millisecond
 				cfg.Retry.MaxInterval = 10 * time.Millisecond
 			},
@@ -432,7 +550,7 @@ func TestExporterLogs(t *testing.T) {
 			"fail http request": func(attempts *atomic.Int64) bulkHandler {
 				return func([]itemRequest) ([]itemResponse, error) {
 					attempts.Add(1)
-					return nil, &httpTestError{message: "oops"}
+					return nil, &httpTestError{message: "oops", status: 429}
 				}
 			},
 			"fail item": func(attempts *atomic.Int64) bulkHandler {
@@ -585,9 +703,38 @@ func TestExporterLogs(t *testing.T) {
 
 		assert.Len(t, rec.Items(), 1)
 		doc := rec.Items()[0].Document
-		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
+
+	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendLogs(t, exporter, newLogsWithAttributes(map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}))
+
+		rec.WaitItems(1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
@@ -739,8 +886,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(8)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
@@ -776,7 +921,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("publish histogram", func(t *testing.T) {
@@ -809,8 +954,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -822,7 +965,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("publish exponential histogram", func(t *testing.T) {
@@ -855,8 +998,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -864,7 +1005,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("publish histogram cumulative temporality", func(t *testing.T) {
@@ -963,8 +1104,6 @@ func TestExporterMetrics(t *testing.T) {
 		err := exporter.ConsumeMetrics(context.Background(), metrics)
 		assert.NoError(t, err)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -976,7 +1115,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode", func(t *testing.T) {
@@ -1026,8 +1165,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.metric.foo":"histogram"}}}`),
@@ -1047,7 +1184,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode attribute array value", func(t *testing.T) {
@@ -1073,9 +1210,9 @@ func TestExporterMetrics(t *testing.T) {
 
 		assert.Len(t, rec.Items(), 1)
 		doc := rec.Items()[0].Document
-		assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-		assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-		assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+		assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("otel mode _doc_count hint", func(t *testing.T) {
@@ -1109,7 +1246,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.sum":"gauge_long","metrics.summary":"summary"}}}`),
@@ -1117,7 +1253,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode aggregate_metric_double hint", func(t *testing.T) {
@@ -1160,7 +1296,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.histogram.summary":"summary"}}}`),
@@ -1172,7 +1307,75 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("otel mode metric name conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetric := resourceMetric.ScopeMetrics().AppendEmpty()
+
+		fooBarMetric := scopeMetric.Metrics().AppendEmpty()
+		fooBarMetric.SetName("foo.bar")
+		fooBarMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		fooMetric := scopeMetric.Metrics().AppendEmpty()
+		fooMetric.SetName("foo")
+		fooMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		fooBarBazMetric := scopeMetric.Metrics().AppendEmpty()
+		fooBarBazMetric.SetName("foo.bar.baz")
+		fooBarBazMetric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
+
+		mustSendMetrics(t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic.otel-default","dynamic_templates":{"metrics.foo.bar":"gauge_long","metrics.foo":"gauge_long","metrics.foo.bar.baz":"gauge_long"}}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic.otel","namespace":"default","type":"metrics"},"metrics":{"foo":0,"foo.bar":0,"foo.bar.baz":0},"resource":{"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0}}`),
+			},
+		}
+
+		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendMetrics(t, exporter, newMetricsWithAttributes(map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}))
+
+		rec.WaitItems(1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 
 	t.Run("publish summary", func(t *testing.T) {
@@ -1203,8 +1406,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -1216,7 +1417,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 }
 
@@ -1236,7 +1437,6 @@ func TestExporterTraces(t *testing.T) {
 	})
 
 	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
-
 		rec := newBulkRecorder()
 		var (
 			prefix = "resprefix-"
@@ -1282,7 +1482,6 @@ func TestExporterTraces(t *testing.T) {
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
-
 		rec := newBulkRecorder()
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1425,8 +1624,6 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, traces)
 
-		rec.WaitItems(2)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"traces-generic.otel-default"}}`),
@@ -1438,7 +1635,7 @@ func TestExporterTraces(t *testing.T) {
 			},
 		}
 
-		assertItemsEqual(t, expected, rec.Items(), false)
+		assertRecordedItems(t, expected, rec, false)
 	})
 
 	t.Run("otel mode attribute array value", func(t *testing.T) {
@@ -1470,10 +1667,39 @@ func TestExporterTraces(t *testing.T) {
 		assert.Len(t, rec.Items(), 2)
 		for _, item := range rec.Items() {
 			doc := item.Document
-			assert.Equal(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
-			assert.Equal(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
-			assert.Equal(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+			assert.JSONEq(t, `{"some.record.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `attributes`).Raw)
+			assert.JSONEq(t, `{"some.scope.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+			assert.JSONEq(t, `{"some.resource.attribute":["foo","bar"]}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 		}
+	})
+
+	t.Run("otel mode attribute key prefix conflict", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		mustSendTraces(t, exporter, newTracesWithAttributes(map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}, map[string]any{
+			"a":   "a",
+			"a.b": "a.b",
+		}))
+
+		rec.WaitItems(1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
@@ -1551,7 +1777,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -1569,7 +1795,7 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -1597,7 +1823,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	return exp
 }

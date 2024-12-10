@@ -3,7 +3,7 @@ type: jmx
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
     active: []

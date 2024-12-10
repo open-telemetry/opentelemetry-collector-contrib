@@ -30,8 +30,10 @@ import (
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
-var invalidTraceID = [16]byte{}
-var invalidSpanID = [8]byte{}
+var (
+	invalidTraceID = [16]byte{}
+	invalidSpanID  = [8]byte{}
+)
 
 func cloudLoggingTraceToTraceIDBytes(trace string) [16]byte {
 	// Format: projects/my-gcp-project/traces/4ebc71f1def9274798cac4e8960d0095
@@ -88,8 +90,10 @@ func cloudLoggingSeverityToNumber(severity string) plog.SeverityNumber {
 	return plog.SeverityNumberUnspecified
 }
 
-var desc protoreflect.MessageDescriptor
-var descOnce sync.Once
+var (
+	desc     protoreflect.MessageDescriptor
+	descOnce sync.Once
+)
 
 func getLogEntryDescriptor() protoreflect.MessageDescriptor {
 	descOnce.Do(func() {
@@ -115,7 +119,6 @@ func TranslateLogEntry(_ context.Context, _ *zap.Logger, data []byte) (pcommon.R
 
 	var src map[string]stdjson.RawMessage
 	err := json.Unmarshal(data, &src)
-
 	if err != nil {
 		return res, lr, err
 	}
@@ -491,6 +494,7 @@ func (opts translateOptions) translateMap(dst pcommon.Map, fd protoreflect.Field
 	}
 	return nil
 }
+
 func translateAny(dst pcommon.Map, src map[string]stdjson.RawMessage) error {
 	// protojson represents Any as the JSON representation of the actual
 	// message, plus a special @type field containing the type URL of the

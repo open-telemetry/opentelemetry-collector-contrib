@@ -15,8 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 )
 
-var _ source.Provider = (*Provider)(nil)
-var _ provider.ClusterNameProvider = (*Provider)(nil)
+var (
+	_ source.Provider              = (*Provider)(nil)
+	_ provider.ClusterNameProvider = (*Provider)(nil)
+)
 
 type Provider struct {
 	detector azure.Provider

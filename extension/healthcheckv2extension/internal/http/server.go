@@ -35,8 +35,10 @@ type Server struct {
 	doneCh         chan struct{}
 }
 
-var _ component.Component = (*Server)(nil)
-var _ extensioncapabilities.ConfigWatcher = (*Server)(nil)
+var (
+	_ component.Component                 = (*Server)(nil)
+	_ extensioncapabilities.ConfigWatcher = (*Server)(nil)
+)
 
 func NewServer(
 	config *Config,

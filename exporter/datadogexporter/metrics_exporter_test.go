@@ -43,7 +43,7 @@ func TestNewExporter(t *testing.T) {
 
 	cfg := &Config{
 		API: APIConfig{
-			Key: "ddog_32_characters_long_api_key1",
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		Metrics: MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
@@ -58,14 +58,19 @@ func TestNewExporter(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: HostMetadataConfig{},
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
+		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
+
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
@@ -74,8 +79,6 @@ func TestNewExporter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
-	cfg.HostMetadata.Enabled = true
-	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
@@ -422,7 +425,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 
 	cfg := &Config{
 		API: APIConfig{
-			Key: "ddog_32_characters_long_api_key1",
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
 		Metrics: MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
@@ -437,12 +440,17 @@ func TestNewExporter_Zorkian(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
+		},
 	}
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
-	exp, err := f.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 	testMetrics := pmetric.NewMetrics()
@@ -451,8 +459,6 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
-	cfg.HostMetadata.Enabled = true
-	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)

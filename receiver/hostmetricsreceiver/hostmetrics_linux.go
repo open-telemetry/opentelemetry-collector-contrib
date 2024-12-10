@@ -14,13 +14,12 @@ import (
 )
 
 var gopsutilEnvVars = map[common.EnvKeyType]string{
-	common.HostProcEnvKey:    "/proc",
-	common.HostSysEnvKey:     "/sys",
-	common.HostEtcEnvKey:     "/etc",
-	common.HostVarEnvKey:     "/var",
-	common.HostRunEnvKey:     "/run",
-	common.HostDevEnvKey:     "/dev",
-	common.HostProcMountinfo: "",
+	common.HostProcEnvKey: "/proc",
+	common.HostSysEnvKey:  "/sys",
+	common.HostEtcEnvKey:  "/etc",
+	common.HostVarEnvKey:  "/var",
+	common.HostRunEnvKey:  "/run",
+	common.HostDevEnvKey:  "/dev",
 }
 
 // This exists to validate that different instances of the hostmetricsreceiver do not

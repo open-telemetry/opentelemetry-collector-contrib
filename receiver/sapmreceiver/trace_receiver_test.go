@@ -34,7 +34,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
@@ -336,7 +335,6 @@ func TestReception(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			sink := new(consumertest.TracesSink)
 			sr := setupReceiver(t, tt.args.config, sink)
 			defer func() {
@@ -358,78 +356,6 @@ func TestReception(t *testing.T) {
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
 			assert.EqualValues(t, tt.want, got[0])
-		})
-	}
-}
-
-func TestAccessTokenPassthrough(t *testing.T) {
-	tests := []struct {
-		name                   string
-		accessTokenPassthrough bool
-		token                  string
-	}{
-		{
-			name:                   "no passthrough and no token",
-			accessTokenPassthrough: false,
-			token:                  "",
-		},
-		{
-			name:                   "no passthrough and token",
-			accessTokenPassthrough: false,
-			token:                  "MyAccessToken",
-		},
-		{
-			name:                   "passthrough and no token",
-			accessTokenPassthrough: true,
-			token:                  "",
-		},
-		{
-			name:                   "passthrough and token",
-			accessTokenPassthrough: true,
-			token:                  "MyAccessToken",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config := &Config{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint: "0.0.0.0:7226",
-				},
-				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
-					AccessTokenPassthrough: tt.accessTokenPassthrough,
-				},
-			}
-
-			sapm := &splunksapm.PostSpansRequest{
-				Batches: []*model.Batch{grpcFixture(time.Now().UTC())},
-			}
-
-			sink := new(consumertest.TracesSink)
-			sr := setupReceiver(t, config, sink)
-			defer func() {
-				require.NoError(t, sr.Shutdown(context.Background()))
-			}()
-
-			var resp *http.Response
-			resp, err := sendSapm(config.Endpoint, sapm, "gzip", false, tt.token)
-			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
-			assert.Equal(t, 200, resp.StatusCode)
-			assert.NoError(t, resp.Body.Close())
-
-			got := sink.AllTraces()
-			assert.Len(t, got, 1)
-
-			received := got[0].ResourceSpans()
-			for i := 0; i < received.Len(); i++ {
-				rspan := received.At(i)
-				attrs := rspan.Resource().Attributes()
-				amap, contains := attrs.Get("com.splunk.signalfx.access_token")
-				if tt.accessTokenPassthrough && tt.token != "" {
-					assert.Equal(t, tt.token, amap.Str())
-				} else {
-					assert.False(t, contains)
-				}
-			}
 		})
 	}
 }

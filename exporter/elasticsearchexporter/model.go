@@ -13,8 +13,10 @@ import (
 	"hash/fnv"
 	"math"
 	"slices"
+	"strings"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -56,6 +58,13 @@ var resourceAttrsConversionMap = map[string]string{
 	semconv.AttributeK8SNodeName:            "kubernetes.node.name",
 	semconv.AttributeK8SPodName:             "kubernetes.pod.name",
 	semconv.AttributeK8SPodUID:              "kubernetes.pod.uid",
+	semconv.AttributeK8SJobName:             "kubernetes.job.name",
+	semconv.AttributeK8SCronJobName:         "kubernetes.cronjob.name",
+	semconv.AttributeK8SStatefulSetName:     "kubernetes.statefulset.name",
+	semconv.AttributeK8SReplicaSetName:      "kubernetes.replicaset.name",
+	semconv.AttributeK8SDaemonSetName:       "kubernetes.daemonset.name",
+	semconv.AttributeK8SContainerName:       "kubernetes.container.name",
+	semconv.AttributeK8SClusterName:         "orchestrator.cluster.name",
 }
 
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
@@ -64,6 +73,8 @@ var resourceAttrsConversionMap = map[string]string{
 var resourceAttrsToPreserve = map[string]bool{
 	semconv.AttributeHostName: true,
 }
+
+var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 'bodymap' mapping mode")
 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
@@ -107,10 +118,13 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 		document = m.encodeLogECSMode(resource, record, scope)
 	case MappingOTel:
 		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	case MappingBodyMap:
+		return m.encodeLogBodyMapMode(record)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
-	document.Dedup()
+	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
+	document.Dedup(m.mode != MappingOTel)
 
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
@@ -136,6 +150,15 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	document.AddAttributes("Scope", scopeToAttributes(scope))
 
 	return document
+}
+
+func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error) {
+	body := record.Body()
+	if body.Type() != pcommon.ValueTypeMap {
+		return nil, fmt.Errorf("%w: %q", ErrInvalidTypeForBodyMapMode, body.Type())
+	}
+
+	return jsoniter.Marshal(body.Map().AsRaw())
 }
 
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
@@ -253,7 +276,8 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 }
 
 func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error) {
-	document.Dedup()
+	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
+	document.Dedup(m.mode != MappingOTel)
 
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
@@ -576,7 +600,7 @@ func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resour
 		}
 		return false
 	})
-
+	mergeGeolocation(resourceAttrMap)
 	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
 }
 
@@ -602,6 +626,7 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 		}
 		return false
 	})
+	mergeGeolocation(scopeAttrMap)
 	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 }
 
@@ -621,6 +646,7 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 		}
 		return false
 	})
+	mergeGeolocation(attrsCopy)
 	document.AddAttributes("attributes", attrsCopy)
 }
 
@@ -632,7 +658,8 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 	default:
 		document = m.encodeSpanDefaultMode(resource, span, scope)
 	}
-	document.Dedup()
+	// For OTel mode, prefix conflicts are not a problem as otel-data has subobjects: false
+	document.Dedup(m.mode != MappingOTel)
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
 	return buf.Bytes(), err
@@ -972,5 +999,78 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 func sliceHash(h hash.Hash, s pcommon.Slice) {
 	for i := 0; i < s.Len(); i++ {
 		valueHash(h, s.At(i))
+	}
+}
+
+// mergeGeolocation mutates attributes map to merge all `geo.location.{lon,lat}`,
+// and namespaced `*.geo.location.{lon,lat}` to unnamespaced and namespaced `geo.location`.
+// This is to match the geo_point type in Elasticsearch.
+func mergeGeolocation(attributes pcommon.Map) {
+	const (
+		lonKey    = "geo.location.lon"
+		latKey    = "geo.location.lat"
+		mergedKey = "geo.location"
+	)
+	// Prefix is the attribute name without lonKey or latKey suffix
+	// e.g. prefix of "foo.bar.geo.location.lon" is "foo.bar.", prefix of "geo.location.lon" is "".
+	prefixToGeo := make(map[string]struct {
+		lon, lat       float64
+		lonSet, latSet bool
+	})
+	setLon := func(prefix string, v float64) {
+		g := prefixToGeo[prefix]
+		g.lon = v
+		g.lonSet = true
+		prefixToGeo[prefix] = g
+	}
+	setLat := func(prefix string, v float64) {
+		g := prefixToGeo[prefix]
+		g.lat = v
+		g.latSet = true
+		prefixToGeo[prefix] = g
+	}
+	attributes.RemoveIf(func(key string, val pcommon.Value) bool {
+		if val.Type() != pcommon.ValueTypeDouble {
+			return false
+		}
+
+		if key == lonKey {
+			setLon("", val.Double())
+			return true
+		} else if key == latKey {
+			setLat("", val.Double())
+			return true
+		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
+			prefix := namespace + "."
+			setLon(prefix, val.Double())
+			return true
+		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
+			prefix := namespace + "."
+			setLat(prefix, val.Double())
+			return true
+		}
+		return false
+	})
+
+	for prefix, geo := range prefixToGeo {
+		if geo.lonSet && geo.latSet {
+			key := prefix + mergedKey
+			// Geopoint expressed as an array with the format: [lon, lat]
+			s := attributes.PutEmptySlice(key)
+			s.EnsureCapacity(2)
+			s.AppendEmpty().SetDouble(geo.lon)
+			s.AppendEmpty().SetDouble(geo.lat)
+			continue
+		}
+
+		// Place the attributes back if lon and lat are not present together
+		if geo.lonSet {
+			key := prefix + lonKey
+			attributes.PutDouble(key, geo.lon)
+		}
+		if geo.latSet {
+			key := prefix + latKey
+			attributes.PutDouble(key, geo.lat)
+		}
 	}
 }

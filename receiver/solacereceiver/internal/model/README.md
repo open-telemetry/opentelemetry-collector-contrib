@@ -6,5 +6,6 @@ To generate the V1 model from the model directory:
 ```
 protoc --go_out=../ --go_opt=paths=import --go_opt=Mreceive_v1.proto=model/receive/v1 receive_v1.proto
 protoc --go_out=../ --go_opt=paths=import --go_opt=Megress_v1.proto=model/egress/v1 egress_v1.proto
+protoc --go_out=../ --go_opt=paths=import --go_opt=Mmove_v1.proto=model/move/v1 move_v1.proto
 goimports -w .
 ```

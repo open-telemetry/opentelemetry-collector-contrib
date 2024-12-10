@@ -99,6 +99,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	require.Error(t, err)
 	require.EqualError(t, err, file.Name()+" is not a directory")
 }
+
 func TestDirectoryCreateConfig(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -195,7 +196,6 @@ func TestDirectoryCreateConfig(t *testing.T) {
 				cfg.CreateDirectory = false
 				cfg.DirectoryPermissions = "07771"
 				return cfg
-
 			},
 			err: nil,
 		},

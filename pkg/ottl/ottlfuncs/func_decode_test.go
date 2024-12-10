@@ -14,7 +14,6 @@ import (
 )
 
 func TestDecode(t *testing.T) {
-
 	testByteSlice := pcommon.NewByteSlice()
 	testByteSlice.FromRaw([]byte("test string"))
 	testByteSliceB64 := pcommon.NewByteSlice()
