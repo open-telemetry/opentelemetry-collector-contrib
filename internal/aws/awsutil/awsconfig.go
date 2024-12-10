@@ -26,6 +26,8 @@ type AWSSessionSettings struct {
 	ResourceARN string `mapstructure:"resource_arn"`
 	// IAM role to upload segments to a different account.
 	RoleARN string `mapstructure:"role_arn"`
+	// External ID to verify third party role assumption
+	ExternalID string `mapstructure:"external_id"`
 }
 
 func CreateDefaultSessionConfig() AWSSessionSettings {
