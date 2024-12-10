@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -728,7 +729,7 @@ var sumoAppProcesses = map[string]string{
 	"sqlservr":              "mssql",     // linux SQL Server process
 }
 
-func filteredProcessList() ([]string, error) {
+func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 	var pl []string
 
 	processes, err := process.Processes()
@@ -739,6 +740,12 @@ func filteredProcessList() ([]string, error) {
 	for _, v := range processes {
 		e, err := v.Name()
 		if err != nil {
+			if runtime.GOOS == "windows" {
+				// On Windows, we can't get some special process names, so we skip them.
+				se.logger.Warn("Failed to get executable name, skipping process", zap.Int32("pid", v.Pid), zap.Error(err))
+				continue
+			}
+
 			return nil, fmt.Errorf("Error getting executable name: %w", err)
 		}
 		e = strings.ToLower(e)
@@ -773,12 +780,12 @@ func filteredProcessList() ([]string, error) {
 	return pl, nil
 }
 
-func discoverTags() (map[string]any, error) {
+func (se *SumologicExtension) discoverTags() (map[string]any, error) {
 	t := map[string]any{
 		"sumo.disco.enabled": "true",
 	}
 
-	pl, err := filteredProcessList()
+	pl, err := se.filteredProcessList()
 	if err != nil {
 		return t, err
 	}
@@ -814,7 +821,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	td := map[string]any{}
 
 	if se.conf.DiscoverCollectorTags {
-		td, err = discoverTags()
+		td, err = se.discoverTags()
 		if err != nil {
 			return err
 		}
