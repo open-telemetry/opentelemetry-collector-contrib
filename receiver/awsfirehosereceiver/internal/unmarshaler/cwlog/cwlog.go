@@ -3,7 +3,7 @@
 
 package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
-type cWLog struct {
+type CWLog struct {
 	MessageType         string   `json:"messageType"`
 	Owner               string   `json:"owner"`
 	LogGroup            string   `json:"logGroup"`

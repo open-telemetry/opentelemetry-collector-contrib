@@ -64,8 +64,13 @@ func newMetricsReceiver(
 // single pmetric.Metrics. If there are common attributes available, then it will
 // attach those to each of the pcommon.Resources. It will send the final result
 // to the next consumer.
-func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error) {
-	md, err := mc.unmarshaler.Unmarshal(records)
+func (mc *metricsConsumer) Consume(
+	ctx context.Context,
+	contentType string,
+	records [][]byte,
+	commonAttributes map[string]string,
+) (int, error) {
+	md, err := mc.unmarshaler.UnmarshalMetrics(contentType, records)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
