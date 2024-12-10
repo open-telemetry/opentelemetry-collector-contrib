@@ -206,6 +206,34 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 }
 
+func TestBearerTokenUpdateForGrpc(t *testing.T) {
+	// prepare
+	cfg := createDefaultConfig().(*Config)
+	cfg.BearerToken = "1234"
+
+	bauth := newBearerTokenAuth(cfg, zaptest.NewLogger(t))
+	assert.NotNil(t, bauth)
+
+	perRPCAuth, err := bauth.PerRPCCredentials()
+	assert.NoError(t, err)
+
+	ctx := context.Background()
+	assert.NoError(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	// initial token, OK
+	md, err := perRPCAuth.GetRequestMetadata(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"authorization": "Bearer " + "1234"}, md)
+
+	// update the token
+	bauth.setAuthorizationValue("5678")
+	md, err = perRPCAuth.GetRequestMetadata(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]string{"authorization": "Bearer " + "5678"}, md)
+
+	assert.NoError(t, bauth.Shutdown(context.Background()))
+}
+
 func TestBearerServerAuthenticateWithScheme(t *testing.T) {
 	const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // #nosec
 	cfg := createDefaultConfig().(*Config)
