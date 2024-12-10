@@ -3184,6 +3184,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.AwsVolumeID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ContainerCsiPluginName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.csi.plugin.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiPluginName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ContainerCsiPluginName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.csi.plugin.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiPluginName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.csi.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.csi.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCsiVolumeID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
