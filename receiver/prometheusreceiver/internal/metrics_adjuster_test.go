@@ -134,6 +134,7 @@ func TestSumWithDifferentResources(t *testing.T) {
 	}
 	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute, true), "job", "0", script)
 }
+
 func TestSummaryNoCount(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
@@ -752,7 +753,6 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 				if !found {
 					rm.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
 				}
-
 			}
 			assert.NoError(t, ma.AdjustMetrics(adjusted))
 
@@ -767,7 +767,6 @@ func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*
 				if !found {
 					rm.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
 				}
-
 			}
 			assert.EqualValues(t, test.adjusted, adjusted)
 		})
