@@ -458,7 +458,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["snowflake.query.bytes_spilled.local.avg"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Avergae bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.", ms.At(i).Description())
+					assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -491,7 +491,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["snowflake.query.bytes_spilled.remote.avg"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Avergae bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.", ms.At(i).Description())
+					assert.Equal(t, "Average bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
