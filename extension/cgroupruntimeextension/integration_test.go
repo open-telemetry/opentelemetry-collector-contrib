@@ -3,7 +3,7 @@
 //go:build integration && sudo
 // +build integration,sudo
 
-// Priviledged access is required to set cgroup's memory and cpu max values
+// Privileged access is required to set cgroup's memory and cpu max values
 
 package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension"
 
