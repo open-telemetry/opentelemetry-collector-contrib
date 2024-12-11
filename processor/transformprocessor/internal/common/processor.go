@@ -215,6 +215,37 @@ func (pc parserCollection) parseCommonContextStatements(contextStatement Context
 	}
 }
 
+type baseGlobalExpressions struct {
+	ResourceGlobalExpr expr.BoolExpr[ottlresource.TransformContext]
+	ScopeGlobalExpr    expr.BoolExpr[ottlscope.TransformContext]
+}
+
+func (pc parserCollection) parseCommonGlobalExpressions(contextStatements ContextStatements) (*baseGlobalExpressions, error) {
+	resourceGlobalExpr, errResourceGlobalExpr := parseGlobalExpr(
+		filterottl.NewBoolExprForResource,
+		contextStatements.ResourceConditions,
+		pc,
+		filterottl.StandardResourceFuncs(),
+	)
+	if errResourceGlobalExpr != nil {
+		return nil, errResourceGlobalExpr
+	}
+
+	scopeGlobalExpr, errScopeGlobalExpr := parseGlobalExpr(
+		filterottl.NewBoolExprForScope,
+		contextStatements.ScopeConditions,
+		pc,
+		filterottl.StandardScopeFuncs(),
+	)
+	if errScopeGlobalExpr != nil {
+		return nil, errScopeGlobalExpr
+	}
+	return &baseGlobalExpressions{
+		ResourceGlobalExpr: resourceGlobalExpr,
+		ScopeGlobalExpr:    scopeGlobalExpr,
+	}, nil
+}
+
 func parseGlobalExpr[K any](
 	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings) (*ottl.ConditionSequence[K], error),
 	conditions []string,
