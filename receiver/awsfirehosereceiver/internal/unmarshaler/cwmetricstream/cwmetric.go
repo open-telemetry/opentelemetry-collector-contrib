@@ -3,11 +3,11 @@
 
 package cwmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 
-// The cWMetric is the format for the CloudWatch metric stream records.
+// The CWMetric is the format for the CloudWatch metric stream records.
 //
 // More details can be found at:
 // https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-json.html
-type cWMetric struct {
+type CWMetric struct {
 	// MetricStreamName is the name of the CloudWatch metric stream.
 	MetricStreamName string `json:"metric_stream_name"`
 	// AccountID is the AWS account ID associated with the metric.
