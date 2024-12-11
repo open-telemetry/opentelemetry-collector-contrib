@@ -7,7 +7,7 @@ change_type: enhancement
 component: azureeventhubreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: support more time format
+note: support providing one or more time formats for timestamp parsing
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36650]

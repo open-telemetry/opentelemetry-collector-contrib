@@ -27,7 +27,7 @@ var testBuildInfo = component.BuildInfo{
 var minimumLogRecord = func() plog.LogRecord {
 	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z", nil)
+	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
 	lr.SetTimestamp(ts)
 	lr.Attributes().PutStr(azureOperationName, "SecretGet")
 	lr.Attributes().PutStr(azureCategory, "AuditEvent")
@@ -38,7 +38,7 @@ var minimumLogRecord = func() plog.LogRecord {
 var maximumLogRecord1 = func() plog.LogRecord {
 	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z", nil)
+	ts, _ := asTimestamp("2022-11-11T04:48:27.6767145Z")
 	lr.SetTimestamp(ts)
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText("Warning")
@@ -72,7 +72,7 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	lr := sl.LogRecords().AppendEmpty()
 	lr2 := sl.LogRecords().AppendEmpty()
 
-	ts, _ := asTimestamp("2022-11-11T04:48:29.6767145Z", nil)
+	ts, _ := asTimestamp("2022-11-11T04:48:29.6767145Z")
 	lr.SetTimestamp(ts)
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText("Warning")
@@ -98,7 +98,7 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 	m.PutDouble("float", 41.3)
 	m.PutBool("bool", true)
 
-	ts, _ = asTimestamp("2022-11-11T04:48:31.6767145Z", nil)
+	ts, _ = asTimestamp("2022-11-11T04:48:31.6767145Z")
 	lr2.SetTimestamp(ts)
 	lr2.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr2.SetSeverityText("Warning")
@@ -131,7 +131,7 @@ var maximumLogRecord2 = func() []plog.LogRecord {
 var badLevelLogRecord = func() plog.LogRecord {
 	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	ts, _ := asTimestamp("2023-10-26T14:22:43.3416357Z", nil)
+	ts, _ := asTimestamp("2023-10-26T14:22:43.3416357Z")
 	lr.SetTimestamp(ts)
 	lr.SetSeverityNumber(plog.SeverityNumberTrace4)
 	lr.SetSeverityText("4")
@@ -171,7 +171,7 @@ var badLevelLogRecord = func() plog.LogRecord {
 var badTimeLogRecord = func() plog.LogRecord {
 	lr := plog.NewLogs().ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-	ts, _ := asTimestamp("2021-10-14T22:17:11+00:00", nil)
+	ts, _ := asTimestamp("2021-10-14T22:17:11+00:00")
 	lr.SetTimestamp(ts)
 
 	lr.Attributes().PutStr(azureOperationName, "ApplicationGatewayAccess")
@@ -213,29 +213,29 @@ var badTimeLogRecord = func() plog.LogRecord {
 
 func TestAsTimestamp(t *testing.T) {
 	timestamp := "2022-11-11T04:48:27.6767145Z"
-	nanos, err := asTimestamp(timestamp, nil)
+	nanos, err := asTimestamp(timestamp)
 	assert.NoError(t, err)
 	assert.Less(t, pcommon.Timestamp(0), nanos)
 
 	timestamp = "11/20/2024 13:57:18"
-	nanos, err = asTimestamp(timestamp, []string{"01/02/2006 15:04:05"})
+	nanos, err = asTimestamp(timestamp, "01/02/2006 15:04:05")
 	assert.NoError(t, err)
 	assert.Less(t, pcommon.Timestamp(0), nanos)
 
 	// time_format set, but fallback to iso8601 and succeeded to parse
 	timestamp = "2022-11-11T04:48:27.6767145Z"
-	nanos, err = asTimestamp(timestamp, []string{"01/02/2006 15:04:05"})
+	nanos, err = asTimestamp(timestamp, "01/02/2006 15:04:05")
 	assert.NoError(t, err)
 	assert.Less(t, pcommon.Timestamp(0), nanos)
 
 	// time_format set, but all failed to parse
 	timestamp = "11/20/2024 13:57:18"
-	nanos, err = asTimestamp(timestamp, []string{"2006-01-02 15:04:05"})
+	nanos, err = asTimestamp(timestamp, "2006-01-02 15:04:05")
 	assert.Error(t, err)
 	assert.Equal(t, pcommon.Timestamp(0), nanos)
 
 	timestamp = "invalid-time"
-	nanos, err = asTimestamp(timestamp, nil)
+	nanos, err = asTimestamp(timestamp, nil...)
 	assert.Error(t, err)
 	assert.Equal(t, pcommon.Timestamp(0), nanos)
 }

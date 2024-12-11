@@ -50,17 +50,11 @@ attribute names are copied without any changes.
 
 Default: `false` (semantic conventions are not applied)
 
-### time_format (optional)
+### time_formats (optional)
 
 All supported time format for logs, metrics and traces. Default is `nil` (unset), which means using the current iso8601 parser. The format is based on https://pkg.go.dev/time#Layout. If no time-zone info, will use UTC time. If all failed, it will use iso8601 format to parse.
 
 Default: `nil`
-
-### time_offset (optional)
-
-The offset hours to parsed time. Mainly for cases when there's no time-zone info in time string.
-
-Default: `0`.
 
 ### Example Configuration
 
@@ -73,7 +67,7 @@ receivers:
     offset: "1234-5566"
     format: "azure"
     # optional
-    time_format:
+    time_formats:
       # All supported time format. Default is empty string array, which means using the current iso8601 parser. The format is based on https://pkg.go.dev/time#Layout. If no time-zone info, will use UTC time.
       logs: ["01/02/2006 15:04:05","2006-01-02 15:04:05","2006-01-02T15:04:05Z07:00"]
       metrics: ["01/02/2006 15:04:05"]

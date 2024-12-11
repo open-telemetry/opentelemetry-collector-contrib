@@ -25,17 +25,17 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 	if applySemanticConventions {
 		return AzureResourceLogsEventUnmarshaler{
 			unmarshaler: &azurelogs.ResourceLogsUnmarshaler{
-				Version:    buildInfo.Version,
-				Logger:     logger,
-				TimeFormat: timeFormat,
+				Version:     buildInfo.Version,
+				Logger:      logger,
+				TimeFormats: timeFormat,
 			},
 		}
 	}
 	return AzureResourceLogsEventUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
-			Version:    buildInfo.Version,
-			Logger:     logger,
-			TimeFormat: timeFormat,
+			Version:     buildInfo.Version,
+			Logger:      logger,
+			TimeFormats: timeFormat,
 		},
 	}
 }

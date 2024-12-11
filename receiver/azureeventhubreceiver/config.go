@@ -32,7 +32,7 @@ type Config struct {
 	Format                   string        `mapstructure:"format"`
 	ConsumerGroup            string        `mapstructure:"group"`
 	ApplySemanticConventions bool          `mapstructure:"apply_semantic_conventions"`
-	TimeFormat               TimeFormat    `mapstructure:"time_format"`
+	TimeFormats              TimeFormat    `mapstructure:"time_formats"`
 }
 
 type TimeFormat struct {
