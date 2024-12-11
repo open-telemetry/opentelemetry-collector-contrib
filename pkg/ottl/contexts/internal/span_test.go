@@ -101,7 +101,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 			path: &TestPath[*spanContext]{
 				N: "trace_state",
 			},
-			orig:   "key1=val1,key2=val2",
+			orig:   "key1=val1,key2=val2,ot=th:c",
 			newVal: "key=newVal",
 			modified: func(span ptrace.Span) {
 				span.TraceState().FromRaw("key=newVal")
@@ -120,7 +120,21 @@ func TestSpanPathGetSetter(t *testing.T) {
 			orig:   "val1",
 			newVal: "newVal",
 			modified: func(span ptrace.Span) {
-				span.TraceState().FromRaw("key1=newVal,key2=val2")
+				span.TraceState().FromRaw("key1=newVal,key2=val2,ot=th:c")
+			},
+		},
+		{
+			name: "trace_state adjusted count",
+			path: &TestPath[*spanContext]{
+				N: "trace_state",
+				NextPath: &TestPath[*spanContext]{
+					N: "adjusted_count",
+				},
+			},
+			orig:   float64(4),
+			newVal: float64(4),
+			modified: func(span ptrace.Span) {
+				// no-op as setters are not supported
 			},
 		},
 		{
@@ -627,7 +641,7 @@ func createSpan() ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
-	span.TraceState().FromRaw("key1=val1,key2=val2")
+	span.TraceState().FromRaw("key1=val1,key2=val2,ot=th:c")
 	span.SetParentSpanID(spanID2)
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
