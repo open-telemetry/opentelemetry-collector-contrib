@@ -687,6 +687,7 @@ func newTestOpampAgent(cfg *Config, set extension.Settings, mockOpampClient *moc
 		capabilities:             cfg.Capabilities,
 		opampClient:              mockOpampClient,
 		statusSubscriptionWg:     &sync.WaitGroup{},
+		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, mockOpampClient),
 		statusAggregator:         sa,
