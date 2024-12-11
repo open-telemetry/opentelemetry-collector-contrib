@@ -4,8 +4,6 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	"time"
-
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -18,13 +16,12 @@ type azureTracesEventUnmarshaler struct {
 	unmarshaler *azure.TracesUnmarshaler
 }
 
-func newAzureTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string, timeOffset time.Duration) eventTracesUnmarshaler {
+func newAzureTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string) eventTracesUnmarshaler {
 	return azureTracesEventUnmarshaler{
 		unmarshaler: &azure.TracesUnmarshaler{
 			Version:    buildInfo.Version,
 			Logger:     logger,
 			TimeFormat: timeFormat,
-			TimeOffset: timeOffset,
 		},
 	}
 }

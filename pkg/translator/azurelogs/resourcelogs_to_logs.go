@@ -43,12 +43,7 @@ const (
 	azureTenantID          = "tenant.id"
 )
 
-var (
-	errMissingTimestamp       = errors.New("missing timestamp")
-	errNotSupportedTimeFormat = errors.New("not supported time format")
-)
-
-const ISO8601 = "iso8601" // azureRecords represents an array of Azure log records
+var errMissingTimestamp = errors.New("missing timestamp")
 
 // as exported via an Azure Event Hub
 type azureRecords struct {
@@ -84,7 +79,6 @@ type ResourceLogsUnmarshaler struct {
 	Version    string
 	Logger     *zap.Logger
 	TimeFormat []string
-	TimeOffset time.Duration
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
@@ -116,7 +110,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for i := 0; i < len(logs); i++ {
 			log := logs[i]
-			nanos, err := getTimestamp(log, r.TimeFormat, r.TimeOffset)
+			nanos, err := getTimestamp(log, r.TimeFormat)
 			if err != nil {
 				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
 				continue
@@ -144,11 +138,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return l, nil
 }
 
-func getTimestamp(record azureLogRecord, format []string, offset time.Duration) (pcommon.Timestamp, error) {
+func getTimestamp(record azureLogRecord, formats []string) (pcommon.Timestamp, error) {
 	if record.Time != "" {
-		return asTimestamp(record.Time, format, offset)
+		return asTimestamp(record.Time, formats)
 	} else if record.Timestamp != "" {
-		return asTimestamp(record.Timestamp, format, offset)
+		return asTimestamp(record.Timestamp, formats)
 	}
 
 	return 0, errMissingTimestamp
@@ -157,33 +151,21 @@ func getTimestamp(record azureLogRecord, format []string, offset time.Duration) 
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
-func asTimestamp(s string, format []string, offset time.Duration) (pcommon.Timestamp, error) {
+func asTimestamp(s string, formats []string) (pcommon.Timestamp, error) {
 	var err error
 	var t time.Time
-	if format != nil {
-		for _, v := range format {
-			if v == ISO8601 {
-				t, err = iso8601.ParseString(s)
-			} else {
-				t, err = time.Parse(v, s)
-			}
-			if err == nil {
-				break
-			}
+	// Try parsing with provided formats first
+	for _, format := range formats {
+		if t, err = time.Parse(format, s); err == nil {
+			return pcommon.Timestamp(t.UnixNano()), nil
 		}
-		if t == (time.Time{}) {
-			err = errNotSupportedTimeFormat
-		}
-	} else {
-		t, err = iso8601.ParseString(s)
-	}
-	if err != nil {
-		return 0, err
 	}
 
-	timestamp := t.Add(offset * time.Hour).UnixNano()
-
-	return pcommon.Timestamp(timestamp), nil
+	// Fallback to ISO 8601 parsing if no format matches
+	if t, err = iso8601.ParseString(s); err == nil {
+		return pcommon.Timestamp(t.UnixNano()), nil
+	}
+	return 0, err
 }
 
 // asSeverity converts the Azure log level to equivalent

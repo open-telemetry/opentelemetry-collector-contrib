@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"net/url"
-	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -66,7 +65,6 @@ type TracesUnmarshaler struct {
 	Version    string
 	Logger     *zap.Logger
 	TimeFormat []string
-	TimeOffset time.Duration
 }
 
 func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
@@ -98,7 +96,7 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 		resource.Attributes().PutStr("service.name", azureTrace.AppRoleName)
 
-		nanos, err := asTimestamp(azureTrace.Time, r.TimeFormat, r.TimeOffset)
+		nanos, err := asTimestamp(azureTrace.Time, r.TimeFormat)
 		if err != nil {
 			r.Logger.Warn("Invalid Timestamp", zap.String("time", azureTrace.Time))
 			continue

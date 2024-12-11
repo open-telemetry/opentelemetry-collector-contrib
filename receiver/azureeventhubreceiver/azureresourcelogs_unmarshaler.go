@@ -4,8 +4,6 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
-	"time"
-
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,14 +21,13 @@ type AzureResourceLogsEventUnmarshaler struct {
 	unmarshaler logsUnmarshaler
 }
 
-func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool, timeFormat []string, timeOffset time.Duration) eventLogsUnmarshaler {
+func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool, timeFormat []string) eventLogsUnmarshaler {
 	if applySemanticConventions {
 		return AzureResourceLogsEventUnmarshaler{
 			unmarshaler: &azurelogs.ResourceLogsUnmarshaler{
 				Version:    buildInfo.Version,
 				Logger:     logger,
 				TimeFormat: timeFormat,
-				TimeOffset: timeOffset,
 			},
 		}
 	}
@@ -39,7 +36,6 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 			Version:    buildInfo.Version,
 			Logger:     logger,
 			TimeFormat: timeFormat,
-			TimeOffset: timeOffset,
 		},
 	}
 }

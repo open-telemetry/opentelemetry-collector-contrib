@@ -52,7 +52,7 @@ Default: `false` (semantic conventions are not applied)
 
 ### time_format (optional)
 
-All supported time format for logs, metrics and traces. Default is empty string array, which means using the current iso8601 parser. The format is based on https://pkg.go.dev/time#Layout. If no time-zone info, will use UTC time.
+All supported time format for logs, metrics and traces. Default is `nil` (unset), which means using the current iso8601 parser. The format is based on https://pkg.go.dev/time#Layout. If no time-zone info, will use UTC time. If all failed, it will use iso8601 format to parse.
 
 Default: `nil`
 
@@ -76,14 +76,7 @@ receivers:
     time_format:
       # All supported time format. Default is empty string array, which means using the current iso8601 parser. The format is based on https://pkg.go.dev/time#Layout. If no time-zone info, will use UTC time.
       logs: ["01/02/2006 15:04:05","2006-01-02 15:04:05","2006-01-02T15:04:05Z07:00"]
-      metrics: [""]
-      traces: [""]
-    # optional
-    time_offset:
-      # The offset hours to parsed time. Mainly for cases when there's no time-zone info in time string. default is 0.
-      logs: -8
-      metrics: +8
-      traces: -8
+      metrics: ["01/02/2006 15:04:05"]
 ```
 
 This component can persist its state using the [storage extension].
