@@ -80,13 +80,8 @@ linters-settings:
   revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
-
-  gofmt:
-    # simplify code: gofmt with `-s` option, true by default
-    simplify: true
-    rewrite-rules:
-    - pattern: interface{}
-      replacement: any
+    rules:
+      - name: use-any
 
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
