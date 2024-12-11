@@ -137,7 +137,7 @@ func TestPeerTags(t *testing.T) {
 		{
 			name:                  "traces::peer_service_aggregation and traces::peer_tags_aggregation unset",
 			cfgMap:                confmap.New(),
-			expectedPeerTagsValue: false,
+			expectedPeerTagsValue: true,
 		},
 		{
 			name: "traces::peer_tags_aggregation set",

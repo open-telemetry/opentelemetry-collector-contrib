@@ -22,7 +22,7 @@ const (
 
 // NetworkAttributes is the set of known network attributes
 type NetworkAttributes struct {
-	// see https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
+	// see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/attributes-registry/network.md#network-attributes
 	NetTransport string
 	NetPeerIP    string
 	NetPeerPort  int64

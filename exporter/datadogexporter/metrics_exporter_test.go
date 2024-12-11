@@ -59,10 +59,13 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
+
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
@@ -76,8 +79,6 @@ func TestNewExporter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
-	cfg.HostMetadata.Enabled = true
-	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
@@ -440,7 +441,9 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			},
 		},
 		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 	params := exportertest.NewNopSettings()
@@ -456,8 +459,6 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, server.MetadataChan)
 
-	cfg.HostMetadata.Enabled = true
-	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 	testMetrics = pmetric.NewMetrics()
 	testutil.TestMetrics.CopyTo(testMetrics)
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
