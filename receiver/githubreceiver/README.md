@@ -38,8 +38,8 @@ The collection interval is common to all scrapers and is set to 30 seconds by de
 github:
     collection_interval: <duration> #default = 30s recommended 300s
     scrapers:
-        <scraper1>:
-        <scraper2>:
+        scraper/config-1:
+        scraper/config-2:
         ...
 ```
 
@@ -55,7 +55,7 @@ receivers:
         initial_delay: 1s
         collection_interval: 60s
         scrapers:
-            github:
+            scraper:
                 metrics:
                     vcs.repository.contributor.count:
                         enabled: true
