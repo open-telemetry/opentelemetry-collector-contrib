@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.126
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.114.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.115.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.115.1-0.20241206185113-3f3e208e71b8
 	go.opentelemetry.io/collector/component/componenttest v0.115.1-0.20241206185113-3f3e208e71b8
