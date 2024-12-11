@@ -103,9 +103,9 @@ histogram:
 
 - [**Optional**] `count` represents an OTTL expression to extract the count to be
   recorded in the histogram from the incoming data. If no expression is provided
-  then it defaults to the count of the signal i.e. [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count)
-  for spans and count for others. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
-  can be used to transform the data.
+  then it defaults to the count of the signal. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
+  can be used to transform the data. For spans, a special converter [adjusted count](#custom-ottl-functions),
+  is provided to help calculte the span's [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count).
 - [**Required**] `value` represents an OTTL expression to extract the value to be
   recorded in the histogram from the incoming data. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
@@ -124,13 +124,13 @@ exponential_histogram:
 - [**Optional**] `max_size` represents the maximum number of buckets per positive
   or negative number range. Defaults to `160`.
 - [**Optional**] `count` represents an OTTL expression to extract the count to be
-  recorded in the exponential histogram from the incoming data. If no expression
-  is provided then it defaults to the count of the signal i.e. [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count)
-  for spans and count for others.
-  [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters) can be used to transform the data.
-- [**Required**] `value` represents an OTTL expression to extract the value to be recorded
-  in the exponential histogram from the incoming data.
-  [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters) can be used to transform the data.
+  recorded in the expoential histogram from the incoming data. If no expression
+  is provided then it defaults to the count of the signal. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
+  can be used to transform the data. For spans, a special converter [adjusted count](#custom-ottl-functions),
+  is provided to help calculte the span's [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count).
+- [**Required**] `value` represents an OTTL expression to extract the value to be
+  recorded in the exponential histogram from the incoming data. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
+  can be used to transform the data.
 
 ### Attributes
 
@@ -225,3 +225,12 @@ signaltometrics.service.name: <service_name_of_the_otel_collector>
 signaltometrics.service.namespace: <service_namespace_of_the_otel_collector>
 signaltometrics.service.instance.id: <service_instance_id_of_the_otel_collector>
 ```
+
+### Custom OTTL functions
+
+The component implements a couple of custom OTTL functions:
+
+1. `AdjustedCount`: a converter capable of calculating [adjusted count for a span](https://github.com/open-telemetry/oteps/blob/main/text/trace/0235-sampling-threshold-in-trace-state.md).
+2. `get`: a temporary solution to parse OTTL expressions with only values. This is
+only for internal usage and MUST NOT be used explicitly as it is a stopgap measure
+([see this for more details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35621)).
