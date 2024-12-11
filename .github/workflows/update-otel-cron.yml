@@ -1,0 +1,32 @@
+name: 'Update contrib to the latest core source'
+on:
+  schedule:
+    - cron: "27 21 * * *" # Run at an arbitrary time on weekdays.
+
+jobs:
+  update-otel:
+    runs-on: ubuntu-24.04
+    if: ${{ github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update to latest opentelemetry-collector release
+        run: make update-otel
+      - name: Create pull request against main
+        env:
+          # not using secrets.GITHUB_TOKEN since pull requests from that token do not run workflows
+          GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+        run: |
+          message="[chore] Update to latest opentelemetry-collector"
+          body="Update to latest opentelemetry-collector release."
+          branch="opentelemetrybot/update-otel"
+
+          git checkout -b $branch
+          git commit -a -m "$message"
+          git push --set-upstream origin $branch
+          url=$(gh pr create --title "$message" \
+                             --body "$body" \
+                             --base main)
+
+          pull_request_number=${url//*\//}
+          git push
+
