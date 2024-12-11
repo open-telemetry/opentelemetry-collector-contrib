@@ -83,11 +83,6 @@ linters-settings:
     rules:
       - name: use-any
 
-  goimports:
-    # put imports beginning with prefix after 3rd-party packages;
-    # it's a comma-separated list of prefixes
-    local-prefixes: github.com/open-telemetry/opentelemetry-collector-contrib
-
   misspell:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
@@ -146,7 +141,6 @@ linters:
     - gci
     - gocritic
     - gofumpt
-    - goimports
     - gosec
     - govet
     - misspell
