@@ -42,9 +42,6 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	if err != nil {
 		return err
 	}
-	if s == nil {
-		return fmt.Errorf("non-string indexing is not supported")
-	}
 
 	currentValue, ok := m.Get(*s)
 	if !ok {
