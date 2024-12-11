@@ -74,7 +74,6 @@ type opampAgent struct {
 
 	statusAggregator     statusAggregator
 	statusSubscriptionWg *sync.WaitGroup
-	componentHealthWg    *sync.WaitGroup
 	startTimeUnixNano    uint64
 	componentStatusCh    chan *eventSourcePair
 	readyCh              chan struct{}
@@ -161,7 +160,6 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 	}
 
 	o.statusSubscriptionWg.Wait()
-	o.componentHealthWg.Wait()
 
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient == nil {
@@ -289,7 +287,6 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		statusSubscriptionWg:     &sync.WaitGroup{},
-		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
 	}
@@ -465,7 +462,6 @@ func (o *opampAgent) initHealthReporting() {
 	// Start processing events in the background so that our status watcher doesn't
 	// block others before the extension starts.
 	o.componentStatusCh = make(chan *eventSourcePair)
-	o.componentHealthWg.Add(1)
 	go o.componentHealthEventLoop()
 }
 
@@ -476,7 +472,6 @@ func (o *opampAgent) componentHealthEventLoop() {
 	// individually by the service.
 	var eventQueue []*eventSourcePair
 
-	defer o.componentHealthWg.Done()
 	for loop := true; loop; {
 		select {
 		case esp, ok := <-o.componentStatusCh:
