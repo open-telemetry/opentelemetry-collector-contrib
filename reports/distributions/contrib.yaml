@@ -79,6 +79,7 @@ components:
         - oidc
         - opamp
         - pprof
+        - redis_storage
         - sigv4auth
     processor:
         - attributes
