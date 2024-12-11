@@ -14,6 +14,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -34,6 +35,8 @@ const (
 type scraper struct {
 	scraperType    ScraperType
 	endpoint       string
+	namespace      string
+	tlsSettings    configtls.ClientConfig
 	configs        []ScraperConfig
 	scrapeInterval time.Duration
 	labels         model.LabelSet
@@ -42,6 +45,8 @@ type scraper struct {
 func NewScraper(_ context.Context,
 	scraperType ScraperType,
 	endpoint string,
+	namespace string,
+	tlsSettings configtls.ClientConfig,
 	configs []ScraperConfig,
 	scrapeInterval time.Duration,
 	labels model.LabelSet,
@@ -49,6 +54,8 @@ func NewScraper(_ context.Context,
 	return &scraper{
 		scraperType:    scraperType,
 		endpoint:       endpoint,
+		namespace:      namespace,
+		tlsSettings:    tlsSettings,
 		configs:        configs,
 		scrapeInterval: scrapeInterval,
 		labels:         labels,
@@ -71,9 +78,17 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 
 		httpConfig := configutil.HTTPClientConfig{}
 		httpConfig.BearerToken = configutil.Secret(bearerToken)
+		httpConfig.TLSConfig = configutil.TLSConfig{
+			CAFile:             h.tlsSettings.CAFile,
+			CertFile:           h.tlsSettings.CertFile,
+			KeyFile:            h.tlsSettings.KeyFile,
+			InsecureSkipVerify: h.tlsSettings.InsecureSkipVerify,
+			ServerName:         h.tlsSettings.ServerName,
+		}
 
 		scrapeConfig := &config.ScrapeConfig{
 			HTTPClientConfig: httpConfig,
+			ScrapeProtocols:  config.DefaultScrapeProtocols,
 			ScrapeInterval:   model.Duration(h.scrapeInterval),
 			ScrapeTimeout:    model.Duration(h.scrapeInterval),
 			JobName:          fmt.Sprintf("%s/%s/%s", "purefa", h.scraperType, arr.Address),
@@ -81,7 +96,8 @@ func (h *scraper) ToPrometheusReceiverConfig(host component.Host, _ receiver.Fac
 			Scheme:           u.Scheme,
 			MetricsPath:      fmt.Sprintf("/metrics/%s", h.scraperType),
 			Params: url.Values{
-				"endpoint": {arr.Address},
+				"endpoint":  {arr.Address},
+				"namespace": {h.namespace},
 			},
 
 			ServiceDiscoveryConfigs: discovery.Configs{
