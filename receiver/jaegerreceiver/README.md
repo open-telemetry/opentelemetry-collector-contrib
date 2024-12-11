@@ -8,7 +8,7 @@
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fjaeger%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fjaeger) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fjaeger%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fjaeger) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@yurishkuro](https://www.github.com/yurishkuro) |
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
@@ -28,7 +28,7 @@ object configuration parameter.
 - `thrift_compact` (default `endpoint` = localhost:6831)
 - `thrift_http` (default `endpoint` = localhost:14268)
 
-You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change tgese endpoints to 0.0.0.0:14250, 0.0.0.0:6832, 0.0.0.0:6831 and 0.0.0.0:14268. This feature gate will be removed in a future release.
+See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 Examples:
 

@@ -6,7 +6,6 @@ package arrow // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"runtime"
 	"strings"
@@ -39,9 +38,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
-	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
@@ -50,10 +48,10 @@ const (
 )
 
 var (
-	ErrNoMetricsConsumer   = fmt.Errorf("no metrics consumer")
-	ErrNoLogsConsumer      = fmt.Errorf("no logs consumer")
-	ErrNoTracesConsumer    = fmt.Errorf("no traces consumer")
-	ErrUnrecognizedPayload = consumererror.NewPermanent(fmt.Errorf("unrecognized OTel-Arrow payload"))
+	ErrNoMetricsConsumer   = errors.New("no metrics consumer")
+	ErrNoLogsConsumer      = errors.New("no logs consumer")
+	ErrNoTracesConsumer    = errors.New("no traces consumer")
+	ErrUnrecognizedPayload = consumererror.NewPermanent(errors.New("unrecognized OTel-Arrow payload"))
 )
 
 type Consumers interface {
@@ -69,15 +67,14 @@ type Receiver struct {
 	arrowpb.UnsafeArrowLogsServiceServer
 	arrowpb.UnsafeArrowMetricsServiceServer
 
-	telemetry        component.TelemetrySettings
-	tracer           trace.Tracer
-	obsrecv          *receiverhelper.ObsReport
-	gsettings        configgrpc.ServerConfig
-	authServer       auth.Server
-	newConsumer      func() arrowRecord.ConsumerAPI
-	netReporter      netstats.Interface
-	telemetryBuilder *internalmetadata.TelemetryBuilder
-	boundedQueue     admission.Queue
+	telemetry    component.TelemetrySettings
+	tracer       trace.Tracer
+	obsrecv      *receiverhelper.ObsReport
+	gsettings    configgrpc.ServerConfig
+	authServer   auth.Server
+	newConsumer  func() arrowRecord.ConsumerAPI
+	netReporter  netstats.Interface
+	boundedQueue admission2.Queue
 }
 
 // receiverStream holds the inFlightWG for a single stream.
@@ -94,25 +91,20 @@ func New(
 	gsettings configgrpc.ServerConfig,
 	authServer auth.Server,
 	newConsumer func() arrowRecord.ConsumerAPI,
-	bq admission.Queue,
+	bq admission2.Queue,
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
 	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")
-	telemetryBuilder, err := internalmetadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
 	return &Receiver{
-		Consumers:        cs,
-		obsrecv:          obsrecv,
-		telemetry:        set.TelemetrySettings,
-		tracer:           tracer,
-		authServer:       authServer,
-		newConsumer:      newConsumer,
-		gsettings:        gsettings,
-		netReporter:      netReporter,
-		boundedQueue:     bq,
-		telemetryBuilder: telemetryBuilder,
+		Consumers:    cs,
+		obsrecv:      obsrecv,
+		telemetry:    set.TelemetrySettings,
+		tracer:       tracer,
+		authServer:   authServer,
+		newConsumer:  newConsumer,
+		gsettings:    gsettings,
+		netReporter:  netReporter,
+		boundedQueue: bq,
 	}, nil
 }
 
@@ -424,7 +416,6 @@ func (r *receiverStream) newInFlightData(ctx context.Context, method string, bat
 	_, span := r.tracer.Start(ctx, "otel_arrow_stream_inflight")
 
 	r.inFlightWG.Add(1)
-	r.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, 1)
 	id := &inFlightData{
 		receiverStream: r,
 		method:         method,
@@ -453,6 +444,7 @@ type inFlightData struct {
 
 	numItems   int   // how many items
 	uncompSize int64 // uncompressed data size == how many bytes held in the semaphore
+	releaser   admission2.ReleaseFunc
 }
 
 func (id *inFlightData) recvDone(ctx context.Context, recvErrPtr *error) {
@@ -501,17 +493,8 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 
 	id.span.End()
 
-	if id.uncompSize != 0 {
-		if err := id.boundedQueue.Release(id.uncompSize); err != nil {
-			id.telemetry.Logger.Error("release error", zap.Error(err))
-		}
-	}
-
-	if id.uncompSize != 0 {
-		id.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(ctx, -id.uncompSize)
-	}
-	if id.numItems != 0 {
-		id.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(ctx, int64(-id.numItems))
+	if id.releaser != nil {
+		id.releaser()
 	}
 
 	// The netstats code knows that uncompressed size is
@@ -523,7 +506,6 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 	sized.Length = id.uncompSize
 	id.netReporter.CountReceive(ctx, sized)
 
-	id.telemetryBuilder.OtelArrowReceiverInFlightRequests.Add(ctx, -1)
 	id.inFlightWG.Done()
 }
 
@@ -545,7 +527,6 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 // tracks everything that needs to be used by instrumention when the
 // batch finishes.
 func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStreamServer, hrcv *headerReceiver, pendingCh chan<- batchResp, method string, ac arrowRecord.ConsumerAPI) (retErr error) {
-
 	// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,
 	// or plog.Logs item.
 	req, recvErr := serverStream.Recv()
@@ -565,12 +546,10 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	if recvErr != nil {
 		if errors.Is(recvErr, io.EOF) {
 			return recvErr
-
 		} else if errors.Is(recvErr, context.Canceled) {
 			// This is a special case to avoid introducing a span error
 			// for a canceled operation.
 			return io.EOF
-
 		} else if status, ok := status.FromError(recvErr); ok && status.Code() == codes.Canceled {
 			// This is a special case to avoid introducing a span error
 			// for a canceled operation.
@@ -635,15 +614,13 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// immediately if there are too many waiters, or will
 	// otherwise block until timeout or enough memory becomes
 	// available.
-	acquireErr := r.boundedQueue.Acquire(inflightCtx, uncompSize)
+	releaser, acquireErr := r.boundedQueue.Acquire(inflightCtx, uint64(uncompSize))
 	if acquireErr != nil {
 		return acquireErr
 	}
 	flight.uncompSize = uncompSize
 	flight.numItems = numItems
-
-	r.telemetryBuilder.OtelArrowReceiverInFlightBytes.Add(inflightCtx, uncompSize)
-	r.telemetryBuilder.OtelArrowReceiverInFlightItems.Add(inflightCtx, int64(numItems))
+	flight.releaser = releaser
 
 	// Recognize that the request is still in-flight via consumeAndRespond()
 	flight.refs.Add(1)
@@ -773,7 +750,6 @@ func (r *receiverStream) srvSendLoop(ctx context.Context, serverStream anyStream
 // slice of pdata objects of the corresponding data type as `any`.
 // along with the number of items and true uncompressed size.
 func (r *Receiver) consumeBatch(arrowConsumer arrowRecord.ConsumerAPI, records *arrowpb.BatchArrowRecords) (retData any, numItems int, uncompSize int64, retErr error) {
-
 	payloads := records.GetArrowPayloads()
 	if len(payloads) == 0 {
 		return nil, 0, 0, nil

@@ -15,10 +15,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
 )
 
-const enableProcessesCount = true
-const enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
+const (
+	enableProcessesCount   = true
+	enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
+)
 
-func (s *scraper) getProcessesMetadata() (processesMetadata, error) {
+func (s *processesScraper) getProcessesMetadata() (processesMetadata, error) {
 	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	processes, err := s.getProcesses()
 	if err != nil {

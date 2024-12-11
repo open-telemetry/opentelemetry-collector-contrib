@@ -49,7 +49,6 @@ type resourceProcessorTestCase struct {
 }
 
 func getResourceProcessorTestCases() []resourceProcessorTestCase {
-
 	tests := []resourceProcessorTestCase{
 		{
 			name: "update_and_rename_existing_attributes",

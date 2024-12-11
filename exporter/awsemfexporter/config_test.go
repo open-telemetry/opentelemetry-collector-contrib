@@ -159,7 +159,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		logger:                      zap.NewNop(),
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
-
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
@@ -174,7 +173,6 @@ func TestRetentionValidateWrong(t *testing.T) {
 		logger:                      zap.NewNop(),
 	}
 	assert.Error(t, component.ValidateConfig(wrongcfg))
-
 }
 
 func TestValidateTags(t *testing.T) {

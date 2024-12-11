@@ -28,8 +28,10 @@ const (
 	dataFormat = "cloudfoundry"
 )
 
-var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
-var _ receiver.Logs = (*cloudFoundryReceiver)(nil)
+var (
+	_ receiver.Metrics = (*cloudFoundryReceiver)(nil)
+	_ receiver.Logs    = (*cloudFoundryReceiver)(nil)
+)
 
 // newCloudFoundryReceiver implements the receiver.Metrics and receiver.Logs for the Cloud Foundry protocol.
 type cloudFoundryReceiver struct {
@@ -47,7 +49,8 @@ type cloudFoundryReceiver struct {
 func newCloudFoundryMetricsReceiver(
 	settings receiver.Settings,
 	config Config,
-	nextConsumer consumer.Metrics) (*cloudFoundryReceiver, error) {
+	nextConsumer consumer.Metrics,
+) (*cloudFoundryReceiver, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -70,7 +73,8 @@ func newCloudFoundryMetricsReceiver(
 func newCloudFoundryLogsReceiver(
 	settings receiver.Settings,
 	config Config,
-	nextConsumer consumer.Logs) (*cloudFoundryReceiver, error) {
+	nextConsumer consumer.Logs,
+) (*cloudFoundryReceiver, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -149,7 +153,8 @@ func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
 func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
-	host component.Host) {
+	host component.Host,
+) {
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
 		envelopes := stream()
@@ -188,7 +193,8 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 func (cfr *cloudFoundryReceiver) streamLogs(
 	ctx context.Context,
 	stream loggregator.EnvelopeStream,
-	host component.Host) {
+	host component.Host,
+) {
 	for {
 		envelopes := stream()
 		if envelopes == nil {

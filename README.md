@@ -70,10 +70,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
-- [Christos Markou](https://github.com/ChrsMark), Elastic
+- [Florian Bacher](https://github.com/bacherfl), Dynatrace
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
+- [Vihas Makwana](https://github.com/VihasMakwana), Elastic
+- [Braydon Kains](https://github.com/braydonk), Google
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
@@ -87,6 +89,7 @@ Emeritus Triagers:
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Antoine Toulme](https://github.com/atoulme), Splunk
+- [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Curtis Robert](https://github.com/crobert-1), Splunk (on leave)
 - [David Ashpole](https://github.com/dashpole), Google
 - [Matt Wear](https://github.com/mwear), Lightstep

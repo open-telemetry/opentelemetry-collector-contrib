@@ -38,9 +38,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 			acc.accumulate(convertToOTLPMetrics(containerPrefix, containerMetrics, containerResource, timestamp))
 			aggregateTaskMetrics(&taskMetrics, containerMetrics)
 		} else if containerMetadata.FinishedAt != "" && containerMetadata.StartedAt != "" {
-
 			duration, err := calculateDuration(containerMetadata.StartedAt, containerMetadata.FinishedAt)
-
 			if err != nil {
 				logger.Warn("Error time format error found for this container:" + containerMetadata.ContainerName)
 			}

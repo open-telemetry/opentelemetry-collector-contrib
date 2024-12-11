@@ -101,7 +101,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": "PO",
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -120,7 +121,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": []any{"PO"},
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -139,7 +141,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": []any{`/^[A-Z][A-Z]$/`},
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -158,7 +161,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": []any{`/.+/`},
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -177,7 +181,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": []any{`*O*`},
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -234,7 +239,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": []any{"mycontainer"},
-				}}},
+				},
+			}},
 			expectedNonMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -247,7 +253,8 @@ func TestFilterSet(t *testing.T) {
 				Dimensions: map[string]any{
 					"host":   []any{"localhost"},
 					"system": []any{"r4"},
-				}}},
+				},
+			}},
 			expectedNonMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -266,7 +273,8 @@ func TestFilterSet(t *testing.T) {
 				Dimensions: map[string]any{
 					"host":   []any{"localhost"},
 					"system": []any{"r4"},
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -282,7 +290,8 @@ func TestFilterSet(t *testing.T) {
 				Dimensions: map[string]any{
 					"host":   []any{"localhost"},
 					"system": []any{"r4"},
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric: "cpu.utilization",
@@ -307,7 +316,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": []any{"*", "!pause", "!/.*idle/"},
-				}}},
+				},
+			}},
 			expectedMatches: []*sfxpb.DataPoint{
 				{
 					Metric:     "cpu.utilization",
@@ -345,7 +355,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"dim": []any{},
-				}}},
+				},
+			}},
 			wantErr:    true,
 			wantErrMsg: "string map value in filter cannot be empty",
 		},
@@ -360,7 +371,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"container_name": []any{"cpu.*["},
-				}}},
+				},
+			}},
 			wantErr:    true,
 			wantErrMsg: "unexpected end of input",
 		},
@@ -369,7 +381,8 @@ func TestFilterSet(t *testing.T) {
 			excludes: []MetricFilter{{
 				Dimensions: map[string]any{
 					"host": 1,
-				}}},
+				},
+			}},
 			wantErr:    true,
 			wantErrMsg: "1 should be either a string or string list",
 		},

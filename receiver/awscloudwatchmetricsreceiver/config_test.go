@@ -133,17 +133,19 @@ func TestValidate(t *testing.T) {
 				Region:       "eu-west-1",
 				PollInterval: time.Minute * 5,
 				Metrics: &MetricsConfig{
-					Names: []*NamedConfig{{
-						Namespace:      "AWS/EC2",
-						MetricName:     "CPUUtilizaition",
-						Period:         time.Second * 60,
-						AwsAggregation: "TS99",
-					},
+					Names: []*NamedConfig{
 						{
 							Namespace:      "AWS/EC2",
 							MetricName:     "CPUUtilizaition",
 							Period:         time.Second * 60,
-							AwsAggregation: "TS99"},
+							AwsAggregation: "TS99",
+						},
+						{
+							Namespace:      "AWS/EC2",
+							MetricName:     "CPUUtilizaition",
+							Period:         time.Second * 60,
+							AwsAggregation: "TS99",
+						},
 					},
 				},
 			},

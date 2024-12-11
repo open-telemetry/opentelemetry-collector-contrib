@@ -62,7 +62,6 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(cfg.BearerToken)))
-
 }
 
 func TestBearerAuthenticator(t *testing.T) {
@@ -128,7 +127,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.True(t, credential.RequireTransportSecurity())
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
@@ -137,7 +136,7 @@ func TestBearerStartWatchStop(t *testing.T) {
 	assert.NoError(t, err)
 
 	// change file content back
-	assert.NoError(t, os.WriteFile(bauth.filename, token, 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, token, 0o600))
 	time.Sleep(5 * time.Second)
 	credential, _ = bauth.PerRPCCredentials()
 	md, err = credential.GetRequestMetadata(context.Background())
@@ -178,7 +177,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 
 	// change file content once
-	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, []byte(fmt.Sprintf("%stest", token)), 0o600))
 	time.Sleep(5 * time.Second)
 
 	tokenNew, err := os.ReadFile(bauth.filename)
@@ -192,7 +191,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(tokenNew)))
 
 	// change file content back
-	assert.NoError(t, os.WriteFile(bauth.filename, token, 0600))
+	assert.NoError(t, os.WriteFile(bauth.filename, token, 0o600))
 	time.Sleep(5 * time.Second)
 
 	// check if request is updated with the old token

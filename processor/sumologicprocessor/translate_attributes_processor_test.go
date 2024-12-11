@@ -110,7 +110,6 @@ func assertAttribute(t *testing.T, metadata pcommon.Map, attributeName string, e
 	} else {
 		assert.True(t, exists)
 		assert.Equal(t, expectedValue, value.Str())
-
 	}
 }
 

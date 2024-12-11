@@ -8,7 +8,10 @@
       "go": "1.22.0"
     },
     "schedule": ["every tuesday"],
-    "extends": ["config:recommended"],
+    "extends": [
+      "config:recommended",
+      "customManagers:githubActionsVersions"
+    ],
     "ignorePaths": [
       "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",
       "**/receiver/elasticsearchreceiver/testdata/integration/Dockerfile.elasticsearch.7_16_3",
@@ -101,14 +104,25 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector-contrib"],
+        "groupName": "All OpenTelemetry Collector Contrib packages",
+        "matchUpdateTypes": ["major", "minor", "patch"]
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrls": [
           "https://github.com/open-telemetry/opentelemetry-go-contrib"
         ],
         "groupName": "All opentelemetry-go-contrib packages"
+      },
+      {
+        "matchPackageNames": ["google.golang.org/grpc"],
+        "allowedVersions": "!/v1.68.0$/"
       }
     ],
     "ignoreDeps": [
-      "github.com/DataDog/datadog-agent/pkg/trace/exportable"
+      "github.com/DataDog/datadog-agent/pkg/trace/exportable",
+      "github.com/DataDog/datadog-api-client-go"
     ],
     "prConcurrentLimit": 200,
     "suppressNotifications": ["prEditedNotification"]

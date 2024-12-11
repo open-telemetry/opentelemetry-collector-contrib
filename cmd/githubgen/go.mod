@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
 go 1.22.0
 
 require (
-	github.com/google/go-github/v66 v66.0.0
-	go.opentelemetry.io/collector/confmap v1.18.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.18.0
+	github.com/google/go-github/v67 v67.0.0
+	go.opentelemetry.io/collector/confmap v1.21.1-0.20241206185113-3f3e208e71b8
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.21.1-0.20241206185113-3f3e208e71b8
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -14,7 +14,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.1 // indirect
+	github.com/knadh/koanf/v2 v2.1.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

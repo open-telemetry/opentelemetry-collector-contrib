@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
@@ -50,7 +50,7 @@ func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 	type testCase struct {
 		name                string
-		mutateScraper       func(*scraper)
+		mutateScraper       func(*processScraper)
 		mutateMetricsConfig func(*testing.T, *metadata.MetricsConfig)
 	}
 	testCases := []testCase{
@@ -109,7 +109,6 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			md, err := scraper.scrape(context.Background())
-
 			// may receive some partial errors as a result of attempting to:
 			// a) read native system processes on Windows (e.g. Registry process)
 			// b) read info on processes that have just terminated
@@ -272,7 +271,8 @@ func assertMetricMissing(t *testing.T, resourceMetrics pmetric.ResourceMetricsSl
 }
 
 func assertDiskIoMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
-	startTime pcommon.Timestamp) {
+	startTime pcommon.Timestamp,
+) {
 	diskIoMetric := getMetric(t, "process.disk.io", resourceMetrics)
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIoMetric, startTime)

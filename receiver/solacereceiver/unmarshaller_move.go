@@ -38,7 +38,7 @@ func (u *brokerTraceMoveUnmarshallerV1) unmarshal(message *inboundMessage) (ptra
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
 // Returns an error if one occurred.
 func (u *brokerTraceMoveUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*move_v1.SpanData, error) {
-	var data = message.GetData()
+	data := message.GetData()
 	if len(data) == 0 {
 		return nil, errEmptyPayload
 	}
@@ -70,7 +70,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(spanData *move
 }
 
 func (u *brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1.SpanData, span ptrace.Span) {
-
 	// hard coded to internal span
 	// SPAN_KIND_CONSUMER == 1
 	span.SetKind(ptrace.SpanKindInternal)

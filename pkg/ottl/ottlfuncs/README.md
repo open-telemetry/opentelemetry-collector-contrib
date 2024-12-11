@@ -456,6 +456,7 @@ Available Converters:
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SHA512](#sha512)
+- [SliceToMap](#slicetomap)
 - [Sort](#sort)
 - [SpanID](#spanid)
 - [Split](#split)
@@ -1342,7 +1343,7 @@ Examples:
 
 The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
 
-The goal of this Converter is to produce a more user-friendly representation of XML data than the `ParseXML` Converter.
+The goal of this Converter is to produce a more user-friendly representation of XML data than the [`ParseXML`](#parsexml) Converter.
 This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
 
 This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
@@ -1350,11 +1351,11 @@ a direct representation of XML data. Users are encouraged to simplify their XML 
 
 See other functions which may be useful for preparing XML documents:
 
-- `ConvertAttributesToElementsXML`
-- `ConvertTextToElementsXML`
-- `RemoveXML`
-- `InsertXML`
-- `GetXML`
+- [`ConvertAttributesToElementsXML`](#convertattributestoelementsxml)
+- [`ConvertTextToElementsXML`](#converttexttoelementsxml)
+- [`RemoveXML`](#removexml)
+- [`InsertXML`](#insertxml)
+- [`GetXML`](#getxml)
 
 #### Formal Definitions
 
@@ -1667,6 +1668,67 @@ Examples:
 - `SHA512(attributes["device.name"])`
 
 - `SHA512("name")`
+
+### SliceToMap
+
+`SliceToMap(target, keyPath, Optional[valuePath])`
+
+The `SliceToMap` converter converts a slice of objects to a map. The arguments are as follows:
+
+- `target`: A list of maps containing the entries to be converted.
+- `keyPath`: A string array that determines the name of the keys for the map entries by pointing to the value of an attribute within each slice item. Note that
+the `keyPath` must resolve to a string value, otherwise the converter will not be able to convert the item
+to a map entry.
+- `valuePath`: This optional string array determines which attribute should be used as the value for the map entry. If no
+`valuePath` is defined, the value of the map entry will be the same as the original slice item.
+
+Examples:
+
+The examples below will convert the following input: 
+
+```yaml
+attributes:
+  hello: world
+  things:
+    - name: foo
+      value: 2
+    - name: bar
+      value: 5
+```
+
+- `SliceToMap(attributes["things"], ["name"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo:
+      name: foo
+      value: 2
+    bar:
+      name: bar
+      value: 5
+```
+
+- `SliceToMap(attributes["things"], ["name"], ["value"])`:
+
+This converts the input above to the following:
+
+```yaml
+attributes:
+  hello: world
+  things:
+    foo: 2
+    bar: 5
+```
+
+Once the `SliceToMap` function has been applied to a value, the converted entries are addressable via their keys:
+
+- `set(attributes["thingsMap"], SliceToMap(attributes["things"], ["name"]))`
+- `set(attributes["element_1"], attributes["thingsMap"]["foo'])`
+- `set(attributes["element_2"], attributes["thingsMap"]["bar'])`
 
 ### Sort
 
@@ -2065,35 +2127,3 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
-
-## Function syntax
-
-Functions should be named and formatted according to the following standards.
-
-- Function names MUST start with a verb unless it is a Factory that creates a new type.
-- Converters MUST be UpperCamelCase.
-- Function names that contain multiple words MUST separate those words with `_`.
-- Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
-- Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
-- Functions that change a specific target MUST set the target as the first parameter.
-
-## Adding New Editors/Converters
-
-Before raising a PR with a new Editor or Converter, raise an issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
-
-Your proposal likely will be accepted if:
-- The proposed functionality is missing,
-- The proposed solution significantly improves user experience and readability for very common use cases,
-- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
-
-It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
-
-Your proposal likely won't be accepted if:
-- User experience is worse and assumes a highly technical user,
-- The performance of your proposal very negatively affects the processing pipeline.
-
-As with code, OTTL aims for readability first. This means:
-- Using short, meaningful, and descriptive names,
-- Ensuring naming consistency across Editors and Converters,
-- Avoiding deep nesting to achieve desired transformations,
-- Ensuring Editors and Converters have a single responsibility.

@@ -9,7 +9,6 @@ import (
 
 // Config defines the configuration for the processor.
 type Config struct {
-
 	// List of delta sum metrics to convert to rates
 	Metrics []string `mapstructure:"metrics"`
 }

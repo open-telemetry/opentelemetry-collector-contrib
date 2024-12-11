@@ -29,7 +29,6 @@ func newLogsExporter(logger *zap.Logger, _ *Config) *kineticaLogsExporter {
 }
 
 func (e *kineticaLogsExporter) start(_ context.Context, _ component.Host) error {
-
 	return nil
 }
 

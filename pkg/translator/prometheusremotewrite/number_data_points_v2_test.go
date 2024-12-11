@@ -122,7 +122,6 @@ func TestPrometheusConverterV2_addGaugeNumberDataPoints(t *testing.T) {
 
 			diff := cmp.Diff(w, converter.unique, cmpopts.EquateNaNs())
 			assert.Empty(t, diff)
-
 		})
 	}
 }
@@ -172,5 +171,4 @@ func TestPrometheusConverterV2_addGaugeNumberDataPointsDuplicate(t *testing.T) {
 	converter.addGaugeNumberDataPoints(metric2.Gauge().DataPoints(), pcommon.NewResource(), settings, metric2.Name())
 
 	assert.Equal(t, want(), converter.unique)
-
 }

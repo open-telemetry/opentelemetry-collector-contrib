@@ -405,7 +405,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
 	})
-
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {
@@ -489,10 +488,12 @@ func TestTranslateUnit(t *testing.T) {
 	translateUnitCases := map[string]string{
 		"Count": "Count",
 		"ms":    "Milliseconds",
+		"ns":    "",
+		"1":     "",
 		"s":     "Seconds",
 		"us":    "Microseconds",
 		"By":    "Bytes",
-		"Bi":    "Bits",
+		"bit":   "Bits",
 	}
 	for input, output := range translateUnitCases {
 		t.Run(input, func(_ *testing.T) {

@@ -129,6 +129,13 @@ type Supervisor struct {
 
 	// A channel to indicate there is a new config to apply.
 	hasNewConfig chan struct{}
+	// configApplyTimeout is the maximum time to wait for the agent to apply a new config.
+	// After this time passes without the agent reporting health as OK, the agent is considered unhealthy.
+	configApplyTimeout time.Duration
+	// lastHealthFromClient is the last health status of the agent received from the client.
+	lastHealthFromClient *protobufs.ComponentHealth
+	// lastHealth is the last health status of the agent.
+	lastHealth *protobufs.ComponentHealth
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -139,9 +146,12 @@ type Supervisor struct {
 	customMessageToServer chan *protobufs.CustomMessage
 	customMessageWG       sync.WaitGroup
 
-	agentHasStarted               bool
+	// agentHasStarted is true if the agent has started.
+	agentHasStarted bool
+	// agentStartHealthCheckAttempts is the number of health check attempts made by the agent since it started.
 	agentStartHealthCheckAttempts int
-	agentRestarting               atomic.Bool
+	// agentRestarting is true if the agent is restarting.
+	agentRestarting atomic.Bool
 
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
@@ -170,9 +180,11 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	}
 	s.config = cfg
 
-	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
+	if err := os.MkdirAll(s.config.Storage.Directory, 0o700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
+
+	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 
 	return s, nil
 }
@@ -191,7 +203,6 @@ func (s *Supervisor) Start() error {
 	healthCheckPort := s.config.Agent.HealthCheckPort
 	if healthCheckPort == 0 {
 		healthCheckPort, err = s.findRandomPort()
-
 		if err != nil {
 			return fmt.Errorf("could not find port for health check: %w", err)
 		}
@@ -273,12 +284,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0600)
+	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
 	if err != nil {
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
-	srv := server.New(newLoggerFromZap(s.logger))
+	srv := server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	done := make(chan error, 1)
 	var connected atomic.Bool
@@ -376,7 +387,7 @@ func (s *Supervisor) startOpAMP() error {
 }
 
 func (s *Supervisor) startOpAMPClient() error {
-	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
+	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger, "opamp-client"))
 
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
@@ -454,7 +465,7 @@ func (s *Supervisor) startOpAMPClient() error {
 // depending on information received by the Supervisor from the remote
 // OpAMP server.
 func (s *Supervisor) startOpAMPServer() error {
-	s.opampServer = server.New(newLoggerFromZap(s.logger))
+	s.opampServer = server.New(newLoggerFromZap(s.logger, "opamp-server"))
 
 	var err error
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
@@ -527,6 +538,11 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 				zap.String("type", message.CustomMessage.Type),
 			)
 		}
+	}
+
+	if message.Health != nil {
+		s.logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
+		s.lastHealthFromClient = message.Health
 	}
 }
 
@@ -636,11 +652,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		newServerConfig.Headers = s.getHeadersFromSettings(settings.Headers)
 	}
 	if settings.Certificate != nil {
-		if len(settings.Certificate.CaPublicKey) != 0 {
-			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaPublicKey)
+		if len(settings.Certificate.CaCert) != 0 {
+			newServerConfig.TLSSetting.CAPem = configopaque.String(settings.Certificate.CaCert)
 		}
-		if len(settings.Certificate.PublicKey) != 0 {
-			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.PublicKey)
+		if len(settings.Certificate.Cert) != 0 {
+			newServerConfig.TLSSetting.CertPem = configopaque.String(settings.Certificate.Cert)
 		}
 		if len(settings.Certificate.PrivateKey) != 0 {
 			newServerConfig.TLSSetting.KeyPem = configopaque.String(settings.Certificate.PrivateKey)
@@ -691,7 +707,7 @@ func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 }
 
 func (s *Supervisor) composeNoopConfig() ([]byte, error) {
-	var k = koanf.New("::")
+	k := koanf.New("::")
 
 	cfg, err := s.composeNoopPipeline()
 	if err != nil {
@@ -766,7 +782,8 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
-		if err == nil {
+		switch {
+		case err == nil:
 			config := &protobufs.AgentRemoteConfig{}
 			err = proto.Unmarshal(lastRecvRemoteConfig, config)
 			if err != nil {
@@ -774,7 +791,9 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 			} else {
 				s.remoteConfig = config
 			}
-		} else {
+		case errors.Is(err, os.ErrNotExist):
+			s.logger.Info("No last received remote config found")
+		default:
 			s.logger.Error("error while reading last received config", zap.Error(err))
 		}
 	} else {
@@ -804,7 +823,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 
 	// write the initial merged config to disk
 	cfgState := s.cfgState.Load().(*configState)
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
@@ -844,7 +863,6 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 		s.logger.Debug("Enabling own metrics pipeline in the config")
 
 		port, err := s.findRandomPort()
-
 		if err != nil {
 			s.logger.Error("Could not setup own metrics", zap.Error(err))
 			return
@@ -861,7 +879,6 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 			s.logger.Error("Could not setup own metrics", zap.Error(err))
 			return
 		}
-
 	}
 	s.agentConfigOwnMetricsSection.Store(cfg.String())
 
@@ -880,7 +897,7 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
 func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
-	var k = koanf.New("::")
+	k := koanf.New("::")
 
 	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
 
@@ -908,7 +925,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 			if item == nil {
 				continue
 			}
-			var k2 = koanf.New("::")
+			k2 := koanf.New("::")
 			err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser())
 			if err != nil {
 				return false, fmt.Errorf("cannot parse config named %s: %w", name, err)
@@ -994,7 +1011,6 @@ func (s *Supervisor) startAgent() {
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
 		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: fmt.Sprintf("Cannot start the agent: %v", err)})
-
 		if err != nil {
 			s.logger.Error("Failed to report OpAMP client health", zap.Error(err))
 		}
@@ -1031,11 +1047,6 @@ func (s *Supervisor) healthCheck() {
 	err := s.healthChecker.Check(ctx)
 	cancel()
 
-	if errors.Is(err, s.lastHealthCheckErr) {
-		// No difference from last check. Nothing new to report.
-		return
-	}
-
 	// Prepare OpAMP health report.
 	health := &protobufs.ComponentHealth{
 		StartTimeUnixNano: uint64(s.startedAt.UnixNano()),
@@ -1046,6 +1057,10 @@ func (s *Supervisor) healthCheck() {
 		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
 			health.LastError = "Agent is starting"
 			s.agentStartHealthCheckAttempts++
+			// if we have a last health status, use it
+			if s.lastHealth != nil && s.lastHealth.Healthy {
+				health.Healthy = s.lastHealth.Healthy
+			}
 		} else {
 			health.LastError = err.Error()
 			s.logger.Error("Agent is not healthy", zap.Error(err))
@@ -1054,6 +1069,12 @@ func (s *Supervisor) healthCheck() {
 		s.agentHasStarted = true
 		health.Healthy = true
 		s.logger.Debug("Agent is healthy.")
+	}
+	s.lastHealth = health
+
+	if err != nil && errors.Is(err, s.lastHealthCheckErr) {
+		// No difference from last check. Nothing new to report.
+		return
 	}
 
 	// Report via OpAMP.
@@ -1075,9 +1096,21 @@ func (s *Supervisor) runAgentProcess() {
 	restartTimer := time.NewTimer(0)
 	restartTimer.Stop()
 
+	configApplyTimeoutTimer := time.NewTimer(0)
+	configApplyTimeoutTimer.Stop()
+
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.lastHealthFromClient = nil
+			if !configApplyTimeoutTimer.Stop() {
+				select {
+				case <-configApplyTimeoutTimer.C: // Try to drain the channel
+				default:
+				}
+			}
+			configApplyTimeoutTimer.Reset(s.config.Agent.ConfigApplyTimeout)
+
 			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
@@ -1095,7 +1128,6 @@ func (s *Supervisor) runAgentProcess() {
 				s.commander.Pid(), s.commander.ExitCode(),
 			)
 			err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg})
-
 			if err != nil {
 				s.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 			}
@@ -1116,6 +1148,13 @@ func (s *Supervisor) runAgentProcess() {
 			s.logger.Debug("Agent starting after start backoff")
 			s.startAgent()
 
+		case <-configApplyTimeoutTimer.C:
+			if s.lastHealthFromClient == nil || !s.lastHealthFromClient.Healthy {
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+			} else {
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+			}
+
 		case <-s.healthCheckTicker.C:
 			s.healthCheck()
 
@@ -1133,12 +1172,11 @@ func (s *Supervisor) stopAgentApplyConfig() {
 	s.logger.Debug("Stopping the agent to apply new config")
 	cfgState := s.cfgState.Load().(*configState)
 	err := s.commander.Stop(context.Background())
-
 	if err != nil {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0600); err != nil {
+	if err := os.WriteFile(s.agentConfigFilePath(), []byte(cfgState.mergedConfig), 0o600); err != nil {
 		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 }
@@ -1170,13 +1208,11 @@ func (s *Supervisor) Shutdown() {
 				Healthy: false, LastError: "Supervisor is shutdown",
 			},
 		)
-
 		if err != nil {
 			s.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 
 		err = s.stopOpAMPClient()
-
 		if err != nil {
 			s.logger.Error("Could not stop the OpAMP client", zap.Error(err))
 		}
@@ -1193,7 +1229,7 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0600)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0o600)
 }
 
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
@@ -1202,7 +1238,18 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0600)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0o600)
+}
+
+func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+	err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+		LastRemoteConfigHash: s.remoteConfig.ConfigHash,
+		Status:               status,
+		ErrorMessage:         errorMessage,
+	})
+	if err != nil {
+		s.logger.Error("Could not report OpAMP remote config status", zap.Error(err))
+	}
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
@@ -1276,22 +1323,9 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
-		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-			LastRemoteConfigHash: msg.ConfigHash,
-			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
-			ErrorMessage:         err.Error(),
-		})
-		if err != nil {
-			s.logger.Error("Could not report failed OpAMP remote config status", zap.Error(err))
-		}
+		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 	} else {
-		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-			LastRemoteConfigHash: msg.ConfigHash,
-			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
-		})
-		if err != nil {
-			s.logger.Error("Could not report applied OpAMP remote config status", zap.Error(err))
-		}
+		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
 	return configChanged
@@ -1354,7 +1388,6 @@ func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
 
 func (s *Supervisor) findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
-
 	if err != nil {
 		return 0, err
 	}
@@ -1362,7 +1395,6 @@ func (s *Supervisor) findRandomPort() (int, error) {
 	port := l.Addr().(*net.TCPAddr).Port
 
 	err = l.Close()
-
 	if err != nil {
 		return 0, err
 	}

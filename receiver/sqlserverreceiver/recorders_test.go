@@ -41,7 +41,6 @@ func TestPerfCounterRecorders(t *testing.T) {
 			}
 		}
 	})
-
 }
 
 // getAvailableCounters populates a map containing all available counters.

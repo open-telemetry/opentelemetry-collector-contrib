@@ -101,7 +101,6 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 		tok:        nil,
 		logger:     p.logger,
 	}, nil
-
 }
 
 type readOnlyClientProvider struct {
@@ -121,7 +120,6 @@ func (p *readOnlyClientProvider) BuildClient() (Client, error) {
 		tok:        nil,
 		logger:     p.logger,
 	}, nil
-
 }
 
 type tlsClientProvider struct {

@@ -241,12 +241,12 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 				if stringV, ok := v.(string); ok {
 					ts, err := time.Parse(time.RFC3339, stringV)
 					if err != nil {
-						l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Error(err), zap.String("value", stringV))
+						l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.Error(err), zap.String("value", stringV))
 					} else {
 						logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 					}
 				} else {
-					l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Any("value", v))
+					l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.Any("value", v))
 				}
 			}
 
