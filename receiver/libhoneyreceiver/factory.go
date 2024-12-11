@@ -12,8 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/sharedcomponent"
 )
 
 const (
@@ -70,17 +70,20 @@ func createLogs(
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
+	var err error
+	r := receivers.GetOrAdd(
 		oCfg,
-		func() (*libhoneyReceiver, error) {
-			return newLibhoneyReceiver(oCfg, &set)
+		func() (lh component.Component) {
+			lh, err = newLibhoneyReceiver(oCfg, &set)
+			return lh
 		},
 	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	r.Unwrap().registerLogConsumer(nextConsumer)
+	r.Unwrap().(*libhoneyReceiver).registerLogConsumer(nextConsumer)
 	return r, nil
 }
 
@@ -92,19 +95,20 @@ func createTraces(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	oCfg := cfg.(*Config)
-	r, err := receivers.LoadOrStore(
+	var err error
+	r := receivers.GetOrAdd(
 		oCfg,
-		func() (*libhoneyReceiver, error) {
-			return newLibhoneyReceiver(oCfg, &set)
+		func() (lh component.Component) {
+			lh, err = newLibhoneyReceiver(oCfg, &set)
+			return lh
 		},
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	r.Unwrap().registerTraceConsumer(nextConsumer)
+	r.Unwrap().(*libhoneyReceiver).registerTraceConsumer(nextConsumer)
 	return r, nil
 }
 
-// Used the same pattern as the OTLP receiver. Requires sharedcomponent.go from core collector repo
-var receivers = sharedcomponent.NewMap[*Config, *libhoneyReceiver]()
+var receivers = sharedcomponent.NewSharedComponents()
