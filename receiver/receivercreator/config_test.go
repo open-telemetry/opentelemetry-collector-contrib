@@ -299,3 +299,40 @@ func (*nopWithoutEndpointFactory) CreateTraces(
 		cfg:      cfg,
 	}, nil
 }
+
+type nopWithFilelogConfig struct {
+	Include         []string `mapstructure:"include"`
+	IncludeFileName bool     `mapstructure:"include_file_name"`
+	IncludeFilePath bool     `mapstructure:"include_file_path"`
+	Operators       []any    `mapstructure:"operators"`
+}
+
+type nopWithFilelogFactory struct {
+	rcvr.Factory
+}
+
+type nopWithFilelogReceiver struct {
+	mockComponent
+	consumer.Logs
+	consumer.Metrics
+	consumer.Traces
+	rcvr.Settings
+	cfg component.Config
+}
+
+func (*nopWithFilelogFactory) CreateDefaultConfig() component.Config {
+	return &nopWithFilelogConfig{}
+}
+
+func (*nopWithFilelogFactory) CreateLogs(
+	_ context.Context,
+	rcs rcvr.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
+	return &nopWithEndpointReceiver{
+		Logs:     nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
+	}, nil
+}
