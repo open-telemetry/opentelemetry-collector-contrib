@@ -56,7 +56,7 @@ func addToGroupedMetric(
 			continue
 		}
 
-		for i, dp := range dps {
+		for _, dp := range dps {
 			labels := dp.labels
 
 			if metricType, ok := labels["Type"]; ok {
@@ -86,7 +86,6 @@ func addToGroupedMetric(
 			}
 
 			// Extra params to use when grouping metrics
-			metadata.groupedMetricMetadata.batchIndex = i
 			groupKey := aws.NewKey(metadata.groupedMetricMetadata, labels)
 			if _, ok := groupedMetrics[groupKey]; ok {
 				// if MetricName already exists in metrics map, print warning log
