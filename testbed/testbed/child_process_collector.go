@@ -466,7 +466,10 @@ func (cp *childProcessCollector) GetResourceConsumption() string {
 
 // GetTotalConsumption returns total resource consumption since start of process
 func (cp *childProcessCollector) GetTotalConsumption() *ResourceConsumption {
-	rc := &ResourceConsumption{}
+	rc := &ResourceConsumption{
+		CPUPercentLimit: float64(cp.resourceSpec.ExpectedMaxCPU),
+		RAMMiBLimit:     cp.resourceSpec.ExpectedMaxRAM,
+	}
 
 	if cp.processMon != nil {
 		// Get total elapsed time since process start
