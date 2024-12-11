@@ -30,6 +30,53 @@ type worker struct {
 	index          int                          // worker index
 }
 
+var histogramBucketSamples = []struct {
+	bucketCounts []uint64
+	sum          int64
+}{
+	{
+		[]uint64{0, 0, 0, 0, 0},
+		0,
+	},
+
+	{
+		[]uint64{0, 1, 0, 0, 0},
+		1,
+	},
+	{
+		[]uint64{0, 1, 0, 1, 0},
+		4,
+	},
+	{
+		[]uint64{1, 1, 1, 0, 0},
+		3,
+	},
+	{
+		[]uint64{0, 0, 1, 2, 1},
+		12,
+	},
+	{
+		[]uint64{0, 0, 0, 0, 0},
+		0,
+	},
+	{
+		[]uint64{0, 1, 0, 0, 0},
+		1,
+	},
+	{
+		[]uint64{0, 2, 0, 0, 0},
+		2,
+	},
+	{
+		[]uint64{1, 0, 1, 1, 0},
+		5,
+	},
+	{
+		[]uint64{2, 0, 1, 0, 1},
+		6,
+	},
+}
+
 func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdkmetric.Exporter, error), signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
@@ -78,6 +125,29 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
+						},
+					},
+				},
+			})
+		case metricTypeHistogram:
+			iteration := uint64(i) % 10
+			sum := histogramBucketSamples[iteration].sum
+			bucketCounts := histogramBucketSamples[iteration].bucketCounts
+			metrics = append(metrics, metricdata.Metrics{
+				Name: w.metricName,
+				Data: metricdata.Histogram[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					DataPoints: []metricdata.HistogramDataPoint[int64]{
+						{
+							StartTime:  time.Now().Add(-1 * time.Second),
+							Time:       time.Now(),
+							Attributes: attribute.NewSet(signalAttrs...),
+							Exemplars:  w.exemplars,
+							Count:      iteration,
+							Sum:        sum,
+							// Simple bounds assumption
+							Bounds:       []float64{0, 1, 2, 3, 4},
+							BucketCounts: bucketCounts,
 						},
 					},
 				},
