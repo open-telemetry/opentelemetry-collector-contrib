@@ -1656,7 +1656,7 @@ func Test_setResourceAttribute(t *testing.T) {
 			},
 		},
 		{
-			name: "attribute present - do not overwrite value",
+			name: "attribute present with non-empty value - do not overwrite value",
 			attributes: func() pcommon.Map {
 				m := pcommon.NewMap()
 				m.PutStr("foo", "bar")
