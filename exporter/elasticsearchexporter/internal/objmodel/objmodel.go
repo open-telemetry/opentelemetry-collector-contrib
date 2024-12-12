@@ -33,6 +33,7 @@ package objmodel // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"encoding/hex"
+	"errors"
 	"io"
 	"maps"
 	"math"
@@ -535,11 +536,10 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	case KindBool:
 		return w.OnBool(v.primitive == 1)
 	case KindInt:
-		var i int64 = math.MaxInt64
-		if v.primitive < math.MaxInt64 {
-			i = int64(v.primitive) //nolint:gosec // overflow checked
+		if v.primitive > math.MaxInt64 {
+			return errors.New("integer value is higher than maximum int64")
 		}
-		return w.OnInt64(i)
+		return w.OnInt64(int64(v.primitive)) //nolint:gosec // overflow checked
 	case KindDouble:
 		if math.IsNaN(v.dbl) || math.IsInf(v.dbl, 0) {
 			// NaN and Inf are undefined for JSON. Let's serialize to "null"

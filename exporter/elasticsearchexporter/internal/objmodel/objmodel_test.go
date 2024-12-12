@@ -4,6 +4,7 @@
 package objmodel
 
 import (
+	"errors"
 	"math"
 	"strings"
 	"testing"
@@ -372,13 +373,19 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 
 func TestValue_Serialize(t *testing.T) {
 	tests := map[string]struct {
-		value Value
-		want  string
+		value   Value
+		want    string
+		wantErr error
 	}{
-		"nil value":          {value: nilValue, want: "null"},
-		"bool value: true":   {value: BoolValue(true), want: "true"},
-		"bool value: false":  {value: BoolValue(false), want: "false"},
-		"int value":          {value: IntValue(42), want: "42"},
+		"nil value":         {value: nilValue, want: "null"},
+		"bool value: true":  {value: BoolValue(true), want: "true"},
+		"bool value: false": {value: BoolValue(false), want: "false"},
+		"int value":         {value: IntValue(42), want: "42"},
+		"large int value": {
+			value:   UIntValue(math.MaxInt64 + 1),
+			want:    "",
+			wantErr: errors.New("integer value is higher than maximum int64"),
+		},
 		"double value: 3.14": {value: DoubleValue(3.14), want: "3.14"},
 		"double value: 1.0":  {value: DoubleValue(1.0), want: "1.0"},
 		"NaN is undefined":   {value: DoubleValue(math.NaN()), want: "null"},
@@ -410,7 +417,11 @@ func TestValue_Serialize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
 			err := test.value.iterJSON(newJSONVisitor(&buf), false, false)
-			require.NoError(t, err)
+			if test.wantErr == nil {
+				require.NoError(t, err)
+			} else {
+				assert.Equal(t, test.wantErr, err)
+			}
 			assert.Equal(t, test.want, buf.String())
 		})
 	}
