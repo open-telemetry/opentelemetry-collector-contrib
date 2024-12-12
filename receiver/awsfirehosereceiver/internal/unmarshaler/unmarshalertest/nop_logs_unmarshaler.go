@@ -37,7 +37,7 @@ func NewErrLogs(err error) *NopLogsUnmarshaler {
 }
 
 // Unmarshal deserializes the records into logs.
-func (u *NopLogsUnmarshaler) Unmarshal([][]byte) (plog.Logs, error) {
+func (u *NopLogsUnmarshaler) Unmarshal([][]byte, map[string]string, string, int64) (plog.Logs, error) {
 	return u.logs, u.err
 }
 

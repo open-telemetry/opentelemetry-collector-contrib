@@ -26,6 +26,7 @@ const (
 	headerFirehoseRequestID        = "X-Amz-Firehose-Request-Id"
 	headerFirehoseAccessKey        = "X-Amz-Firehose-Access-Key"
 	headerFirehoseCommonAttributes = "X-Amz-Firehose-Common-Attributes"
+	headerFirehoseSourceArn        = "X-Amz-Firehose-Source-Arn"
 	headerContentType              = "Content-Type"
 	headerContentLength            = "Content-Length"
 )
@@ -41,7 +42,7 @@ var (
 // The firehoseConsumer is responsible for using the unmarshaler and the consumer.
 type firehoseConsumer interface {
 	// Consume unmarshalls and consumes the records.
-	Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string) (int, error)
+	Consume(ctx context.Context, records [][]byte, commonAttributes map[string]string, firehoseARN string, timestamp int64) (int, error)
 }
 
 // firehoseReceiver
@@ -220,7 +221,15 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	statusCode, err := fmr.consumer.Consume(ctx, records, commonAttributes)
+	firehoseARN, err := fmr.getFirehoseArn(r)
+	if err != nil {
+		fmr.settings.Logger.Error(
+			"Unable to get firehose source ARN from request header. Will not attach attributes.",
+			zap.Error(err),
+		)
+	}
+
+	statusCode, err := fmr.consumer.Consume(ctx, records, commonAttributes, firehoseARN, fr.Timestamp)
 	if err != nil {
 		fmr.settings.Logger.Error(
 			"Unable to consume records",
@@ -270,6 +279,11 @@ func (fmr *firehoseReceiver) getCommonAttributes(r *http.Request) (map[string]st
 		attributes = fca.CommonAttributes
 	}
 	return attributes, nil
+}
+
+// getFirehoseArn returns firehose ARN from the request header
+func (fmr *firehoseReceiver) getFirehoseArn(r *http.Request) (string, error) {
+	return r.Header.Get(headerFirehoseSourceArn), nil
 }
 
 // sendResponse writes a response to Firehose in the expected format.
