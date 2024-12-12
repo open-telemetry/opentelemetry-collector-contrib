@@ -1343,7 +1343,7 @@ Examples:
 
 The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
 
-The goal of this Converter is to produce a more user-friendly representation of XML data than the `ParseXML` Converter.
+The goal of this Converter is to produce a more user-friendly representation of XML data than the [`ParseXML`](#parsexml) Converter.
 This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
 
 This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
@@ -1351,11 +1351,11 @@ a direct representation of XML data. Users are encouraged to simplify their XML 
 
 See other functions which may be useful for preparing XML documents:
 
-- `ConvertAttributesToElementsXML`
-- `ConvertTextToElementsXML`
-- `RemoveXML`
-- `InsertXML`
-- `GetXML`
+- [`ConvertAttributesToElementsXML`](#convertattributestoelementsxml)
+- [`ConvertTextToElementsXML`](#converttexttoelementsxml)
+- [`RemoveXML`](#removexml)
+- [`InsertXML`](#insertxml)
+- [`GetXML`](#getxml)
 
 #### Formal Definitions
 

@@ -162,6 +162,9 @@ func (o *opampAgent) Shutdown(ctx context.Context) error {
 
 	o.statusSubscriptionWg.Wait()
 	o.componentHealthWg.Wait()
+	if o.componentStatusCh != nil {
+		close(o.componentStatusCh)
+	}
 
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient == nil {

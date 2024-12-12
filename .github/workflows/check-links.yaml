@@ -17,35 +17,44 @@ jobs:
   changedfiles:
     name: changed files
     runs-on: ubuntu-24.04
-    env:
-      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
-      md: ${{ steps.changes.outputs.md }}
+      md_files: ${{ steps.changed-files.outputs.md_all_changed_files }}
+      yaml_files: ${{ steps.changed-files.outputs.yaml_all_changed_files }} # used to catch MD_LINK_CHECK_VERSION updates and runs check-links to confirm functionality
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get changed files
-        id: changes
-        run: |
-          echo "md=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)" >> $GITHUB_OUTPUT
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files_yaml: |
+            md:
+              - '**.md'
+            yaml:
+              - .github/workflows/check-links.yaml
+
   check-links:
     runs-on: ubuntu-24.04
     needs: changedfiles
-    if: ${{needs.changedfiles.outputs.md}}
+    if: needs.changedfiles.outputs.md_files || needs.changedfiles.outputs.yaml_files
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Install markdown-link-check
         run: npm install -g markdown-link-check@${{ env.MD_LINK_CHECK_VERSION }}
-
       - name: Run markdown-link-check
         run: |
+          if [ -n "${{ needs.changedfiles.outputs.yaml_files }}" ]; then
+            md=$(find . -type f -name "*.md")
+          else
+            md="${{ needs.changedfiles.outputs.md_files }}"
+          fi
+
           markdown-link-check \
             --verbose \
             --config .github/workflows/check_links_config.json \
-            ${{needs.changedfiles.outputs.md}} \
+            $md \
             || { echo "Check that anchor links are lowercase"; exit 1; }
