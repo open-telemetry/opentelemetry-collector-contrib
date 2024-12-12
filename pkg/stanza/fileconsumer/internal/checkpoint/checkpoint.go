@@ -10,9 +10,10 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 const knownFilesKey = "knownFiles"
