@@ -180,7 +180,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 
 		var rm pmetric.ResourceMetrics
-		hashedLabels := xxhash.Sum64String(string(ls.Bytes(make([]byte, 0))))
+		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 		intraCacheEntry, ok := intraRequestCache[hashedLabels]
 		if ok {
 			// We found the same time series in the same request, so we should append to the same OTLP metric.
