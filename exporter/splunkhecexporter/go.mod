@@ -4,7 +4,7 @@ go 1.22.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/goccy/go-json v0.10.3
+	github.com/goccy/go-json v0.10.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.115.0
