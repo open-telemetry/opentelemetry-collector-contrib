@@ -25,11 +25,26 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"golang.org/x/sys/unix"
 )
 
 const (
 	defaultCgroup2Path = "/sys/fs/cgroup"
 )
+
+// checkCgroupSystem skips the test if is not run in a cgroupv2 system
+func checkCgroupSystem(tb testing.TB) {
+	var st unix.Statfs_t
+	err := unix.Statfs(defaultCgroup2Path, &st)
+	if err != nil {
+		tb.Skip("cannot statfs cgroup root")
+	}
+
+	isUnified := st.Type == unix.CGROUP2_SUPER_MAGIC
+	if !isUnified {
+		tb.Skip("System running in hybrid or cgroupv1 mode")
+	}
+}
 
 // cgroupMaxCpu returns the CPU max definition for a given cgroup slice path
 // File format: cpu_quote cpu_period
@@ -49,6 +64,7 @@ func cgroupMaxCpu(filename string) (quota int64, period uint64, err error) {
 }
 
 func TestCgroupV2Integration(t *testing.T) {
+	checkCgroupSystem(t)
 	pointerInt64 := func(int int64) *int64 {
 		return &int
 	}
