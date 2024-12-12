@@ -130,6 +130,15 @@ func Test_lexer(t *testing.T) {
 			{"String", `"bar"`},
 			{"RBrace", "}"},
 		}},
+		{"Expression path", `${foo["foo"]}`, false, []result{
+			{"Dollar", "$"},
+			{"LBrace", "{"},
+			{"Lowercase", "foo"},
+			{"Punct", "["},
+			{"String", `"foo"`},
+			{"Punct", "]"},
+			{"RBrace", "}"},
+		}},
 	}
 
 	for _, tt := range tests {

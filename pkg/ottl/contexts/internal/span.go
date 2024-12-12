@@ -452,6 +452,7 @@ func accessAttributesKey[K SpanContext](keys []ottl.Key[K]) ottl.StandardGetSett
 		Setter: func(ctx context.Context, tCtx K, val any) error {
 			return SetMapValue[K](ctx, tCtx, tCtx.GetSpan().Attributes(), keys, val)
 		},
+		// TODO
 	}
 }
 
