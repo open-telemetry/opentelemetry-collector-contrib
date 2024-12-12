@@ -29,10 +29,9 @@ import (
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	return &prometheusRemoteWriteReceiver{
-		settings:         settings,
-		nextConsumer:     nextConsumer,
-		config:           cfg,
-		jobInstanceCache: make(map[uint64]pcommon.Resource),
+		settings:     settings,
+		nextConsumer: nextConsumer,
+		config:       cfg,
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
@@ -43,9 +42,8 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	jobInstanceCache map[uint64]pcommon.Resource
-	config           *Config
-	server           *http.Server
+	config *Config
+	server *http.Server
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -163,6 +161,11 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		otelMetrics      = pmetric.NewMetrics()
 		labelsBuilder    = labels.NewScratchBuilder(0)
 		stats            = promremote.WriteResponseStats{}
+		// Prometheus Remote-Write can send multiple time series with the same labels in the same request.
+		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
+		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
+		// between requests based on the metric "target_info".
+		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
 	)
 
 	for _, ts := range req.Timeseries {
@@ -177,20 +180,15 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		}
 
 		var rm pmetric.ResourceMetrics
-		// This cache should be populated by the metric 'target_info', but we're not handling it yet.
-		hashedJobAndInstance := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		cacheEntry, ok := prw.jobInstanceCache[hashedJobAndInstance]
+		hashedLabels := xxhash.Sum64String(string(ls.Bytes(make([]byte, 0))))
+		intraCacheEntry, ok := intraRequestCache[hashedLabels]
 		if ok {
-			rm = pmetric.NewResourceMetrics()
-			cacheEntry.CopyTo(rm.Resource())
+			// We found the same time series in the same request, so we should append to the same OTLP metric.
+			rm = intraCacheEntry
 		} else {
-			// A remote-write request can have multiple timeseries with the same instance and job labels.
-			// While they are different timeseries in Prometheus, we're handling it as the same OTLP metric
-			// until we support 'target_info'.
-			// TODO: Use 'target_info' to populate the resource attributes instead of caching job and instance.
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			prw.jobInstanceCache[hashedJobAndInstance] = rm.Resource()
+			intraRequestCache[hashedLabels] = rm
 		}
 
 		switch ts.Metadata.Type {
@@ -235,6 +233,9 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
+
+	// TODO: Check if Scope is already present by comparing labels "otel_scope_name" and "otel_scope_version"
+	// with Scope.Name and Scope.Version. If it is present, we should append to the existing Scope.
 	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge()
 	addDatapoints(m.DataPoints(), ls, ts)
 }

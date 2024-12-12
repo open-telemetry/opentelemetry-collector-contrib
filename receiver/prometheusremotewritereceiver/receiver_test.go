@@ -179,9 +179,16 @@ func TestTranslateV2(t *testing.T) {
 				rmAttributes1.PutStr("service.namespace", "service-x")
 				rmAttributes1.PutStr("service.name", "test")
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
-				mAttributes1 := rm1.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
-				mAttributes1.PutStr("d", "e")
-				mAttributes1.PutStr("foo", "bar")
+				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				sm1Attributes := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm1Attributes.PutStr("d", "e")
+				sm1Attributes.PutStr("foo", "bar")
+				// Since we don't check "scope_name" and "scope_version", we end up with duplicated scope metrics for repeated series.
+				// TODO: Properly handle scope metrics.
+				sm2 := rm1.ScopeMetrics().AppendEmpty()
+				sm2Attributes := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty().Attributes()
+				sm2Attributes.PutStr("d", "e")
+				sm2Attributes.PutStr("foo", "bar")
 
 				rm2 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes2 := rm2.Resource().Attributes()
