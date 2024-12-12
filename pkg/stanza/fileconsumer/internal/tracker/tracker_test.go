@@ -54,7 +54,7 @@ func TestIndexInBounds(t *testing.T) {
 	require.Equal(t, tracker.archiveIndex, 0)
 
 	// run archiving. Each time, index should be in bound.
-	for i := 0; i < 1075; i++ {
+	for i := 0; i < 1099; i++ {
 		require.Equalf(t, i%pollsToArchive, tracker.archiveIndex, "Index should %d, but was %d", i%pollsToArchive, tracker.archiveIndex)
 		tracker.archive(&fileset.Fileset[*reader.Metadata]{})
 		require.Truef(t, tracker.archiveIndex >= 0 && tracker.archiveIndex < pollsToArchive, "Index should be between 0 and %d, but was %d", pollsToArchive, tracker.archiveIndex)
