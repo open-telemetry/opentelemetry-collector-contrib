@@ -372,9 +372,8 @@ func TestDocument_Serialize_Dedot(t *testing.T) {
 
 func TestValue_Serialize(t *testing.T) {
 	tests := map[string]struct {
-		value   Value
-		want    string
-		wantErr error
+		value Value
+		want  string
 	}{
 		"nil value":          {value: nilValue, want: "null"},
 		"bool value: true":   {value: BoolValue(true), want: "true"},
@@ -412,11 +411,7 @@ func TestValue_Serialize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			var buf strings.Builder
 			err := test.value.iterJSON(newJSONVisitor(&buf), false, false)
-			if test.wantErr == nil {
-				require.NoError(t, err)
-			} else {
-				assert.Equal(t, test.wantErr, err)
-			}
+			require.NoError(t, err)
 			assert.Equal(t, test.want, buf.String())
 		})
 	}
