@@ -387,7 +387,6 @@ func (dp summaryDataPoint) Value() (pcommon.Value, error) {
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
-
 	m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 	return vm, nil
 }
@@ -675,7 +674,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddSpanID("parent_span_id", span.ParentSpanID())
 	document.AddString("name", span.Name())
 	document.AddString("kind", span.Kind().String())
-	document.AddUint("duration", (span.EndTimestamp()-span.StartTimestamp()))
+	document.AddUint("duration", (span.EndTimestamp() - span.StartTimestamp()))
 
 	m.encodeAttributesOTelMode(&document, span.Attributes())
 
