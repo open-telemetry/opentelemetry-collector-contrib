@@ -43,5 +43,8 @@ func (p scopedPersister) Delete(ctx context.Context, key string) error {
 }
 
 func (p scopedPersister) Batch(ctx context.Context, ops ...storage.Operation) error {
+	for _, op := range ops {
+		op.Key = fmt.Sprintf("%s.%s", p.scope, op.Key)
+	}
 	return p.Persister.Batch(ctx, ops...)
 }
