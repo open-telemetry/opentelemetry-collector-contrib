@@ -33,7 +33,6 @@ package objmodel // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"encoding/hex"
-	"errors"
 	"io"
 	"maps"
 	"math"
@@ -61,13 +60,14 @@ type field struct {
 
 // Value type that can be added to a Document.
 type Value struct {
-	kind      Kind
-	primitive uint64
-	dbl       float64
-	str       string
-	arr       []Value
-	doc       Document
-	ts        time.Time
+	kind Kind
+	ui   uint64
+	i    int64
+	dbl  float64
+	str  string
+	arr  []Value
+	doc  Document
+	ts   time.Time
 }
 
 // Kind represent the internal kind of a value stored in a Document.
@@ -430,16 +430,10 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 func StringValue(str string) Value { return Value{kind: KindString, str: str} }
 
 // IntValue creates a new value from an integer.
-func IntValue(i int64) Value {
-	var v uint64
-	if i > 0 {
-		v = uint64(i) //nolint:gosec // overflow checked
-	}
-	return Value{kind: KindInt, primitive: v}
-}
+func IntValue(i int64) Value { return Value{kind: KindInt, i: i} }
 
 // UIntValue creates a new value from an unsigned integer.
-func UIntValue(i uint64) Value { return Value{kind: KindInt, primitive: i} }
+func UIntValue(i uint64) Value { return Value{kind: KindInt, ui: i} }
 
 // DoubleValue creates a new value from a double value..
 func DoubleValue(d float64) Value { return Value{kind: KindDouble, dbl: d} }
@@ -450,7 +444,7 @@ func BoolValue(b bool) Value {
 	if b {
 		v = 1
 	}
-	return Value{kind: KindBool, primitive: v}
+	return Value{kind: KindBool, ui: v}
 }
 
 // ArrValue combines multiple values into an array value.
@@ -534,12 +528,12 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	case KindNil:
 		return w.OnNil()
 	case KindBool:
-		return w.OnBool(v.primitive == 1)
+		return w.OnBool(v.ui == 1)
 	case KindInt:
-		if v.primitive > math.MaxInt64 {
-			return errors.New("integer value is higher than maximum int64")
+		if v.ui != 0 {
+			return w.OnUint64(v.ui)
 		}
-		return w.OnInt64(int64(v.primitive)) //nolint:gosec // overflow checked
+		return w.OnInt64(v.i)
 	case KindDouble:
 		if math.IsNaN(v.dbl) || math.IsInf(v.dbl, 0) {
 			// NaN and Inf are undefined for JSON. Let's serialize to "null"

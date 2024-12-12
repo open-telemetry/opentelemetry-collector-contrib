@@ -4,7 +4,6 @@
 package objmodel
 
 import (
-	"errors"
 	"math"
 	"strings"
 	"testing"
@@ -377,15 +376,11 @@ func TestValue_Serialize(t *testing.T) {
 		want    string
 		wantErr error
 	}{
-		"nil value":         {value: nilValue, want: "null"},
-		"bool value: true":  {value: BoolValue(true), want: "true"},
-		"bool value: false": {value: BoolValue(false), want: "false"},
-		"int value":         {value: IntValue(42), want: "42"},
-		"large int value": {
-			value:   UIntValue(math.MaxInt64 + 1),
-			want:    "",
-			wantErr: errors.New("integer value is higher than maximum int64"),
-		},
+		"nil value":          {value: nilValue, want: "null"},
+		"bool value: true":   {value: BoolValue(true), want: "true"},
+		"bool value: false":  {value: BoolValue(false), want: "false"},
+		"int value":          {value: IntValue(42), want: "42"},
+		"uint value":         {value: UIntValue(42), want: "42"},
 		"double value: 3.14": {value: DoubleValue(3.14), want: "3.14"},
 		"double value: 1.0":  {value: DoubleValue(1.0), want: "1.0"},
 		"NaN is undefined":   {value: DoubleValue(math.NaN()), want: "null"},
