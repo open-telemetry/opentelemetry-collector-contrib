@@ -51,7 +51,7 @@ func TestIndexInBounds(t *testing.T) {
 	tracker := NewFileTracker(componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 
 	// no index exists. archiveIndex should be 0
-	require.Equal(t, tracker.archiveIndex, 0)
+	require.Equal(t, 0, tracker.archiveIndex)
 
 	// run archiving. Each time, index should be in bound.
 	for i := 0; i < 1099; i++ {
@@ -72,7 +72,7 @@ func TestIndexInBounds(t *testing.T) {
 	tracker = NewFileTracker(componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 
 	// index should exist but it is out of bounds. So it should reset to 0
-	require.Equalf(t, tracker.archiveIndex, 0, "Index should be reset to 0 but was %d", tracker.archiveIndex)
+	require.Equalf(t, 0, tracker.archiveIndex, "Index should be reset to 0 but was %d", tracker.archiveIndex)
 }
 
 func populatedPersisterData(persister operator.Persister, fps []*fingerprint.Fingerprint) []bool {

@@ -159,7 +159,7 @@ func (t *fileTracker) restoreArchiveIndex() {
 	if !t.archiveEnabled() {
 		return
 	}
-	var archiveIndex = 0
+	archiveIndex := 0
 	byteIndex, err := t.persister.Get(context.Background(), archiveIndexKey)
 	if err != nil {
 		t.set.Logger.Error("error while reading the archiveIndexKey. Starting from 0", zap.Error(err))
