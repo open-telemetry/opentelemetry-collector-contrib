@@ -323,23 +323,19 @@ func TestGetSuffixTime(t *testing.T) {
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.LogstashFormat.Enabled = true
 	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
-	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
-	assert.NoError(t, err)
+	index := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.Equal(t, "logs-generic-default-2023.12.02", index)
 
 	defaultCfg.LogsIndex = "logstash"
 	defaultCfg.LogstashFormat.PrefixSeparator = "."
-	otelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
-	assert.NoError(t, err)
+	otelLogsIndex := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.Equal(t, "logstash.2023.12.02", otelLogsIndex)
 
-	defaultCfg.LogstashFormat.DateFormat = "%Y-%m-%d"
-	newOtelLogsIndex, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
-	assert.NoError(t, err)
+	defaultCfg.LogstashFormat.DateFormat = "2006-01-02"
+	newOtelLogsIndex := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.Equal(t, "logstash.2023-12-02", newOtelLogsIndex)
 
-	defaultCfg.LogstashFormat.DateFormat = "%d/%m/%Y"
-	newOtelLogsIndexWithSpecDataFormat, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
-	assert.NoError(t, err)
+	defaultCfg.LogstashFormat.DateFormat = "02/01/2006"
+	newOtelLogsIndexWithSpecDataFormat := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.Equal(t, "logstash.02/12/2023", newOtelLogsIndexWithSpecDataFormat)
 }

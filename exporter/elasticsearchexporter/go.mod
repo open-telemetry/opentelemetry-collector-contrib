@@ -9,7 +9,6 @@ require (
 	github.com/elastic/go-structform v0.0.12
 	github.com/json-iterator/go v1.1.12
 	github.com/klauspost/compress v1.17.11
-	github.com/lestrrat-go/strftime v1.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
 	github.com/stretchr/testify v1.10.0

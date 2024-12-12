@@ -110,7 +110,7 @@ func TestConfig(t *testing.T) {
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
 					PrefixSeparator: "-",
-					DateFormat:      "%Y.%m.%d",
+					DateFormat:      "2006.01.02",
 				},
 				Batcher: BatcherConfig{
 					FlushTimeout: 30 * time.Second,
@@ -182,7 +182,7 @@ func TestConfig(t *testing.T) {
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
 					PrefixSeparator: "-",
-					DateFormat:      "%Y.%m.%d",
+					DateFormat:      "2006.01.02",
 				},
 				Batcher: BatcherConfig{
 					FlushTimeout: 30 * time.Second,
@@ -254,7 +254,7 @@ func TestConfig(t *testing.T) {
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
 					PrefixSeparator: "-",
-					DateFormat:      "%Y.%m.%d",
+					DateFormat:      "2006.01.02",
 				},
 				Batcher: BatcherConfig{
 					FlushTimeout: 30 * time.Second,

@@ -166,11 +166,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 	}
 
 	if e.logstashFormat.Enabled {
-		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
-		if err != nil {
-			return err
-		}
-		fIndex = formattedIndex
+		fIndex = generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 	}
 
 	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
@@ -212,10 +208,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 				metric := scopeMetrics.Metrics().At(k)
 
 				upsertDataPoint := func(dp dataPoint) error {
-					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp)
-					if err != nil {
-						return err
-					}
+					fIndex := e.getMetricDataPointIndex(resource, scope, dp)
 					if _, ok := resourceDocs[fIndex]; !ok {
 						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
 					}
@@ -323,20 +316,16 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	dataPoint dataPoint,
-) (string, error) {
+) string {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
-		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
-		if err != nil {
-			return "", err
-		}
-		fIndex = formattedIndex
+		fIndex = generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 	}
-	return fIndex, nil
+	return fIndex
 }
 
 func (e *elasticsearchExporter) pushTraceData(
@@ -404,11 +393,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	}
 
 	if e.logstashFormat.Enabled {
-		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
-		if err != nil {
-			return err
-		}
-		fIndex = formattedIndex
+		fIndex = generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 	}
 
 	document, err := e.model.encodeSpan(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
@@ -434,11 +419,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	}
 
 	if e.logstashFormat.Enabled {
-		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
-		if err != nil {
-			return err
-		}
-		fIndex = formattedIndex
+		fIndex = generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 	}
 
 	document := e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)

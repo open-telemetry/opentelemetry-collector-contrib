@@ -79,7 +79,7 @@ func createDefaultConfig() component.Config {
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
 			PrefixSeparator: "-",
-			DateFormat:      "%Y.%m.%d",
+			DateFormat:      "2006.01.02",
 		},
 		TelemetrySettings: TelemetrySettings{
 			LogRequestBody:  false,
