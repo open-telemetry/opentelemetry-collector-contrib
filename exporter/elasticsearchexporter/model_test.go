@@ -1109,7 +1109,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 // helper function that creates the OTel LogRecord from the test structure
 func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
-	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controller from test
+	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controller by tests
 	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano()))) //nolint:gosec // this input is controller from test
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
