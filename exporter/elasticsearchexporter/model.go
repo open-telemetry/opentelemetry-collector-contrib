@@ -675,7 +675,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddSpanID("parent_span_id", span.ParentSpanID())
 	document.AddString("name", span.Name())
 	document.AddString("kind", span.Kind().String())
-	document.AddInt("duration", safeUint64ToInt64(uint64(span.EndTimestamp()-span.StartTimestamp())))
+	document.AddUint("duration", (span.EndTimestamp()-span.StartTimestamp()))
 
 	m.encodeAttributesOTelMode(&document, span.Attributes())
 
