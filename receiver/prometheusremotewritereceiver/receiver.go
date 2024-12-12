@@ -232,6 +232,9 @@ func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.
 }
 
 func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
+	// In OTel name+type+unit is the unique identifier of a metric and we should not create
+	// a new metric if it already exists.
 	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge()
 	addDatapoints(m.DataPoints(), ls, ts)
 }
