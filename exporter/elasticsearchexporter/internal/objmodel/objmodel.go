@@ -168,6 +168,11 @@ func (doc *Document) AddInt(key string, value int64) {
 	doc.Add(key, IntValue(value))
 }
 
+// AddInt adds an unsigned integer value to the document.
+func (doc *Document) AddUInt(key string, value uint64) {
+	doc.Add(key, UIntValue(value))
+}
+
 // AddAttributes expands and flattens all key-value pairs from the input attribute map into
 // the document.
 func (doc *Document) AddAttributes(key string, attributes pcommon.Map) {
@@ -424,7 +429,16 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 func StringValue(str string) Value { return Value{kind: KindString, str: str} }
 
 // IntValue creates a new value from an integer.
-func IntValue(i int64) Value { return Value{kind: KindInt, primitive: uint64(i)} }
+func IntValue(i int64) Value {
+	var v uint64
+	if i > 0 {
+		v = uint64(i) //nolint:gosec // overflow checked
+	}
+	return Value{kind: KindInt, primitive: v}
+}
+
+// UIntValue creates a new value from an unsigned integer.
+func UIntValue(i uint64) Value { return Value{kind: KindInt, primitive: i} }
 
 // DoubleValue creates a new value from a double value..
 func DoubleValue(d float64) Value { return Value{kind: KindDouble, dbl: d} }
@@ -521,7 +535,11 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	case KindBool:
 		return w.OnBool(v.primitive == 1)
 	case KindInt:
-		return w.OnInt64(int64(v.primitive))
+		var i int64 = math.MaxInt64
+		if v.primitive < math.MaxInt64 {
+			i = int64(v.primitive) //nolint:gosec // overflow checked
+		}
+		return w.OnInt64(i)
 	case KindDouble:
 		if math.IsNaN(v.dbl) || math.IsInf(v.dbl, 0) {
 			// NaN and Inf are undefined for JSON. Let's serialize to "null"
