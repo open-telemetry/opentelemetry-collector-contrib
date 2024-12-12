@@ -78,6 +78,7 @@ const (
 	KindNil Kind = iota
 	KindBool
 	KindInt
+	KindUInt
 	KindDouble
 	KindString
 	KindArr
@@ -433,7 +434,7 @@ func StringValue(str string) Value { return Value{kind: KindString, str: str} }
 func IntValue(i int64) Value { return Value{kind: KindInt, i: i} }
 
 // UIntValue creates a new value from an unsigned integer.
-func UIntValue(i uint64) Value { return Value{kind: KindInt, ui: i} }
+func UIntValue(i uint64) Value { return Value{kind: KindUInt, ui: i} }
 
 // DoubleValue creates a new value from a double value..
 func DoubleValue(d float64) Value { return Value{kind: KindDouble, dbl: d} }
@@ -530,10 +531,9 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	case KindBool:
 		return w.OnBool(v.ui == 1)
 	case KindInt:
-		if v.ui != 0 {
-			return w.OnUint64(v.ui)
-		}
 		return w.OnInt64(v.i)
+	case KindUInt:
+		return w.OnUint64(v.ui)
 	case KindDouble:
 		if math.IsNaN(v.dbl) || math.IsInf(v.dbl, 0) {
 			// NaN and Inf are undefined for JSON. Let's serialize to "null"
