@@ -12,6 +12,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 const knownFilesKey = "knownFiles"
@@ -21,7 +22,7 @@ func Save(ctx context.Context, persister operator.Persister, rmds []*reader.Meta
 	return SaveKey(ctx, persister, rmds, knownFilesKey)
 }
 
-func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string) error {
+func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.Metadata, key string, ops ...storage.Operation) error {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
@@ -37,8 +38,8 @@ func SaveKey(ctx context.Context, persister operator.Persister, rmds []*reader.M
 			errs = append(errs, fmt.Errorf("encode metadata: %w", err))
 		}
 	}
-
-	if err := persister.Set(ctx, key, buf.Bytes()); err != nil {
+	ops = append(ops, storage.SetOperation(key, buf.Bytes()))
+	if err := persister.Batch(ctx, ops...); err != nil {
 		errs = append(errs, fmt.Errorf("persist known files: %w", err))
 	}
 

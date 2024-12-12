@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -42,6 +43,36 @@ func TestFindFilesOrder(t *testing.T) {
 			require.Nil(t, matchables[i], "resulting index %d should be of nil type", i)
 		}
 	}
+}
+
+func TestIndexInBounds(t *testing.T) {
+	persister := testutil.NewUnscopedMockPersister()
+	pollsToArchive := 100
+	tracker := NewFileTracker(componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+
+	// no index exists. archiveIndex should be 0
+	require.Equal(t, tracker.archiveIndex, 0)
+
+	// run archiving. Each time, index should be in bound.
+	for i := 0; i < 1075; i++ {
+		require.Equalf(t, i%pollsToArchive, tracker.archiveIndex, "Index should %d, but was %d", i%pollsToArchive, tracker.archiveIndex)
+		tracker.archive(&fileset.Fileset[*reader.Metadata]{})
+		require.Truef(t, tracker.archiveIndex >= 0 && tracker.archiveIndex < pollsToArchive, "Index should be between 0 and %d, but was %d", pollsToArchive, tracker.archiveIndex)
+	}
+	oldIndex := tracker.archiveIndex
+
+	// re-create archive
+	tracker = NewFileTracker(componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+
+	// index should exist and new archiveIndex should be equal to oldIndex
+	require.Equalf(t, oldIndex, tracker.archiveIndex, "New index should %d, but was %d", oldIndex, tracker.archiveIndex)
+
+	// re-create archive, with reduced pollsToArchive
+	pollsToArchive = 70
+	tracker = NewFileTracker(componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+
+	// index should exist but it is out of bounds. So it should reset to 0
+	require.Equalf(t, tracker.archiveIndex, 0, "Index should be reset to 0 but was %d", tracker.archiveIndex)
 }
 
 func populatedPersisterData(persister operator.Persister, fps []*fingerprint.Fingerprint) []bool {

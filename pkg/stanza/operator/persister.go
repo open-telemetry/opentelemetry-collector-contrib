@@ -6,6 +6,8 @@ package operator // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
 // Persister is an interface used to persist data
@@ -13,6 +15,7 @@ type Persister interface {
 	Get(context.Context, string) ([]byte, error)
 	Set(context.Context, string, []byte) error
 	Delete(context.Context, string) error
+	Batch(ctx context.Context, ops ...storage.Operation) error
 }
 
 type scopedPersister struct {
@@ -37,4 +40,8 @@ func (p scopedPersister) Set(ctx context.Context, key string, value []byte) erro
 
 func (p scopedPersister) Delete(ctx context.Context, key string) error {
 	return p.Persister.Delete(ctx, fmt.Sprintf("%s.%s", p.scope, key))
+}
+
+func (p scopedPersister) Batch(ctx context.Context, ops ...storage.Operation) error {
+	return p.Persister.Batch(ctx, ops...)
 }
