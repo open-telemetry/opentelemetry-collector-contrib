@@ -133,10 +133,10 @@ connectors:
     default_pipelines: [logs/other]
     table:
       - context: request
-        condition: reqeust["X-Tenant"] == "acme"
+        condition: request["X-Tenant"] == "acme"
         pipelines: [logs/acme]
       - context: request
-        condition: reqeust["X-Tenant"] == "ecorp"
+        condition: request["X-Tenant"] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -263,10 +263,10 @@ connectors:
         condition: severity_number < SEVERITY_NUMBER_ERROR
         pipelines: [logs/cheap]
       - context: request
-        condition: reqeust["X-Tenant"] == "acme"
+        condition: request["X-Tenant"] == "acme"
         pipelines: [logs/acme]
       - context: request
-        condition: reqeust["X-Tenant"] == "ecorp"
+        condition: request["X-Tenant"] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -284,10 +284,6 @@ service:
       receivers: [routing]
       exporters: [file/ecorp]
 ```
-
-## Differences between the Routing Connector and Routing Processor
-
-- The connector routes to pipelines, not exporters as the processor does.
 
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 

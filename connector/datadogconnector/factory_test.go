@@ -21,7 +21,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 		&Config{
 			Traces: TracesConfig{
 				TracesConfig: datadogconfig.TracesConfig{
-					IgnoreResources: []string{},
+					IgnoreResources:        []string{},
+					PeerServiceAggregation: true,
+					PeerTagsAggregation:    true,
+					ComputeStatsBySpanKind: true,
 				},
 				TraceBuffer:    1000,
 				BucketInterval: 10 * time.Second,

@@ -4,10 +4,25 @@
 package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver"
 
 import (
+	"errors"
+	"fmt"
+	"slices"
+
+	"github.com/huaweicloud/huaweicloud-sdk-go-v3/services/ces/v1/model"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/multierr"
+)
+
+var (
+	// Predefined error responses for configuration validation failures
+	errInvalidCollectionInterval = errors.New(`invalid period; must be less than "collection_interval"`)
+	errMissingProjectID          = errors.New(`"project_id" is not specified in config`)
+	errMissingRegionID           = errors.New(`"region_id" is not specified in config`)
+	errInvalidProxy              = errors.New(`"proxy_address" must be specified if "proxy_user" or "proxy_password" is set"`)
 )
 
 // Config represent a configuration for the CloudWatch logs exporter.
@@ -62,4 +77,50 @@ type huaweiSessionConfig struct {
 	ProxyAddress  string `mapstructure:"proxy_address"`
 	ProxyUser     string `mapstructure:"proxy_user"`
 	ProxyPassword string `mapstructure:"proxy_password"`
+}
+
+var _ component.Config = (*Config)(nil)
+
+// These valid periods are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
+var validPeriods = []int32{1, 300, 1200, 3600, 14400, 86400}
+
+// These valid filters are defined by CES API constraints: https://support.huaweicloud.com/intl/en-us/api-ces/ces_03_0034.html#section3
+var validFilters = map[string]model.ShowMetricDataRequestFilter{
+	"max":      model.GetShowMetricDataRequestFilterEnum().MAX,
+	"min":      model.GetShowMetricDataRequestFilterEnum().MIN,
+	"average":  model.GetShowMetricDataRequestFilterEnum().AVERAGE,
+	"sum":      model.GetShowMetricDataRequestFilterEnum().SUM,
+	"variance": model.GetShowMetricDataRequestFilterEnum().VARIANCE,
+}
+
+// Validate config
+func (config *Config) Validate() error {
+	var err error
+	if config.RegionID == "" {
+		err = multierr.Append(err, errMissingRegionID)
+	}
+
+	if config.ProjectID == "" {
+		err = multierr.Append(err, errMissingProjectID)
+	}
+	if index := slices.Index(validPeriods, config.Period); index == -1 {
+		err = multierr.Append(err, fmt.Errorf("invalid period: got %d; must be one of %v", config.Period, validPeriods))
+	}
+	if _, ok := validFilters[config.Filter]; !ok {
+		var validFiltersSlice []string
+		for key := range validFilters {
+			validFiltersSlice = append(validFiltersSlice, key)
+		}
+		err = multierr.Append(err, fmt.Errorf("invalid filter: got %s; must be one of %v", config.Filter, validFiltersSlice))
+	}
+	if config.Period >= int32(config.CollectionInterval.Seconds()) {
+		err = multierr.Append(err, errInvalidCollectionInterval)
+	}
+
+	// Validate that ProxyAddress is provided if ProxyUser or ProxyPassword is set
+	if (config.ProxyUser != "" || config.ProxyPassword != "") && config.ProxyAddress == "" {
+		err = multierr.Append(err, errInvalidProxy)
+	}
+
+	return err
 }
