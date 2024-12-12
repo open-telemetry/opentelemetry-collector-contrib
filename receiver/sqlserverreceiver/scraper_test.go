@@ -89,7 +89,7 @@ func TestSuccessfulScrape(t *testing.T) {
 			SQL:          scraper.sqlQuery,
 		}
 
-		actualMetrics, err := scraper.Scrape(context.Background())
+		actualMetrics, err := scraper.ScrapeMetrics(context.Background())
 		assert.NoError(t, err)
 
 		var expectedFile string
@@ -139,7 +139,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 			SQL:          "Invalid SQL query",
 		}
 
-		actualMetrics, err := scraper.Scrape(context.Background())
+		actualMetrics, err := scraper.ScrapeMetrics(context.Background())
 		assert.Error(t, err)
 		assert.Empty(t, actualMetrics)
 	}

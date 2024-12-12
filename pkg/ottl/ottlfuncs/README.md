@@ -1343,7 +1343,7 @@ Examples:
 
 The `ParseSimplifiedXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string without preservation of attributes or extraneous text content.
 
-The goal of this Converter is to produce a more user-friendly representation of XML data than the `ParseXML` Converter.
+The goal of this Converter is to produce a more user-friendly representation of XML data than the [`ParseXML`](#parsexml) Converter.
 This Converter should be preferred over `ParseXML` when minor semantic details (e.g. order of elements) are not critically important, when subsequent processing or querying of the result is expected, or when human-readability is a concern.
 
 This Converter disregards certain aspects of XML, specifically attributes and extraneous text content, in order to produce
@@ -1351,11 +1351,11 @@ a direct representation of XML data. Users are encouraged to simplify their XML 
 
 See other functions which may be useful for preparing XML documents:
 
-- `ConvertAttributesToElementsXML`
-- `ConvertTextToElementsXML`
-- `RemoveXML`
-- `InsertXML`
-- `GetXML`
+- [`ConvertAttributesToElementsXML`](#convertattributestoelementsxml)
+- [`ConvertTextToElementsXML`](#converttexttoelementsxml)
+- [`RemoveXML`](#removexml)
+- [`InsertXML`](#insertxml)
+- [`GetXML`](#getxml)
 
 #### Formal Definitions
 
@@ -2127,35 +2127,3 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
-
-## Function syntax
-
-Functions should be named and formatted according to the following standards.
-
-- Function names MUST start with a verb unless it is a Factory that creates a new type.
-- Converters MUST be UpperCamelCase.
-- Function names that contain multiple words MUST separate those words with `_`.
-- Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
-- Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
-- Functions that change a specific target MUST set the target as the first parameter.
-
-## Adding New Editors/Converters
-
-Before raising a PR with a new Editor or Converter, raise an issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
-
-Your proposal likely will be accepted if:
-- The proposed functionality is missing,
-- The proposed solution significantly improves user experience and readability for very common use cases,
-- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
-
-It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
-
-Your proposal likely won't be accepted if:
-- User experience is worse and assumes a highly technical user,
-- The performance of your proposal very negatively affects the processing pipeline.
-
-As with code, OTTL aims for readability first. This means:
-- Using short, meaningful, and descriptive names,
-- Ensuring naming consistency across Editors and Converters,
-- Avoiding deep nesting to achieve desired transformations,
-- Ensuring Editors and Converters have a single responsibility.
