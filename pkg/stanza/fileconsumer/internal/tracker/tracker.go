@@ -163,14 +163,17 @@ func (t *fileTracker) restoreArchiveIndex() {
 	byteIndex, err := t.persister.Get(context.Background(), archiveIndexKey)
 	if err != nil {
 		t.set.Logger.Error("error while reading the archiveIndexKey. Starting from 0", zap.Error(err))
+		return
 	}
 	archiveIndex, err = byteToIndex(byteIndex)
 	if err != nil {
 		t.set.Logger.Error("error getting read index. Starting from 0", zap.Error(err))
+		return
 	} else if archiveIndex < 0 || archiveIndex >= t.pollsToArchive {
 		// safety check. It can happen if `polls_to_archive` was changed.
 		// It's best if we reset the index or else we might end up writing invalid keys
 		t.set.Logger.Warn("the read index was found, but it exceeds the bounds. Starting from 0")
+		return
 	}
 	t.archiveIndex = archiveIndex
 }
