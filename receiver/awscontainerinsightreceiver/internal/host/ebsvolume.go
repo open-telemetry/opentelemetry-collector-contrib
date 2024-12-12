@@ -56,7 +56,8 @@ type ebsVolume struct {
 type ebsVolumeOption func(*ebsVolume)
 
 func newEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
-	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption) ebsVolumeProvider {
+	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption,
+) ebsVolumeProvider {
 	e := &ebsVolume{
 		dev2Vol:         make(map[string]string),
 		instanceID:      instanceID,

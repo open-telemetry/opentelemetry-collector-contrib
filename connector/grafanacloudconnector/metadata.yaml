@@ -1,5 +1,4 @@
 type: grafanacloud
-scope_name: otelcol/grafanacloud
 
 status:
   class: connector
@@ -7,9 +6,9 @@ status:
     alpha: [traces_to_metrics]
   distributions: [contrib]
   codeowners:
-    active: [jpkrohling, rlankfo, jcreixell]
+    active: [rlankfo, jcreixell]
     emeritus: []
-    seeking_new: true
+    seeking_new: false
 
 tests:
   config:

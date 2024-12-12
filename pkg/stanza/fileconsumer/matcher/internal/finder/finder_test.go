@@ -4,6 +4,7 @@
 package finder
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -176,10 +177,10 @@ func TestFindFiles(t *testing.T) {
 				require.NoError(t, os.Chdir(cwd))
 			}()
 			for _, f := range tc.files {
-				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
+				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
 
 				var file *os.File
-				file, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				file, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, err)
 
 				_, err = file.WriteString(filepath.Base(f))
@@ -188,7 +189,7 @@ func TestFindFiles(t *testing.T) {
 			}
 			files, err := FindFiles(tc.include, tc.exclude)
 			assert.NoError(t, err)
-			assert.Equal(t, tc.expected, files)
+			assert.ElementsMatch(t, tc.expected, files)
 		})
 	}
 }
@@ -212,15 +213,15 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 		filepath.Join("dir1", "1.log"),
 		filepath.Join("dir1", "2.log"),
 	} {
-		require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
+		require.NoError(t, os.MkdirAll(filepath.Dir(f), 0o700))
 
-		_, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+		_, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0o600)
 		require.NoError(t, err)
 	}
 
-	require.NoError(t, os.Chmod("no_permission", 0000))
+	require.NoError(t, os.Chmod("no_permission", 0o000))
 	defer func() {
-		require.NoError(t, os.Chmod("no_permission", 0700))
+		require.NoError(t, os.Chmod("no_permission", 0o700))
 	}()
 
 	cases := []struct {
@@ -251,7 +252,38 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			files, err := FindFiles(tc.include, []string{})
 			assert.ErrorContains(t, err, tc.failedMsg)
-			assert.Equal(t, tc.expected, files)
+			assert.ElementsMatch(t, tc.expected, files)
 		})
 	}
+}
+
+// benchResult is package level variable that store the result of the benchmark.
+// It is used to prevent go from optimizing out the benchmarked code.
+var benchResult []string
+
+func BenchmarkFind10kFiles(b *testing.B) {
+	numFiles := 10000
+	tmpDir := b.TempDir()
+
+	// Create a bunch of files for benchmarking
+	for i := range numFiles {
+		path := filepath.Join(tmpDir, fmt.Sprintf("log-%05d.log", i))
+		f, err := os.Create(path)
+		require.NoError(b, err)
+		require.NoError(b, f.Close())
+	}
+
+	includeGlobs := []string{
+		filepath.Join(tmpDir, "log-*.log"),
+	}
+
+	excludeGlobs := []string{}
+
+	var r []string
+	b.ResetTimer()
+	for range b.N {
+		r, _ = FindFiles(includeGlobs, excludeGlobs)
+	}
+
+	benchResult = r
 }

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("servicegraph")
+	Type      = component.MustNewType("servicegraph")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 )
 
 const (

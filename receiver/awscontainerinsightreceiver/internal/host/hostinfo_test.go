@@ -18,8 +18,7 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 )
 
-type mockNodeCapacity struct {
-}
+type mockNodeCapacity struct{}
 
 func (m *mockNodeCapacity) getMemoryCapacity() int64 {
 	return 1024
@@ -29,8 +28,7 @@ func (m *mockNodeCapacity) getNumCores() int64 {
 	return 2
 }
 
-type mockEC2Metadata struct {
-}
+type mockEC2Metadata struct{}
 
 func (m *mockEC2Metadata) getInstanceID() string {
 	return "instance-id"
@@ -48,8 +46,7 @@ func (m *mockEC2Metadata) getRegion() string {
 	return "region"
 }
 
-type mockEBSVolume struct {
-}
+type mockEBSVolume struct{}
 
 func (m *mockEBSVolume) getEBSVolumeID(_ string) string {
 	return "ebs-volume-id"
@@ -59,8 +56,7 @@ func (m *mockEBSVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	return map[string]string{}
 }
 
-type mockEC2Tags struct {
-}
+type mockEC2Tags struct{}
 
 func (m *mockEC2Tags) getClusterName() string {
 	return "cluster-name"
@@ -104,19 +100,22 @@ func TestInfo(t *testing.T) {
 	}
 	ec2MetadataCreatorOpt := func(m any) {
 		m.(*Info).ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger,
-			...ec2MetadataOption) ec2MetadataProvider {
+			...ec2MetadataOption,
+		) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
 	ebsVolumeCreatorOpt := func(m any) {
 		m.(*Info).ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
-			...ebsVolumeOption) ebsVolumeProvider {
+			...ebsVolumeOption,
+		) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
 	ec2TagsCreatorOpt := func(m any) {
 		m.(*Info).ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
-			...ec2TagsOption) ec2TagsProvider {
+			...ec2TagsOption,
+		) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}
 	}
@@ -186,19 +185,22 @@ func TestInfoForECS(t *testing.T) {
 	}
 	ec2MetadataCreatorOpt := func(m any) {
 		m.(*Info).ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger,
-			...ec2MetadataOption) ec2MetadataProvider {
+			...ec2MetadataOption,
+		) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
 	ebsVolumeCreatorOpt := func(m any) {
 		m.(*Info).ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
-			...ebsVolumeOption) ebsVolumeProvider {
+			...ebsVolumeOption,
+		) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
 	ec2TagsCreatorOpt := func(m any) {
 		m.(*Info).ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
-			...ec2TagsOption) ec2TagsProvider {
+			...ec2TagsOption,
+		) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}
 	}

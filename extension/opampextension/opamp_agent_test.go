@@ -18,7 +18,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.uber.org/zap"
 )
 
 func TestNewOpampAgent(t *testing.T) {
@@ -31,6 +32,7 @@ func TestNewOpampAgent(t *testing.T) {
 	assert.Equal(t, "test version", o.agentVersion)
 	assert.NotEmpty(t, o.instanceID.String())
 	assert.True(t, o.capabilities.ReportsEffectiveConfig)
+	assert.True(t, o.capabilities.ReportsHealth)
 	assert.Empty(t, o.effectiveConfig)
 	assert.Nil(t, o.agentDescription)
 }
@@ -52,6 +54,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 func TestCreateAgentDescription(t *testing.T) {
 	hostname, err := os.Hostname()
 	require.NoError(t, err)
+	description := getOSDescription(zap.NewNop())
 
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
@@ -75,6 +78,7 @@ func TestCreateAgentDescription(t *testing.T) {
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, hostname),
+					stringKeyValue(semconv.AttributeOSDescription, description),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -98,6 +102,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, hostname),
 					stringKeyValue(semconv.AttributeK8SPodName, "my-very-cool-pod"),
+					stringKeyValue(semconv.AttributeOSDescription, description),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -118,6 +123,7 @@ func TestCreateAgentDescription(t *testing.T) {
 				NonIdentifyingAttributes: []*protobufs.KeyValue{
 					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
 					stringKeyValue(semconv.AttributeHostName, "override-host"),
+					stringKeyValue(semconv.AttributeOSDescription, description),
 					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
 				},
 			},
@@ -126,7 +132,6 @@ func TestCreateAgentDescription(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			cfg := createDefaultConfig().(*Config)
 			tc.cfg(cfg)
 
@@ -175,14 +180,14 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	ecFileName := filepath.Join("testdata", "effective.yaml")
 	cm, err := confmaptest.LoadConf(ecFileName)
 	assert.NoError(t, err)
-	redactedFileName := filepath.Join("testdata", "effective-redacted.yaml")
-	expected, err := os.ReadFile(redactedFileName)
+	expected, err := os.ReadFile(ecFileName)
 	assert.NoError(t, err)
 
 	o.updateEffectiveConfig(cm)
 	ec = o.composeEffectiveConfig()
 	assert.NotNil(t, ec)
 	assert.YAMLEq(t, string(expected), string(ec.ConfigMap.ConfigMap[""].Body))
+	assert.Equal(t, "text/yaml", ec.ConfigMap.ConfigMap[""].ContentType)
 }
 
 func TestShutdown(t *testing.T) {
@@ -240,4 +245,41 @@ func TestParseInstanceIDString(t *testing.T) {
 			require.Equal(t, tc.expectedUUID, id)
 		})
 	}
+}
+
+func TestOpAMPAgent_Dependencies(t *testing.T) {
+	t.Run("No server specified", func(t *testing.T) {
+		o := opampAgent{
+			cfg: &Config{},
+		}
+
+		require.Nil(t, o.Dependencies())
+	})
+
+	t.Run("No auth extension specified", func(t *testing.T) {
+		o := opampAgent{
+			cfg: &Config{
+				Server: &OpAMPServer{
+					WS: &commonFields{},
+				},
+			},
+		}
+
+		require.Nil(t, o.Dependencies())
+	})
+
+	t.Run("auth extension specified", func(t *testing.T) {
+		authID := component.MustNewID("basicauth")
+		o := opampAgent{
+			cfg: &Config{
+				Server: &OpAMPServer{
+					WS: &commonFields{
+						Auth: authID,
+					},
+				},
+			},
+		}
+
+		require.Equal(t, []component.ID{authID}, o.Dependencies())
+	})
 }

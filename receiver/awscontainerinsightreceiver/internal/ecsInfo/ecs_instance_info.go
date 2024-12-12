@@ -41,7 +41,8 @@ type ContainerInstance struct {
 }
 
 func newECSInstanceInfo(ctx context.Context, clusterName string, ecsAgentEndpointProvider hostIPProvider,
-	refreshInterval time.Duration, logger *zap.Logger, httpClient doer, readyC chan bool) containerInstanceInfoProvider {
+	refreshInterval time.Duration, logger *zap.Logger, httpClient doer, readyC chan bool,
+) containerInstanceInfoProvider {
 	cii := &containerInstanceInfo{
 		logger:                   logger,
 		httpClient:               httpClient,
@@ -77,7 +78,6 @@ func (cii *containerInstanceInfo) refresh(ctx context.Context) {
 
 	cluster := containerInstance.Cluster
 	instanceID, err := GetContainerInstanceIDFromArn(containerInstance.ContainerInstanceArn)
-
 	if err != nil {
 		cii.logger.Warn("Failed to get instance id from arn, error: ", zap.Error(err))
 	}

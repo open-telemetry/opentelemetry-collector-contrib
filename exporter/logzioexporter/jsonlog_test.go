@@ -27,6 +27,7 @@ func generateLogRecordWithNestedBody() plog.LogRecord {
 	fillLogOne(lr)
 	return lr
 }
+
 func generateLogRecordWithMultiTypeValues() plog.LogRecord {
 	lr := plog.NewLogRecord()
 	fillLogTwo(lr)
@@ -40,8 +41,9 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		expected map[string]any
 	}
 
-	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
-		{generateLogRecordWithNestedBody(),
+	convertLogRecordToJSONTests := []convertLogRecordToJSONTest{
+		{
+			generateLogRecordWithNestedBody(),
 			pcommon.NewResource(),
 			map[string]any{
 				"23":           float64(45),
@@ -56,7 +58,8 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"traceID":      "08040201000000000000000000000000",
 			},
 		},
-		{generateLogRecordWithMultiTypeValues(),
+		{
+			generateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
 			map[string]any{
 				"bool":       true,
@@ -71,7 +74,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 	}
 	for _, test := range convertLogRecordToJSONTests {
 		output := convertLogRecordToJSON(test.log, test.log.Attributes())
-		require.Equal(t, output, test.expected)
+		require.Equal(t, test.expected, output)
 	}
 }
 
@@ -83,13 +86,13 @@ func TestSetTimeStamp(t *testing.T) {
 	}))
 	defer func() { server.Close() }()
 	ld := generateLogsOneEmptyTimestamp()
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.Compression = configcompression.TypeGzip
 	cfg := &Config{
-		Region: "us",
-		Token:  "token",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint:    server.URL,
-			Compression: configcompression.TypeGzip,
-		},
+		Region:       "us",
+		Token:        "token",
+		ClientConfig: clientConfig,
 	}
 	var err error
 	params := exportertest.NewNopSettings()

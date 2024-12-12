@@ -11,4 +11,4 @@ service:
       exporters: [nop]
   telemetry:
     resource:
-      test_key: "${file:{{.TestKeyFile}}}"
+      test_key: '${file:{{.TestKeyFile}}}'

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
@@ -31,9 +30,6 @@ var (
 
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
-	// TODO: find a more appropriate way to get this done, as we are swallowing the error here
-	_ = view.Register(metricViews()...)
-
 	return processor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -58,8 +54,8 @@ func createTracesProcessor(
 	_ context.Context,
 	params processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (processor.Traces, error) {
-
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 
 	var st storage
@@ -70,8 +66,9 @@ func createTracesProcessor(
 		return nil, errDiscardOrphansNotSupported
 	}
 
+	processor := newGroupByTraceProcessor(params, nextConsumer, *oCfg)
 	// the only supported storage for now
-	st = newMemoryStorage()
-
-	return newGroupByTraceProcessor(params.Logger, st, nextConsumer, *oCfg), nil
+	st = newMemoryStorage(processor.telemetryBuilder)
+	processor.st = st
+	return processor, nil
 }

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -42,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Len(t, cfg.Receivers, 2)
 
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 	defaultConfigCPUScraper := factory.CreateDefaultConfig()
@@ -58,6 +59,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 	expectedConfig := &Config{
+		MetadataCollectionInterval: 5 * time.Minute,
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 30 * time.Second,
 			InitialDelay:       time.Second,
@@ -117,6 +119,11 @@ func TestLoadConfig(t *testing.T) {
 				cfg.SetEnvMap(common.EnvMap{})
 				return cfg
 			})(),
+			systemscraper.TypeStr: (func() internal.Config {
+				cfg := (&systemscraper.Factory{}).CreateDefaultConfig()
+				cfg.SetEnvMap(common.EnvMap{})
+				return cfg
+			})(),
 		},
 	}
 
@@ -133,7 +140,7 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
-	require.Contains(t, err.Error(), "must specify at least one scraper when using hostmetrics receiver")
+	require.ErrorContains(t, err, "must specify at least one scraper when using hostmetrics receiver")
 }
 
 func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
@@ -146,5 +153,5 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
-	require.Contains(t, err.Error(), "error reading configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
+	require.ErrorContains(t, err, "error reading configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")
 }

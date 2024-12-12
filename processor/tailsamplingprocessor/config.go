@@ -109,7 +109,7 @@ type CompositeCfg struct {
 	RateAllocation         []RateAllocationCfg     `mapstructure:"rate_allocation"`
 }
 
-// RateAllocationCfg  used within composite policy
+// RateAllocationCfg used within composite policy
 type RateAllocationCfg struct {
 	Policy  string `mapstructure:"policy"`
 	Percent int64  `mapstructure:"percent"`
@@ -210,6 +210,10 @@ type BooleanAttributeCfg struct {
 	// Value indicate the bool value, either true or false to use when matching against attribute values.
 	// BooleanAttribute Policy will apply exact value match on Value
 	Value bool `mapstructure:"value"`
+	// InvertMatch indicates that values must not match against attribute values.
+	// If InvertMatch is true and Values is equal to 'true', all other values will be sampled except 'true'.
+	// Also, if the specified Key does not match any resource or span attributes, data will be sampled.
+	InvertMatch bool `mapstructure:"invert_match"`
 }
 
 // OTTLConditionCfg holds the configurable setting to create a OTTL condition filter
@@ -221,11 +225,16 @@ type OTTLConditionCfg struct {
 }
 
 type DecisionCacheConfig struct {
-	// SampledCacheSize specifies the size of the cache that holds the sampled trace IDs
+	// SampledCacheSize specifies the size of the cache that holds the sampled trace IDs.
 	// This value will be the maximum amount of trace IDs that the cache can hold before overwriting previous IDs.
 	// For effective use, this value should be at least an order of magnitude higher than Config.NumTraces.
 	// If left as default 0, a no-op DecisionCache will be used.
 	SampledCacheSize int `mapstructure:"sampled_cache_size"`
+	// NonSampledCacheSize specifies the size of the cache that holds the non-sampled trace IDs.
+	// This value will be the maximum amount of trace IDs that the cache can hold before overwriting previous IDs.
+	// For effective use, this value should be at least an order of magnitude higher than Config.NumTraces.
+	// If left as default 0, a no-op DecisionCache will be used.
+	NonSampledCacheSize int `mapstructure:"non_sampled_cache_size"`
 }
 
 // Config holds the configuration for tail-based sampling.

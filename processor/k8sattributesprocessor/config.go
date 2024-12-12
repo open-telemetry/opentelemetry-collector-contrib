@@ -6,11 +6,20 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"fmt"
 	"regexp"
+	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+)
+
+var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.fieldExtractConfigRegex.disallow",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
+	featuregate.WithRegisterFromVersion("v0.106.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -38,6 +47,12 @@ type Config struct {
 	// Exclude section allows to define names of pod that should be
 	// ignored while tagging.
 	Exclude ExcludeConfig `mapstructure:"exclude"`
+
+	// WaitForMetadata is a flag that determines if the processor should wait k8s metadata to be synced when starting.
+	WaitForMetadata bool `mapstructure:"wait_for_metadata"`
+
+	// WaitForMetadataTimeout is the maximum time the processor will wait for the k8s metadata to be synced.
+	WaitForMetadataTimeout time.Duration `mapstructure:"wait_for_metadata_timeout"`
 }
 
 func (cfg *Config) Validate() error {
@@ -63,6 +78,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		if f.Regex != "" {
+			if disallowFieldExtractConfigRegex.IsEnabled() {
+				return fmt.Errorf("the extract.annotations.regex and extract.labels.regex fields have been deprecated, please use the `ExtractPatterns` function in the transform processor instead")
+			}
 			r, err := regexp.Compile(f.Regex)
 			if err != nil {
 				return err
@@ -84,7 +102,7 @@ func (cfg *Config) Validate() error {
 	for _, field := range cfg.Extract.Metadata {
 		switch field {
 		case conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID,
-			specPodHostName, metadataPodStartTime,
+			specPodHostName, metadataPodStartTime, metadataPodIP,
 			conventions.AttributeK8SDeploymentName, conventions.AttributeK8SDeploymentUID,
 			conventions.AttributeK8SReplicaSetName, conventions.AttributeK8SReplicaSetUID,
 			conventions.AttributeK8SDaemonSetName, conventions.AttributeK8SDaemonSetUID,
@@ -94,7 +112,7 @@ func (cfg *Config) Validate() error {
 			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
 			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
 			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
-			clusterUID:
+			containerImageRepoDigests, clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 		}
@@ -132,8 +150,8 @@ type ExtractConfig struct {
 	//   k8s.daemonset.name, k8s.daemonset.uid,
 	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
 	//   k8s.statefulset.name, k8s.statefulset.uid,
-	//   k8s.container.name, container.image.name,
-	//   container.image.tag, container.id
+	//   k8s.container.name, container.id, container.image.name,
+	//   container.image.tag, container.image.repo_digests
 	//   k8s.cluster.uid
 	//
 	// Specifying anything other than these values will result in an error.
@@ -213,10 +231,12 @@ type FieldExtractConfig struct {
 	//       regex: JENKINS=(?P<value>[\w]+)
 	//
 	// this will add the `git.sha` and `ci.build` resource attributes.
+	// Deprecated: [v0.106.0] Use the `ExtractPatterns` function in the transform processor instead.
+	// More information about how to replace the regex field can be found in the k8sattributes processor readme.
 	Regex string `mapstructure:"regex"`
 
 	// From represents the source of the labels/annotations.
-	// Allowed values are "pod" and "namespace". The default is pod.
+	// Allowed values are "pod", "namespace", and "node". The default is pod.
 	From string `mapstructure:"from"`
 }
 

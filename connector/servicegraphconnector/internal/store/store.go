@@ -12,9 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var (
-	ErrTooManyItems = errors.New("too many items")
-)
+var ErrTooManyItems = errors.New("too many items")
 
 type Callback func(e *Edge)
 
@@ -61,8 +59,8 @@ func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) *S
 	return s
 }
 
-// len is only used for testing.
-func (s *Store) len() int {
+// Len is only used for testing.
+func (s *Store) Len() int {
 	return s.l.Len()
 }
 

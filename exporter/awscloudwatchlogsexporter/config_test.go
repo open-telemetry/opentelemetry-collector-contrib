@@ -43,10 +43,10 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:      "testing",
 				Endpoint:           "",
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 1,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 			},
 		},
@@ -64,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",
 				LogStreamName:      "testing",
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    2,
@@ -118,14 +118,13 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       365,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: exporterhelper.QueueSettings{
+		QueueSettings: exporterhelper.QueueConfig{
 			Enabled:      true,
 			NumConsumers: 1,
-			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+			QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 		},
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
-
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
@@ -137,13 +136,12 @@ func TestRetentionValidateWrong(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       366,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: exporterhelper.QueueSettings{
+		QueueSettings: exporterhelper.QueueConfig{
 			Enabled:   true,
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+			QueueSize: exporterhelper.NewDefaultQueueConfig().QueueSize,
 		},
 	}
 	assert.Error(t, component.ValidateConfig(wrongcfg))
-
 }
 
 func TestValidateTags(t *testing.T) {
@@ -221,10 +219,10 @@ func TestValidateTags(t *testing.T) {
 				Endpoint:           "",
 				Tags:               tt.tags,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 1,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 			}
 			if tt.errorMessage != "" {

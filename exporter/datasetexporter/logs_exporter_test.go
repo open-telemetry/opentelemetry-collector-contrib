@@ -31,30 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-func TestCreateLogsExporter(t *testing.T) {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(*testing.T) {
-			logs, err := createLogsExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				assert.Nil(t, tt.expectedError, tt.name)
-				assert.NotNil(t, logs, tt.name)
-			} else {
-				if tt.expectedError == nil {
-					assert.Nil(t, err, tt.name)
-				} else {
-					assert.Equal(t, tt.expectedError.Error(), err.Error(), tt.name)
-					assert.Nil(t, logs, tt.name)
-				}
-			}
-		})
-	}
-}
-
 func TestBuildBody(t *testing.T) {
 	slice := pcommon.NewValueSlice()
 	err := slice.FromRaw([]any{1, 2, 3})
@@ -628,7 +604,6 @@ func TestBuildEventFromLog(t *testing.T) {
 			assert.Equal(t, expected, was)
 		})
 	}
-
 }
 
 func TestBuildEventFromLogExportResources(t *testing.T) {
@@ -697,6 +672,7 @@ func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
 
 	assert.Equal(t, expected, was)
 }
+
 func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
 	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
 	// ObservedTimestamp should be used
@@ -736,7 +712,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 	now = func() time.Time { return time.Unix(123456789, 0) }
 	currentTime := now()
 	assert.Equal(t, currentTime, time.Unix(123456789, 0))
-	assert.Equal(t, strconv.FormatInt(currentTime.UnixNano(), 10), "123456789000000000")
+	assert.Equal(t, "123456789000000000", strconv.FormatInt(currentTime.UnixNano(), 10))
 
 	lr := testdata.GenerateLogsOneLogRecord()
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
@@ -819,6 +795,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
 			RetryShutdownTimeout: time.Minute,
+			MaxParallelOutgoing:  100,
 		},
 		LogsSettings: LogsSettings{
 			ExportResourceInfo:   true,
@@ -840,8 +817,8 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			ServerHost: testServerHost,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 	}
 
 	lr1 := testdata.GenerateLogsOneLogRecord()
@@ -1113,7 +1090,6 @@ func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextInvalidVal
 
 	ld = makeLogRecordWithSeverityNumberAndSeverityText(100, "")
 	assert.Equal(t, defaultDataSetSeverityLevel, mapOtelSeverityToDataSetSeverity(ld))
-
 }
 
 func TestOtelSeverityToDataSetSeverityWithSeverityNumberNoSeverityTextDataSetTraceLogLevel(t *testing.T) {

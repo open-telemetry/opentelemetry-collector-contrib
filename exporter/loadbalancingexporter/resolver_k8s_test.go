@@ -56,7 +56,8 @@ func TestK8sResolve(t *testing.T) {
 		}
 
 		cl := fake.NewSimpleClientset(endpoint)
-		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout)
+		_, tb := getTelemetryAssets(t)
+		res, err := newK8sResolver(cl, zap.NewNop(), service, ports, defaultListWatchTimeout, tb)
 		require.NoError(t, err)
 
 		require.NoError(t, res.start(context.Background()))
@@ -76,6 +77,7 @@ func TestK8sResolve(t *testing.T) {
 		name       string
 		args       args
 		simulateFn func(*suiteContext, args) error
+		onChangeFn func([]string)
 		verifyFn   func(*suiteContext, args) error
 	}{
 		{
@@ -99,7 +101,6 @@ func TestK8sResolve(t *testing.T) {
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
-
 			},
 			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
@@ -109,6 +110,41 @@ func TestK8sResolve(t *testing.T) {
 				assert.Equal(t, []string{
 					"10.10.0.11:8080",
 					"10.10.0.11:9090",
+					"192.168.10.100:8080",
+					"192.168.10.100:9090",
+				}, ctx.resolver.Endpoints(), "resolver failed, endpoints not equal")
+
+				return nil
+			},
+		},
+		{
+			name: "simulate re-list that does not change endpoints",
+			args: args{
+				logger:    zap.NewNop(),
+				service:   "lb",
+				namespace: "default",
+				ports:     []int32{8080, 9090},
+			},
+			simulateFn: func(suiteCtx *suiteContext, args args) error {
+				exist := suiteCtx.endpoint.DeepCopy()
+				patch := client.MergeFrom(exist)
+				data, err := patch.Data(exist)
+				if err != nil {
+					return err
+				}
+				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
+					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
+				return err
+			},
+			onChangeFn: func([]string) {
+				assert.Fail(t, "should not call onChange")
+			},
+			verifyFn: func(ctx *suiteContext, _ args) error {
+				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
+					return err
+				}
+
+				assert.Equal(t, []string{
 					"192.168.10.100:8080",
 					"192.168.10.100:9090",
 				}, ctx.resolver.Endpoints(), "resolver failed, endpoints not equal")
@@ -137,7 +173,6 @@ func TestK8sResolve(t *testing.T) {
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
-
 			},
 			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
@@ -177,6 +212,10 @@ func TestK8sResolve(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			suiteCtx, teardownSuite := setupSuite(t, tt.args)
 			defer teardownSuite(t)
+
+			if tt.onChangeFn != nil {
+				suiteCtx.resolver.onChange(tt.onChangeFn)
+			}
 
 			err := tt.simulateFn(suiteCtx, tt.args)
 			assert.NoError(t, err)
@@ -241,9 +280,10 @@ func Test_newK8sResolver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout)
+			_, tb := getTelemetryAssets(t)
+			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, tb)
 			if tt.wantErr != nil {
-				require.Error(t, err, tt.wantErr)
+				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.wantNil, got == nil)

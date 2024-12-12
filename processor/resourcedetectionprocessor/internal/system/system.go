@@ -10,7 +10,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
@@ -22,23 +22,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 )
 
-var (
-	_ = featuregate.GlobalRegistry().MustRegister(
-		"processor.resourcedetection.hostCPUModelAndFamilyAsString",
-		featuregate.StageStable,
-		featuregate.WithRegisterDescription("Change type of host.cpu.model.id and host.cpu.model.family to string."),
-		featuregate.WithRegisterFromVersion("v0.89.0"),
-		featuregate.WithRegisterToVersion("v0.101.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/495"),
-	)
-	hostCPUSteppingAsStringID          = "processor.resourcedetection.hostCPUSteppingAsString"
-	hostCPUSteppingAsStringFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		hostCPUSteppingAsStringID,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
-		featuregate.WithRegisterFromVersion("v0.95.0"),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
-	)
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"processor.resourcedetection.hostCPUSteppingAsString",
+	featuregate.StageStable,
+	featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
+	featuregate.WithRegisterFromVersion("v0.95.0"),
+	featuregate.WithRegisterToVersion("v0.110.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
 )
 
 const (
@@ -130,9 +120,14 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
 	}
 
-	cpuInfo, err := cpu.Info()
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
+	var cpuInfo []cpu.InfoStat
+	if d.cfg.ResourceAttributes.HostCPUCacheL2Size.Enabled || d.cfg.ResourceAttributes.HostCPUFamily.Enabled ||
+		d.cfg.ResourceAttributes.HostCPUModelID.Enabled || d.cfg.ResourceAttributes.HostCPUVendorID.Enabled ||
+		d.cfg.ResourceAttributes.HostCPUModelName.Enabled || d.cfg.ResourceAttributes.HostCPUStepping.Enabled {
+		cpuInfo, err = d.provider.CPUInfo(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
+		}
 	}
 
 	for _, source := range d.cfg.HostnameSources {
@@ -210,15 +205,6 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) {
 	}
 
 	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
-	if hostCPUSteppingAsStringFeatureGate.IsEnabled() {
-		d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
-	} else {
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31136
-		d.logger.Info("This attribute will change from int to string. Switch now using the feature gate.",
-			zap.String("attribute", "host.cpu.stepping"),
-			zap.String("feature gate", hostCPUSteppingAsStringID),
-		)
-		d.rb.SetHostCPUSteppingAsInt(int64(cpuInfo.Stepping))
-	}
+	d.rb.SetHostCPUStepping(fmt.Sprintf("%d", cpuInfo.Stepping))
 	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
 }

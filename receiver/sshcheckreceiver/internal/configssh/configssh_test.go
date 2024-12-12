@@ -4,7 +4,7 @@
 package configssh // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -118,7 +118,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 			assert.EqualValues(t, client.ClientConfig.User, test.settings.Username)
 
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
-				assert.EqualValues(t, 1, len(client.ClientConfig.Auth))
+				assert.Len(t, client.ClientConfig.Auth, 1)
 			}
 		})
 	}
@@ -164,7 +164,7 @@ func Test_Client_Dial(t *testing.T) {
 				KeyFile:  keyfile,
 			},
 			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
-				return nil, fmt.Errorf("dial")
+				return nil, errors.New("dial")
 			},
 			shouldError: true,
 		},
@@ -192,7 +192,7 @@ func Test_Client_Dial(t *testing.T) {
 				assert.EqualValues(t, client.HostKeyCallback, ssh.InsecureIgnoreHostKey()) //#nosec G106
 			}
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
-				assert.EqualValues(t, 1, len(client.ClientConfig.Auth))
+				assert.Len(t, client.ClientConfig.Auth, 1)
 			}
 		})
 	}
@@ -237,7 +237,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 				KeyFile:  keyfile,
 			},
 			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
-				return nil, fmt.Errorf("dial")
+				return nil, errors.New("dial")
 			},
 			shouldError: true,
 		},

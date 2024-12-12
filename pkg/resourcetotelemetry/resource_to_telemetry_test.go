@@ -54,7 +54,6 @@ func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Histogram().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(5).Summary().DataPoints().At(0).Attributes().Len())
 	assert.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).ExponentialHistogram().DataPoints().At(0).Attributes().Len())
-
 }
 
 func BenchmarkJoinAttributes(b *testing.B) {
@@ -113,7 +112,6 @@ func BenchmarkJoinAttributes(b *testing.B) {
 			}
 		})
 	}
-
 }
 
 func initMetricAttributes(capacity int, idx int) pcommon.Map {

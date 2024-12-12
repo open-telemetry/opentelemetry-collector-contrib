@@ -21,8 +21,7 @@ type HostInfo interface {
 }
 
 // Cadvisor is a dummy struct for windows
-type Cadvisor struct {
-}
+type Cadvisor struct{}
 
 type Decorator interface {
 	Decorate(*stores.CIMetricImpl) *stores.CIMetricImpl

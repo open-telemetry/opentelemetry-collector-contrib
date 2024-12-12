@@ -65,7 +65,7 @@ func (ote *ocTracesDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateTraces(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (ome *ocMetricsDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

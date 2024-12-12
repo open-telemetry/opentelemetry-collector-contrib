@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v4/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -29,7 +29,7 @@ var allTCPStates = []string{
 	"TIME_WAIT",
 }
 
-func (s *scraper) recordNetworkConntrackMetrics() error {
+func (s *networkScraper) recordNetworkConntrackMetrics() error {
 	if !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.MetricsBuilderConfig.Metrics.SystemNetworkConntrackMax.Enabled {
 		return nil
 	}

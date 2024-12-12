@@ -1,10 +1,9 @@
 type: chrony
-scope_name: otelcol/chronyreceiver
 
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    beta: [metrics]
   distributions: [contrib]
   codeowners:
     active: [MovieStoreGuy, jamesmoessis]

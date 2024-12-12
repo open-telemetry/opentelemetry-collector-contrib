@@ -134,7 +134,7 @@ func TestNewFromFile(t *testing.T) {
 			fp, err := NewFromFile(temp, tc.fingerprintSize)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expectedLen, len(fp.firstBytes))
+			require.Len(t, fp.firstBytes, tc.expectedLen)
 		})
 	}
 }

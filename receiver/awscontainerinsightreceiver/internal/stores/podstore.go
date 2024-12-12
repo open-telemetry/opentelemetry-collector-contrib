@@ -249,7 +249,7 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 			p.addPodOwnersAndPodName(metric, &entry.pod, kubernetesBlob)
 			addLabels(&entry.pod, kubernetesBlob)
 		} else {
-			p.logger.Warn(fmt.Sprintf("no pod information is found in podstore for pod %s", podKey))
+			p.logger.Warn("no pod information is found in podstore for pod " + podKey)
 			return false
 		}
 	}
@@ -303,7 +303,7 @@ func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
 		pod := podList[i]
 		podKey := createPodKeyFromMetaData(&pod)
 		if podKey == "" {
-			p.logger.Warn(fmt.Sprintf("podKey is unavailable, refresh pod store for pod %s", pod.Name))
+			p.logger.Warn("podKey is unavailable, refresh pod store for pod " + pod.Name)
 			continue
 		}
 		// filter out terminated pods

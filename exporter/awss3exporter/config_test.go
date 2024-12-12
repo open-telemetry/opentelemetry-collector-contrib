@@ -32,17 +32,16 @@ func TestLoadConfig(t *testing.T) {
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 	encoding := component.MustNewIDWithName("foo", "bar")
-	assert.Equal(t, e,
-		&Config{
-			Encoding:              &encoding,
-			EncodingFileExtension: "baz",
-			S3Uploader: S3UploaderConfig{
-				Region:      "us-east-1",
-				S3Bucket:    "foo",
-				S3Partition: "minute",
-			},
-			MarshalerName: "otlp_json",
+	assert.Equal(t, &Config{
+		Encoding:              &encoding,
+		EncodingFileExtension: "baz",
+		S3Uploader: S3UploaderConfig{
+			Region:      "us-east-1",
+			S3Bucket:    "foo",
+			S3Partition: "minute",
 		},
+		MarshalerName: "otlp_json",
+	}, e,
 	)
 }
 
@@ -62,17 +61,16 @@ func TestConfig(t *testing.T) {
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
-	assert.Equal(t, e,
-		&Config{
-			S3Uploader: S3UploaderConfig{
-				Region:      "us-east-1",
-				S3Bucket:    "foo",
-				S3Prefix:    "bar",
-				S3Partition: "minute",
-				Endpoint:    "http://endpoint.com",
-			},
-			MarshalerName: "otlp_json",
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:      "us-east-1",
+			S3Bucket:    "foo",
+			S3Prefix:    "bar",
+			S3Partition: "minute",
+			Endpoint:    "http://endpoint.com",
 		},
+		MarshalerName: "otlp_json",
+	}, e,
 	)
 }
 
@@ -92,19 +90,18 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
-	assert.Equal(t, e,
-		&Config{
-			S3Uploader: S3UploaderConfig{
-				Region:           "us-east-1",
-				S3Bucket:         "foo",
-				S3Prefix:         "bar",
-				S3Partition:      "minute",
-				Endpoint:         "alternative-s3-system.example.com",
-				S3ForcePathStyle: true,
-				DisableSSL:       true,
-			},
-			MarshalerName: "otlp_json",
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:           "us-east-1",
+			S3Bucket:         "foo",
+			S3Prefix:         "bar",
+			S3Partition:      "minute",
+			Endpoint:         "alternative-s3-system.example.com",
+			S3ForcePathStyle: true,
+			DisableSSL:       true,
 		},
+		MarshalerName: "otlp_json",
+	}, e,
 	)
 }
 
@@ -205,30 +202,27 @@ func TestMarshallerName(t *testing.T) {
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
-	assert.Equal(t, e,
-		&Config{
-			S3Uploader: S3UploaderConfig{
-				Region:      "us-east-1",
-				S3Bucket:    "foo",
-				S3Partition: "minute",
-			},
-			MarshalerName: "sumo_ic",
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:      "us-east-1",
+			S3Bucket:    "foo",
+			S3Partition: "minute",
 		},
+		MarshalerName: "sumo_ic",
+	}, e,
 	)
 
 	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
 
-	assert.Equal(t, e,
-		&Config{
-			S3Uploader: S3UploaderConfig{
-				Region:      "us-east-1",
-				S3Bucket:    "bar",
-				S3Partition: "minute",
-			},
-			MarshalerName: "otlp_proto",
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:      "us-east-1",
+			S3Bucket:    "bar",
+			S3Partition: "minute",
 		},
+		MarshalerName: "otlp_proto",
+	}, e,
 	)
-
 }
 
 func TestCompressionName(t *testing.T) {
@@ -247,30 +241,27 @@ func TestCompressionName(t *testing.T) {
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
 
-	assert.Equal(t, e,
-		&Config{
-			S3Uploader: S3UploaderConfig{
-				Region:      "us-east-1",
-				S3Bucket:    "foo",
-				S3Partition: "minute",
-				Compression: "gzip",
-			},
-			MarshalerName: "otlp_json",
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:      "us-east-1",
+			S3Bucket:    "foo",
+			S3Partition: "minute",
+			Compression: "gzip",
 		},
+		MarshalerName: "otlp_json",
+	}, e,
 	)
 
 	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
 
-	assert.Equal(t, e,
-		&Config{
-			S3Uploader: S3UploaderConfig{
-				Region:      "us-east-1",
-				S3Bucket:    "bar",
-				S3Partition: "minute",
-				Compression: "none",
-			},
-			MarshalerName: "otlp_proto",
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:      "us-east-1",
+			S3Bucket:    "bar",
+			S3Partition: "minute",
+			Compression: "none",
 		},
+		MarshalerName: "otlp_proto",
+	}, e,
 	)
-
 }

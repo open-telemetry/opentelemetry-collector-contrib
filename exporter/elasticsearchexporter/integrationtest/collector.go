@@ -8,11 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/process"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
@@ -46,9 +47,12 @@ func createConfigYaml(
 
 	processorSection, processorList := createConfigSection(processors)
 	extensionSection, extensionList := createConfigSection(extensions)
+	exporters := []string{receiver.ProtocolName()}
 	debugVerbosity := "basic"
+	logLevel := "INFO"
 	if debug {
-		debugVerbosity = "detailed"
+		exporters = append(exporters, "debug")
+		logLevel = "DEBUG"
 	}
 
 	format := `
@@ -67,12 +71,16 @@ service:
   telemetry:
     metrics:
       address: 127.0.0.1:%d
+    logs:
+      level: %s
+      sampling:
+        enabled: false
   extensions: [%s]
   pipelines:
     %s:
       receivers: [%v]
       processors: [%s]
-      exporters: [%v]
+      exporters: [%s]
 `
 
 	return fmt.Sprintf(
@@ -83,11 +91,12 @@ service:
 		processorSection,
 		extensionSection,
 		testutil.GetAvailablePort(t),
+		logLevel,
 		extensionList,
 		pipelineType,
 		sender.ProtocolName(),
 		processorList,
-		receiver.ProtocolName(),
+		strings.Join(exporters, ","),
 	)
 }
 

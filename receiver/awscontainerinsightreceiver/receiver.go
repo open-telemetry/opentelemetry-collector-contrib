@@ -65,8 +65,8 @@ type awsContainerInsightReceiver struct {
 func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
-	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	r := &awsContainerInsightReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -420,7 +420,6 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	}
 
 	return errs
-
 }
 
 // collectData collects container stats from cAdvisor and k8s api server (if it is an elected leader)

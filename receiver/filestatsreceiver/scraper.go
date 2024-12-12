@@ -19,13 +19,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
-type scraper struct {
+type fsScraper struct {
 	include string
 	logger  *zap.Logger
 	mb      *metadata.MetricsBuilder
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *fsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	matches, err := doublestar.FilepathGlob(s.include)
 	if err != nil {
 		return pmetric.NewMetrics(), err
@@ -60,8 +60,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func newScraper(cfg *Config, settings receiver.Settings) *scraper {
-	return &scraper{
+func newScraper(cfg *Config, settings receiver.Settings) *fsScraper {
+	return &fsScraper{
 		include: cfg.Include,
 		logger:  settings.TelemetrySettings.Logger,
 		mb:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),

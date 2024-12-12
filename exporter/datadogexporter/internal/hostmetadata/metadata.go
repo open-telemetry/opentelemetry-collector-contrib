@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package metadata is responsible for collecting host metadata from different providers
+// Package hostmetadata is responsible for collecting host metadata from different providers
 // such as EC2, ECS, AWS, etc and pushing it to Datadog.
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 
@@ -77,7 +77,7 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 	hm.Processes = gohai.NewProcessesPayload(hm.Meta.Hostname, params.Logger)
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
-		ec2HostInfo := ec2.GetHostInfo(params.Logger)
+		ec2HostInfo := ec2.GetHostInfo(context.Background(), params.Logger)
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 	}

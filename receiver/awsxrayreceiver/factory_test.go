@@ -9,9 +9,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
@@ -26,7 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, metadata.Type, factory.Type())
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	// TODO review if test should succeed on Windows
 	if runtime.GOOS == "windows" {
 		t.Skip()
@@ -35,23 +35,23 @@ func TestCreateTracesReceiver(t *testing.T) {
 	t.Setenv(regionEnvName, mockRegion)
 
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(
+	_, err := factory.CreateTraces(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
-	assert.Nil(t, err, "trace receiver can be created")
+	assert.NoError(t, err, "trace receiver can be created")
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
+	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(),
 		factory.CreateDefaultConfig().(*Config),
 		consumertest.NewNop(),
 	)
-	assert.NotNil(t, err, "a trace receiver factory should not create a metric receiver")
-	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
+	assert.Error(t, err, "a trace receiver factory should not create a metric receiver")
+	assert.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }

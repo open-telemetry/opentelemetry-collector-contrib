@@ -83,11 +83,11 @@ func TestIsNode(t *testing.T) {
 }
 
 func TestIsInstance(t *testing.T) {
-	assert.Equal(t, true, IsInstance(TypeInstance))
-	assert.Equal(t, true, IsInstance(TypeInstanceNet))
-	assert.Equal(t, true, IsInstance(TypeInstanceFS))
-	assert.Equal(t, true, IsInstance(TypeInstanceDiskIO))
-	assert.Equal(t, false, IsInstance(TypePod))
+	assert.True(t, IsInstance(TypeInstance))
+	assert.True(t, IsInstance(TypeInstanceNet))
+	assert.True(t, IsInstance(TypeInstanceFS))
+	assert.True(t, IsInstance(TypeInstanceDiskIO))
+	assert.False(t, IsInstance(TypePod))
 }
 
 func TestIsContainer(t *testing.T) {
@@ -142,8 +142,8 @@ func convertToFloat64(value any) float64 {
 }
 
 func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string]any, tags map[string]string,
-	expectedUnits map[string]string) {
-
+	expectedUnits map[string]string,
+) {
 	rms := md.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
 
@@ -155,7 +155,7 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 	for key, val := range tags {
 		log.Printf("key=%v value=%v", key, val)
 		attr, ok := attributes.Get(key)
-		assert.Equal(t, true, ok)
+		assert.True(t, ok)
 		if key == Timestamp {
 			timeUnixNano, _ = strconv.ParseUint(val, 10, 64)
 			val = strconv.FormatUint(timeUnixNano/uint64(time.Millisecond), 10)
@@ -276,7 +276,6 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 	}
 	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
-
 }
 
 func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {

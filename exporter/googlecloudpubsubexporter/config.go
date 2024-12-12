@@ -16,9 +16,9 @@ var topicMatcher = regexp.MustCompile(`^projects/[a-z][a-z0-9\-]*/topics/`)
 
 type Config struct {
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	// Google Cloud Project ID where the Pubsub client will connect to
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
@@ -38,7 +38,7 @@ type Config struct {
 
 // WatermarkConfig customizes the behavior of the watermark
 type WatermarkConfig struct {
-	// Behavior of the watermark. Currently, only  of the message (none, earliest and current, current being the default)
+	// Behavior of the watermark. Currently, only of the message (none, earliest and current, current being the default)
 	// will set the timestamp on pubsub based on timestamps of the events inside the message
 	Behavior string `mapstructure:"behavior"`
 	// Indication on how much the timestamp can drift from the current time, the timestamp will be capped to the allowed

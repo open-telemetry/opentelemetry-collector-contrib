@@ -80,7 +80,7 @@ func TestHandlerHappyCase(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", strings.NewReader(`{"NextToken": null}`))
 	rec := httptest.NewRecorder()
 	handler(rec, req)
@@ -106,7 +106,7 @@ func TestHandlerIoReadSeekerCreationFailed(t *testing.T) {
 
 	expectedErr := errors.New("expected mockReadCloser error")
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", &mockReadCloser{
 			readErr: expectedErr,
 		})
@@ -134,7 +134,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
 	rec := httptest.NewRecorder()
 	handler(rec, req)
@@ -158,16 +158,13 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 	assert.NoError(t, err, "NewServer should succeed")
 
 	handler := srv.(*http.Server).Handler.ServeHTTP
-	req := httptest.NewRequest("POST",
+	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", strings.NewReader(`{}`))
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
-	for _, entry := range logs {
-		fmt.Print(entry.Message)
-	}
 	assert.Contains(t, lastEntry.Message, "Unable to sign request", "expected log message")
 	assert.Contains(t, lastEntry.Context[0].Interface.(error).Error(),
 		"NoCredentialProviders", "expected error")
@@ -195,7 +192,7 @@ func TestCantGetServiceEndpoint(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.Contains(t, err.Error(), "invalid region")
+	assert.ErrorContains(t, err, "invalid region")
 }
 
 func TestAWSEndpointInvalid(t *testing.T) {
@@ -210,7 +207,7 @@ func TestAWSEndpointInvalid(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.Contains(t, err.Error(), "unable to parse AWS service endpoint")
+	assert.ErrorContains(t, err, "unable to parse AWS service endpoint")
 }
 
 func TestCanCreateTransport(t *testing.T) {
@@ -225,7 +222,7 @@ func TestCanCreateTransport(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.Contains(t, err.Error(), "invalid control character in URL")
+	assert.ErrorContains(t, err, "failed to parse proxy URL")
 }
 
 func TestGetServiceEndpointInvalidAWSConfig(t *testing.T) {

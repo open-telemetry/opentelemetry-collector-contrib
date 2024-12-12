@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper/internal/metadata"
@@ -21,8 +21,7 @@ const (
 )
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -36,10 +35,9 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
 	config internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 	s := newMemoryScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraper(
-		TypeStr, s.scrape, scraperhelper.WithStart(s.start))
+	return scraper.NewMetrics(s.scrape, scraper.WithStart(s.start))
 }

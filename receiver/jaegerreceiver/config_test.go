@@ -69,19 +69,19 @@ func TestLoadConfig(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
-							Endpoint:  "0.0.0.0:14250",
+							Endpoint:  "localhost:14250",
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					ThriftHTTP: &confighttp.ServerConfig{
-						Endpoint: "0.0.0.0:14268",
+						Endpoint: "localhost:14268",
 					},
 					ThriftCompact: &ProtocolUDP{
-						Endpoint:        "0.0.0.0:6831",
+						Endpoint:        "localhost:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 					ThriftBinary: &ProtocolUDP{
-						Endpoint:        "0.0.0.0:6832",
+						Endpoint:        "localhost:6832",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
@@ -98,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					ThriftCompact: &ProtocolUDP{
-						Endpoint:        "0.0.0.0:6831",
+						Endpoint:        "localhost:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
@@ -152,12 +152,12 @@ func TestFailedLoadConfig(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "typo_default_proto_config").String())
 	require.NoError(t, err)
 	err = sub.Unmarshal(cfg)
-	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
+	assert.ErrorContains(t, err, "'protocols' has invalid keys: thrift_htttp")
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "bad_proto_config").String())
 	require.NoError(t, err)
 	err = sub.Unmarshal(cfg)
-	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
+	assert.ErrorContains(t, err, "'protocols' has invalid keys: thrift_htttp")
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "empty").String())
 	require.NoError(t, err)
@@ -236,7 +236,6 @@ func TestInvalidConfig(t *testing.T) {
 
 			err := component.ValidateConfig(cfg)
 			assert.Error(t, err, tC.err)
-
 		})
 	}
 }

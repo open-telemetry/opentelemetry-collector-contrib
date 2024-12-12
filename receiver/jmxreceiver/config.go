@@ -80,7 +80,7 @@ type otlpExporterConfig struct {
 	// The OTLP Receiver endpoint to send metrics to ("0.0.0.0:<random open port>" by default).
 	Endpoint string `mapstructure:"endpoint"`
 	// The OTLP exporter timeout (5 seconds by default).  Will be converted to milliseconds.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	// The headers to include in OTLP metric submission requests.
 	Headers map[string]string `mapstructure:"headers"`
 }
@@ -113,7 +113,7 @@ func (c *Config) parseProperties(logger *zap.Logger) []string {
 		logLevel = getZapLoggerLevelEquivalent(logger)
 	}
 
-	parsed = append(parsed, fmt.Sprintf("-Dorg.slf4j.simpleLogger.defaultLogLevel=%s", logLevel))
+	parsed = append(parsed, "-Dorg.slf4j.simpleLogger.defaultLogLevel="+logLevel)
 	// Sorted for testing and reproducibility
 	sort.Strings(parsed)
 	return parsed
@@ -208,9 +208,13 @@ func (c *Config) validateJar(supportedJarDetails map[string]supportedJar, jar st
 	return nil
 }
 
-var validLogLevels = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
-var validTargetSystems = map[string]struct{}{"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
-	"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {}}
+var (
+	validLogLevels     = map[string]struct{}{"trace": {}, "debug": {}, "info": {}, "warn": {}, "error": {}, "off": {}}
+	validTargetSystems = map[string]struct{}{
+		"activemq": {}, "cassandra": {}, "hbase": {}, "hadoop": {},
+		"jetty": {}, "jvm": {}, "kafka": {}, "kafka-consumer": {}, "kafka-producer": {}, "solr": {}, "tomcat": {}, "wildfly": {},
+	}
+)
 var AdditionalTargetSystems = "n/a"
 
 // Separated into two functions for tests
@@ -259,8 +263,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("`interval` must be positive: %vms", c.CollectionInterval.Milliseconds())
 	}
 
-	if c.OTLPExporterConfig.Timeout < 0 {
-		return fmt.Errorf("`otlp.timeout` must be positive: %vms", c.OTLPExporterConfig.Timeout.Milliseconds())
+	if c.OTLPExporterConfig.TimeoutSettings.Timeout < 0 {
+		return fmt.Errorf("`otlp.timeout` must be positive: %vms", c.OTLPExporterConfig.TimeoutSettings.Timeout.Milliseconds())
 	}
 
 	if len(c.LogLevel) > 0 {

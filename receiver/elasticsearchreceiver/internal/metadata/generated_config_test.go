@@ -45,6 +45,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ElasticsearchIndexCacheSize:                               MetricConfig{Enabled: true},
 					ElasticsearchIndexDocuments:                               MetricConfig{Enabled: true},
 					ElasticsearchIndexOperationsCompleted:                     MetricConfig{Enabled: true},
+					ElasticsearchIndexOperationsMergeCurrent:                  MetricConfig{Enabled: true},
 					ElasticsearchIndexOperationsMergeDocsCount:                MetricConfig{Enabled: true},
 					ElasticsearchIndexOperationsMergeSize:                     MetricConfig{Enabled: true},
 					ElasticsearchIndexOperationsTime:                          MetricConfig{Enabled: true},
@@ -149,6 +150,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ElasticsearchIndexCacheSize:                               MetricConfig{Enabled: false},
 					ElasticsearchIndexDocuments:                               MetricConfig{Enabled: false},
 					ElasticsearchIndexOperationsCompleted:                     MetricConfig{Enabled: false},
+					ElasticsearchIndexOperationsMergeCurrent:                  MetricConfig{Enabled: false},
 					ElasticsearchIndexOperationsMergeDocsCount:                MetricConfig{Enabled: false},
 					ElasticsearchIndexOperationsMergeSize:                     MetricConfig{Enabled: false},
 					ElasticsearchIndexOperationsTime:                          MetricConfig{Enabled: false},
@@ -233,9 +235,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -281,9 +282,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

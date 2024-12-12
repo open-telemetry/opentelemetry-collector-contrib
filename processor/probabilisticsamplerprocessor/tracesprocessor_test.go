@@ -49,7 +49,7 @@ func TestEmptyHashFunction(t *testing.T) {
 	require.InDelta(t, 0.568, float64(hashed)/float64(numHashBuckets), 0.001)
 }
 
-func TestNewTracesProcessor(t *testing.T) {
+func TestNewTraces(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Traces
@@ -222,7 +222,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 				assert.Equal(t, tt.resourceSpanPerTrace*tt.numTracesPerBatch, sink.SpanCount())
 				sink.Reset()
 			}
-
 		})
 	}
 }
@@ -246,7 +245,6 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 		{100, false, true},
 	} {
 		t.Run(fmt.Sprint(tt.pct, "_", tt.failClosed), func(t *testing.T) {
-
 			ctx := context.Background()
 			traces := ptrace.NewTraces()
 			span := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -276,20 +274,20 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 
 			sampledData := sink.AllTraces()
 			if tt.sampled {
-				require.Equal(t, 1, len(sampledData))
+				require.Len(t, sampledData, 1)
 				assert.Equal(t, 1, sink.SpanCount())
 			} else {
-				require.Equal(t, 0, len(sampledData))
+				require.Empty(t, sampledData)
 				assert.Equal(t, 0, sink.SpanCount())
 			}
 
 			if tt.pct != 0 {
 				// pct==0 bypasses the randomness check
-				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "traces sampler")
 				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
 			} else {
-				require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
+				require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 			}
 		})
 	}
@@ -388,7 +386,6 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, mode := range AllModes {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 
 				cfg := &Config{}
@@ -406,10 +403,10 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 
 				sampledData := sink.AllTraces()
 				if tt.sampled {
-					require.Equal(t, 1, len(sampledData))
+					require.Len(t, sampledData, 1)
 					assert.Equal(t, 1, sink.SpanCount())
 				} else {
-					require.Equal(t, 0, len(sampledData))
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
 				}
 			})
@@ -504,11 +501,11 @@ func Test_parseSpanSamplingPriority(t *testing.T) {
 func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
-	var defaultTID = mustParseTID("fefefefefefefefefe80000000000000")
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 
 	// improbableTraceID will sample at all supported probabilities.  In
 	// hex, the leading 18 digits do not matter, the trailing 14 are all `f`.
-	var improbableTraceID = mustParseTID("111111111111111111ffffffffffffff")
+	improbableTraceID := mustParseTID("111111111111111111ffffffffffffff")
 
 	sid := idutils.UInt64ToSpanID(0xfefefefe)
 	tests := []struct {
@@ -846,7 +843,6 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 	for _, tt := range tests {
 		for _, mode := range []SamplerMode{Equalizing, Proportional} {
 			t.Run(fmt.Sprint(mode, "_", tt.name), func(t *testing.T) {
-
 				sink := new(consumertest.TracesSink)
 				cfg := &Config{}
 				if tt.cfg != nil {
@@ -882,7 +878,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					expectSampled, expectCount, expectTS = tt.sf(mode)
 				}
 				if expectSampled {
-					require.Equal(t, 1, len(sampledData))
+					require.Len(t, sampledData, 1)
 					assert.Equal(t, 1, sink.SpanCount())
 					got := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 					gotTs, err := sampling.NewW3CTraceState(got.TraceState().AsRaw())
@@ -899,15 +895,15 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					}
 					require.Equal(t, expectTS, got.TraceState().AsRaw())
 				} else {
-					require.Equal(t, 0, len(sampledData))
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
 					require.Equal(t, "", expectTS)
 				}
 
 				if len(tt.log) == 0 {
-					require.Equal(t, 0, len(observed.All()), "should not have logs: %v", observed.All())
+					require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				} else {
-					require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 					require.Contains(t, observed.All()[0].Message, "traces sampler")
 					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
 				}
@@ -1013,7 +1009,6 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 				expectMessage := ""
 				if tt.sf != nil {
 					expectMessage = tt.sf(mode)
-
 				}
 
 				tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
@@ -1026,10 +1021,10 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 
 				sampledData := sink.AllTraces()
 
-				require.Equal(t, 0, len(sampledData))
+				require.Empty(t, sampledData)
 				assert.Equal(t, 0, sink.SpanCount())
 
-				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				if observed.All()[0].Message == "trace sampler" {
 					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), expectMessage)
 				} else {
@@ -1254,7 +1249,7 @@ func TestHashingFunction(t *testing.T) {
 		sampled bool
 	}
 
-	var expect50PctData = []expect50PctHashed{
+	expect50PctData := []expect50PctHashed{
 		{653, "474a03c76d75951a4b4c537ced8f1122", true},
 		{563, "53a518291e91307e43cd8467bb06f986", true},
 		{142, "a56a02f843b9bc6ee0b13889249e90e6", true},

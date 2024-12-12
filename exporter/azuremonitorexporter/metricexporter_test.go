@@ -35,79 +35,79 @@ func TestDoubleGaugeEnvelopes(t *testing.T) {
 	gaugeMetric := getDoubleTestGaugeMetric()
 	dataPoint := getDataPoint(t, gaugeMetric)
 
-	assert.Equal(t, dataPoint.Name, "Gauge")
-	assert.Equal(t, dataPoint.Value, float64(1))
-	assert.Equal(t, dataPoint.Count, 1)
-	assert.Equal(t, dataPoint.Kind, contracts.Measurement)
+	assert.Equal(t, "Gauge", dataPoint.Name)
+	assert.Equal(t, float64(1), dataPoint.Value)
+	assert.Equal(t, 1, dataPoint.Count)
+	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
 
 func TestIntGaugeEnvelopes(t *testing.T) {
 	gaugeMetric := getIntTestGaugeMetric()
 	dataPoint := getDataPoint(t, gaugeMetric)
 
-	assert.Equal(t, dataPoint.Name, "Gauge")
-	assert.Equal(t, dataPoint.Value, float64(1))
-	assert.Equal(t, dataPoint.Count, 1)
-	assert.Equal(t, dataPoint.Kind, contracts.Measurement)
+	assert.Equal(t, "Gauge", dataPoint.Name)
+	assert.Equal(t, float64(1), dataPoint.Value)
+	assert.Equal(t, 1, dataPoint.Count)
+	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
 
 func TestDoubleSumEnvelopes(t *testing.T) {
 	sumMetric := getDoubleTestSumMetric()
 	dataPoint := getDataPoint(t, sumMetric)
 
-	assert.Equal(t, dataPoint.Name, "Sum")
-	assert.Equal(t, dataPoint.Value, float64(2))
-	assert.Equal(t, dataPoint.Count, 1)
-	assert.Equal(t, dataPoint.Kind, contracts.Measurement)
+	assert.Equal(t, "Sum", dataPoint.Name)
+	assert.Equal(t, float64(2), dataPoint.Value)
+	assert.Equal(t, 1, dataPoint.Count)
+	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
 
 func TestIntSumEnvelopes(t *testing.T) {
 	sumMetric := getIntTestSumMetric()
 	dataPoint := getDataPoint(t, sumMetric)
 
-	assert.Equal(t, dataPoint.Name, "Sum")
-	assert.Equal(t, dataPoint.Value, float64(2))
-	assert.Equal(t, dataPoint.Count, 1)
-	assert.Equal(t, dataPoint.Kind, contracts.Measurement)
+	assert.Equal(t, "Sum", dataPoint.Name)
+	assert.Equal(t, float64(2), dataPoint.Value)
+	assert.Equal(t, 1, dataPoint.Count)
+	assert.Equal(t, contracts.Measurement, dataPoint.Kind)
 }
 
 func TestHistogramEnvelopes(t *testing.T) {
 	histogramMetric := getTestHistogramMetric()
 	dataPoint := getDataPoint(t, histogramMetric)
 
-	assert.Equal(t, dataPoint.Name, "Histogram")
-	assert.Equal(t, dataPoint.Value, float64(3))
-	assert.Equal(t, dataPoint.Count, 3)
-	assert.Equal(t, dataPoint.Min, float64(0))
-	assert.Equal(t, dataPoint.Max, float64(2))
-	assert.Equal(t, dataPoint.Kind, contracts.Aggregation)
+	assert.Equal(t, "Histogram", dataPoint.Name)
+	assert.Equal(t, float64(3), dataPoint.Value)
+	assert.Equal(t, 3, dataPoint.Count)
+	assert.Equal(t, float64(0), dataPoint.Min)
+	assert.Equal(t, float64(2), dataPoint.Max)
+	assert.Equal(t, contracts.Aggregation, dataPoint.Kind)
 }
 
 func TestExponentialHistogramEnvelopes(t *testing.T) {
 	exponentialHistogramMetric := getTestExponentialHistogramMetric()
 	dataPoint := getDataPoint(t, exponentialHistogramMetric)
 
-	assert.Equal(t, dataPoint.Name, "ExponentialHistogram")
-	assert.Equal(t, dataPoint.Value, float64(4))
-	assert.Equal(t, dataPoint.Count, 4)
-	assert.Equal(t, dataPoint.Min, float64(1))
-	assert.Equal(t, dataPoint.Max, float64(3))
-	assert.Equal(t, dataPoint.Kind, contracts.Aggregation)
+	assert.Equal(t, "ExponentialHistogram", dataPoint.Name)
+	assert.Equal(t, float64(4), dataPoint.Value)
+	assert.Equal(t, 4, dataPoint.Count)
+	assert.Equal(t, float64(1), dataPoint.Min)
+	assert.Equal(t, float64(3), dataPoint.Max)
+	assert.Equal(t, contracts.Aggregation, dataPoint.Kind)
 }
 
 func TestSummaryEnvelopes(t *testing.T) {
 	summaryMetric := getTestSummaryMetric()
 	dataPoint := getDataPoint(t, summaryMetric)
 
-	assert.Equal(t, dataPoint.Name, "Summary")
-	assert.Equal(t, dataPoint.Value, float64(5))
-	assert.Equal(t, dataPoint.Count, 5)
-	assert.Equal(t, dataPoint.Kind, contracts.Aggregation)
+	assert.Equal(t, "Summary", dataPoint.Name)
+	assert.Equal(t, float64(5), dataPoint.Value)
+	assert.Equal(t, 5, dataPoint.Count)
+	assert.Equal(t, contracts.Aggregation, dataPoint.Kind)
 }
 
 func getDataPoint(t testing.TB, metric pmetric.Metric) *contracts.DataPoint {
 	var envelopes []*contracts.Envelope = getMetricPacker().MetricToEnvelopes(metric, getResource(), getScope())
-	require.Equal(t, len(envelopes), 1)
+	require.Len(t, envelopes, 1)
 	envelope := envelopes[0]
 	require.NotNil(t, envelope)
 
@@ -117,13 +117,13 @@ func getDataPoint(t testing.TB, metric pmetric.Metric) *contracts.DataPoint {
 
 	require.NotNil(t, envelope.Data)
 	envelopeData := envelope.Data.(*contracts.Data)
-	assert.Equal(t, envelopeData.BaseType, "MetricData")
+	assert.Equal(t, "MetricData", envelopeData.BaseType)
 
 	require.NotNil(t, envelopeData.BaseData)
 
 	metricData := envelopeData.BaseData.(*contracts.MetricData)
 
-	require.Equal(t, len(metricData.Metrics), 1)
+	require.Len(t, metricData.Metrics, 1)
 
 	dataPoint := metricData.Metrics[0]
 	require.NotNil(t, dataPoint)

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -58,7 +58,7 @@ func TestChronyScraper(t *testing.T) {
 				rMetrics := metrics.ResourceMetrics().AppendEmpty()
 
 				metric := rMetrics.ScopeMetrics().AppendEmpty()
-				metric.Scope().SetName("otelcol/chronyreceiver")
+				metric.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver")
 				metric.Scope().SetVersion("latest")
 
 				m := metric.Metrics().AppendEmpty()
@@ -106,7 +106,7 @@ func TestChronyScraper(t *testing.T) {
 
 	// Clock allows for us to pin the time to
 	// simplify checking the metrics
-	clck := clock.NewMock(time.Unix(100, 0))
+	clck := clockwork.NewFakeClockAt(time.Unix(100, 0))
 
 	for _, tc := range tests {
 		t.Run(tc.scenario, func(t *testing.T) {
@@ -114,7 +114,7 @@ func TestChronyScraper(t *testing.T) {
 
 			chronym.On("GetTrackingData").Return(tc.mockTracking, tc.mockErr)
 
-			ctx := clock.Context(context.Background(), clck)
+			ctx := clockwork.AddToContext(context.Background(), clck)
 			scraper := newScraper(ctx, tc.conf, receivertest.NewNopSettings())
 			scraper.client = chronym
 

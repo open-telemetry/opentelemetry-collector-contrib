@@ -37,6 +37,8 @@ func TestLoadConfig(t *testing.T) {
 			Project:      "my-project",
 			Scopes:       []string{"https://www.something.com/hello", "https://www.something.com/world"},
 			QuotaProject: "other-project",
+			TokenType:    "access_token",
+			Audience:     "my-audience",
 		},
 	}, cfg)
 }

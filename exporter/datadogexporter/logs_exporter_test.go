@@ -12,14 +12,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -212,6 +213,8 @@ func TestLogsExporter(t *testing.T) {
 			},
 		},
 	}
+	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
+	assert.NoError(t, featuregateErr)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			server := testutil.DatadogLogServerMock()
@@ -227,17 +230,22 @@ func TestLogsExporter(t *testing.T) {
 						Endpoint: server.URL,
 					},
 				},
+				HostMetadata: HostMetadataConfig{
+					ReporterPeriod: 30 * time.Minute,
+				},
 			}
 
 			params := exportertest.NewNopSettings()
 			f := NewFactory()
 			ctx := context.Background()
-			exp, err := f.CreateLogsExporter(ctx, params, cfg)
+			exp, err := f.CreateLogs(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
 			assert.Equal(t, tt.want, server.LogsData)
 		})
 	}
+	featuregateErr = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
+	assert.NoError(t, featuregateErr)
 }
 
 func TestLogsAgentExporter(t *testing.T) {
@@ -291,6 +299,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("attr", "hello")
 					ldd.Attributes().PutStr("service.name", "service")
+					ldd.Attributes().PutStr("host.name", "test-host")
 					return lrr
 				}(),
 				retry: false,
@@ -314,6 +323,8 @@ func TestLogsAgentExporter(t *testing.T) {
 						"attr":                 "hello",
 						"service":              "service",
 						"service.name":         "service",
+						"host.name":            "test-host",
+						"hostname":             "test-host",
 					},
 					"ddsource": "otlp_log_ingestion",
 					"ddtags":   "otel_source:datadog_exporter",
@@ -496,9 +507,42 @@ func TestLogsAgentExporter(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "new-env-convention",
+			args: args{
+				ld: func() plog.Logs {
+					lrr := testdata.GenerateLogsOneLogRecord()
+					lrr.ResourceLogs().At(0).Resource().Attributes().PutStr(conventions127.AttributeDeploymentEnvironmentName, "new_env")
+					return lrr
+				}(),
+				retry: false,
+			},
+			want: testutil.JSONLogs{
+				{
+					"message": testutil.JSONLog{
+						"@timestamp":                  testdata.TestLogTime.Format(timeFormatString),
+						"app":                         "server",
+						"dd.span_id":                  fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
+						"dd.trace_id":                 fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
+						"deployment.environment.name": "new_env",
+						"instance_num":                "1",
+						"message":                     ld.Body().AsString(),
+						"otel.severity_number":        "9",
+						"otel.severity_text":          "Info",
+						"otel.span_id":                traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
+						"otel.timestamp":              fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.trace_id":               traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
+						"resource-attr":               "resource-attr-val-1",
+						"status":                      "Info",
+					},
+					"ddsource": "otlp_log_ingestion",
+					"ddtags":   "env:new_env,otel_source:datadog_exporter",
+					"service":  "",
+					"status":   "Info",
+				},
+			},
+		},
 	}
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
-	assert.NoError(t, err)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doneChannel := make(chan bool)
@@ -554,11 +598,14 @@ func TestLogsAgentExporter(t *testing.T) {
 					CompressionLevel: 6,
 					BatchWait:        1,
 				},
+				HostMetadata: HostMetadataConfig{
+					ReporterPeriod: 30 * time.Minute,
+				},
 			}
 			params := exportertest.NewNopSettings()
 			f := NewFactory()
 			ctx := context.Background()
-			exp, err := f.CreateLogsExporter(ctx, params, cfg)
+			exp, err := f.CreateLogs(ctx, params, cfg)
 			require.NoError(t, err)
 			require.NoError(t, exp.ConsumeLogs(ctx, tt.args.ld))
 

@@ -6,6 +6,7 @@ package awsxray
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -501,7 +502,7 @@ var rawExpectedSegmentForInstrumentedServer = Segment{
 	EndTime:   aws.Float64(1596648396.6401389),
 	HTTP: &HTTPData{
 		Request: &RequestData{
-			Method:        String("GET"),
+			Method:        String(http.MethodGet),
 			URL:           String("http://localhost:8000/"),
 			ClientIP:      String("127.0.0.1"),
 			UserAgent:     String("Go-http-client/1.1"),
@@ -598,7 +599,6 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 						ExceptionID: String("abcdefghijklmnop"),
 					},
 				}, actualSeg, testCase+": unmarshalled segment is different from the expected")
-
 			},
 		},
 		{
@@ -627,9 +627,9 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 
 	for _, tc := range tests {
 		content, err := os.ReadFile(tc.samplePath)
-		assert.NoError(t, err, fmt.Sprintf("[%s] can not read raw segment", tc.testCase))
+		assert.NoErrorf(t, err, "[%s] can not read raw segment", tc.testCase)
 
-		assert.True(t, len(content) > 0, fmt.Sprintf("[%s] content length is 0", tc.testCase))
+		assert.NotEmptyf(t, content, "[%s] content length is 0", tc.testCase)
 
 		var actualSeg Segment
 		err = json.Unmarshal(content, &actualSeg)

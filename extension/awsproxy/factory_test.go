@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -28,7 +29,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "0.0.0.0:2000",
+				Endpoint: "localhost:2000",
 			},
 		},
 	}, cfg)
@@ -36,7 +37,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		// Verify a signature was added, indicating the reverse proxy is doing its job.
@@ -62,14 +63,17 @@ func TestFactory_CreateExtension(t *testing.T) {
 
 	ctx := context.Background()
 	cs := extensiontest.NewNopSettings()
-	cs.ReportStatus = func(event *component.StatusEvent) {
-		assert.NoError(t, event.Err())
-	}
 	ext, err := createExtension(ctx, cs, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 
-	err = ext.Start(ctx, componenttest.NewNopHost())
+	host := &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			assert.NoError(t, event.Err())
+		},
+	}
+
+	err = ext.Start(ctx, host)
 	assert.NoError(t, err)
 
 	var resp *http.Response
@@ -88,4 +92,18 @@ func TestFactory_CreateExtension(t *testing.T) {
 
 	err = ext.Shutdown(ctx)
 	assert.NoError(t, err)
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

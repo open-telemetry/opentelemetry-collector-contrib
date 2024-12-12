@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -22,11 +24,17 @@ type componentTestTelemetry struct {
 }
 
 func (tt *componentTestTelemetry) NewSettings() exporter.Settings {
-	settings := exportertest.NewNopSettings()
-	settings.MeterProvider = tt.meterProvider
-	settings.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
+	set := exportertest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("prometheusremotewrite"))
+	set.TelemetrySettings = tt.newTelemetrySettings()
+	return set
+}
 
-	return settings
+func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = tt.meterProvider
+	set.MetricsLevel = configtelemetry.LevelDetailed
+	return set
 }
 
 func setupTestTelemetry() componentTestTelemetry {

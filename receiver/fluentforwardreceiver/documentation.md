@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### fluent_closed_connections
+### otelcol_fluent_closed_connections
 
 Number of connections closed to the fluentforward receiver
 
@@ -14,7 +14,7 @@ Number of connections closed to the fluentforward receiver
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### fluent_events_parsed
+### otelcol_fluent_events_parsed
 
 Number of Fluent events parsed successfully
 
@@ -22,7 +22,7 @@ Number of Fluent events parsed successfully
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### fluent_opened_connections
+### otelcol_fluent_opened_connections
 
 Number of connections opened to the fluentforward receiver
 
@@ -30,7 +30,7 @@ Number of connections opened to the fluentforward receiver
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### fluent_parse_failures
+### otelcol_fluent_parse_failures
 
 Number of times Fluent messages failed to be decoded
 
@@ -38,7 +38,7 @@ Number of times Fluent messages failed to be decoded
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### fluent_records_generated
+### otelcol_fluent_records_generated
 
 Number of log records generated from Fluent forward input
 

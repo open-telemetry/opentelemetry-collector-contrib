@@ -7,10 +7,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/load"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/load"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -32,7 +32,7 @@ var metricsLength = func() int {
 }()
 
 // scraper for Processes Metrics
-type scraper struct {
+type processesScraper struct {
 	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
@@ -54,8 +54,8 @@ type processesMetadata struct {
 }
 
 // newProcessesScraper creates a set of Processes related metrics
-func newProcessesScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
-	return &scraper{
+func newProcessesScraper(_ context.Context, settings receiver.Settings, cfg *Config) *processesScraper {
+	return &processesScraper{
 		settings:     settings,
 		config:       cfg,
 		getMiscStats: load.MiscWithContext,
@@ -72,7 +72,7 @@ func newProcessesScraper(_ context.Context, settings receiver.Settings, cfg *Con
 	}
 }
 
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
+func (s *processesScraper) start(ctx context.Context, _ component.Host) error {
 	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
@@ -83,7 +83,7 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *processesScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	md := pmetric.NewMetrics()

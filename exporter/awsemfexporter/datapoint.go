@@ -491,7 +491,6 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, _ string, detai
 			quantile := values.At(i)
 			cLabels["quantile"] = strconv.FormatFloat(quantile.Quantile(), 'g', -1, 64)
 			datapoints = append(datapoints, dataPoint{name: dps.metricName, value: quantile.Value(), labels: cLabels, timestampMs: timestampMs})
-
 		}
 	} else {
 		metricVal := &cWMetricStats{Count: count, Sum: sum}

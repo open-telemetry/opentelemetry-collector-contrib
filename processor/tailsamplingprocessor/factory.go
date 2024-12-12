@@ -38,5 +38,5 @@ func createTracesProcessor(
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
 	tCfg := cfg.(*Config)
-	return newTracesProcessor(ctx, params.TelemetrySettings, nextConsumer, *tCfg)
+	return newTracesProcessor(ctx, params, nextConsumer, *tCfg)
 }

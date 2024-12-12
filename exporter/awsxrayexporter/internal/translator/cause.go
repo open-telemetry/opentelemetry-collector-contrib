@@ -14,21 +14,24 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 // ExceptionEventName the name of the exception event.
 // TODO: Remove this when collector defines this semantic convention.
-const ExceptionEventName = "exception"
-const AwsIndividualHTTPEventName = "HTTP request failure"
-const AwsIndividualHTTPErrorEventType = "aws.http.error.event"
-const AwsIndividualHTTPErrorCodeAttr = "http.response.status_code"
-const AwsIndividualHTTPErrorMsgAttr = "aws.http.error_message"
+const (
+	ExceptionEventName              = "exception"
+	AwsIndividualHTTPEventName      = "HTTP request failure"
+	AwsIndividualHTTPErrorEventType = "aws.http.error.event"
+	AwsIndividualHTTPErrorCodeAttr  = "http.response.status_code"
+	AwsIndividualHTTPErrorMsgAttr   = "aws.http.error_message"
+)
 
 func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
-	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
+	filtered map[string]pcommon.Value, cause *awsxray.CauseData,
+) {
 	status := span.Status()
 
 	filtered = attributes
@@ -112,7 +115,9 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		cause = &awsxray.CauseData{
 			Type: awsxray.CauseTypeObject,
 			CauseObject: awsxray.CauseObject{
-				Exceptions: exceptions}}
+				Exceptions: exceptions,
+			},
+		}
 
 	case status.Code() != ptrace.StatusCodeError:
 		cause = nil

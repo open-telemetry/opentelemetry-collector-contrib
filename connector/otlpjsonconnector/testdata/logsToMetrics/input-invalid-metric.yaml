@@ -1,0 +1,11 @@
+# Error: ReadInt64: strconv.ParseInt: parsing "notAndInt123": invalid syntax, error found in #10 byte
+resourceLogs:
+  - resource:
+    scopeLogs:
+      - logRecords:
+          - attributes:
+            body:
+              stringValue: '{"resourceMetrics":[{"resource":{"attributes":[{"key":"resource-attr","value":{"stringValue":"resource-attr-val-1"}}]},"scopeMetrics":[{"scope":{},"metrics":[{"name":"gauge-int","unit":"1","gauge":{"dataPoints":[{"attributes":[{"key":"label-1","value":{"stringValue":"label-value-1"}}],"startTimeUnixNano":"1581452772000000321","timeUnixNano":"1581452773000000789","asInt":"notAndInt123"},{"attributes":[{"key":"label-2","value":{"stringValue":"label-value-2"}}],"startTimeUnixNano":"1581452772000000321","timeUnixNano":"1581452773000000789","asInt":"456"}]}}]}]}]}'
+            spanId: ""
+            traceId: ""
+        scope: {}

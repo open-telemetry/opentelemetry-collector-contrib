@@ -180,7 +180,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 			require.NotNil(t, testCase.metadataStore)
 			require.NotNil(t, testCase.resource)
 
-			observedLogger, logs := observer.New(zapcore.WarnLevel)
+			observedLogger, logs := observer.New(zapcore.DebugLevel)
 			logger := zap.New(observedLogger)
 
 			name := fmt.Sprintf("(%s) - %s", kind, tt.name)

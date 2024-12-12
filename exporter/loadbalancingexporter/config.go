@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
@@ -17,10 +19,23 @@ const (
 	svcRouting
 	metricNameRouting
 	resourceRouting
+	streamIDRouting
+)
+
+const (
+	svcRoutingStr        = "service"
+	traceIDRoutingStr    = "traceID"
+	metricNameRoutingStr = "metric"
+	resourceRoutingStr   = "resource"
+	streamIDRoutingStr   = "streamID"
 )
 
 // Config defines configuration for the exporter.
 type Config struct {
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+
 	Protocol   Protocol         `mapstructure:"protocol"`
 	Resolver   ResolverSettings `mapstructure:"resolver"`
 	RoutingKey string           `mapstructure:"routing_key"`

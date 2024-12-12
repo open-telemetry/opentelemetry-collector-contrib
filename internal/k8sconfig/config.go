@@ -27,7 +27,7 @@ import (
 
 func init() {
 	k8sruntime.ReallyCrash = false
-	k8sruntime.PanicHandlers = []func(any){}
+	k8sruntime.PanicHandlers = []func(context.Context, any){}
 }
 
 // AuthType describes the type of authentication to use for the K8s API
@@ -107,7 +107,6 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 		}
 		authConf, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			loadingRules, configOverrides).ClientConfig()
-
 		if err != nil {
 			return nil, fmt.Errorf("error connecting to k8s with auth_type=%s: %w", AuthTypeKubeConfig, err)
 		}

@@ -8,7 +8,8 @@
 | ---- | ----------- | ------ | ------- |
 | container.id | Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count. | Any Str | false |
 | container.image.name | Name of the image the container was built on. Requires container.id or k8s.container.name. | Any Str | true |
-| container.image.tag | Container image tag. Requires container.id or k8s.container.name. | Any Str | true |
+| container.image.repo_digests | Repo digests of the container image as provided by the container runtime. | Any Slice | false |
+| container.image.tag | Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. | Any Str | true |
 | k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false |
 | k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false |
 | k8s.cronjob.name | The name of the CronJob. | Any Str | false |
@@ -22,6 +23,7 @@
 | k8s.node.name | The name of the Node. | Any Str | true |
 | k8s.node.uid | The UID of the Node. | Any Str | false |
 | k8s.pod.hostname | The hostname of the Pod. | Any Str | false |
+| k8s.pod.ip | The IP address of the Pod. | Any Str | false |
 | k8s.pod.name | The name of the Pod. | Any Str | true |
 | k8s.pod.start_time | The start time of the Pod. | Any Str | true |
 | k8s.pod.uid | The UID of the Pod. | Any Str | true |
@@ -34,7 +36,7 @@
 
 The following telemetry is emitted by this component.
 
-### otelsvc_k8s_ip_lookup_miss
+### otelcol_otelsvc_k8s_ip_lookup_miss
 
 Number of times pod by IP lookup failed.
 
@@ -42,7 +44,7 @@ Number of times pod by IP lookup failed.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_namespace_added
+### otelcol_otelsvc_k8s_namespace_added
 
 Number of namespace add events received
 
@@ -50,7 +52,7 @@ Number of namespace add events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_namespace_deleted
+### otelcol_otelsvc_k8s_namespace_deleted
 
 Number of namespace delete events received
 
@@ -58,7 +60,7 @@ Number of namespace delete events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_namespace_updated
+### otelcol_otelsvc_k8s_namespace_updated
 
 Number of namespace update events received
 
@@ -66,7 +68,7 @@ Number of namespace update events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_node_added
+### otelcol_otelsvc_k8s_node_added
 
 Number of node add events received
 
@@ -74,7 +76,7 @@ Number of node add events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_node_deleted
+### otelcol_otelsvc_k8s_node_deleted
 
 Number of node delete events received
 
@@ -82,7 +84,7 @@ Number of node delete events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_node_updated
+### otelcol_otelsvc_k8s_node_updated
 
 Number of node update events received
 
@@ -90,7 +92,7 @@ Number of node update events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_pod_added
+### otelcol_otelsvc_k8s_pod_added
 
 Number of pod add events received
 
@@ -98,7 +100,7 @@ Number of pod add events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_pod_deleted
+### otelcol_otelsvc_k8s_pod_deleted
 
 Number of pod delete events received
 
@@ -106,7 +108,7 @@ Number of pod delete events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_pod_table_size
+### otelcol_otelsvc_k8s_pod_table_size
 
 Size of table containing pod info
 
@@ -114,7 +116,7 @@ Size of table containing pod info
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
-### otelsvc_k8s_pod_updated
+### otelcol_otelsvc_k8s_pod_updated
 
 Number of pod update events received
 
@@ -122,7 +124,7 @@ Number of pod update events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_replicaset_added
+### otelcol_otelsvc_k8s_replicaset_added
 
 Number of ReplicaSet add events received
 
@@ -130,7 +132,7 @@ Number of ReplicaSet add events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_replicaset_deleted
+### otelcol_otelsvc_k8s_replicaset_deleted
 
 Number of ReplicaSet delete events received
 
@@ -138,7 +140,7 @@ Number of ReplicaSet delete events received
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### otelsvc_k8s_replicaset_updated
+### otelcol_otelsvc_k8s_replicaset_updated
 
 Number of ReplicaSet update events received
 

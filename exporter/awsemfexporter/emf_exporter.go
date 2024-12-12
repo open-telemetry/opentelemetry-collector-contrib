@@ -63,6 +63,12 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		return nil, err
 	}
 
+	var userAgentExtras []string
+	if config.isAppSignalsEnabled() {
+		//TODO(kausyas): Add logic for Enhanced CI
+		userAgentExtras = append(userAgentExtras, "AppSignals")
+	}
+
 	// create CWLogs client with aws session config
 	svcStructuredLog := cwlogs.NewClient(set.Logger,
 		awsConfig,
@@ -71,10 +77,9 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		config.LogRetention,
 		config.Tags,
 		session,
-		cwlogs.WithEnabledContainerInsights(config.IsEnhancedContainerInsights()),
-		cwlogs.WithEnabledAppSignals(config.IsAppSignalsEnabled()),
+		metadata.Type.String(),
+		cwlogs.WithUserAgentExtras(userAgentExtras...),
 	)
-
 	collectorIdentifier, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -90,6 +95,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		processResourceLabels: func(map[string]string) {},
 	}
 
+	//TODO(kausyas): Check why this isnt in upstream
 	if config.IsAppSignalsEnabled() {
 		userAgent := appsignals.NewUserAgent()
 		svcStructuredLog.Handlers().Build.PushBackNamed(userAgent.Handler())
@@ -117,7 +123,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		}
 	}
 	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
-	emf.processResourceLabels(labels)
+	emf.processResourceLabels(labels) //TODO(kausyas): Check why this isnt in upstream
 
 	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)

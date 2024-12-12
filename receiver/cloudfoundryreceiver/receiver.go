@@ -12,37 +12,45 @@ import (
 
 	"code.cloudfoundry.org/go-loggregator"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver/internal/metadata"
 )
 
 const (
-	transport              = "http"
-	dataFormat             = "cloudfoundry"
-	instrumentationLibName = "otelcol/cloudfoundry"
+	transport  = "http"
+	dataFormat = "cloudfoundry"
 )
 
-var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
+var (
+	_ receiver.Metrics = (*cloudFoundryReceiver)(nil)
+	_ receiver.Logs    = (*cloudFoundryReceiver)(nil)
+)
 
-// newCloudFoundryReceiver implements the receiver.Metrics for Cloud Foundry protocol.
+// newCloudFoundryReceiver implements the receiver.Metrics and receiver.Logs for the Cloud Foundry protocol.
 type cloudFoundryReceiver struct {
 	settings          component.TelemetrySettings
 	cancel            context.CancelFunc
 	config            Config
-	nextConsumer      consumer.Metrics
+	nextMetrics       consumer.Metrics
+	nextLogs          consumer.Logs
 	obsrecv           *receiverhelper.ObsReport
 	goroutines        sync.WaitGroup
 	receiverStartTime time.Time
 }
 
-// newCloudFoundryReceiver creates the Cloud Foundry receiver with the given parameters.
-func newCloudFoundryReceiver(
+// newCloudFoundryMetricsReceiver creates the Cloud Foundry receiver with the given parameters.
+func newCloudFoundryMetricsReceiver(
 	settings receiver.Settings,
 	config Config,
-	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
+	nextConsumer consumer.Metrics,
+) (*cloudFoundryReceiver, error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -51,22 +59,50 @@ func newCloudFoundryReceiver(
 	if err != nil {
 		return nil, err
 	}
-
-	return &cloudFoundryReceiver{
+	result := &cloudFoundryReceiver{
 		settings:          settings.TelemetrySettings,
 		config:            config,
-		nextConsumer:      nextConsumer,
+		nextMetrics:       nextConsumer,
 		obsrecv:           obsrecv,
 		receiverStartTime: time.Now(),
-	}, nil
+	}
+	return result, nil
+}
+
+// newCloudFoundryLogsReceiver creates the Cloud Foundry logs receiver with the given parameters.
+func newCloudFoundryLogsReceiver(
+	settings receiver.Settings,
+	config Config,
+	nextConsumer consumer.Logs,
+) (*cloudFoundryReceiver, error) {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             settings.ID,
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := &cloudFoundryReceiver{
+		settings:          settings.TelemetrySettings,
+		config:            config,
+		nextLogs:          nextConsumer,
+		obsrecv:           obsrecv,
+		receiverStartTime: time.Now(),
+	}
+	return result, nil
 }
 
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
-	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedClientConfig, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
+	tokenProvider, tokenErr := newUAATokenProvider(
+		cfr.settings.Logger,
+		cfr.config.UAA.LimitedClientConfig,
+		cfr.config.UAA.Username,
+		string(cfr.config.UAA.Password),
+	)
 	if tokenErr != nil {
-		return fmt.Errorf("create cloud foundry UAA token provider: %w", tokenErr)
+		return fmt.Errorf("cloudfoundry receiver failed to create UAA token provider: %w", tokenErr)
 	}
-
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		ctx,
 		cfr.settings,
@@ -75,34 +111,33 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		host,
 	)
 	if streamErr != nil {
-		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %w", streamErr)
+		return fmt.Errorf("cloudfoundry receiver failed to create RLP envelope stream factory: %w", streamErr)
 	}
 
 	innerCtx, cancel := context.WithCancel(ctx)
 	cfr.cancel = cancel
-
 	cfr.goroutines.Add(1)
 
 	go func() {
 		defer cfr.goroutines.Done()
-		cfr.settings.Logger.Debug("cloud foundry receiver starting")
-
+		cfr.settings.Logger.Debug("cloudfoundry receiver starting")
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
-			cfr.settings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %w", tokenErr)))
+			componentstatus.ReportStatus(
+				host,
+				componentstatus.NewFatalErrorEvent(
+					fmt.Errorf("cloudfoundry receiver failed to fetch initial token from UAA: %w", tokenErr),
+				),
+			)
 			return
 		}
-
-		envelopeStream, err := streamFactory.CreateStream(innerCtx, cfr.config.RLPGateway.ShardID)
-		if err != nil {
-			cfr.settings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("creating RLP gateway envelope stream: %w", err)))
-			return
+		if cfr.nextLogs != nil {
+			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
+		} else if cfr.nextMetrics != nil {
+			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID), host)
 		}
-
-		cfr.streamMetrics(innerCtx, envelopeStream)
-		cfr.settings.Logger.Debug("cloudfoundry metrics streamer stopped")
+		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")
 	}()
-
 	return nil
 }
 
@@ -117,23 +152,26 @@ func (cfr *cloudFoundryReceiver) Shutdown(_ context.Context) error {
 
 func (cfr *cloudFoundryReceiver) streamMetrics(
 	ctx context.Context,
-	stream loggregator.EnvelopeStream) {
-
+	stream loggregator.EnvelopeStream,
+	host component.Host,
+) {
 	for {
 		// Blocks until non-empty result or context is cancelled (returns nil in that case)
 		envelopes := stream()
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(component.NewFatalErrorEvent(errors.New("RLP gateway streamer shut down due to an error")))
+				componentstatus.ReportStatus(
+					host,
+					componentstatus.NewFatalErrorEvent(
+						errors.New("RLP gateway metrics streamer shut down due to an error"),
+					),
+				)
 			}
-
 			break
 		}
-
 		metrics := pmetric.NewMetrics()
 		libraryMetrics := createLibraryMetricsSlice(metrics)
-
 		for _, envelope := range envelopes {
 			if envelope != nil {
 				// There is no concept of startTime in CF loggregator, and we do not know the uptime of the component
@@ -141,21 +179,64 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 				convertEnvelopeToMetrics(envelope, libraryMetrics, cfr.receiverStartTime)
 			}
 		}
-
 		if libraryMetrics.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartMetricsOp(ctx)
-			err := cfr.nextConsumer.ConsumeMetrics(ctx, metrics)
+			err := cfr.nextMetrics.ConsumeMetrics(ctx, metrics)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume metrics", zap.Error(err))
+			}
 			cfr.obsrecv.EndMetricsOp(obsCtx, dataFormat, metrics.DataPointCount(), err)
 		}
 	}
 }
 
+func (cfr *cloudFoundryReceiver) streamLogs(
+	ctx context.Context,
+	stream loggregator.EnvelopeStream,
+	host component.Host,
+) {
+	for {
+		envelopes := stream()
+		if envelopes == nil {
+			if ctx.Err() == nil {
+				componentstatus.ReportStatus(
+					host,
+					componentstatus.NewFatalErrorEvent(
+						errors.New("RLP gateway log streamer shut down due to an error"),
+					),
+				)
+			}
+			break
+		}
+		logs := plog.NewLogs()
+		libraryLogs := createLibraryLogsSlice(logs)
+		observedTime := time.Now()
+		for _, envelope := range envelopes {
+			if envelope != nil {
+				_ = convertEnvelopeToLogs(envelope, libraryLogs, observedTime)
+			}
+		}
+		if libraryLogs.Len() > 0 {
+			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
+			err := cfr.nextLogs.ConsumeLogs(ctx, logs)
+			if err != nil {
+				cfr.settings.Logger.Error("Failed to consume logs", zap.Error(err))
+			}
+			cfr.obsrecv.EndLogsOp(obsCtx, dataFormat, logs.LogRecordCount(), err)
+		}
+	}
+}
+
 func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
-	resourceMetrics := metrics.ResourceMetrics()
-	resourceMetric := resourceMetrics.AppendEmpty()
-	resourceMetric.Resource().Attributes()
-	libraryMetricsSlice := resourceMetric.ScopeMetrics()
-	libraryMetrics := libraryMetricsSlice.AppendEmpty()
-	libraryMetrics.Scope().SetName(instrumentationLibName)
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	libraryMetrics := resourceMetric.ScopeMetrics().AppendEmpty()
+	libraryMetrics.Scope().SetName(metadata.ScopeName)
 	return libraryMetrics.Metrics()
+}
+
+func createLibraryLogsSlice(logs plog.Logs) plog.LogRecordSlice {
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	libraryLogs := resourceLog.ScopeLogs().AppendEmpty()
+	libraryLogs.Scope().SetName(metadata.ScopeName)
+	return libraryLogs.LogRecords()
 }

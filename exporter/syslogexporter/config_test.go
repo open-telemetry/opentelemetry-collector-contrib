@@ -10,7 +10,6 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-
 	tests := []struct {
 		name string
 		cfg  *Config

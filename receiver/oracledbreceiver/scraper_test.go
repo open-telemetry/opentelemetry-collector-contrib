@@ -22,7 +22,7 @@ import (
 )
 
 func TestScraper_ErrorOnStart(t *testing.T) {
-	scrpr := scraper{
+	scrpr := oracleScraper{
 		dbProviderFunc: func() (*sql.DB, error) {
 			return nil, errors.New("oops")
 		},
@@ -34,13 +34,14 @@ func TestScraper_ErrorOnStart(t *testing.T) {
 var queryResponses = map[string][]metricRow{
 	statsSQL:        {{"NAME": enqueueDeadlocks, "VALUE": "18"}, {"NAME": exchangeDeadlocks, "VALUE": "88898"}, {"NAME": executeCount, "VALUE": "178878"}, {"NAME": parseCountTotal, "VALUE": "1999"}, {"NAME": parseCountHard, "VALUE": "1"}, {"NAME": userCommits, "VALUE": "187778888"}, {"NAME": userRollbacks, "VALUE": "1898979879789"}, {"NAME": physicalReads, "VALUE": "1887777"}, {"NAME": sessionLogicalReads, "VALUE": "189"}, {"NAME": cpuTime, "VALUE": "1887"}, {"NAME": pgaMemory, "VALUE": "1999887"}, {"NAME": dbBlockGets, "VALUE": "42"}, {"NAME": consistentGets, "VALUE": "78944"}},
 	sessionCountSQL: {{"VALUE": "1"}},
-	systemResourceLimitsSQL: {{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
-		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"}},
+	systemResourceLimitsSQL: {
+		{"RESOURCE_NAME": "processes", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "100", "LIMIT_VALUE": "100"},
+		{"RESOURCE_NAME": "locks", "CURRENT_UTILIZATION": "3", "MAX_UTILIZATION": "10", "INITIAL_ALLOCATION": "-1", "LIMIT_VALUE": "-1"},
+	},
 	tablespaceUsageSQL: {{"TABLESPACE_NAME": "SYS", "USED_SPACE": "111288", "TABLESPACE_SIZE": "3518587", "BLOCK_SIZE": "8192"}},
 }
 
 func TestScraper_Scrape(t *testing.T) {
-
 	tests := []struct {
 		name       string
 		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
@@ -128,7 +129,7 @@ func TestScraper_Scrape(t *testing.T) {
 			cfg.Metrics.OracledbConsistentGets.Enabled = true
 			cfg.Metrics.OracledbDbBlockGets.Enabled = true
 
-			scrpr := scraper{
+			scrpr := oracleScraper{
 				logger: zap.NewNop(),
 				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
 				dbProviderFunc: func() (*sql.DB, error) {
@@ -165,5 +166,4 @@ func TestScraper_Scrape(t *testing.T) {
 			assert.Equal(t, int64(78944), found.Sum().DataPoints().At(0).IntValue())
 		})
 	}
-
 }

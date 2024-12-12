@@ -23,7 +23,7 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",
@@ -37,7 +37,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			RoleARN:               "",
 		},
 		skipTimestampValidation: true,
-	}, "failed to create default config")
+	}, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -48,7 +48,7 @@ func TestCreateDefaultConfigWithSkipTimestampValidation(t *testing.T) {
 	assert.NoError(t, err)
 
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			NumberOfWorkers:       8,
 			Endpoint:              "",
@@ -62,14 +62,14 @@ func TestCreateDefaultConfigWithSkipTimestampValidation(t *testing.T) {
 			RoleARN:               "",
 		},
 		skipTimestampValidation: true,
-	}, "failed to create default config")
+	}, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	err = featuregate.GlobalRegistry().Set("exporter.awsxray.skiptimestampvalidation", false)
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -80,12 +80,12 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTracesExporter(ctx, exportertest.NewNopSettings(), cfg)
+	exporter, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }
 
-func TestCreateMetricsExporter(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -96,7 +96,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetricsExporter(ctx, exportertest.NewNopSettings(), cfg)
+	exporter, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(), cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exporter)
 }

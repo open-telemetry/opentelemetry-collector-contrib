@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -53,14 +54,14 @@ func TestConvertCountEnvelope(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 10.0, dataPoint.DoubleValue())
 
-	assertAttributes(t, dataPoint.Attributes(), map[string]string{
+	assertAttributes(t, map[string]string{
 		"org.cloudfoundry.source_id":  "uaa",
 		"org.cloudfoundry.origin":     "gorouter",
 		"org.cloudfoundry.deployment": "cf",
 		"org.cloudfoundry.job":        "router",
 		"org.cloudfoundry.index":      "bc276108-8282-48a5-bae7-c009c4392246",
 		"org.cloudfoundry.ip":         "10.244.0.34",
-	})
+	}, dataPoint.Attributes())
 }
 
 func TestConvertGaugeEnvelope(t *testing.T) {
@@ -129,7 +130,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 17046641.0, dataPoint.DoubleValue())
-	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
+	assertAttributes(t, expectedAttributes, dataPoint.Attributes())
 
 	metric = metricSlice.At(1 - memoryMetricPosition)
 	assert.Equal(t, "rep.disk", metric.Name())
@@ -139,10 +140,96 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 10231808.0, dataPoint.DoubleValue())
-	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
+	assertAttributes(t, expectedAttributes, dataPoint.Attributes())
 }
 
-func assertAttributes(t *testing.T, attributes pcommon.Map, expected map[string]string) {
+func TestConvertLogsEnvelope(t *testing.T) {
+	now := time.Now()
+	before := time.Now().Add(-time.Second)
+	t.Parallel()
+	tests := []struct {
+		id       string
+		envelope loggregator_v2.Envelope
+		expected map[string]any
+	}{
+		{
+			id: "normal-without-sourcetype-tag",
+			envelope: loggregator_v2.Envelope{
+				Timestamp: before.UnixNano(),
+				SourceId:  "744e75bb-69d1-4cf4-b037-76875368097b",
+				Tags:      map[string]string{},
+				Message: &loggregator_v2.Envelope_Log{
+					Log: &loggregator_v2.Log{
+						Payload: []byte(`test-app. Says Hello. on index: 0`),
+						Type:    loggregator_v2.Log_OUT,
+					},
+				},
+			},
+			expected: map[string]any{
+				"Timestamp": before,
+				"Attributes": map[string]string{
+					"org.cloudfoundry.source_id": "744e75bb-69d1-4cf4-b037-76875368097b",
+				},
+				"Body":           `test-app. Says Hello. on index: 0`,
+				"SeverityNumber": plog.SeverityNumberInfo,
+				"SeverityText":   plog.SeverityNumberInfo.String(),
+			},
+		},
+		{
+			id: "json-log-with-sourcetype-error",
+			envelope: loggregator_v2.Envelope{
+				Timestamp: before.UnixNano(),
+				SourceId:  "df75aec8-b937-4dc8-9b4d-c336e36e3895",
+				Tags: map[string]string{
+					"source_type": "APP/PROC/WEB",
+					"origin":      "rep",
+					"deployment":  "cf",
+					"job":         "diego-cell",
+					"index":       "bc276108-8282-48a5-bae7-c009c4392246",
+					"ip":          "10.80.0.2",
+				},
+				Message: &loggregator_v2.Envelope_Log{
+					Log: &loggregator_v2.Log{
+						Payload: []byte(`{"timestamp":"2024-05-29T16:16:28.063062903Z","level":"info","source":"guardian","message":"guardian.api.garden-server.get-properties.got-properties","data":{"handle":"e885e8be-c6a7-43b1-5066-a821","session":"2.1.209666"}}`),
+						Type:    loggregator_v2.Log_ERR,
+					},
+				},
+			},
+			expected: map[string]any{
+				"Timestamp": before,
+				"Attributes": map[string]string{
+					"org.cloudfoundry.source_id":   "df75aec8-b937-4dc8-9b4d-c336e36e3895",
+					"org.cloudfoundry.source_type": "APP/PROC/WEB",
+					"org.cloudfoundry.origin":      "rep",
+					"org.cloudfoundry.deployment":  "cf",
+					"org.cloudfoundry.job":         "diego-cell",
+					"org.cloudfoundry.index":       "bc276108-8282-48a5-bae7-c009c4392246",
+					"org.cloudfoundry.ip":          "10.80.0.2",
+				},
+				"Body":           `{"timestamp":"2024-05-29T16:16:28.063062903Z","level":"info","source":"guardian","message":"guardian.api.garden-server.get-properties.got-properties","data":{"handle":"e885e8be-c6a7-43b1-5066-a821","session":"2.1.209666"}}`,
+				"SeverityNumber": plog.SeverityNumberError,
+				"SeverityText":   plog.SeverityNumberError.String(),
+			},
+		},
+	}
+	for i := range tests {
+		tt := tests[i]
+		t.Run(tt.id, func(t *testing.T) {
+			logSlice := plog.NewLogRecordSlice()
+			e := convertEnvelopeToLogs(&tt.envelope, logSlice, now)
+			require.NoError(t, e)
+			require.Equal(t, 1, logSlice.Len())
+			log := logSlice.At(0)
+			assert.Equal(t, tt.expected["Body"], log.Body().AsString())
+			assert.Equal(t, tt.expected["SeverityText"], log.SeverityText())
+			assert.Equal(t, pcommon.NewTimestampFromTime(tt.expected["Timestamp"].(time.Time)), log.Timestamp())
+			assert.Equal(t, pcommon.NewTimestampFromTime(now), log.ObservedTimestamp())
+			assertAttributes(t, tt.expected["Attributes"].(map[string]string), log.Attributes())
+		})
+	}
+}
+
+func assertAttributes(t *testing.T, expected map[string]string, attributes pcommon.Map) {
 	assert.Equal(t, len(expected), attributes.Len())
 
 	for key, expectedValue := range expected {

@@ -9,6 +9,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -75,6 +76,11 @@ func (m *mockMetadata) HostIPs() ([]net.IP, error) {
 func (m *mockMetadata) HostMACs() ([]net.HardwareAddr, error) {
 	args := m.MethodCalled("HostMACs")
 	return args.Get(0).([]net.HardwareAddr), args.Error(1)
+}
+
+func (m *mockMetadata) CPUInfo(_ context.Context) ([]cpu.InfoStat, error) {
+	args := m.MethodCalled("CPUInfo")
+	return args.Get(0).([]cpu.InfoStat), args.Error(1)
 }
 
 var (
@@ -159,6 +165,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	md.AssertExpectations(t)
+	md.AssertNotCalled(t, "CPUInfo")
 
 	expected := map[string]any{
 		conventions.AttributeHostName:      "fqdn",
@@ -171,7 +178,6 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
-
 }
 
 func TestFallbackHostname(t *testing.T) {
@@ -328,6 +334,39 @@ func TestDetectError(t *testing.T) {
 		"host.ip":                          testIPsAttribute,
 		"host.mac":                         testMACsAttribute,
 	}, res.Attributes().AsRaw())
+}
+
+func TestDetectCPUInfo(t *testing.T) {
+	md := &mockMetadata{}
+	md.On("FQDN").Return("fqdn", nil)
+	md.On("OSDescription").Return("Ubuntu 22.04.2 LTS (Jammy Jellyfish)", nil)
+	md.On("OSType").Return("darwin", nil)
+	md.On("HostID").Return("2", nil)
+	md.On("HostArch").Return("amd64", nil)
+	md.On("HostIPs").Return(testIPsAddresses, nil)
+	md.On("HostMACs").Return(testMACsAddresses, nil)
+	md.On("CPUInfo").Return([]cpu.InfoStat{{Family: "some"}}, nil)
+
+	cfg := allEnabledConfig()
+	cfg.HostCPUFamily.Enabled = true
+	detector := newTestDetector(md, []string{"dns"}, cfg)
+	res, schemaURL, err := detector.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	md.AssertExpectations(t)
+
+	expected := map[string]any{
+		conventions.AttributeHostName:      "fqdn",
+		conventions.AttributeOSDescription: "Ubuntu 22.04.2 LTS (Jammy Jellyfish)",
+		conventions.AttributeOSType:        "darwin",
+		conventions.AttributeHostID:        "2",
+		conventions.AttributeHostArch:      conventions.AttributeHostArchAMD64,
+		"host.ip":                          testIPsAttribute,
+		"host.mac":                         testMACsAttribute,
+		"host.cpu.family":                  "some",
+	}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
 func newTestDetector(mock *mockMetadata, hostnameSources []string, resCfg metadata.ResourceAttributesConfig) *Detector {

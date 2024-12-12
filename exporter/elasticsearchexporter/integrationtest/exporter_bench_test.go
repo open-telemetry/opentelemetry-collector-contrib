@@ -26,7 +26,7 @@ import (
 )
 
 func BenchmarkExporter(b *testing.B) {
-	for _, eventType := range []string{"logs", "traces"} {
+	for _, eventType := range []string{"logs", "metrics", "traces"} {
 		for _, mappingMode := range []string{"none", "ecs", "raw"} {
 			for _, tc := range []struct {
 				name      string
@@ -41,6 +41,8 @@ func BenchmarkExporter(b *testing.B) {
 					switch eventType {
 					case "logs":
 						benchmarkLogs(b, tc.batchSize, mappingMode)
+					case "metrics":
+						benchmarkMetrics(b, tc.batchSize, mappingMode)
 					case "traces":
 						benchmarkTraces(b, tc.batchSize, mappingMode)
 					}
@@ -57,7 +59,7 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
-	exporter, err := runnerCfg.factory.CreateLogsExporter(
+	exporter, err := runnerCfg.factory.CreateLogs(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
@@ -79,6 +81,35 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, exporter.Shutdown(ctx))
 }
 
+func benchmarkMetrics(b *testing.B, batchSize int, mappingMode string) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	exporterSettings := exportertest.NewNopSettings()
+	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	exporter, err := runnerCfg.factory.CreateMetrics(
+		ctx, exporterSettings, runnerCfg.esCfg,
+	)
+	require.NoError(b, err)
+	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.StopTimer()
+	for i := 0; i < b.N; i++ {
+		metrics, _ := runnerCfg.provider.GenerateMetrics()
+		b.StartTimer()
+		require.NoError(b, exporter.ConsumeMetrics(ctx, metrics))
+		b.StopTimer()
+	}
+	b.ReportMetric(
+		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
+		"events/s",
+	)
+	require.NoError(b, exporter.Shutdown(ctx))
+}
+
 func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -86,7 +117,7 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
-	exporter, err := runnerCfg.factory.CreateTracesExporter(
+	exporter, err := runnerCfg.factory.CreateTraces(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
@@ -125,7 +156,7 @@ func prepareBenchmark(
 
 	cfg := &benchRunnerCfg{}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
-	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */)
+	receiver := newElasticsearchDataReceiver(b, withDecodeBulkRequest(false))
 	cfg.provider = testbed.NewPerfTestDataProvider(testbed.LoadOptions{ItemsPerBatch: batchSize})
 	cfg.provider.SetLoadGeneratorCounters(&cfg.generatedCount)
 
@@ -134,7 +165,11 @@ func prepareBenchmark(
 	cfg.esCfg.Mapping.Mode = mappingMode
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
+	cfg.esCfg.LogsDynamicIndex.Enabled = false
+	cfg.esCfg.MetricsIndex = TestMetricsIndex
+	cfg.esCfg.MetricsDynamicIndex.Enabled = false
 	cfg.esCfg.TracesIndex = TestTracesIndex
+	cfg.esCfg.TracesDynamicIndex.Enabled = false
 	cfg.esCfg.Flush.Interval = 10 * time.Millisecond
 	cfg.esCfg.NumWorkers = 1
 

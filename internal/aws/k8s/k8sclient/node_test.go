@@ -405,10 +405,10 @@ func TestNodeClient(t *testing.T) {
 			require.Equal(t, testCase.want["nodeToConditionsMap"], client.NodeToConditionsMap())
 			require.Equal(t, testCase.want["NodeToLabelsMap"], client.NodeToLabelsMap())
 
-			client.shutdown()
-			assert.True(t, client.stopped)
-		})
-	}
+	assert.Equal(t, expectedClusterNodeCount, clusterNodeCount)
+	assert.Equal(t, expectedClusterFailedNodeCount, clusterFailedNodeCount)
+	client.shutdown()
+	assert.True(t, client.stopped)
 }
 
 func TestTransformFuncNode(t *testing.T) {

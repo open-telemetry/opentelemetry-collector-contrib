@@ -19,8 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
-type s3Writer struct {
-}
+type s3Writer struct{}
 
 // generate the s3 time key based on partition configuration
 func getTimeKey(time time.Time, partition string) string {
@@ -113,7 +112,6 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 
 	sessionConfig := getSessionConfig(config)
 	sess, err := getSession(config, sessionConfig)
-
 	if err != nil {
 		return err
 	}

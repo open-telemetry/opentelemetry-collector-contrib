@@ -1,0 +1,54 @@
+[
+   {
+      "2001:220::/32" : {
+         "continent" : {
+            "code" : "AS",
+            "geoname_id" : 6255147,
+            "names" : {
+               "de" : "Asien",
+               "en" : "Asia",
+               "es" : "Asia",
+               "fr" : "Asie",
+               "ja" : "アジア",
+               "pt-BR" : "Ásia",
+               "ru" : "Азия",
+               "zh-CN" : "亚洲"
+            }
+         },
+         "country" : {
+            "geoname_id" : 1835841,
+            "iso_code" : "KR",
+            "names" : {
+               "de" : "Republik Korea",
+               "en" : "South Korea",
+               "es" : "Corea, República de",
+               "fr" : "Corée du Sud",
+               "ja" : "大韓民国",
+               "pt-BR" : "Coréia, República da",
+               "ru" : "Южная Корея",
+               "zh-CN" : "韩国"
+            }
+         },
+         "location" : {
+            "accuracy_radius" : 100,
+            "latitude" : 1,
+            "longitude" : 1,
+            "time_zone" : "Asia/Seoul"
+         },
+         "registered_country" : {
+            "geoname_id" : 1835841,
+            "iso_code" : "KR",
+            "names" : {
+               "de" : "Republik Korea",
+               "en" : "South Korea",
+               "es" : "Corea, República de",
+               "fr" : "Corée du Sud",
+               "ja" : "大韓民国",
+               "pt-BR" : "Coréia, República da",
+               "ru" : "Южная Корея",
+               "zh-CN" : "韩国"
+            }
+         }
+      }
+   }
+]

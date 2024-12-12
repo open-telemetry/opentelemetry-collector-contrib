@@ -20,7 +20,8 @@ func TestNetStats(t *testing.T) {
 
 	containerType := ci.TypeNode
 	extractor := NewNetMetricExtractor(nil)
-	var cMetrics []*stores.CIMetricImpl
+	defer require.NoError(t, extractor.Shutdown())
+	var cMetrics []*CAdvisorMetric
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
@@ -153,9 +154,8 @@ func TestNetStats(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, len(cMetrics), 8)
+	assert.Len(t, cMetrics, 8)
 	for i := range expectedFields {
 		AssertContainsTaggedField(t, cMetrics[i], expectedFields[i], expectedTags[i])
 	}
-	require.NoError(t, extractor.Shutdown())
 }

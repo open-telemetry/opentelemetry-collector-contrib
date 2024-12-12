@@ -2,9 +2,9 @@ name: build-and-test
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
   pull_request:
 env:
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -37,6 +37,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -49,6 +50,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
+      - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
   check-codeowners:
@@ -66,7 +68,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test:
+        goos:
           - windows
           - linux
         group:
@@ -93,7 +95,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -103,6 +105,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -116,7 +119,7 @@ jobs:
           path: ~/.cache/go-build
           key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
-        run: GOOS=${{ matrix.os }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
+        run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
@@ -162,7 +165,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -172,6 +175,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -185,7 +189,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -195,6 +199,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -202,6 +207,7 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - run: make genotelcontribcol
       - name: CheckDoc
         run: make checkdoc
       - name: CheckMetadata
@@ -220,14 +226,6 @@ jobs:
         run: |
           make gotidy
           git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
-      - name: Gen genotelcontribcol
-        run: |
-          make genotelcontribcol
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genotelcontribcol" and commit the changes in this PR.' && exit 1)
-      - name: Gen genoteltestbedcol
-        run: |
-          make genoteltestbedcol
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genoteltestbedcol" and commit the changes in this PR.' && exit 1)
       - name: Gen distributions
         run: |
           make gendistributions
@@ -254,7 +252,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["1.22.5", "1.21.11"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["1.23.0", "1.22.8"] # 1.20 is interpreted as 1.2 without quotes
         runner: [ubuntu-latest]
         group:
           - receiver-0
@@ -290,6 +288,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -303,13 +302,13 @@ jobs:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        if: startsWith( matrix.go-version, '1.21' ) != true
+        if: startsWith( matrix.go-version, '1.22' ) != true
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With Coverage
-        if: startsWith( matrix.go-version, '1.21' ) # only run coverage on one version
+        if: startsWith( matrix.go-version, '1.22' ) # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@v4
-        if: startsWith( matrix.go-version, '1.21' ) # only upload artifact for one version
+        if: startsWith( matrix.go-version, '1.22' ) # only upload artifact for one version
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
@@ -339,7 +338,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # 4.5.0
+        uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # 5.0.7
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -370,7 +369,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -380,6 +379,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
@@ -387,7 +387,7 @@ jobs:
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
-    needs: [ setup-environment, integration-tests-matrix ]
+    needs: [setup-environment, integration-tests-matrix]
     steps:
       - name: Print result
         run: echo ${{ needs.integration-tests-matrix.result }}
@@ -408,7 +408,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -418,6 +418,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -434,7 +435,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -444,6 +445,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -459,6 +461,7 @@ jobs:
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
+      - run: make genotelcontribcol
       - name: Build Examples
         run: make build-examples
 
@@ -481,8 +484,8 @@ jobs:
           - s390x
         include:
           - os: linux
-          - arch: arm
-          - arm: 7
+            arch: arm
+            arm: 7
         exclude:
           - os: darwin
             arch: 386
@@ -504,7 +507,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -514,6 +517,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -521,6 +525,8 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
+      - name: Generate collector files
+        run: make genotelcontribcol
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
@@ -529,57 +535,9 @@ jobs:
           name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: ./bin/*
 
-  build-package:
-    runs-on: ubuntu-latest
-    needs: [cross-compile]
-    strategy:
-      fail-fast: false
-      matrix:
-        package_type: ["deb", "rpm"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Install Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-      - name: Install fpm
-        run: gem install --no-document fpm -v 1.15.1
-      - name: Download Collector Binaries
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: bin/
-          pattern: collector-binaries-*
-      - run: chmod +x bin/*
-      - name: Set Release Tag
-        id: github_tag
-        run: ./.github/workflows/scripts/set_release_tag.sh
-      - name: Build ${{ matrix.package_type }} amd64 package
-        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "amd64" "./dist/"
-      - name: Build ${{ matrix.package_type }} arm64 package
-        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "arm64" "./dist/"
-      - name: Build ${{ matrix.package_type }} ppc64le package
-        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "ppc64le" "./dist/"
-      - name: Build ${{ matrix.package_type }} s390x package
-        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "s390x" "./dist/"
-      - name: Test ${{ matrix.package_type }} package
-        run: |
-          if [[ "${{ matrix.package_type }}" = "deb" ]]; then
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/demo/otel-collector-config.yaml
-          else
-              ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/demo/otel-collector-config.yaml
-          fi
-      - name: Upload Packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: collector-packages-${{ matrix.package_type }}
-          path: ./dist/*
-
   publish-check:
     runs-on: ubuntu-latest
-    needs: [lint, unittest, integration-tests, build-package]
+    needs: [lint, unittest, integration-tests]
     steps:
       - uses: actions/checkout@v4
       - name: Download Binaries
@@ -588,24 +546,18 @@ jobs:
           merge-multiple: true
           path: ./bin/
           pattern: collector-binaries-*
-      - name: Download Packages
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: ./dist/
-          pattern: collector-packages-*
       - name: Verify Distribution Files Exist
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
   publish-dev:
     runs-on: ubuntu-latest
-    needs: [lint, unittest, integration-tests, build-package]
+    needs: [lint, unittest, integration-tests]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.5"
+          go-version: "1.22.8"
           cache: false
       - name: Mkdir bin and dist
         run: |
@@ -618,6 +570,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
+            ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
@@ -632,12 +585,6 @@ jobs:
           path: ./bin/
           pattern: collector-binaries-*
       - run: chmod +x bin/*
-      - name: Download Packages
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: ./dist/
-          pattern: collector-packages-*
       - name: Add Permissions to Tool Binaries
         run: chmod -R +x ./dist
       - name: Verify Distribution Files Exist
@@ -646,14 +593,15 @@ jobs:
       - name: Build Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-            make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
+          make genotelcontribcol
+          make docker-otelcontribcol
+          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
       - name: Validate Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-            docker run otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --version
-            docker run otel/opentelemetry-collector-contrib-dev:latest --version
+          docker run otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA --version
+          docker run otel/opentelemetry-collector-contrib-dev:latest --version
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
@@ -662,11 +610,11 @@ jobs:
       - name: Push Docker Image
         if: steps.check.outputs.passed == 'true'
         run: |
-            docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
-            docker push otel/opentelemetry-collector-contrib-dev:latest
+          docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
+          docker push otel/opentelemetry-collector-contrib-dev:latest
   publish-stable:
     runs-on: ubuntu-latest
-    needs: [lint, unittest, integration-tests, build-package]
+    needs: [lint, unittest, integration-tests]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@v4
@@ -711,4 +659,3 @@ jobs:
                 return
               }
             }
-

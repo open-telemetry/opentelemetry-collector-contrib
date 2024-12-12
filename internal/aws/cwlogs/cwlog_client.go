@@ -58,31 +58,44 @@ func WithEnabledAppSignals(flag bool) UserAgentOption {
 	}
 }
 
+type ClientOption func(*cwLogClientConfig)
+
+type cwLogClientConfig struct {
+	userAgentExtras []string
+}
+
+func WithUserAgentExtras(userAgentExtras ...string) ClientOption {
+	return func(config *cwLogClientConfig) {
+		config.userAgentExtras = append(config.userAgentExtras, userAgentExtras...)
+	}
+}
+
 // Create a log client based on the actual cloudwatch logs client.
 func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, logger *zap.Logger) *Client {
-	logClient := &Client{svc: svc,
+	logClient := &Client{
+		svc:          svc,
 		logRetention: logRetention,
 		tags:         tags,
-		logger:       logger}
+		logger:       logger,
+	}
 	return logClient
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, opts ...UserAgentOption) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string, opts ...ClientOption) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.NewRequestCompressionHandler([]string{"PutLogEvents"}, logger))
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 
 	// Loop through each option
-	option := &UserAgentFlag{
-		isEnhancedContainerInsights: false,
-		isAppSignals:                false,
+	option := &cwLogClientConfig{
+		userAgentExtras: []string{},
 	}
 	for _, opt := range opts {
 		opt(option)
 	}
 
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, option))
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, componentName, option))
 	return newCloudWatchLogClient(client, logRetention, tags, logger)
 }
 
@@ -135,10 +148,9 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 				client.logger.Error("cwlog_client: Error occurs in PutLogEvents", zap.Error(awsErr))
 				return err
 			}
-
 		}
 
-		//TODO: Should have metrics to provide visibility of these failures
+		// TODO: Should have metrics to provide visibility of these failures
 		if response != nil {
 			if response.RejectedLogEventsInfo != nil {
 				rejectedLogEventsInfo := response.RejectedLogEventsInfo
@@ -213,19 +225,15 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 	return nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, userAgentFlag *UserAgentFlag) request.NamedHandler {
-	extraStr := ""
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string, clientConfig *cwLogClientConfig) request.NamedHandler {
+	extraStrs := []string{componentName}
+	extraStrs = append(extraStrs, clientConfig.userAgentExtras...)
 
-	switch {
-	case userAgentFlag.isEnhancedContainerInsights && enhancedContainerInsightsEKSPattern.MatchString(logGroupName):
-		extraStr = "EnhancedEKSContainerInsights"
-	case containerInsightsRegexPattern.MatchString(logGroupName):
-		extraStr = "ContainerInsights"
-	case userAgentFlag.isAppSignals:
-		extraStr = "AppSignals"
+	if containerInsightsRegexPattern.MatchString(logGroupName) {
+		extraStrs = append(extraStrs, "ContainerInsights")
 	}
 
-	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, extraStr)
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, extraStrs...)
 
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",

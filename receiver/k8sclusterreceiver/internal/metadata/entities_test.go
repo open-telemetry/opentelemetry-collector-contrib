@@ -190,7 +190,7 @@ func Test_GetEntityEvents(t *testing.T) {
 
 				// Convert and test expected events.
 				timestamp := pcommon.NewTimestampFromTime(time.Now())
-				events := GetEntityEvents(tt.old, tt.new, timestamp)
+				events := GetEntityEvents(tt.old, tt.new, timestamp, 1*time.Hour)
 				require.Equal(t, tt.events.Len(), events.Len())
 				for i := 0; i < events.Len(); i++ {
 					actual := events.At(i)
@@ -202,6 +202,7 @@ func Test_GetEntityEvents(t *testing.T) {
 						estate := expected.EntityStateDetails()
 						astate := actual.EntityStateDetails()
 						assert.EqualValues(t, estate.EntityType(), astate.EntityType())
+						assert.EqualValues(t, 1*time.Hour, astate.Interval())
 						assert.EqualValues(t, estate.Attributes().AsRaw(), astate.Attributes().AsRaw())
 					}
 				}

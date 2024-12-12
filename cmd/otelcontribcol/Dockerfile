@@ -1,12 +1,11 @@
-FROM alpine:latest as prep
+FROM alpine:latest AS prep
 RUN apk --update add ca-certificates
-
-RUN mkdir -p /tmp
 
 FROM scratch
 
 ARG USER_UID=10001
-USER ${USER_UID}
+ARG USER_GID=10001
+USER ${USER_UID}:${USER_GID}
 
 COPY --from=prep /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY otelcontribcol /

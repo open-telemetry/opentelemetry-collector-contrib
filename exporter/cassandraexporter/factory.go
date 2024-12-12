@@ -44,12 +44,12 @@ func createTracesExporter(ctx context.Context, set exporter.Settings, cfg compon
 	c := cfg.(*Config)
 	exp := newTracesExporter(set.Logger, c)
 
-	return exporterhelper.NewTracesExporter(ctx, set, cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown), exporterhelper.WithStart(exp.Start))
+	return exporterhelper.NewTraces(ctx, set, cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown), exporterhelper.WithStart(exp.Start))
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	c := cfg.(*Config)
 	exp := newLogsExporter(set.Logger, c)
 
-	return exporterhelper.NewLogsExporter(ctx, set, cfg, exp.pushLogsData, exporterhelper.WithShutdown(exp.Shutdown), exporterhelper.WithStart(exp.Start))
+	return exporterhelper.NewLogs(ctx, set, cfg, exp.pushLogsData, exporterhelper.WithShutdown(exp.Shutdown), exporterhelper.WithStart(exp.Start))
 }

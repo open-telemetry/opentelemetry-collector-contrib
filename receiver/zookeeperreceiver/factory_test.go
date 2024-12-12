@@ -28,7 +28,7 @@ func TestFactory(t *testing.T) {
 	// Assert defaults.
 	assert.Equal(t, 10*time.Second, rCfg.CollectionInterval)
 	assert.Equal(t, 10*time.Second, rCfg.Timeout)
-	assert.Equal(t, "0.0.0.0:2181", rCfg.Endpoint)
+	assert.Equal(t, "localhost:2181", rCfg.Endpoint)
 
 	tests := []struct {
 		name    string
@@ -57,7 +57,7 @@ func TestFactory(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r, err := f.CreateMetricsReceiver(
+			r, err := f.CreateMetrics(
 				context.Background(),
 				receivertest.NewNopSettings(),
 				test.config,

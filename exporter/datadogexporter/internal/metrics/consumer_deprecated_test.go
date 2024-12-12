@@ -7,14 +7,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestZorkianRunningMetrics(t *testing.T) {
@@ -54,7 +53,6 @@ func TestZorkianRunningMetrics(t *testing.T) {
 		runningHostnames,
 		[]string{"fallbackHostname", "resource-hostname-1", "resource-hostname-2"},
 	)
-
 }
 
 func TestZorkianTagsMetrics(t *testing.T) {

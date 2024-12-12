@@ -1,13 +1,12 @@
 type: apachespark
-scope_name: otelcol/apachesparkreceiver
 
 status:
   class: receiver
-  stability: 
-    development: [metrics]
+  stability:
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, Caleb-Hurshman, mrsillydog]
+    active: [Caleb-Hurshman, mrsillydog]
 
 resource_attributes:
   spark.application.id:
@@ -216,7 +215,7 @@ metrics:
   spark.stage.io.size:
     description: Amount of data written and read at this stage.
     enabled: true
-    sum: 
+    sum:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int

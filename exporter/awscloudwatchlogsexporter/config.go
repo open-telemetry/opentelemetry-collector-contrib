@@ -42,7 +42,7 @@ type Config struct {
 	Tags map[string]*string `mapstructure:"tags,omitempty"`
 
 	// Queue settings frm the exporterhelper
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 
 	awsutil.AWSSessionSettings `mapstructure:",squash"`
 

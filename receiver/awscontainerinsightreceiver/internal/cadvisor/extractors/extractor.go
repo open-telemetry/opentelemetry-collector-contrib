@@ -29,7 +29,7 @@ type CPUMemInfoProvider interface {
 
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
-	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl
+	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric
 	Shutdown() error
 }
 
@@ -47,7 +47,8 @@ func NewFloat64RateCalculator() awsmetrics.MetricCalculator {
 }
 
 func AssignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields map[string]any, metricName string,
-	cinfoName string, curVal any, curTime time.Time, multiplier float64) {
+	cinfoName string, curVal any, curTime time.Time, multiplier float64,
+) {
 	mKey := awsmetrics.NewKey(cinfoName+metricName, nil)
 	if val, ok := rateCalculator.Calculate(mKey, curVal, curTime); ok {
 		fields[metricName] = val.(float64) * multiplier
@@ -55,9 +56,9 @@ func AssignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields 
 }
 
 // MergeMetrics merges an array of cadvisor metrics based on common metric keys
-func MergeMetrics(metrics []*stores.CIMetricImpl) []*stores.CIMetricImpl {
-	result := make([]*stores.CIMetricImpl, 0, len(metrics))
-	metricMap := make(map[string]*stores.CIMetricImpl)
+func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
+	result := make([]*CAdvisorMetric, 0, len(metrics))
+	metricMap := make(map[string]*CAdvisorMetric)
 	for _, metric := range metrics {
 		if metricKey := getMetricKey(metric); metricKey != "" {
 			if mergedMetric, ok := metricMap[metricKey]; ok {
@@ -77,16 +78,16 @@ func MergeMetrics(metrics []*stores.CIMetricImpl) []*stores.CIMetricImpl {
 }
 
 // return MetricKey for merge-able metrics
-func getMetricKey(metric *stores.CIMetricImpl) string {
+func getMetricKey(metric *CAdvisorMetric) string {
 	metricType := metric.GetMetricType()
 	var metricKey string
 	switch metricType {
 	case ci.TypeInstance:
 		// merge cpu, memory, net metric for type Instance
-		metricKey = fmt.Sprintf("metricType:%s", ci.TypeInstance)
+		metricKey = "metricType:" + ci.TypeInstance
 	case ci.TypeNode:
 		// merge cpu, memory, net metric for type Node
-		metricKey = fmt.Sprintf("metricType:%s", ci.TypeNode)
+		metricKey = "metricType:" + ci.TypeNode
 	case ci.TypePod:
 		// merge cpu, memory, net metric for type Pod
 		metricKey = fmt.Sprintf("metricType:%s,podId:%s", ci.TypePod, metric.GetTags()[ci.AttributePodID])

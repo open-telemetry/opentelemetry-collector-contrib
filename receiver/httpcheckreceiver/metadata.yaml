@@ -1,11 +1,10 @@
 type: httpcheck
-scope_name: otelcol/httpcheckreceiver
 
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: [contrib]
+    alpha: [metrics]
+  distributions: [contrib, k8s]
   warnings: []
   codeowners:
     active: [codeboten]
@@ -37,7 +36,7 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
-    unit: 1
+    unit: "1"
     attributes: [http.url, http.status_code, http.method, http.status_class]
   httpcheck.duration:
     description: Measures the duration of the HTTP check.

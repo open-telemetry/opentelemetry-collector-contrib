@@ -1,5 +1,4 @@
 type: riak
-scope_name: otelcol/riakreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, armstrmi]
+    active: [armstrmi]
     seeking_new: true
 
 resource_attributes:

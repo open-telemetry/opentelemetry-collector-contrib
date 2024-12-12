@@ -133,7 +133,7 @@ data:
           encoding: "json"
           initial_fields:
             # Add the service field to every log line. It can be used for filtering in Datadog.
-            - service: "otel-collector"
+            service: "otel-collector"
       pipelines:
         metrics:
           receivers: [hostmetrics, otlp]

@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 type logsProcessor struct {
@@ -24,6 +25,7 @@ type logsProcessor struct {
 	precision        int
 	failClosed       bool
 	logger           *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 type recordCarrier struct {
@@ -184,15 +186,20 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRe
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
 func newLogsProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	lsp := &logsProcessor{
 		sampler:          makeSampler(cfg, true),
 		samplingPriority: cfg.SamplingPriority,
 		precision:        cfg.SamplingPrecision,
 		failClosed:       cfg.FailClosed,
 		logger:           set.Logger,
+		telemetryBuilder: telemetryBuilder,
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
@@ -214,6 +221,7 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, logsData plog.Logs) (
 					lsp.priorityFunc,
 					"logs sampler",
 					lsp.logger,
+					lsp.telemetryBuilder.ProcessorProbabilisticSamplerCountLogsSampled,
 				)
 			})
 			// Filter out empty ScopeLogs
@@ -260,7 +268,6 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sa
 				// The record has supplied a valid alternative sampling probability
 				return th
 			}
-
 		}
 	}
 	return sampling.NeverSampleThreshold

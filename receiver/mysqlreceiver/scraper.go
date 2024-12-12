@@ -500,7 +500,7 @@ func (m *mySQLScraper) scrapeIndexIoWaitsStats(now pcommon.Timestamp, errs *scra
 func (m *mySQLScraper) scrapeStatementEventsStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	statementEventsStats, err := m.sqlclient.getStatementEventsStats()
 	if err != nil {
-		m.logger.Error("Failed to fetch index io_waits stats", zap.Error(err))
+		m.logger.Error("Failed to fetch statement events stats", zap.Error(err))
 		errs.AddPartial(8, err)
 		return
 	}

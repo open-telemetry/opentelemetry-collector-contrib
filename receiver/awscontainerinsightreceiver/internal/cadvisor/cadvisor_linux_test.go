@@ -38,8 +38,7 @@ func (m *mockCadvisorManager) SubcontainersInfo(_ string, _ *info.ContainerInfoR
 	return containerInfos, nil
 }
 
-type mockCadvisorManager2 struct {
-}
+type mockCadvisorManager2 struct{}
 
 func (m *mockCadvisorManager2) Start() error {
 	return errors.New("new error")
@@ -50,26 +49,29 @@ func (m *mockCadvisorManager2) SubcontainersInfo(_ string, _ *info.ContainerInfo
 }
 
 func newMockCreateManager(t *testing.T) createCadvisorManager {
-	return func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig, _ container.MetricSet,
-		_ *http.Client, _ []string, _ string) (cadvisorManager, error) {
+	return func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
+		_ container.MetricSet, _ *http.Client, _ []string,
+		_ string,
+	) (cadvisorManager, error) {
 		return &mockCadvisorManager{t: t}, nil
 	}
 }
 
 var mockCreateManager2 = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
 	_ container.MetricSet, _ *http.Client, _ []string,
-	_ string) (cadvisorManager, error) {
+	_ string,
+) (cadvisorManager, error) {
 	return &mockCadvisorManager2{}, nil
 }
 
 var mockCreateManagerWithError = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ manager.HousekeepingConfig,
 	_ container.MetricSet, _ *http.Client, _ []string,
-	_ string) (cadvisorManager, error) {
+	_ string,
+) (cadvisorManager, error) {
 	return nil, errors.New("error")
 }
 
-type MockDecorator struct {
-}
+type MockK8sDecorator struct{}
 
 func (m *MockDecorator) Decorate(metric stores.CIMetric) stores.CIMetric {
 	return metric
@@ -87,6 +89,7 @@ func TestGetMetrics(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 	assert.NotNil(t, c.GetMetrics())
+	assert.NoError(t, c.Shutdown())
 }
 
 func TestGetMetricsNoClusterName(t *testing.T) {
@@ -97,6 +100,7 @@ func TestGetMetricsNoClusterName(t *testing.T) {
 	assert.NotNil(t, c)
 	assert.NoError(t, err)
 	assert.Nil(t, c.GetMetrics())
+	assert.NoError(t, c.Shutdown())
 }
 
 func TestGetMetricsErrorWhenCreatingManager(t *testing.T) {

@@ -41,6 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerCPUNodeUtilization:       MetricConfig{Enabled: true},
 					K8sContainerCPULimitUtilization:      MetricConfig{Enabled: true},
 					K8sContainerCPURequestUtilization:    MetricConfig{Enabled: true},
+					K8sContainerMemoryNodeUtilization:    MetricConfig{Enabled: true},
 					K8sContainerMemoryLimitUtilization:   MetricConfig{Enabled: true},
 					K8sContainerMemoryRequestUtilization: MetricConfig{Enabled: true},
 					K8sNodeCPUTime:                       MetricConfig{Enabled: true},
@@ -69,6 +70,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodFilesystemUsage:                MetricConfig{Enabled: true},
 					K8sPodMemoryAvailable:                MetricConfig{Enabled: true},
 					K8sPodMemoryMajorPageFaults:          MetricConfig{Enabled: true},
+					K8sPodMemoryNodeUtilization:          MetricConfig{Enabled: true},
 					K8sPodMemoryPageFaults:               MetricConfig{Enabled: true},
 					K8sPodMemoryRss:                      MetricConfig{Enabled: true},
 					K8sPodMemoryUsage:                    MetricConfig{Enabled: true},
@@ -123,6 +125,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sContainerCPUNodeUtilization:       MetricConfig{Enabled: false},
 					K8sContainerCPULimitUtilization:      MetricConfig{Enabled: false},
 					K8sContainerCPURequestUtilization:    MetricConfig{Enabled: false},
+					K8sContainerMemoryNodeUtilization:    MetricConfig{Enabled: false},
 					K8sContainerMemoryLimitUtilization:   MetricConfig{Enabled: false},
 					K8sContainerMemoryRequestUtilization: MetricConfig{Enabled: false},
 					K8sNodeCPUTime:                       MetricConfig{Enabled: false},
@@ -151,6 +154,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodFilesystemUsage:                MetricConfig{Enabled: false},
 					K8sPodMemoryAvailable:                MetricConfig{Enabled: false},
 					K8sPodMemoryMajorPageFaults:          MetricConfig{Enabled: false},
+					K8sPodMemoryNodeUtilization:          MetricConfig{Enabled: false},
 					K8sPodMemoryPageFaults:               MetricConfig{Enabled: false},
 					K8sPodMemoryRss:                      MetricConfig{Enabled: false},
 					K8sPodMemoryUsage:                    MetricConfig{Enabled: false},
@@ -189,9 +193,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }
@@ -259,9 +262,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
-				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
-			}
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
 		})
 	}
 }

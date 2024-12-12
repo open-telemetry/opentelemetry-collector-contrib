@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -207,7 +208,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
-	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
 
 	client := &http.Client{}
 	defer client.CloseIdleConnections()
@@ -228,7 +229,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 	wantAllowMethods := ""
 	if wantAllowed {
 		wantAllowOrigin = origin
-		wantAllowMethods = "POST"
+		wantAllowMethods = http.MethodPost
 	}
 
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
@@ -300,6 +301,88 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestStartListenerClosed(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	sink := new(consumertest.TracesSink)
+	cfg := &Config{
+		ServerConfig: configgrpc.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  addr,
+				Transport: "tcp",
+			},
+		},
+	}
+	ocr := newOpenCensusReceiver(cfg, sink, nil, receivertest.NewNopSettings())
+
+	ctx := context.Background()
+
+	// start receiver
+	err := ocr.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start trace receiver: %v", err)
+
+	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
+	traceJSON := []byte(`
+	{
+	   "node":{"identifier":{"hostName":"testHost"}},
+	   "spans":[
+	      {
+	          "traceId":"W47/95gDgQPSabYzgT/GDA==",
+	          "spanId":"7uGbfsPBsXM=",
+	          "name":{"value":"testSpan"},
+	          "startTime":"2018-12-13T14:51:00Z",
+	          "endTime":"2018-12-13T14:51:01Z",
+	          "attributes": {
+	            "attributeMap": {
+	              "attr1": {"intValue": "55"}
+	            }
+	          }
+	      }
+	   ]
+	}`)
+
+	// send request to verify listener is working
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	defer client.CloseIdleConnections()
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	respStr := string(respBytes)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, respStr)
+
+	// stop the listener
+	ocr.ln.Close()
+
+	// verify trace was sent
+	got := sink.AllTraces()
+	require.Len(t, got, 1)
+	require.Equal(t, 1, got[0].ResourceSpans().Len())
+	gotNode, gotResource, gotSpans := opencensus.ResourceSpansToOC(got[0].ResourceSpans().At(0))
+
+	wantNode := &commonpb.Node{Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"}}
+	wantResource := &resourcepb.Resource{}
+	assert.True(t, proto.Equal(wantNode, gotNode))
+	assert.True(t, proto.Equal(wantResource, gotResource))
+	require.Len(t, gotSpans, 1)
+
+	// stop the receiver to verify it's not blocked by the closed listener
+	require.NoError(t, ocr.Shutdown(ctx))
 }
 
 func tempSocketName(t *testing.T) string {
@@ -419,8 +502,8 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	exportBidiFn := func(
 		t *testing.T,
 		cc *grpc.ClientConn,
-		msg *agenttracepb.ExportTraceServiceRequest) error {
-
+		msg *agenttracepb.ExportTraceServiceRequest,
+	) error {
 		acc := agenttracepb.NewTraceServiceClient(cc)
 		stream, err := acc.Export(context.Background())
 		require.NoError(t, err)
@@ -501,7 +584,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 					assert.Equal(t, ingestionState.expectedCode, status.Code())
 				}
 
-				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+				require.Len(t, sink.AllTraces(), tt.expectedReceivedBatches)
 				require.NoError(t, testTel.CheckReceiverTraces("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
@@ -577,8 +660,8 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	exportBidiFn := func(
 		t *testing.T,
 		cc *grpc.ClientConn,
-		msg *agentmetricspb.ExportMetricsServiceRequest) error {
-
+		msg *agentmetricspb.ExportMetricsServiceRequest,
+	) error {
 		acc := agentmetricspb.NewMetricsServiceClient(cc)
 		stream, err := acc.Export(context.Background())
 		require.NoError(t, err)
@@ -636,7 +719,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink
-				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 				cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -659,7 +742,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 					assert.Equal(t, ingestionState.expectedCode, status.Code())
 				}
 
-				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
+				require.Len(t, sink.AllMetrics(), tt.expectedReceivedBatches)
 				require.NoError(t, testTel.CheckReceiverMetrics("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
@@ -690,6 +773,28 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	srv, err := ocr.grpcServerSettings.ToServer(context.Background(), componenttest.NewNopHost(), ocr.settings.TelemetrySettings)
 	assert.EqualError(t, err, `failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 	assert.Nil(t, srv)
+}
+
+func TestStartShutdownShouldNotReportError(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	cfg := Config{
+		ServerConfig: configgrpc.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  addr,
+				Transport: "tcp",
+			},
+		},
+	}
+	ocr := newOpenCensusReceiver(&cfg, new(consumertest.TracesSink), new(consumertest.MetricsSink), receivertest.NewNopSettings())
+	require.NotNil(t, ocr)
+
+	nopHostReporter := &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			assert.NoError(t, event.Err())
+		},
+	}
+	require.NoError(t, ocr.Start(context.Background(), nopHostReporter))
+	require.NoError(t, ocr.Shutdown(context.Background()))
 }
 
 type errOrSinkConsumer struct {
@@ -746,4 +851,18 @@ func (esc *errOrSinkConsumer) Reset() {
 	if esc.MetricsSink != nil {
 		esc.MetricsSink.Reset()
 	}
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

@@ -405,7 +405,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             unit: '{ event }'
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -575,7 +575,7 @@ resourceMetrics:
               isMonotonic: true
             unit: ms
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -665,7 +665,7 @@ resourceMetrics:
               isMonotonic: true
             unit: '{ task }'
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -955,7 +955,7 @@ resourceMetrics:
               isMonotonic: true
             unit: bytes
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest
   - resource:
       attributes:
@@ -1245,5 +1245,5 @@ resourceMetrics:
               isMonotonic: true
             unit: bytes
         scope:
-          name: otelcol/apachesparkreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver
           version: latest

@@ -5,7 +5,6 @@ package sumologicexporter
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -15,18 +14,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
@@ -52,14 +50,6 @@ func createTestConfig() *Config {
 	config.MaxRequestBodySize = 20_971_520
 	config.MetricFormat = OTLPMetricFormat
 	return config
-}
-
-func createExporterCreateSettings() exporter.Settings {
-	return exporter.Settings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
-		},
-	}
 }
 
 // prepareExporterTest prepares an exporter test object using provided config
@@ -91,7 +81,8 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	cfg.ClientConfig.Endpoint = testServer.URL
 	cfg.ClientConfig.Auth = nil
 
-	exp := initExporter(cfg, createExporterCreateSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	require.NoError(t, err)
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
@@ -175,7 +166,7 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 func TestAllFailed(t *testing.T) {
 	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log\nAnother example log", body)
@@ -200,7 +191,7 @@ func TestAllFailed(t *testing.T) {
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, errors.As(err, &partial))
+	require.ErrorAs(t, err, &partial)
 	assert.Equal(t, logsExpected, partial.Data())
 }
 
@@ -213,7 +204,7 @@ func TestPartiallyFailed(t *testing.T) {
 			assert.Empty(t, req.Header.Get("X-Sumo-Fields"))
 		},
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Another example log", body)
@@ -239,21 +230,22 @@ func TestPartiallyFailed(t *testing.T) {
 	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 
 	var partial consumererror.Logs
-	require.True(t, errors.As(err, &partial))
+	require.ErrorAs(t, err, &partial)
 	assert.Equal(t, logsExpected, partial.Data())
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	exp := initExporter(&Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "test_endpoint",
-			TLSSetting: configtls.ClientConfig{
-				Config: configtls.Config{
-					MinVersion: "invalid",
-				},
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "test_endpoint"
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			MinVersion: "invalid",
 		},
-	}, createExporterCreateSettings())
+	}
+	exp, err := initExporter(&Config{
+		ClientConfig: clientConfig,
+	}, exportertest.NewNopSettings())
+	require.NoError(t, err)
 
 	assert.EqualError(t,
 		exp.start(context.Background(), componenttest.NewNopHost()),
@@ -403,7 +395,7 @@ func TestAllMetricsFailed(t *testing.T) {
 			name: "sent together when metrics under the same resource",
 			callbacks: []func(w http.ResponseWriter, req *http.Request){
 				func(w http.ResponseWriter, req *http.Request) {
-					w.WriteHeader(500)
+					w.WriteHeader(http.StatusInternalServerError)
 
 					body := extractBody(t, req)
 					expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
@@ -429,7 +421,7 @@ gauge_metric_name{test="test_value",test2="second_value",remote_name="156955",ur
 			name: "sent together when metrics under different resources",
 			callbacks: []func(w http.ResponseWriter, req *http.Request){
 				func(w http.ResponseWriter, req *http.Request) {
-					w.WriteHeader(500)
+					w.WriteHeader(http.StatusInternalServerError)
 
 					body := extractBody(t, req)
 					expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
@@ -469,7 +461,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 			assert.EqualError(t, err, tc.expectedError)
 
 			var partial consumererror.Metrics
-			require.True(t, errors.As(err, &partial))
+			require.ErrorAs(t, err, &partial)
 			// TODO fix
 			// assert.Equal(t, metrics, partial.GetMetrics())
 		})
@@ -516,7 +508,8 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	cfg := createConfig()
 	cfg.ClientConfig.Endpoint = testServer.URL
 
-	exp := initExporter(cfg, createExporterCreateSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	require.NoError(b, err)
 	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(b, exp.shutdown(context.Background()))
@@ -580,7 +573,7 @@ func TestSendEmptyTraces(t *testing.T) {
 func TestGetSignalURL(t *testing.T) {
 	testCases := []struct {
 		description  string
-		signalType   component.Type
+		signalType   pipeline.Signal
 		cfg          Config
 		endpointURL  string
 		expected     string
@@ -588,55 +581,55 @@ func TestGetSignalURL(t *testing.T) {
 	}{
 		{
 			description: "no change if log format not otlp",
-			signalType:  component.DataTypeLogs,
+			signalType:  pipeline.SignalLogs,
 			cfg:         Config{LogFormat: TextFormat},
 			endpointURL: "http://localhost",
 			expected:    "http://localhost",
 		},
 		{
 			description: "no change if metric format not otlp",
-			signalType:  component.DataTypeMetrics,
+			signalType:  pipeline.SignalMetrics,
 			cfg:         Config{MetricFormat: PrometheusFormat},
 			endpointURL: "http://localhost",
 			expected:    "http://localhost",
 		},
 		{
 			description: "always add suffix for traces if not present",
-			signalType:  component.DataTypeTraces,
+			signalType:  pipeline.SignalTraces,
 			endpointURL: "http://localhost",
 			expected:    "http://localhost/v1/traces",
 		},
 		{
 			description: "always add suffix for logs if not present",
-			signalType:  component.DataTypeLogs,
+			signalType:  pipeline.SignalLogs,
 			cfg:         Config{LogFormat: OTLPLogFormat},
 			endpointURL: "http://localhost",
 			expected:    "http://localhost/v1/logs",
 		},
 		{
 			description: "always add suffix for metrics if not present",
-			signalType:  component.DataTypeMetrics,
+			signalType:  pipeline.SignalMetrics,
 			cfg:         Config{MetricFormat: OTLPMetricFormat},
 			endpointURL: "http://localhost",
 			expected:    "http://localhost/v1/metrics",
 		},
 		{
 			description: "no change if suffix already present",
-			signalType:  component.DataTypeTraces,
+			signalType:  pipeline.SignalTraces,
 			endpointURL: "http://localhost/v1/traces",
 			expected:    "http://localhost/v1/traces",
 		},
 		{
 			description:  "error if url invalid",
-			signalType:   component.DataTypeTraces,
+			signalType:   pipeline.SignalTraces,
 			endpointURL:  ":",
 			errorMessage: `parse ":": missing protocol scheme`,
 		},
 		{
 			description:  "error if signal type is unknown",
-			signalType:   component.MustNewType("unknown"),
+			signalType:   pipeline.Signal{},
 			endpointURL:  "http://localhost",
-			errorMessage: `unknown signal type: unknown`,
+			errorMessage: `unknown signal type: `,
 		},
 	}
 	for _, tC := range testCases {

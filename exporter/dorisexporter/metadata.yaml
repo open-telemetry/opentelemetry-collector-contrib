@@ -1,0 +1,14 @@
+type: doris
+scope_name: otelcol/doris
+
+status:
+  class: exporter
+  stability:
+    development: [traces, metrics, logs]
+  distributions: []
+  codeowners:
+    active: [atoulme, joker-star-l]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

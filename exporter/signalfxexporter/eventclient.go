@@ -58,7 +58,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 	if !strings.HasSuffix(eventURL.Path, "v2/event") {
 		eventURL.Path = path.Join(eventURL.Path, "v2/event")
 	}
-	req, err := http.NewRequestWithContext(ctx, "POST", eventURL.String(), body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, eventURL.String(), body)
 	if err != nil {
 		return ld.LogRecordCount(), consumererror.NewPermanent(err)
 	}

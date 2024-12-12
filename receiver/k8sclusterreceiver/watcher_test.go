@@ -65,9 +65,10 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
-			args{exporters: map[component.ID]component.Component{
-				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
-			},
+			args{
+				exporters: map[component.ID]component.Component{
+					component.MustNewID("nop"): mockExporterWithK8sMetadata{},
+				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
 			false,
@@ -77,9 +78,10 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{},
 			},
-			args{exporters: map[component.ID]component.Component{
-				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
-			},
+			args{
+				exporters: map[component.ID]component.Component{
+					component.MustNewID("nop"): mockExporterWithK8sMetadata{},
+				},
 				metadataExportersFromConfig: []string{"nop/1"},
 			},
 			true,
@@ -100,7 +102,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 }
 
 func TestIsKindSupported(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name     string
 		client   *fake.Clientset
 		gvk      schema.GroupVersionKind
@@ -108,7 +110,7 @@ func TestIsKindSupported(t *testing.T) {
 	}{
 		{
 			name:     "nothing_supported",
-			client:   fake.NewSimpleClientset(),
+			client:   fake.NewClientset(),
 			gvk:      gvk.Pod,
 			expected: false,
 		},
@@ -133,7 +135,7 @@ func TestIsKindSupported(t *testing.T) {
 }
 
 func TestPrepareSharedInformerFactory(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		name   string
 		client *fake.Clientset
 	}{
@@ -144,7 +146,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 		{
 			name: "old_server_version", // With no batch/v1.CronJob support.
 			client: func() *fake.Clientset {
-				client := fake.NewSimpleClientset()
+				client := fake.NewClientset()
 				client.Resources = []*metav1.APIResourceList{
 					{
 						GroupVersion: "v1",
@@ -185,7 +187,6 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			obs, logs := observer.New(zap.WarnLevel)
 			obsLogger := zap.New(obs)
 			rw := &resourceWatcher{
@@ -229,7 +230,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
 
-	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{}, metadata.NewStore())
+	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
 	rw.entityLogConsumer = logsConsumer
 
 	step1 := time.Now()
@@ -266,6 +267,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	lr := logsConsumer.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 	expected := map[string]any{
 		"otel.entity.event.type": "entity_state",
+		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
 		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z"},

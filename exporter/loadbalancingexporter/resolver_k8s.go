@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,15 +27,19 @@ import (
 	"k8s.io/utils/ptr"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 var _ resolver = (*k8sResolver)(nil)
 
 var (
-	errNoSvc                        = errors.New("no service specified to resolve the backends")
-	k8sResolverMutator              = tag.Upsert(tag.MustNewKey("resolver"), "k8s")
-	k8sResolverSuccessTrueMutators  = []tag.Mutator{k8sResolverMutator, successTrueMutator}
-	k8sResolverSuccessFalseMutators = []tag.Mutator{k8sResolverMutator, successFalseMutator}
+	errNoSvc = errors.New("no service specified to resolve the backends")
+
+	k8sResolverAttr           = attribute.String("resolver", "k8s")
+	k8sResolverAttrSet        = attribute.NewSet(k8sResolverAttr)
+	k8sResolverSuccessAttrSet = attribute.NewSet(k8sResolverAttr, attribute.Bool("success", true))
+	k8sResolverFailureAttrSet = attribute.NewSet(k8sResolverAttr, attribute.Bool("success", false))
 )
 
 const (
@@ -62,13 +66,17 @@ type k8sResolver struct {
 	updateLock         sync.RWMutex
 	shutdownWg         sync.WaitGroup
 	changeCallbackLock sync.RWMutex
+
+	telemetry *metadata.TelemetryBuilder
 }
 
 func newK8sResolver(clt kubernetes.Interface,
 	logger *zap.Logger,
 	service string,
-	ports []int32, timeout time.Duration) (*k8sResolver, error) {
-
+	ports []int32,
+	timeout time.Duration,
+	tb *metadata.TelemetryBuilder,
+) (*k8sResolver, error) {
 	if len(service) == 0 {
 		return nil, errNoSvc
 	}
@@ -106,7 +114,11 @@ func newK8sResolver(clt kubernetes.Interface,
 	}
 
 	epsStore := &sync.Map{}
-	h := &handler{endpoints: epsStore, logger: logger}
+	h := &handler{
+		endpoints: epsStore,
+		logger:    logger,
+		telemetry: tb,
+	}
 	r := &k8sResolver{
 		logger:         logger,
 		svcName:        name,
@@ -118,6 +130,7 @@ func newK8sResolver(clt kubernetes.Interface,
 		handler:        h,
 		stopCh:         make(chan struct{}),
 		lwTimeout:      timeout,
+		telemetry:      tb,
 	}
 	h.callback = r.resolve
 
@@ -160,6 +173,7 @@ func (r *k8sResolver) shutdown(_ context.Context) error {
 	r.shutdownWg.Wait()
 	return nil
 }
+
 func newInClusterClient() (kubernetes.Interface, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -184,7 +198,7 @@ func (r *k8sResolver) resolve(ctx context.Context) ([]string, error) {
 		}
 		return true
 	})
-	_ = stats.RecordWithTags(ctx, k8sResolverSuccessTrueMutators, mNumResolutions.M(1))
+	r.telemetry.LoadbalancerNumResolutions.Add(ctx, 1, metric.WithAttributeSet(k8sResolverSuccessAttrSet))
 
 	// keep it always in the same order
 	sort.Strings(backends)
@@ -197,7 +211,8 @@ func (r *k8sResolver) resolve(ctx context.Context) ([]string, error) {
 	r.updateLock.Lock()
 	r.endpoints = backends
 	r.updateLock.Unlock()
-	_ = stats.RecordWithTags(ctx, k8sResolverSuccessTrueMutators, mNumBackends.M(int64(len(backends))))
+	r.telemetry.LoadbalancerNumBackends.Record(ctx, int64(len(backends)), metric.WithAttributeSet(k8sResolverAttrSet))
+	r.telemetry.LoadbalancerNumBackendUpdates.Add(ctx, 1, metric.WithAttributeSet(k8sResolverAttrSet))
 
 	// propagate the change
 	r.changeCallbackLock.RLock()
@@ -213,6 +228,7 @@ func (r *k8sResolver) onChange(f func([]string)) {
 	defer r.changeCallbackLock.Unlock()
 	r.onChangeCallbacks = append(r.onChangeCallbacks, f)
 }
+
 func (r *k8sResolver) Endpoints() []string {
 	r.updateLock.RLock()
 	defer r.updateLock.RUnlock()

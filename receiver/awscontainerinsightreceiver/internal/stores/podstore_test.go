@@ -687,7 +687,7 @@ func TestPodStore_addContainerID(t *testing.T) {
 	expected := map[string]any{}
 	expected["docker"] = map[string]string{"container_id": "637631e2634ea92c0c1aa5d24734cfe794f09c57933026592c12acafbaf6972c"}
 	assert.Equal(t, expected, kubernetesBlob)
-	assert.Equal(t, metric.GetTag(ci.AttributeContainerName), "ubuntu")
+	assert.Equal(t, "ubuntu", metric.GetTag(ci.ContainerNamekey))
 
 	tags = map[string]string{ci.AttributeContainerName: "notUbuntu", ci.AttributeContainerID: "123"}
 	kubernetesBlob = map[string]any{}
@@ -697,7 +697,7 @@ func TestPodStore_addContainerID(t *testing.T) {
 	expected = map[string]any{}
 	expected["container_id"] = "123"
 	assert.Equal(t, expected, kubernetesBlob)
-	assert.Equal(t, metric.GetTag(ci.AttributeContainerName), "notUbuntu")
+	assert.Equal(t, "notUbuntu", metric.GetTag(ci.ContainerNamekey))
 }
 
 func TestPodStore_addLabel(t *testing.T) {
@@ -900,8 +900,8 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	pod.Name = kpName
 	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	assert.Equal(t, kpName, metric.GetTag(ci.AttributePodName))
-	assert.True(t, len(kubernetesBlob) == 0)
+	assert.Equal(t, kpName, metric.GetTag(ci.PodNameKey))
+	assert.Empty(t, kubernetesBlob)
 
 	podStore.prefFullPodName = false
 	metric = generateMetric(fields, tags)
@@ -909,12 +909,11 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	pod.Name = kpName
 	kubernetesBlob = map[string]any{}
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
-	assert.Equal(t, kubeProxy, metric.GetTag(ci.AttributePodName))
-	assert.True(t, len(kubernetesBlob) == 0)
+	assert.Equal(t, kubeProxy, metric.GetTag(ci.PodNameKey))
+	assert.Empty(t, kubernetesBlob)
 }
 
-type mockPodClient struct {
-}
+type mockPodClient struct{}
 
 func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
 	pod := getBaseTestPodInfo()

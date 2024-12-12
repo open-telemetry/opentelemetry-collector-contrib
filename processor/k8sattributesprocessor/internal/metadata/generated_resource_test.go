@@ -9,12 +9,13 @@ import (
 )
 
 func TestResourceBuilder(t *testing.T) {
-	for _, test := range []string{"default", "all_set", "none_set"} {
-		t.Run(test, func(t *testing.T) {
-			cfg := loadResourceAttributesConfig(t, test)
+	for _, tt := range []string{"default", "all_set", "none_set"} {
+		t.Run(tt, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerImageRepoDigests([]any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"})
 			rb.SetContainerImageTag("container.image.tag-val")
 			rb.SetK8sClusterUID("k8s.cluster.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
@@ -29,6 +30,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
 			rb.SetK8sPodHostname("k8s.pod.hostname-val")
+			rb.SetK8sPodIP("k8s.pod.ip-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodStartTime("k8s.pod.start_time-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
@@ -40,20 +42,20 @@ func TestResourceBuilder(t *testing.T) {
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
-			switch test {
+			switch tt {
 			case "default":
 				assert.Equal(t, 8, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 23, res.Attributes().Len())
+				assert.Equal(t, 25, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
 			default:
-				assert.Failf(t, "unexpected test case: %s", test)
+				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
 			val, ok := res.Attributes().Get("container.id")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "container.id-val", val.Str())
 			}
@@ -62,33 +64,38 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "container.image.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("container.image.repo_digests")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, []any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"}, val.Slice().AsRaw())
+			}
 			val, ok = res.Attributes().Get("container.image.tag")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.image.tag-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.uid")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.cluster.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.container.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.container.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cronjob.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.cronjob.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.daemonset.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.daemonset.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.daemonset.uid")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.daemonset.uid-val", val.Str())
 			}
@@ -98,17 +105,17 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.deployment.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.deployment.uid")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.deployment.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.job.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.job.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.job.uid")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.job.uid-val", val.Str())
 			}
@@ -123,14 +130,19 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.node.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.uid")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.node.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.hostname")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.pod.hostname-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.pod.ip")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.pod.ip-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
@@ -148,22 +160,22 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.pod.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.replicaset.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.replicaset.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.replicaset.uid")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.replicaset.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.statefulset.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.uid")
-			assert.Equal(t, test == "all_set", ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.statefulset.uid-val", val.Str())
 			}

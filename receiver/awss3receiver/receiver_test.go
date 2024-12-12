@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -33,6 +35,26 @@ func generateTraceData() ptrace.Traces {
 	return td
 }
 
+func generateMetricData() pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	rs := md.ResourceMetrics().AppendEmpty()
+	metric := rs.ScopeMetrics().AppendEmpty().Metrics()
+	dp := metric.AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetDoubleValue(1.0)
+	dp.SetStartTimestamp(1581452772000000000)
+	dp.SetTimestamp(1581452772000000000)
+	return md
+}
+
+func generateLogData() plog.Logs {
+	ld := plog.NewLogs()
+	rs := ld.ResourceLogs().AppendEmpty()
+	log := rs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log.SetObservedTimestamp(1581452772000000000)
+	log.Body().SetStr("test")
+	return ld
+}
+
 func gzipCompress(data []byte) []byte {
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
@@ -45,24 +67,8 @@ type hostWithExtensions struct {
 	extensions map[component.ID]component.Component
 }
 
-func (h hostWithExtensions) Start(context.Context, component.Host) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) Shutdown(context.Context) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) GetFactory(component.Kind, component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
-}
-
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	panic("unsupported")
 }
 
 type nonEncodingExtension struct{}
@@ -76,7 +82,9 @@ func (e nonEncodingExtension) Shutdown(_ context.Context) error {
 }
 
 type unmarshalExtension struct {
-	trace ptrace.Traces
+	trace  ptrace.Traces
+	metric pmetric.Metrics
+	log    plog.Logs
 }
 
 func (e unmarshalExtension) Start(_ context.Context, _ component.Host) error {
@@ -91,7 +99,15 @@ func (e unmarshalExtension) UnmarshalTraces(_ []byte) (ptrace.Traces, error) {
 	return e.trace, nil
 }
 
-func Test_receiveBytes(t *testing.T) {
+func (e unmarshalExtension) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
+	return e.metric, nil
+}
+
+func (e unmarshalExtension) UnmarshalLogs(_ []byte) (plog.Logs, error) {
+	return e.log, nil
+}
+
+func Test_receiveBytes_traces(t *testing.T) {
 	testTrace := generateTraceData()
 
 	jsonTrace, err := (&ptrace.JSONMarshaler{}).MarshalTraces(testTrace)
@@ -205,15 +221,285 @@ func Test_receiveBytes(t *testing.T) {
 			})
 			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 			require.NoError(t, err)
-			r := &awss3TraceReceiver{
-				consumer: tracesConsumer,
-				logger:   zap.NewNop(),
-				obsrecv:  obsrecv,
+			r := &awss3Receiver{
+				logger:  zap.NewNop(),
+				obsrecv: obsrecv,
 				extensions: encodingExtensions{
 					{
 						extension: &unmarshalExtension{trace: testTrace},
 						suffix:    ".test",
 					},
+				},
+				dataProcessor: &traceReceiver{
+					consumer: tracesConsumer,
+				},
+			}
+			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_receiveBytes_metrics(t *testing.T) {
+	testMetric := generateMetricData()
+
+	jsonMetric, err := (&pmetric.JSONMarshaler{}).MarshalMetrics(testMetric)
+	require.NoError(t, err)
+	protobufMetric, err := (&pmetric.ProtoMarshaler{}).MarshalMetrics(testMetric)
+	require.NoError(t, err)
+
+	type args struct {
+		key  string
+		data []byte
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    bool
+		wantMetric bool
+	}{
+		{
+			name: "nil data",
+			args: args{
+				key:  "test.json",
+				data: nil,
+			},
+			wantErr:    false,
+			wantMetric: false,
+		},
+		{
+			name: ".json",
+			args: args{
+				key:  "test.json",
+				data: jsonMetric,
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".binpb",
+			args: args{
+				key:  "test.binpb",
+				data: protobufMetric,
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".unknown",
+			args: args{
+				key:  "test.unknown",
+				data: []byte("unknown"),
+			},
+			wantErr:    false,
+			wantMetric: false,
+		},
+		{
+			name: ".json.gz",
+			args: args{
+				key:  "test.json.gz",
+				data: gzipCompress(jsonMetric),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".binpb.gz",
+			args: args{
+				key:  "test.binpb.gz",
+				data: gzipCompress(protobufMetric),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "encoding extension",
+			args: args{
+				key:  "test.test",
+				data: []byte("test"),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "encoding extension .gz",
+			args: args{
+				key:  "test.test",
+				data: gzipCompress([]byte("test")),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "invalid gzip",
+			args: args{
+				key:  "test.json.gz",
+				data: []byte("invalid gzip"),
+			},
+			wantErr:    true,
+			wantMetric: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tracesConsumer, _ := consumer.NewMetrics(func(_ context.Context, md pmetric.Metrics) error {
+				t.Helper()
+				if !tt.wantMetric {
+					t.Errorf("receiveBytes() received unexpected trace")
+				} else {
+					require.Equal(t, testMetric, md)
+				}
+				return nil
+			})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			require.NoError(t, err)
+			r := &awss3Receiver{
+				logger:  zap.NewNop(),
+				obsrecv: obsrecv,
+				extensions: encodingExtensions{
+					{
+						extension: &unmarshalExtension{metric: testMetric},
+						suffix:    ".test",
+					},
+				},
+				dataProcessor: &metricsReceiver{
+					consumer: tracesConsumer,
+				},
+			}
+			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
+				t.Errorf("receiveBytes() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_receiveBytes_logs(t *testing.T) {
+	testLog := generateLogData()
+
+	jsonLog, err := (&plog.JSONMarshaler{}).MarshalLogs(testLog)
+	require.NoError(t, err)
+	protobufLog, err := (&plog.ProtoMarshaler{}).MarshalLogs(testLog)
+	require.NoError(t, err)
+
+	type args struct {
+		key  string
+		data []byte
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantErr    bool
+		wantMetric bool
+	}{
+		{
+			name: "nil data",
+			args: args{
+				key:  "test.json",
+				data: nil,
+			},
+			wantErr:    false,
+			wantMetric: false,
+		},
+		{
+			name: ".json",
+			args: args{
+				key:  "test.json",
+				data: jsonLog,
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".binpb",
+			args: args{
+				key:  "test.binpb",
+				data: protobufLog,
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".unknown",
+			args: args{
+				key:  "test.unknown",
+				data: []byte("unknown"),
+			},
+			wantErr:    false,
+			wantMetric: false,
+		},
+		{
+			name: ".json.gz",
+			args: args{
+				key:  "test.json.gz",
+				data: gzipCompress(jsonLog),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: ".binpb.gz",
+			args: args{
+				key:  "test.binpb.gz",
+				data: gzipCompress(protobufLog),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "encoding extension",
+			args: args{
+				key:  "test.test",
+				data: []byte("test"),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "encoding extension .gz",
+			args: args{
+				key:  "test.test",
+				data: gzipCompress([]byte("test")),
+			},
+			wantErr:    false,
+			wantMetric: true,
+		},
+		{
+			name: "invalid gzip",
+			args: args{
+				key:  "test.json.gz",
+				data: []byte("invalid gzip"),
+			},
+			wantErr:    true,
+			wantMetric: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tracesConsumer, _ := consumer.NewLogs(func(_ context.Context, ld plog.Logs) error {
+				t.Helper()
+				if !tt.wantMetric {
+					t.Errorf("receiveBytes() received unexpected trace")
+				} else {
+					require.Equal(t, testLog, ld)
+				}
+				return nil
+			})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+			require.NoError(t, err)
+			r := &awss3Receiver{
+				logger:  zap.NewNop(),
+				obsrecv: obsrecv,
+				extensions: encodingExtensions{
+					{
+						extension: &unmarshalExtension{log: testLog},
+						suffix:    ".test",
+					},
+				},
+				dataProcessor: &logsReceiver{
+					consumer: tracesConsumer,
 				},
 			}
 			if err := r.receiveBytes(context.Background(), tt.args.key, tt.args.data); (err != nil) != tt.wantErr {
@@ -261,15 +547,10 @@ func Test_newEncodingExtensions(t *testing.T) {
 			wantErr: assert.NoError,
 		},
 		{
-			name: "non-encoding",
+			name: "empty",
 			args: args{
-				encodingsConfig: []Encoding{
-					{
-						Extension: component.MustNewID("nonencoding"),
-						Suffix:    ".non-encoding",
-					},
-				},
-				host: host,
+				encodingsConfig: []Encoding{},
+				host:            host,
 			},
 			want:    encodingExtensions{},
 			wantErr: assert.NoError,

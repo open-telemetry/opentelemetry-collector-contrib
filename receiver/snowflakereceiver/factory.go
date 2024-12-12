@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
@@ -43,7 +44,8 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-func createMetricsReceiver(_ context.Context,
+func createMetricsReceiver(
+	_ context.Context,
 	params receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
@@ -51,7 +53,7 @@ func createMetricsReceiver(_ context.Context,
 	cfg := baseCfg.(*Config)
 	snowflakeScraper := newSnowflakeMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
+	s, err := scraper.NewMetrics(snowflakeScraper.scrape, scraper.WithStart(snowflakeScraper.start), scraper.WithShutdown(snowflakeScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +62,6 @@ func createMetricsReceiver(_ context.Context,
 		&cfg.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraper(metadata.Type, s),
 	)
 }
