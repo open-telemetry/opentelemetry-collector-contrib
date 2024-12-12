@@ -85,8 +85,8 @@ func (r *PerformanceResults) Init(resultsDir string) {
 	_, _ = io.WriteString(r.resultsFile,
 		"# Test PerformanceResults\n"+
 			fmt.Sprintf("Started: %s\n\n", time.Now().Format(time.RFC1123Z))+
-			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|\n"+
-			"----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|\n")
+			"Test                                    |Result|Duration|CPU Avg%|CPU Max%|CPU Limit|RAM Avg MiB|RAM Max MiB|RAM Limit MiB|Sent Items|Received Items|\n"+
+			"----------------------------------------|------|-------:|-------:|-------:|--------:|----------:|----------:|------------:|---------:|-------------:|\n")
 }
 
 // Save the total results and close the file.
