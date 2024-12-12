@@ -36,8 +36,8 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 	return &Unmarshaler{logger}
 }
 
-// Unmarshal deserializes the records into pmetric.Metrics
-func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
+// UnmarshalMetrics deserializes the records into pmetric.Metrics
+func (u Unmarshaler) UnmarshalMetrics(_ string, records [][]byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	for recordIndex, record := range records {
 		dataLen, pos := len(record), 0

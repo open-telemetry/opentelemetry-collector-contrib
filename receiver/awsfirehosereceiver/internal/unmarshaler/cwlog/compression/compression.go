@@ -18,10 +18,7 @@ func Zip(data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	if err = w.Flush(); err != nil {
-		return nil, err
-	}
-
+	//Close handles flushing.
 	if err = w.Close(); err != nil {
 		return nil, err
 	}
@@ -37,6 +34,7 @@ func Unzip(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 
 	var rv bytes.Buffer
 	_, err = rv.ReadFrom(r)
