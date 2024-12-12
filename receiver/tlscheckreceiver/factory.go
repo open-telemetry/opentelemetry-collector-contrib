@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper" collectorscraper
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
@@ -47,7 +48,7 @@ func newReceiver(
 	}
 
 	mp := newScraper(tlsCheckConfig, settings, getConnectionState)
-	s, err := scraper.NewMetrics(mp.scrape)
+	s, err := collectorscraper.NewMetrics(mp.scrape)
 	if err != nil {
 		return nil, err
 	}
