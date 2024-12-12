@@ -481,18 +481,29 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	case strings.HasPrefix(name, "Setter"):
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
-		if argVal.Literal == nil || argVal.Literal.Path == nil {
-			return nil, fmt.Errorf("must be a path")
+		if argVal.Literal != nil && argVal.Literal.Path != nil {
+			np, err := p.newPath(argVal.Literal.Path)
+			if err != nil {
+				return nil, err
+			}
+			arg, err := p.parsePath(np)
+			if err != nil {
+				return nil, err
+			}
+			return arg, nil
 		}
-		np, err := p.newPath(argVal.Literal.Path)
-		if err != nil {
-			return nil, err
+		if argVal.ExpressionPath != nil {
+			np, err := p.newPath(argVal.ExpressionPath)
+			if err != nil {
+				return nil, err
+			}
+			arg, err := p.parsePath(np)
+			if err != nil {
+				return nil, err
+			}
+			return arg, nil
 		}
-		arg, err := p.parsePath(np)
-		if err != nil {
-			return nil, err
-		}
-		return arg, nil
+		return nil, fmt.Errorf("must be a path")
 	case strings.HasPrefix(name, "Getter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {

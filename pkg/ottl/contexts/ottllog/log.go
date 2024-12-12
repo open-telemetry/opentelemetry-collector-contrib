@@ -485,6 +485,7 @@ func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSette
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetLogRecord().Attributes(), key, val)
 		},
+		// TODO
 	}
 }
 
