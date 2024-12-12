@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-//go:build integration && sudo
-// +build integration,sudo
+//go:build integration
+// +build integration
 
 // Privileged access is required to set cgroup's memory and cpu max values
 
@@ -63,7 +63,7 @@ func cgroupMaxCpu(filename string) (quota int64, period uint64, err error) {
 	return quota, period, err
 }
 
-func TestCgroupV2Integration(t *testing.T) {
+func TestCgroupV2SudoIntegration(t *testing.T) {
 	checkCgroupSystem(t)
 	pointerInt64 := func(int int64) *int64 {
 		return &int
