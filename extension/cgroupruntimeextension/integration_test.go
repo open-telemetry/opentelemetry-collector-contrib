@@ -65,11 +65,11 @@ func cgroupMaxCpu(filename string) (quota int64, period uint64, err error) {
 
 func TestCgroupV2SudoIntegration(t *testing.T) {
 	checkCgroupSystem(t)
-	pointerInt64 := func(int int64) *int64 {
-		return &int
+	pointerInt64 := func(val int64) *int64 {
+		return &val
 	}
-	pointerUint64 := func(int uint64) *uint64 {
-		return &int
+	pointerUint64 := func(uval uint64) *uint64 {
+		return &uval
 	}
 
 	tests := []struct {
@@ -168,7 +168,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	if initialMaxMemory == math.MaxUint64 {
 		// fallback solution to set cgroup's max memory to "max"
 		memoryCgroupCleanUp = func() {
-			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "memory.max"), []byte("max"), 0o644)
+			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "memory.max"), []byte("max"), 0o600)
 			assert.NoError(t, err)
 		}
 	}
@@ -188,7 +188,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	if initialCpuQuota == math.MaxInt64 {
 		// fallback solution to set cgroup's max cpu to "max"
 		cpuCgroupCleanUp = func() {
-			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "cpu.max"), []byte("max"), 0o644)
+			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "cpu.max"), []byte("max"), 0o600)
 			assert.NoError(t, err)
 		}
 	}
