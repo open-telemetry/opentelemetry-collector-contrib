@@ -633,7 +633,6 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 }
 
 func TestProcessWithTimeRemovalFlagDisabled(t *testing.T) {
-
 	require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), false))
 	t.Cleanup(func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(removeOriginalTimeField.ID(), true))

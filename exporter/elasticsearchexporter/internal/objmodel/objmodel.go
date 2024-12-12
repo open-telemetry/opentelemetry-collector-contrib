@@ -88,8 +88,10 @@ const (
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
-var nilValue = Value{kind: KindNil}
-var ignoreValue = Value{kind: KindIgnore}
+var (
+	nilValue    = Value{kind: KindNil}
+	ignoreValue = Value{kind: KindIgnore}
+)
 
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
@@ -372,7 +374,6 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 
 		// increase object level up to current field
 		for {
-
 			// Otel mode serialization
 			if otel {
 				// Check the prefix

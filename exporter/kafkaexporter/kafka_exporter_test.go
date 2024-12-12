@@ -140,7 +140,6 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 	require.NotNil(t, lexp)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.ErrorContains(t, err, "failed to load TLS config")
-
 }
 
 func TestNewExporter_err_compression(t *testing.T) {

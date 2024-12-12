@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -328,7 +327,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				return
 			}
 
-			expectedFile := filepath.Join("testdata", "scraper", fmt.Sprintf("%s.yaml", tt.expectedMetricsFilename))
+			expectedFile := filepath.Join("testdata", "scraper", tt.expectedMetricsFilename+".yaml")
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
 

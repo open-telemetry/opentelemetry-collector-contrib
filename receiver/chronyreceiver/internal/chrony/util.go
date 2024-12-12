@@ -11,9 +11,7 @@ import (
 	"strings"
 )
 
-var (
-	ErrInvalidNetwork = errors.New("invalid network format")
-)
+var ErrInvalidNetwork = errors.New("invalid network format")
 
 // SplitNetworkEndpoint takes in a URL like string of the format: [network type]://[network endpoint]
 // and then will return the network and the endpoint for the client to use for connection.

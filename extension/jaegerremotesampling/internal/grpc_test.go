@@ -94,9 +94,11 @@ func (g *grpcServerMock) Serve(_ net.Listener) error {
 	g.quit = make(chan bool)
 	return nil
 }
+
 func (g *grpcServerMock) Stop() {
 	g.quit <- true
 }
+
 func (g *grpcServerMock) GracefulStop() {
 	select {
 	case <-g.quit:

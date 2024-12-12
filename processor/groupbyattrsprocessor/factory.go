@@ -15,9 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
-var (
-	consumerCapabilities = consumer.Capabilities{MutatesData: true}
-)
+var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() processor.Factory {
@@ -64,8 +62,8 @@ func createTracesProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (processor.Traces, error) {
-
+	nextConsumer consumer.Traces,
+) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(set, oCfg.GroupByKeys)
 	if err != nil {
@@ -86,8 +84,8 @@ func createLogsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Logs) (processor.Logs, error) {
-
+	nextConsumer consumer.Logs,
+) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(set, oCfg.GroupByKeys)
 	if err != nil {
@@ -108,8 +106,8 @@ func createMetricsProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextConsumer consumer.Metrics) (processor.Metrics, error) {
-
+	nextConsumer consumer.Metrics,
+) (processor.Metrics, error) {
 	oCfg := cfg.(*Config)
 	gap, err := createGroupByAttrsProcessor(set, oCfg.GroupByKeys)
 	if err != nil {

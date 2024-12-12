@@ -9,8 +9,10 @@ import (
 	"github.com/jonboulle/clockwork"
 )
 
-var Now = time.Now
-var Since = time.Since
+var (
+	Now   = time.Now
+	Since = time.Since
+)
 
 // Clock where Now() always returns a greater value than the previous return value
 type AlwaysIncreasingClock struct {

@@ -26,9 +26,7 @@ const (
 	queryTime  = "time"
 )
 
-var (
-	errCannotConvertValue = errors.New("cannot convert field value to attribute")
-)
+var errCannotConvertValue = errors.New("cannot convert field value to attribute")
 
 // splunkHecToLogData transforms splunk events into logs
 func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, error) {
@@ -140,7 +138,6 @@ func convertToValue(logger *zap.Logger, src any, dest pcommon.Value) error {
 	default:
 		logger.Debug("Unsupported value conversion", zap.Any("value", src))
 		return errCannotConvertValue
-
 	}
 	return nil
 }

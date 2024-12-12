@@ -623,9 +623,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	}
 	cfg := createDefaultConfig().(*Config)
 	p, err := createMetricsProcessor(context.Background(), params, cfg, c)
-	if err != nil {
-		b.Fatal(err)
-	}
+	require.NoError(b, err)
 
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()

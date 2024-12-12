@@ -12,9 +12,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -22,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -222,20 +221,11 @@ func (m *mockConfig) SetRootPath(_ string) {}
 
 func (m *mockConfig) SetEnvMap(_ common.EnvMap) {}
 
-type mockFactory struct{ mock.Mock }
-type mockScraper struct{ mock.Mock }
+type errFactory struct{}
 
-func (m *mockFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
-func (m *mockFactory) CreateMetricsScraper(context.Context, receiver.Settings, internal.Config) (scraperhelper.Scraper, error) {
-	args := m.MethodCalled("CreateMetricsScraper")
-	return args.Get(0).(scraperhelper.Scraper), args.Error(1)
-}
-
-func (m *mockScraper) ID() component.ID                            { return component.MustNewID("mock_scraper") }
-func (m *mockScraper) Start(context.Context, component.Host) error { return nil }
-func (m *mockScraper) Shutdown(context.Context) error              { return nil }
-func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {
-	return pmetric.NewMetrics(), errors.New("err1")
+func (m *errFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
+func (m *errFactory) CreateMetricsScraper(context.Context, receiver.Settings, internal.Config) (scraper.Metrics, error) {
+	return nil, errors.New("err1")
 }
 
 func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
@@ -252,8 +242,7 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 }
 
 func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
-	mFactory := &mockFactory{}
-	mFactory.On("CreateMetricsScraper").Return(&mockScraper{}, errors.New("err1"))
+	mFactory := &errFactory{}
 	tmp := scraperFactories
 	scraperFactories = map[string]internal.ScraperFactory{mockTypeStr: mFactory}
 	defer func() {

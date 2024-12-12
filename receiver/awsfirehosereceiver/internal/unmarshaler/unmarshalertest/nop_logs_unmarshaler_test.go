@@ -4,7 +4,7 @@
 package unmarshalertest
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,7 +31,7 @@ func TestNewWithLogs(t *testing.T) {
 }
 
 func TestNewErrLogs(t *testing.T) {
-	wantErr := fmt.Errorf("test error")
+	wantErr := errors.New("test error")
 	unmarshaler := NewErrLogs(wantErr)
 	got, err := unmarshaler.Unmarshal(nil)
 	require.Error(t, err)

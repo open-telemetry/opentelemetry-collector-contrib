@@ -14,10 +14,10 @@ import (
 )
 
 func TestNewTraces(t *testing.T) {
-
 	t.Run("empty", func(t *testing.T) {
 		expected := ptrace.NewTraces()
 		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTraces("", "", "", "")))
+		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTracesFromOpts()))
 	})
 
 	t.Run("simple", func(t *testing.T) {
@@ -34,6 +34,9 @@ func TestNewTraces(t *testing.T) {
 			return td
 		}()
 		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTraces("A", "B", "C", "D")))
+		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTracesFromOpts(
+			ptraceutiltest.Resource("A", ptraceutiltest.Scope("B", ptraceutiltest.Span("C", ptraceutiltest.SpanEvent("D")))),
+		)))
 	})
 
 	t.Run("two_resources", func(t *testing.T) {
@@ -58,6 +61,10 @@ func TestNewTraces(t *testing.T) {
 			return td
 		}()
 		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTraces("AB", "C", "D", "E")))
+		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTracesFromOpts(
+			ptraceutiltest.Resource("A", ptraceutiltest.Scope("C", ptraceutiltest.Span("D", ptraceutiltest.SpanEvent("E")))),
+			ptraceutiltest.Resource("B", ptraceutiltest.Scope("C", ptraceutiltest.Span("D", ptraceutiltest.SpanEvent("E")))),
+		)))
 	})
 
 	t.Run("two_scopes", func(t *testing.T) {
@@ -80,6 +87,12 @@ func TestNewTraces(t *testing.T) {
 			return td
 		}()
 		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTraces("A", "BC", "D", "E")))
+		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTracesFromOpts(
+			ptraceutiltest.Resource("A",
+				ptraceutiltest.Scope("B", ptraceutiltest.Span("D", ptraceutiltest.SpanEvent("E"))),
+				ptraceutiltest.Scope("C", ptraceutiltest.Span("D", ptraceutiltest.SpanEvent("E"))),
+			),
+		)))
 	})
 
 	t.Run("two_spans", func(t *testing.T) {
@@ -100,6 +113,14 @@ func TestNewTraces(t *testing.T) {
 			return td
 		}()
 		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTraces("A", "B", "CD", "E")))
+		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTracesFromOpts(
+			ptraceutiltest.Resource("A",
+				ptraceutiltest.Scope("B",
+					ptraceutiltest.Span("C", ptraceutiltest.SpanEvent("E")),
+					ptraceutiltest.Span("D", ptraceutiltest.SpanEvent("E")),
+				),
+			),
+		)))
 	})
 
 	t.Run("two_spanevents", func(t *testing.T) {
@@ -118,5 +139,12 @@ func TestNewTraces(t *testing.T) {
 			return td
 		}()
 		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTraces("A", "B", "C", "DE")))
+		assert.NoError(t, ptracetest.CompareTraces(expected, ptraceutiltest.NewTracesFromOpts(
+			ptraceutiltest.Resource("A",
+				ptraceutiltest.Scope("B",
+					ptraceutiltest.Span("C", ptraceutiltest.SpanEvent("D"), ptraceutiltest.SpanEvent("E")),
+				),
+			),
+		)))
 	})
 }

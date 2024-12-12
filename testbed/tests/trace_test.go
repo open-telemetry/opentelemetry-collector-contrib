@@ -149,6 +149,7 @@ func TestTrace10kSPS(t *testing.T) {
 				performanceResultsSummary,
 				processors,
 				nil,
+				nil,
 			)
 		})
 	}
@@ -180,7 +181,6 @@ func TestTrace10kSPSJaegerGRPC(t *testing.T) {
 }
 
 func TestTraceNoBackend10kSPS(t *testing.T) {
-
 	limitProcessors := []ProcessorNameAndConfigBody{
 		{
 			Name: "memory_limiter",
@@ -194,7 +194,7 @@ func TestTraceNoBackend10kSPS(t *testing.T) {
 
 	noLimitProcessors := []ProcessorNameAndConfigBody{}
 
-	var processorsConfig = []processorConfig{
+	processorsConfig := []processorConfig{
 		{
 			Name:                "NoMemoryLimit",
 			Processor:           noLimitProcessors,
@@ -277,7 +277,6 @@ func verifySingleSpan(
 	spanName string,
 	verifyReceived func(span ptrace.Span),
 ) {
-
 	// Clear previously received traces.
 	tc.MockBackend.ClearReceivedItems()
 	startCounter := tc.MockBackend.DataItemsReceived()

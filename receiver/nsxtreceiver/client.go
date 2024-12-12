@@ -36,9 +36,7 @@ type nsxClient struct {
 	logger   *zap.Logger
 }
 
-var (
-	errUnauthorized = errors.New("STATUS 403, unauthorized")
-)
+var errUnauthorized = errors.New("STATUS 403, unauthorized")
 
 func newClient(ctx context.Context, c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
 	client, err := c.ClientConfig.ToClient(ctx, host, settings)
@@ -133,7 +131,6 @@ func (c *nsxClient) InterfaceStatus(
 		ctx,
 		c.interfaceStatusEndpoint(class, nodeID, interfaceID),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("unable to get interface stats: %w", err)
 	}

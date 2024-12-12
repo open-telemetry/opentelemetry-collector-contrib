@@ -19,14 +19,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
-var (
-	errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
-)
+var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 
 type splunkScraper struct {
 	splunkClient *splunkEntClient
@@ -116,7 +114,8 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			fn func(ctx context.Context, now pcommon.Timestamp, errs chan error),
 			ctx context.Context,
 			now pcommon.Timestamp,
-			errs chan error) {
+			errs chan error,
+		) {
 			// actual function body
 			defer wg.Done()
 			fn(ctx, now, errs)
@@ -426,7 +425,6 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
-
 	}
 	// Record the results
 	var host string
@@ -1665,7 +1663,6 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	}
 
 	for _, f := range da.Entries {
-
 		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
 			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
 			if err != nil {
@@ -1734,6 +1731,5 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			}
 			s.mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(now, cacheTotalEntries, s.conf.SHEndpoint.Endpoint)
 		}
-
 	}
 }

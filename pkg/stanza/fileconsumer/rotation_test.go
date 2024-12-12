@@ -191,14 +191,14 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	operator.wg.Wait()
 
 	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
-	err := os.Mkdir(newDir, 0777)
+	err := os.Mkdir(newDir, 0o777)
 	require.NoError(t, err)
 	newFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
 
 	err = os.Rename(temp1.Name(), newFileName)
 	require.NoError(t, err)
 
-	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, movedFile, "testlog2\n")
 	operator.poll(context.Background())
@@ -236,12 +236,12 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	originalFile.Close()
 
 	newDir := fmt.Sprintf("%s%s", tempDir[:len(tempDir)-1], "_new/")
-	require.NoError(t, os.Mkdir(newDir, 0777))
+	require.NoError(t, os.Mkdir(newDir, 0o777))
 	movedFileName := fmt.Sprintf("%s%s", newDir, "newfile.log")
 
 	require.NoError(t, os.Rename(orginalName, movedFileName))
 
-	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	newFile, err := os.OpenFile(orginalName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	require.NoError(t, err)
 	filetest.WriteString(t, newFile, "testlog3\n")
 

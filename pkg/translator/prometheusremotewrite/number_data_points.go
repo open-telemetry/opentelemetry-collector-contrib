@@ -14,7 +14,8 @@ import (
 )
 
 func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, settings Settings, name string) {
+	resource pcommon.Resource, settings Settings, name string,
+) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		labels := createAttributes(
@@ -44,7 +45,8 @@ func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.Number
 }
 
 func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
-	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string) {
+	resource pcommon.Resource, metric pmetric.Metric, settings Settings, name string,
+) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
 		lbls := createAttributes(

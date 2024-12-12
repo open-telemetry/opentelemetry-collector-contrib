@@ -86,7 +86,6 @@ func TestAttributes_InsertValue(t *testing.T) {
 }
 
 func TestAttributes_InsertFromAttribute(t *testing.T) {
-
 	testCases := []testCase{
 		// Ensure no attribute is inserted because because attributes do not exist.
 		{
@@ -144,7 +143,6 @@ func TestAttributes_InsertFromAttribute(t *testing.T) {
 }
 
 func TestAttributes_UpdateValue(t *testing.T) {
-
 	testCases := []testCase{
 		// Ensure no changes to the span as there is no attributes map.
 		{
@@ -190,7 +188,6 @@ func TestAttributes_UpdateValue(t *testing.T) {
 }
 
 func TestAttributes_UpdateFromAttribute(t *testing.T) {
-
 	testCases := []testCase{
 		// Ensure no changes to the span as there is no attributes map.
 		{
@@ -403,7 +400,6 @@ func TestAttributes_Extract(t *testing.T) {
 
 	cfg := &Settings{
 		Actions: []ActionKeyValue{
-
 			{Key: "user_key", RegexPattern: "^\\/api\\/v1\\/document\\/(?P<new_user_key>.*)\\/update\\/(?P<version>.*)$", Action: EXTRACT},
 		},
 	}
@@ -418,7 +414,6 @@ func TestAttributes_Extract(t *testing.T) {
 }
 
 func TestAttributes_UpsertFromAttribute(t *testing.T) {
-
 	testCases := []testCase{
 		// Ensure `new_user_key` is not set for spans with no attributes.
 		{
@@ -857,7 +852,8 @@ func TestInvalidConfig(t *testing.T) {
 			},
 			errorString: "error creating AttrProc due to missing required field \"pattern\" for action \"extract\" at the 0-th action",
 		},
-		{name: "set value for extract",
+		{
+			name: "set value for extract",
 			actionLists: []ActionKeyValue{
 				{Key: "Key", RegexPattern: "(?P<operation_website>.*?)$", Value: "value", Action: EXTRACT},
 			},
@@ -919,14 +915,14 @@ func TestValidConfiguration(t *testing.T) {
 	compiledRegex := regexp.MustCompile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
-		{Key: "two", Action: INSERT,
+		{
+			Key: "two", Action: INSERT,
 			AttributeValue: &av,
 		},
 		{Key: "three", FromAttribute: "two", Action: UPDATE},
 		{Key: "five", FromAttribute: "two", Action: UPSERT},
 		{Key: "two", Regex: compiledRegex, AttrNames: []string{"", "documentId"}, Action: EXTRACT},
 	}, ap.actions)
-
 }
 
 func hash(b []byte) string {
@@ -950,7 +946,6 @@ func (a mockInfoAuth) GetAttributeNames() []string {
 }
 
 func TestFromContext(t *testing.T) {
-
 	mdCtx := client.NewContext(context.TODO(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{
 			"source_single_val":   {"single_val"},

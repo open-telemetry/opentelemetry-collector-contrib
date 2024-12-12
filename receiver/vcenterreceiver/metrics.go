@@ -73,7 +73,6 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, dcStat.DiskFree, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatacenterCPULimitDataPoint(ts, dcStat.CPULimit)
 	v.mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, dcStat.MemoryLimit)
-
 }
 
 func getEntityStatusAttribute(status types.ManagedEntityStatus) (metadata.AttributeEntityStatus, bool) {
@@ -200,7 +199,6 @@ func (v *vcenterMetricScraper) recordResourcePoolStats(
 
 	v.mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, int64(s.Config.CpuAllocation.Shares.Shares))
 	v.mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, int64(s.Config.MemoryAllocation.Shares.Shares))
-
 }
 
 // recordClusterStats records stat metrics for a vSphere Host
@@ -312,7 +310,6 @@ func (v *vcenterMetricScraper) recordVMStats(
 
 	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
 	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
-
 }
 
 var hostPerfMetricList = []string{

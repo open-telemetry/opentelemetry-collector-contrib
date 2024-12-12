@@ -130,7 +130,7 @@ func newElasticsearchClient(
 		RetryOnStatus:        config.Retry.RetryOnStatus,
 		DisableRetry:         !config.Retry.Enabled,
 		EnableRetryOnTimeout: config.Retry.Enabled,
-		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
+		// RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
 		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
 

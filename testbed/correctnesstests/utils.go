@@ -33,7 +33,6 @@ func CreateConfigYaml(
 	connector testbed.DataConnector,
 	processors []ProcessorNameAndConfigBody,
 ) string {
-
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
 	processorsSections := ""

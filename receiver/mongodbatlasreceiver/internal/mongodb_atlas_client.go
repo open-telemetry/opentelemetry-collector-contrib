@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -70,7 +71,7 @@ func (rt *clientRoundTripper) Shutdown() error {
 
 func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	if rt.isStopped() {
-		return nil, fmt.Errorf("request cancelled due to shutdown")
+		return nil, errors.New("request cancelled due to shutdown")
 	}
 
 	resp, err := rt.originalTransport.RoundTrip(r)
@@ -100,9 +101,9 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 				zap.Duration("delay", delay))
 			select {
 			case <-r.Context().Done():
-				return resp, fmt.Errorf("request was cancelled or timed out")
+				return resp, errors.New("request was cancelled or timed out")
 			case <-rt.shutdownChan:
-				return resp, fmt.Errorf("request is cancelled due to server shutdown")
+				return resp, errors.New("request is cancelled due to server shutdown")
 			case <-time.After(delay):
 			}
 
@@ -217,7 +218,6 @@ func (s *MongoDBAtlasClient) GetOrganization(ctx context.Context, orgID string) 
 		return nil, fmt.Errorf("error retrieving project page: %w", err)
 	}
 	return org, nil
-
 }
 
 // Projects returns a list of projects accessible within the provided organization
@@ -719,12 +719,11 @@ type GetAccessLogsOptions struct {
 
 // GetAccessLogs returns the access logs specified for the cluster requested
 func (s *MongoDBAtlasClient) GetAccessLogs(ctx context.Context, groupID string, clusterName string, opts *GetAccessLogsOptions) (ret []*mongodbatlas.AccessLogs, err error) {
-
 	options := mongodbatlas.AccessLogOptions{
 		// Earliest Timestamp in epoch milliseconds from when Atlas should access log results
-		Start: fmt.Sprintf("%d", opts.MinDate.UTC().UnixMilli()),
+		Start: strconv.FormatInt(opts.MinDate.UTC().UnixMilli(), 10),
 		// Latest Timestamp in epoch milliseconds from when Atlas should access log results
-		End: fmt.Sprintf("%d", opts.MaxDate.UTC().UnixMilli()),
+		End: strconv.FormatInt(opts.MaxDate.UTC().UnixMilli(), 10),
 		// If true, only return successful access attempts; if false, only return failed access attempts
 		// If nil, return both successful and failed access attempts
 		AuthResult: opts.AuthResult,

@@ -35,8 +35,10 @@ type Config struct {
 	MetadataCollectionInterval time.Duration `mapstructure:"metadata_collection_interval"`
 }
 
-var _ component.Config = (*Config)(nil)
-var _ confmap.Unmarshaler = (*Config)(nil)
+var (
+	_ component.Config    = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
+)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

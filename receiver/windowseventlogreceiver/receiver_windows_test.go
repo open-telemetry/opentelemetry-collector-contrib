@@ -324,11 +324,17 @@ func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSour
 func assertExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
 	var actualLogRecords []plog.LogRecord
 
-	// logs sometimes take a while to be written, so a substantial wait buffer is needed
-	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+	// We can't use assert.Eventually because the condition function is launched in a separate goroutine
+	// and we want to return the slice filled by the condition function. Use a local condition check
+	// to avoid data race conditions.
+	startTime := time.Now()
+	actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
+	for len(actualLogRecords) != expectedEventCount && time.Since(startTime) < 10*time.Second {
+		time.Sleep(250 * time.Millisecond)
 		actualLogRecords = filterAllLogRecordsBySource(t, sink, expectedEventSrc)
-		assert.Len(c, actualLogRecords, expectedEventCount)
-	}, 10*time.Second, 250*time.Millisecond)
+	}
+
+	require.Len(t, actualLogRecords, expectedEventCount)
 
 	return actualLogRecords
 }

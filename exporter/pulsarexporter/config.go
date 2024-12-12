@@ -35,7 +35,7 @@ type Config struct {
 	Authentication             Authentication `mapstructure:"auth"`
 	OperationTimeout           time.Duration  `mapstructure:"operation_timeout"`
 	ConnectionTimeout          time.Duration  `mapstructure:"connection_timeout"`
-	MaxConnectionsPerBroker    int            `mapstructure:"map_connections_per_broker"`
+	MaxConnectionsPerBroker    int            `mapstructure:"max_connections_per_broker"`
 }
 
 type Authentication struct {
@@ -90,7 +90,6 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-
 	return nil
 }
 

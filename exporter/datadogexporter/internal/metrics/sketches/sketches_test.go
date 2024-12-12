@@ -96,7 +96,6 @@ func TestSketchSeriesListMarshal(t *testing.T) {
 
 		require.Len(t, pb.Dogsketches, len(in.Points))
 		for j, pointPb := range pb.Dogsketches {
-
 			check(t, in.Points[j], pointPb)
 		}
 	}

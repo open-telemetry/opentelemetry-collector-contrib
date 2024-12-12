@@ -13,8 +13,10 @@ import (
 )
 
 // systemPropertiesRenderContext stores a custom rendering context to get only the event properties.
-var systemPropertiesRenderContext = uintptr(0)
-var systemPropertiesRenderContextErr error
+var (
+	systemPropertiesRenderContext    = uintptr(0)
+	systemPropertiesRenderContextErr error
+)
 
 func init() {
 	// This is not expected to fail, however, collecting the error if a new failure mode appears.

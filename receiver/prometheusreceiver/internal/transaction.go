@@ -67,7 +67,8 @@ func newTransaction(
 	settings receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
-	enableNativeHistograms bool) *transaction {
+	enableNativeHistograms bool,
+) *transaction {
 	return &transaction{
 		ctx:                    ctx,
 		families:               make(map[resourceKey]map[scopeID]map[string]*metricFamily),
@@ -298,7 +299,7 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 }
 
 func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, _ labels.Labels, _, _ int64) (storage.SeriesRef, error) {
-	//TODO: implement this func
+	// TODO: implement this func
 	return 0, nil
 }
 
@@ -470,7 +471,7 @@ func (t *transaction) Rollback() error {
 }
 
 func (t *transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ metadata.Metadata) (storage.SeriesRef, error) {
-	//TODO: implement this func
+	// TODO: implement this func
 	return 0, nil
 }
 

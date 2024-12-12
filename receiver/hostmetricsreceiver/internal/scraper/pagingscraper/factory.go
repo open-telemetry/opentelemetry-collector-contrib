@@ -6,9 +6,8 @@ package pagingscraper // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
@@ -21,14 +20,8 @@ const (
 	TypeStr = "paging"
 )
 
-var (
-	// scraperType is the component type used for the built scraper.
-	scraperType component.Type = component.MustNewType(TypeStr)
-)
-
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -42,13 +35,12 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
 	config internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 	s := newPagingScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
+		scraper.WithStart(s.start),
 	)
 }

@@ -36,7 +36,6 @@ func addToGroupedMetric(
 	config *Config,
 	calculators *emfCalculators,
 ) error {
-
 	dps := getDataPoints(pmd, metadata, config.logger)
 	if dps == nil || dps.Len() == 0 {
 		return nil
@@ -107,7 +106,6 @@ func addToGroupedMetric(
 				}
 			}
 		}
-
 	}
 	return nil
 }
@@ -194,6 +192,11 @@ func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor
 		}
 	}
 	switch unit {
+	case "1":
+		unit = ""
+	case "ns":
+		// CloudWatch doesn't support Nanoseconds
+		unit = ""
 	case "ms":
 		unit = "Milliseconds"
 	case "s":
@@ -202,7 +205,7 @@ func translateUnit(metric pmetric.Metric, descriptor map[string]MetricDescriptor
 		unit = "Microseconds"
 	case "By":
 		unit = "Bytes"
-	case "Bi":
+	case "bit":
 		unit = "Bits"
 	}
 	return unit

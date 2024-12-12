@@ -33,7 +33,7 @@ If you are not already familiar with connectors, you may find it helpful to firs
 The following settings are available:
 
 - `table (required)`: the routing table for this connector.
-- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `metric`, `log`, and `request` are supported.
+- `table.context (optional, default: resource)`: the [OTTL Context] in which the statement will be evaluated. Currently, only `resource`, `span`, `metric`, `datapoint`, `log`, and `request` are supported.
 - `table.statement`: the routing condition provided as the [OTTL] statement. Required if `table.condition` is not provided. May not be used for `request` context.
 - `table.condition`: the routing condition provided as the [OTTL] condition. Required if `table.statement` is not provided. Required for `request` context.
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
@@ -43,7 +43,7 @@ The following settings are available:
 
 ### Limitations
 
-- The `match_once` setting is only supported when using the `resource` context. If any routes use `metric`, `log` or `request` context, `match_once` must be set to `true`.
+- The `match_once` setting is only supported when using the `resource` context. If any routes use `span`, `metric`, `datapoint`, `log` or `request` context, `match_once` must be set to `true`.
 - The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
 
 ### Supported [OTTL] functions
@@ -133,10 +133,10 @@ connectors:
     default_pipelines: [logs/other]
     table:
       - context: request
-        condition: reqeust["X-Tenant"] == "acme"
+        condition: request["X-Tenant"] == "acme"
         pipelines: [logs/acme]
       - context: request
-        condition: reqeust["X-Tenant"] == "ecorp"
+        condition: request["X-Tenant"] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -263,10 +263,10 @@ connectors:
         condition: severity_number < SEVERITY_NUMBER_ERROR
         pipelines: [logs/cheap]
       - context: request
-        condition: reqeust["X-Tenant"] == "acme"
+        condition: request["X-Tenant"] == "acme"
         pipelines: [logs/acme]
       - context: request
-        condition: reqeust["X-Tenant"] == "ecorp"
+        condition: request["X-Tenant"] == "ecorp"
         pipelines: [logs/ecorp]
 
 service:
@@ -284,11 +284,6 @@ service:
       receivers: [routing]
       exporters: [file/ecorp]
 ```
-
-## Differences between the Routing Connector and Routing Processor
-
-- Routing on context values is only supported for logs at this time.
-- The connector routes to pipelines, not exporters as the processor does.
 
 [Connectors README]:https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
 

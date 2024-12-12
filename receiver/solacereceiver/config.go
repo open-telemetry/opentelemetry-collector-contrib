@@ -80,8 +80,7 @@ type SaslXAuth2Config struct {
 }
 
 // SaslExternalConfig defines the configuration for the SASL External used in conjunction with TLS client authentication.
-type SaslExternalConfig struct {
-}
+type SaslExternalConfig struct{}
 
 // FlowControl defines the configuration for what to do in backpressure scenarios, e.g. memorylimiter errors
 type FlowControl struct {

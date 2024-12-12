@@ -79,7 +79,6 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 }
 
 func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
-
 	wkrCount := int(math.Max(1, float64(runtime.NumCPU())))
 	ltp.fromConverter = adapter.NewFromPdataConverter(ltp.set, wkrCount)
 

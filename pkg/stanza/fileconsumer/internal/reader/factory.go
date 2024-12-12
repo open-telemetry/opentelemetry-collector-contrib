@@ -64,7 +64,6 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
-
 	r = &Reader{
 		Metadata:             m,
 		set:                  f.TelemetrySettings,

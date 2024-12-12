@@ -25,9 +25,7 @@ import (
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
-var (
-	skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
-)
+var skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
 
 var traceJSON = []byte(`
 	[{
@@ -83,7 +81,6 @@ func TestStartAndShutdown(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, sr.Shutdown(context.Background())) })
-
 }
 
 func TestGRPCReception(t *testing.T) {
@@ -151,7 +148,6 @@ func TestHttpReception(t *testing.T) {
 	// verify
 	assert.NoError(t, err, "send skywalking segment successful.")
 	assert.NotNil(t, response)
-
 }
 
 func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {

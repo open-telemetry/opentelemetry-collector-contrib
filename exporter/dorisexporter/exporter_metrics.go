@@ -135,7 +135,6 @@ func (e *metricsExporter) pushMetricData(ctx context.Context, md pmetric.Metrics
 				}
 			}
 		}
-
 	}
 
 	return e.pushMetricDataParallel(ctx, metricMap)

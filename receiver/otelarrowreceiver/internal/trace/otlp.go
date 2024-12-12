@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -22,13 +22,13 @@ type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Traces
 	obsrecv      *receiverhelper.ObsReport
-	boundedQueue admission.Queue
+	boundedQueue admission2.Queue
 	sizer        *ptrace.ProtoMarshaler
 	logger       *zap.Logger
 }
 
 // New creates a new Receiver reference.
-func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelper.ObsReport, bq admission.Queue) *Receiver {
+func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelper.ObsReport, bq admission2.Queue) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
@@ -49,11 +49,10 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
 	var err error
-	sizeBytes := int64(r.sizer.TracesSize(req.Traces()))
-	if acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
+	sizeBytes := uint64(r.sizer.TracesSize(req.Traces()))
+	if releaser, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
 		err = r.nextConsumer.ConsumeTraces(ctx, td)
-		// Release() is not checked, see #36074.
-		_ = r.boundedQueue.Release(sizeBytes) // immediate release
+		releaser() // immediate release
 	} else {
 		err = acqErr
 	}

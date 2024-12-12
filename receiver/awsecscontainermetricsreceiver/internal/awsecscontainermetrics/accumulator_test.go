@@ -216,6 +216,7 @@ func TestGetMetricsDataCpuReservedZero(t *testing.T) {
 	acc.getMetricsData(cstats, tm, logger)
 	require.NotEmpty(t, acc.mds)
 }
+
 func TestIsEmptyStats(t *testing.T) {
 	require.False(t, isEmptyStats(&containerStats))
 	require.True(t, isEmptyStats(cstats["002"]))
