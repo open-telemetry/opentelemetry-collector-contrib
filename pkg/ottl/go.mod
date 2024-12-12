@@ -8,7 +8,7 @@ require (
 	github.com/antchfx/xpath v1.3.2
 	github.com/elastic/go-grok v0.3.1
 	github.com/gobwas/glob v0.2.3
-	github.com/goccy/go-json v0.10.3
+	github.com/goccy/go-json v0.10.4
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
