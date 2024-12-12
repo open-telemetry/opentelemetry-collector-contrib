@@ -986,11 +986,7 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 		h.Write(buf)
 	case pcommon.ValueTypeInt:
 		buf := make([]byte, 8)
-		var i uint64
-		if v.Int() > 0 {
-			i = uint64(v.Int()) //nolint:gosec // overflow checked
-		}
-		binary.LittleEndian.PutUint64(buf, i)
+		binary.LittleEndian.PutUint64(buf, uint64(v.Int())) // nolint:gosec // overflow assumed. We prefer having high integers than zero.
 		h.Write(buf)
 	case pcommon.ValueTypeBytes:
 		h.Write(v.Bytes().AsRaw())
