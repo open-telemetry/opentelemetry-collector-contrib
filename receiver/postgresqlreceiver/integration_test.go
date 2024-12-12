@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build integration
+
 package postgresqlreceiver
 
 import (
@@ -21,8 +23,10 @@ import (
 
 const postgresqlPort = "5432"
 
-const pre17TestVersion = "13.18"
-const post17TestVersion = "17.2"
+const (
+	pre17TestVersion  = "13.18"
+	post17TestVersion = "17.2"
+)
 
 func TestIntegration(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
