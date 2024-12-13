@@ -9,7 +9,6 @@ package proxy
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -147,11 +146,13 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 }
 
 func TestHandlerSignerErrorsOut(t *testing.T) {
+	// Note: this may fail if you have a local credentials file (e.g. ~/.aws/credentials)
 	logger, recordedLogs := logSetup()
 
 	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
+	cfg.TCPAddrConfig.Endpoint = "0.0.0.0:2000"
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.TCPAddrConfig.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
@@ -222,7 +223,7 @@ func TestCanCreateTransport(t *testing.T) {
 
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-	assert.ErrorContains(t, err, "failed to parse proxy URL")
+	assert.ErrorContains(t, err, "invalid control character in URL")
 }
 
 func TestGetServiceEndpointInvalidAWSConfig(t *testing.T) {

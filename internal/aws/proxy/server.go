@@ -40,6 +40,7 @@ type Server interface {
 func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	_, err := net.ResolveTCPAddr("tcp", cfg.Endpoint)
 	if err != nil {
+		fmt.Printf("aeraesra")
 		return nil, err
 	}
 	if cfg.ProxyAddress != "" {
