@@ -85,10 +85,10 @@ type prwExporter struct {
 	exporterSettings  prometheusremotewrite.Settings
 	telemetry         prwTelemetry
 
-	// When concurrency is enabled, concurrent goroutines would potentially 
+	// When concurrency is enabled, concurrent goroutines would potentially
 	// fight over the same batchState object. To avoid this, we use a pool
 	// to provide each goroutine with its own state.
-	batchStatePool    sync.Pool
+	batchStatePool sync.Pool
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -143,7 +143,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
 		},
-		telemetry:            prwTelemetry,
+		telemetry:      prwTelemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeSericesState() }},
 	}
 
@@ -232,10 +232,10 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 		return nil
 	}
 
-	state := prwe.batchStatePool.Get().(batchTimeSeriesState)
+	state := prwe.batchStatePool.Get().(*batchTimeSeriesState)
 	defer prwe.batchStatePool.Put(state)
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &state)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, state)
 	if err != nil {
 		return err
 	}
