@@ -49,15 +49,18 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
 		}
-		clusterAdmin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		s.client = client
+	}
+
+	if s.clusterAdmin == nil {
+		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
 		if err != nil {
-			if client != nil {
-				_ = client.Close()
+			if s.client != nil {
+				_ = s.client.Close()
 			}
 			return pmetric.Metrics{}, fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
 		}
-		s.client = client
-		s.clusterAdmin = clusterAdmin
+		s.clusterAdmin = admin
 	}
 
 	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
