@@ -16,9 +16,7 @@ const (
 	kueueMetricsStability = component.StabilityLevelDevelopment
 )
 
-var (
-	receiverType component.Type = component.MustNewType("awscontainerinsightskueuereceiver")
-)
+var receiverType component.Type = component.MustNewType("awscontainerinsightskueuereceiver")
 
 // Factory for awscontainerinsightreceiver
 const (
@@ -52,7 +50,6 @@ func createMetricsReceiver(
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-
 	rCfg := baseCfg.(*Config)
 	return newAWSContainerInsightReceiver(params.TelemetrySettings, rCfg, consumer)
 }

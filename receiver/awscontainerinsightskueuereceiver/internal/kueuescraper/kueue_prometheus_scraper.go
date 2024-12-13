@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kueue_scraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightskueuereceiver/internal/kueue_scraper"
+package kueuescraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightskueuereceiver/internal/kueuescraper"
 
 import (
 	"context"
@@ -132,7 +132,7 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 	}
 
 	promFactory := prometheusreceiver.NewFactory()
-	promReceiver, err := promFactory.CreateMetricsReceiver(opts.Ctx, params, &promConfig, opts.Consumer)
+	promReceiver, err := promFactory.CreateMetrics(opts.Ctx, params, &promConfig, opts.Consumer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create prometheus receiver for kueue metrics: %w", err)
 	}
@@ -146,8 +146,8 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 	}, nil
 }
 
-func GetKueueRelabelConfigs(cluster_name string) []*relabel.Config {
-	relabel_configs := []*relabel.Config{
+func GetKueueRelabelConfigs(clusterName string) []*relabel.Config {
+	relabelConfigs := []*relabel.Config{
 		{ // filter by metric name: keep only the Kueue metrics specified via regex in `kueueMetricAllowList`
 			Action:       relabel.Keep,
 			Regex:        relabel.MustNewRegexp(kueueMetricsAllowRegex),
@@ -174,13 +174,13 @@ func GetKueueRelabelConfigs(cluster_name string) []*relabel.Config {
 			Action:      relabel.Replace,
 			Regex:       relabel.MustNewRegexp(".*"),
 			TargetLabel: "ClusterName",
-			Replacement: cluster_name,
+			Replacement: clusterName,
 		},
 	}
 	// relabel configs to change casing conventions for Kueue dimensions
 	for sourceLabel, targetLabel := range kueueDimensionsRelabelMap {
-		relabel_configs = append(
-			relabel_configs,
+		relabelConfigs = append(
+			relabelConfigs,
 			&relabel.Config{
 				Action:       relabel.Replace,
 				Regex:        relabel.MustNewRegexp("(.*)"),
@@ -190,7 +190,7 @@ func GetKueueRelabelConfigs(cluster_name string) []*relabel.Config {
 			},
 		)
 	}
-	return relabel_configs
+	return relabelConfigs
 }
 
 func (kps *KueuePrometheusScraper) GetMetrics() []pmetric.Metrics {
@@ -206,6 +206,7 @@ func (kps *KueuePrometheusScraper) GetMetrics() []pmetric.Metrics {
 	}
 	return nil
 }
+
 func (kps *KueuePrometheusScraper) Shutdown() {
 	if kps.running {
 		err := kps.prometheusReceiver.Shutdown(kps.ctx)

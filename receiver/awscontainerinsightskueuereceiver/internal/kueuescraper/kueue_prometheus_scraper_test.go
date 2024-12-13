@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kueue_scraper
+package kueuescraper
 
 import (
 	"context"
@@ -173,7 +173,7 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 	params := receiver.Settings{
 		TelemetrySettings: settings,
 	}
-	promReceiver, err := promFactory.CreateMetricsReceiver(context.TODO(), params, &promConfig, mConsumer)
+	promReceiver, err := promFactory.CreateMetrics(context.TODO(), params, &promConfig, mConsumer)
 	assert.NoError(t, err)
 
 	// attach test receiver to scraper (replaces existing one)
@@ -201,5 +201,5 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 
 func TestKueuePrometheusScraperJobName(t *testing.T) {
 	// needs to start with containerInsights
-	assert.True(t, kmJobName == "containerInsightsKueueMetricsScraper")
+	assert.Equal(t, "containerInsightsKueueMetricsScraper", kmJobName)
 }

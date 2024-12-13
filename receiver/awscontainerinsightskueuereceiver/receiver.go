@@ -17,7 +17,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightskueuereceiver/internal/kueue_scraper"
+	kueuescraper "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightskueuereceiver/internal/kueuescraper"
 )
 
 var _ receiver.Metrics = (*awsContainerInsightKueueReceiver)(nil)
@@ -28,15 +28,15 @@ type awsContainerInsightKueueReceiver struct {
 	nextConsumer consumer.Metrics
 	config       *Config
 	cancel       context.CancelFunc
-	kueueScraper *kueue_scraper.KueuePrometheusScraper
+	kueueScraper *kueuescraper.KueuePrometheusScraper
 }
 
 // newAWSContainerInsightReceiver creates the aws container insight receiver with the given parameters.
 func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
-	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	r := &awsContainerInsightKueueReceiver{
 		settings:     settings,
 		nextConsumer: nextConsumer,
@@ -62,15 +62,14 @@ func (akr *awsContainerInsightKueueReceiver) Start(ctx context.Context, host com
 }
 
 func (akr *awsContainerInsightKueueReceiver) init(ctx context.Context, host component.Host) error {
-
 	if runtime.GOOS == ci.OperatingSystemWindows {
 		return fmt.Errorf("unsupported operating system: %s", ci.OperatingSystemWindows)
-	} else {
-		err := akr.initKueuePrometheusScraper(ctx, host)
-		if err != nil {
-			akr.settings.Logger.Warn("Unable to start kueue prometheus scraper", zap.Error(err))
-			return err
-		}
+	}
+
+	err := akr.initKueuePrometheusScraper(ctx, host)
+	if err != nil {
+		akr.settings.Logger.Warn("Unable to start kueue prometheus scraper", zap.Error(err))
+		return err
 	}
 	return nil
 }
@@ -82,7 +81,7 @@ func (akr *awsContainerInsightKueueReceiver) start(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
-			_ = akr.collectData()
+			akr.collectData()
 		case <-ctx.Done():
 			return
 		}
@@ -102,7 +101,7 @@ func (akr *awsContainerInsightKueueReceiver) initKueuePrometheusScraper(
 		return errors.New("bearer token was empty")
 	}
 
-	akr.kueueScraper, err = kueue_scraper.NewKueuePrometheusScraper(kueue_scraper.KueuePrometheusScraperOpts{
+	akr.kueueScraper, err = kueuescraper.NewKueuePrometheusScraper(kueuescraper.KueuePrometheusScraperOpts{
 		Ctx:               ctx,
 		TelemetrySettings: akr.settings,
 		Consumer:          akr.nextConsumer,
@@ -127,10 +126,9 @@ func (akr *awsContainerInsightKueueReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
-func (akr *awsContainerInsightKueueReceiver) collectData() error {
+func (akr *awsContainerInsightKueueReceiver) collectData() {
 	if akr.kueueScraper != nil {
 		// this does not return any metrics, it just ensures scraping is running on elected leader node
 		akr.kueueScraper.GetMetrics() //nolint:errcheck
 	}
-	return nil
 }
