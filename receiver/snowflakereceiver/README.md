@@ -38,11 +38,11 @@ receivers:
     password: securepassword
     account: bigbusinessaccount
     warehouse: metricWarehouse
-    collection_interval: 18m
+    collection_interval: 5m
     metrics:
       snowflake.database.bytes_scanned.avg:
         enabled: true
-      snowflake.database.bytes_deketed.avg:
+      snowflake.query.bytes_deleted.avg:
         enabled: false
 ```
 

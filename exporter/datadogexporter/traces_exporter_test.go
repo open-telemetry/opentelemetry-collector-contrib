@@ -320,10 +320,10 @@ func TestPushTraceData(t *testing.T) {
 		Traces: TracesConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 

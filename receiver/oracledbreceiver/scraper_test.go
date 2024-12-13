@@ -15,14 +15,14 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 func TestScraper_ErrorOnStart(t *testing.T) {
-	scrpr := scraper{
+	scrpr := oracleScraper{
 		dbProviderFunc: func() (*sql.DB, error) {
 			return nil, errors.New("oops")
 		},
@@ -129,7 +129,7 @@ func TestScraper_Scrape(t *testing.T) {
 			cfg.Metrics.OracledbConsistentGets.Enabled = true
 			cfg.Metrics.OracledbDbBlockGets.Enabled = true
 
-			scrpr := scraper{
+			scrpr := oracleScraper{
 				logger: zap.NewNop(),
 				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
 				dbProviderFunc: func() (*sql.DB, error) {

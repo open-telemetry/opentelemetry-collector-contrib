@@ -92,6 +92,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordPostgresqlBlksHitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordPostgresqlBlksReadDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, AttributeSourceHeapRead)
@@ -159,6 +165,21 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordPostgresqlTempFilesDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordPostgresqlTupDeletedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordPostgresqlTupFetchedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordPostgresqlTupInsertedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordPostgresqlTupReturnedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordPostgresqlTupUpdatedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -284,6 +305,34 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of times the background writer stopped a cleaning scan because it had written too many buffers.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.blks_hit":
+					assert.False(t, validatedMetrics["postgresql.blks_hit"], "Found a duplicate in the metrics slice: postgresql.blks_hit")
+					validatedMetrics["postgresql.blks_hit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times disk blocks were found already in the buffer cache.", ms.At(i).Description())
+					assert.Equal(t, "{blks_hit}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.blks_read":
+					assert.False(t, validatedMetrics["postgresql.blks_read"], "Found a duplicate in the metrics slice: postgresql.blks_read")
+					validatedMetrics["postgresql.blks_read"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of disk blocks read in this database.", ms.At(i).Description())
+					assert.Equal(t, "{blks_read}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -549,6 +598,76 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The number of temp files.", ms.At(i).Description())
 					assert.Equal(t, "{temp_file}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.tup_deleted":
+					assert.False(t, validatedMetrics["postgresql.tup_deleted"], "Found a duplicate in the metrics slice: postgresql.tup_deleted")
+					validatedMetrics["postgresql.tup_deleted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of rows deleted by queries in the database.", ms.At(i).Description())
+					assert.Equal(t, "{tup_deleted}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.tup_fetched":
+					assert.False(t, validatedMetrics["postgresql.tup_fetched"], "Found a duplicate in the metrics slice: postgresql.tup_fetched")
+					validatedMetrics["postgresql.tup_fetched"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of rows fetched by queries in the database.", ms.At(i).Description())
+					assert.Equal(t, "{tup_fetched}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.tup_inserted":
+					assert.False(t, validatedMetrics["postgresql.tup_inserted"], "Found a duplicate in the metrics slice: postgresql.tup_inserted")
+					validatedMetrics["postgresql.tup_inserted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of rows inserted by queries in the database.", ms.At(i).Description())
+					assert.Equal(t, "{tup_inserted}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.tup_returned":
+					assert.False(t, validatedMetrics["postgresql.tup_returned"], "Found a duplicate in the metrics slice: postgresql.tup_returned")
+					validatedMetrics["postgresql.tup_returned"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of rows returned by queries in the database.", ms.At(i).Description())
+					assert.Equal(t, "{tup_returned}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.tup_updated":
+					assert.False(t, validatedMetrics["postgresql.tup_updated"], "Found a duplicate in the metrics slice: postgresql.tup_updated")
+					validatedMetrics["postgresql.tup_updated"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of rows updated by queries in the database.", ms.At(i).Description())
+					assert.Equal(t, "{tup_updated}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

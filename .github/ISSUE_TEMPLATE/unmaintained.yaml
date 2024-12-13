@@ -88,6 +88,7 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
@@ -239,6 +240,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/libhoney
       - receiver/loki
       - receiver/memcached
       - receiver/mongodb
