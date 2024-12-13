@@ -110,6 +110,12 @@ func TestInferServiceAndRegion(t *testing.T) {
 	req5, err := http.NewRequest(http.MethodGet, "https://aps-workspaces.us-east-1.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write", nil)
 	assert.NoError(t, err)
 
+	req6, err := http.NewRequest(http.MethodGet, "https://logs.us-east-1.amazonaws.com/v1/logs", nil)
+	assert.NoError(t, err)
+
+	req7, err := http.NewRequest(http.MethodGet, "https://xray.us-east-1.amazonaws.com/v1/traces", nil)
+	assert.NoError(t, err)
+
 	tests := []struct {
 		name            string
 		request         *http.Request
@@ -148,6 +154,20 @@ func TestInferServiceAndRegion(t *testing.T) {
 		{
 			"match_with_config",
 			req5,
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
+			"service",
+			"region",
+		},
+		{
+			"match_with_config",
+			req6,
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
+			"service",
+			"region",
+		},
+		{
+			"match_with_config",
+			req7,
 			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
 			"service",
 			"region",
