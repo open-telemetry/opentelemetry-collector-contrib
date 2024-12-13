@@ -72,14 +72,14 @@ func TestMetricName(t *testing.T) {
 }
 
 func TestIsNode(t *testing.T) {
-	assert.Equal(t, true, IsNode(TypeNode))
-	assert.Equal(t, true, IsNode(TypeNodeDiskIO))
-	assert.Equal(t, true, IsNode(TypeNodeEFA))
-	assert.Equal(t, true, IsNode(TypeNodeFS))
-	assert.Equal(t, true, IsNode(TypeNodeGPU))
-	assert.Equal(t, true, IsNode(TypeNodeNet))
-	assert.Equal(t, false, IsNode(TypePod))
-	assert.Equal(t, true, IsNode(TypeHyperPodNode))
+	assert.True(t, IsNode(TypeNode))
+	assert.True(t, IsNode(TypeNodeDiskIO))
+	assert.True(t, IsNode(TypeNodeEFA))
+	assert.True(t, IsNode(TypeNodeFS))
+	assert.True(t, IsNode(TypeNodeGPU))
+	assert.True(t, IsNode(TypeNodeNet))
+	assert.False(t, IsNode(TypePod))
+	assert.True(t, IsNode(TypeHyperPodNode))
 }
 
 func TestIsInstance(t *testing.T) {
@@ -91,20 +91,19 @@ func TestIsInstance(t *testing.T) {
 }
 
 func TestIsContainer(t *testing.T) {
-	assert.Equal(t, true, IsContainer(TypeContainer))
-	assert.Equal(t, true, IsContainer(TypeContainerDiskIO))
-	assert.Equal(t, true, IsContainer(TypeContainerEFA))
-	assert.Equal(t, true, IsContainer(TypeContainerGPU))
-	assert.Equal(t, true, IsContainer(TypeContainerFS))
-	assert.Equal(t, false, IsContainer(TypePod))
+	assert.True(t, IsContainer(TypeContainer))
+	assert.True(t, IsContainer(TypeContainerDiskIO))
+	assert.True(t, IsContainer(TypeContainerEFA))
+	assert.True(t, IsContainer(TypeContainerGPU))
+	assert.True(t, IsContainer(TypeContainerFS))
 }
 
 func TestIsPod(t *testing.T) {
-	assert.Equal(t, true, IsPod(TypePod))
-	assert.Equal(t, true, IsPod(TypePodEFA))
-	assert.Equal(t, true, IsPod(TypePodGPU))
-	assert.Equal(t, true, IsPod(TypePodNet))
-	assert.Equal(t, false, IsPod(TypeInstance))
+	assert.True(t, IsPod(TypePod))
+	assert.True(t, IsPod(TypePodEFA))
+	assert.True(t, IsPod(TypePodGPU))
+	assert.True(t, IsPod(TypePodNet))
+	assert.False(t, IsPod(TypeInstance))
 }
 
 func convertToInt64(value any) int64 {
