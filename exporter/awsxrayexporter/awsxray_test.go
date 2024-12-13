@@ -168,7 +168,7 @@ func testEncodingOtlpFormatWithIndexConfiguration(t *testing.T, config *Config) 
 	td := constructMultiSpanData(50)
 	documents, err := encodeOtlpAsBase64(td, config)
 	assert.NoError(t, err)
-	assert.EqualValues(t, td.ResourceSpans().Len(), len(documents), "ensure #resourcespans same as #documents")
+	assert.Len(t, documents, td.ResourceSpans().Len(), "ensure #resourcespans same as #documents")
 
 	// 2. ensure documents can be decoded back
 	unmarshaler := &ptrace.ProtoUnmarshaler{}
@@ -192,7 +192,7 @@ func TestEncodingOtlpFormatWithEmptySpans(t *testing.T) {
 	td := constructMultiSpanData(0)
 	documents, err := encodeOtlpAsBase64(td, generateConfig(t))
 	assert.NoError(t, err)
-	assert.EqualValues(t, 0, len(documents), "expect 0 document")
+	assert.Empty(t, documents, "expect 0 document")
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
