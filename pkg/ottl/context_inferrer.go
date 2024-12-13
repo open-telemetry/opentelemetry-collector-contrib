@@ -37,20 +37,41 @@ func (s *priorityContextInferrer) infer(statements []string) (string, error) {
 		}
 
 		for _, p := range getParsedStatementPaths(parsed) {
-			pathContextPriority, ok := s.contextPriority[p.Context]
+			pathContext := s.getContextCandidate(p)
+			pathContextPriority, ok := s.contextPriority[pathContext]
 			if !ok {
 				// Lowest priority
 				pathContextPriority = math.MaxInt
 			}
 
 			if inferredContext == "" || pathContextPriority < inferredContextPriority {
-				inferredContext = p.Context
+				inferredContext = pathContext
 				inferredContextPriority = pathContextPriority
 			}
 		}
 	}
 
 	return inferredContext, nil
+}
+
+// When a path has no dots separators (e.g.: resource), the grammar extracts it into the
+// path.Fields slice, letting the path.Context empty. This function returns either the
+// path.Context string or, if it's eligible and meets certain conditions, the first
+// path.Fields name.
+func (s *priorityContextInferrer) getContextCandidate(p path) string {
+	if p.Context != "" {
+		return p.Context
+	}
+	// If it has multiple fields or keys, it means the path has at least one dot on it,
+	// and isn't a context access.
+	if len(p.Fields) != 1 || len(p.Fields[0].Keys) > 0 {
+		return ""
+	}
+	_, ok := s.contextPriority[p.Fields[0].Name]
+	if ok {
+		return p.Fields[0].Name
+	}
+	return ""
 }
 
 // defaultPriorityContextInferrer is like newPriorityContextInferrer, but using the default

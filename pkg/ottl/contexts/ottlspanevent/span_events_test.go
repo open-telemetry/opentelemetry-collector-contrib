@@ -5,10 +5,12 @@ package ottlspanevent
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -47,11 +49,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[TransformContext]
-		orig     any
-		newVal   any
-		modified func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		name                    string
+		path                    ottl.Path[TransformContext]
+		orig                    any
+		newVal                  any
+		modified                func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		skipWithPathContextTest bool
 	}{
 		{
 			name: "span event time",
@@ -415,6 +418,19 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				pcommon.NewInstrumentationScope().CopyTo(il)
 			},
+			skipWithPathContextTest: true,
+		},
+		{
+			name: "instrumentation_scope context",
+			path: &internal.TestPath[TransformContext]{
+				C: "instrumentation_scope",
+			},
+			orig:   refIS,
+			newVal: pcommon.NewInstrumentationScope(),
+			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+				pcommon.NewInstrumentationScope().CopyTo(il)
+			},
+			skipWithPathContextTest: true,
 		},
 		{
 			name: "resource",
@@ -426,6 +442,19 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
 				pcommon.NewResource().CopyTo(resource)
 			},
+			skipWithPathContextTest: true,
+		},
+		{
+			name: "resource context",
+			path: &internal.TestPath[TransformContext]{
+				C: "resource",
+			},
+			orig:   refResource,
+			newVal: pcommon.NewResource(),
+			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
+				pcommon.NewResource().CopyTo(resource)
+			},
+			skipWithPathContextTest: true,
 		},
 		{
 			name: "span",
@@ -437,7 +466,33 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(_ ptrace.SpanEvent, span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				ptrace.NewSpan().CopyTo(span)
 			},
+			skipWithPathContextTest: true,
 		},
+		{
+			name: "span context",
+			path: &internal.TestPath[TransformContext]{
+				C: "span",
+			},
+			orig:   refSpan,
+			newVal: ptrace.NewSpan(),
+			modified: func(_ ptrace.SpanEvent, span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
+				ptrace.NewSpan().CopyTo(span)
+			},
+			skipWithPathContextTest: true,
+		},
+	}
+	// Copy all tests cases and sets the path.Context value to the generated ones.
+	// It ensures all exiting field access also work when the path context is set.
+	for _, tt := range slices.Clone(tests) {
+		if tt.skipWithPathContextTest {
+			continue
+		}
+		testWithContext := tt
+		testWithContext.name = "with_path_context:" + tt.name
+		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])
+		pathWithContext.C = ContextName
+		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
+		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -464,6 +519,109 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
 			assert.Equal(t, exCache, tCtx.getCache())
+		})
+	}
+}
+
+func Test_newPathGetSetter_higherContextPath(t *testing.T) {
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("foo", "bar")
+
+	span := ptrace.NewSpan()
+	span.SetName("span")
+
+	instrumentationScope := pcommon.NewInstrumentationScope()
+	instrumentationScope.SetName("instrumentation_scope")
+
+	ctx := NewTransformContext(ptrace.NewSpanEvent(), span, instrumentationScope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+
+	tests := []struct {
+		name     string
+		path     ottl.Path[TransformContext]
+		expected any
+	}{
+		{
+			name:     "resource",
+			path:     &internal.TestPath[TransformContext]{N: "resource"},
+			expected: resource,
+		},
+		{
+			name: "resource field",
+			path: &internal.TestPath[TransformContext]{C: "", N: "resource", NextPath: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[TransformContext]{
+					&internal.TestKey[TransformContext]{
+						S: ottltest.Strp("foo"),
+					},
+				},
+			}},
+			expected: "bar",
+		},
+		{
+			name:     "resource context",
+			path:     &internal.TestPath[TransformContext]{C: "resource"},
+			expected: resource,
+		},
+		{
+			name: "resource field with context",
+			path: &internal.TestPath[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
+				&internal.TestKey[TransformContext]{
+					S: ottltest.Strp("foo"),
+				},
+			}},
+			expected: "bar",
+		},
+		{
+			name:     "instrumentation_scope",
+			path:     &internal.TestPath[TransformContext]{N: "instrumentation_scope"},
+			expected: instrumentationScope,
+		},
+		{
+			name:     "instrumentation_scope field",
+			path:     &internal.TestPath[TransformContext]{N: "instrumentation_scope", NextPath: &internal.TestPath[TransformContext]{N: "name"}},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "instrumentation_scope context",
+			path:     &internal.TestPath[TransformContext]{C: "instrumentation_scope"},
+			expected: instrumentationScope,
+		},
+		{
+			name:     "instrumentation_scope field with context",
+			path:     &internal.TestPath[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "span",
+			path:     &internal.TestPath[TransformContext]{N: "span"},
+			expected: span,
+		},
+		{
+			name:     "span field",
+			path:     &internal.TestPath[TransformContext]{N: "span", NextPath: &internal.TestPath[TransformContext]{N: "name"}},
+			expected: span.Name(),
+		},
+		{
+			name:     "span context",
+			path:     &internal.TestPath[TransformContext]{C: "span"},
+			expected: span,
+		},
+		{
+			name:     "span field with context",
+			path:     &internal.TestPath[TransformContext]{C: "span", N: "name"},
+			expected: span.Name(),
+		},
+	}
+
+	pep := pathExpressionParser{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := pep.parsePath(tt.path)
+			require.NoError(t, err)
+
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
 }

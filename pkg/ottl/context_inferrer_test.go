@@ -49,6 +49,24 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			statements: []string{"set(span.foo, true) where span.bar == true"},
 			expected:   "span",
 		},
+		{
+			name:       "with context root access",
+			priority:   []string{"resource", "foo"},
+			statements: []string{"set(foo.attributes[\"body\"], resource)"},
+			expected:   "resource",
+		},
+		{
+			name:       "with non-eligible context root access",
+			priority:   []string{"resource", "foo"},
+			statements: []string{"set(foo.attributes[\"body\"], resource[\"foo\"])"},
+			expected:   "foo",
+		},
+		{
+			name:       "with non-prioritized context root access",
+			priority:   []string{"foo"},
+			statements: []string{"set(resource, bar.attributes[\"body\"])"},
+			expected:   "bar",
+		},
 	}
 
 	for _, tt := range tests {

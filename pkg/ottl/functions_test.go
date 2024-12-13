@@ -2504,6 +2504,21 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 	}
 }
 
+func Test_newPath_withPathNameEqualsToContextName(t *testing.T) {
+	ps, _ := NewParser[any](
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"resource"}),
+	)
+
+	rs, err := ps.newPath(&path{Context: "", Fields: []field{{Name: "resource"}}})
+	assert.NoError(t, err)
+	assert.Equal(t, "resource", rs.Context())
+	assert.Empty(t, rs.Name())
+}
+
 func Test_baseKey_String(t *testing.T) {
 	bp := baseKey[any]{
 		s: ottltest.Strp("test"),

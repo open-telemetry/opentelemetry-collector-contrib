@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	SpanContextName = "Span"
+	SpanContextName            = "span"
+	SpanContextNameDescription = "Span"
 )
 
 type SpanContext interface {
@@ -38,7 +39,7 @@ var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 }
 
 func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
-	if path == nil {
+	if isPathToContextRoot(path, SpanContextName) {
 		return accessSpan[K](), nil
 	}
 	switch path.Name() {
@@ -48,7 +49,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringTraceID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextNameDescription, SpanRef)
 		}
 		return accessTraceID[K](), nil
 	case "span_id":
@@ -57,7 +58,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringSpanID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextNameDescription, SpanRef)
 		}
 		return accessSpanID[K](), nil
 	case "trace_state":
@@ -72,7 +73,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			if nextPath.Name() == "string" {
 				return accessStringParentSpanID[K](), nil
 			}
-			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+			return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextNameDescription, SpanRef)
 		}
 		return accessParentSpanID[K](), nil
 	case "name":
@@ -86,7 +87,7 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			case "deprecated_string":
 				return accessDeprecatedStringKind[K](), nil
 			default:
-				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextNameDescription, SpanRef)
 			}
 		}
 		return accessKind[K](), nil
@@ -123,12 +124,12 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 			case "message":
 				return accessStatusMessage[K](), nil
 			default:
-				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextName, SpanRef)
+				return nil, FormatDefaultErrorMessage(nextPath.Name(), nextPath.String(), SpanContextNameDescription, SpanRef)
 			}
 		}
 		return accessStatus[K](), nil
 	default:
-		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), SpanContextName, SpanRef)
+		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), SpanContextNameDescription, SpanRef)
 	}
 }
 

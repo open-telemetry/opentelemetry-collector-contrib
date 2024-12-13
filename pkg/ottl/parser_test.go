@@ -2832,6 +2832,13 @@ func Test_prependContextToStatementPaths_Success(t *testing.T) {
 			pathContextNames: []string{"log", "resource"},
 			expected:         `set(log.attributes["test"], "pass") where IsMatch(resource.name, "operation[AC]")`,
 		},
+		{
+			name:             "path to context root object",
+			statement:        `set(attributes["test"], resource)`,
+			context:          "log",
+			pathContextNames: []string{"log", "resource"},
+			expected:         `set(log.attributes["test"], resource)`,
+		},
 	}
 
 	for _, tt := range tests {
