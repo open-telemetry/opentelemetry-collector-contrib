@@ -3,6 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhon
 go 1.22.0
 
 require (
+	github.com/gogo/protobuf v1.3.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.115.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component/componenttest v0.116.0
 	go.opentelemetry.io/collector/config/confighttp v0.116.0
@@ -10,7 +13,15 @@ require (
 	go.opentelemetry.io/collector/consumer v1.22.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.116.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.116.0
+	github.com/vmihailenco/msgpack/v5 v5.4.1
+	go.opentelemetry.io/collector/component v0.116.0
+	go.opentelemetry.io/collector/config/confighttp v0.116.0
+	go.opentelemetry.io/collector/pdata v1.22.0
+	go.opentelemetry.io/collector/receiver v0.116.0
+	go.opentelemetry.io/collector/semconv v0.116.0
 	go.uber.org/goleak v1.3.0
+	go.uber.org/zap v1.27.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9
 )
 
 require (
@@ -25,7 +36,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -64,12 +74,10 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.32.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
-	google.golang.org/grpc v1.69.0 // indirect
+	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
+	google.golang.org/grpc v1.68.1 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
@@ -77,3 +85,11 @@ require (
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20240701130421-f6361c86f094
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
