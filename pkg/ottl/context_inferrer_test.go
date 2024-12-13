@@ -89,8 +89,8 @@ func Test_NewPriorityContextInferrer_InvalidStatement(t *testing.T) {
 func Test_DefaultPriorityContextInferrer(t *testing.T) {
 	expectedPriority := []string{
 		"log",
-		"metric",
 		"datapoint",
+		"metric",
 		"spanevent",
 		"span",
 		"resource",

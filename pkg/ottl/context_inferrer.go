@@ -7,8 +7,8 @@ import "math"
 
 var defaultContextInferPriority = []string{
 	"log",
-	"metric",
 	"datapoint",
+	"metric",
 	"spanevent",
 	"span",
 	"resource",
@@ -82,11 +82,10 @@ func defaultPriorityContextInferrer() contextInferrer {
 
 // newPriorityContextInferrer creates a new priority-based context inferrer.
 // To infer the context, it compares all [ottl.Path.Context] values, prioritizing them based
-// on the provide contextsPriority argument, the lower the context position is in the array,
+// on the provided contextsPriority argument, the lower the context position is in the array,
 // the more priority it will have over other items.
-// If unknown/non-prioritized contexts are found on the statements, they can be either ignored
-// or considered when no other prioritized context is found. To skip unknown contexts, the
-// ignoreUnknownContext argument must be set to false.
+// If unknown/non-prioritized contexts are found on the statements, they get assigned the lowest
+// possible priority, and are only selected if no other prioritized context is found.
 func newPriorityContextInferrer(contextsPriority []string) contextInferrer {
 	contextPriority := make(map[string]int, len(contextsPriority))
 	for i, ctx := range contextsPriority {
