@@ -235,7 +235,6 @@ func (a *argument) accept(v grammarVisitor) {
 // mathExpression, function call, or literal.
 type value struct {
 	IsNil          *isNil           `parser:"( @'nil'"`
-	ExpressionPath *path            `parser:"| '$''{' @@ '}'"`
 	Literal        *mathExprLiteral `parser:"| @@ (?! OpAddSub | OpMultDiv)"`
 	MathExpression *mathExpression  `parser:"| @@"`
 	Bytes          *byteSlice       `parser:"| @Bytes"`
@@ -262,9 +261,6 @@ func (v *value) accept(vis grammarVisitor) {
 			i.accept(vis)
 		}
 	}
-	if v.ExpressionPath != nil {
-		vis.visitPath(v.ExpressionPath)
-	}
 }
 
 // path represents a telemetry path mathExpression.
@@ -282,7 +278,8 @@ type field struct {
 
 type key struct {
 	String *string `parser:"'[' (@String "`
-	Int    *int64  `parser:"| @Int) ']'"`
+	Int    *int64  `parser:"| @Int"`
+	Path   *path   `parser:"| @@ ) ']'"`
 }
 
 type list struct {
@@ -491,7 +488,6 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `LBrace`, Pattern: `\{`},
 		{Name: `RBrace`, Pattern: `\}`},
 		{Name: `Colon`, Pattern: `\:`},
-		{Name: `Dollar`, Pattern: `\$`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
 		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
 		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},
