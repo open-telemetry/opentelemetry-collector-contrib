@@ -11,14 +11,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/provider"
@@ -65,7 +63,8 @@ func GetHostInfo(ctx context.Context, logger *zap.Logger) (hostInfo *HostInfo) {
 		return
 	}
 
-	if idDoc, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{}); err == nil {
+	idDoc, err := client.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
+	if err == nil {
 		hostInfo.InstanceID = idDoc.InstanceID
 	} else {
 		logger.Warn("Failed to get EC2 instance id document", zap.Error(err))
