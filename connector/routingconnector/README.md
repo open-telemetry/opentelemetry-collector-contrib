@@ -32,7 +32,7 @@ The `match_once` field is deprecated as of `v0.116.0`. The deprecation schedule 
 
 - `v0.116.0`: The field is deprecated. If `false` is used, a warning will be logged.
 - `v0.117.0`: The default value will change from `false` to `true`. If `false` is used, an error will be logged.
-- `v0.118.0`: The field will be disconnected from behavior of the connector. If used (either `false` or `true`), an error will be logged.
+- `v0.118.0`: The field will be disconnected from behavior of the connector.
 - `v0.120.0`: The field will be removed.
 
 ### Migration
