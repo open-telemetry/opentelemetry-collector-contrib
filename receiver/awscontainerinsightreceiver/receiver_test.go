@@ -154,5 +154,5 @@ func TestCollectDataWithSystemd(t *testing.T) {
 
 	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 }

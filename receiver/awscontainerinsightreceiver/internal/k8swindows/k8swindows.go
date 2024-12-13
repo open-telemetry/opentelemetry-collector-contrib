@@ -98,11 +98,11 @@ func (k *K8sWindows) GetMetrics() []pmetric.Metrics {
 }
 
 func (k *K8sWindows) decorateMetrics(windowsmetrics []*stores.CIMetricImpl) []*stores.CIMetricImpl {
-	//ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
+	// ebsVolumeIdsUsedAsPV := c.hostInfo.ExtractEbsIDsUsedByKubernetes()
 	var result []*stores.CIMetricImpl
 	for _, m := range windowsmetrics {
 		tags := m.GetTags()
-		//c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
+		// c.addEbsVolumeInfo(tags, ebsVolumeIdsUsedAsPV)
 
 		// add version
 		tags[ci.Version] = k.version

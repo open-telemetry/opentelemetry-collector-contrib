@@ -40,8 +40,7 @@ const (
 	dummyInstanceType = "instance-type"
 )
 
-type mockHostInfoProvider struct {
-}
+type mockHostInfoProvider struct{}
 
 func (m mockHostInfoProvider) GetClusterName() string {
 	return dummyClusterName
@@ -105,29 +104,29 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 		"DCGM_FI_DEV_GPU_TEMP": {
 			value: 65,
 			labels: map[string]string{
-				ci.NodeNameKey:            "hostname",
-				ci.AttributeK8sNamespace:  "kube-system",
-				ci.ClusterNameKey:         dummyClusterName,
-				ci.InstanceID:             dummyInstanceID,
-				ci.InstanceType:           dummyInstanceType,
-				ci.AttributeFullPodName:   "fullname-hash",
-				ci.AttributeK8sPodName:    "fullname-hash",
-				ci.AttributeContainerName: "main",
-				ci.AttributeGpuDevice:     "nvidia0",
+				ci.NodeNameKey:      "hostname",
+				ci.K8sNamespace:     "kube-system",
+				ci.ClusterNameKey:   dummyClusterName,
+				ci.InstanceID:       dummyInstanceID,
+				ci.InstanceType:     dummyInstanceType,
+				ci.FullPodNameKey:   "fullname-hash",
+				ci.PodNameKey:       "fullname-hash",
+				ci.ContainerNamekey: "main",
+				ci.GpuDevice:        "nvidia0",
 			},
 		},
 		"DCGM_FI_DEV_GPU_UTIL": {
 			value: 100,
 			labels: map[string]string{
-				ci.NodeNameKey:            "hostname",
-				ci.AttributeK8sNamespace:  "kube-system",
-				ci.ClusterNameKey:         dummyClusterName,
-				ci.InstanceID:             dummyInstanceID,
-				ci.InstanceType:           dummyInstanceType,
-				ci.AttributeFullPodName:   "fullname-hash",
-				ci.AttributeK8sPodName:    "fullname-hash",
-				ci.AttributeContainerName: "main",
-				ci.AttributeGpuDevice:     "nvidia0",
+				ci.NodeNameKey:      "hostname",
+				ci.K8sNamespace:     "kube-system",
+				ci.ClusterNameKey:   dummyClusterName,
+				ci.InstanceID:       dummyInstanceID,
+				ci.InstanceType:     dummyInstanceType,
+				ci.FullPodNameKey:   "fullname-hash",
+				ci.PodNameKey:       "fullname-hash",
+				ci.ContainerNamekey: "main",
+				ci.GpuDevice:        "nvidia0",
 			},
 		},
 	}
@@ -202,7 +201,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 	params := receiver.Settings{
 		TelemetrySettings: scraper.Settings,
 	}
-	scraper.PrometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.Ctx, params, &promConfig, mConsumer)
+	scraper.PrometheusReceiver, err = promFactory.CreateMetrics(scraper.Ctx, params, &promConfig, mConsumer)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)

@@ -12,8 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type mockHostInfoProvider struct {
-}
+type mockHostInfoProvider struct{}
 
 func (m mockHostInfoProvider) GetClusterName() string {
 	return "cluster-name"

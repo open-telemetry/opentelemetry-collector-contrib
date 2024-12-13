@@ -174,17 +174,17 @@ func (k *K8sAPIServer) getNamespaceMetrics(clusterName, timestampNs string) []pm
 			"namespace_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
-			ci.ClusterNameKey:        clusterName,
-			ci.MetricType:            ci.TypeClusterNamespace,
-			ci.Timestamp:             timestampNs,
-			ci.AttributeK8sNamespace: namespace,
-			ci.Version:               "0",
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterNamespace,
+			ci.Timestamp:      timestampNs,
+			ci.K8sNamespace:   namespace,
+			ci.Version:        "0",
 		}
 		if k.nodeName != "" {
 			attributes["NodeName"] = k.nodeName
 		}
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		attributes[ci.AttributeKubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
+		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)
 	}
@@ -202,18 +202,18 @@ func (k *K8sAPIServer) getDeploymentMetrics(clusterName, timestampNs string) []p
 			ci.StatusReplicasUnavailable: deployment.Status.UnavailableReplicas, // status_replicas_unavailable
 		}
 		attributes := map[string]string{
-			ci.ClusterNameKey:        clusterName,
-			ci.MetricType:            ci.TypeClusterDeployment,
-			ci.Timestamp:             timestampNs,
-			ci.AttributePodName:      deployment.Name,
-			ci.AttributeK8sNamespace: deployment.Namespace,
-			ci.Version:               "0",
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterDeployment,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     deployment.Name,
+			ci.K8sNamespace:   deployment.Namespace,
+			ci.Version:        "0",
 		}
 		if k.nodeName != "" {
 			attributes[ci.NodeNameKey] = k.nodeName
 		}
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		// attributes[ci.AttributeKubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"deployment_name\":\"%s\"}",
+		// attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"deployment_name\":\"%s\"}",
 		//	deployment.Namespace, deployment.Name)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)
@@ -232,18 +232,18 @@ func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pm
 			ci.ReplicasReady:             daemonSet.Status.CurrentNumberScheduled, // replicas_ready
 		}
 		attributes := map[string]string{
-			ci.ClusterNameKey:        clusterName,
-			ci.MetricType:            ci.TypeClusterDaemonSet,
-			ci.Timestamp:             timestampNs,
-			ci.AttributePodName:      daemonSet.Name,
-			ci.AttributeK8sNamespace: daemonSet.Namespace,
-			ci.Version:               "0",
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterDaemonSet,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     daemonSet.Name,
+			ci.K8sNamespace:   daemonSet.Namespace,
+			ci.Version:        "0",
 		}
 		if k.nodeName != "" {
 			attributes[ci.NodeNameKey] = k.nodeName
 		}
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		// attributes[ci.AttributeKubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"daemonset_name\":\"%s\"}",
+		// attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"daemonset_name\":\"%s\"}",
 		//	daemonSet.Namespace, daemonSet.Name)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)
@@ -258,18 +258,18 @@ func (k *K8sAPIServer) getServiceMetrics(clusterName, timestampNs string) []pmet
 			"service_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
-			ci.ClusterNameKey:        clusterName,
-			ci.MetricType:            ci.TypeClusterService,
-			ci.Timestamp:             timestampNs,
-			ci.TypeService:           service.ServiceName,
-			ci.AttributeK8sNamespace: service.Namespace,
-			ci.Version:               "0",
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterService,
+			ci.Timestamp:      timestampNs,
+			ci.TypeService:    service.ServiceName,
+			ci.K8sNamespace:   service.Namespace,
+			ci.Version:        "0",
 		}
 		if k.nodeName != "" {
 			attributes["NodeName"] = k.nodeName
 		}
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
-		attributes[ci.AttributeKubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
+		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
 			service.Namespace, service.ServiceName)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)
@@ -287,12 +287,12 @@ func (k *K8sAPIServer) getStatefulSetMetrics(clusterName, timestampNs string) []
 			ci.StatusReplicasAvailable: statefulSet.Status.AvailableReplicas, // status_replicas_available
 		}
 		attributes := map[string]string{
-			ci.ClusterNameKey:        clusterName,
-			ci.MetricType:            ci.TypeClusterStatefulSet,
-			ci.Timestamp:             timestampNs,
-			ci.AttributePodName:      statefulSet.Name,
-			ci.AttributeK8sNamespace: statefulSet.Namespace,
-			ci.Version:               "0",
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterStatefulSet,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     statefulSet.Name,
+			ci.K8sNamespace:   statefulSet.Namespace,
+			ci.Version:        "0",
 		}
 		if k.nodeName != "" {
 			attributes[ci.NodeNameKey] = k.nodeName
@@ -314,12 +314,12 @@ func (k *K8sAPIServer) getReplicaSetMetrics(clusterName, timestampNs string) []p
 			ci.StatusReplicasAvailable: replicaSet.Status.AvailableReplicas, // status_replicas_available
 		}
 		attributes := map[string]string{
-			ci.ClusterNameKey:        clusterName,
-			ci.MetricType:            ci.TypeClusterReplicaSet,
-			ci.Timestamp:             timestampNs,
-			ci.AttributePodName:      replicaSet.Name,
-			ci.AttributeK8sNamespace: replicaSet.Namespace,
-			ci.Version:               "0",
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterReplicaSet,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     replicaSet.Name,
+			ci.K8sNamespace:   replicaSet.Namespace,
+			ci.Version:        "0",
 		}
 		if k.nodeName != "" {
 			attributes[ci.NodeNameKey] = k.nodeName
@@ -347,12 +347,12 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 			}
 
 			attributes := map[string]string{
-				ci.ClusterNameKey:        clusterName,
-				ci.MetricType:            ci.TypePod,
-				ci.Timestamp:             timestampNs,
-				ci.AttributePodName:      podInfo.Name,
-				ci.AttributeK8sNamespace: podInfo.Namespace,
-				ci.Version:               "0",
+				ci.ClusterNameKey: clusterName,
+				ci.MetricType:     ci.TypePod,
+				ci.Timestamp:      timestampNs,
+				ci.PodNameKey:     podInfo.Name,
+				ci.K8sNamespace:   podInfo.Namespace,
+				ci.Version:        "0",
 			}
 
 			podKey := k8sutil.CreatePodKey(podInfo.Namespace, podInfo.Name)
@@ -375,7 +375,7 @@ func (k *K8sAPIServer) getPendingPodStatusMetrics(clusterName, timestampNs strin
 				if err != nil {
 					k.logger.Warn("Error parsing kubernetes blob for pod metrics")
 				} else {
-					attributes[ci.AttributeKubernetes] = string(kubernetesInfo)
+					attributes[ci.Kubernetes] = string(kubernetesInfo)
 				}
 			}
 			attributes[ci.SourcesKey] = "[\"apiserver\"]"
@@ -447,9 +447,9 @@ func (k *K8sAPIServer) getKubernetesBlob(pod *k8sclient.PodInfo, kubernetesBlob 
 		}
 	}
 
-	attributes[ci.AttributePodName] = podName
+	attributes[ci.PodNameKey] = podName
 	if k.addFullPodNameMetricLabel {
-		attributes[ci.AttributeFullPodName] = pod.Name
+		attributes[ci.FullPodNameKey] = pod.Name
 		kubernetesBlob["pod_name"] = pod.Name
 	}
 }

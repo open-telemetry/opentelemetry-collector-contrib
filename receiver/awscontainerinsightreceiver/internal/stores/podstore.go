@@ -123,7 +123,8 @@ type PodStore struct {
 }
 
 func NewPodStore(client podClient, prefFullPodName bool, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool,
-	enableAcceleratedComputeMetrics bool, hostName string, isSystemdEnabled bool, logger *zap.Logger) (*PodStore, error) {
+	enableAcceleratedComputeMetrics bool, hostName string, isSystemdEnabled bool, logger *zap.Logger,
+) (*PodStore, error) {
 	if hostName == "" {
 		return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config or passed as part of the agent config", ci.HostName)
 	}
@@ -148,7 +149,7 @@ func NewPodStore(client podClient, prefFullPodName bool, addFullPodNameMetricLab
 	podStore := &PodStore{
 		cache:            newMapWithExpiry(podsExpiry),
 		prevMeasurements: sync.Map{},
-		//prevMeasurements:          make(map[string]*mapWithExpiry),
+		// prevMeasurements:          make(map[string]*mapWithExpiry),
 		podClient:                       client,
 		nodeInfo:                        nodeInfo,
 		prefFullPodName:                 prefFullPodName,
@@ -217,7 +218,7 @@ func (p *PodStore) RefreshTick(ctx context.Context) {
 func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]any) bool {
 	if metric.GetTag(ci.MetricType) == ci.TypeNode {
 		p.decorateNode(metric)
-	} else if metric.GetTag(ci.AttributeK8sPodName) != "" {
+	} else if metric.GetTag(ci.PodNameKey) != "" {
 		podKey := createPodKeyFromMetric(metric)
 		if podKey == "" {
 			p.logger.Error("podKey is unavailable when decorating pod")
@@ -415,7 +416,6 @@ func (p *PodStore) decorateNode(metric CIMetric) {
 func (p *PodStore) decorateGPU(metric CIMetric, pod *corev1.Pod) {
 	if p.includeEnhancedMetrics && p.enableAcceleratedComputeMetrics && metric.GetTag(ci.MetricType) == ci.TypePod &&
 		pod.Status.Phase != corev1.PodSucceeded && pod.Status.Phase != corev1.PodFailed {
-
 		if podGpuLimit, ok := getResourceSettingForPod(pod, 0, gpuKey, getLimitForContainer); ok {
 			podGpuRequest, _ := getResourceSettingForPod(pod, 0, gpuKey, getRequestForContainer)
 			metric.AddField(ci.MetricName(ci.TypePod, ci.GpuRequest), podGpuRequest)
@@ -460,7 +460,7 @@ func (p *PodStore) decorateCPU(metric CIMetric, pod *corev1.Pod) {
 		// add cpu limit and request for container
 		if metric.HasField(ci.MetricName(ci.TypeContainer, ci.CPUTotal)) {
 			containerCPUTotal := metric.GetField(ci.MetricName(ci.TypeContainer, ci.CPUTotal))
-			if containerName := metric.GetTag(ci.AttributeContainerName); containerName != "" {
+			if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 				for _, containerSpec := range pod.Spec.Containers {
 					if containerSpec.Name == containerName {
 						if containerCPULimit, ok := getLimitForContainer(cpuKey, containerSpec); ok {
@@ -509,7 +509,7 @@ func (p *PodStore) decorateMem(metric CIMetric, pod *corev1.Pod) {
 		memWorkingsetMetric := ci.MetricName(ci.TypeContainer, ci.MemWorkingset)
 		if metric.HasField(memWorkingsetMetric) {
 			containerMemWorkingset := metric.GetField(memWorkingsetMetric)
-			if containerName := metric.GetTag(ci.AttributeContainerName); containerName != "" {
+			if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 				for _, containerSpec := range pod.Spec.Containers {
 					if containerSpec.Name == containerName {
 						if containerMemLimit, ok := getLimitForContainer(memoryKey, containerSpec); ok {
@@ -557,7 +557,7 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 			p.setPrevMeasurement(ci.TypePod, podKey, prevPodMeasurement{containersRestarts: curContainerRestarts})
 		}
 	} else if metric.GetTag(ci.MetricType) == ci.TypeContainer {
-		if containerName := metric.GetTag(ci.AttributeContainerName); containerName != "" {
+		if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 			for _, containerStatus := range pod.Status.ContainerStatuses {
 				if containerStatus.Name == containerName {
 					switch {
@@ -616,7 +616,6 @@ func (p *PodStore) addPodConditionMetrics(metric CIMetric, pod *corev1.Pod) {
 	metric.AddField(PodConditionUnknownMetric, 0)
 
 	for _, condition := range pod.Status.Conditions {
-
 		switch condition.Status {
 		case corev1.ConditionTrue:
 			if statusMetricName, ok := PodConditionMetricNames[condition.Type]; ok {
@@ -627,7 +626,6 @@ func (p *PodStore) addPodConditionMetrics(metric CIMetric, pod *corev1.Pod) {
 				metric.AddField(PodConditionUnknownMetric, 1)
 			}
 		}
-
 	}
 }
 
@@ -723,10 +721,10 @@ func getRequestForContainer(resource corev1.ResourceName, spec corev1.Container)
 }
 
 func addContainerID(pod *corev1.Pod, metric CIMetric, kubernetesBlob map[string]any, logger *zap.Logger) {
-	if containerName := metric.GetTag(ci.AttributeContainerName); containerName != "" {
+	if containerName := metric.GetTag(ci.ContainerNamekey); containerName != "" {
 		rawID := ""
 		for _, container := range pod.Status.ContainerStatuses {
-			if metric.GetTag(ci.AttributeContainerName) == container.Name {
+			if metric.GetTag(ci.ContainerNamekey) == container.Name {
 				rawID = container.ContainerID
 				if rawID != "" {
 					ids := strings.Split(rawID, "://")
@@ -741,9 +739,9 @@ func addContainerID(pod *corev1.Pod, metric CIMetric, kubernetesBlob map[string]
 			}
 		}
 		if rawID == "" {
-			kubernetesBlob["container_id"] = metric.GetTag(ci.AttributeContainerID)
+			kubernetesBlob["container_id"] = metric.GetTag(ci.ContainerIDkey)
 		}
-		metric.RemoveTag(ci.AttributeContainerID)
+		metric.RemoveTag(ci.ContainerIDkey)
 	}
 }
 
@@ -814,9 +812,9 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 		}
 	}
 
-	metric.AddTag(ci.AttributePodName, podName)
+	metric.AddTag(ci.PodNameKey, podName)
 	if p.addFullPodNameMetricLabel {
-		metric.AddTag(ci.AttributeFullPodName, pod.Name)
+		metric.AddTag(ci.FullPodNameKey, pod.Name)
 	}
 }
 

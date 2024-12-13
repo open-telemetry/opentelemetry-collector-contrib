@@ -130,9 +130,9 @@ func (hp *HCSStatsProvider) getPodMetrics() ([]*stores.CIMetricImpl, error) {
 		var metricsPerPod []*stores.CIMetricImpl
 		tags := map[string]string{}
 
-		tags[ci.AttributePodID] = pod.PodId
-		tags[ci.AttributeK8sPodName] = pod.PodName
-		tags[ci.AttributeK8sNamespace] = pod.PodNamespace
+		tags[ci.PodIDKey] = pod.PodId
+		tags[ci.PodNameKey] = pod.PodName
+		tags[ci.K8sNamespace] = pod.PodNamespace
 
 		for _, container := range pod.Containers {
 			if _, ok := hp.containerToEndpoint[container.Id]; !ok {
@@ -204,7 +204,7 @@ func (hp *HCSStatsProvider) getPodToContainerMap() (map[string]PodKey, error) {
 }
 
 func (hp *HCSStatsProvider) getContainerToEndpointMap() (map[string]EndpointInfo, error) {
-	var containerToEndpointMap = make(map[string]EndpointInfo)
+	containerToEndpointMap := make(map[string]EndpointInfo)
 	endpointList, err := hp.hcsClient.GetEndpointList()
 	if err != nil {
 		hp.logger.Error("failed to get endpoints list from HCS shim client, ", zap.Error(err))

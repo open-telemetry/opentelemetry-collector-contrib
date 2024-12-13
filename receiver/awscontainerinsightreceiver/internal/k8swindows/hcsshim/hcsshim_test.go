@@ -76,7 +76,8 @@ func (m *MockKubeletProvider) GetPods() ([]corev1.Pod, error) {
 		Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{
 			Name:        "mockContainername",
 			ContainerID: "containerd://1234123412341afasdfa12342343134",
-		}}}})
+		}}},
+	})
 	return mockPods, nil
 }
 
@@ -144,9 +145,9 @@ func TestGetPodMetrics(t *testing.T) {
 	assert.Equal(t, len(metrics), 1)
 	podMetric := metrics[0]
 	assert.Equal(t, podMetric.GetMetricType(), ci.TypePodNet)
-	assert.NotNil(t, podMetric.GetTag(ci.AttributePodID))
-	assert.NotNil(t, podMetric.GetTag(ci.AttributeK8sPodName))
-	assert.NotNil(t, podMetric.GetTag(ci.AttributeK8sNamespace))
+	assert.NotNil(t, podMetric.GetTag(ci.PodIDKey))
+	assert.NotNil(t, podMetric.GetTag(ci.PodNameKey))
+	assert.NotNil(t, podMetric.GetTag(ci.K8sNamespace))
 	assert.NotNil(t, podMetric.GetTag(ci.Timestamp))
 	assert.NotNil(t, podMetric.GetTag(ci.SourcesKey))
 	assert.NotNil(t, podMetric.GetTag(ci.NetIfce))

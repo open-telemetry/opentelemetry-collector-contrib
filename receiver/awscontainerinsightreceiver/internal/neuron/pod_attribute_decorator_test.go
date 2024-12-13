@@ -16,13 +16,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 )
 
-var dummyPodName = "pod-name"
-var dummyPodNameForAltResource = "pod-name-alt"
-var dummyContainerName = "container-name"
-var dummyNamespace = "namespace"
+var (
+	dummyPodName               = "pod-name"
+	dummyPodNameForAltResource = "pod-name-alt"
+	dummyContainerName         = "container-name"
+	dummyNamespace             = "namespace"
+)
 
-type mockPodResourcesStore struct {
-}
+type mockPodResourcesStore struct{}
 
 func (m mockPodResourcesStore) GetContainerInfo(_ string, _ string) *stores.ContainerInfo {
 	return &stores.ContainerInfo{
@@ -32,8 +33,7 @@ func (m mockPodResourcesStore) GetContainerInfo(_ string, _ string) *stores.Cont
 	}
 }
 
-type mockPodResourcesStoreWithAltResourceName struct {
-}
+type mockPodResourcesStoreWithAltResourceName struct{}
 
 func (m mockPodResourcesStoreWithAltResourceName) GetContainerInfo(_ string, resourceName string) *stores.ContainerInfo {
 	if resourceName == neuronDeviceResourceNameAlt {
@@ -63,9 +63,10 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 		},
 		"neuron_hardware_info_not_found": {
 			Metrics: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
-				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {{
-					"device": "test0",
-				},
+				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
+					{
+						"device": "test0",
+					},
 				},
 			}),
 
@@ -85,24 +86,27 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 						neuronCorePerDeviceKey: "2",
 					},
 				},
-				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {{
-					"device":                 "test0",
-					neuronDeviceAttributeKey: "1",
-				},
+				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
+					{
+						"device":                 "test0",
+						neuronDeviceAttributeKey: "1",
+					},
 				},
 			}),
 			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
-				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {{
-					neuronCorePerDeviceKey: "2",
+				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
-				},
-				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {{
-					"device":                  "test0",
-					neuronDeviceAttributeKey:  "1",
-					ci.AttributeContainerName: dummyContainerName,
-					ci.AttributeK8sPodName:    dummyPodName,
-					ci.AttributeK8sNamespace:  dummyNamespace,
-				},
+				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
+					{
+						"device":                 "test0",
+						neuronDeviceAttributeKey: "1",
+						ci.ContainerNamekey:      dummyContainerName,
+						ci.PodNameKey:            dummyPodName,
+						ci.K8sNamespace:          dummyNamespace,
+					},
 				},
 			}),
 			ShouldError: false,
@@ -129,12 +133,12 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
 					{
-						"device":                  "test0",
-						neuronCoreAttributeKey:    "10",
-						neuronDeviceAttributeKey:  "5",
-						ci.AttributeContainerName: dummyContainerName,
-						ci.AttributeK8sPodName:    dummyPodName,
-						ci.AttributeK8sNamespace:  dummyNamespace,
+						"device":                 "test0",
+						neuronCoreAttributeKey:   "10",
+						neuronDeviceAttributeKey: "5",
+						ci.ContainerNamekey:      dummyContainerName,
+						ci.PodNameKey:            dummyPodName,
+						ci.K8sNamespace:          dummyNamespace,
 					},
 				},
 			}),
@@ -163,12 +167,12 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
 					{
-						"device":                  "test0",
-						neuronCoreAttributeKey:    "10",
-						neuronDeviceAttributeKey:  "5",
-						ci.AttributeContainerName: dummyContainerName,
-						ci.AttributeK8sPodName:    dummyPodName,
-						ci.AttributeK8sNamespace:  dummyNamespace,
+						"device":                 "test0",
+						neuronCoreAttributeKey:   "10",
+						neuronDeviceAttributeKey: "5",
+						ci.ContainerNamekey:      dummyContainerName,
+						ci.PodNameKey:            dummyPodName,
+						ci.K8sNamespace:          dummyNamespace,
 					},
 				},
 			}),
@@ -200,17 +204,18 @@ func TestConsumeMetricsForPodAttributeDecorator(t *testing.T) {
 				},
 			}),
 			Want: decoratorconsumer.GenerateMetrics(map[decoratorconsumer.MetricIdentifier][]map[string]string{
-				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {{
-					neuronCorePerDeviceKey: "2",
-				},
+				{Name: neuronHardwareInfoKey, MetricType: pmetric.MetricTypeSum}: {
+					{
+						neuronCorePerDeviceKey: "2",
+					},
 				},
 				{Name: "test", MetricType: pmetric.MetricTypeGauge}: {
 					{
-						"device":                  "test0",
-						neuronDeviceAttributeKey:  "1",
-						ci.AttributeContainerName: dummyContainerName,
-						ci.AttributeK8sPodName:    dummyPodNameForAltResource,
-						ci.AttributeK8sNamespace:  dummyNamespace,
+						"device":                 "test0",
+						neuronDeviceAttributeKey: "1",
+						ci.ContainerNamekey:      dummyContainerName,
+						ci.PodNameKey:            dummyPodNameForAltResource,
+						ci.K8sNamespace:          dummyNamespace,
 					},
 				},
 			}),

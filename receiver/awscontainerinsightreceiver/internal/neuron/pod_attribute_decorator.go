@@ -94,7 +94,6 @@ func (pdc *PodAttributesDecoratorConsumer) addPodCorrelationAttributes(metricDat
 			// get container info from neuronDeviceIndex
 			neuronDeviceIndex := neuronDeviceIndex.AsString()
 			containerInfo = pdc.getContainerInfoForNeuronDeviceIndex(neuronDeviceIndex)
-
 		} else if neuronCoreIndex, neuronCoreIndexPresent := attributes.Get(neuronCoreAttributeKey); neuronCoreIndexPresent {
 			// get container info from neuronCore
 			containerInfo = pdc.PodResourcesStore.GetContainerInfo(neuronCoreIndex.AsString(), neuronCoreResourceName)
@@ -120,9 +119,9 @@ func (pdc *PodAttributesDecoratorConsumer) getContainerInfoForNeuronDeviceIndex(
 
 func populateAttributes(attributes *pcommon.Map, containerInfo *stores.ContainerInfo) {
 	if containerInfo != nil {
-		attributes.PutStr(ci.AttributeContainerName, containerInfo.ContainerName)
-		attributes.PutStr(ci.AttributeK8sPodName, containerInfo.PodName)
-		attributes.PutStr(ci.AttributeK8sNamespace, containerInfo.Namespace)
+		attributes.PutStr(ci.ContainerNamekey, containerInfo.ContainerName)
+		attributes.PutStr(ci.PodNameKey, containerInfo.PodName)
+		attributes.PutStr(ci.K8sNamespace, containerInfo.Namespace)
 	}
 }
 

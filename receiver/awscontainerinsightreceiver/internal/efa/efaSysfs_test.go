@@ -113,10 +113,10 @@ var efa0Metrics = []expectation{
 			"node_efa_tx_bytes":              12,
 		},
 		map[string]string{
-			ci.MetricType:         ci.TypeNodeEFA,
-			ci.AttributeEfaDevice: "efa0",
-			ci.Timestamp:          "to-be-replaced",
-			"decorated":           "true",
+			ci.MetricType: ci.TypeNodeEFA,
+			ci.EfaDevice:  "efa0",
+			ci.Timestamp:  "to-be-replaced",
+			"decorated":   "true",
 		},
 	},
 	{
@@ -129,13 +129,13 @@ var efa0Metrics = []expectation{
 			"pod_efa_tx_bytes":              12,
 		},
 		map[string]string{
-			ci.MetricType:             ci.TypePodEFA,
-			ci.AttributeEfaDevice:     "efa0",
-			ci.AttributeK8sNamespace:  "namespace0",
-			ci.AttributeK8sPodName:    "pod0",
-			ci.AttributeContainerName: "container0",
-			ci.Timestamp:              "to-be-replaced",
-			"decorated":               "true",
+			ci.MetricType:       ci.TypePodEFA,
+			ci.EfaDevice:        "efa0",
+			ci.K8sNamespace:     "namespace0",
+			ci.PodNameKey:       "pod0",
+			ci.ContainerNamekey: "container0",
+			ci.Timestamp:        "to-be-replaced",
+			"decorated":         "true",
 		},
 	},
 	{
@@ -148,13 +148,13 @@ var efa0Metrics = []expectation{
 			"container_efa_tx_bytes":              12,
 		},
 		map[string]string{
-			ci.MetricType:             ci.TypeContainerEFA,
-			ci.AttributeEfaDevice:     "efa0",
-			ci.AttributeK8sNamespace:  "namespace0",
-			ci.AttributeK8sPodName:    "pod0",
-			ci.AttributeContainerName: "container0",
-			ci.Timestamp:              "to-be-replaced",
-			"decorated":               "true",
+			ci.MetricType:       ci.TypeContainerEFA,
+			ci.EfaDevice:        "efa0",
+			ci.K8sNamespace:     "namespace0",
+			ci.PodNameKey:       "pod0",
+			ci.ContainerNamekey: "container0",
+			ci.Timestamp:        "to-be-replaced",
+			"decorated":         "true",
 		},
 	},
 }
@@ -169,10 +169,10 @@ var efa1NodeMetric = expectation{
 		"node_efa_tx_bytes":              12,
 	},
 	map[string]string{
-		ci.MetricType:         ci.TypeNodeEFA,
-		ci.AttributeEfaDevice: "efa1",
-		ci.Timestamp:          "to-be-replaced",
-		"decorated":           "true",
+		ci.MetricType: ci.TypeNodeEFA,
+		ci.EfaDevice:  "efa1",
+		ci.Timestamp:  "to-be-replaced",
+		"decorated":   "true",
 	},
 }
 
@@ -187,13 +187,13 @@ var efa1PodContainerMetrics = []expectation{
 			"pod_efa_tx_bytes":              12,
 		},
 		map[string]string{
-			ci.MetricType:             ci.TypePodEFA,
-			ci.AttributeEfaDevice:     "efa1",
-			ci.AttributeK8sNamespace:  "namespace1",
-			ci.AttributeK8sPodName:    "pod1",
-			ci.AttributeContainerName: "container1",
-			ci.Timestamp:              "to-be-replaced",
-			"decorated":               "true",
+			ci.MetricType:       ci.TypePodEFA,
+			ci.EfaDevice:        "efa1",
+			ci.K8sNamespace:     "namespace1",
+			ci.PodNameKey:       "pod1",
+			ci.ContainerNamekey: "container1",
+			ci.Timestamp:        "to-be-replaced",
+			"decorated":         "true",
 		},
 	},
 	{
@@ -206,13 +206,13 @@ var efa1PodContainerMetrics = []expectation{
 			"container_efa_tx_bytes":              12,
 		},
 		map[string]string{
-			ci.MetricType:             ci.TypeContainerEFA,
-			ci.AttributeEfaDevice:     "efa1",
-			ci.AttributeK8sNamespace:  "namespace1",
-			ci.AttributeK8sPodName:    "pod1",
-			ci.AttributeContainerName: "container1",
-			ci.Timestamp:              "to-be-replaced",
-			"decorated":               "true",
+			ci.MetricType:       ci.TypeContainerEFA,
+			ci.EfaDevice:        "efa1",
+			ci.K8sNamespace:     "namespace1",
+			ci.PodNameKey:       "pod1",
+			ci.ContainerNamekey: "container1",
+			ci.Timestamp:        "to-be-replaced",
+			"decorated":         "true",
 		},
 	},
 }
@@ -288,11 +288,11 @@ func checkExpectations(t *testing.T, expected []expectation, actual []pmetric.Me
 	}
 
 	slices.SortFunc(expected, func(a, b expectation) int {
-		return compareStrings(a.tags[ci.AttributeEfaDevice], b.tags[ci.AttributeEfaDevice])
+		return compareStrings(a.tags[ci.EfaDevice], b.tags[ci.EfaDevice])
 	})
 	slices.SortFunc(actual, func(a, b pmetric.Metrics) int {
-		aVal, _ := a.ResourceMetrics().At(0).Resource().Attributes().Get(ci.AttributeEfaDevice)
-		bVal, _ := b.ResourceMetrics().At(0).Resource().Attributes().Get(ci.AttributeEfaDevice)
+		aVal, _ := a.ResourceMetrics().At(0).Resource().Attributes().Get(ci.EfaDevice)
+		bVal, _ := b.ResourceMetrics().At(0).Resource().Attributes().Get(ci.EfaDevice)
 		return compareStrings(aVal.Str(), bVal.Str())
 	})
 

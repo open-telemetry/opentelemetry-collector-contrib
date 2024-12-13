@@ -133,7 +133,7 @@ func isHyperPodNode(instanceType string) bool {
 }
 
 func isLabelSet(conditionType int8, nodeLabels map[k8sclient.Label]int8, labelKey k8sclient.Label) (int, bool) {
-	var count = 0
+	count := 0
 	nodeConditions, labelExists := nodeLabels[labelKey]
 	if labelExists && nodeConditions == conditionType {
 		count = 1

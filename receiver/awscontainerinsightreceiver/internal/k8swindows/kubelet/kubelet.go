@@ -82,12 +82,12 @@ func (sp *SummaryProvider) getContainerMetrics(pod stats.PodStats) ([]*stores.CI
 	for _, container := range pod.Containers {
 		tags := map[string]string{}
 
-		tags[ci.AttributePodID] = pod.PodRef.UID
-		tags[ci.AttributeK8sPodName] = pod.PodRef.Name
-		tags[ci.AttributeK8sNamespace] = pod.PodRef.Namespace
-		tags[ci.AttributeContainerName] = container.Name
+		tags[ci.PodIDKey] = pod.PodRef.UID
+		tags[ci.PodNameKey] = pod.PodRef.Name
+		tags[ci.K8sNamespace] = pod.PodRef.Namespace
+		tags[ci.ContainerNamekey] = container.Name
 		containerID := fmt.Sprintf("%s-%s", pod.PodRef.UID, container.Name)
-		tags[ci.AttributeContainerID] = containerID
+		tags[ci.ContainerIDkey] = containerID
 
 		rawMetric := extractors.ConvertContainerToRaw(container, pod)
 		tags[ci.Timestamp] = strconv.FormatInt(rawMetric.Time.UnixNano(), 10)
@@ -118,9 +118,9 @@ func (sp *SummaryProvider) getPodMetrics(summary *stats.Summary) ([]*stores.CIMe
 
 		tags := map[string]string{}
 
-		tags[ci.AttributePodID] = pod.PodRef.UID
-		tags[ci.AttributeK8sPodName] = pod.PodRef.Name
-		tags[ci.AttributeK8sNamespace] = pod.PodRef.Namespace
+		tags[ci.PodIDKey] = pod.PodRef.UID
+		tags[ci.PodNameKey] = pod.PodRef.Name
+		tags[ci.K8sNamespace] = pod.PodRef.Namespace
 
 		rawMetric := extractors.ConvertPodToRaw(pod)
 		tags[ci.Timestamp] = strconv.FormatInt(rawMetric.Time.UnixNano(), 10)

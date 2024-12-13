@@ -139,7 +139,8 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 }
 
 func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host component.Host, hostInfo *hostinfo.Info,
-	hostName string, kubeletClient *kubeletutil.KubeletClient) error {
+	hostName string, kubeletClient *kubeletutil.KubeletClient,
+) error {
 	k8sDecorator, err := stores.NewK8sDecorator(ctx, kubeletClient, acir.config.TagService, acir.config.PrefFullPodName,
 		acir.config.AddFullPodNameMetricLabel, acir.config.AddContainerNameMetricLabel,
 		acir.config.EnableControlPlaneMetrics, acir.config.EnableAcceleratedComputeMetrics,

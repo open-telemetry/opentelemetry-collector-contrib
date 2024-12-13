@@ -29,7 +29,7 @@ type CPUMemInfoProvider interface {
 
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
-	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric
+	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl
 	Shutdown() error
 }
 
@@ -56,9 +56,9 @@ func AssignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields 
 }
 
 // MergeMetrics merges an array of cadvisor metrics based on common metric keys
-func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
-	result := make([]*CAdvisorMetric, 0, len(metrics))
-	metricMap := make(map[string]*CAdvisorMetric)
+func MergeMetrics(metrics []*stores.CIMetricImpl) []*stores.CIMetricImpl {
+	result := make([]*stores.CIMetricImpl, 0, len(metrics))
+	metricMap := make(map[string]*stores.CIMetricImpl)
 	for _, metric := range metrics {
 		if metricKey := getMetricKey(metric); metricKey != "" {
 			if mergedMetric, ok := metricMap[metricKey]; ok {
@@ -78,7 +78,7 @@ func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
 }
 
 // return MetricKey for merge-able metrics
-func getMetricKey(metric *CAdvisorMetric) string {
+func getMetricKey(metric *stores.CIMetricImpl) string {
 	metricType := metric.GetMetricType()
 	var metricKey string
 	switch metricType {
@@ -90,10 +90,10 @@ func getMetricKey(metric *CAdvisorMetric) string {
 		metricKey = "metricType:" + ci.TypeNode
 	case ci.TypePod:
 		// merge cpu, memory, net metric for type Pod
-		metricKey = fmt.Sprintf("metricType:%s,podId:%s", ci.TypePod, metric.GetTags()[ci.AttributePodID])
+		metricKey = fmt.Sprintf("metricType:%s,podId:%s", ci.TypePod, metric.GetTags()[ci.PodIDKey])
 	case ci.TypeContainer:
 		// merge cpu, memory metric for type Container
-		metricKey = fmt.Sprintf("metricType:%s,podId:%s,containerName:%s", ci.TypeContainer, metric.GetTags()[ci.AttributePodID], metric.GetTags()[ci.AttributeContainerName])
+		metricKey = fmt.Sprintf("metricType:%s,podId:%s,containerName:%s", ci.TypeContainer, metric.GetTags()[ci.PodIDKey], metric.GetTags()[ci.ContainerNamekey])
 	case ci.TypeInstanceDiskIO:
 		// merge io_serviced, io_service_bytes for type InstanceDiskIO
 		metricKey = fmt.Sprintf("metricType:%s,device:%s", ci.TypeInstanceDiskIO, metric.GetTags()[ci.DiskDev])

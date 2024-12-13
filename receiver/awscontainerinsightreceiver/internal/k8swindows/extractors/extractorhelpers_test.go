@@ -16,7 +16,6 @@ import (
 )
 
 func TestConvertPodToRaw(t *testing.T) {
-
 	result := testutils.LoadKubeletSummary(t, "./testdata/PreSingleKubeletSummary.json")
 
 	podRawMetric := ConvertPodToRaw(result.Pods[0])
@@ -59,7 +58,6 @@ func TestConvertContainerToRaw(t *testing.T) {
 }
 
 func TestConvertNodeToRaw(t *testing.T) {
-
 	result := testutils.LoadKubeletSummary(t, "./testdata/PreSingleKubeletSummary.json")
 
 	nodeRawMetric := ConvertNodeToRaw(result.Node)

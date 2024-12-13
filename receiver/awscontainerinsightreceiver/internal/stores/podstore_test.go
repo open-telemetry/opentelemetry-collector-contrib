@@ -233,7 +233,7 @@ func TestPodStore_decorateCpu(t *testing.T) {
 	assert.Equal(t, float64(1), metric.GetField("pod_cpu_usage_total").(float64))
 
 	// test container metrics
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.ContainerNamekey: "ubuntu"}
 	fields = map[string]any{ci.MetricName(ci.TypeContainer, ci.CPUTotal): float64(1)}
 	metric = generateMetric(fields, tags)
 	podStore.decorateCPU(metric, pod)
@@ -266,7 +266,7 @@ func TestPodStore_decorateMem(t *testing.T) {
 	assert.Equal(t, float64(20), metric.GetField("pod_memory_utilization_over_pod_limit").(float64))
 	assert.Equal(t, uint64(10*1024*1024), metric.GetField("pod_memory_working_set").(uint64))
 
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.ContainerNamekey: "ubuntu"}
 	fields = map[string]any{ci.MetricName(ci.TypeContainer, ci.MemWorkingset): uint64(10 * 1024 * 1024)}
 
 	metric = generateMetric(fields, tags)
@@ -310,7 +310,7 @@ func TestPodStore_previousCleanupLocking(_ *testing.T) {
 	pod := getBaseTestPodInfo()
 	ctx := context.TODO()
 
-	tags := map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	metric := generateMetric(fields, tags)
 
@@ -443,6 +443,7 @@ func TestPodStore_addStatus_adds_all_pod_conditions_as_metrics_when_unexpected(t
 	assert.Equal(t, 1, decoratedResultMetric.GetField(PodScheduledMetricName))
 	assert.Equal(t, 0, decoratedResultMetric.GetField(PodUnknownMetricName))
 }
+
 func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 	pod := getBaseTestPodInfo()
 	// add another container
@@ -450,7 +451,7 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 	containerCopy.Name = "ubuntu2"
 	pod.Status.ContainerStatuses = append(pod.Status.ContainerStatuses, containerCopy)
 
-	tags := map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	podStore := getPodStore()
 	podStore.includeEnhancedMetrics = true
@@ -463,21 +464,21 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 	assert.Nil(t, val)
 
 	// set up container defaults
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 	podStore.addStatus(metric, pod)
 	assert.Equal(t, "Running", metric.GetTag(ci.ContainerStatus))
 	val = metric.GetField(ci.ContainerRestartCount)
 	assert.Nil(t, val)
 	// set up the other container
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu2"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu2"}
 	metric = generateMetric(fields, tags)
 	podStore.addStatus(metric, pod)
 	assert.Equal(t, "Running", metric.GetTag(ci.ContainerStatus))
 	val = metric.GetField(ci.ContainerRestartCount)
 	assert.Nil(t, val)
 
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -498,7 +499,7 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 	pod.Status.ContainerStatuses[1].RestartCount = 1
 	pod.Status.Phase = "Succeeded"
 
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -507,18 +508,18 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 
 	// update the container metrics
 	// set up container defaults
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 	podStore.addStatus(metric, pod)
 	assert.Equal(t, 1, metric.GetField(ci.ContainerRestartCount))
 
 	// test the other container
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu2"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu2"}
 	metric = generateMetric(fields, tags)
 	podStore.addStatus(metric, pod)
 	assert.Equal(t, 1, metric.GetField(ci.ContainerRestartCount))
 
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -530,7 +531,7 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 	pod.Status.ContainerStatuses[1].LastTerminationState.Terminated = nil
 	pod.Status.ContainerStatuses[1].State.Waiting = &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}
 
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -546,7 +547,7 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 	pod.Status.ContainerStatuses[0].State.Waiting = &corev1.ContainerStateWaiting{Reason: "ImagePullBackOff"}
 	pod.Status.ContainerStatuses[1].State.Waiting = &corev1.ContainerStateWaiting{Reason: "StartError"}
 
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -583,13 +584,13 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 
 	// test delta of restartCount
 	pod.Status.ContainerStatuses[0].RestartCount = 3
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
 	assert.Equal(t, 2, metric.GetField(ci.MetricName(ci.TypePod, ci.ContainerRestartCount)))
 
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -598,7 +599,7 @@ func TestPodStore_addStatus_enhanced_metrics(t *testing.T) {
 
 func TestPodStore_addStatus_without_enhanced_metrics(t *testing.T) {
 	pod := getBaseTestPodInfo()
-	tags := map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	podStore := getPodStore()
 	podStore.includeEnhancedMetrics = false
@@ -609,7 +610,7 @@ func TestPodStore_addStatus_without_enhanced_metrics(t *testing.T) {
 	val := metric.GetField(ci.MetricName(ci.TypePod, ci.ContainerRestartCount))
 	assert.Nil(t, val)
 
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -624,14 +625,14 @@ func TestPodStore_addStatus_without_enhanced_metrics(t *testing.T) {
 	pod.Status.ContainerStatuses[0].RestartCount = 1
 	pod.Status.Phase = "Succeeded"
 
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
 	assert.Equal(t, "Succeeded", metric.GetTag(ci.PodStatus))
 	assert.Equal(t, int(1), metric.GetField(ci.MetricName(ci.TypePod, ci.ContainerRestartCount)).(int))
 
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -643,7 +644,7 @@ func TestPodStore_addStatus_without_enhanced_metrics(t *testing.T) {
 	pod.Status.ContainerStatuses[0].State.Terminated = nil
 	pod.Status.ContainerStatuses[0].State.Waiting = &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}
 
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -653,7 +654,7 @@ func TestPodStore_addStatus_without_enhanced_metrics(t *testing.T) {
 
 	pod.Status.ContainerStatuses[0].State.Waiting = &corev1.ContainerStateWaiting{Reason: "SomeOtherReason"}
 
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -663,13 +664,13 @@ func TestPodStore_addStatus_without_enhanced_metrics(t *testing.T) {
 
 	// test delta of restartCount
 	pod.Status.ContainerStatuses[0].RestartCount = 3
-	tags = map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags = map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
 	assert.Equal(t, int(2), metric.GetField(ci.MetricName(ci.TypePod, ci.ContainerRestartCount)).(int))
 
-	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit", ci.AttributeContainerName: "ubuntu"}
+	tags = map[string]string{ci.MetricType: ci.TypeContainer, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit", ci.ContainerNamekey: "ubuntu"}
 	metric = generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -678,7 +679,7 @@ func TestPodStore_addStatus_without_enhanced_metrics(t *testing.T) {
 
 func TestPodStore_addContainerID(t *testing.T) {
 	pod := getBaseTestPodInfo()
-	tags := map[string]string{ci.AttributeContainerName: "ubuntu", ci.AttributeContainerID: "123"}
+	tags := map[string]string{ci.ContainerNamekey: "ubuntu", ci.ContainerIDkey: "123"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	kubernetesBlob := map[string]any{}
 	metric := generateMetric(fields, tags)
@@ -689,7 +690,7 @@ func TestPodStore_addContainerID(t *testing.T) {
 	assert.Equal(t, expected, kubernetesBlob)
 	assert.Equal(t, "ubuntu", metric.GetTag(ci.ContainerNamekey))
 
-	tags = map[string]string{ci.AttributeContainerName: "notUbuntu", ci.AttributeContainerID: "123"}
+	tags = map[string]string{ci.ContainerNamekey: "notUbuntu", ci.ContainerIDkey: "123"}
 	kubernetesBlob = map[string]any{}
 	metric = generateMetric(fields, tags)
 	addContainerID(pod, metric, kubernetesBlob, zap.NewNop())
@@ -757,7 +758,7 @@ func (m *mockK8sClient2) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 	podStore := &PodStore{k8sClient: &mockK8sClient1{}}
 	pod := getBaseTestPodInfo()
-	tags := map[string]string{ci.MetricType: ci.TypePod, ci.AttributeContainerName: "ubuntu"}
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	metric := generateMetric(fields, tags)
 
@@ -771,7 +772,7 @@ func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 	expectedOwner := map[string]any{}
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Deployment, "owner_name": rsName}}
 	expectedOwnerName := rsName
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test Job
@@ -784,7 +785,7 @@ func TestPodStore_addPodOwnersAndPodNameFallback(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.CronJob, "owner_name": jobName}}
 	expectedOwnerName = jobName
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 }
 
@@ -792,7 +793,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore := &PodStore{k8sClient: &mockK8sClient2{}}
 
 	pod := getBaseTestPodInfo()
-	tags := map[string]string{ci.MetricType: ci.TypePod, ci.AttributeContainerName: "ubuntu"}
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.ContainerNamekey: "ubuntu"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 
 	// Test DaemonSet
@@ -803,7 +804,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	expectedOwner := map[string]any{}
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.DaemonSet, "owner_name": "DaemonSetTest"}}
 	expectedOwnerName := "DaemonSetTest"
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test ReplicaSet
@@ -815,7 +816,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.ReplicaSet, "owner_name": rsName}}
 	expectedOwnerName = rsName
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test StatefulSet
@@ -827,7 +828,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.StatefulSet, "owner_name": ssName}}
 	expectedOwnerName = "cpu-limit"
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test ReplicationController
@@ -839,8 +840,8 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.ReplicationController, "owner_name": rcName}}
 	expectedOwnerName = rcName
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
-	assert.Equal(t, "", metric.GetTag(ci.AttributeFullPodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
+	assert.Equal(t, "", metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test Job
@@ -856,8 +857,8 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Job, "owner_name": jobName + surfixHash}}
 	expectedOwnerName = jobName + surfixHash
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
-	assert.Equal(t, pod.Name, metric.GetTag(ci.AttributeFullPodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
+	assert.Equal(t, pod.Name, metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	podStore.prefFullPodName = false
@@ -865,7 +866,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Job, "owner_name": jobName}}
 	expectedOwnerName = jobName
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test Deployment
@@ -877,7 +878,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.Deployment, "owner_name": dpName}}
 	expectedOwnerName = dpName
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test CronJob
@@ -889,7 +890,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	podStore.addPodOwnersAndPodName(metric, pod, kubernetesBlob)
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.CronJob, "owner_name": cjName}}
 	expectedOwnerName = cjName
-	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.AttributePodName))
+	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test kube-proxy created in kops
@@ -1067,10 +1068,10 @@ func TestPodStore_Decorate(t *testing.T) {
 
 	// metric with no namespace
 	tags = map[string]string{
-		ci.AttributeContainerName: "testContainer",
-		ci.AttributePodID:         "123",
-		ci.AttributeK8sPodName:    "testPod",
-		// ci.AttributeK8sNamespace:     "testNamespace",
+		ci.ContainerNamekey: "testContainer",
+		ci.PodIDKey:         "123",
+		ci.PodNameKey:       "testPod",
+		// ci.K8sNamespace:     "testNamespace",
 		ci.TypeService: "testService",
 		ci.NodeNameKey: "testNode",
 	}
@@ -1082,12 +1083,12 @@ func TestPodStore_Decorate(t *testing.T) {
 
 	// metric with pod info not in cache
 	tags = map[string]string{
-		ci.AttributeContainerName: "testContainer",
-		ci.AttributeK8sPodName:    "testPod",
-		ci.AttributePodID:         "123",
-		ci.AttributeK8sNamespace:  "testNamespace",
-		ci.TypeService:            "testService",
-		ci.NodeNameKey:            "testNode",
+		ci.ContainerNamekey: "testContainer",
+		ci.PodNameKey:       "testPod",
+		ci.PodIDKey:         "123",
+		ci.K8sNamespace:     "testNamespace",
+		ci.TypeService:      "testService",
+		ci.NodeNameKey:      "testNode",
 	}
 	metric = &mockCIMetric{
 		tags: tags,
@@ -1123,7 +1124,7 @@ func generatePodInfo(sourceFileName string) *corev1.Pod {
 }
 
 func generateRawCIMetric() CIMetric {
-	tags := map[string]string{ci.MetricType: ci.TypePod, ci.AttributeK8sNamespace: "default", ci.AttributeK8sPodName: "cpu-limit"}
+	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.PodNameKey: "cpu-limit"}
 	fields := map[string]any{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
 	return generateMetric(fields, tags)
 }

@@ -27,7 +27,6 @@ const (
 )
 
 func GetNeuronScrapeConfig(hostinfo prometheusscraper.HostInfoProvider) *config.ScrapeConfig {
-
 	return &config.ScrapeConfig{
 		ScrapeProtocols: config.DefaultScrapeProtocols,
 		HTTPClientConfig: configutil.HTTPClientConfig{
@@ -60,7 +59,6 @@ func GetNeuronScrapeConfig(hostinfo prometheusscraper.HostInfoProvider) *config.
 }
 
 func GetNeuronMetricRelabelConfigs(hostinfo prometheusscraper.HostInfoProvider) []*relabel.Config {
-
 	return []*relabel.Config{
 		{
 			SourceLabels: model.LabelNames{"__name__"},

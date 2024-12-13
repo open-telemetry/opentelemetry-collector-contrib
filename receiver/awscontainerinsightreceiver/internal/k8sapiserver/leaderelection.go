@@ -154,7 +154,6 @@ func (le *LeaderElection) init() error {
 }
 
 func (le *LeaderElection) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {
-
 	for {
 		leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
 			Lock: lock,

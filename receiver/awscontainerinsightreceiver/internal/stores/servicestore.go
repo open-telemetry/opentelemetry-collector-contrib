@@ -59,7 +59,7 @@ func (s *ServiceStore) RefreshTick(ctx context.Context) {
 // Decorate decorates metrics and update kubernetesBlob
 // service info is not mandatory
 func (s *ServiceStore) Decorate(_ context.Context, metric CIMetric, _ map[string]any) bool {
-	if metric.HasTag(ci.AttributeK8sPodName) {
+	if metric.HasTag(ci.PodNameKey) {
 		podKey := createPodKeyFromMetric(metric)
 		if podKey == "" {
 			s.logger.Error("podKey is unavailable when decorating service.", zap.Any("podKey", podKey))

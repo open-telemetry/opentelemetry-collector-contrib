@@ -23,7 +23,7 @@ func checkPermissions(info os.FileInfo) error {
 		return fmt.Errorf("not owned by root, owned by uid %d", stat.Uid)
 	}
 	perms := info.Mode().Perm()
-	if perms&0002 != 0 {
+	if perms&0o002 != 0 {
 		return fmt.Errorf("writeable by anyone, permissions: %s", perms.String())
 	}
 

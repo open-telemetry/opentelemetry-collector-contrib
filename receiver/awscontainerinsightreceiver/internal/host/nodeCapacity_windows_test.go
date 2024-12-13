@@ -18,7 +18,6 @@ import (
 )
 
 func TestNodeCapacityOnWindows(t *testing.T) {
-
 	// can't parse cpu and mem info
 	setEnvOption := func(nc *nodeCapacity) {
 		nc.osSetenv = func(key, value string) error {

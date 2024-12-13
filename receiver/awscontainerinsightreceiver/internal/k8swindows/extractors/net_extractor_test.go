@@ -19,7 +19,6 @@ import (
 )
 
 func TestNetStats(t *testing.T) {
-
 	result := testutils.LoadKubeletSummary(t, "./testdata/PreSingleKubeletSummary.json")
 	result2 := testutils.LoadKubeletSummary(t, "./testdata/CurSingleKubeletSummary.json")
 

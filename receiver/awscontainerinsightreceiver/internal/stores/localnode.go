@@ -109,7 +109,6 @@ func (d *LocalNodeDecorator) Decorate(m CIMetric) CIMetric {
 
 	// add tags for EKS
 	if d.containerOrchestrator == ci.EKS {
-
 		tags[ci.ClusterNameKey] = d.hostInfo.GetClusterName()
 
 		if d.k8sDecorator != nil {

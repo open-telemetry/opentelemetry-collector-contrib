@@ -52,7 +52,6 @@ func (p *PodResourcesClient) connectToServer(socket string) (*grpc.ClientConn, e
 			return d.DialContext(ctx, "unix", addr)
 		}),
 	)
-
 	if err != nil {
 		return nil, fmt.Errorf("failure connecting to '%s': %w", socket, err)
 	}

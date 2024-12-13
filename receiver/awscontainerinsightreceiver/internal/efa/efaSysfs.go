@@ -188,13 +188,13 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 		}
 
 		for _, m := range allMetrics {
-			m.AddTag(ci.AttributeEfaDevice, string(deviceName))
+			m.AddTag(ci.EfaDevice, string(deviceName))
 			m.AddTag(ci.Timestamp, strconv.FormatInt(store.timestamp.UnixNano(), 10))
 		}
 		for _, m := range podContainerMetrics {
-			m.AddTag(ci.AttributeK8sNamespace, containerInfo.Namespace)
-			m.AddTag(ci.AttributeK8sPodName, containerInfo.PodName)
-			m.AddTag(ci.AttributeContainerName, containerInfo.ContainerName)
+			m.AddTag(ci.K8sNamespace, containerInfo.Namespace)
+			m.AddTag(ci.PodNameKey, containerInfo.PodName)
+			m.AddTag(ci.ContainerNamekey, containerInfo.ContainerName)
 		}
 
 		for _, m := range allMetrics {

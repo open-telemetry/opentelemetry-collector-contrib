@@ -22,7 +22,7 @@ func checkPodResourcesSocketPermissions(info os.FileInfo) error {
 		return fmt.Errorf("owned by %d, not root", stat.Uid)
 	}
 	perms := info.Mode().Perm()
-	if perms&0002 != 0 {
+	if perms&0o002 != 0 {
 		return fmt.Errorf("writeable by anyone - permissions: %s", perms)
 	}
 	if info.Mode()&os.ModeSocket == 0 {

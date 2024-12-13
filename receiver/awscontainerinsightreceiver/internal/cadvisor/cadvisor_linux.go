@@ -157,7 +157,6 @@ func (c *Cadvisor) Shutdown() error {
 }
 
 func (c *Cadvisor) addECSMetrics(cadvisormetrics []stores.CIMetric) {
-
 	if len(cadvisormetrics) == 0 {
 		c.logger.Warn("cadvisor can't collect any metrics!")
 	}

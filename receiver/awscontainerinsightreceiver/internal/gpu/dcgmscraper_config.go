@@ -78,7 +78,7 @@ func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config
 		},
 		{
 			SourceLabels: model.LabelNames{"namespace"},
-			TargetLabel:  ci.AttributeK8sNamespace,
+			TargetLabel:  ci.K8sNamespace,
 			Regex:        relabel.MustNewRegexp("(.*)"),
 			Replacement:  "${1}",
 			Action:       relabel.Replace,
@@ -108,7 +108,7 @@ func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config
 		},
 		{
 			SourceLabels: model.LabelNames{"pod"},
-			TargetLabel:  ci.AttributeFullPodName,
+			TargetLabel:  ci.FullPodNameKey,
 			Regex:        relabel.MustNewRegexp("(.*)"),
 			Replacement:  "${1}",
 			Action:       relabel.Replace,
@@ -116,21 +116,21 @@ func getMetricRelabelConfig(hostInfoProvider hostInfoProvider) []*relabel.Config
 		// additional k8s podname for service name and k8s blob decoration
 		{
 			SourceLabels: model.LabelNames{"pod"},
-			TargetLabel:  ci.AttributeK8sPodName,
+			TargetLabel:  ci.PodNameKey,
 			Regex:        relabel.MustNewRegexp("(.*)"),
 			Replacement:  "${1}",
 			Action:       relabel.Replace,
 		},
 		{
 			SourceLabels: model.LabelNames{"container"},
-			TargetLabel:  ci.AttributeContainerName,
+			TargetLabel:  ci.ContainerNamekey,
 			Regex:        relabel.MustNewRegexp("(.*)"),
 			Replacement:  "${1}",
 			Action:       relabel.Replace,
 		},
 		{
 			SourceLabels: model.LabelNames{"device"},
-			TargetLabel:  ci.AttributeGpuDevice,
+			TargetLabel:  ci.GpuDevice,
 			Regex:        relabel.MustNewRegexp("(.*)"),
 			Replacement:  "${1}",
 			Action:       relabel.Replace,

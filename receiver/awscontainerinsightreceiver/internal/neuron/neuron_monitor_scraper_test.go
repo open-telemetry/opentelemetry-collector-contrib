@@ -36,13 +36,14 @@ neurondevice_hw_ecc_events_total_mem_ecc_corrected{availability_zone="us-east-1c
 hardware_ecc_events_total{availability_zone="us-east-1c",event_type="sram_ecc_uncorrected",instance_id="i-09db9b55e0095612f",instance_name="",instance_type="trn1n.32xlarge",neuron_device_index="7",region="us-east-1",subnet_id="subnet-06a7754948e8a000f"} 864.0
 `
 
-const dummyClusterName = "cluster-name"
-const dummyHostName = "i-000000000"
-const dummyNodeName = "dummy-nodeName"
-const dummyInstanceType = "instance-type"
+const (
+	dummyClusterName  = "cluster-name"
+	dummyHostName     = "i-000000000"
+	dummyNodeName     = "dummy-nodeName"
+	dummyInstanceType = "instance-type"
+)
 
-type mockHostInfoProvider struct {
-}
+type mockHostInfoProvider struct{}
 
 func (m mockHostInfoProvider) GetClusterName() string {
 	return dummyClusterName

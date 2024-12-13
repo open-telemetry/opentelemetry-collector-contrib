@@ -32,15 +32,15 @@ func createPodKeyFromMetaData(pod *corev1.Pod) string {
 }
 
 func createPodKeyFromMetric(metric CIMetric) string {
-	namespace := metric.GetTag(ci.AttributeK8sNamespace)
-	podName := metric.GetTag(ci.AttributeK8sPodName)
+	namespace := metric.GetTag(ci.K8sNamespace)
+	podName := metric.GetTag(ci.PodNameKey)
 	return k8sutil.CreatePodKey(namespace, podName)
 }
 
 func createContainerKeyFromMetric(metric CIMetric) string {
-	namespace := metric.GetTag(ci.AttributeK8sNamespace)
-	podName := metric.GetTag(ci.AttributeK8sPodName)
-	containerName := metric.GetTag(ci.AttributeContainerName)
+	namespace := metric.GetTag(ci.K8sNamespace)
+	podName := metric.GetTag(ci.PodNameKey)
+	containerName := metric.GetTag(ci.ContainerNamekey)
 	return k8sutil.CreateContainerKey(namespace, podName, containerName)
 }
 
@@ -193,13 +193,13 @@ func tagMetricSourceWindows(metric CIMetric) {
 }
 
 func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]any, retainContainerNameTag bool) {
-	needMoveToKubernetes := map[string]string{ci.AttributeK8sPodName: "pod_name", ci.AttributePodID: "pod_id"}
-	needCopyToKubernetes := map[string]string{ci.AttributeK8sNamespace: "namespace_name", ci.TypeService: "service_name", ci.NodeNameKey: "host"}
+	needMoveToKubernetes := map[string]string{ci.PodNameKey: "pod_name", ci.PodIDKey: "pod_id"}
+	needCopyToKubernetes := map[string]string{ci.K8sNamespace: "namespace_name", ci.TypeService: "service_name", ci.NodeNameKey: "host"}
 
 	if retainContainerNameTag {
-		needCopyToKubernetes[ci.AttributeContainerName] = "container_name"
+		needCopyToKubernetes[ci.ContainerNamekey] = "container_name"
 	} else {
-		needMoveToKubernetes[ci.AttributeContainerName] = "container_name"
+		needMoveToKubernetes[ci.ContainerNamekey] = "container_name"
 	}
 
 	for k, v := range needMoveToKubernetes {
@@ -219,7 +219,7 @@ func AddKubernetesInfo(metric CIMetric, kubernetesBlob map[string]any, retainCon
 		if err != nil {
 			return
 		}
-		metric.AddTag(ci.AttributeKubernetes, string(kubernetesInfo))
+		metric.AddTag(ci.Kubernetes, string(kubernetesInfo))
 	}
 }
 

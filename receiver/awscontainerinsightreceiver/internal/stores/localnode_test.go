@@ -33,7 +33,7 @@ func TestNewLocalNodeDecorator(t *testing.T) {
 	d, err = NewLocalNodeDecorator(logger, "eks", nil, "test-hostname")
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
-	assert.Equal(t, d.nodeName, "test-hostname")
+	assert.Equal(t, "test-hostname", d.nodeName)
 }
 
 func TestEbsVolumeInfo(t *testing.T) {
@@ -71,6 +71,7 @@ func (d mockK8sDecorator) Decorate(m CIMetric) CIMetric {
 	m.AddTag("k8s-decorated", "true")
 	return m
 }
+
 func (d mockK8sDecorator) Shutdown() error {
 	return nil
 }

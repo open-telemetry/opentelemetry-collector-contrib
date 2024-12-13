@@ -67,6 +67,6 @@ func TestNewKubeletClient(t *testing.T) {
 		assert.Equal(t, client.KubeIP, tt.kubeIP)
 		fc := (client.restClient).(*fakeClient)
 		assert.NotNil(t, fc)
-		assert.Equal(t, fc.endpoint, tt.wantEndpoint)
+		assert.Equal(t, tt.wantEndpoint, fc.endpoint)
 	}
 }

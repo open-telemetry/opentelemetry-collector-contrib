@@ -31,7 +31,7 @@ func (n *NetMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 	return info.Spec.HasNetwork
 }
 
-func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
+func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {
 	// Just a protection here, there is no Container level Net metrics
 	if containerType == ci.TypePod || containerType == ci.TypeContainer {
 		return nil

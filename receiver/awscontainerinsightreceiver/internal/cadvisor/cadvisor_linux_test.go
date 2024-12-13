@@ -71,7 +71,7 @@ var mockCreateManagerWithError = func(_ *memory.InMemoryCache, _ sysfs.SysFs, _ 
 	return nil, errors.New("error")
 }
 
-type MockK8sDecorator struct{}
+type MockDecorator struct{}
 
 func (m *MockDecorator) Decorate(metric stores.CIMetric) stores.CIMetric {
 	return metric
