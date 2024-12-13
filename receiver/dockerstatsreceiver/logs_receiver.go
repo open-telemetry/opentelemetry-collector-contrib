@@ -98,13 +98,13 @@ func newDockerEventPoller(
 }
 
 func (d *dockerEventPoller) Start(ctx context.Context) {
-	for {
-		filterArgs := filters.NewArgs()
-		for k, v := range d.config.Logs.Filters {
-			for _, elem := range v {
-				filterArgs.Add(k, elem)
-			}
+	filterArgs := filters.NewArgs()
+	for k, v := range d.config.Logs.Filters {
+		for _, elem := range v {
+			filterArgs.Add(k, elem)
 		}
+	}
+	for {
 		// event stream can be interrupted by async errors (connection or other).
 		// client caller must retry to restart processing. retry with backoff here
 		// except for context cancellation.

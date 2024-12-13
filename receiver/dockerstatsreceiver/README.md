@@ -27,7 +27,7 @@ resource usage of cpu, memory, network, and the
 
 ## Configuration
 
-The following settings are for both logs and metrics receier:
+The following settings are for both logs and metrics receiver:
 
 - `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `excluded_images` (no default, all running containers monitored): A list of strings,
