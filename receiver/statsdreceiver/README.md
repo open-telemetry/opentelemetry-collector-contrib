@@ -25,7 +25,7 @@ The Following settings are optional:
   - For `udp` and `tcp` based `transport`, this config will default to `localhost:8125`
   - For `unixgram` `transport`, this config will default to `/var/run/statsd-receiver.sock`
 
-- `transport` (default = `udp`): Protocol used by the StatsD server. Currently supported transports can be found in [this file](/internal/transport/transport.go).
+- `transport` (default = `udp`): Protocol used by the StatsD server. Currently supported transports can be found in [this file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/statsdreceiver/internal/transport/transport.go).
 
 - `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 
