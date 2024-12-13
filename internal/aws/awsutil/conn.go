@@ -53,7 +53,6 @@ func (s *stsCredentialProvider) Retrieve() (credentials.Value, error) {
 	}
 
 	v, err := s.regional.Retrieve()
-
 	if err != nil {
 		var aerr awserr.Error
 		if errors.As(err, &aerr) && aerr.Code() == sts.ErrCodeRegionDisabledException {

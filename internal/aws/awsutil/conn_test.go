@@ -112,13 +112,13 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 		RoleARN: roleArn,
 	}
 	se, err := conn.newAWSSession(logger, aWSSessionSettings, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	aWSSessionSettings = &AWSSessionSettings{
 		RoleARN: "",
 	}
 	se, err = conn.newAWSSession(logger, aWSSessionSettings, region)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, se)
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
@@ -127,7 +127,7 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	})
 	assert.NotNil(t, se)
 	_, err = conn.getEC2Region(se, aWSSessionSettings.IMDSRetries)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
@@ -149,7 +149,7 @@ func TestGetDefaultSession(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	aWSSessionSettings := &AWSSessionSettings{}
 	_, err := GetDefaultSession(logger, aWSSessionSettings)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetSTSCreds(t *testing.T) {
@@ -161,10 +161,10 @@ func TestGetSTSCreds(t *testing.T) {
 	}
 	creds, err := getSTSCreds(logger, region, aWSSessionSettings)
 	assert.NotNil(t, creds)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err = getSTSCreds(logger, region, aWSSessionSettings)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestLoadAmazonCertificateFromFile(t *testing.T) {

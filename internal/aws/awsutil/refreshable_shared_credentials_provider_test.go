@@ -16,7 +16,7 @@ func TestSharedCredentialsProviderExpiryWindowIsExpired(t *testing.T) {
 	tmpFile, _ := os.CreateTemp(os.TempDir(), "credential")
 	defer os.Remove(tmpFile.Name())
 	bytes, _ := os.ReadFile("./testdata/credential_original")
-	_ = os.WriteFile(tmpFile.Name(), bytes, 0600)
+	_ = os.WriteFile(tmpFile.Name(), bytes, 0o600)
 	p := credentials.NewCredentials(&RefreshableSharedCredentialsProvider{
 		sharedCredentialsProvider: &credentials.SharedCredentialsProvider{
 			Filename: tmpFile.Name(),
@@ -31,7 +31,7 @@ func TestSharedCredentialsProviderExpiryWindowIsExpired(t *testing.T) {
 	assert.False(t, p.IsExpired(), "Expect creds not to be expired.")
 
 	bytesRotate, _ := os.ReadFile("./testdata/credential_rotate")
-	_ = os.WriteFile(tmpFile.Name(), bytesRotate, 0600)
+	_ = os.WriteFile(tmpFile.Name(), bytesRotate, 0o600)
 
 	time.Sleep(2 * time.Second)
 
