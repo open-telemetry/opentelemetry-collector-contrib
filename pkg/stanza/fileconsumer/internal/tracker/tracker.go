@@ -57,7 +57,7 @@ type fileTracker struct {
 
 var errInvalidValue = errors.New("invalid value")
 
-var archiveIndexKey = "knonwFiles_ai"
+var archiveIndexKey = "knownFilesArchiveIndex"
 
 func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
