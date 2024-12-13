@@ -170,7 +170,7 @@ func (doc *Document) AddInt(key string, value int64) {
 	doc.Add(key, IntValue(value))
 }
 
-// AddInt adds an unsigned integer value to the document.
+// AddUInt adds an unsigned integer value to the document.
 func (doc *Document) AddUInt(key string, value uint64) {
 	doc.Add(key, UIntValue(value))
 }
