@@ -36,6 +36,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, 30*time.Second, cfg.Interval)
 	assert.Equal(t, "collector-1", cfg.CollectorID)
 }
+
 func TestLoadTargetAllocatorK8Config(t *testing.T) {
 	t.Setenv("POD_NAME", "collector-1")
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "k8-config.yaml"))

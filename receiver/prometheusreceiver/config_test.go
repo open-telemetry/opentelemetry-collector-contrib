@@ -119,7 +119,6 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	assert.Equal(t, "collector-1", r3.TargetAllocator.CollectorID)
 	assert.Equal(t, promModel.Duration(15*time.Second), r3.PrometheusConfig.GlobalConfig.ScrapeInterval)
 	assert.Equal(t, promModel.Duration(10*time.Second), r3.PrometheusConfig.GlobalConfig.ScrapeTimeout)
-
 }
 
 func TestValidateConfigWithScrapeConfigFiles(t *testing.T) {

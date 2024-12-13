@@ -32,6 +32,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 func getPodName() string {
 	return os.Getenv("POD_NAME")
 }
+
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	err := componentParser.Unmarshal(cfg)
 	if err != nil {

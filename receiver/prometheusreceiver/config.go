@@ -62,8 +62,10 @@ func containsScrapeConfig(cfg *Config) bool {
 // as prometheus "config" uses `yaml` tags.
 type PromConfig promconfig.Config
 
-var _ confmap.Unmarshaler = (*PromConfig)(nil)
-var _ confmap.Marshaler = (*PromConfig)(nil)
+var (
+	_ confmap.Unmarshaler = (*PromConfig)(nil)
+	_ confmap.Marshaler   = (*PromConfig)(nil)
+)
 
 func (cfg *PromConfig) Unmarshal(componentParser *confmap.Conf) error {
 	cfgMap := componentParser.ToStringMap()
