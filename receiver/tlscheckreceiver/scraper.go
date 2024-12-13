@@ -13,18 +13,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
 
-type scraper struct {
+type tlsCheckScraper struct {
 	// include string
 	logger *zap.Logger
 	mb     *metadata.MetricsBuilder
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *tlsCheckScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return pmetric.NewMetrics(), nil
 }
 
-func newScraper(cfg *Config, settings receiver.Settings) *scraper {
-	return &scraper{
+func newScraper(cfg *Config, settings receiver.Settings) *tlsCheckScraper {
+	return &tlsCheckScraper{
 		logger: settings.TelemetrySettings.Logger,
 		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}

@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -30,6 +31,7 @@ type traceExporterImp struct {
 	loadBalancer *loadBalancer
 	routingKey   routingKey
 
+	logger     *zap.Logger
 	stopped    bool
 	shutdownWg sync.WaitGroup
 	telemetry  *metadata.TelemetryBuilder
@@ -45,7 +47,9 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	exporterFactory := otlpexporter.NewFactory()
 	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
-		return exporterFactory.CreateTraces(ctx, params, &oCfg)
+		oParams := buildExporterSettings(params, endpoint)
+
+		return exporterFactory.CreateTraces(ctx, oParams, &oCfg)
 	}
 
 	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
@@ -57,6 +61,7 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 		loadBalancer: lb,
 		routingKey:   traceIDRouting,
 		telemetry:    telemetry,
+		logger:       params.Logger,
 	}
 
 	switch cfg.(*Config).RoutingKey {
@@ -67,12 +72,6 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
 	return &traceExporter, nil
-}
-
-func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
-	oCfg := cfg.Protocol.OTLP
-	oCfg.Endpoint = endpoint
-	return oCfg
 }
 
 func (e *traceExporterImp) Capabilities() consumer.Capabilities {
@@ -131,6 +130,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
 		} else {
 			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+			e.logger.Debug("failed to export traces", zap.Error(err))
 		}
 	}
 
