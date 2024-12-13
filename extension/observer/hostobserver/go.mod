@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.114.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.115.0
 	github.com/shirou/gopsutil/v4 v4.24.10
-	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.114.0
-	go.opentelemetry.io/collector/component/componenttest v0.114.0
-	go.opentelemetry.io/collector/confmap v1.20.0
-	go.opentelemetry.io/collector/extension v0.114.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.114.0
+	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/component v0.115.1-0.20241206185113-3f3e208e71b8
+	go.opentelemetry.io/collector/component/componenttest v0.115.1-0.20241206185113-3f3e208e71b8
+	go.opentelemetry.io/collector/confmap v1.21.1-0.20241206185113-3f3e208e71b8
+	go.opentelemetry.io/collector/extension v0.115.1-0.20241206185113-3f3e208e71b8
+	go.opentelemetry.io/collector/extension/extensiontest v0.115.1-0.20241206185113-3f3e208e71b8
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -35,8 +35,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.114.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.20.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.115.1-0.20241206185113-3f3e208e71b8 // indirect
+	go.opentelemetry.io/collector/pdata v1.21.1-0.20241206185113-3f3e208e71b8 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
@@ -48,7 +48,7 @@ require (
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240814211410-ddb44dafa142 // indirect
 	google.golang.org/grpc v1.67.1 // indirect
-	google.golang.org/protobuf v1.35.1 // indirect
+	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
