@@ -452,6 +452,11 @@ func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (m *mockClient) getVersion(_ context.Context) (string, error) {
+	args := m.Called()
+	return args.String(0), args.Error(1)
+}
+
 func (m *mockClientFactory) getClient(database string) (client, error) {
 	args := m.Called(database)
 	return args.Get(0).(client), args.Error(1)
@@ -511,7 +516,6 @@ func (m *mockClient) initMocks(database string, schema string, databases []strin
 			checkpointWriteTime:  3.12,
 			checkpointSyncTime:   4.23,
 			bgWrites:             5,
-			backendWrites:        6,
 			bufferBackendWrites:  7,
 			bufferFsyncWrites:    8,
 			bufferCheckpoints:    9,
