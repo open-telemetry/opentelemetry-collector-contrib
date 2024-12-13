@@ -1289,7 +1289,7 @@ func BenchmarkPushMetricsVaryingMetrics(b *testing.B) {
 }
 
 // benchmarkPushMetrics benchmarks the PushMetrics method with a given number of metrics.
-// If numMetrics is -1, it will benchmark with varying number of metrics, from 100 up to 1000000.
+// If numMetrics is -1, it will benchmark with varying number of metrics, from 10 up to 10000.
 func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -1314,7 +1314,7 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	cfg := &Config{
 		Namespace:         "",
 		ClientConfig:      clientConfig,
-		MaxBatchSizeBytes: 3000000,
+		MaxBatchSizeBytes: 3000,
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: numConsumers},
 		BackOffConfig:     retrySettings,
 		TargetInfo:        &TargetInfo{Enabled: true},
@@ -1327,11 +1327,14 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 	for n := 0; n < b.N; n++ {
 		actualNumMetrics := numMetrics
 		if numMetrics == -1 {
-			actualNumMetrics = int(math.Pow(100, float64(n%3+1)))
+			actualNumMetrics = int(math.Pow(10, float64(n%4+1)))
 		}
 		m := testdata.GenerateMetricsManyMetricsSameResource(actualNumMetrics)
 		for i := 0; i < m.MetricCount(); i++ {
-			m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i).Sum().DataPoints().AppendEmpty().SetIntValue(int64(i))
+			dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i).Sum().DataPoints().AppendEmpty()
+			dp.SetIntValue(int64(i))
+			// We add a random key to the attributes to ensure that we create a new time series during translation for each metric.
+			dp.Attributes().PutInt("random_key", int64(i))
 		}
 		metrics = append(metrics, m)
 	}
