@@ -11,16 +11,16 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/simplespan"
 )
 
 // Config represents the receiver config settings within the collector's config.yaml
 type Config struct {
-	HTTP       *HTTPConfig      `mapstructure:"http"`
-	AuthAPI    string           `mapstructure:"auth_api"`
-	Wrapper    string           `mapstructure:"wrapper"`
-	Resources  ResourcesConfig  `mapstructure:"resources"`
-	Scopes     ScopesConfig     `mapstructure:"scopes"`
-	Attributes AttributesConfig `mapstructure:"attributes"`
+	HTTP           *HTTPConfig               `mapstructure:"http"`
+	AuthAPI        string                    `mapstructure:"auth_api"`
+	Wrapper        string                    `mapstructure:"wrapper"`
+	FieldMapConfig simplespan.FieldMapConfig `mapstructure:"fields"`
 }
 
 type HTTPConfig struct {
@@ -28,25 +28,6 @@ type HTTPConfig struct {
 
 	// The URL path to receive traces on. If omitted "/" will be used.
 	TracesURLPaths []string `mapstructure:"traces_url_paths,omitempty"`
-}
-
-type ResourcesConfig struct {
-	ServiceName string `mapstructure:"service_name"`
-}
-
-type ScopesConfig struct {
-	LibraryName    string `mapstructure:"library_name"`
-	LibraryVersion string `mapstructure:"library_version"`
-}
-
-type AttributesConfig struct {
-	TraceID        string   `mapstructure:"trace_id"`
-	ParentID       string   `mapstructure:"parent_id"`
-	SpanID         string   `mapstructure:"span_id"`
-	Name           string   `mapstructure:"name"`
-	Error          string   `mapstructure:"error"`
-	SpanKind       string   `mapstructure:"spankind"`
-	DurationFields []string `mapstructure:"durationFields"`
 }
 
 func (cfg *Config) Validate() error {

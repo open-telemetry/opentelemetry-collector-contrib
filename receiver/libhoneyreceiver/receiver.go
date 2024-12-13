@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/simplespan"
 )
 
 type libhoneyReceiver struct {
@@ -195,7 +196,7 @@ func (r *libhoneyReceiver) handleSomething(resp http.ResponseWriter, req *http.R
 		errorutil.HTTPError(resp, err)
 	}
 
-	simpleSpans := make([]simpleSpan, 0)
+	simpleSpans := make([]simplespan.SimpleSpan, 0)
 	switch req.Header.Get("Content-Type") {
 	case "application/x-msgpack", "application/msgpack":
 		decoder := msgpack.NewDecoder(bytes.NewReader(body))

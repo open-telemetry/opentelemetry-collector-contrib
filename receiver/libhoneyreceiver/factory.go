@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/simplespan"
 )
 
 const (
@@ -44,21 +45,23 @@ func createDefaultConfig() component.Config {
 			TracesURLPaths: defaultTracesURLPaths,
 		},
 		AuthAPI: "",
-		Resources: ResourcesConfig{
-			ServiceName: "service.name",
-		},
-		Scopes: ScopesConfig{
-			LibraryName:    "library.name",
-			LibraryVersion: "library.version",
-		},
-		Attributes: AttributesConfig{
-			TraceID:        "trace.trace_id",
-			SpanID:         "trace.span_id",
-			ParentID:       "trace.parent_id",
-			Name:           "name",
-			Error:          "error",
-			SpanKind:       "span.kind",
-			DurationFields: durationFieldsArr,
+		FieldMapConfig: simplespan.FieldMapConfig{
+			Resources: simplespan.ResourcesConfig{
+				ServiceName: "service.name",
+			},
+			Scopes: simplespan.ScopesConfig{
+				LibraryName:    "library.name",
+				LibraryVersion: "library.version",
+			},
+			Attributes: simplespan.AttributesConfig{
+				TraceID:        "trace.trace_id",
+				SpanID:         "trace.span_id",
+				ParentID:       "trace.parent_id",
+				Name:           "name",
+				Error:          "error",
+				SpanKind:       "span.kind",
+				DurationFields: durationFieldsArr,
+			},
 		},
 	}
 }
