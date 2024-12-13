@@ -6,13 +6,12 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/config/confignet"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
-
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
@@ -28,7 +27,7 @@ var (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
+	tcpConfigs                     []*confignet.TCPAddrConfig `mapstructure:",squash"`
 }
 
 func validatePort(port string) error {
@@ -69,13 +68,15 @@ func validateTarget(cfg *confignet.TCPAddrConfig) error {
 func (cfg *Config) Validate() error {
 	var err error
 
-	if len(cfg.Targets) == 0 {
+	if len(cfg.tcpConfigs) == 0 {
 		err = multierr.Append(err, errMissingTargets)
 	}
 
-	for _, target := range cfg.Targets {
-		err = multierr.Append(err, validateTarget(target))
+	for _, tcpConfig := range cfg.tcpConfigs {
+		err = multierr.Append(err, validateTarget(tcpConfig))
 	}
 
 	return err
 }
+
+// createcient
