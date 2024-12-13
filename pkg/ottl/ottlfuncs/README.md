@@ -835,6 +835,18 @@ Get all elements in the document with tag "a" that have an attribute "b" with va
 
 - `GetXML(body, "//a[@b='c']")`
 
+Get `foo` from `<a>foo</a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `hello` from `<a><![CDATA[hello]]></a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `bar` from `<a foo="bar"/>`
+
+- `GetXML(body, "/a/@foo")`
+
 ### Hex
 
 `Hex(value)`
