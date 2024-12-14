@@ -85,7 +85,6 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
@@ -139,7 +138,6 @@ func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			requireDataStreamCh := make(chan bool, 1)
@@ -215,7 +213,6 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
@@ -269,7 +266,6 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
