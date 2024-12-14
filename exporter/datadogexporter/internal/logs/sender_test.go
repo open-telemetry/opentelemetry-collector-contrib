@@ -13,6 +13,7 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap/zaptest"
@@ -192,9 +193,7 @@ func TestSubmitLogs(t *testing.T) {
 			})
 			defer server.Close()
 			s := NewSender(server.URL, logger, confighttp.ClientConfig{Timeout: time.Second * 10, TLSSetting: configtls.ClientConfig{InsecureSkipVerify: true}}, true, "")
-			if err := s.SubmitLogs(context.Background(), tt.payload); err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, s.SubmitLogs(context.Background(), tt.payload))
 			assert.Equal(t, calls, tt.numRequests)
 		})
 	}
