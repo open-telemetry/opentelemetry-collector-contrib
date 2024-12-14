@@ -159,18 +159,18 @@ func TestInferServiceAndRegion(t *testing.T) {
 			"region",
 		},
 		{
-			"match_with_config",
+			"logs_service_and_region_match_with_no_config",
 			req6,
-			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
-			"service",
-			"region",
+			createDefaultConfig().(*Config),
+			"logs",
+			"us-east-1",
 		},
 		{
-			"match_with_config",
+			"xray_service_and_region_match_with_no_config",
 			req7,
-			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
-			"service",
-			"region",
+			createDefaultConfig().(*Config),
+			"xray",
+			"us-east-1",
 		},
 	}
 
