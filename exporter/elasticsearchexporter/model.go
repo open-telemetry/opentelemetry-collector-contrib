@@ -349,7 +349,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 
 	if dp.HasMappingHint(hintDocCount) {
 		docCount := dp.DocCount()
-		document.AddInt("_doc_count", int64(docCount))
+		document.AddUInt("_doc_count", docCount)
 	}
 
 	switch value.Type() {
@@ -387,7 +387,7 @@ func (dp summaryDataPoint) Value() (pcommon.Value, error) {
 	vm := pcommon.NewValueMap()
 	m := vm.Map()
 	m.PutDouble("sum", dp.Sum())
-	m.PutInt("value_count", int64(dp.Count()))
+	m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 	return vm, nil
 }
 
@@ -413,7 +413,7 @@ func (dp exponentialHistogramDataPoint) Value() (pcommon.Value, error) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
-		m.PutInt("value_count", int64(dp.Count()))
+		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
 	}
 
@@ -460,7 +460,7 @@ func (dp histogramDataPoint) Value() (pcommon.Value, error) {
 		vm := pcommon.NewValueMap()
 		m := vm.Map()
 		m.PutDouble("sum", dp.Sum())
-		m.PutInt("value_count", int64(dp.Count()))
+		m.PutInt("value_count", safeUint64ToInt64(dp.Count()))
 		return vm, nil
 	}
 	return histogramToValue(dp.HistogramDataPoint)
@@ -518,7 +518,7 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 			value = explicitBounds.At(i-1) + (explicitBounds.At(i)-explicitBounds.At(i-1))/2.0
 		}
 
-		counts.AppendEmpty().SetInt(int64(count))
+		counts.AppendEmpty().SetInt(safeUint64ToInt64(count))
 		values.AppendEmpty().SetDouble(value)
 	}
 
@@ -674,7 +674,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddSpanID("parent_span_id", span.ParentSpanID())
 	document.AddString("name", span.Name())
 	document.AddString("kind", span.Kind().String())
-	document.AddInt("duration", int64(span.EndTimestamp()-span.StartTimestamp()))
+	document.AddUInt("duration", uint64(span.EndTimestamp()-span.StartTimestamp()))
 
 	m.encodeAttributesOTelMode(&document, span.Attributes())
 
@@ -985,7 +985,7 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 		h.Write(buf)
 	case pcommon.ValueTypeInt:
 		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, uint64(v.Int()))
+		binary.LittleEndian.PutUint64(buf, uint64(v.Int())) // nolint:gosec // Overflow assumed. We prefer having high integers over zero.
 		h.Write(buf)
 	case pcommon.ValueTypeBytes:
 		h.Write(v.Bytes().AsRaw())
@@ -1072,5 +1072,13 @@ func mergeGeolocation(attributes pcommon.Map) {
 			key := prefix + latKey
 			attributes.PutDouble(key, geo.lat)
 		}
+	}
+}
+
+func safeUint64ToInt64(v uint64) int64 {
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	} else {
+		return int64(v) // nolint:goset // overflow checked
 	}
 }
