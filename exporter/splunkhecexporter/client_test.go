@@ -194,8 +194,8 @@ type capturingData struct {
 func (c *capturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
-	if c.checkCompression && r.Header.Get("Content-Encoding") != "gzip" {
-		c.testing.Fatal("No compression")
+	if c.checkCompression {
+		assert.Equal(c.testing, "gzip", r.Header.Get("Content-Encoding"), "No compression")
 	}
 
 	if err != nil {
@@ -535,9 +535,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 					}
 					timeStr := fmt.Sprintf(`"time":%d,`, i+1)
 					if strings.Contains(string(batchBody), timeStr) {
-						if eventFound {
-							t.Errorf("span event %d found in multiple batches", i)
-						}
+						assert.False(t, eventFound, "span event %d found in multiple batches", i)
 						eventFound = true
 					}
 				}
@@ -827,9 +825,7 @@ func TestReceiveLogs(t *testing.T) {
 								require.NoError(t, err)
 							}
 							if strings.Contains(string(batchBody), fmt.Sprintf(`"%s"`, attrVal.Str())) {
-								if eventFound {
-									t.Errorf("log event %s found in multiple batches", attrVal.Str())
-								}
+								assert.False(t, eventFound, "log event %s found in multiple batches", attrVal.Str())
 								eventFound = true
 								droppedCount--
 							}
@@ -1203,9 +1199,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 						}
 						time := float64(i) + 0.001*float64(i)
 						if strings.Contains(string(batchBody), fmt.Sprintf(`"time":%g`, time)) {
-							if eventFound {
-								t.Errorf("metric event %d found in multiple batches", i)
-							}
+							assert.False(t, eventFound, "metric event %d found in multiple batches", i)
 							eventFound = true
 						}
 					}
