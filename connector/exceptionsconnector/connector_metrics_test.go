@@ -45,7 +45,7 @@ func TestConnectorConsumeTraces(t *testing.T) {
 
 	testcases := []struct {
 		name     string
-		verifier func(t testing.TB, input pmetric.Metrics) bool
+		verifier func(tb testing.TB, input pmetric.Metrics) bool
 		traces   []ptrace.Traces
 	}{
 		{
@@ -153,8 +153,8 @@ func newTestMetricsConnector(mcon consumer.Metrics, defaultNullValue *string, lo
 }
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
-func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, 1)
+func verifyConsumeMetricsInputCumulative(tb testing.TB, input pmetric.Metrics) bool {
+	return verifyConsumeMetricsInput(tb, input, 1)
 }
 
 func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
@@ -163,52 +163,52 @@ func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
 
 // verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
 // numCumulativeConsumptions acts as a multiplier for the values, since the cumulative metrics are additive.
-func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Metrics) bool {
+func verifyMultipleCumulativeConsumptions() func(tb testing.TB, input pmetric.Metrics) bool {
 	numCumulativeConsumptions := 0
-	return func(t testing.TB, input pmetric.Metrics) bool {
+	return func(tb testing.TB, input pmetric.Metrics) bool {
 		numCumulativeConsumptions++
-		return verifyConsumeMetricsInput(t, input, numCumulativeConsumptions)
+		return verifyConsumeMetricsInput(tb, input, numCumulativeConsumptions)
 	}
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this connector.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativeConsumptions int) bool {
-	require.Equal(t, 3, input.DataPointCount(), "Should be 1 for each generated span")
+func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, numCumulativeConsumptions int) bool {
+	require.Equal(tb, 3, input.DataPointCount(), "Should be 1 for each generated span")
 
 	rm := input.ResourceMetrics()
-	require.Equal(t, 1, rm.Len())
+	require.Equal(tb, 1, rm.Len())
 
 	ilm := rm.At(0).ScopeMetrics()
-	require.Equal(t, 1, ilm.Len())
-	assert.Equal(t, "exceptionsconnector", ilm.At(0).Scope().Name())
+	require.Equal(tb, 1, ilm.Len())
+	assert.Equal(tb, "exceptionsconnector", ilm.At(0).Scope().Name())
 
 	m := ilm.At(0).Metrics()
-	require.Equal(t, 1, m.Len())
+	require.Equal(tb, 1, m.Len())
 
 	seenMetricIDs := make(map[metricID]bool)
 	// The first 3 data points are for call counts.
-	assert.Equal(t, "exceptions", m.At(0).Name())
-	assert.True(t, m.At(0).Sum().IsMonotonic())
+	assert.Equal(tb, "exceptions", m.At(0).Name())
+	assert.True(tb, m.At(0).Sum().IsMonotonic())
 	callsDps := m.At(0).Sum().DataPoints()
-	require.Equal(t, 3, callsDps.Len())
+	require.Equal(tb, 3, callsDps.Len())
 	for dpi := 0; dpi < 3; dpi++ {
 		dp := callsDps.At(dpi)
-		assert.Equal(t, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/kind combination")
-		assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
-		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
-		verifyMetricLabels(dp, t, seenMetricIDs)
+		assert.Equal(tb, int64(numCumulativeConsumptions), dp.IntValue(), "There should only be one metric per Service/kind combination")
+		assert.NotZero(tb, dp.StartTimestamp(), "StartTimestamp should be set")
+		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
+		verifyMetricLabels(tb, dp, seenMetricIDs)
 
-		assert.Equal(t, 1, dp.Exemplars().Len())
+		assert.Equal(tb, 1, dp.Exemplars().Len())
 		exemplar := dp.Exemplars().At(0)
-		assert.NotZero(t, exemplar.Timestamp())
-		assert.NotZero(t, exemplar.TraceID())
-		assert.NotZero(t, exemplar.SpanID())
+		assert.NotZero(tb, exemplar.Timestamp())
+		assert.NotZero(tb, exemplar.TraceID())
+		assert.NotZero(tb, exemplar.SpanID())
 	}
 	return true
 }
 
-func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
+func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pcommon.Value{
 		stringAttrName:      pcommon.NewValueStr("stringAttrValue"),
@@ -233,17 +233,17 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		case statusCodeKey:
 			mID.statusCode = v.Str()
 		case notInSpanAttrName1:
-			assert.Fail(t, notInSpanAttrName1+" should not be in this metric")
+			assert.Fail(tb, notInSpanAttrName1+" should not be in this metric")
 		default:
-			assert.Equal(t, wantDimensions[k], v)
+			assert.Equal(tb, wantDimensions[k], v)
 			delete(wantDimensions, k)
 		}
 		return true
 	})
-	assert.Empty(t, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
+	assert.Empty(tb, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
 	// Service/kind should be a unique metric.
-	assert.False(t, seenMetricIDs[mID])
+	assert.False(tb, seenMetricIDs[mID])
 	seenMetricIDs[mID] = true
 }
 
