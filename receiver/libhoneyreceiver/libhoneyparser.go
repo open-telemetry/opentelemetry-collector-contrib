@@ -69,7 +69,7 @@ func getDatasetFromRequest(path string) (string, error) {
 	return dataset, nil
 }
 
-func toPsomething(dataset string, ss []simplespan.SimpleSpan, cfg Config, logger zap.Logger) (plog.Logs, error) {
+func toPsomething(dataset string, ss []simplespan.SimpleSpan, cfg Config, logger zap.Logger) plog.Logs {
 	foundServices := simplespan.ServiceHistory{}
 	foundServices.NameCount = make(map[string]int)
 	foundScopes := simplespan.ScopeHistory{}
@@ -103,7 +103,7 @@ func toPsomething(dataset string, ss []simplespan.SimpleSpan, cfg Config, logger
 			logService, _ := span.GetService(cfg.FieldMapConfig, &foundServices, dataset)
 			logScopeKey, _ := span.GetScope(cfg.FieldMapConfig, &foundScopes, logService) // adds a new found scope if needed
 			newLog := foundScopes.Scope[logScopeKey].ScopeLogs.AppendEmpty()
-			span.ToPLogRecord(&newLog, &already_used_fields, logger)
+			err := span.ToPLogRecord(&newLog, &already_used_fields, logger)
 			if err != nil {
 				logger.Warn("log could not be converted from libhoney to plog", zap.String("span.object", span.DebugString()))
 			}
@@ -125,5 +125,5 @@ func toPsomething(dataset string, ss []simplespan.SimpleSpan, cfg Config, logger
 		}
 	}
 
-	return resultLogs, nil
+	return resultLogs
 }

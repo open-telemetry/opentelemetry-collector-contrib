@@ -36,7 +36,6 @@ func GetEventTime(etHeader string) time.Time {
 						sec, dec := math.Modf(epochFloat)
 						eventTime = time.Unix(int64(sec), int64(dec*(1e9)))
 					}
-
 				}
 			} else {
 				epochFloat, err := strconv.ParseFloat(etHeader, 64)

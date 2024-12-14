@@ -44,10 +44,10 @@ type AttributesConfig struct {
 }
 
 type SimpleSpan struct {
-	Samplerate       int                    `json:"samplerate" msgpack:"samplerate"`
-	MsgPackTimestamp *time.Time             `msgpack:"time"`
-	Time             string                 `json:"time"` // should not be trusted. use MsgPackTimestamp
-	Data             map[string]interface{} `json:"data" msgpack:"data"`
+	Samplerate       int            `json:"samplerate" msgpack:"samplerate"`
+	MsgPackTimestamp *time.Time     `msgpack:"time"`
+	Time             string         `json:"time"` // should not be trusted. use MsgPackTimestamp
+	Data             map[string]any `json:"data" msgpack:"data"`
 }
 
 // Overrides unmarshall to make sure the MsgPackTimestamp is set

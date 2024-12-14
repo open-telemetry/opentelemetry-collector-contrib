@@ -118,7 +118,10 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 				return
 			}
 			authRawBody, _ := io.ReadAll(authResp.Body)
-			resp.Write(authRawBody)
+			_, err = resp.Write(authRawBody)
+			if err != nil {
+				r.settings.Logger.Info("couldn't write http response")
+			}
 		})
 	}
 
@@ -201,7 +204,10 @@ func (r *libhoneyReceiver) handleSomething(resp http.ResponseWriter, req *http.R
 	case "application/x-msgpack", "application/msgpack":
 		decoder := msgpack.NewDecoder(bytes.NewReader(body))
 		decoder.UseLooseInterfaceDecoding(true)
-		decoder.Decode(&simpleSpans)
+		err = decoder.Decode(&simpleSpans)
+		if err != nil {
+			r.settings.Logger.Info("messagepack decoding failed")
+		}
 		if len(simpleSpans) > 0 {
 			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *simpleSpans[0].MsgPackTimestamp), zap.String("timestamp.first.time", simpleSpans[0].Time))
 			r.settings.Logger.Debug("span zero", zap.String("span.data", simpleSpans[0].DebugString()))
@@ -216,11 +222,7 @@ func (r *libhoneyReceiver) handleSomething(resp http.ResponseWriter, req *http.R
 		}
 	}
 
-	otlpLogs, err := toPsomething(dataset, simpleSpans, *r.cfg, *r.settings.Logger)
-	if err != nil {
-		errorutil.HTTPError(resp, err)
-		return
-	}
+	otlpLogs := toPsomething(dataset, simpleSpans, *r.cfg, *r.settings.Logger)
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
