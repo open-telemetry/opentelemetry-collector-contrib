@@ -1,5 +1,6 @@
 name: 'Update contrib to the latest core source'
 on:
+  pull_request:
   schedule:
     - cron: "27 21 * * *" # Run at an arbitrary time on weekdays.
 
