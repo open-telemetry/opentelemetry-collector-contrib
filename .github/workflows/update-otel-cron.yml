@@ -10,13 +10,21 @@ jobs:
     if: github.repository_owner == 'open-telemetry'
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector
+          repository: open-telemetry/opentelemetry-collector
+          ref: main
+      - uses: actions/checkout@v4
+        with:
+          path: opentelemetry-collector-contrib
       - name: Update to latest opentelemetry-collector release
-        run: make update-otel
+        run: cd opentelemetry-collector-contrib && make update-otel
       - name: Create pull request against main
         env:
           # not using secrets.GITHUB_TOKEN since pull requests from that token do not run workflows
           GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
         run: |
+          cd opentelemetry-collector-contrib
           message="[chore] Update to latest opentelemetry-collector"
           body="Update to latest opentelemetry-collector release."
           branch="opentelemetrybot/update-otel"
