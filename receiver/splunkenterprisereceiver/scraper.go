@@ -113,6 +113,12 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var info infoDict
 	if s.conf.VersionInfo {
 		info = s.scrapeInfo(ctx, now, errChan)
+	} else {
+		info = make(infoDict)
+		nullInfo := Info{Host: "", Entries: make([]InfoEntry, 1)}
+		info[typeCm] = nullInfo
+		info[typeSh] = nullInfo
+		info[typeIdx] = nullInfo
 	}
 
 	for _, fn := range metricScrapes {
