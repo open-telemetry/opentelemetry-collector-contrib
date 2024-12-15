@@ -220,6 +220,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver

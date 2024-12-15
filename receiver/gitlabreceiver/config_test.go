@@ -1,7 +1,9 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package gitlabreceiver
 
 import (
-	"gitlabreceiver/internal/metadata"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -62,7 +66,8 @@ func TestLoadConfig(t *testing.T) {
 				Key:   "key-present",
 				Value: "value-present",
 			},
-		}}
+		},
+	}
 
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 
@@ -71,5 +76,4 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 
 	assert.Equal(t, expectedConfig, r1)
-
 }

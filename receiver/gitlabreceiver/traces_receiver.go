@@ -1,4 +1,7 @@
-package gitlabreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package gitlabreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver"
 
 import (
 	"context"
@@ -91,7 +94,6 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	}()
 
 	return nil
-
 }
 
 func (gtr *gitlabTracesReceiver) Shutdown(ctx context.Context) error {

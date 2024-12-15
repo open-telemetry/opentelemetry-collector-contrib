@@ -6,4 +6,4 @@ status:
     development: [traces]
   distributions: [contrib]
   codeowners:
-    active: [adrielp, niwoerner, atoulme]
+    active: [adrielp, atoulme]
