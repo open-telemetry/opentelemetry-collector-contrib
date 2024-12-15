@@ -38,7 +38,7 @@ func (o *OtelLogsProducerWrapper) Produce(msg interface{}, args *producer.Produc
 	for _, msg := range flowMessageSet {
 
 		// Convert each one to the Otel semantic dictionary format
-		otelMessage, err := ConvertToOtel(msg)
+		otelMessage, err := convertToOtel(msg)
 		if err != nil {
 			continue
 		}
@@ -84,7 +84,7 @@ func (o *OtelLogsProducerWrapper) Commit(flowMessageSet []producer.ProducerMessa
 	o.wrapped.Commit(flowMessageSet)
 }
 
-func NewOtelLogsProducer(wrapped producer.ProducerInterface, logConsumer consumer.Logs) producer.ProducerInterface {
+func newOtelLogsProducer(wrapped producer.ProducerInterface, logConsumer consumer.Logs) producer.ProducerInterface {
 	return &OtelLogsProducerWrapper{
 		wrapped:     wrapped,
 		logConsumer: logConsumer,

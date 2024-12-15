@@ -20,7 +20,7 @@ type netflowReceiver struct {
 
 func (nr *netflowReceiver) Start(ctx context.Context, host component.Host) error {
 	// TODO - Pass ctx and host here
-	listener := NewListener(*nr.config, nr.logger, nr.logConsumer)
+	listener := newListener(*nr.config, nr.logger, nr.logConsumer)
 	if err := listener.Start(); err != nil {
 		return err
 	}

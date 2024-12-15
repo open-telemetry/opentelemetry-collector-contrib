@@ -86,8 +86,8 @@ func getFlowTypeName(flowType int32) string {
 	return "unknown"
 }
 
-// ConvertToOtel converts a ProtoProducerMessage to an OtelNetworkMessage
-func ConvertToOtel(m producer.ProducerMessage) (*OtelNetworkMessage, error) {
+// convertToOtel converts a ProtoProducerMessage to an OtelNetworkMessage
+func convertToOtel(m producer.ProducerMessage) (*OtelNetworkMessage, error) {
 
 	// we know msg is ProtoProducerMessage because that is the parent producer
 	pm, ok := m.(*protoproducer.ProtoProducerMessage)

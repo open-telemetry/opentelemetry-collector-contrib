@@ -29,7 +29,7 @@ func (l *Listener) Dropped(msg utils.Message) {
 	l.logger.Warn("Dropped netflow message", zap.Any("msg", msg))
 }
 
-func NewListener(config Config, logger *zap.Logger, logConsumer consumer.Logs) *Listener {
+func newListener(config Config, logger *zap.Logger, logConsumer consumer.Logs) *Listener {
 	return &Listener{config: config, logger: logger, logConsumer: logConsumer}
 }
 
@@ -105,7 +105,7 @@ func (l *Listener) buildDecodeFunc() (utils.DecoderFunc, error) {
 	}
 
 	// the otel log producer converts those messages into OpenTelemetry logs
-	otelLogsProducer := NewOtelLogsProducer(protoProducer, l.logConsumer)
+	otelLogsProducer := newOtelLogsProducer(protoProducer, l.logConsumer)
 
 	cfgPipe := &utils.PipeConfig{
 		Producer: otelLogsProducer,
