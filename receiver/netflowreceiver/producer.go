@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 
 	"github.com/netsampler/goflow2/v2/producer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 )
 
 // OtelLogsProducerWrapper is a wrapper around a producer.ProducerInterface that sends the messages to a log consumer
@@ -19,7 +20,6 @@ type OtelLogsProducerWrapper struct {
 
 // Produce converts the message into a list log records and sends them to log consumer
 func (o *OtelLogsProducerWrapper) Produce(msg interface{}, args *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
-
 	// First we let the proto producer parse the message
 	// All the netflow protocol and structure is handled by the proto producer
 	flowMessageSet, err := o.wrapped.Produce(msg, args)

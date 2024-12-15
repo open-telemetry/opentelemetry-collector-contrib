@@ -91,7 +91,6 @@ func (l *Listener) handleErrors() {
 
 // buildDecodeFunc creates a decode function based on the scheme
 func (l *Listener) buildDecodeFunc() (utils.DecoderFunc, error) {
-
 	// Eventually this can be used to configure mappings
 	cfgProducer := &protoproducer.ProducerConfig{}
 	cfgm, err := cfgProducer.Compile() // converts configuration into a format that can be used by a protobuf producer
