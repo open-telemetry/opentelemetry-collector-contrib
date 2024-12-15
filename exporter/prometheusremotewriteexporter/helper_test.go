@@ -242,10 +242,8 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 			si := ts.Samples[i]
 			for j := 0; j < i; j++ {
 				sj := ts.Samples[j]
-				if sj.Timestamp > si.Timestamp {
-					t.Errorf("Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
-						ti, j, sj.Timestamp, i, si.Timestamp)
-				}
+				assert.LessOrEqual(t, sj.Timestamp, si.Timestamp, "Timeseries[%d]: Sample[%d].Timestamp(%d) > Sample[%d].Timestamp(%d)",
+					ti, j, sj.Timestamp, i, si.Timestamp)
 			}
 		}
 	}

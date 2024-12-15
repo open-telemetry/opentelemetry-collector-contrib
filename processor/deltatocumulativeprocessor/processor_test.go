@@ -97,8 +97,8 @@ func config(t *testing.T, file string) *Config {
 	return cfg
 }
 
-func setup(t testing.TB, cfg *Config) State {
-	t.Helper()
+func setup(tb testing.TB, cfg *Config) State {
+	tb.Helper()
 
 	next := &consumertest.MetricsSink{}
 	if cfg == nil {
@@ -112,7 +112,7 @@ func setup(t testing.TB, cfg *Config) State {
 		cfg,
 		next,
 	)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 
 	return State{
 		proc: proc,
