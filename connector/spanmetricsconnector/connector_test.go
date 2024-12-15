@@ -78,7 +78,7 @@ type span struct {
 }
 
 // verifyDisabledHistogram expects that histograms are disabled.
-func verifyDisabledHistogram(t testing.TB, input pmetric.Metrics) bool {
+func verifyDisabledHistogram(tb testing.TB, input pmetric.Metrics) bool {
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
@@ -87,15 +87,15 @@ func verifyDisabledHistogram(t testing.TB, input pmetric.Metrics) bool {
 			m := ism.At(ismC).Metrics()
 			for mC := 0; mC < m.Len(); mC++ {
 				metric := m.At(mC)
-				assert.NotEqual(t, pmetric.MetricTypeExponentialHistogram, metric.Type())
-				assert.NotEqual(t, pmetric.MetricTypeHistogram, metric.Type())
+				assert.NotEqual(tb, pmetric.MetricTypeExponentialHistogram, metric.Type())
+				assert.NotEqual(tb, pmetric.MetricTypeHistogram, metric.Type())
 			}
 		}
 	}
 	return true
 }
 
-func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
+func verifyExemplarsExist(tb testing.TB, input pmetric.Metrics) bool {
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
@@ -113,7 +113,7 @@ func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
 				dps := metric.Histogram().DataPoints()
 				for dp := 0; dp < dps.Len(); dp++ {
 					d := dps.At(dp)
-					assert.Positive(t, d.Exemplars().Len())
+					assert.Positive(tb, d.Exemplars().Len())
 				}
 			}
 		}
@@ -122,8 +122,8 @@ func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
 }
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
-func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
+func verifyConsumeMetricsInputCumulative(tb testing.TB, input pmetric.Metrics) bool {
+	return verifyConsumeMetricsInput(tb, input, pmetric.AggregationTemporalityCumulative, 1)
 }
 
 func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
@@ -131,37 +131,37 @@ func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
 }
 
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
-func verifyConsumeMetricsInputDelta(t testing.TB, input pmetric.Metrics) bool {
-	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityDelta, 1)
+func verifyConsumeMetricsInputDelta(tb testing.TB, input pmetric.Metrics) bool {
+	return verifyConsumeMetricsInput(tb, input, pmetric.AggregationTemporalityDelta, 1)
 }
 
 // verifyMultipleCumulativeConsumptions expects the amount of accumulations as kept track of by numCumulativeConsumptions.
 // numCumulativeConsumptions acts as a multiplier for the values, since the cumulative metrics are additive.
-func verifyMultipleCumulativeConsumptions() func(t testing.TB, input pmetric.Metrics) bool {
+func verifyMultipleCumulativeConsumptions() func(tb testing.TB, input pmetric.Metrics) bool {
 	numCumulativeConsumptions := 0
-	return func(t testing.TB, input pmetric.Metrics) bool {
+	return func(tb testing.TB, input pmetric.Metrics) bool {
 		numCumulativeConsumptions++
-		return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, numCumulativeConsumptions)
+		return verifyConsumeMetricsInput(tb, input, pmetric.AggregationTemporalityCumulative, numCumulativeConsumptions)
 	}
 }
 
 // verifyConsumeMetricsInput verifies the input of the ConsumeMetrics call from this connector.
 // This is the best point to verify the computed metrics from spans are as expected.
-func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
-	require.Equal(t, 6, input.DataPointCount(),
+func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTemporality pmetric.AggregationTemporality, numCumulativeConsumptions int) bool {
+	require.Equal(tb, 6, input.DataPointCount(),
 		"Should be 3 for each of call count and latency split into two resource scopes defined by: "+
 			"service-a: service-a (server kind) -> service-a (client kind) and "+
 			"service-b: service-b (service kind)",
 	)
 
-	require.Equal(t, 2, input.ResourceMetrics().Len())
+	require.Equal(tb, 2, input.ResourceMetrics().Len())
 
 	for i := 0; i < input.ResourceMetrics().Len(); i++ {
 		rm := input.ResourceMetrics().At(i)
 
 		var numDataPoints int
 		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
-		require.True(t, ok)
+		require.True(tb, ok)
 		serviceName := val.AsString()
 		if serviceName == "service-a" {
 			numDataPoints = 2
@@ -170,68 +170,68 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		}
 
 		ilm := rm.ScopeMetrics()
-		require.Equal(t, 1, ilm.Len())
-		assert.Equal(t, "spanmetricsconnector", ilm.At(0).Scope().Name())
+		require.Equal(tb, 1, ilm.Len())
+		assert.Equal(tb, "spanmetricsconnector", ilm.At(0).Scope().Name())
 
 		m := ilm.At(0).Metrics()
-		require.Equal(t, 2, m.Len(), "only sum and histogram metric types generated")
+		require.Equal(tb, 2, m.Len(), "only sum and histogram metric types generated")
 
 		// validate calls - sum metrics
 		metric := m.At(0)
-		assert.Equal(t, metricNameCalls, metric.Name())
-		assert.Equal(t, expectedTemporality, metric.Sum().AggregationTemporality())
-		assert.True(t, metric.Sum().IsMonotonic())
+		assert.Equal(tb, metricNameCalls, metric.Name())
+		assert.Equal(tb, expectedTemporality, metric.Sum().AggregationTemporality())
+		assert.True(tb, metric.Sum().IsMonotonic())
 
 		seenMetricIDs := make(map[metricID]bool)
 		callsDps := metric.Sum().DataPoints()
-		require.Equal(t, numDataPoints, callsDps.Len())
+		require.Equal(tb, numDataPoints, callsDps.Len())
 		for dpi := 0; dpi < numDataPoints; dpi++ {
 			dp := callsDps.At(dpi)
-			assert.Equal(t,
+			assert.Equal(tb,
 				int64(numCumulativeConsumptions),
 				dp.IntValue(),
 				"There should only be one metric per Service/name/kind combination",
 			)
-			assert.NotZero(t, dp.StartTimestamp(), "StartTimestamp should be set")
-			assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
-			verifyMetricLabels(dp, t, seenMetricIDs)
+			assert.NotZero(tb, dp.StartTimestamp(), "StartTimestamp should be set")
+			assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
+			verifyMetricLabels(tb, dp, seenMetricIDs)
 		}
 
 		// validate latency - histogram metrics
 		metric = m.At(1)
-		assert.Equal(t, metricNameDuration, metric.Name())
-		assert.Equal(t, defaultUnit.String(), metric.Unit())
+		assert.Equal(tb, metricNameDuration, metric.Name())
+		assert.Equal(tb, defaultUnit.String(), metric.Unit())
 
 		if metric.Type() == pmetric.MetricTypeExponentialHistogram {
 			hist := metric.ExponentialHistogram()
-			assert.Equal(t, expectedTemporality, hist.AggregationTemporality())
-			verifyExponentialHistogramDataPoints(t, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
+			assert.Equal(tb, expectedTemporality, hist.AggregationTemporality())
+			verifyExponentialHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
 		} else {
 			hist := metric.Histogram()
-			assert.Equal(t, expectedTemporality, hist.AggregationTemporality())
-			verifyExplicitHistogramDataPoints(t, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
+			assert.Equal(tb, expectedTemporality, hist.AggregationTemporality())
+			verifyExplicitHistogramDataPoints(tb, hist.DataPoints(), numDataPoints, numCumulativeConsumptions)
 		}
 	}
 	return true
 }
 
-func verifyExplicitHistogramDataPoints(t testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
+func verifyExplicitHistogramDataPoints(tb testing.TB, dps pmetric.HistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
 	seenMetricIDs := make(map[metricID]bool)
-	require.Equal(t, numDataPoints, dps.Len())
+	require.Equal(tb, numDataPoints, dps.Len())
 	for dpi := 0; dpi < numDataPoints; dpi++ {
 		dp := dps.At(dpi)
 		assert.Equal(
-			t,
+			tb,
 			sampleDuration*float64(numCumulativeConsumptions),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
-		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
+		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
 		// Verify bucket counts.
 
 		// The bucket counts should be 1 greater than the explicit bounds as documented in:
 		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto.
-		assert.Equal(t, dp.ExplicitBounds().Len()+1, dp.BucketCounts().Len())
+		assert.Equal(tb, dp.ExplicitBounds().Len()+1, dp.BucketCounts().Len())
 
 		// Find the bucket index where the 11ms duration should belong in.
 		var foundDurationIndex int
@@ -248,31 +248,31 @@ func verifyExplicitHistogramDataPoints(t testing.TB, dps pmetric.HistogramDataPo
 			if bi == foundDurationIndex {
 				wantBucketCount = uint64(numCumulativeConsumptions)
 			}
-			assert.Equal(t, wantBucketCount, dp.BucketCounts().At(bi))
+			assert.Equal(tb, wantBucketCount, dp.BucketCounts().At(bi))
 		}
-		verifyMetricLabels(dp, t, seenMetricIDs)
+		verifyMetricLabels(tb, dp, seenMetricIDs)
 	}
 }
 
-func verifyExponentialHistogramDataPoints(t testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
+func verifyExponentialHistogramDataPoints(tb testing.TB, dps pmetric.ExponentialHistogramDataPointSlice, numDataPoints, numCumulativeConsumptions int) {
 	seenMetricIDs := make(map[metricID]bool)
-	require.Equal(t, numDataPoints, dps.Len())
+	require.Equal(tb, numDataPoints, dps.Len())
 	for dpi := 0; dpi < numDataPoints; dpi++ {
 		dp := dps.At(dpi)
 		assert.Equal(
-			t,
+			tb,
 			sampleDuration*float64(numCumulativeConsumptions),
 			dp.Sum(),
 			"Should be a 11ms duration measurement, multiplied by the number of stateful accumulations.")
-		assert.Equal(t, uint64(numCumulativeConsumptions), dp.Count())
-		assert.Equal(t, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
-		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
+		assert.Equal(tb, uint64(numCumulativeConsumptions), dp.Count())
+		assert.Equal(tb, []uint64{uint64(numCumulativeConsumptions)}, dp.Positive().BucketCounts().AsRaw())
+		assert.NotZero(tb, dp.Timestamp(), "Timestamp should be set")
 
-		verifyMetricLabels(dp, t, seenMetricIDs)
+		verifyMetricLabels(tb, dp, seenMetricIDs)
 	}
 }
 
-func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metricID]bool) {
+func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[metricID]bool) {
 	mID := metricID{}
 	wantDimensions := map[string]pcommon.Value{
 		stringAttrName:         pcommon.NewValueStr("stringAttrValue"),
@@ -296,17 +296,17 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		case statusCodeKey:
 			mID.statusCode = v.Str()
 		case notInSpanAttrName1:
-			assert.Fail(t, notInSpanAttrName1+" should not be in this metric")
+			assert.Fail(tb, notInSpanAttrName1+" should not be in this metric")
 		default:
-			assert.Equal(t, wantDimensions[k], v)
+			assert.Equal(tb, wantDimensions[k], v)
 			delete(wantDimensions, k)
 		}
 		return true
 	})
-	assert.Empty(t, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
+	assert.Empty(tb, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
 	// Service/name/kind should be a unique metric.
-	assert.False(t, seenMetricIDs[mID])
+	assert.False(tb, seenMetricIDs[mID])
 	seenMetricIDs[mID] = true
 }
 
@@ -764,7 +764,7 @@ func TestConsumeTraces(t *testing.T) {
 		aggregationTemporality string
 		histogramConfig        func() HistogramConfig
 		exemplarConfig         func() ExemplarsConfig
-		verifier               func(t testing.TB, input pmetric.Metrics) bool
+		verifier               func(tb testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
 	}{
 		// disabling histogram

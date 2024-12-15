@@ -116,11 +116,10 @@ func TestTracesSource(t *testing.T) {
 			return
 		}
 		buf := new(bytes.Buffer)
-		if _, err := buf.ReadFrom(r.Body); err != nil {
-			t.Fatalf("Metrics server handler error: %v", err)
-		}
+		_, err := buf.ReadFrom(r.Body)
+		assert.NoError(t, err, "Metrics server handler error: %v", err)
 		reqs <- buf.Bytes()
-		_, err := w.Write([]byte("{\"status\": \"ok\"}"))
+		_, err = w.Write([]byte("{\"status\": \"ok\"}"))
 		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
