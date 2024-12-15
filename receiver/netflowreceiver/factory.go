@@ -16,7 +16,7 @@ import (
 const (
 	defaultSockets   = 1
 	defaultWorkers   = 2
-	defaultQueueSize = 1_000_000
+	defaultQueueSize = 1_000
 )
 
 // NewFactory creates a factory for netflow receiver.

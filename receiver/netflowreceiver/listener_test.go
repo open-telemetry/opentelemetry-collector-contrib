@@ -23,5 +23,5 @@ func TestCreateValidDefaultListener(t *testing.T) {
 	assert.Equal(t, 2055, receiver.(*netflowReceiver).config.Port)
 	assert.Equal(t, 1, receiver.(*netflowReceiver).config.Sockets)
 	assert.Equal(t, 2, receiver.(*netflowReceiver).config.Workers)
-	assert.Equal(t, 1_000_000, receiver.(*netflowReceiver).config.QueueSize)
+	assert.Equal(t, 1_000, receiver.(*netflowReceiver).config.QueueSize)
 }

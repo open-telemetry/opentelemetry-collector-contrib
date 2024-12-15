@@ -12,18 +12,28 @@ import (
 )
 
 type netflowReceiver struct {
-	// host        component.Host
-	// cancel      context.CancelFunc
 	config      *Config
 	logConsumer consumer.Logs
 	logger      *zap.Logger
-	// listeners   []*Listener
+	listener    *Listener
 }
 
-func (nr *netflowReceiver) Start(_ context.Context, _ component.Host) error {
+func (nr *netflowReceiver) Start(ctx context.Context, host component.Host) error {
+	// TODO - Pass ctx and host here
+	listener := NewListener(*nr.config, nr.logger, nr.logConsumer)
+	if err := listener.Start(); err != nil {
+		return err
+	}
+	nr.listener = listener
+	nr.logger.Info("NetFlow receiver started")
 	return nil
 }
 
 func (nr *netflowReceiver) Shutdown(_ context.Context) error {
+	nr.logger.Info("NetFlow receiver is shutting down")
+	err := nr.listener.Shutdown()
+	if err != nil {
+		return err
+	}
 	return nil
 }
