@@ -4,6 +4,7 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,19 +14,18 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/go-viper/mapstructure/v2"
-	"github.com/knadh/koanf/parsers/yaml"
-	"github.com/knadh/koanf/providers/file"
-	"github.com/knadh/koanf/v2"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.uber.org/zap/zapcore"
 )
 
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
-	Server       OpAMPServer
-	Agent        Agent
+	Server       OpAMPServer  `mapstructure:"server"`
+	Agent        Agent        `mapstructure:"agent"`
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      Storage      `mapstructure:"storage"`
 	Telemetry    Telemetry    `mapstructure:"telemetry"`
@@ -37,26 +37,29 @@ func Load(configFile string) (Supervisor, error) {
 		return Supervisor{}, errors.New("path to config file cannot be empty")
 	}
 
-	k := koanf.New("::")
-	if err := k.Load(file.Provider(configFile), yaml.Parser()); err != nil {
+	resolverSettings := confmap.ResolverSettings{
+		URIs: []string{configFile},
+		ProviderFactories: []confmap.ProviderFactory{
+			fileprovider.NewFactory(),
+			envprovider.NewFactory(),
+		},
+		ConverterFactories: []confmap.ConverterFactory{},
+		DefaultScheme:      "env",
+	}
+
+	resolver, err := confmap.NewResolver(resolverSettings)
+	if err != nil {
+		return Supervisor{}, err
+	}
+
+	conf, err := resolver.Resolve(context.Background())
+	if err != nil {
 		return Supervisor{}, err
 	}
 
 	cfg := DefaultSupervisor()
-
-	decodeConf := koanf.UnmarshalConf{
-		Tag: "mapstructure",
-		DecoderConfig: &mapstructure.DecoderConfig{
-			DecodeHook: mapstructure.ComposeDecodeHookFunc(
-				mapstructure.StringToTimeDurationHookFunc()),
-			Result:           &cfg,
-			WeaklyTypedInput: true,
-			ErrorUnused:      true,
-		},
-	}
-
-	if err := k.UnmarshalWithConf("", &cfg, decodeConf); err != nil {
-		return Supervisor{}, fmt.Errorf("cannot parse %s: %w", configFile, err)
+	if err = conf.Unmarshal(&cfg); err != nil {
+		return Supervisor{}, err
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -129,8 +132,8 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 }
 
 type OpAMPServer struct {
-	Endpoint   string
-	Headers    http.Header
+	Endpoint   string                 `mapstructure:"endpoint"`
+	Headers    http.Header            `mapstructure:"headers"`
 	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
@@ -159,7 +162,7 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string
+	Executable              string           `mapstructure:"executable"`
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
@@ -255,7 +258,7 @@ func DefaultSupervisor() Supervisor {
 		Telemetry: Telemetry{
 			Logs: Logs{
 				Level:       zapcore.InfoLevel,
-				OutputPaths: []string{"stdout", "stderr"},
+				OutputPaths: []string{"stderr"},
 			},
 		},
 	}
