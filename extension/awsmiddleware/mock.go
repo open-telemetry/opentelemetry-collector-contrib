@@ -41,8 +41,10 @@ type MockHandler struct {
 	mock.Mock
 }
 
-var _ RequestHandler = (*MockHandler)(nil)
-var _ ResponseHandler = (*MockHandler)(nil)
+var (
+	_ RequestHandler  = (*MockHandler)(nil)
+	_ ResponseHandler = (*MockHandler)(nil)
+)
 
 func (m *MockHandler) ID() string {
 	args := m.Called()

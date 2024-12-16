@@ -27,8 +27,10 @@ var (
 // HandlerPosition is the relative position of a handler used during insertion.
 type HandlerPosition int
 
-var _ encoding.TextMarshaler = (*HandlerPosition)(nil)
-var _ encoding.TextUnmarshaler = (*HandlerPosition)(nil)
+var (
+	_ encoding.TextMarshaler   = (*HandlerPosition)(nil)
+	_ encoding.TextUnmarshaler = (*HandlerPosition)(nil)
+)
 
 const (
 	After HandlerPosition = iota
