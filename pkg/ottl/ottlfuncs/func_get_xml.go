@@ -52,10 +52,18 @@ func getXML[K any](target ottl.StringGetter[K], xPath string) ottl.ExprFunc[K] {
 
 		result := &xmlquery.Node{Type: xmlquery.DocumentNode}
 		for _, n := range nodes {
-			if n.Type != xmlquery.ElementNode {
+			switch n.Type {
+			case xmlquery.ElementNode, xmlquery.TextNode:
+				xmlquery.AddChild(result, n)
+			case xmlquery.AttributeNode, xmlquery.CharDataNode:
+				// get the value
+				xmlquery.AddChild(result, &xmlquery.Node{
+					Type: xmlquery.TextNode,
+					Data: n.InnerText(),
+				})
+			default:
 				continue
 			}
-			xmlquery.AddChild(result, n)
 		}
 		return result.OutputXML(false), nil
 	}
