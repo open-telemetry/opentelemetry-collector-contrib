@@ -30,11 +30,13 @@ type Manager struct {
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
+	noTracking    bool
 
-	pollInterval  time.Duration
-	persister     operator.Persister
-	maxBatches    int
-	maxBatchFiles int
+	pollInterval   time.Duration
+	persister      operator.Persister
+	maxBatches     int
+	maxBatchFiles  int
+	pollsToArchive int
 
 	telemetryBuilder *metadata.TelemetryBuilder
 }
@@ -47,6 +49,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 		m.set.Logger.Warn("finding files", zap.Error(err))
 	}
 
+	// instantiate the tracker
+	m.instantiateTracker(persister)
+
 	if persister != nil {
 		m.persister = persister
 		offsets, err := checkpoint.Load(ctx, m.persister)
@@ -58,6 +63,8 @@ func (m *Manager) Start(persister operator.Persister) error {
 			m.readerFactory.FromBeginning = true
 			m.tracker.LoadMetadata(offsets)
 		}
+	} else if m.pollsToArchive > 0 {
+		m.set.Logger.Error("archiving is not supported in memory, please use a storage extension")
 	}
 
 	// Start polling goroutine
@@ -73,7 +80,9 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	if m.tracker != nil {
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	}
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.set.Logger.Error("save offsets", zap.Error(err))
@@ -260,4 +269,14 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	}
 	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 	return r, nil
+}
+
+func (m *Manager) instantiateTracker(persister operator.Persister) {
+	var t tracker.Tracker
+	if m.noTracking {
+		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
+	} else {
+		t = tracker.NewFileTracker(m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+	}
+	m.tracker = t
 }

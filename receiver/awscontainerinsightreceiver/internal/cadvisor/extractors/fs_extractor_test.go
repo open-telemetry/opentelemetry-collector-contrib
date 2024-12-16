@@ -135,5 +135,4 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	assert.Equal(t, "tmpfs", cMetrics[0].tags["device"])
 	assert.Equal(t, "/dev/xvda1", cMetrics[1].tags["device"])
 	assert.Equal(t, "overlay", cMetrics[2].tags["device"])
-
 }

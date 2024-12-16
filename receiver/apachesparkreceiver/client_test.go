@@ -28,6 +28,8 @@ const (
 )
 
 func TestNewApacheSparkClient(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = defaultEndpoint
 	testCases := []struct {
 		desc        string
 		cfg         *Config
@@ -39,9 +41,7 @@ func TestNewApacheSparkClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: defaultEndpoint,
-				},
+				ClientConfig: clientConfig,
 			},
 			host:        componenttest.NewNopHost(),
 			settings:    componenttest.NewNopTelemetrySettings(),

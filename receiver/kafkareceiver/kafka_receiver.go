@@ -12,7 +12,6 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -34,7 +33,7 @@ const (
 	attrPartition    = "partition"
 )
 
-var errInvalidInitialOffset = fmt.Errorf("invalid initial offset")
+var errInvalidInitialOffset = errors.New("invalid initial offset")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
@@ -44,6 +43,7 @@ type kafkaTracesConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       TracesUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -65,6 +65,7 @@ type kafkaMetricsConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       MetricsUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -86,6 +87,7 @@ type kafkaLogsConsumer struct {
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       LogsUnmarshaler
+	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
 	telemetryBuilder *metadata.TelemetryBuilder
@@ -99,9 +101,11 @@ type kafkaLogsConsumer struct {
 	maxFetchSize      int32
 }
 
-var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
-var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
-var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
+var (
+	_ receiver.Traces  = (*kafkaTracesConsumer)(nil)
+	_ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
+	_ receiver.Logs    = (*kafkaLogsConsumer)(nil)
+)
 
 func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -113,6 +117,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -125,7 +130,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 	}, nil
 }
 
-func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
+func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.ClientID = config.ClientID
 	saramaConfig.Metadata.Full = config.Metadata.Full
@@ -151,7 +156,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 			return nil, err
 		}
 	}
-	if err := kafka.ConfigureAuthentication(config.Authentication, saramaConfig); err != nil {
+	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
 		return nil, err
 	}
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
@@ -186,7 +191,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
 			return err
 		}
 	}
@@ -207,16 +212,14 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 			headers: c.headers,
 		}
 	}
-	go func() {
-		if err := c.consumeLoop(ctx, consumerGroup); !errors.Is(err, context.Canceled) {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-		}
-	}()
+	c.consumeLoopWG.Add(1)
+	go c.consumeLoop(ctx, consumerGroup)
 	<-consumerGroup.ready
 	return nil
 }
 
-func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -227,7 +230,7 @@ func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.Co
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
-			return ctx.Err()
+			return
 		}
 	}
 }
@@ -237,6 +240,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
@@ -253,6 +257,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consu
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -294,7 +299,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
 			return err
 		}
 	}
@@ -315,16 +320,14 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 			headers: c.headers,
 		}
 	}
-	go func() {
-		if err := c.consumeLoop(ctx, metricsConsumerGroup); err != nil {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-		}
-	}()
+	c.consumeLoopWG.Add(1)
+	go c.consumeLoop(ctx, metricsConsumerGroup)
 	<-metricsConsumerGroup.ready
 	return nil
 }
 
-func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -335,7 +338,7 @@ func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.C
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
-			return ctx.Err()
+			return
 		}
 	}
 }
@@ -345,6 +348,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
@@ -361,6 +365,7 @@ func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer
 		config:            config,
 		topics:            []string{config.Topic},
 		nextConsumer:      nextConsumer,
+		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
@@ -405,7 +410,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	}
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
-		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
 			return err
 		}
 	}
@@ -426,16 +431,14 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 			headers: c.headers,
 		}
 	}
-	go func() {
-		if err := c.consumeLoop(ctx, logsConsumerGroup); err != nil {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
-		}
-	}()
+	c.consumeLoopWG.Add(1)
+	go c.consumeLoop(ctx, logsConsumerGroup)
 	<-logsConsumerGroup.ready
 	return nil
 }
 
-func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) error {
+func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
+	defer c.consumeLoopWG.Done()
 	for {
 		// `Consume` should be called inside an infinite loop, when a
 		// server-side rebalance happens, the consumer session will need to be
@@ -446,7 +449,7 @@ func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.Cons
 		// check if context was cancelled, signaling that the consumer should stop
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
-			return ctx.Err()
+			return
 		}
 	}
 }
@@ -456,6 +459,7 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 		return nil
 	}
 	c.cancelConsumeLoop()
+	c.consumeLoopWG.Wait()
 	if c.consumerGroup == nil {
 		return nil
 	}
@@ -513,9 +517,11 @@ type logsConsumerGroupHandler struct {
 	headerExtractor   HeaderExtractor
 }
 
-var _ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
-var _ sarama.ConsumerGroupHandler = (*metricsConsumerGroupHandler)(nil)
-var _ sarama.ConsumerGroupHandler = (*logsConsumerGroupHandler)(nil)
+var (
+	_ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
+	_ sarama.ConsumerGroupHandler = (*metricsConsumerGroupHandler)(nil)
+	_ sarama.ConsumerGroupHandler = (*logsConsumerGroupHandler)(nil)
+)
 
 func (c *tracesConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
 	c.readyCloser.Do(func() {

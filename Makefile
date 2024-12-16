@@ -51,6 +51,7 @@ CMD_MODS_1 := $(shell find ./cmd/[n-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*
 CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(PWD)
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
+CGO_MODS := ./receiver/hostmetricsreceiver
 
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
 INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) | uniq)
@@ -134,6 +135,14 @@ gotest:
 gotest-with-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
 	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
+
+.PHONY: gobuildtest
+gobuildtest:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="buildtest"
+
+.PHONY: gorunbuilttest
+gorunbuilttest:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="runbuilttest"
 
 .PHONY: gointegration-test
 gointegration-test:
@@ -260,6 +269,9 @@ for-other-target: $(OTHER_MODS)
 .PHONY: for-integration-target
 for-integration-target: $(INTEGRATION_MODS)
 
+.PHONY: for-cgo-target
+for-cgo-target: $(CGO_MODS)
+
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -295,8 +307,7 @@ docker-telemetrygen:
 
 .PHONY: generate
 generate: install-tools
-	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
-	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	PATH="$$PWD/.tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 
 .PHONY: githubgen-install
@@ -337,13 +348,13 @@ genotelcontribcol: $(BUILDER)
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
-otelcontribcol:
+otelcontribcol: genotelcontribcol
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 # Build the Collector executable without the symbol table, debug information, and the DWARF symbol table.
 .PHONY: otelcontribcollite
-otelcontribcollite:
+otelcontribcollite: genotelcontribcol
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
@@ -353,12 +364,12 @@ genoteltestbedcol: $(BUILDER)
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
-oteltestbedcol:
+oteltestbedcol: genoteltestbedcol
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: oteltestbedcollite
-oteltestbedcollite:
+oteltestbedcollite: genoteltestbedcol
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
@@ -374,7 +385,7 @@ telemetrygenlite:
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
 # helper function to update the core packages in builder-config.yaml
-# input parameters are 
+# input parameters are
 # $(1) = path/to/versions.yaml (where it greps the relevant packages)
 # $(2) = path/to/go.mod (where it greps the package-versions)
 # $(3) = path/to/builder-config.yaml (where we want to update the versions)
@@ -383,16 +394,16 @@ define updatehelper
 			echo "Usage: updatehelper <versions.yaml> <go.mod> <builder-config.yaml>"; \
 			exit 1; \
 	fi
-	grep "go\.opentelemetry\.io" $(1) | sed 's/^\s*-\s*//' | while IFS= read -r line; do \
+	grep "go\.opentelemetry\.io" $(1) | sed 's/^[[:space:]]*-[[:space:]]*//' | while IFS= read -r line; do \
 			if grep -qF "$$line" $(2); then \
 					package=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$1}'); \
 					version=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$2}'); \
 					builder_package=$$(grep -F "$$package" $(3) | awk '{print $$3}'); \
 					builder_version=$$(grep -F "$$package" $(3) | awk '{print $$4}'); \
 					if [ "$$builder_package" == "$$package" ]; then \
-						echo "$$builder_version";\
-						sed -i -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
-						echo "[$(3)]: $$package updated to $$version"; \
+						sed -i.bak -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
+						rm $(3).bak; \
+						echo "[$(3)]: $$package updated from $$builder_version to $$version"; \
 					fi; \
 			fi; \
 	done
@@ -539,6 +550,8 @@ clean:
 	find . -type f -name 'coverage.out' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+	@echo "Removing built binary files"
+	find . -type f -name 'builtunitetest.test' -delete
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:

@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 
-	ltel "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/lineartelemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/telemetry"
 )
 
 func NewFactory() processor.Factory {
@@ -29,17 +29,10 @@ func createMetricsProcessor(_ context.Context, set processor.Settings, cfg compo
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	telb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	tel, err := telemetry.New(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	proc := newProcessor(pcfg, set.Logger, telb, next)
 
-	ltel, err := ltel.New(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
-	linear := newLinear(pcfg, ltel, proc)
-
-	return Chain{linear, proc}, nil
+	return newProcessor(pcfg, tel, next), nil
 }

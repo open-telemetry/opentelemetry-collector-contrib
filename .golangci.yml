@@ -80,13 +80,8 @@ linters-settings:
   revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
-
-  gofmt:
-    # simplify code: gofmt with `-s` option, true by default
-    simplify: true
-    rewrite-rules:
-    - pattern: interface{}
-      replacement: any
+    rules:
+      - name: use-any
 
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
@@ -137,7 +132,17 @@ linters-settings:
       - float-compare
       - require-error
       - suite-subtest-run
+      - encoded-compare # has false positives that cannot be fixed with testifylint-fix
     enable-all: true
+  thelper:
+    test:
+      begin: false
+    benchmark:
+      begin: false
+    tb:
+      begin: false
+    fuzz:
+      begin: false
 
 linters:
   enable:
@@ -149,7 +154,7 @@ linters:
     - exhaustive
     - gci
     - gocritic
-    - gofmt
+    - gofumpt
     - goimports
     - gosec
     - govet
@@ -160,10 +165,13 @@ linters:
     - staticcheck
     - tenv
     - testifylint
+    - thelper
     - unconvert
     - unparam
     - unused
+    - usestdlibvars
     - wastedassign
+    - whitespace
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

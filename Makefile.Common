@@ -36,6 +36,7 @@ GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofil
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
+GOTESTARCH?=$(GOARCH)
 
 # In order to help reduce toil related to managing tooling for the open telemetry collector
 # this section of the makefile looks at only requiring command definitions to be defined
@@ -56,7 +57,7 @@ $(TOOLS_BIN_DIR):
 	mkdir -p $@
 
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
-	cd $(TOOLS_MOD_DIR) && GOOS="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
+	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
 ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
 MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
@@ -71,13 +72,14 @@ CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
+GOFUMPT             := $(TOOLS_BIN_DIR)/gofumpt
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
 TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 
 GOTESTSUM_OPT?= --rerun-fails=1
-TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run
+TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run,encoded-compare
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -140,6 +142,18 @@ do-unit-tests-with-cover: $(GOTESTSUM)
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_COVERAGE)
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
+.PHONY: buildtest
+buildtest:
+ifneq (,$(wildcard ./*.go))
+	GOARCH=$(GOTESTARCH) CGO_ENABLED=1 $(GOCMD) test -c -o builtunitetest.test
+endif
+
+.PHONY: runbuilttest
+runbuilttest: $(GOTESTSUM)
+ifneq (,$(wildcard ./builtunitetest.test))
+	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
+endif	
+
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... in `pwd`"
@@ -194,8 +208,8 @@ checklinks:
 		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
 
 .PHONY: fmt
-fmt: $(GOIMPORTS)
-	gofmt -w -s ./
+fmt: $(GOFUMPT) $(GOIMPORTS)
+	$(GOFUMPT) -l -w .
 	$(GOIMPORTS) -w -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint

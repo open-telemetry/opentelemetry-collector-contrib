@@ -10,3 +10,8 @@ status:
 
 tests:
   expect_consumer_error: true
+  goleak:
+    ignore:
+      top:
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"

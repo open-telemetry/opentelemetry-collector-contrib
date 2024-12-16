@@ -43,7 +43,6 @@ func newExporter(config *Config, settings component.TelemetrySettings) (*lokiExp
 	settings.Logger.Info("using the new Loki exporter")
 
 	builder, err := metadata.NewTelemetryBuilder(settings)
-
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +89,7 @@ func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, reque
 		return consumererror.NewPermanent(err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", l.config.ClientConfig.Endpoint, bytes.NewReader(buf))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, l.config.ClientConfig.Endpoint, bytes.NewReader(buf))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}

@@ -58,8 +58,10 @@ type TestCase struct {
 	decision decisionFunc
 }
 
-const mibibyte = 1024 * 1024
-const testcaseDurationVar = "TESTCASE_DURATION"
+const (
+	mibibyte            = 1024 * 1024
+	testcaseDurationVar = "TESTCASE_DURATION"
+)
 
 // NewTestCase creates a new TestCase. It expects agent-config.yaml in the specified directory.
 func NewTestCase(
@@ -345,5 +347,4 @@ func (tc *TestCase) AgentLogsContains(text string) bool {
 
 	res, _ := grep.Output()
 	return string(res) != ""
-
 }

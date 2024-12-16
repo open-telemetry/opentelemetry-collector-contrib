@@ -125,6 +125,41 @@ func TestGetPrometheusConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "Test with job name",
+			config: &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint: "localhost:1234",
+				},
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metric",
+				JobName:            "job123",
+			},
+			want: &prometheusreceiver.Config{
+				PrometheusConfig: &prometheusreceiver.PromConfig{
+					GlobalConfig: config.DefaultGlobalConfig,
+					ScrapeConfigs: []*config.ScrapeConfig{
+						{
+							ScrapeInterval:  model.Duration(10 * time.Second),
+							ScrapeTimeout:   model.Duration(10 * time.Second),
+							JobName:         "job123",
+							HonorTimestamps: true,
+							Scheme:          "https",
+							MetricsPath:     "/metric",
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
+									{
+										Targets: []model.LabelSet{
+											{model.AddressLabel: model.LabelValue("localhost:1234")},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Test with TLS",
 			config: &Config{
 				ClientConfig:       clientConfigCA,
@@ -189,7 +224,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 										Targets: []model.LabelSet{
 											{
 												model.AddressLabel:     model.LabelValue("localhost:1234"),
-												model.LabelName("key"): model.LabelValue("value")},
+												model.LabelName("key"): model.LabelValue("value"),
+											},
 										},
 									},
 								},

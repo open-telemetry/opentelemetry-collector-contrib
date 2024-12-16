@@ -111,7 +111,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 	if r.discoveryManager == nil {
 		// NewManager can sometimes return nil if it encountered an error, but
 		// the error message is logged separately.
-		return fmt.Errorf("failed to create discovery manager")
+		return errors.New("failed to create discovery manager")
 	}
 
 	go func() {

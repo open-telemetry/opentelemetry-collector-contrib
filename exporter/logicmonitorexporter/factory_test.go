@@ -28,7 +28,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateLogsExporter(t *testing.T) {
+func TestCreateLogs(t *testing.T) {
 	tests := []struct {
 		name         string
 		config       Config
@@ -50,9 +50,9 @@ func TestCreateLogsExporter(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			set := exportertest.NewNopSettings()
-			oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+			oexp, err := factory.CreateLogs(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
-				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)
+				t.Errorf("CreateLogs() error = %v, shouldError %v", err, tt.shouldError)
 				return
 			}
 			if tt.shouldError {
@@ -68,7 +68,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	}
 }
 
-func TestCreateTracesExporter(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	tests := []struct {
 		name         string
 		config       Config
@@ -90,9 +90,9 @@ func TestCreateTracesExporter(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			set := exportertest.NewNopSettings()
-			oexp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+			oexp, err := factory.CreateTraces(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
-				t.Errorf("CreateTracesExporter() error = %v, shouldError %v", err, tt.shouldError)
+				t.Errorf("CreateTraces() error = %v, shouldError %v", err, tt.shouldError)
 				return
 			}
 			if tt.shouldError {

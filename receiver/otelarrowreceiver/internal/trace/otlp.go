@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -22,13 +22,13 @@ type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Traces
 	obsrecv      *receiverhelper.ObsReport
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission2.Queue
 	sizer        *ptrace.ProtoMarshaler
 	logger       *zap.Logger
 }
 
 // New creates a new Receiver reference.
-func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelper.ObsReport, bq *admission.BoundedQueue) *Receiver {
+func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelper.ObsReport, bq admission2.Queue) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
@@ -41,25 +41,22 @@ func New(logger *zap.Logger, nextConsumer consumer.Traces, obsrecv *receiverhelp
 // Export implements the service Export traces func.
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
-	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
 		return ptraceotlp.NewExportResponse(), nil
 	}
+
 	ctx = r.obsrecv.StartTracesOp(ctx)
 
-	sizeBytes := int64(r.sizer.TracesSize(req.Traces()))
-	err := r.boundedQueue.Acquire(ctx, sizeBytes)
-	if err != nil {
-		return ptraceotlp.NewExportResponse(), err
+	var err error
+	sizeBytes := uint64(r.sizer.TracesSize(req.Traces()))
+	if releaser, acqErr := r.boundedQueue.Acquire(ctx, sizeBytes); acqErr == nil {
+		err = r.nextConsumer.ConsumeTraces(ctx, td)
+		releaser() // immediate release
+	} else {
+		err = acqErr
 	}
-	defer func() {
-		if releaseErr := r.boundedQueue.Release(sizeBytes); releaseErr != nil {
-			r.logger.Error("Error releasing bytes from semaphore", zap.Error(releaseErr))
-		}
-	}()
 
-	err = r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsrecv.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	return ptraceotlp.NewExportResponse(), err

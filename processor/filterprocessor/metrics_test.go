@@ -369,7 +369,6 @@ func TestFilterMetricProcessor(t *testing.T) {
 
 func TestFilterMetricProcessorTelemetry(t *testing.T) {
 	tel := setupTestTelemetry()
-	next := new(consumertest.MetricsSink)
 	cfg := &Config{
 		Metrics: MetricFilters{
 			MetricConditions: []string{
@@ -377,24 +376,16 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 			},
 		},
 	}
-	factory := NewFactory()
-	fmp, err := factory.CreateMetrics(
-		context.Background(),
+	fmp, err := newFilterMetricProcessor(
 		tel.NewSettings(),
 		cfg,
-		next,
 	)
 	assert.NotNil(t, fmp)
 	assert.NoError(t, err)
 
-	caps := fmp.Capabilities()
-	assert.True(t, caps.MutatesData)
-	ctx := context.Background()
-	assert.NoError(t, fmp.Start(ctx, nil))
-
-	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
+	_, err = fmp.processMetrics(context.Background(), testResourceMetrics([]metricWithResource{
 		{
-			metricNames: []string{"foo", "bar"},
+			metricNames: []string{"metric1", "metric2"},
 			resourceAttributes: map[string]any{
 				"attr1": "attr1/val1",
 			},
@@ -412,165 +403,15 @@ func TestFilterMetricProcessorTelemetry(t *testing.T) {
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      0,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("processor", "filter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("processor", "filter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-	}
-
-	tel.assertMetrics(t, want)
-
-	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
-		{
-			metricNames: []string{"metric1", "metric2"},
-			resourceAttributes: map[string]any{
-				"attr1": "attr1/val1",
-			},
-		},
-	}))
-	assert.NoError(t, err)
-
-	want = []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_filter_datapoints.filtered",
-			Description: "Number of metric data points dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
 						Value:      1,
 						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
 					},
 				},
 			},
 		},
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      4,
-						Attributes: attribute.NewSet(attribute.String("processor", "filter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      3,
-						Attributes: attribute.NewSet(attribute.String("processor", "filter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
 	}
 	tel.assertMetrics(t, want)
-
-	err = fmp.ConsumeMetrics(context.Background(), testResourceMetrics([]metricWithResource{
-		{
-			metricNames: []string{"metric1"},
-			resourceAttributes: map[string]any{
-				"attr1": "attr1/val1",
-			},
-		},
-	}))
-	assert.NoError(t, err)
-
-	want = []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_filter_datapoints.filtered",
-			Description: "Number of metric data points dropped by the filter processor",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      2,
-						Attributes: attribute.NewSet(attribute.String("filter", "filter")),
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      4,
-						Attributes: attribute.NewSet(attribute.String("processor", "filter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      3,
-						Attributes: attribute.NewSet(attribute.String("processor", "filter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-	}
-	tel.assertMetrics(t, want)
-
-	assert.NoError(t, fmp.Shutdown(ctx))
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
@@ -943,7 +784,6 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			if tt.filterEverything {
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, err)
 			} else {
-
 				exTd := constructMetrics()
 				tt.want(exTd)
 				assert.Equal(t, exTd, got)

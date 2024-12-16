@@ -116,11 +116,10 @@ func TestTracesSource(t *testing.T) {
 			return
 		}
 		buf := new(bytes.Buffer)
-		if _, err := buf.ReadFrom(r.Body); err != nil {
-			t.Fatalf("Metrics server handler error: %v", err)
-		}
+		_, err := buf.ReadFrom(r.Body)
+		assert.NoError(t, err, "Metrics server handler error: %v", err)
 		reqs <- buf.Bytes()
-		_, err := w.Write([]byte("{\"status\": \"ok\"}"))
+		_, err = w.Write([]byte("{\"status\": \"ok\"}"))
 		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
@@ -150,7 +149,7 @@ func TestTracesSource(t *testing.T) {
 	assert := assert.New(t)
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
-	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
+	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(err)
 
 	// Payload specifies a sub-set of a Zorkian metrics series payload.
@@ -272,7 +271,7 @@ func TestTraceExporter(t *testing.T) {
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
-	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
+	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(t, err)
 
 	ctx := context.Background()
@@ -299,7 +298,7 @@ func TestNewTracesExporter(t *testing.T) {
 
 	// The client should have been created correctly
 	f := NewFactory()
-	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
@@ -320,16 +319,16 @@ func TestPushTraceData(t *testing.T) {
 		Traces: TracesConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
-	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
 	testTraces := ptrace.NewTraces()
@@ -363,7 +362,7 @@ func TestPushTraceData_NewEnvConvention(t *testing.T) {
 
 	params := exportertest.NewNopSettings()
 	f := NewFactory()
-	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
 	err = exp.ConsumeTraces(context.Background(), simpleTracesWithAttributes(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}))

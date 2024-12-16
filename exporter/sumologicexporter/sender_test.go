@@ -329,7 +329,7 @@ func TestSendLogsSplit(t *testing.T) {
 func TestSendLogsSplitFailedOne(t *testing.T) {
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			_, err := fmt.Fprintf(
 				w,
 				`{"id":"1TIRY-KGIVX-TPQRJ","errors":[{"code":"internal.error","message":"Internal server error."}]}`,
@@ -368,13 +368,13 @@ func TestSendLogsSplitFailedOne(t *testing.T) {
 func TestSendLogsSplitFailedAll(t *testing.T) {
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log", body)
 		},
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Another example log", body)
@@ -687,7 +687,7 @@ func TestSendLogsJsonSplit(t *testing.T) {
 func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 
@@ -732,7 +732,7 @@ func TestSendLogsJsonSplitFailedOne(t *testing.T) {
 func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 
@@ -741,7 +741,7 @@ func TestSendLogsJsonSplitFailedAll(t *testing.T) {
 			assert.Regexp(t, regex, body)
 		},
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 
 			body := extractBody(t, req)
 
@@ -984,7 +984,7 @@ func TestInvalidPipeline(t *testing.T) {
 func TestSendCompressGzip(t *testing.T) {
 	test := prepareSenderTest(t, configcompression.TypeGzip, []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
-			res.WriteHeader(200)
+			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
 				assert.Fail(t, "err: %v", err)
@@ -1005,7 +1005,7 @@ func TestSendCompressGzip(t *testing.T) {
 func TestSendCompressGzipDeprecated(t *testing.T) {
 	test := prepareSenderTest(t, "default", []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
-			res.WriteHeader(200)
+			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
 				assert.Fail(t, "err: %v", err)
@@ -1026,7 +1026,7 @@ func TestSendCompressGzipDeprecated(t *testing.T) {
 func TestSendCompressZstd(t *testing.T) {
 	test := prepareSenderTest(t, configcompression.TypeZstd, []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
-			res.WriteHeader(200)
+			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
 				assert.Fail(t, "err: %v", err)
@@ -1047,7 +1047,7 @@ func TestSendCompressZstd(t *testing.T) {
 func TestSendCompressDeflate(t *testing.T) {
 	test := prepareSenderTest(t, configcompression.TypeDeflate, []func(res http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, req *http.Request) {
-			res.WriteHeader(200)
+			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
 				assert.Fail(t, "err: %v", err)
@@ -1192,7 +1192,7 @@ func TestSendMetricsSplitBySource(t *testing.T) {
 func TestSendMetricsSplitFailedOne(t *testing.T) {
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000`
@@ -1233,14 +1233,14 @@ func TestSendMetricsSplitFailedOne(t *testing.T) {
 func TestSendMetricsSplitFailedAll(t *testing.T) {
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000`
 			assert.Equal(t, expected, body)
 		},
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(404)
+			w.WriteHeader(http.StatusNotFound)
 
 			body := extractBody(t, req)
 			expected := `` +
@@ -1302,7 +1302,7 @@ func TestSendMetricsUnexpectedFormat(t *testing.T) {
 func TestBadRequestCausesPermanentError(t *testing.T) {
 	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
 		func(res http.ResponseWriter, _ *http.Request) {
-			res.WriteHeader(400)
+			res.WriteHeader(http.StatusBadRequest)
 		},
 	})
 	test.s.config.MetricFormat = OTLPMetricFormat

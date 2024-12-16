@@ -310,6 +310,36 @@ func TestSpansWithMultipleAttrs(t *testing.T) {
 	}
 }
 
+func TestValidate(t *testing.T) {
+	tests := []struct {
+		name           string
+		cfg            *Config
+		wantErrMessage string
+	}{
+		{
+			name: "No duration or NumTraces",
+			cfg: &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+			},
+			wantErrMessage: "either `traces` or `duration` must be greater than 0",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			syncer := &mockSyncer{}
+
+			tracerProvider := sdktrace.NewTracerProvider()
+			sp := sdktrace.NewSimpleSpanProcessor(syncer)
+			tracerProvider.RegisterSpanProcessor(sp)
+			otel.SetTracerProvider(tracerProvider)
+			logger, _ := zap.NewDevelopment()
+			require.EqualError(t, Run(tt.cfg, logger), tt.wantErrMessage)
+		})
+	}
+}
+
 var _ sdktrace.SpanExporter = (*mockSyncer)(nil)
 
 type mockSyncer struct {
@@ -361,5 +391,4 @@ func configWithMultipleAttributes(qty int, statusCode string) *Config {
 		NumTraces:  qty,
 		StatusCode: statusCode,
 	}
-
 }

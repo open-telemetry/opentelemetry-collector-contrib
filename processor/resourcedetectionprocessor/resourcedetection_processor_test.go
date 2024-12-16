@@ -19,8 +19,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -259,6 +261,37 @@ func TestResourceProcessor(t *testing.T) {
 			got = tln.AllLogs()[0].ResourceLogs().At(0).Resource().Attributes().AsRaw()
 
 			assert.Equal(t, tt.expectedResource, got)
+
+			// Test profiles consumer
+			tpn := new(consumertest.ProfilesSink)
+			rpp, err := factory.createProfilesProcessor(context.Background(), processortest.NewNopSettings(), cfg, tpn)
+
+			if tt.expectedNewError != "" {
+				assert.EqualError(t, err, tt.expectedNewError)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.True(t, rpp.Capabilities().MutatesData)
+
+			err = rpp.Start(context.Background(), componenttest.NewNopHost())
+
+			if tt.detectedError != nil {
+				require.NoError(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, rpp.Shutdown(context.Background())) }()
+
+			pd := pprofile.NewProfiles()
+			require.NoError(t, pd.ResourceProfiles().AppendEmpty().Resource().Attributes().FromRaw(tt.sourceResource))
+
+			err = rpp.ConsumeProfiles(context.Background(), pd)
+			require.NoError(t, err)
+			got = tpn.AllProfiles()[0].ResourceProfiles().At(0).Resource().Attributes().AsRaw()
+
+			assert.Equal(t, tt.expectedResource, got)
 		})
 	}
 }
@@ -327,4 +360,26 @@ func BenchmarkConsumeLogsDefault(b *testing.B) {
 func BenchmarkConsumeLogsAll(b *testing.B) {
 	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
 	benchmarkConsumeLogs(b, cfg)
+}
+
+func benchmarkConsumeProfiles(b *testing.B, cfg *Config) {
+	factory := NewFactory()
+	sink := new(consumertest.ProfilesSink)
+	processor, _ := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, sink)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// TODO use testbed.PerfTestDataProvider here once that includes resources
+		assert.NoError(b, processor.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	}
+}
+
+func BenchmarkConsumeProfilesDefault(b *testing.B) {
+	cfg := NewFactory().CreateDefaultConfig()
+	benchmarkConsumeProfiles(b, cfg.(*Config))
+}
+
+func BenchmarkConsumeProfilesAll(b *testing.B) {
+	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
+	benchmarkConsumeProfiles(b, cfg)
 }

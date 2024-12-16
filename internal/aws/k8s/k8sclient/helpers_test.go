@@ -7,14 +7,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type mockReflectorSyncChecker struct {
-}
+type mockReflectorSyncChecker struct{}
 
 func (m *mockReflectorSyncChecker) Check(_ cacheReflector, _ string) {
-
 }
 
 var kubeConfigPath string
@@ -51,12 +50,8 @@ users:
       provideClusterInfo: true
 `
 	tmpfile, err := os.CreateTemp("", "kubeconfig")
-	if err != nil {
-		t.Error(err)
-	}
-	if err := os.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(tmpfile.Name(), []byte(content), 0o600))
 	// overwrite the default kube config path
 	kubeConfigPath = tmpfile.Name()
 	return kubeConfigPath

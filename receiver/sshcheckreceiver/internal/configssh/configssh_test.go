@@ -4,7 +4,7 @@
 package configssh // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -164,7 +164,7 @@ func Test_Client_Dial(t *testing.T) {
 				KeyFile:  keyfile,
 			},
 			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
-				return nil, fmt.Errorf("dial")
+				return nil, errors.New("dial")
 			},
 			shouldError: true,
 		},
@@ -237,7 +237,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 				KeyFile:  keyfile,
 			},
 			dial: func(_, _ string, _ *ssh.ClientConfig) (*ssh.Client, error) {
-				return nil, fmt.Errorf("dial")
+				return nil, errors.New("dial")
 			},
 			shouldError: true,
 		},

@@ -23,7 +23,7 @@ func TestNewProcessorFactory(t *testing.T) {
 }
 
 func TestCreateLogs(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name        string
 		cfg         component.Config
 		expectedErr string
@@ -36,6 +36,37 @@ func TestCreateLogs(t *testing.T) {
 			name:        "invalid config type",
 			cfg:         nil,
 			expectedErr: "invalid config type",
+		},
+		{
+			name: "valid custom condition",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{"false"},
+			},
+		},
+		{
+			name: "valid multiple conditions",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{"false", `(attributes["ID"] == 1)`},
+			},
+		},
+		{
+			name: "invalid condition",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Interval:          defaultInterval,
+				Timezone:          defaultTimezone,
+				ExcludeFields:     []string{},
+				Conditions:        []string{"x"},
+			},
+			expectedErr: "invalid condition",
 		},
 	}
 

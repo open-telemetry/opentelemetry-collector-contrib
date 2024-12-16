@@ -6,10 +6,19 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [rmfitzpatrick, jamesmoessis]
+    active: [jamesmoessis]
+    emeritus: [rmfitzpatrick]
   unsupported_platforms: [darwin, windows]
 
-sem_conv_version: 1.6.1
+sem_conv_version: 1.27.0
+
+tests:
+  goleak:
+    ignore:
+      top:
+        - "github.com/testcontainers/testcontainers-go.(*Reaper).Connect.func1"
+        - "net/http.(*persistConn).writeLoop"
+        - "internal/poll.runtime_pollWait"
 
 # Note: there are other, additional resource attributes that the user can configure through the yaml
 resource_attributes:

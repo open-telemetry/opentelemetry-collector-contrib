@@ -170,7 +170,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 					at:         11,
 					value:      66,
 					metric:     "histogram_with_created_bucket",
-					extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
+					extraLabel: labels.Label{Name: "le", Value: "+Inf"},
+				},
 			},
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()

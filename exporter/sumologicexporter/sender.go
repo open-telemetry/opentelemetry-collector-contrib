@@ -215,7 +215,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 
 	// API responds with a 200 or 204 with ConentLength set to 0 when all data
 	// has been successfully ingested.
-	if resp.ContentLength == 0 && (resp.StatusCode == 200 || resp.StatusCode == 204) {
+	if resp.ContentLength == 0 && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent) {
 		return nil
 	}
 
@@ -229,7 +229,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 	// API responds with a 200 or 204 with a JSON body describing what issues
 	// were encountered when processing the sent data.
 	switch resp.StatusCode {
-	case 200, 204:
+	case http.StatusOK, http.StatusNoContent:
 		if resp.ContentLength < 0 {
 			s.logger.Warn("Unknown length of server response")
 			return nil
@@ -259,7 +259,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		l.Warn("There was an issue sending data")
 		return nil
 
-	case 401:
+	case http.StatusUnauthorized:
 		return errUnauthorized
 
 	default:
@@ -354,7 +354,6 @@ func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 	enc := json.NewEncoder(nextLine)
 	enc.SetEscapeHTML(false)
 	err := enc.Encode(recordCopy.Attributes().AsRaw())
-
 	if err != nil {
 		return "", err
 	}
@@ -485,7 +484,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 			previousFields := newFields(rms.At(i - 1).Resource().Attributes())
 			previousSourceHeaders := getSourcesHeaders(previousFields)
 			if !reflect.DeepEqual(previousSourceHeaders, currentSourceHeaders) && body.Len() > 0 {
-
 				if err := s.send(ctx, MetricsPipeline, body.toCountingReader(), previousFields); err != nil {
 					errs = append(errs, err)
 					for _, resource := range currentResources {
@@ -537,7 +535,6 @@ func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pm
 		}
 
 		currentResources = append(currentResources, rm)
-
 	}
 
 	if body.Len() > 0 {
@@ -580,7 +577,6 @@ func (s *sender) appendAndMaybeSend(
 	body *bodyBuilder,
 	flds fields,
 ) (sent bool, err error) {
-
 	linesTotalLength := 0
 	for _, line := range lines {
 		linesTotalLength += len(line) + 1 // count the newline as well
@@ -703,6 +699,7 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 	}
 	return nil
 }
+
 func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
 	statusCode := 0
 

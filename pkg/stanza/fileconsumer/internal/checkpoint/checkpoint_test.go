@@ -141,7 +141,6 @@ func TestMigrateHeaderAttributes(t *testing.T) {
 			},
 		},
 	}, reloaded)
-
 }
 
 func saveDeprecated(t *testing.T, persister operator.Persister, dep *deprecatedMetadata) {

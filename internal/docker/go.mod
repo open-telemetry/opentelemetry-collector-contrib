@@ -4,10 +4,10 @@ go 1.22.0
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
-	github.com/docker/docker v26.1.5+incompatible
+	github.com/docker/docker v27.4.0+incompatible
 	github.com/gobwas/glob v0.2.3
-	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v1.17.0
+	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/confmap v1.21.1-0.20241206185113-3f3e208e71b8
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -21,11 +21,11 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.1.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.1 // indirect
+	github.com/knadh/koanf/v2 v2.1.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect

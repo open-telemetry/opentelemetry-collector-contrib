@@ -38,7 +38,6 @@ func TestNewZorkianType(t *testing.T) {
 
 	count := NewZorkianCount(name, ts, value, tags)
 	assert.Equal(t, count.GetType(), string(Count))
-
 }
 
 func TestDefaultZorkianMetrics(t *testing.T) {

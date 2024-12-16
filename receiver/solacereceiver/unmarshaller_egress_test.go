@@ -3,7 +3,7 @@
 package solacereceiver
 
 import (
-	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/Azure/go-amqp"
@@ -283,9 +283,9 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 			},
 		},
 	}
-	var i = 1
+	i := 1
 	for _, dataRef := range validEgressSpans {
-		name := "valid span " + fmt.Sprint(i)
+		name := "valid span " + strconv.Itoa(i)
 		i++
 		want := dataRef.out
 		spanData := dataRef.in
@@ -331,6 +331,7 @@ func TestEgressUnmarshallerEgressSpan(t *testing.T) {
 func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	// creates a base attribute map that additional data can be added to
 	// does not include outcome or source. Attributes will override all fields in base
+	somePartitionNumber := uint32(123)
 	getSpan := func(attributes map[string]any, name string) ptrace.Span {
 		base := map[string]any{
 			"messaging.system":                  "SolacePubSub+",
@@ -342,6 +343,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			"messaging.solace.client_name":      "someName",
 			"messaging.solace.message_replayed": false,
 			"messaging.solace.send.outcome":     "accepted",
+			"messaging.solace.partition_number": 123,
 		}
 		for key, val := range attributes {
 			base[key] = val
@@ -360,6 +362,7 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 		base.ProtocolVersion = &protocolVersion
 		base.ConsumerClientUsername = "someUser"
 		base.ConsumerClientName = "someName"
+		base.PartitionNumber = &somePartitionNumber
 		return base
 	}
 	tests := []struct {
@@ -478,6 +481,290 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 			actual := ptrace.NewSpan()
 			u.mapSendSpan(spanData, actual)
 			compareSpans(t, expected, actual)
+		})
+	}
+}
+
+func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
+	// creates a base attribute map that additional data can be added to
+	// does not include outcome or source. Attributes will override all fields in base
+	somePartitionNumber := uint32(123)
+	getSpan := func(attributes map[string]any, name string) ptrace.Span {
+		base := map[string]any{
+			"messaging.system":                  "SolacePubSub+",
+			"messaging.operation.name":          "delete",
+			"messaging.operation.type":          "delete",
+			"messaging.solace.partition_number": 123,
+		}
+		for key, val := range attributes {
+			base[key] = val
+		}
+		span := ptrace.NewSpan()
+		err := span.Attributes().FromRaw(base)
+		assert.NoError(t, err)
+		span.SetName(name)
+		span.SetKind(ptrace.SpanKindInternal)
+		return span
+	}
+	// sets the common fields from getAttributes
+	getDeleteSpan := func(base *egress_v1.SpanData_DeleteSpan) *egress_v1.SpanData_DeleteSpan {
+		// just return the base back
+		base.PartitionNumber = &somePartitionNumber
+		return base
+	}
+	tests := []struct {
+		name                        string
+		spanData                    *egress_v1.SpanData_DeleteSpan
+		want                        ptrace.Span
+		expectedUnmarshallingErrors int64
+	}{
+		{
+			name: "With Queue endpoint",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "someQueue",
+				"messaging.solace.destination.type": "queue",
+			}, "someQueue delete"),
+			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
+		},
+		{
+			name: "With Topic Endpoint endpoint",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_TopicEndpointName{
+					TopicEndpointName: "0123456789abcdef0123456789abcdeg",
+				},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "0123456789abcdef0123456789abcdeg",
+				"messaging.solace.destination.type": "topic-endpoint",
+			}, "0123456789abcdef0123456789abcdeg delete"),
+			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
+		},
+		{
+			name: "With Anonymous Queue endpoint",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "#P2P/QTMP/myQueue",
+				},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "#P2P/QTMP/myQueue",
+				"messaging.solace.destination.type": "queue",
+			}, "(anonymous) delete"),
+			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
+		},
+		{
+			name: "With Anonymous Topic Endpoint",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_TopicEndpointName{
+					TopicEndpointName: "0123456789abcdef0123456789abcdef",
+				},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "0123456789abcdef0123456789abcdef",
+				"messaging.solace.destination.type": "topic-endpoint",
+			}, "(anonymous) delete"),
+			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
+		},
+		{
+			name:                        "With Unknown Endpoint",
+			spanData:                    getDeleteSpan(&egress_v1.SpanData_DeleteSpan{}),
+			want:                        getSpan(map[string]any{}, "(unknown) delete"),
+			expectedUnmarshallingErrors: 2,
+		},
+
+		// Tests for the Delete Reason
+		{
+			name: "With Queue endpoint and Ttl Expired reason",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "someQueue",
+				"messaging.solace.destination.type": "queue",
+				"messaging.solace.operation.reason": "ttl_expired",
+			}, "someQueue delete"),
+		},
+		{
+			name: "With Queue endpoint and Rejected Outcome reason",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_RejectedOutcomeInfo{},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "someQueue",
+				"messaging.solace.destination.type": "queue",
+				"messaging.solace.operation.reason": "rejected_nack",
+			}, "someQueue delete"),
+		},
+		{
+			name: "With Queue endpoint and Max Redeliveries Exceeded reason",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_MaxRedeliveriesInfo{},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "someQueue",
+				"messaging.solace.destination.type": "queue",
+				"messaging.solace.operation.reason": "max_redeliveries_exceeded",
+			}, "someQueue delete"),
+		},
+		{
+			name: "With Queue endpoint and Hop Count Exceeded reason",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_HopCountExceededInfo{},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "someQueue",
+				"messaging.solace.destination.type": "queue",
+				"messaging.solace.operation.reason": "hop_count_exceeded",
+			}, "someQueue delete"),
+		},
+		{
+			name: "With Queue endpoint and Ingress Selector reason",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_IngressSelectorInfo{},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":        "someQueue",
+				"messaging.solace.destination.type": "queue",
+				"messaging.solace.operation.reason": "ingress_selector",
+			}, "someQueue delete"),
+		},
+		{
+			name: "With Queue endpoint and Admin reason (through CLI Terminal)",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_AdminActionInfo{
+					AdminActionInfo: &egress_v1.SpanData_AdminActionInfo{
+						Username: "clientId",
+						SessionInfo: &egress_v1.SpanData_AdminActionInfo_CliSessionInfo{
+							CliSessionInfo: &egress_v1.SpanData_CliSessionInfo{
+								SessionNumber: 123456789,
+								Descriptor_: &egress_v1.SpanData_CliSessionInfo_LocalSession{
+									LocalSession: &egress_v1.SpanData_TerminalCliSessionDescriptor{
+										TerminalName: "terminalName",
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":                "someQueue",
+				"messaging.solace.destination.type":         "queue",
+				"messaging.solace.operation.reason":         "admin_action",
+				"messaging.solace.admin.interface":          "cli_terminal",
+				"enduser.id":                                "clientId",
+				"messaging.solace.admin.cli.terminal.name":  "terminalName",
+				"messaging.solace.admin.cli.session_number": 123456789,
+			}, "someQueue delete"),
+		},
+		{
+			name: "With Queue endpoint and Admin reason (through CLI SSH)",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_AdminActionInfo{
+					AdminActionInfo: &egress_v1.SpanData_AdminActionInfo{
+						Username: "clientId",
+						SessionInfo: &egress_v1.SpanData_AdminActionInfo_CliSessionInfo{
+							CliSessionInfo: &egress_v1.SpanData_CliSessionInfo{
+								SessionNumber: 123456789,
+								Descriptor_: &egress_v1.SpanData_CliSessionInfo_RemoteSession{
+									RemoteSession: &egress_v1.SpanData_SshCliSessionDescriptor{
+										PeerIp: []byte{1, 2, 3, 4},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":                "someQueue",
+				"messaging.solace.destination.type":         "queue",
+				"messaging.solace.operation.reason":         "admin_action",
+				"messaging.solace.admin.interface":          "cli_ssh",
+				"enduser.id":                                "clientId",
+				"client.address":                            "1.2.3.4",
+				"messaging.solace.admin.cli.session_number": 123456789,
+			}, "someQueue delete"),
+		},
+		{
+			name: "With Queue endpoint and Admin reason (through SEMP)",
+			spanData: getDeleteSpan(&egress_v1.SpanData_DeleteSpan{
+				EndpointName: &egress_v1.SpanData_DeleteSpan_QueueName{
+					QueueName: "someQueue",
+				},
+				TypeInfo: &egress_v1.SpanData_DeleteSpan_AdminActionInfo{
+					AdminActionInfo: &egress_v1.SpanData_AdminActionInfo{
+						Username: "clientId",
+						SessionInfo: &egress_v1.SpanData_AdminActionInfo_SempSessionInfo{
+							SempSessionInfo: &egress_v1.SpanData_SempSessionInfo{
+								SempVersion: 2,
+								PeerIp:      []byte{0, 1, 2, 3, 4, 5, 6, 7},
+							},
+						},
+					},
+				},
+			}),
+			want: getSpan(map[string]any{
+				"messaging.destination.name":          "someQueue",
+				"messaging.solace.destination.type":   "queue",
+				"messaging.solace.operation.reason":   "admin_action",
+				"messaging.solace.admin.interface":    "semp",
+				"messaging.solace.admin.semp.version": 2,
+				"enduser.id":                          "clientId",
+			}, "someQueue delete"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u, tel := newTestEgressV1Unmarshaller(t)
+			actual := ptrace.NewSpan()
+			u.mapDeleteSpan(tt.spanData, actual)
+			compareSpans(t, tt.want, actual)
+			var expectedMetrics []metricdata.Metrics
+			if tt.expectedUnmarshallingErrors > 0 {
+				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
+					Description: "Number of recoverable message unmarshalling errors",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value:      tt.expectedUnmarshallingErrors,
+								Attributes: u.metricAttrs,
+							},
+						},
+					},
+				})
+			}
+			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 }

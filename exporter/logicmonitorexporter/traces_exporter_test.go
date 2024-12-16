@@ -51,7 +51,7 @@ func TestPushTraceData(t *testing.T) {
 		APIToken: APIToken{AccessID: "testid", AccessKey: "testkey"},
 	}
 	ctx := context.Background()
-	exp, err := f.CreateTracesExporter(ctx, params, config)
+	exp, err := f.CreateTraces(ctx, params, config)
 	assert.NoError(t, err)
 	assert.NoError(t, exp.Start(ctx, componenttest.NewNopHost()))
 	defer func() { assert.NoError(t, exp.Shutdown(ctx)) }()

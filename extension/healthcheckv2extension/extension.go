@@ -16,7 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/http"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 type eventSourcePair struct {
@@ -34,9 +34,11 @@ type healthCheckExtension struct {
 	host          component.Host
 }
 
-var _ component.Component = (*healthCheckExtension)(nil)
-var _ extensioncapabilities.ConfigWatcher = (*healthCheckExtension)(nil)
-var _ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
+var (
+	_ component.Component                   = (*healthCheckExtension)(nil)
+	_ extensioncapabilities.ConfigWatcher   = (*healthCheckExtension)(nil)
+	_ extensioncapabilities.PipelineWatcher = (*healthCheckExtension)(nil)
+)
 
 func newExtension(
 	ctx context.Context,

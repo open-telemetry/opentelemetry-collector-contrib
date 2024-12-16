@@ -63,7 +63,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 }
 
 type getExporters interface {
-	GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component
+	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
@@ -71,7 +71,7 @@ func (p *logProcessor) Start(_ context.Context, host component.Host) error {
 	if !ok {
 		return fmt.Errorf("unable to get exporters")
 	}
-	err := p.router.registerExporters(ge.GetExportersWithSignal()[pipeline.SignalLogs])
+	err := p.router.registerExporters(ge.GetExporters()[pipeline.SignalLogs])
 	if err != nil {
 		return err
 	}

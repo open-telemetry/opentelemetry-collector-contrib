@@ -5,6 +5,7 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pipeline"
 
@@ -12,10 +13,11 @@ import (
 )
 
 var (
-	errEmptyRoute         = errors.New("invalid route: no statement provided")
-	errNoPipelines        = errors.New("invalid route: no pipelines defined")
-	errUnexpectedConsumer = errors.New("expected consumer to be a connector router")
-	errNoTableItems       = errors.New("invalid routing table: the routing table is empty")
+	errNoConditionOrStatement = errors.New("invalid route: no condition or statement provided")
+	errConditionAndStatement  = errors.New("invalid route: both condition and statement provided")
+	errNoPipelines            = errors.New("invalid route: no pipelines defined")
+	errUnexpectedConsumer     = errors.New("expected consumer to be a connector router")
+	errNoTableItems           = errors.New("invalid routing table: the routing table is empty")
 )
 
 // Config defines configuration for the Routing processor.
@@ -55,23 +57,50 @@ func (c *Config) Validate() error {
 	// validate that every route has a value for the routing attribute and has
 	// at least one pipeline
 	for _, item := range c.Table {
-		if len(item.Statement) == 0 {
-			return errEmptyRoute
+		if item.Statement == "" && item.Condition == "" {
+			return errNoConditionOrStatement
 		}
-
+		if item.Statement != "" && item.Condition != "" {
+			return errConditionAndStatement
+		}
 		if len(item.Pipelines) == 0 {
 			return errNoPipelines
 		}
-	}
 
+		switch item.Context {
+		case "", "resource": // ok
+		case "request":
+			if item.Statement != "" || item.Condition == "" {
+				return fmt.Errorf("%q context requires a 'condition'", item.Context)
+			}
+			if _, err := parseRequestCondition(item.Condition); err != nil {
+				return err
+			}
+			fallthrough
+		case "span", "metric", "datapoint", "log": // ok
+			if !c.MatchOnce {
+				return fmt.Errorf(`%q context is not supported with "match_once: false"`, item.Context)
+			}
+		default:
+			return errors.New("invalid context: " + item.Context)
+		}
+	}
 	return nil
 }
 
 // RoutingTableItem specifies how data should be routed to the different pipelines
 type RoutingTableItem struct {
+	// One of "request", "resource", "log" (other OTTL contexts will be added in the future)
+	// Optional. Default "resource".
+	Context string `mapstructure:"context"`
+
 	// Statement is a OTTL statement used for making a routing decision.
-	// Required when 'Value' isn't provided.
+	// One of 'Statement' or 'Condition' must be provided.
 	Statement string `mapstructure:"statement"`
+
+	// Condition is an OTTL condition used for making a routing decision.
+	// One of 'Statement' or 'Condition' must be provided.
+	Condition string `mapstructure:"condition"`
 
 	// Pipelines contains the list of pipelines to use when the value from the FromAttribute field
 	// matches this table item. When no pipelines are specified, the ones specified under

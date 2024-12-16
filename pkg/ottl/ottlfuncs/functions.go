@@ -40,6 +40,8 @@ func converters[K any]() []ottl.Factory[K] {
 		NewDecodeFactory[K](),
 		NewConcatFactory[K](),
 		NewConvertCaseFactory[K](),
+		NewConvertAttributesToElementsXMLFactory[K](),
+		NewConvertTextToElementsXMLFactory[K](),
 		NewDayFactory[K](),
 		NewDoubleFactory[K](),
 		NewDurationFactory[K](),
@@ -71,6 +73,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewParseCSVFactory[K](),
 		NewParseJSONFactory[K](),
 		NewParseKeyValueFactory[K](),
+		NewParseSimplifiedXMLFactory[K](),
 		NewParseXMLFactory[K](),
 		NewRemoveXMLFactory[K](),
 		NewSecondsFactory[K](),
@@ -98,5 +101,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewAppendFactory[K](),
 		NewYearFactory[K](),
 		NewHexFactory[K](),
+		NewSliceToMapFactory[K](),
 	}
 }

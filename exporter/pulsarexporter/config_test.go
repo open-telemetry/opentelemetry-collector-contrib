@@ -110,5 +110,4 @@ func TestClientOptions(t *testing.T) {
 		OperationTimeout:        30 * time.Second,
 		MaxConnectionsPerBroker: 1,
 	}, &options)
-
 }

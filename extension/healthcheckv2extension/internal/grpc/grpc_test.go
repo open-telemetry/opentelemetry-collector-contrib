@@ -22,9 +22,10 @@ import (
 	grpcstatus "google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
+	internalhelpers "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/testhelpers"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status/testhelpers"
 )
 
 func TestCheck(t *testing.T) {
@@ -695,7 +696,7 @@ func TestCheck(t *testing.T) {
 				config,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
+				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
@@ -740,7 +741,6 @@ func TestCheck(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestWatch(t *testing.T) {
@@ -1532,7 +1532,7 @@ func TestWatch(t *testing.T) {
 				config,
 				tc.componentHealthSettings,
 				componenttest.NewNopTelemetrySettings(),
-				status.NewAggregator(testhelpers.ErrPriority(tc.componentHealthSettings)),
+				status.NewAggregator(internalhelpers.ErrPriority(tc.componentHealthSettings)),
 			)
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })

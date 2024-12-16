@@ -216,6 +216,7 @@ func TestGetMetricsDataCpuReservedZero(t *testing.T) {
 	acc.getMetricsData(cstats, tm, logger)
 	require.NotEmpty(t, acc.mds)
 }
+
 func TestIsEmptyStats(t *testing.T) {
 	require.False(t, isEmptyStats(&containerStats))
 	require.True(t, isEmptyStats(cstats["002"]))
@@ -226,7 +227,6 @@ func TestIsEmptyStats(t *testing.T) {
 }
 
 func TestCalculateDuration(t *testing.T) {
-
 	startTime := "2020-10-02T00:15:07.620912337Z"
 	endTime := "2020-10-03T15:14:06.620913372Z"
 	result, err := calculateDuration(startTime, endTime)
@@ -250,5 +250,4 @@ func TestCalculateDuration(t *testing.T) {
 	result, err = calculateDuration(startTime, endTime)
 	require.Error(t, err)
 	require.EqualValues(t, 0, result)
-
 }

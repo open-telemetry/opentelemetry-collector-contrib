@@ -1,30 +1,35 @@
-experimental_metricsgeneration/metric2_zero_add:
+metricsgeneration/metric2_zero_add:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: add
-experimental_metricsgeneration/metric2_zero_subtract:
+      type: calculate
+metricsgeneration/metric2_zero_subtract:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: subtract
-experimental_metricsgeneration/metric2_zero_multiply:
+      type: calculate
+metricsgeneration/metric2_zero_multiply:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: multiply
-experimental_metricsgeneration/metric2_zero_divide:
+      type: calculate
+metricsgeneration/metric2_zero_divide:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: divide
-experimental_metricsgeneration/metric2_zero_percent:
+      type: calculate
+metricsgeneration/metric2_zero_percent:
   rules:
     - name: new_metric
       metric1: capacity.total
       metric2: capacity.used
       operation: percent
+      type: calculate

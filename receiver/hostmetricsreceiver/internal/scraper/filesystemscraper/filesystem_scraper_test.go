@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -30,7 +31,7 @@ func TestScrape(t *testing.T) {
 		name                     string
 		config                   Config
 		rootPath                 string
-		osEnv                    map[string]string
+		osEnv                    map[common.EnvKeyType]string
 		bootTimeFunc             func(context.Context) (uint64, error)
 		partitionsFunc           func(context.Context, bool) ([]disk.PartitionStat, error)
 		usageFunc                func(context.Context, string) (*disk.UsageStat, error)
@@ -198,8 +199,8 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name: "RootPath at /hostfs but HOST_PROC_MOUNTINFO is set",
-			osEnv: map[string]string{
-				"HOST_PROC_MOUNTINFO": "/proc/1/self",
+			osEnv: map[common.EnvKeyType]string{
+				common.HostProcMountinfo: "/proc/1/self",
 			},
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -347,14 +348,51 @@ func TestScrape(t *testing.T) {
 			usageFunc:   func(context.Context, string) (*disk.UsageStat, error) { return nil, errors.New("err2") },
 			expectedErr: "err2",
 		},
+		{
+			name: "Do not report duplicate mount points",
+			config: Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			usageFunc: func(context.Context, string) (*disk.UsageStat, error) {
+				return &disk.UsageStat{
+					Fstype: "fs_type_a",
+				}, nil
+			},
+			partitionsFunc: func(context.Context, bool) ([]disk.PartitionStat, error) {
+				return []disk.PartitionStat{
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+					{
+						Device:     "device_a",
+						Mountpoint: "mount_point_a",
+						Fstype:     "fs_type_a",
+					},
+				}, nil
+			},
+			expectMetrics:            true,
+			expectedDeviceDataPoints: 1,
+			expectedDeviceAttributes: []map[string]pcommon.Value{
+				{
+					"device":     pcommon.NewValueStr("device_a"),
+					"mountpoint": pcommon.NewValueStr("mount_point_a"),
+					"type":       pcommon.NewValueStr("fs_type_a"),
+					"mode":       pcommon.NewValueStr("unknown"),
+				},
+			},
+		},
 	}
 
 	for _, test := range testCases {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
+			envMap := common.EnvMap{}
 			for k, v := range test.osEnv {
-				t.Setenv(k, v)
+				envMap[k] = v
 			}
+			test.config.EnvMap = envMap
 			test.config.SetRootPath(test.rootPath)
 			scraper, err := newFileSystemScraper(context.Background(), receivertest.NewNopSettings(), &test.config)
 			if test.newErrRegex != "" {
@@ -450,7 +488,8 @@ func assertFileSystemUsageMetricValid(
 	t *testing.T,
 	metric pmetric.Metric,
 	expectedDeviceDataPoints int,
-	expectedDeviceAttributes []map[string]pcommon.Value) {
+	expectedDeviceAttributes []map[string]pcommon.Value,
+) {
 	for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 		for _, label := range []string{"device", "type", "mode", "mountpoint"} {
 			internal.AssertSumMetricHasAttribute(t, metric, i, label)

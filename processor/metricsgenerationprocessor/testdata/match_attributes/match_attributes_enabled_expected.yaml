@@ -1,0 +1,216 @@
+resourceMetrics:
+  - resource: {}
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: total capacity
+            name: capacity.total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "3000"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk2
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: used capacity
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "20"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "30"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "50"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk2
+                    - key: encrypted
+                      value:
+                        boolValue: false
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "40"
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk2
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "60"
+                  attributes:
+                    - key: bool_test
+                      value:
+                        boolValue: true
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                    - key: double_test
+                      value:
+                        doubleValue: 200
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                    - key: int_test
+                      value:
+                        intValue: "100"
+                    - key: owner
+                      value:
+                        stringValue: foo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: capacity.used
+            unit: By
+          - name: new_metric
+            sum:
+              dataPoints:
+                - asDouble: 1010
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1020
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 2010
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 2020
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1030
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk4
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1050
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk2
+                    - key: encrypted
+                      value:
+                        boolValue: false
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1040
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk2
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 3010
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk2
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 3040
+                  attributes:
+                    - key: device
+                      value:
+                        stringValue: /dev/disk2
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 1060
+                  attributes:
+                    - key: bool_test
+                      value:
+                        boolValue: true
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                    - key: double_test
+                      value:
+                        doubleValue: 200
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                    - key: int_test
+                      value:
+                        intValue: "100"
+                    - key: owner
+                      value:
+                        stringValue: foo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 2060
+                  attributes:
+                    - key: bool_test
+                      value:
+                        boolValue: true
+                    - key: device
+                      value:
+                        stringValue: /dev/disk1
+                    - key: double_test
+                      value:
+                        doubleValue: 200
+                    - key: encrypted
+                      value:
+                        boolValue: true
+                    - key: int_test
+                      value:
+                        intValue: "100"
+                    - key: owner
+                      value:
+                        stringValue: foo
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper
+          version: latest

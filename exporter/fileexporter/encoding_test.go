@@ -13,13 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/pipeline"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 )
@@ -28,16 +29,8 @@ type hostWithEncoding struct {
 	encodings map[component.ID]component.Component
 }
 
-func (h hostWithEncoding) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithEncoding) GetExtensions() map[component.ID]component.Component {
 	return h.encodings
-}
-
-func (h hostWithEncoding) GetExportersWithSignal() map[pipeline.Signal]map[component.ID]component.Component {
-	panic("unsupported")
 }
 
 func TestEncoding(t *testing.T) {
@@ -50,15 +43,17 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.CreateExtension(context.Background(), extensiontest.NewNopSettings(), efCfg)
+	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(), efCfg)
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	me, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-	te, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-	le, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+	require.NoError(t, err)
+	pe, err := f.(exporterprofiles.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	host := hostWithEncoding{
 		map[component.ID]component.Component{id: ext},
@@ -66,23 +61,26 @@ func TestEncoding(t *testing.T) {
 	require.NoError(t, me.Start(context.Background(), host))
 	require.NoError(t, te.Start(context.Background(), host))
 	require.NoError(t, le.Start(context.Background(), host))
+	require.NoError(t, pe.Start(context.Background(), host))
 	t.Cleanup(func() {
-
 	})
 
 	require.NoError(t, me.ConsumeMetrics(context.Background(), generateMetrics()))
 	require.NoError(t, te.ConsumeTraces(context.Background(), generateTraces()))
 	require.NoError(t, le.ConsumeLogs(context.Background(), generateLogs()))
+	require.NoError(t, pe.ConsumeProfiles(context.Background(), generateProfiles()))
 
 	require.NoError(t, me.Shutdown(context.Background()))
 	require.NoError(t, te.Shutdown(context.Background()))
 	require.NoError(t, le.Shutdown(context.Background()))
+	require.NoError(t, pe.Shutdown(context.Background()))
 
 	b, err := os.ReadFile(cfg.Path)
 	require.NoError(t, err)
 	require.Contains(t, string(b), `{"resourceMetrics":`)
 	require.Contains(t, string(b), `{"resourceSpans":`)
 	require.Contains(t, string(b), `{"resourceLogs":`)
+	require.Contains(t, string(b), `{"resourceProfiles":`)
 }
 
 func generateLogs() plog.Logs {
@@ -93,6 +91,17 @@ func generateLogs() plog.Logs {
 	l.Body().SetStr("test log message")
 	l.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return logs
+}
+
+func generateProfiles() pprofile.Profiles {
+	proflies := pprofile.NewProfiles()
+	rp := proflies.ResourceProfiles().AppendEmpty()
+	rp.Resource().Attributes().PutStr("resource", "R1")
+	p := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
+	p.SetProfileID(pprofile.NewProfileIDEmpty())
+	p.SetStartTime(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
+	p.SetDuration(pcommon.Timestamp(1 * time.Second / time.Nanosecond))
+	return proflies
 }
 
 func generateMetrics() pmetric.Metrics {

@@ -1,4 +1,4 @@
-type: experimental_metricsgeneration
+type: metricsgeneration
 
 status:
   class: processor
