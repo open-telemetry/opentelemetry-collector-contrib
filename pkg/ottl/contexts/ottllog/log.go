@@ -259,18 +259,6 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 		if path.Keys() == nil {
 			return accessAttributes(), nil
 		}
-		// p, err := path.Keys()[0].Path()
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// var subGetter ottl.GetSetter[TransformContext]
-		// if p.Keys() != nil {
-		// 	s, err := pep.parsePath(p)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	subGetter = s
-		// }
 		return accessAttributesKey(path.Keys()), nil
 	case "dropped_attributes_count":
 		return accessDroppedAttributesCount(), nil

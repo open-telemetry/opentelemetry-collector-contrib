@@ -143,11 +143,6 @@ func (g exprGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 			default:
 				return nil, fmt.Errorf("type, %T, does not support int indexing", result)
 			}
-		case k.Path != nil:
-			// getter, err := p.newGetter(k.Path)
-			// if err != nil {
-			// 	return nil, err
-			// }
 		default:
 			return nil, fmt.Errorf("neither map nor slice index were set; this is an error in OTTL")
 		}
