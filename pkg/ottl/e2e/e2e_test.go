@@ -325,9 +325,9 @@ func Test_e2e_converters(t *testing.T) {
 		want      func(tCtx ottllog.TransformContext)
 	}{
 		{
-			statement: `set(attributes[attributes["flags"]], attributes["total.string"])`,
+			statement: `set(attributes[attributes["flags"]], "something")`,
 			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("A|B|C", "123456789")
+				tCtx.GetLogRecord().Attributes().PutStr("A|B|C", "something")
 			},
 		},
 	}

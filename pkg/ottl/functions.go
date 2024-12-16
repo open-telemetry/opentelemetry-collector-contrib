@@ -53,6 +53,9 @@ func buildOriginalKeysText(keys []key) string {
 			if k.String != nil {
 				builder.WriteString(*k.String)
 			}
+			if k.Path != nil {
+				builder.WriteString(buildOriginalText(k.Path))
+			}
 			builder.WriteString("]")
 		}
 	}
@@ -72,10 +75,14 @@ func (p *Parser[K]) newPath(path *path) (*basePath[K], error) {
 	originalText := buildOriginalText(path)
 	var current *basePath[K]
 	for i := len(fields) - 1; i >= 0; i-- {
+		keys, err := p.newKeys(fields[i].Keys)
+		if err != nil {
+			return nil, err
+		}
 		current = &basePath[K]{
 			context:      pathContext,
 			name:         fields[i].Name,
-			keys:         newKeys[K](fields[i].Keys),
+			keys:         keys,
 			nextPath:     current,
 			originalText: originalText,
 		}
@@ -203,18 +210,32 @@ func (p *basePath[K]) isComplete() error {
 	return p.nextPath.isComplete()
 }
 
-func newKeys[K any](keys []key) []Key[K] {
+func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 	if len(keys) == 0 {
-		return nil
+		return nil, nil
 	}
 	ks := make([]Key[K], len(keys))
 	for i := range keys {
+		var par *basePath[K]
+		if keys[i].Path != nil {
+			pp, err := p.newPath(keys[i].Path) // newGetter here
+			if err != nil {
+				return nil, err
+			}
+			// arg, err := p.parsePath()
+			// if err != nil {
+			// 	return nil, err
+			// }
+			par = pp
+		}
 		ks[i] = &baseKey[K]{
 			s: keys[i].String,
 			i: keys[i].Int,
+			p: par,
 		}
+
 	}
-	return ks
+	return ks, nil
 }
 
 // Key represents a chain of keys in an OTTL statement, such as `attributes["foo"]["bar"]`.
@@ -230,6 +251,8 @@ type Key[K any] interface {
 	// If the Key does not have a int value the returned value is nil.
 	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
+
+	Path() (Path[K], error)
 }
 
 var _ Key[any] = &baseKey[any]{}
@@ -237,6 +260,7 @@ var _ Key[any] = &baseKey[any]{}
 type baseKey[K any] struct {
 	s *string
 	i *int64
+	p *basePath[K]
 }
 
 func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -247,7 +271,24 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
 }
 
+func (k *baseKey[K]) Path() (Path[K], error) {
+	var path Path[K]
+	path = k.p
+	return path, nil
+}
+
 func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
+	// path, err := ip.Keys()[0].Path()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// if p != nil {
+	// 	s, err := p.parsePath(path.(*basePath[K]))
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// }
 	g, err := p.pathParser(ip)
 	if err != nil {
 		return nil, err
@@ -490,19 +531,9 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			if err != nil {
 				return nil, err
 			}
+			//tu
 			return arg, nil
 		}
-		// if argVal.ExpressionPath != nil {
-		// 	np, err := p.newPath(argVal.ExpressionPath)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	arg, err := p.parsePath(np)
-		// 	if err != nil {
-		// 		return nil, err
-		// 	}
-		// 	return arg, nil
-		// }
 		return nil, fmt.Errorf("must be a path")
 	case strings.HasPrefix(name, "Getter"):
 		arg, err := p.newGetter(argVal)

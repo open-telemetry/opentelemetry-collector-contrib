@@ -25,7 +25,7 @@ func Test_set(t *testing.T) {
 
 	tests := []struct {
 		name   string
-		setter ottl.Setter[pcommon.Value]
+		setter ottl.GetSetter[pcommon.Value]
 		getter ottl.Getter[pcommon.Value]
 		want   func(pcommon.Value)
 	}{
