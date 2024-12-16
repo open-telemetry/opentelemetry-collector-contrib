@@ -953,6 +953,14 @@ func Test_e2e_converters(t *testing.T) {
 				thing2.PutInt("value", 5)
 			},
 		},
+		{
+			statement: `set(attributes["test"], SliceToMap(attributes["things"], ["name"], ["value"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutInt("foo", 2)
+				m.PutInt("bar", 5)
+			},
+		},
 	}
 
 	for _, tt := range tests {
