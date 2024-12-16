@@ -248,7 +248,11 @@ func TestGetPrometheusConfig(t *testing.T) {
 func TestGetPrometheusConfigWrapper(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = defaultEndpoint
-	clientConfig.TLSSetting = configtls.ClientConfig{
+	clientConfig.TLSSetting = configtls.ClientConfig{}
+
+	clientConfigInsecure := confighttp.NewDefaultClientConfig()
+	clientConfigInsecure.Endpoint = defaultEndpoint
+	clientConfigInsecure.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
 
@@ -276,7 +280,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 						InsecureSkipVerify: true,
 					},
 				},
-				ClientConfig:       clientConfig,
+				ClientConfig:       clientConfigInsecure,
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metric",
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
@@ -319,7 +323,7 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 				httpConfig: httpConfig{
 					TLSEnabled: false,
 				},
-				ClientConfig:       clientConfig,
+				ClientConfig:       clientConfigInsecure,
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metric",
 				Params:             url.Values{"foo": []string{"bar", "foobar"}},
