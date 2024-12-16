@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -21,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/appsignals"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -34,6 +36,8 @@ const (
 	appSignalsMetricNamespace    = "ApplicationSignals"
 	appSignalsLogGroupNamePrefix = "/aws/application-signals/"
 )
+
+var enhancedContainerInsightsEKSPattern = regexp.MustCompile(`^/aws/containerinsights/\S+/performance$`)
 
 type emfExporter struct {
 	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
@@ -64,9 +68,11 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 	}
 
 	var userAgentExtras []string
-	if config.isAppSignalsEnabled() {
-		//TODO(kausyas): Add logic for Enhanced CI
+	if config.IsAppSignalsEnabled() {
 		userAgentExtras = append(userAgentExtras, "AppSignals")
+	}
+	if config.IsEnhancedContainerInsights() && enhancedContainerInsightsEKSPattern.MatchString(config.LogGroupName) {
+		userAgentExtras = append(userAgentExtras, "EnhancedEKSContainerInsights")
 	}
 
 	// create CWLogs client with aws session config
@@ -95,7 +101,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		processResourceLabels: func(map[string]string) {},
 	}
 
-	//TODO(kausyas): Check why this isnt in upstream
+	// TODO(kausyas): Check why this isnt in upstream
 	if config.IsAppSignalsEnabled() {
 		userAgent := appsignals.NewUserAgent()
 		svcStructuredLog.Handlers().Build.PushBackNamed(userAgent.Handler())
@@ -123,7 +129,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		}
 	}
 	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
-	emf.processResourceLabels(labels) //TODO(kausyas): Check why this isnt in upstream
+	emf.processResourceLabels(labels) // TODO(kausyas): Check why this isnt in upstream
 
 	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)

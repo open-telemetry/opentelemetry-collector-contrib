@@ -375,7 +375,7 @@ func TestIsApplicationSignalsEnabled(t *testing.T) {
 				cfg.LogGroupName = tc.logGroupName
 			}
 
-			assert.Equal(t, tc.expectedResult, cfg.isAppSignalsEnabled())
+			assert.Equal(t, tc.expectedResult, cfg.IsAppSignalsEnabled())
 		})
 	}
 }

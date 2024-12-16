@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -484,13 +485,11 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 	metricsMap := make(map[string]any)
 	for _, measurement := range cWMetric.measurements {
 		for _, metric := range measurement.Metrics {
-			metricName, exist := metric["Name"]
-			if exist {
-				v, ok := fieldMap[metricName]
-				if ok {
-					metricsMap[metricName] = v
-					delete(fieldMap, metricName)
-				}
+			metricName := metric.Name
+			v, ok := fieldMap[metricName]
+			if ok {
+				metricsMap[metricName] = v
+				delete(fieldMap, metricName)
 			}
 		}
 	}

@@ -120,7 +120,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			for _, v := range groupedMetrics {
 				assert.Equal(t, len(tc.expectedMetricInfo), len(v.metrics))
 				assert.Equal(t, tc.expectedMetricInfo, v.metrics)
-				assert.Len(t, v.labels, 2)
+				assert.Len(t, v.labels, 1)
 				assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, tc.expectedMetricType), v.metadata)
 				assert.Equal(t, tc.expectedLabels, v.labels)
 			}
@@ -427,18 +427,17 @@ func TestAddToGroupedMetric(t *testing.T) {
 			)
 			assert.NoError(t, err)
 		}
-		assert.Equal(t, 2, len(groupedMetrics))
+		assert.Len(t, groupedMetrics, 2)
 		expectedLabels := map[string]string{"label1": "value1"}
 		idx := 0
 		for _, v := range groupedMetrics {
-			assert.Equal(t, 1, len(v.metrics))
-			assert.Equal(t, 1, len(v.labels))
+			assert.Len(t, v.metrics, 1)
+			assert.Len(t, v.labels, 1)
 			assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(0).Type(), idx), v.metadata)
 			assert.Equal(t, expectedLabels, v.labels)
 			idx++
 		}
 	})
-
 }
 
 func TestAddKubernetesWrapper(t *testing.T) {
