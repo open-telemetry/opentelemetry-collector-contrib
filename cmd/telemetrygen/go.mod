@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetryge
 
 go 1.22.7
 
-toolchain go1.22.8
-
 require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/spf13/cobra v1.8.1
