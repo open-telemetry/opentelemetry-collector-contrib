@@ -13,15 +13,6 @@ resourceMetrics:
         - key: process.executable.path
           value:
             stringValue: /usr/bin/sleep
-        - key: process.owner
-          value:
-            stringValue: neck
-        - key: process.parent_pid
-          value:
-            intValue: "137141"
-        - key: process.pid
-          value:
-            intValue: "137154"
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
