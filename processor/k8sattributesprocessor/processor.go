@@ -230,7 +230,18 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 			return
 		}
 	default:
-		return
+		// if there is only one container in the pod, we can fall back to that container
+		if len(pod.Containers.ByID) == 1 {
+			for _, c := range pod.Containers.ByID {
+				containerSpec = c
+			}
+		} else if len(pod.Containers.ByName) == 1 {
+			for _, c := range pod.Containers.ByName {
+				containerSpec = c
+			}
+		} else {
+			return
+		}
 	}
 	if containerSpec.Name != "" {
 		if _, found := attrs.Get(conventions.AttributeK8SContainerName); !found {

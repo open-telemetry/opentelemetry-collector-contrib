@@ -1264,6 +1264,80 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				conventions.AttributeContainerImageName:       "test/app",
 			},
 		},
+		{
+			name: "fall back to only container",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Name:      "app",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+			},
+			wantAttrs: map[string]any{
+				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				conventions.AttributeK8SContainerName:   "app",
+				conventions.AttributeContainerImageName: "test/app",
+				conventions.AttributeContainerImageTag:  "1.0.1",
+			},
+		},
+		{
+			name: "multiple containers in the pod - do not fall back to any container",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Name:      "app",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+							"app2": {
+								Name:      "app2",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+			},
+			wantAttrs: map[string]any{
+				conventions.AttributeK8SPodUID: "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+			},
+		},
 	}
 
 	for _, tt := range tests {
