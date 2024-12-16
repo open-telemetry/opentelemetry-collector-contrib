@@ -45,9 +45,16 @@ func TestValidate(t *testing.T) {
 			err: ErrUnsetAPIKey.Error(),
 		},
 		{
+			name: "invalid format api::key",
+			cfg: &Config{
+				API: APIConfig{Key: "'aaaaaaa"},
+			},
+			err: ErrAPIKeyFormat.Error(),
+		},
+		{
 			name: "invalid hostname",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				TagsConfig:   TagsConfig{Hostname: "invalid_host"},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -56,7 +63,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "no metadata",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				OnlyMetadata: true,
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -65,7 +72,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping valid",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"old.opentelemetryspan.name": "updated.name"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -73,7 +80,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping empty val",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"oldname": ""}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -82,7 +89,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "span name remapping empty key",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{SpanNameRemappings: map[string]string{"": "newname"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -91,7 +98,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "ignore resources valid",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123]"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -99,7 +106,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "ignore resources missing bracket",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				Traces:       TracesExporterConfig{TracesConfig: TracesConfig{IgnoreResources: []string{"[123"}}},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -108,7 +115,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "invalid histogram settings",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				Metrics: MetricsConfig{
 					HistConfig: HistogramConfig{
 						Mode:             HistogramModeNoBuckets,
@@ -122,7 +129,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "TLS settings are valid",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					TLSSetting: configtls.ClientConfig{
 						InsecureSkipVerify: true,
@@ -134,7 +141,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With trace_buffer",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "aaaaaaa"},
 				Traces:       TracesExporterConfig{TraceBuffer: 10},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 10 * time.Minute},
 			},
@@ -142,7 +149,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With peer_tags",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				Traces: TracesExporterConfig{
 					TracesConfig: TracesConfig{
 						PeerTags: []string{"tag1", "tag2"},
@@ -154,7 +161,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "With confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					ReadBufferSize:      100,
 					WriteBufferSize:     200,
@@ -173,7 +180,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "unsupported confighttp client configs",
 			cfg: &Config{
-				API: APIConfig{Key: "notnull"},
+				API: APIConfig{Key: "aaaaaaa"},
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint:             "endpoint",
 					Compression:          "gzip",
@@ -189,7 +196,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Invalid reporter_period",
 			cfg: &Config{
-				API:          APIConfig{Key: "notnull"},
+				API:          APIConfig{Key: "abcdef0"},
 				HostMetadata: HostMetadataConfig{Enabled: true, ReporterPeriod: 4 * time.Minute},
 			},
 			err: "reporter_period must be 5 minutes or higher",
@@ -199,7 +206,7 @@ func TestValidate(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			err := testInstance.cfg.Validate()
 			if testInstance.err != "" {
-				assert.EqualError(t, err, testInstance.err)
+				assert.ErrorContains(t, err, testInstance.err)
 			} else {
 				assert.NoError(t, err)
 			}
@@ -433,7 +440,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			TracesConfig: TracesConfig{
-				IgnoreResources: []string{},
+				IgnoreResources:        []string{},
+				PeerServiceAggregation: true,
+				PeerTagsAggregation:    true,
+				ComputeStatsBySpanKind: true,
 			},
 		},
 		Logs: LogsConfig{
@@ -503,7 +513,10 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					TracesConfig: TracesConfig{
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
@@ -564,6 +577,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 						SpanNameAsResourceName: true,
 						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 					TraceBuffer: 10,
 				},
@@ -623,7 +639,10 @@ func TestLoadConfig(t *testing.T) {
 							"old_name3": "new_name3",
 							"old_name4": "new_name4",
 						},
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
@@ -649,7 +668,7 @@ func TestLoadConfig(t *testing.T) {
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 				API: APIConfig{
-					Key:              "key",
+					Key:              "abc",
 					Site:             "datadoghq.com",
 					FailOnInvalidKey: false,
 				},
@@ -677,7 +696,10 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					TracesConfig: TracesConfig{
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						ComputeStatsBySpanKind: true,
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
 					},
 				},
 				Logs: LogsConfig{
