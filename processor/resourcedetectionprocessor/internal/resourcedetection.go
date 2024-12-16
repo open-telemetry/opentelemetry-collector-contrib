@@ -12,6 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"go.opentelemetry.io/collector/component"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
@@ -23,6 +27,9 @@ type Detector interface {
 	Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error)
 }
 
+type HandlerProvider interface {
+	ExposeHandlers() *request.Handlers
+}
 type DetectorConfig any
 
 type ResourceDetectorConfig interface {
@@ -114,6 +121,14 @@ func (p *ResourceProvider) Get(ctx context.Context, client *http.Client) (resour
 	})
 
 	return p.detectedResource.resource, p.detectedResource.schemaURL, p.detectedResource.err
+}
+
+func (p *ResourceProvider) ConfigureHandlers(ctx context.Context, host component.Host, middlewareId component.ID) {
+	for _, detector := range p.detectors {
+		if handlerDetector, ok := detector.(HandlerProvider); ok {
+			awsmiddleware.TryConfigure(p.logger, host, middlewareId, awsmiddleware.SDKv1(handlerDetector.ExposeHandlers()))
+		}
+	}
 }
 
 func (p *ResourceProvider) detectResource(ctx context.Context) {

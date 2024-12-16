@@ -4,6 +4,7 @@
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -41,6 +42,10 @@ type Config struct {
 	// If a supplied attribute is not a valid attribute of a supplied detector it will be ignored.
 	// Deprecated: Please use detector's resource_attributes config instead
 	Attributes []string `mapstructure:"attributes"`
+
+	// MiddlewareID is an ID for an extension that can be used to configure the
+	// AWS client.
+	MiddlewareID *component.ID `mapstructure:"middleware,omitempty"`
 }
 
 // DetectorConfig contains user-specified configurations unique to all individual detectors
