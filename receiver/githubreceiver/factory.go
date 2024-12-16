@@ -33,7 +33,7 @@ const (
 
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
-		metadata.Type.String(): &githubscraper.Factory{},
+		githubscraper.TypeStr: &githubscraper.Factory{},
 	}
 
 	errConfigNotValid = errors.New("configuration is not valid for the github receiver")

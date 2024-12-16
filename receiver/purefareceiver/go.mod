@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.115.1-0.20241206185113-3f3e208e71b8
 	go.opentelemetry.io/collector/config/configauth v0.115.1-0.20241206185113-3f3e208e71b8
 	go.opentelemetry.io/collector/config/confighttp v0.115.1-0.20241206185113-3f3e208e71b8
+	go.opentelemetry.io/collector/config/configtls v1.21.1-0.20241206185113-3f3e208e71b8
 	go.opentelemetry.io/collector/confmap v1.21.1-0.20241206185113-3f3e208e71b8
 	go.opentelemetry.io/collector/consumer v1.21.1-0.20241206185113-3f3e208e71b8
 	go.opentelemetry.io/collector/consumer/consumertest v0.115.1-0.20241206185113-3f3e208e71b8
@@ -144,7 +145,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.21.1-0.20241206185113-3f3e208e71b8 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.21.1-0.20241206185113-3f3e208e71b8 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.1-0.20241206185113-3f3e208e71b8 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.21.1-0.20241206185113-3f3e208e71b8 // indirect
 	go.opentelemetry.io/collector/config/internal v0.115.1-0.20241206185113-3f3e208e71b8 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.1-0.20241206185113-3f3e208e71b8 // indirect
 	go.opentelemetry.io/collector/consumer/consumerprofiles v0.115.1-0.20241206185113-3f3e208e71b8 // indirect
@@ -163,7 +163,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.30.0 // indirect
+	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.32.0 // indirect
