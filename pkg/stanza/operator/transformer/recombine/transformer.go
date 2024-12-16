@@ -95,11 +95,7 @@ func (t *Transformer) Stop() error {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs []error
-	for i := range entries {
-		errs = append(errs, t.Process(ctx, entries[i]))
-	}
-	return errors.Join(errs...)
+	return t.ProcessBatchWith(ctx, entries, t.Process)
 }
 
 func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {

@@ -5,7 +5,6 @@ package copy // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -20,11 +19,7 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs []error
-	for i := range entries {
-		errs = append(errs, t.Process(ctx, entries[i]))
-	}
-	return errors.Join(errs...)
+	return t.ProcessBatchWith(ctx, entries, t.Process)
 }
 
 // Process will process an entry with a copy transformation.
