@@ -1,0 +1,60 @@
+type: hostmetricsreceiver/groupprocess
+
+parent: hostmetrics
+
+sem_conv_version: 1.9.0
+
+resource_attributes:
+  group.name:
+    enabled: true
+    description: "Name of the process"
+    type: string
+
+attributes:
+  state:
+    description: Breakdown of CPU usage by type.
+    type: string
+    enum: [system, user, wait, total]
+
+metrics:
+  process.count:
+    enabled: true
+    description: "Total number of processes"
+    unit: "count"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  process.threads:
+    enabled: true
+    description: "Total number of threads"
+    unit: "count"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  process.cpu.percent:
+    enabled: true
+    description: "Total CPU percent used by the process"
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: [state]
+
+  process.memory.percent:
+    enabled: true
+    description: "Total memory percent used by the process"
+    unit: "%"
+    gauge:
+      value_type: double
+
+  process.open_file_descriptors:
+    enabled: true
+    description: "Total number of open file descriptors"
+    unit: "count"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false

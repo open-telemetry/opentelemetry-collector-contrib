@@ -298,6 +298,13 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
+ubuntu-component: check-component
+	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
+	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
+
+ubuntu-otelcontribcol:
+	COMPONENT=otelcontribcol $(MAKE) ubuntu-component
+
 .PHONY: docker-ubuntu-component # Not intended to be used directly
 docker-ubuntu-component: check-component
 	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)

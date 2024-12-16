@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/groupprocessscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/memoryscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
@@ -37,16 +38,17 @@ const (
 // This file implements Factory for HostMetrics receiver.
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
-		cpuscraper.TypeStr:        &cpuscraper.Factory{},
-		diskscraper.TypeStr:       &diskscraper.Factory{},
-		loadscraper.TypeStr:       &loadscraper.Factory{},
-		filesystemscraper.TypeStr: &filesystemscraper.Factory{},
-		memoryscraper.TypeStr:     &memoryscraper.Factory{},
-		networkscraper.TypeStr:    &networkscraper.Factory{},
-		pagingscraper.TypeStr:     &pagingscraper.Factory{},
-		processesscraper.TypeStr:  &processesscraper.Factory{},
-		processscraper.TypeStr:    &processscraper.Factory{},
-		systemscraper.TypeStr:     &systemscraper.Factory{},
+		cpuscraper.TypeStr:          &cpuscraper.Factory{},
+		diskscraper.TypeStr:         &diskscraper.Factory{},
+		loadscraper.TypeStr:         &loadscraper.Factory{},
+		filesystemscraper.TypeStr:   &filesystemscraper.Factory{},
+		memoryscraper.TypeStr:       &memoryscraper.Factory{},
+		networkscraper.TypeStr:      &networkscraper.Factory{},
+		pagingscraper.TypeStr:       &pagingscraper.Factory{},
+		processesscraper.TypeStr:    &processesscraper.Factory{},
+		processscraper.TypeStr:      &processscraper.Factory{},
+		systemscraper.TypeStr:       &systemscraper.Factory{},
+		groupprocessscraper.TypeStr: &groupprocessscraper.Factory{},
 	}
 )
 

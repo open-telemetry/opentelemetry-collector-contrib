@@ -38,18 +38,19 @@ hostmetrics:
 
 The available scrapers are:
 
-| Scraper      | Supported OSs                | Description                                            |
-| ------------ | ---------------------------- | ------------------------------------------------------ |
-| [cpu]        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
-| [disk]       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
-| [load]       | All                          | CPU load metrics                                       |
-| [filesystem] | All                          | File System utilization metrics                        |
-| [memory]     | All                          | Memory utilization metrics                             |
-| [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
-| [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
-| [processes]  | Linux, Mac                   | Process count metrics                                  |
-| [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
-| [system]     | Linux, Windows, Mac          | Miscellaneous system metrics                           |
+| Scraper        | Supported OSs                | Description                                                                                 |
+|----------------| ---------------------------- |---------------------------------------------------------------------------------------------|
+| [cpu]          | All except Mac<sup>[1]</sup> | CPU utilization metrics                                                                     |
+| [disk]         | All except Mac<sup>[1]</sup> | Disk I/O metrics                                                                            |
+| [load]         | All                          | CPU load metrics                                                                            |
+| [filesystem]   | All                          | File System utilization metrics                                                             |
+| [memory]       | All                          | Memory utilization metrics                                                                  |
+| [network]      | All                          | Network interface I/O metrics & TCP connection metrics                                      |
+| [paging]       | All                          | Paging/Swap space utilization and I/O metrics                                               |
+| [processes]    | Linux, Mac                   | Process count metrics                                                                       |
+| [process]      | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics                                               |
+| [system]       | Linux, Windows, Mac          | Miscellaneous system metrics                                                                |
+| [groupprocess] | Linux, Windows, Mac          | Aggregated metrics of all processes of group - CPU, Memory, Threads, Open FD, Process Count |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
 [disk]: ./internal/scraper/diskscraper/documentation.md
@@ -61,6 +62,7 @@ The available scrapers are:
 [processes]: ./internal/scraper/processesscraper/documentation.md
 [process]: ./internal/scraper/processscraper/documentation.md
 [system]: ./internal/scraper/systemscraper/documentation.md
+[groupprocess]: ./internal/scraper/groupprocessscraper/documentation.md
 
 ### Notes
 
@@ -133,6 +135,36 @@ The following settings are optional:
 - `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only). This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+
+### GroupProcess
+The `groupprocessscraper` collects metrics for groups of processes based on user given regex configurations. This allows for more granular monitoring of specific sets of processes.
+
+```yaml
+receivers:
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      groupprocess:
+        process_configs:
+          - group_name: "kube_process"
+            comm:
+              names:
+                - "kube-proxy"
+              match_type: "strict"
+            exe:
+              names:
+                - "/usr/local/bin/kube-proxy"
+              match_type: "strict"
+            cmdline:
+              names:
+                - "--config=/var/lib/kube-proxy/config.conf"
+              match_type: "regexp"
+```
+In this example, the groupprocessscraper is configured to scrape metrics for processes that match the specified comm, exe, and cmdline criteria. The group_name is used to identify the group of processes being monitored.
+For `comm` and `exe`, the list of strings is an `OR`, meaning any process matching any of the strings will be added to the process group.
+For `cmdline`, the list of regexes is an `AND`, meaning they all must match. <br />
+
+**Note:** If more than one out of `comm`, `exe` and `cmdline` selectors are given then all of them has to match. If a process matches to one group, the same process will not be part of other groups.
 
 ## Advanced Configuration
 
