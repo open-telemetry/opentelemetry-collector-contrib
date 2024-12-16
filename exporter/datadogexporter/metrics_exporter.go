@@ -158,6 +158,9 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	// We must read the full response body from the http request to ensure that connections can be
 	// properly re-used. https://pkg.go.dev/net/http#Client.Do
 	_, err = io.Copy(io.Discard, resp.Body)
+	if err != nil {
+		return clientutil.WrapError(fmt.Errorf("failed to read response body from sketches HTTP request: %w", err), resp)
+	}
 
 	if resp.StatusCode >= 400 {
 		return clientutil.WrapError(fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status), resp)
