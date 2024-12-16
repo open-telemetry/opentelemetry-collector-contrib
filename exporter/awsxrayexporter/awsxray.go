@@ -44,17 +44,10 @@ func newTracesExporter(
 	typeLog := zap.String("type", set.ID.Type().String())
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
-	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &cfg.AWSSessionSettings)
-	if err != nil {
-		return nil, err
-	}
-	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
-	sender := telemetry.NewNopSender()
-	if cfg.TelemetryConfig.Enabled {
-		opts := telemetry.ToOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
-		opts = append(opts, telemetry.WithLogger(set.Logger))
-		sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
-	}
+
+	var xrayClient awsxray.XRayClient
+	var sender telemetry.Sender = telemetry.NewNopSender()
+
 	return exporterhelper.NewTracesExporter(
 		context.TODO(),
 		set,
@@ -99,7 +92,19 @@ func newTracesExporter(
 			}
 			return err
 		},
-		exporterhelper.WithStart(func(_ context.Context, host component.Host) error {
+		exporterhelper.WithStart(func(ctx context.Context, host component.Host) error {
+			awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &cfg.AWSSessionSettings)
+			if err != nil {
+				return err
+			}
+			xrayClient = awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
+
+			if cfg.TelemetryConfig.Enabled {
+				opts := telemetry.ToOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
+				opts = append(opts, telemetry.WithLogger(set.Logger))
+				sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
+			}
+
 			sender.Start()
 			if cfg.MiddlewareID != nil {
 				awsmiddleware.TryConfigure(logger, host, *cfg.MiddlewareID, awsmiddleware.SDKv1(xrayClient.Handlers()))

@@ -206,6 +206,14 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
+type mockHost struct {
+	component.Host
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
 func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	t.Helper()
 	mconn := new(awsutil.Conn)
@@ -213,9 +221,12 @@ func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry tel
 	if err != nil {
 		panic(err)
 	}
+	err = traceExporter.Start(context.Background(), &mockHost{})
+	if err != nil {
+		panic(err)
+	}
 	return traceExporter
 }
-
 func generateConfig(t testing.TB) *Config {
 	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")

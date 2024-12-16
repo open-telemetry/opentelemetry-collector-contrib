@@ -255,6 +255,11 @@ func (p *logPusher) pushEventBatch(req any) error {
 	// The log events in the batch must be in chronological ordered by their
 	// timestamp (the time the event occurred, expressed as the number of milliseconds
 	// since Jan 1, 1970 00:00:00 UTC).
+	if p.logger == nil {
+		// If logger is nil, create a no-op logger or return an error
+		return errors.New("logger is not initialized")
+	}
+
 	logEventBatch := req.(*eventBatch)
 	logEventBatch.sortLogEvents()
 	putLogEventsInput := logEventBatch.putLogEventsInput
