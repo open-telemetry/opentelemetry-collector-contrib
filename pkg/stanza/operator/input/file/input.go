@@ -55,30 +55,25 @@ func (i *Input) emitBatch(ctx context.Context, tokens []emit.Token) error {
 func (i *Input) convertTokens(tokens []emit.Token) ([]*entry.Entry, error) {
 	entries := make([]*entry.Entry, 0, len(tokens))
 	var errs []error
+
 	for _, token := range tokens {
 		if len(token.Body) == 0 {
 			continue
 		}
-		entry, err := i.convertToken(token)
+
+		ent, err := i.NewEntry(i.toBody(token.Body))
 		if err != nil {
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("create entry: %w", err))
 			continue
 		}
-		entries = append(entries, entry)
+
+		for k, v := range token.Attributes {
+			if err := ent.Set(entry.NewAttributeField(k), v); err != nil {
+				i.Logger().Error("set attribute", zap.Error(err))
+			}
+		}
+
+		entries = append(entries, ent)
 	}
 	return entries, errors.Join(errs...)
-}
-
-func (i *Input) convertToken(token emit.Token) (*entry.Entry, error) {
-	ent, err := i.NewEntry(i.toBody(token.Body))
-	if err != nil {
-		return nil, fmt.Errorf("create entry: %w", err)
-	}
-
-	for k, v := range token.Attributes {
-		if err := ent.Set(entry.NewAttributeField(k), v); err != nil {
-			i.Logger().Error("set attribute", zap.Error(err))
-		}
-	}
-	return ent, nil
 }
