@@ -105,8 +105,8 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
-	t.Helper()
+func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
+	tb.Helper()
 	mconn := new(awsutil.Conn)
 	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
 	if err != nil {
@@ -115,11 +115,11 @@ func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry tel
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) *Config {
-	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
-	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
-	t.Setenv("AWS_REGION", "us-east-1")
+func generateConfig(tb testing.TB) *Config {
+	tb.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
+	tb.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
+	tb.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	tb.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
 	exporterConfig := factory.CreateDefaultConfig().(*Config)
 	exporterConfig.Region = "us-east-1"
