@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -177,7 +177,7 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles xconsumer.Profiles) (receiverprofiles.Profiles, error) {
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	cfg := configuration.(*Config)
 	opts := make([]fileconsumer.Option, 0)

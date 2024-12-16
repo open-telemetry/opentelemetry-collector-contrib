@@ -30,6 +30,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles v0.115.1-0.20241216091623-8ac40a01a5ff
 	go.opentelemetry.io/collector/processor/processorprofiles v0.115.1-0.20241216091623-8ac40a01a5ff
 	go.opentelemetry.io/collector/processor/processortest v0.115.1-0.20241216091623-8ac40a01a5ff
+	go.opentelemetry.io/collector/processor/xprocessor v0.0.0-20241215143820-6147243aaaa1
 	go.opentelemetry.io/collector/semconv v0.115.1-0.20241216091623-8ac40a01a5ff
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -125,7 +126,6 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
 	go.opentelemetry.io/collector/pipeline v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.0.0-20241215143820-6147243aaaa1 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.0.0-20241215143820-6147243aaaa1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.30.0 // indirect
