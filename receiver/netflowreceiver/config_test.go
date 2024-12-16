@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 				Port:      2055,
 				Sockets:   1,
 				Workers:   1,
-				QueueSize: 1000000,
+				QueueSize: 1000,
 			},
 		},
 	}
