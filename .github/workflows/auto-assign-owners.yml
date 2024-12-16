@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   add-owner:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: run

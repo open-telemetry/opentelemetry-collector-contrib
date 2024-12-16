@@ -20,7 +20,9 @@ import (
 )
 
 type FileLogWriter struct {
-	file *os.File
+	file    *os.File
+	retry   string
+	storage string
 }
 
 // Ensure FileLogWriter implements LogDataSender.
@@ -38,6 +40,16 @@ func NewFileLogWriter() *FileLogWriter {
 		file: file,
 	}
 
+	return f
+}
+
+func (f *FileLogWriter) WithRetry(retry string) *FileLogWriter {
+	f.retry = retry
+	return f
+}
+
+func (f *FileLogWriter) WithStorage(storage string) *FileLogWriter {
+	f.storage = storage
 	return f
 }
 
@@ -122,7 +134,9 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
           layout: '%%Y-%%m-%%d'
         severity:
           parse_from: attributes.sev
-`, f.file.Name())
+    %s
+    %s
+`, f.file.Name(), f.retry, f.storage)
 }
 
 func (f *FileLogWriter) ProtocolName() string {

@@ -10,13 +10,12 @@ import (
 	"testing"
 
 	"github.com/jaegertracing/jaeger/model"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTransformToLogzioSpanBytes(tester *testing.T) {
 	inStr, err := os.ReadFile("./testdata/span.json")
-	if err != nil {
-		tester.Fatalf("error opening sample span file %s", err.Error())
-	}
+	require.NoError(tester, err, "error opening sample span file")
 
 	var span model.Span
 	err = json.Unmarshal(inStr, &span)
@@ -24,14 +23,10 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 		fmt.Println("json.Unmarshal")
 	}
 	newSpan, err := transformToLogzioSpanBytes(&span)
-	if err != nil {
-		tester.Fatal(err.Error())
-	}
+	require.NoError(tester, err)
 	m := make(map[string]any)
 	err = json.Unmarshal(newSpan, &m)
-	if err != nil {
-		tester.Fatal(err.Error())
-	}
+	require.NoError(tester, err)
 	if _, ok := m["JaegerTag"]; !ok {
 		tester.Error("error converting span to logzioSpan, JaegerTag is not found")
 	}
@@ -39,25 +34,17 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 
 func TestTransformToDbModelSpan(tester *testing.T) {
 	inStr, err := os.ReadFile("./testdata/span.json")
-	if err != nil {
-		tester.Fatalf("error opening sample span file %s", err.Error())
-	}
+	require.NoError(tester, err, "error opening sample span file")
 	var span model.Span
 	err = json.Unmarshal(inStr, &span)
 	if err != nil {
 		fmt.Println("json.Unmarshal")
 	}
 	newSpan, err := transformToLogzioSpanBytes(&span)
-	if err != nil {
-		tester.Fatal(err.Error())
-	}
+	require.NoError(tester, err)
 	var testLogzioSpan logzioSpan
 	err = json.Unmarshal(newSpan, &testLogzioSpan)
-	if err != nil {
-		tester.Fatal(err.Error())
-	}
+	require.NoError(tester, err)
 	dbModelSpan := testLogzioSpan.transformToDbModelSpan()
-	if len(dbModelSpan.References) != 3 {
-		tester.Fatalf("Error converting logzio span to dbmodel span")
-	}
+	require.Len(tester, dbModelSpan.References, 3, "Error converting logzio span to dbmodel span")
 }
