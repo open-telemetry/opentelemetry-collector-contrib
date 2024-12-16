@@ -13,7 +13,6 @@ import (
 )
 
 func TestProduce(t *testing.T) {
-
 	// list of netflow.DataFlowSet
 	message := &netflow.NFv9Packet{
 		Version:        9,
@@ -29,14 +28,15 @@ func TestProduce(t *testing.T) {
 					Length: 1372,
 				},
 				Records: []netflow.DataRecord{
-					{Values: []netflow.DataField{
-						{
-							PenProvided: false,
-							Type:        2,
-							Pen:         0,
-							Value:       []uint8{0x00, 0x00, 0x00, 0x01},
+					{
+						Values: []netflow.DataField{
+							{
+								PenProvided: false,
+								Type:        2,
+								Pen:         0,
+								Value:       []uint8{0x00, 0x00, 0x00, 0x01},
+							},
 						},
-					},
 					},
 				},
 			},
@@ -62,5 +62,4 @@ func TestProduce(t *testing.T) {
 	assert.Equal(t, uint64(1), pm.Packets)
 	assert.Equal(t, uint32(256), pm.ObservationDomainId)
 	assert.Equal(t, uint32(838987416), pm.SequenceNum)
-
 }
