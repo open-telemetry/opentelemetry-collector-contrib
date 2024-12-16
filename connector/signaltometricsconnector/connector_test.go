@@ -312,9 +312,9 @@ func telemetryResource(t *testing.T) pcommon.Resource {
 	return r
 }
 
-func assertAggregatedMetrics(t *testing.T, expected, actual pmetric.Metrics) bool {
+func assertAggregatedMetrics(t *testing.T, expected, actual pmetric.Metrics) {
 	t.Helper()
-	return assert.NoError(t, pmetrictest.CompareMetrics(
+	assert.NoError(t, pmetrictest.CompareMetrics(
 		expected, actual,
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),

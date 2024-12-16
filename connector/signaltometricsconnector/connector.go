@@ -63,7 +63,7 @@ func (sm *signalToMetrics) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 						continue
 					}
 
-					// The transform context is created from orginal attributes so that the
+					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottlspan.NewTransformContext(span, scopeSpan.Scope(), resourceSpan.Resource(), scopeSpan, resourceSpan)
 					if md.Conditions != nil {
@@ -108,7 +108,7 @@ func (sm *signalToMetrics) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 				for _, md := range sm.dpMetricDefs {
 					filteredResAttrs := md.FilterResourceAttributes(resourceAttrs)
 					aggregate := func(dp any, dpAttrs pcommon.Map) error {
-						// The transform context is created from orginal attributes so that the
+						// The transform context is created from original attributes so that the
 						// OTTL expressions are also applied on the original attributes.
 						tCtx := ottldatapoint.NewTransformContext(dp, metric, metrics, scopeMetric.Scope(), resourceMetric.Resource(), scopeMetric, resourceMetric)
 						if md.Conditions != nil {
@@ -211,7 +211,7 @@ func (sm *signalToMetrics) ConsumeLogs(ctx context.Context, logs plog.Logs) erro
 						continue
 					}
 
-					// The transform context is created from orginal attributes so that the
+					// The transform context is created from original attributes so that the
 					// OTTL expressions are also applied on the original attributes.
 					tCtx := ottllog.NewTransformContext(log, scopeLog.Scope(), resourceLog.Resource(), scopeLog, resourceLog)
 					if md.Conditions != nil {
