@@ -151,6 +151,20 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	meta[conventions.AttributeK8SNodeName] = node.Name
 	meta[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
+	kubeletConditions := map[corev1.NodeConditionType]struct{}{
+		corev1.NodeReady:              {},
+		corev1.NodeMemoryPressure:     {},
+		corev1.NodeDiskPressure:       {},
+		corev1.NodePIDPressure:        {},
+		corev1.NodeNetworkUnavailable: {},
+	}
+
+	for _, c := range node.Status.Conditions {
+		if _, ok := kubeletConditions[c.Type]; ok {
+			meta[fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(string(c.Type)))] = strings.ToLower(string(c.Status))
+		}
+	}
+
 	nodeID := experimentalmetricmetadata.ResourceID(node.UID)
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		nodeID: {

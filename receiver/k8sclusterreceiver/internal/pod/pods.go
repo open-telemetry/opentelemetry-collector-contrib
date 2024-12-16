@@ -30,6 +30,8 @@ import (
 const (
 	// Keys for pod metadata.
 	podCreationTime = "pod.creation_timestamp"
+	podPhase        = "k8s.pod.phase"
+	podStatusReason = "k8s.pod.status_reason"
 )
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -126,6 +128,15 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	meta := maps.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	meta[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
+	phase := pod.Status.Phase
+	if phase == "" {
+		phase = corev1.PodUnknown
+	}
+	meta[podPhase] = string(phase)
+	reason := pod.Status.Reason
+	if reason != "" {
+		meta[podStatusReason] = reason
+	}
 
 	for _, or := range pod.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
