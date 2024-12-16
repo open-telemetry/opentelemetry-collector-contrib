@@ -5,7 +5,6 @@ package time // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -18,11 +17,7 @@ type Parser struct {
 }
 
 func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs []error
-	for i := range entries {
-		errs = append(errs, p.Process(ctx, entries[i]))
-	}
-	return errors.Join(errs...)
+	return p.ProcessBatchWith(ctx, entries, p.Process)
 }
 
 // Process will parse time from an entry.
