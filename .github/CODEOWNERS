@@ -132,7 +132,6 @@ internal/filter/                                  @open-telemetry/collector-cont
 internal/grpcutil/                                @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
 internal/k8sconfig/                               @open-telemetry/collector-contrib-approvers @dmitryax
 internal/k8stest/                                 @open-telemetry/collector-contrib-approvers @crobert-1
-internal/kafka/                                   @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 internal/kubelet/                                 @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                       @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/otelarrow/                               @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
@@ -148,6 +147,7 @@ pkg/batchpersignal/                               @open-telemetry/collector-cont
 pkg/datadog/                                      @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96 @jade-guiton-dd
 pkg/experimentalmetricmetadata/                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/golden/                                       @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
+pkg/kafka/                                        @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 pkg/kafka/topic/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 pkg/ottl/                                         @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                    @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146

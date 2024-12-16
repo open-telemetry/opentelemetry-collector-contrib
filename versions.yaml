@@ -131,7 +131,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil

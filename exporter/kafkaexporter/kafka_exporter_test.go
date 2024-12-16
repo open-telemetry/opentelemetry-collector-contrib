@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 )
 
