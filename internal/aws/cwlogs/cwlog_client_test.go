@@ -552,6 +552,7 @@ func TestLogUnknownError(t *testing.T) {
 
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
+	expectedComponentName := "mockComponentName"
 	tests := []struct {
 		name                 string
 		buildInfo            component.BuildInfo

@@ -26,10 +26,7 @@ const (
 	errCodeThrottlingException = "ThrottlingException"
 )
 
-var (
-	containerInsightsRegexPattern       = regexp.MustCompile(`^/aws/.*containerinsights/.*/(performance|prometheus)$`)
-	enhancedContainerInsightsEKSPattern = regexp.MustCompile(`^/aws/containerinsights/\S+/performance$`)
-)
+var containerInsightsRegexPattern = regexp.MustCompile(`^/aws/.*containerinsights/.*/(performance|prometheus)$`)
 
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
