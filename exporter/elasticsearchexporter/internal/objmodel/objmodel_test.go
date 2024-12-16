@@ -379,6 +379,7 @@ func TestValue_Serialize(t *testing.T) {
 		"bool value: true":   {value: BoolValue(true), want: "true"},
 		"bool value: false":  {value: BoolValue(false), want: "false"},
 		"int value":          {value: IntValue(42), want: "42"},
+		"uint value":         {value: UIntValue(42), want: "42"},
 		"double value: 3.14": {value: DoubleValue(3.14), want: "3.14"},
 		"double value: 1.0":  {value: DoubleValue(1.0), want: "1.0"},
 		"NaN is undefined":   {value: DoubleValue(math.NaN()), want: "null"},
