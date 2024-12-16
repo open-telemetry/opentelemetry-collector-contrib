@@ -416,6 +416,7 @@ func TestTransform(t *testing.T) {
 		},
 		Status: corev1.PodStatus{
 			Phase:     corev1.PodRunning,
+			Reason:    "Evicted",
 			HostIP:    "192.168.1.100",
 			PodIP:     "10.244.0.5",
 			StartTime: &v1.Time{Time: v1.Now().Add(-5 * time.Minute)},
@@ -464,7 +465,8 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		Status: corev1.PodStatus{
-			Phase: corev1.PodRunning,
+			Phase:  corev1.PodRunning,
+			Reason: "Evicted",
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
 					Name:         "my-container",

@@ -45,6 +45,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 		Status: corev1.PodStatus{
 			Phase:    pod.Status.Phase,
 			QOSClass: pod.Status.QOSClass,
+			Reason:   pod.Status.Reason,
 		},
 	}
 	for _, cs := range pod.Status.ContainerStatuses {
