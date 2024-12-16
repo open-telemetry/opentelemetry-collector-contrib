@@ -385,7 +385,10 @@ func TestMemoryLimiterHit(t *testing.T) {
 		{
 			name: "filelog",
 			sender: func() testbed.DataSender {
-				return datasenders.NewFileLogWriter()
+				return datasenders.NewFileLogWriter().WithRetry(`
+    retry_on_failure:
+      enabled: true
+`)
 			},
 		},
 	}

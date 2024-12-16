@@ -122,8 +122,6 @@ func (f *FileLogWriter) GenConfigYAMLStr() string {
 	// We are testing stanza receiver here.
 	return fmt.Sprintf(`
   filelog:
-    retry_on_failure:
-      enabled: true
     include: [ %s ]
     start_at: beginning
     operators:
