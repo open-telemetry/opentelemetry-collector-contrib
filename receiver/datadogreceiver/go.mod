@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.22.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.136
+	github.com/DataDog/agent-payload/v5 v5.0.137
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.59.0
 	github.com/DataDog/datadog-agent/pkg/proto v0.59.0
 	github.com/DataDog/datadog-agent/pkg/trace v0.59.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.31.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.33.0
 	github.com/DataDog/sketches-go v1.4.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.115.0
@@ -105,8 +105,8 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.68.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

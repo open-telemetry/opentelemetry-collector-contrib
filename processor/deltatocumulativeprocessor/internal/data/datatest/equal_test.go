@@ -15,12 +15,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
-var t testing.TB = fakeT{}
+var tb testing.TB = fakeT{}
 
-var datatest = struct{ New func(t testing.TB) T }{New: New}
+var datatest = struct{ New func(tb testing.TB) T }{New: New}
 
 func ExampleT_Equal() {
-	is := datatest.New(t)
+	is := datatest.New(tb)
 
 	want := expotest.Histogram{
 		PosNeg: expotest.Observe(expo.Scale(0), 1, 2, 3, 4),

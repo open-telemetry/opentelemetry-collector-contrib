@@ -25,7 +25,7 @@ type portpair struct {
 // describing it. The port is available for opening when this function returns
 // provided that there is no race by some other code to grab the same port
 // immediately.
-func GetAvailableLocalAddress(t testing.TB) string {
+func GetAvailableLocalAddress(tb testing.TB) string {
 	// Retry has been added for windows as net.Listen can return a port that is not actually available. Details can be
 	// found in https://github.com/docker/for-win/issues/3171 but to summarize Hyper-V will reserve ranges of ports
 	// which do not show up under the "netstat -ano" but can only be found by
@@ -34,14 +34,14 @@ func GetAvailableLocalAddress(t testing.TB) string {
 	var exclusions []portpair
 	portFound := false
 	if runtime.GOOS == "windows" {
-		exclusions = getExclusionsList(t)
+		exclusions = getExclusionsList(tb)
 	}
 
 	var endpoint string
 	for !portFound {
-		endpoint = findAvailableAddress(t)
+		endpoint = findAvailableAddress(tb)
 		_, port, err := net.SplitHostPort(endpoint)
-		require.NoError(t, err)
+		require.NoError(tb, err)
 		portFound = true
 		if runtime.GOOS == "windows" {
 			for _, pair := range exclusions {
@@ -56,44 +56,44 @@ func GetAvailableLocalAddress(t testing.TB) string {
 	return endpoint
 }
 
-func findAvailableAddress(t testing.TB) string {
+func findAvailableAddress(tb testing.TB) string {
 	ln, err := net.Listen("tcp", "localhost:0")
-	require.NoError(t, err, "Failed to get a free local port")
+	require.NoError(tb, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
 	defer func() {
-		assert.NoError(t, ln.Close())
+		assert.NoError(tb, ln.Close())
 	}()
 	return ln.Addr().String()
 }
 
 // Get excluded ports on Windows from the command: netsh interface ipv4 show excludedportrange protocol=tcp
-func getExclusionsList(t testing.TB) []portpair {
+func getExclusionsList(tb testing.TB) []portpair {
 	cmdTCP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
 	outputTCP, errTCP := cmdTCP.CombinedOutput()
-	require.NoError(t, errTCP)
-	exclusions := createExclusionsList(string(outputTCP), t)
+	require.NoError(tb, errTCP)
+	exclusions := createExclusionsList(tb, string(outputTCP))
 
 	cmdUDP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=udp")
 	outputUDP, errUDP := cmdUDP.CombinedOutput()
-	require.NoError(t, errUDP)
-	exclusions = append(exclusions, createExclusionsList(string(outputUDP), t)...)
+	require.NoError(tb, errUDP)
+	exclusions = append(exclusions, createExclusionsList(tb, string(outputUDP))...)
 
 	return exclusions
 }
 
-func createExclusionsList(exclusionsText string, t testing.TB) []portpair {
+func createExclusionsList(tb testing.TB, exclusionsText string) []portpair {
 	var exclusions []portpair
 
 	parts := strings.Split(exclusionsText, "--------")
-	require.Len(t, parts, 3)
+	require.Len(tb, parts, 3)
 	portsText := strings.Split(parts[2], "*")
-	require.Greater(t, len(portsText), 1) // original text may have a suffix like " - Administered port exclusions."
+	require.Greater(tb, len(portsText), 1) // original text may have a suffix like " - Administered port exclusions."
 	lines := strings.Split(portsText[0], "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) != "" {
 			entries := strings.Fields(strings.TrimSpace(line))
-			require.Len(t, entries, 2)
+			require.Len(tb, entries, 2)
 			pair := portpair{entries[0], entries[1]}
 			exclusions = append(exclusions, pair)
 		}
