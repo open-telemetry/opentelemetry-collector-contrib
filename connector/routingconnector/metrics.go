@@ -36,6 +36,11 @@ func newMetricsConnector(
 ) (*metricsConnector, error) {
 	cfg := config.(*Config)
 
+	// TODO update log from warning to error in v0.116.0
+	if !cfg.MatchOnce {
+		set.Logger.Warn("The 'match_once' field has been deprecated. Set to 'true' to suppress this warning.")
+	}
+
 	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
 	if !ok {
 		return nil, errUnexpectedConsumer

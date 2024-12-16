@@ -116,11 +116,10 @@ func TestTracesSource(t *testing.T) {
 			return
 		}
 		buf := new(bytes.Buffer)
-		if _, err := buf.ReadFrom(r.Body); err != nil {
-			t.Fatalf("Metrics server handler error: %v", err)
-		}
+		_, err := buf.ReadFrom(r.Body)
+		assert.NoError(t, err, "Metrics server handler error: %v", err)
 		reqs <- buf.Bytes()
-		_, err := w.Write([]byte("{\"status\": \"ok\"}"))
+		_, err = w.Write([]byte("{\"status\": \"ok\"}"))
 		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
@@ -144,9 +143,6 @@ func TestTracesSource(t *testing.T) {
 			TracesConfig: datadogconfig.TracesConfig{
 				IgnoreResources: []string{},
 			},
-		},
-		HostMetadata: HostMetadataConfig{
-			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 
@@ -270,9 +266,6 @@ func TestTraceExporter(t *testing.T) {
 			},
 			TraceBuffer: 2,
 		},
-		HostMetadata: HostMetadataConfig{
-			ReporterPeriod: 30 * time.Minute,
-		},
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
@@ -298,11 +291,7 @@ func TestNewTracesExporter(t *testing.T) {
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
-	cfg := &Config{
-		HostMetadata: HostMetadataConfig{
-			ReporterPeriod: 30 * time.Minute,
-		},
-	}
+	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
 	params := exportertest.NewNopSettings()
@@ -367,9 +356,6 @@ func TestPushTraceData_NewEnvConvention(t *testing.T) {
 		},
 		Traces: TracesConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
-		},
-		HostMetadata: HostMetadataConfig{
-			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 	cfg.Traces.SetFlushInterval(0.1)
