@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -611,8 +612,7 @@ func accessAdjustedCount[K SpanContext]() ottl.StandardGetSetter[K] {
 			return otTraceState.AdjustedCount(), nil
 		},
 		Setter: func(context.Context, K, any) error {
-			// cannot set adjusted count
-			return nil
+			return errors.New("adjusted count cannot be set")
 		},
 	}
 }

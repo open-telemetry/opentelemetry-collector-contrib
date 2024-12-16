@@ -40,11 +40,12 @@ func TestSpanPathGetSetter(t *testing.T) {
 	newStatus.SetMessage("new status")
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*spanContext]
-		orig     any
-		newVal   any
-		modified func(span ptrace.Span)
+		name                 string
+		path                 ottl.Path[*spanContext]
+		orig                 any
+		newVal               any
+		modified             func(span ptrace.Span)
+		expectedSetterErrMsg string
 	}{
 		{
 			name: "trace_id",
@@ -131,11 +132,9 @@ func TestSpanPathGetSetter(t *testing.T) {
 					N: "adjusted_count",
 				},
 			},
-			orig:   float64(4),
-			newVal: float64(4),
-			modified: func(span ptrace.Span) {
-				// no-op as setters are not supported
-			},
+			orig:                 float64(4),
+			newVal:               float64(1), // setters not allowed
+			expectedSetterErrMsg: "adjusted count cannot be set",
 		},
 		{
 			name: "parent_span_id",
@@ -627,6 +626,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
+			if tt.expectedSetterErrMsg != "" {
+				assert.ErrorContains(t, err, tt.expectedSetterErrMsg)
+				return
+			}
 			assert.NoError(t, err)
 
 			expectedSpan := createSpan()
