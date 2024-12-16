@@ -39,9 +39,9 @@ Editors are what OTTL uses to transform telemetry.
 
 Editors:
 
-- Are allowed to transform telemetry. When a Function is invoked the expectation is that the underlying telemetry is modified in some way.
-- May have side effects. Some Functions may generate telemetry and add it to the telemetry payload to be processed in this batch.
-- May return values. Although not common and not required, Functions may return values.
+- Are allowed to transform telemetry. When an Editor is invoked the expectation is that the underlying telemetry is modified in some way.
+- May have side effects. Some Editors may generate telemetry and add it to the telemetry payload to be processed in this batch.
+- May return values. Although not common and not required, Editors may return values.
 
 Available Editors:
 
@@ -69,9 +69,9 @@ The `append` function appends single or multiple string values to `target`.
 
 Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
 
-  - `append(attributes["tags"], "prod")`
-  - `append(attributes["tags"], values = ["staging", "staging:east"])`
-  - `append(attributes["tags_copy"], attributes["tags"])`
+- `append(attributes["tags"], "prod")`
+- `append(attributes["tags"], values = ["staging", "staging:east"])`
+- `append(attributes["tags_copy"], attributes["tags"])`
 
 ### delete_key
 
@@ -834,6 +834,18 @@ Get the first element at the root of the document with tag "a"
 Get all elements in the document with tag "a" that have an attribute "b" with value "c"
 
 - `GetXML(body, "//a[@b='c']")`
+
+Get `foo` from `<a>foo</a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `hello` from `<a><![CDATA[hello]]></a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `bar` from `<a foo="bar"/>`
+
+- `GetXML(body, "/a/@foo")`
 
 ### Hex
 

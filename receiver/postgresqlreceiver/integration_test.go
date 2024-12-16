@@ -6,6 +6,7 @@
 package postgresqlreceiver
 
 import (
+	"fmt"
 	"net"
 	"path/filepath"
 	"testing"
@@ -22,37 +23,44 @@ import (
 
 const postgresqlPort = "5432"
 
+const (
+	pre17TestVersion  = "13.18"
+	post17TestVersion = "17.2"
+)
+
 func TestIntegration(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
 	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, false)()
-	t.Run("single_db", integrationTest("single_db", []string{"otel"}))
-	t.Run("multi_db", integrationTest("multi_db", []string{"otel", "otel2"}))
-	t.Run("all_db", integrationTest("all_db", []string{}))
+	t.Run("single_db", integrationTest("single_db", []string{"otel"}, pre17TestVersion))
+	t.Run("multi_db", integrationTest("multi_db", []string{"otel", "otel2"}, pre17TestVersion))
+	t.Run("all_db", integrationTest("all_db", []string{}, pre17TestVersion))
+
+	t.Run("single_db_post17", integrationTest("single_db_post17", []string{"otel"}, post17TestVersion))
 }
 
 func TestIntegrationWithSeparateSchemaAttr(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, true)()
 	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, false)()
-	t.Run("single_db_schemaattr", integrationTest("single_db_schemaattr", []string{"otel"}))
-	t.Run("multi_db_schemaattr", integrationTest("multi_db_schemaattr", []string{"otel", "otel2"}))
-	t.Run("all_db_schemaattr", integrationTest("all_db_schemaattr", []string{}))
+	t.Run("single_db_schemaattr", integrationTest("single_db_schemaattr", []string{"otel"}, pre17TestVersion))
+	t.Run("multi_db_schemaattr", integrationTest("multi_db_schemaattr", []string{"otel", "otel2"}, pre17TestVersion))
+	t.Run("all_db_schemaattr", integrationTest("all_db_schemaattr", []string{}, pre17TestVersion))
 }
 
 func TestIntegrationWithConnectionPool(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, separateSchemaAttrGate, false)()
 	defer testutil.SetFeatureGateForTest(t, connectionPoolGate, true)()
-	t.Run("single_db_connpool", integrationTest("single_db_connpool", []string{"otel"}))
-	t.Run("multi_db_connpool", integrationTest("multi_db_connpool", []string{"otel", "otel2"}))
-	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}))
+	t.Run("single_db_connpool", integrationTest("single_db_connpool", []string{"otel"}, pre17TestVersion))
+	t.Run("multi_db_connpool", integrationTest("multi_db_connpool", []string{"otel", "otel2"}, pre17TestVersion))
+	t.Run("all_db_connpool", integrationTest("all_db_connpool", []string{}, pre17TestVersion))
 }
 
-func integrationTest(name string, databases []string) func(*testing.T) {
+func integrationTest(name string, databases []string, pgVersion string) func(*testing.T) {
 	expectedFile := filepath.Join("testdata", "integration", "expected_"+name+".yaml")
 	return scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Image: "postgres:13.18",
+				Image: fmt.Sprintf("postgres:%s", pgVersion),
 				Env: map[string]string{
 					"POSTGRES_USER":     "root",
 					"POSTGRES_PASSWORD": "otel",
