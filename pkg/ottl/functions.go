@@ -216,17 +216,13 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 	}
 	ks := make([]Key[K], len(keys))
 	for i := range keys {
-		var par *basePath[K]
+		var par GetSetter[K]
 		if keys[i].Path != nil {
-			pp, err := p.newPath(keys[i].Path) // newGetter here
+			arg, err := p.buildGetSetterFromPath(keys[i].Path)
 			if err != nil {
 				return nil, err
 			}
-			// arg, err := p.parsePath()
-			// if err != nil {
-			// 	return nil, err
-			// }
-			par = pp
+			par = arg
 		}
 		ks[i] = &baseKey[K]{
 			s: keys[i].String,
@@ -252,7 +248,7 @@ type Key[K any] interface {
 	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
 
-	Path() (Path[K], error)
+	PathGetter() (GetSetter[K], error)
 }
 
 var _ Key[any] = &baseKey[any]{}
@@ -260,7 +256,7 @@ var _ Key[any] = &baseKey[any]{}
 type baseKey[K any] struct {
 	s *string
 	i *int64
-	p *basePath[K]
+	p GetSetter[K]
 }
 
 func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -271,10 +267,8 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
 }
 
-func (k *baseKey[K]) Path() (Path[K], error) {
-	var path Path[K]
-	path = k.p
-	return path, nil
+func (k *baseKey[K]) PathGetter() (GetSetter[K], error) {
+	return k.p, nil
 }
 
 func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
@@ -515,6 +509,18 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 	}
 }
 
+func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
+	np, err := p.newPath(path)
+	if err != nil {
+		return nil, err
+	}
+	arg, err := p.parsePath(np)
+	if err != nil {
+		return nil, err
+	}
+	return arg, nil
+}
+
 // Handle interfaces that can be passed as arguments to OTTL functions.
 func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
@@ -523,16 +529,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
 		if argVal.Literal != nil && argVal.Literal.Path != nil {
-			np, err := p.newPath(argVal.Literal.Path)
-			if err != nil {
-				return nil, err
-			}
-			arg, err := p.parsePath(np)
-			if err != nil {
-				return nil, err
-			}
-			//tu
-			return arg, nil
+			return p.buildGetSetterFromPath(argVal.Literal.Path)
 		}
 		return nil, fmt.Errorf("must be a path")
 	case strings.HasPrefix(name, "Getter"):
