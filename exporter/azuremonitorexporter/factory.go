@@ -15,16 +15,26 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
-const (
-	defaultEndpoint = "https://dc.services.visualstudio.com/v2/track"
+var (
+	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
+	exporters                      = sharedcomponent.NewSharedComponents()
 )
 
-var errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
+type AzureMonitorExporter interface {
+	component.Component
+	consumeTraces(_ context.Context, td ptrace.Traces) error
+	consumeMetrics(_ context.Context, md pmetric.Metrics) error
+	consumeLogs(_ context.Context, ld plog.Logs) error
+}
 
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() exporter.Factory {
