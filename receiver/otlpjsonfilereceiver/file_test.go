@@ -135,6 +135,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	cfg.Config.StartAt = "beginning"
 	cfg.ReplayFile = true
 	cfg.Config.PollInterval = 5 * time.Second
+	cfg.IncludeFileName = false
 
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, sink)
