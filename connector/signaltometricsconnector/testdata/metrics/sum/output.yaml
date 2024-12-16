@@ -1,0 +1,54 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.bar
+          value:
+            stringValue: bar
+        - key: resource.foo
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - metrics:
+          - description: Count total number of datapoints
+            name: total.datapoint.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "24"
+                  timeUnixNano: "1000000"
+          - description: Count total number of datapoints as per datapoint.foo attribute
+            name: datapoint.foo.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "12"
+                  attributes:
+                    - key: datapoint.foo
+                      value:
+                        stringValue: foo
+                  timeUnixNano: "1000000"
+                - asInt: "6"
+                  attributes:
+                    - key: datapoint.foo
+                      value:
+                        stringValue: notfoo
+                  timeUnixNano: "1000000"
+          - description: Count total number of datapoints as per datapoint.bar attribute
+            name: datapoint.bar.sum
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asInt: "6"
+                  attributes:
+                    - key: datapoint.bar
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1000000"
+                - asInt: "6"
+                  attributes:
+                    - key: datapoint.bar
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1000000"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
