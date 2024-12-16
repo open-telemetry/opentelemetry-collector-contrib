@@ -19,6 +19,17 @@ env:
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
+  get-changed-files:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Get changed files
+        id: get_changed_files
+        run: echo "::set-output name=files::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})"
+      - name: Print changed files
+        run: echo "${{ steps.get_changed_files.outputs.files }}"
+
   collector-build:
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
