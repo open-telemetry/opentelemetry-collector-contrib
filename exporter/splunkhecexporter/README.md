@@ -54,10 +54,18 @@ The following configuration options can also be configured:
 - `health_path` (default = '/services/collector/health'): The path reporting [health checks](https://docs.splunk.com/Documentation/Splunk/9.0.1/RESTREF/RESTinput#services.2Fcollector.2Fhealth).
 - `health_check_enabled` (default = false): Whether to perform Splunk HEC Health Check during the exporter's startup.
 - `export_raw` (default = false): send only the log's body, targeting a Splunk HEC raw endpoint.
+- `otel_attrs_to_hec_metadata/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
+- `otel_attrs_to_hec_metadata/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
+- `otel_attrs_to_hec_metadata/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
+- `otel_attrs_to_hec_metadata/host` (default = 'host.name'):  Specifies the mapping of a specific unified model attribute value to the standard host field and the `host.name` field of a HEC event.
 - `hec_metadata_to_otel_attrs/source` (default = 'com.splunk.source'): Specifies the mapping of a specific unified model attribute value to the standard source field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/source`.
 - `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of a specific unified model attribute value to the standard sourcetype field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/sourcetype`.
 - `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'):  Specifies the mapping of a specific unified model attribute value to the standard index field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/index`.
 - `hec_metadata_to_otel_attrs/host` (default = 'host.name'):  Specifies the mapping of a specific unified model attribute value to the standard host field and the `host.name` field of a HEC event.
+  **Deprecated** (v0.116.0): prefer `otel_attrs_to_hec_metadata/host`.
 - `otel_to_hec_fields/severity_text` (default = `otel.log.severity.text`): Specifies the name of the field to map the severity text field of log events.
 - `otel_to_hec_fields/severity_number` (default = `otel.log.severity.number`): Specifies the name of the field to map the severity number field of log events.
 - `otel_to_hec_fields/name` (default = `"otel.log.name`): Specifies the name of the field to map the name field of log events.
