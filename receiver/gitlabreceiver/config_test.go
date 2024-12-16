@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
@@ -62,9 +63,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Path:       "some/path",
 			HealthPath: "health/path",
-			RequiredHeader: RequiredHeader{
-				Key:   "key-present",
-				Value: "value-present",
+			RequiredHeaders: map[string]configopaque.String{
+				"key-present": "value-present",
 			},
 		},
 	}
@@ -72,6 +72,11 @@ func TestLoadConfig(t *testing.T) {
 	r0 := cfg.Receivers[component.NewID(metadata.Type)]
 
 	assert.Equal(t, expectedConfig, r0)
+
+	expectedConfig.WebHook.RequiredHeaders = map[string]configopaque.String{
+		"key-present":  "value-present",
+		"key2-present": "value2-present",
+	}
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
 

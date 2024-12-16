@@ -19,7 +19,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const healthyResponse = `{"text": "Gitlab receiver webhook is healthy"}`
+const healthyResponse = `{"text": "GitLab receiver webhook is healthy"}`
 
 type gitlabTracesReceiver struct {
 	cfg           *Config

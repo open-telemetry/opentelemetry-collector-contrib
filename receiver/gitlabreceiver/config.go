@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/multierr"
 )
 
@@ -33,16 +34,11 @@ type Config struct {
 }
 
 type WebHook struct {
-	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	Path                    string                   `mapstructure:"path"`            // path for data collection. Default is /events
-	HealthPath              string                   `mapstructure:"health_path"`     // path for health check api. Default is /health_check
-	RequiredHeader          RequiredHeader           `mapstructure:"required_header"` // optional setting to set a required header for all requests to have
-	Secret                  string                   `mapstructure:"secret"`          // secret for webhook
-}
-
-type RequiredHeader struct {
-	Key   string `mapstructure:"key"`
-	Value string `mapstructure:"value"`
+	confighttp.ServerConfig `mapstructure:",squash"`       // squash ensures fields are correctly decoded in embedded struct
+	Path                    string                         `mapstructure:"path"`             // path for data collection. Default is /events
+	HealthPath              string                         `mapstructure:"health_path"`      // path for health check api. Default is /health_check
+	RequiredHeaders         map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have
+	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
 }
 
 func createDefaultConfig() component.Config {
@@ -72,8 +68,10 @@ func (cfg *Config) Validate() error {
 		errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
 	}
 
-	if (cfg.WebHook.RequiredHeader.Key != "" && cfg.WebHook.RequiredHeader.Value == "") || (cfg.WebHook.RequiredHeader.Value != "" && cfg.WebHook.RequiredHeader.Key == "") {
-		errs = multierr.Append(errs, errRequiredHeader)
+	for key, value := range cfg.WebHook.RequiredHeaders {
+		if key == "" || value == "" {
+			errs = multierr.Append(errs, errRequiredHeader)
+		}
 	}
 
 	return errs
