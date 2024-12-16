@@ -276,10 +276,10 @@ func TestRawLogEmfOnlyCombination(t *testing.T) {
 				Endpoint:           "",
 				LogRetention:       365,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: exporterhelper.QueueSettings{
+				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
 					NumConsumers: 1,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				RawLog:  tt.RawLog,
 				EmfOnly: tt.EmfOnly,

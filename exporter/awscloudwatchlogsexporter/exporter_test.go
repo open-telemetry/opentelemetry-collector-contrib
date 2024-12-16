@@ -488,7 +488,7 @@ func TestMiddleware(t *testing.T) {
 	middleware.On("Handlers").Return([]awsmiddleware.RequestHandler{handler}, []awsmiddleware.ResponseHandler{handler})
 	extensions := map[component.ID]component.Component{id: middleware}
 	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopSettings())
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 	host := new(awsmiddleware.MockExtensionsHost)
 	host.On("GetExtensions").Return(extensions)
