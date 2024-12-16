@@ -277,7 +277,8 @@ func TestNodeMetadata(t *testing.T) {
 		},
 		Status: corev1.NodeStatus{
 			Conditions: []corev1.NodeCondition{
-				{Type: "FrequentUnregisterNetDevice",
+				{
+					Type:   "FrequentUnregisterNetDevice",
 					Status: "False",
 					LastHeartbeatTime: metav1.Time{
 						Time: time.Now(),
@@ -288,7 +289,8 @@ func TestNodeMetadata(t *testing.T) {
 					Message: "node is functioning properly",
 					Reason:  "NoFrequentUnregisterNetDevice",
 				},
-				{Type: "MemoryPressure",
+				{
+					Type:   "MemoryPressure",
 					Status: "False",
 					LastHeartbeatTime: metav1.Time{
 						Time: time.Now(),
