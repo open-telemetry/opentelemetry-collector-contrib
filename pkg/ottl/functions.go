@@ -272,17 +272,6 @@ func (k *baseKey[K]) PathGetter() (GetSetter[K], error) {
 }
 
 func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
-	// path, err := ip.Keys()[0].Path()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// if p != nil {
-	// 	s, err := p.parsePath(path.(*basePath[K]))
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// }
 	g, err := p.pathParser(ip)
 	if err != nil {
 		return nil, err
