@@ -13,8 +13,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -44,16 +47,18 @@ type FileExporter interface {
 	consumeTraces(_ context.Context, td ptrace.Traces) error
 	consumeMetrics(_ context.Context, md pmetric.Metrics) error
 	consumeLogs(_ context.Context, ld plog.Logs) error
+	consumeProfiles(_ context.Context, pd pprofile.Profiles) error
 }
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return exporterprofiles.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
+		exporterprofiles.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporterprofiles.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporterprofiles.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporterprofiles.WithProfiles(createProfilesExporter, metadata.ProfilesStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -112,6 +117,23 @@ func createLogsExporter(
 		set,
 		cfg,
 		fe.consumeLogs,
+		exporterhelper.WithStart(fe.Start),
+		exporterhelper.WithShutdown(fe.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+	)
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporterprofiles.Profiles, error) {
+	fe := getOrCreateFileExporter(cfg, set.Logger)
+	return exporterhelperprofiles.NewProfilesExporter(
+		ctx,
+		set,
+		cfg,
+		fe.consumeProfiles,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
