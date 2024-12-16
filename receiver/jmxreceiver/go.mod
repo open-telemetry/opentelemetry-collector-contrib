@@ -96,7 +96,7 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-20241215143820-6147243aaaa1 // indirect
-	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.0 // indirect
+	go.opentelemetry.io/collector/exporter/exporterprofiles v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
 	go.opentelemetry.io/collector/extension v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
 	go.opentelemetry.io/collector/extension/auth v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
 	go.opentelemetry.io/collector/extension/experimental/storage v0.115.1-0.20241216091623-8ac40a01a5ff // indirect
