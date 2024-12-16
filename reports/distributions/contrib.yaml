@@ -133,7 +133,6 @@ components:
         - flinkmetrics
         - fluentforward
         - github
-        - gitlab
         - googlecloudmonitoring
         - googlecloudspanner
         - haproxy
