@@ -89,7 +89,6 @@ func (nr *netflowReceiver) Shutdown(context.Context) error {
 	if err != nil {
 		nr.logger.Warn("Error stopping UDP receiver", zap.Error(err))
 	}
-
 	return nil
 }
 

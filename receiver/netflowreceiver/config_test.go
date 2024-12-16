@@ -39,6 +39,46 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize: 1000,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "zero_queue"),
+			expected: &Config{
+				Scheme:    "netflow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "zero_queue"),
+			expected: &Config{
+				Scheme:    "netflow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sflow"),
+			expected: &Config{
+				Scheme:    "sflow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "flow"),
+			expected: &Config{
+				Scheme:    "flow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -73,6 +113,14 @@ func TestInvalidConfig(t *testing.T) {
 		{
 			id:  component.NewIDWithName(metadata.Type, "invalid_port"),
 			err: "port must be greater than 0",
+		},
+		{
+			id:  component.NewIDWithName(metadata.Type, "zero_sockets"),
+			err: "sockets must be greater than 0",
+		},
+		{
+			id:  component.NewIDWithName(metadata.Type, "zero_workers"),
+			err: "workers must be greater than 0",
 		},
 	}
 
