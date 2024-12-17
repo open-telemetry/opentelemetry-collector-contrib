@@ -1,0 +1,17 @@
+postgresexporter:
+  username: "postgres"
+  password: "postgres"
+  database: "postgres"
+  logs_table_name: "otellogs"
+  traces_table_name: "oteltraces"
+  metrics_table_name: "otelmetrics"
+  port: 5432
+  host: "localhost"
+  timeout: 1000s
+  sending_queue:
+    queue_size: 100
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 30s
+    max_elapsed_time: 300s
