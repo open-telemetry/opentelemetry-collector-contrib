@@ -6,8 +6,8 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/open-telemetry/opamp-go v0.17.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.116.0
 	github.com/shirou/gopsutil/v4 v4.24.10
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.116.0
