@@ -22,7 +22,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return nil, err
 	}
 	if s == nil {
-		p, err := keys[0].PathGetter()
+		p, err := keys[0].PathGetter(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +59,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return err
 	}
 	if s == nil {
-		p, err := keys[0].PathGetter()
+		p, err := keys[0].PathGetter(ctx, tCtx)
 		if err != nil {
 			return err
 		}
