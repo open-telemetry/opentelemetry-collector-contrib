@@ -1388,7 +1388,7 @@ capabilities:
 
 	_, err = config.Load(cfgPath)
 	require.Error(t, err)
-	require.ErrorContains(t, err, "cannot parse")
+	require.ErrorContains(t, err, "decoding failed")
 
 	t.Cleanup(func() {
 		require.NoError(t, os.Chmod(tmpDir, 0o700))
