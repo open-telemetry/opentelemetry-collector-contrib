@@ -4,7 +4,10 @@
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
@@ -28,6 +31,23 @@ func HandleHTTPCode(resp *http.Response) error {
 		"HTTP %d %q",
 		resp.StatusCode,
 		http.StatusText(resp.StatusCode))
+
+	// Check if there is any error text returned by Splunk that we can append to the error message
+	if resp.ContentLength > 0 {
+		var jsonResponse map[string]any
+		bodyString, _ := io.ReadAll(resp.Body)
+		resp.Body = io.NopCloser(bytes.NewBuffer(bodyString))
+		unmarshalError := json.Unmarshal(bodyString, &jsonResponse)
+
+		if unmarshalError == nil {
+			responseErrorValue, ok := jsonResponse["text"]
+			if ok {
+				err = multierr.Append(err, fmt.Errorf("reason: %v", responseErrorValue))
+			} else {
+				err = multierr.Append(err, fmt.Errorf("no error message from Splunk found"))
+			}
+		}
+	}
 
 	switch resp.StatusCode {
 	// Check for responses that may include "Retry-After" header.
