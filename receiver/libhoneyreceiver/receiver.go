@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"strings"
@@ -24,7 +25,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/simplespan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
 )
 
 type libhoneyReceiver struct {
@@ -37,15 +39,18 @@ type libhoneyReceiver struct {
 	settings   *receiver.Settings
 }
 
+// TeamInfo is part of the AuthInfo struct that stores the team slug
 type TeamInfo struct {
 	Slug string `json:"slug"`
 }
 
+// EnvironmentInfo is part of the AuthInfo struct that stores the environment slug and name
 type EnvironmentInfo struct {
 	Slug string `json:"slug"`
 	Name string `json:"name"`
 }
 
+// AuthInfo is used by Libhoney to validate team and environment information against Honeycomb's Auth API
 type AuthInfo struct {
 	APIKeyAccess map[string]bool `json:"api_key_access"`
 	Team         TeamInfo        `json:"team"`
@@ -83,7 +88,7 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 	r.settings.Logger.Info("r.nextTraces is not null so httpTracesReciever was added", zap.Int("paths", len(r.cfg.HTTP.TracesURLPaths)))
 	for _, path := range r.cfg.HTTP.TracesURLPaths {
 		httpMux.HandleFunc(path, func(resp http.ResponseWriter, req *http.Request) {
-			r.handleSomething(resp, req)
+			r.handleEvent(resp, req)
 		})
 		r.settings.Logger.Debug("Added path to HTTP server", zap.String("path", path))
 	}
@@ -93,28 +98,28 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 			authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
 			authReq, err := http.NewRequest(http.MethodGet, authURL, nil)
 			if err != nil {
-				errJson, _ := json.Marshal(`{"error": "failed to create AuthInfo request"}`)
-				writeResponse(resp, "json", http.StatusBadRequest, errJson)
+				errJSON, _ := json.Marshal(`{"error": "failed to create AuthInfo request"}`)
+				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 				return
 			}
 			authReq.Header.Set("x-honeycomb-team", req.Header.Get("x-honeycomb-team"))
 			var authClient http.Client
 			authResp, err := authClient.Do(authReq)
 			if err != nil {
-				errJson, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", "%s"}`, err.Error()))
-				writeResponse(resp, "json", http.StatusBadRequest, errJson)
+				errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", "%s"}`, err.Error()))
+				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 				return
 			}
 			defer authResp.Body.Close()
 
 			switch {
 			case authResp.StatusCode == http.StatusUnauthorized:
-				errJson, _ := json.Marshal(`"error": "received 401 response for AuthInfo request from Honeycomb API - check your API key"}`)
-				writeResponse(resp, "json", http.StatusBadRequest, errJson)
+				errJSON, _ := json.Marshal(`"error": "received 401 response for AuthInfo request from Honeycomb API - check your API key"}`)
+				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 				return
 			case authResp.StatusCode > 299:
-				errJson, _ := json.Marshal(fmt.Sprintf(`"error": "bad response code from API", "status_code", %d}`, authResp.StatusCode))
-				writeResponse(resp, "json", http.StatusBadRequest, errJson)
+				errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "bad response code from API", "status_code", %d}`, authResp.StatusCode))
+				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
 				return
 			}
 			authRawBody, _ := io.ReadAll(authResp.Body)
@@ -175,13 +180,13 @@ func (r *libhoneyReceiver) registerLogConsumer(tc consumer.Logs) {
 	r.nextLogs = tc
 }
 
-func (r *libhoneyReceiver) handleSomething(resp http.ResponseWriter, req *http.Request) {
+func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
 	enc, ok := readContentType(resp, req)
 	if !ok {
 		return
 	}
 
-	dataset, err := getDatasetFromRequest(req.RequestURI)
+	dataset, err := parser.GetDatasetFromRequest(req.RequestURI)
 	if err != nil {
 		r.settings.Logger.Info("No dataset found in URL", zap.String("req.RequstURI", req.RequestURI))
 	}
@@ -198,31 +203,30 @@ func (r *libhoneyReceiver) handleSomething(resp http.ResponseWriter, req *http.R
 	if err = req.Body.Close(); err != nil {
 		errorutil.HTTPError(resp, err)
 	}
-
-	simpleSpans := make([]simplespan.SimpleSpan, 0)
+	libhoneyevents := make([]libhoneyevent.LibhoneyEvent, 0)
 	switch req.Header.Get("Content-Type") {
 	case "application/x-msgpack", "application/msgpack":
 		decoder := msgpack.NewDecoder(bytes.NewReader(body))
 		decoder.UseLooseInterfaceDecoding(true)
-		err = decoder.Decode(&simpleSpans)
+		err = decoder.Decode(&libhoneyevents)
 		if err != nil {
 			r.settings.Logger.Info("messagepack decoding failed")
 		}
-		if len(simpleSpans) > 0 {
-			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *simpleSpans[0].MsgPackTimestamp), zap.String("timestamp.first.time", simpleSpans[0].Time))
-			r.settings.Logger.Debug("span zero", zap.String("span.data", simpleSpans[0].DebugString()))
+		if len(libhoneyevents) > 0 {
+			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
+			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
 	case jsonContentType:
-		err = json.Unmarshal(body, &simpleSpans)
+		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
 			errorutil.HTTPError(resp, err)
 		}
-		if len(simpleSpans) > 0 {
-			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *simpleSpans[0].MsgPackTimestamp), zap.String("timestamp.first.time", simpleSpans[0].Time))
+		if len(libhoneyevents) > 0 {
+			r.settings.Logger.Debug("Decoding with json worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 		}
 	}
 
-	otlpLogs := toPsomething(dataset, simpleSpans, *r.cfg, *r.settings.Logger)
+	otlpLogs := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
@@ -238,4 +242,45 @@ func (r *libhoneyReceiver) handleSomething(resp http.ResponseWriter, req *http.R
 
 	noErrors := []byte(`{"errors":[]}`)
 	writeResponse(resp, enc.contentType(), http.StatusAccepted, noErrors)
+}
+
+func readContentType(resp http.ResponseWriter, req *http.Request) (encoder, bool) {
+	if req.Method != http.MethodPost {
+		handleUnmatchedMethod(resp)
+		return nil, false
+	}
+
+	switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
+	case jsonContentType:
+		return jsEncoder, true
+	case "application/x-msgpack", "application/msgpack":
+		return mpEncoder, true
+	default:
+		handleUnmatchedContentType(resp)
+		return nil, false
+	}
+}
+
+func writeResponse(w http.ResponseWriter, contentType string, statusCode int, msg []byte) {
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(statusCode)
+	_, _ = w.Write(msg)
+}
+
+func getMimeTypeFromContentType(contentType string) string {
+	mediatype, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return ""
+	}
+	return mediatype
+}
+
+func handleUnmatchedMethod(resp http.ResponseWriter) {
+	status := http.StatusMethodNotAllowed
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v method not allowed, supported: [POST]", status)))
+}
+
+func handleUnmatchedContentType(resp http.ResponseWriter) {
+	status := http.StatusUnsupportedMediaType
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, jsonContentType, pbContentType)))
 }

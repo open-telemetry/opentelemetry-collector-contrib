@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package simplespan // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/simplespan"
+package libhoneyevent // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 
 import (
 	"encoding/json"
@@ -18,21 +18,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
 )
 
+// FieldMapConfig is used to map the fields from the LibhoneyEvent to PData formats
 type FieldMapConfig struct {
 	Resources  ResourcesConfig  `mapstructure:"resources"`
 	Scopes     ScopesConfig     `mapstructure:"scopes"`
 	Attributes AttributesConfig `mapstructure:"attributes"`
 }
 
+// ResourcesConfig is used to map the fields from the LibhoneyEvent to PData formats
 type ResourcesConfig struct {
 	ServiceName string `mapstructure:"service_name"`
 }
 
+// ScopesConfig is used to map the fields from the LibhoneyEvent to PData formats
 type ScopesConfig struct {
 	LibraryName    string `mapstructure:"library_name"`
 	LibraryVersion string `mapstructure:"library_version"`
 }
 
+// AttributesConfig is used to map the fields from the LibhoneyEvent to PData formats
 type AttributesConfig struct {
 	TraceID        string   `mapstructure:"trace_id"`
 	ParentID       string   `mapstructure:"parent_id"`
@@ -43,7 +47,7 @@ type AttributesConfig struct {
 	DurationFields []string `mapstructure:"durationFields"`
 }
 
-type SimpleSpan struct {
+type LibhoneyEvent struct {
 	Samplerate       int            `json:"samplerate" msgpack:"samplerate"`
 	MsgPackTimestamp *time.Time     `msgpack:"time"`
 	Time             string         `json:"time"` // should not be trusted. use MsgPackTimestamp
@@ -51,11 +55,11 @@ type SimpleSpan struct {
 }
 
 // Overrides unmarshall to make sure the MsgPackTimestamp is set
-func (s *SimpleSpan) UnmarshalJSON(j []byte) error {
-	type _simpleSpan SimpleSpan
+func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
+	type _libhoneyEvent LibhoneyEvent
 	tstr := eventtime.GetEventTimeDefaultString()
 	tzero := time.Time{}
-	tmp := _simpleSpan{Time: "none", MsgPackTimestamp: &tzero, Samplerate: 1}
+	tmp := _libhoneyEvent{Time: "none", MsgPackTimestamp: &tzero, Samplerate: 1}
 
 	err := json.Unmarshal(j, &tmp)
 	if err != nil {
@@ -72,29 +76,29 @@ func (s *SimpleSpan) UnmarshalJSON(j []byte) error {
 		tmp.MsgPackTimestamp = &propertime
 	}
 
-	*s = SimpleSpan(tmp)
+	*l = LibhoneyEvent(tmp)
 	return nil
 }
 
-func (s *SimpleSpan) DebugString() string {
-	return fmt.Sprintf("%#v", s)
+func (l *LibhoneyEvent) DebugString() string {
+	return fmt.Sprintf("%#v", l)
 }
 
 // returns log until we add the trace parser
-func (s *SimpleSpan) SignalType() (string, error) {
+func (l *LibhoneyEvent) SignalType() (string, error) {
 	return "log", nil
 }
 
-func (s *SimpleSpan) GetService(fields FieldMapConfig, seen *ServiceHistory, dataset string) (string, error) {
-	if serviceName, ok := s.Data[fields.Resources.ServiceName]; ok {
+func (l *LibhoneyEvent) GetService(fields FieldMapConfig, seen *ServiceHistory, dataset string) (string, error) {
+	if serviceName, ok := l.Data[fields.Resources.ServiceName]; ok {
 		seen.NameCount[serviceName.(string)] += 1
 		return serviceName.(string), nil
 	}
 	return dataset, errors.New("no service.name found in event")
 }
 
-func (s *SimpleSpan) GetScope(fields FieldMapConfig, seen *ScopeHistory, serviceName string) (string, error) {
-	if scopeLibraryName, ok := s.Data[fields.Scopes.LibraryName]; ok {
+func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serviceName string) (string, error) {
+	if scopeLibraryName, ok := l.Data[fields.Scopes.LibraryName]; ok {
 		scopeKey := serviceName + scopeLibraryName.(string)
 		if _, ok := seen.Scope[scopeKey]; ok {
 			// if we've seen it, we don't expect it to be different right away so we'll just return it.
@@ -102,7 +106,7 @@ func (s *SimpleSpan) GetScope(fields FieldMapConfig, seen *ScopeHistory, service
 		}
 		// otherwise, we need to make a new found scope
 		scopeLibraryVersion := "unset"
-		if scopeLibVer, ok := s.Data[fields.Scopes.LibraryVersion]; ok {
+		if scopeLibVer, ok := l.Data[fields.Scopes.LibraryVersion]; ok {
 			scopeLibraryVersion = scopeLibVer.(string)
 		}
 		newScope := SimpleScope{
@@ -126,42 +130,46 @@ type SimpleScope struct {
 	ScopeLogs      plog.LogRecordSlice
 }
 
+// ScopeHistory is a map of scope keys to the SimpleScope object
 type ScopeHistory struct {
 	Scope map[string]SimpleScope // key here is service.name+library.name
 }
+
+// ServiceHistory is a map of service names to the number of times they've been seen
 type ServiceHistory struct {
 	NameCount map[string]int
 }
 
-func (s *SimpleSpan) ToPLogRecord(newLog *plog.LogRecord, already_used_fields *[]string, logger zap.Logger) error {
-	time_ns := s.MsgPackTimestamp.UnixNano()
-	logger.Debug("processing log with", zap.Int64("timestamp", time_ns))
-	newLog.SetTimestamp(pcommon.Timestamp(time_ns))
+// ToPLogRecord converts a LibhoneyEvent to a Pdata LogRecord
+func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *[]string, logger zap.Logger) error {
+	timeNs := l.MsgPackTimestamp.UnixNano()
+	logger.Debug("processing log with", zap.Int64("timestamp", timeNs))
+	newLog.SetTimestamp(pcommon.Timestamp(timeNs))
 
-	if logSevCode, ok := s.Data["severity_code"]; ok {
+	if logSevCode, ok := l.Data["severity_code"]; ok {
 		logSevInt := int32(logSevCode.(int64))
 		newLog.SetSeverityNumber(plog.SeverityNumber(logSevInt))
 	}
 
-	if logSevText, ok := s.Data["severity_text"]; ok {
+	if logSevText, ok := l.Data["severity_text"]; ok {
 		newLog.SetSeverityText(logSevText.(string))
 	}
 
-	if logFlags, ok := s.Data["flags"]; ok {
+	if logFlags, ok := l.Data["flags"]; ok {
 		logFlagsUint := uint32(logFlags.(uint64))
 		newLog.SetFlags(plog.LogRecordFlags(logFlagsUint))
 	}
 
 	// undoing this is gonna be complicated: https://github.com/honeycombio/husky/blob/91c0498333cd9f5eed1fdb8544ca486db7dea565/otlp/logs.go#L61
-	if logBody, ok := s.Data["body"]; ok {
+	if logBody, ok := l.Data["body"]; ok {
 		newLog.Body().SetStr(logBody.(string))
 	}
 
-	newLog.Attributes().PutInt("SampleRate", int64(s.Samplerate))
+	newLog.Attributes().PutInt("SampleRate", int64(l.Samplerate))
 
 	logFieldsAlready := []string{"severity_text", "severity_code", "flags", "body"}
-	for k, v := range s.Data {
-		if slices.Contains(*already_used_fields, k) {
+	for k, v := range l.Data {
+		if slices.Contains(*alreadyUsedFields, k) {
 			continue
 		}
 		if slices.Contains(logFieldsAlready, k) {
@@ -180,7 +188,7 @@ func (s *SimpleSpan) ToPLogRecord(newLog *plog.LogRecord, already_used_fields *[
 		case bool:
 			newLog.Attributes().PutBool(k, v)
 		default:
-			logger.Warn("Span data type issue", zap.Int64("timestamp", time_ns), zap.String("key", k))
+			logger.Warn("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
 		}
 	}
 	return nil

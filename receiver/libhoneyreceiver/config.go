@@ -12,17 +12,18 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/simplespan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 )
 
 // Config represents the receiver config settings within the collector's config.yaml
 type Config struct {
-	HTTP           *HTTPConfig               `mapstructure:"http"`
-	AuthAPI        string                    `mapstructure:"auth_api"`
-	Wrapper        string                    `mapstructure:"wrapper"`
-	FieldMapConfig simplespan.FieldMapConfig `mapstructure:"fields"`
+	HTTP           *HTTPConfig                  `mapstructure:"http"`
+	AuthAPI        string                       `mapstructure:"auth_api"`
+	Wrapper        string                       `mapstructure:"wrapper"`
+	FieldMapConfig libhoneyevent.FieldMapConfig `mapstructure:"fields"`
 }
 
+// HTTPConfig defines the configuration for the HTTP server receiving traces.
 type HTTPConfig struct {
 	*confighttp.ServerConfig `mapstructure:",squash"`
 
@@ -30,6 +31,7 @@ type HTTPConfig struct {
 	TracesURLPaths []string `mapstructure:"traces_url_paths,omitempty"`
 }
 
+// Validate ensures the HTTP configuration is set.
 func (cfg *Config) Validate() error {
 	if cfg.HTTP == nil {
 		return errors.New("must specify at least one protocol when using the arbitrary JSON receiver")
@@ -37,6 +39,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// Unmarshal unmarshals the configuration from the given configuration and then checks for errors.
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	// first load the config normally
 	err := conf.Unmarshal(cfg)

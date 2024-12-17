@@ -13,8 +13,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/simplespan"
 )
 
 const (
@@ -45,15 +45,15 @@ func createDefaultConfig() component.Config {
 			TracesURLPaths: defaultTracesURLPaths,
 		},
 		AuthAPI: "",
-		FieldMapConfig: simplespan.FieldMapConfig{
-			Resources: simplespan.ResourcesConfig{
+		FieldMapConfig: libhoneyevent.FieldMapConfig{
+			Resources: libhoneyevent.ResourcesConfig{
 				ServiceName: "service.name",
 			},
-			Scopes: simplespan.ScopesConfig{
+			Scopes: libhoneyevent.ScopesConfig{
 				LibraryName:    "library.name",
 				LibraryVersion: "library.version",
 			},
-			Attributes: simplespan.AttributesConfig{
+			Attributes: libhoneyevent.AttributesConfig{
 				TraceID:        "trace.trace_id",
 				SpanID:         "trace.span_id",
 				ParentID:       "trace.parent_id",
