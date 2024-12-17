@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,6 +57,7 @@ type client interface {
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
+	getVersion(ctx context.Context) (string, error)
 }
 
 type postgreSQLClient struct {
@@ -442,7 +444,6 @@ type bgStat struct {
 	checkpointWriteTime  float64
 	checkpointSyncTime   float64
 	bgWrites             int64
-	backendWrites        int64
 	bufferBackendWrites  int64
 	bufferFsyncWrites    int64
 	bufferCheckpoints    int64
@@ -451,54 +452,105 @@ type bgStat struct {
 }
 
 func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
-	query := `SELECT
-	checkpoints_req AS checkpoint_req,
-	checkpoints_timed AS checkpoint_scheduled,
-	checkpoint_write_time AS checkpoint_duration_write,
-	checkpoint_sync_time AS checkpoint_duration_sync,
-	buffers_clean AS bg_writes,
-	buffers_backend AS backend_writes,
-	buffers_backend_fsync AS buffers_written_fsync,
-	buffers_checkpoint AS buffers_checkpoints,
-	buffers_alloc AS buffers_allocated,
-	maxwritten_clean AS maxwritten_count
-	FROM pg_stat_bgwriter;`
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	row := c.client.QueryRowContext(ctx, query)
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
 		checkpointsReq, checkpointsScheduled               int64
 		checkpointSyncTime, checkpointWriteTime            float64
 		bgWrites, bufferCheckpoints, bufferAllocated       int64
 		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
 	)
-	err := row.Scan(
-		&checkpointsReq,
-		&checkpointsScheduled,
-		&checkpointWriteTime,
-		&checkpointSyncTime,
-		&bgWrites,
-		&bufferBackendWrites,
-		&bufferFsyncWrites,
-		&bufferCheckpoints,
-		&bufferAllocated,
-		&maxWritten,
-	)
-	if err != nil {
-		return nil, err
+
+	if major < 17 {
+		query := `SELECT
+		checkpoints_req AS checkpoint_req,
+		checkpoints_timed AS checkpoint_scheduled,
+		checkpoint_write_time AS checkpoint_duration_write,
+		checkpoint_sync_time AS checkpoint_duration_sync,
+		buffers_clean AS bg_writes,
+		buffers_backend AS backend_writes,
+		buffers_backend_fsync AS buffers_written_fsync,
+		buffers_checkpoint AS buffers_checkpoints,
+		buffers_alloc AS buffers_allocated,
+		maxwritten_clean AS maxwritten_count
+		FROM pg_stat_bgwriter;`
+
+		row := c.client.QueryRowContext(ctx, query)
+
+		if err = row.Scan(
+			&checkpointsReq,
+			&checkpointsScheduled,
+			&checkpointWriteTime,
+			&checkpointSyncTime,
+			&bgWrites,
+			&bufferBackendWrites,
+			&bufferFsyncWrites,
+			&bufferCheckpoints,
+			&bufferAllocated,
+			&maxWritten,
+		); err != nil {
+			return nil, err
+		}
+		return &bgStat{
+			checkpointsReq:       checkpointsReq,
+			checkpointsScheduled: checkpointsScheduled,
+			checkpointWriteTime:  checkpointWriteTime,
+			checkpointSyncTime:   checkpointSyncTime,
+			bgWrites:             bgWrites,
+			bufferBackendWrites:  bufferBackendWrites,
+			bufferFsyncWrites:    bufferFsyncWrites,
+			bufferCheckpoints:    bufferCheckpoints,
+			buffersAllocated:     bufferAllocated,
+			maxWritten:           maxWritten,
+		}, nil
+	} else {
+		query := `SELECT
+		cp.num_requested AS checkpoint_req,
+		cp.num_timed AS checkpoint_scheduled,
+		cp.write_time AS checkpoint_duration_write,
+		cp.sync_time AS checkpoint_duration_sync,
+		cp.buffers_written AS buffers_checkpoints,
+		bg.buffers_clean AS bg_writes,
+		bg.buffers_alloc AS buffers_allocated,
+		bg.maxwritten_clean AS maxwritten_count
+		FROM pg_stat_bgwriter bg, pg_stat_checkpointer cp;`
+
+		row := c.client.QueryRowContext(ctx, query)
+
+		if err = row.Scan(
+			&checkpointsReq,
+			&checkpointsScheduled,
+			&checkpointWriteTime,
+			&checkpointSyncTime,
+			&bufferCheckpoints,
+			&bgWrites,
+			&bufferAllocated,
+			&maxWritten,
+		); err != nil {
+			return nil, err
+		}
+
+		return &bgStat{
+			checkpointsReq:       checkpointsReq,
+			checkpointsScheduled: checkpointsScheduled,
+			checkpointWriteTime:  checkpointWriteTime,
+			checkpointSyncTime:   checkpointSyncTime,
+			bgWrites:             bgWrites,
+			bufferBackendWrites:  -1, // Not found in pg17+ tables
+			bufferFsyncWrites:    -1, // Not found in pg17+ tables
+			bufferCheckpoints:    bufferCheckpoints,
+			buffersAllocated:     bufferAllocated,
+			maxWritten:           maxWritten,
+		}, nil
 	}
-	return &bgStat{
-		checkpointsReq:       checkpointsReq,
-		checkpointsScheduled: checkpointsScheduled,
-		checkpointWriteTime:  checkpointWriteTime,
-		checkpointSyncTime:   checkpointSyncTime,
-		bgWrites:             bgWrites,
-		backendWrites:        bufferBackendWrites,
-		bufferBackendWrites:  bufferBackendWrites,
-		bufferFsyncWrites:    bufferFsyncWrites,
-		bufferCheckpoints:    bufferCheckpoints,
-		buffersAllocated:     bufferAllocated,
-		maxWritten:           maxWritten,
-	}, nil
 }
 
 func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error) {
@@ -639,6 +691,23 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 		databases = append(databases, database)
 	}
 	return databases, nil
+}
+
+func (c *postgreSQLClient) getVersion(ctx context.Context) (string, error) {
+	query := "SHOW server_version;"
+	row := c.client.QueryRowContext(ctx, query)
+	var version string
+	err := row.Scan(&version)
+	return version, err
+}
+
+func parseMajorVersion(ver string) (int, error) {
+	parts := strings.Split(ver, ".")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("unexpected version string: %s", ver)
+	}
+
+	return strconv.Atoi(parts[0])
 }
 
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
