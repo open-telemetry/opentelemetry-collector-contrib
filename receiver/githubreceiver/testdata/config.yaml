@@ -3,7 +3,7 @@ receivers:
     initial_delay: 1s
     collection_interval: 60s
     scrapers:
-      github:
+      scraper:
     webhook:
       endpoint: localhost:8080
       read_timeout: "500ms"
@@ -18,7 +18,7 @@ receivers:
     initial_delay: 1s
     collection_interval: 30s
     scrapers:
-      github:
+      scraper:
     webhook:
       endpoint: localhost:8080
       read_timeout: "500ms"
