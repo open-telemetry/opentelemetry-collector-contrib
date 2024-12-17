@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/encoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/parser"
 )
@@ -216,7 +217,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 			r.settings.Logger.Debug("Decoding with msgpack worked", zap.Time("timestamp.first.msgpacktimestamp", *libhoneyevents[0].MsgPackTimestamp), zap.String("timestamp.first.time", libhoneyevents[0].Time))
 			r.settings.Logger.Debug("event zero", zap.String("event.data", libhoneyevents[0].DebugString()))
 		}
-	case jsonContentType:
+	case encoder.JsonContentType:
 		err = json.Unmarshal(body, &libhoneyevents)
 		if err != nil {
 			errorutil.HTTPError(resp, err)
@@ -241,20 +242,20 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 	}
 
 	noErrors := []byte(`{"errors":[]}`)
-	writeResponse(resp, enc.contentType(), http.StatusAccepted, noErrors)
+	writeResponse(resp, enc.ContentType(), http.StatusAccepted, noErrors)
 }
 
-func readContentType(resp http.ResponseWriter, req *http.Request) (encoder, bool) {
+func readContentType(resp http.ResponseWriter, req *http.Request) (encoder.Encoder, bool) {
 	if req.Method != http.MethodPost {
 		handleUnmatchedMethod(resp)
 		return nil, false
 	}
 
 	switch getMimeTypeFromContentType(req.Header.Get("Content-Type")) {
-	case jsonContentType:
-		return jsEncoder, true
+	case encoder.JsonContentType:
+		return encoder.JsEncoder, true
 	case "application/x-msgpack", "application/msgpack":
-		return mpEncoder, true
+		return encoder.MpEncoder, true
 	default:
 		handleUnmatchedContentType(resp)
 		return nil, false
@@ -282,5 +283,5 @@ func handleUnmatchedMethod(resp http.ResponseWriter) {
 
 func handleUnmatchedContentType(resp http.ResponseWriter) {
 	status := http.StatusUnsupportedMediaType
-	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, jsonContentType, pbContentType)))
+	writeResponse(resp, "text/plain", status, []byte(fmt.Sprintf("%v unsupported media type, supported: [%s, %s]", status, encoder.JsonContentType, encoder.PbContentType)))
 }

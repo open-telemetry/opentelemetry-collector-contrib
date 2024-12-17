@@ -47,6 +47,7 @@ type AttributesConfig struct {
 	DurationFields []string `mapstructure:"durationFields"`
 }
 
+// LibhoneyEvent is the event structure from libhoney
 type LibhoneyEvent struct {
 	Samplerate       int            `json:"samplerate" msgpack:"samplerate"`
 	MsgPackTimestamp *time.Time     `msgpack:"time"`
@@ -54,7 +55,7 @@ type LibhoneyEvent struct {
 	Data             map[string]any `json:"data" msgpack:"data"`
 }
 
-// Overrides unmarshall to make sure the MsgPackTimestamp is set
+// UnmarshalJSON overrides the unmarshall to make sure the MsgPackTimestamp is set
 func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 	type _libhoneyEvent LibhoneyEvent
 	tstr := eventtime.GetEventTimeDefaultString()
@@ -80,23 +81,26 @@ func (l *LibhoneyEvent) UnmarshalJSON(j []byte) error {
 	return nil
 }
 
+// DebugString returns a string representation of the LibhoneyEvent
 func (l *LibhoneyEvent) DebugString() string {
 	return fmt.Sprintf("%#v", l)
 }
 
-// returns log until we add the trace parser
+// SignalType returns the type of signal this event represents. Only log is implemented for now.
 func (l *LibhoneyEvent) SignalType() (string, error) {
 	return "log", nil
 }
 
+// GetService returns the service name from the event or the dataset name if no service name is found.
 func (l *LibhoneyEvent) GetService(fields FieldMapConfig, seen *ServiceHistory, dataset string) (string, error) {
 	if serviceName, ok := l.Data[fields.Resources.ServiceName]; ok {
-		seen.NameCount[serviceName.(string)] += 1
+		seen.NameCount[serviceName.(string)]++
 		return serviceName.(string), nil
 	}
 	return dataset, errors.New("no service.name found in event")
 }
 
+// GetScope returns the scope key for the event. If the scope has not been seen before, it creates a new one.
 func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serviceName string) (string, error) {
 	if scopeLibraryName, ok := l.Data[fields.Scopes.LibraryName]; ok {
 		scopeKey := serviceName + scopeLibraryName.(string)
@@ -122,6 +126,7 @@ func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serv
 	return "libhoney.receiver", errors.New("library name not found")
 }
 
+// SimpleScope is a simple struct to hold the scope data
 type SimpleScope struct {
 	ServiceName    string
 	LibraryName    string
