@@ -229,7 +229,6 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 			i: keys[i].Int,
 			p: par,
 		}
-
 	}
 	return ks, nil
 }
@@ -248,7 +247,7 @@ type Key[K any] interface {
 	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
 
-	PathGetter() (GetSetter[K], error)
+	PathGetter(context.Context, K) (GetSetter[K], error)
 }
 
 var _ Key[any] = &baseKey[any]{}
@@ -267,7 +266,7 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
 }
 
-func (k *baseKey[K]) PathGetter() (GetSetter[K], error) {
+func (k *baseKey[K]) PathGetter(_ context.Context, _ K) (GetSetter[K], error) {
 	return k.p, nil
 }
 

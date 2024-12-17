@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -969,7 +968,7 @@ func Test_e2e_converters(t *testing.T) {
 			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
 			assert.NoError(t, err)
 			logStatements, err := logParser.ParseStatement(tt.statement)
-			require.Nil(t, err)
+			assert.NoError(t, err)
 
 			tCtx := constructLogTransformContext()
 			_, _, _ = logStatements.Execute(context.Background(), tCtx)
