@@ -459,7 +459,7 @@ receiver_creator/metrics:
 ```
 
 Find bellow the supported annotations that user can define to automatically enable receivers to start
-collecting metrics signals from the target Pods/containers.
+collecting metrics and logs signals from the target Pods/containers.
 
 ### Supported metrics annotations
 
