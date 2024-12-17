@@ -81,8 +81,8 @@ func getDeltaScale(arel, brel pmetric.ExponentialHistogramDataPointBuckets) expo
 
 	var deltaScale expo.Scale
 	for up-lo > maxBuckets {
-		lo >>= 1
-		up >>= 1
+		lo /= 2
+		up /= 2
 		deltaScale++
 	}
 
