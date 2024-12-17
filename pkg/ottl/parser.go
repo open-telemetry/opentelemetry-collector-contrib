@@ -232,8 +232,9 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 }
 
 var (
-	parser          = newParser[parsedStatement]()
-	conditionParser = newParser[booleanExpression]()
+	parser           = newParser[parsedStatement]()
+	conditionParser  = newParser[booleanExpression]()
+	expressionParser = newParser[value]()
 )
 
 func parseStatement(raw string) (*parsedStatement, error) {
@@ -251,6 +252,19 @@ func parseStatement(raw string) (*parsedStatement, error) {
 
 func parseCondition(raw string) (*booleanExpression, error) {
 	parsed, err := conditionParser.ParseString("", raw)
+	if err != nil {
+		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
+	}
+	err = parsed.checkForCustomError()
+	if err != nil {
+		return nil, err
+	}
+
+	return parsed, nil
+}
+
+func parseExpression(raw string) (*value, error) {
+	parsed, err := expressionParser.ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
@@ -438,4 +452,27 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	// idea to return False when ANDing and everything errored. We use atLeastOneMatch here to return true if anything did match.
 	// It is not possible to get here if any condition during an AND explicitly failed.
 	return c.logicOp == And && atLeastOneMatch, nil
+}
+
+type Expression[K any] struct {
+	getter Getter[K]
+}
+
+func (e *Expression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
+	return e.getter.Get(ctx, tCtx)
+}
+
+func (p *Parser[K]) ParseExpression(raw string) (*Expression[K], error) {
+	parsed, err := parseExpression(raw)
+	if err != nil {
+		return nil, err
+	}
+	getter, err := p.newGetter(*parsed)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Expression[K]{
+		getter: getter,
+	}, nil
 }
