@@ -50,7 +50,7 @@ The following settings can be optionally configured:
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `add_metric_suffixes`: If set to false, type and unit suffixes will not be added to metrics. Default: true.
-- `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false.
+- `send_metadata`: If set to true, prometheus metadata will be generated and sent. Default: false. This option is ignored when using PRW 2.0, which already includes metadata.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
   - `enabled`: enable the sending queue (default: `true`)
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false` (default: `10000`)
@@ -66,6 +66,11 @@ The following settings can be optionally configured:
 - `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of
   samples to be sent to the remote write endpoint. If the batch size is larger
   than this value, it will be split into multiple batches.
+- `protobuf_message` (default = `prometheus.WriteRequest`): 
+  - Protobuf message to use when writing to the remote write endpoint. This option is ignored unless the `exporter.prometheusremotewritexporter.enableSendingRW2` feature gate is enabled.
+  - `prometheus.WriteRequest` is the message used in [Remote Write 1.0](https://prometheus.io/docs/specs/remote_write_spec/).
+  - `io.prometheus.write.v2.Request` is the message used in [Remote Write 2.0](https://prometheus.io/docs/specs/remote_write_spec_2_0/). It is more efficient, always includes metadata, and adds support for the created timestamp and native histograms. Your remote storage provider must support PRW 2.0 to be able to use this message. PRW 2.0 support is currently **In Development**, and is only partially implemented.
+
 
 Example:
 

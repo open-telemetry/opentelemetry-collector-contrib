@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -24,6 +25,13 @@ var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.101.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
+)
+
+var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.enableSendingRW2",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.113.0"),
+	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
@@ -84,14 +92,15 @@ func createDefaultConfig() component.Config {
 	clientConfig.Timeout = exporterhelper.NewDefaultTimeoutConfig().Timeout
 
 	return &Config{
-		Namespace:         "",
-		ExternalLabels:    map[string]string{},
-		MaxBatchSizeBytes: 3000000,
-		TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
-		BackOffConfig:     retrySettings,
-		AddMetricSuffixes: true,
-		SendMetadata:      false,
-		ClientConfig:      clientConfig,
+		Namespace:           "",
+		ExternalLabels:      map[string]string{},
+		MaxBatchSizeBytes:   3000000,
+		TimeoutSettings:     exporterhelper.NewDefaultTimeoutConfig(),
+		BackOffConfig:       retrySettings,
+		AddMetricSuffixes:   true,
+		SendMetadata:        false,
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
+		ClientConfig:        clientConfig,
 		// TODO(jbd): Adjust the default queue size.
 		RemoteWriteQueue: RemoteWriteQueue{
 			Enabled:      true,

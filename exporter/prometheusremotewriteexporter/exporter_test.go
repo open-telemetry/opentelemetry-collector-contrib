@@ -18,8 +18,10 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -36,6 +38,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
@@ -117,6 +120,7 @@ func Test_NewPRWExporter(t *testing.T) {
 			cfg.ExternalLabels = tt.externalLabels
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
+			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 			prwe, err := newPRWExporter(cfg, tt.set)
 
 			if tt.returnErrorOnCreate {
@@ -209,6 +213,7 @@ func Test_Start(t *testing.T) {
 			cfg.Namespace = tt.namespace
 			cfg.RemoteWriteQueue.NumConsumers = 1
 			cfg.ClientConfig = tt.clientSettings
+			cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 
 			prwe, err := newPRWExporter(cfg, tt.set)
 			assert.NoError(t, err)
@@ -448,36 +453,50 @@ func Test_PushMetrics(t *testing.T) {
 
 	staleNaNSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSum])
 
-	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool) {
+	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool, enableSendingRW2 bool) {
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 
 		buf := make([]byte, len(body))
 		dest, err := snappy.Decode(buf, body)
-		assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
+		if enableSendingRW2 {
+			assert.Equal(t, "2.0.0", r.Header.Get("x-prometheus-remote-write-version"))
+			assert.Equal(t, "application/x-protobuf;proto=io.prometheus.write.v2.Request", r.Header.Get("Content-Type"))
+		} else {
+			assert.Equal(t, "0.1.0", r.Header.Get("x-prometheus-remote-write-version"))
+		}
 		assert.Equal(t, "snappy", r.Header.Get("content-encoding"))
 		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		assert.NotNil(t, r.Header.Get("tenant-id"))
 		require.NoError(t, err)
-		wr := &prompb.WriteRequest{}
-		ok := proto.Unmarshal(dest, wr)
-		require.NoError(t, ok)
-		assert.Len(t, wr.Timeseries, expected)
-		if isStaleMarker {
-			assert.True(t, value.IsStaleNaN(wr.Timeseries[0].Samples[0].Value))
+		if enableSendingRW2 {
+			wr := &writev2.Request{}
+			ok := proto.Unmarshal(dest, wr)
+			require.NoError(t, ok)
+			assert.Len(t, wr.Timeseries, expected)
+			// TODO check labels
+		} else {
+			wr := &prompb.WriteRequest{}
+			ok := proto.Unmarshal(dest, wr)
+			require.NoError(t, ok)
+			assert.Len(t, wr.Timeseries, expected)
+			if isStaleMarker {
+				assert.True(t, value.IsStaleNaN(wr.Timeseries[0].Samples[0].Value))
+			}
 		}
 	}
 
 	tests := []struct {
 		name                       string
 		metrics                    pmetric.Metrics
-		reqTestFunc                func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
+		reqTestFunc                func(t *testing.T, r *http.Request, expected int, isStaleMarker bool, enableSendingRW2 bool)
 		expectedTimeSeries         int
 		httpResponseCode           int
 		returnErr                  bool
 		isStaleMarker              bool
 		skipForWAL                 bool
 		expectedFailedTranslations int
+		enableSendingRW2           bool
 	}{
 		{
 			name:                       "invalid_type_case",
@@ -507,6 +526,14 @@ func Test_PushMetrics(t *testing.T) {
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 2,
 			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "doubleGauge_case_rw2",
+			metrics:            doubleGaugeBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 2,
+			httpResponseCode:   http.StatusAccepted,
+			enableSendingRW2:   true,
 		},
 		{
 			name:               "intGauge_case",
@@ -686,14 +713,15 @@ func Test_PushMetrics(t *testing.T) {
 			}
 			for _, ttt := range tests {
 				tt := ttt
-				if useWAL && tt.skipForWAL {
+				// skip WAL for rw2 cases as rw2 doesn't currently support WAL
+				if useWAL && (tt.skipForWAL || tt.enableSendingRW2) {
 					t.Skip("test not supported when using WAL")
 				}
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
-							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
+							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker, tt.enableSendingRW2)
 						}
 						w.WriteHeader(tt.httpResponseCode)
 					}))
@@ -723,6 +751,15 @@ func Test_PushMetrics(t *testing.T) {
 							Enabled: true,
 						},
 						BackOffConfig: retrySettings,
+					}
+
+					if tt.enableSendingRW2 {
+						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV2
+						oldValue := enableSendingRW2FeatureGate.IsEnabled()
+						testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, tt.enableSendingRW2)
+						defer testutil.SetFeatureGateForTest(t, enableSendingRW2FeatureGate, oldValue)
+					} else {
+						cfg.RemoteWriteProtoMsg = config.RemoteWriteProtoMsgV1
 					}
 
 					if useWAL {
@@ -1171,8 +1208,18 @@ func TestRetries(t *testing.T) {
 					Enabled: true,
 				},
 			}
+			buf := bufferPool.Get().(*buffer)
+			buf.protobuf.Reset()
+			defer bufferPool.Put(buf)
 
-			err = exporter.execute(tt.ctx, &prompb.WriteRequest{})
+			// Uses proto.Marshal to convert the WriteRequest into bytes array
+			errMarshal := buf.protobuf.Marshal(&prompb.WriteRequest{})
+			if errMarshal != nil {
+				require.NoError(t, errMarshal)
+				return
+			}
+
+			err = exporter.execute(tt.ctx, buf)
 			tt.assertError(t, err)
 			tt.assertErrorType(t, err)
 			assert.Equal(t, tt.expectedAttempts, totalAttempts)
@@ -1266,7 +1313,17 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for _, req := range reqs {
-		err := exporter.execute(ctx, req)
+		buf := bufferPool.Get().(*buffer)
+		buf.protobuf.Reset()
+		defer bufferPool.Put(buf)
+
+		// Uses proto.Marshal to convert the WriteRequest into bytes array
+		errMarshal := buf.protobuf.Marshal(req)
+		if errMarshal != nil {
+			require.NoError(b, errMarshal)
+			return
+		}
+		err := exporter.execute(ctx, buf)
 		require.NoError(b, err)
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -85,6 +86,7 @@ type prwExporter struct {
 	exporterSettings     prometheusremotewrite.Settings
 	telemetry            prwTelemetry
 	batchTimeSeriesState batchTimeSeriesState
+	RemoteWriteProtoMsg  config.RemoteWriteProtoMsg
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -118,19 +120,24 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, err
 	}
 
+	if err := config.RemoteWriteProtoMsg.Validate(cfg.RemoteWriteProtoMsg); err != nil {
+		return nil, err
+	}
+
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	prwe := &prwExporter{
-		endpointURL:       endpointURL,
-		wg:                new(sync.WaitGroup),
-		closeChan:         make(chan struct{}),
-		userAgentHeader:   userAgentHeader,
-		maxBatchSizeBytes: cfg.MaxBatchSizeBytes,
-		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:    &cfg.ClientConfig,
-		settings:          set.TelemetrySettings,
-		retrySettings:     cfg.BackOffConfig,
-		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
+		endpointURL:         endpointURL,
+		wg:                  new(sync.WaitGroup),
+		closeChan:           make(chan struct{}),
+		userAgentHeader:     userAgentHeader,
+		maxBatchSizeBytes:   cfg.MaxBatchSizeBytes,
+		concurrency:         cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:      &cfg.ClientConfig,
+		settings:            set.TelemetrySettings,
+		retrySettings:       cfg.BackOffConfig,
+		retryOnHTTP429:      retryOn429FeatureGate.IsEnabled(),
+		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -143,6 +150,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		batchTimeSeriesState: newBatchTimeSericesState(),
 	}
 
+	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
 	if prwe.exporterSettings.ExportCreatedMetric {
 		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
 	}
@@ -180,6 +188,23 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 	return err
 }
 
+func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) error {
+	tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
+
+	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+
+	var m []*prompb.MetricMetadata
+	if prwe.exporterSettings.SendMetadata {
+		m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+	}
+	if err != nil {
+		prwe.telemetry.recordTranslationFailure(ctx)
+		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+	}
+	// Call export even if a conversion error, since there may be points that were successfully converted.
+	return prwe.handleExport(ctx, tsMap, m)
+}
+
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
 // TimeSeries, validates and handles each individual metric, adding the converted TimeSeries to the map, and finally
 // exports the map.
@@ -192,21 +217,23 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		return errors.New("shutdown has been called")
 	default:
 
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
-		if err != nil {
-			prwe.telemetry.recordTranslationFailure(ctx)
-			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+		// If feature flag not enabled support only RW1
+		if !enableSendingRW2FeatureGate.IsEnabled() {
+			return prwe.pushMetricsV1(ctx, md)
 		}
 
-		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+		// If feature flag enabled check if we want to send RW1 or RW2
+		switch prwe.RemoteWriteProtoMsg {
+		case config.RemoteWriteProtoMsgV1:
+			// Rw1 case
+			return prwe.pushMetricsV1(ctx, md)
+		case config.RemoteWriteProtoMsgV2:
+			// RW2 case
+			return prwe.pushMetricsV2(ctx, md)
 
-		var m []*prompb.MetricMetadata
-		if prwe.exporterSettings.SendMetadata {
-			m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+		default:
+			return fmt.Errorf("unsupported remote-write protobuf message: %v", prwe.RemoteWriteProtoMsg)
 		}
-
-		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return prwe.handleExport(ctx, tsMap, m)
 	}
 }
 
@@ -227,7 +254,6 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	if len(tsMap) == 0 {
 		return nil
 	}
-
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
 	if err != nil {
@@ -275,7 +301,18 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 					if !ok {
 						return
 					}
-					if errExecute := prwe.execute(ctx, request); errExecute != nil {
+
+					buf := bufferPool.Get().(*buffer)
+					buf.protobuf.Reset()
+					defer bufferPool.Put(buf)
+
+					// Uses proto.Marshal to convert the WriteRequest into bytes array.
+					if errMarshal := buf.protobuf.Marshal(request); errMarshal != nil {
+						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						return
+					}
+
+					if errExecute := prwe.execute(ctx, buf); errExecute != nil {
 						mu.Lock()
 						errs = multierr.Append(errs, consumererror.NewPermanent(errExecute))
 						mu.Unlock()
@@ -289,16 +326,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 	return errs
 }
 
-func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
-	buf := bufferPool.Get().(*buffer)
-	buf.protobuf.Reset()
-	defer bufferPool.Put(buf)
-
-	// Uses proto.Marshal to convert the WriteRequest into bytes array
-	errMarshal := buf.protobuf.Marshal(writeReq)
-	if errMarshal != nil {
-		return consumererror.NewPermanent(errMarshal)
-	}
+func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 	// If we don't pass a buffer large enough, Snappy Encode function will not use it and instead will allocate a new buffer.
 	// Manually grow the buffer to make sure Snappy uses it and we can re-use it afterwards.
 	maxCompressedLen := snappy.MaxEncodedLen(len(buf.protobuf.Bytes()))
@@ -331,9 +359,19 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		// Add necessary headers specified by:
 		// https://cortexmetrics.io/docs/apis/#remote-api
 		req.Header.Add("Content-Encoding", "snappy")
-		req.Header.Set("Content-Type", "application/x-protobuf")
-		req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
+
+		switch {
+		// If feature flag not enabled support only RW1
+		case !enableSendingRW2FeatureGate.IsEnabled(), prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV1:
+			req.Header.Set("Content-Type", "application/x-protobuf")
+			req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+		case prwe.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2:
+			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
+			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
+		default:
+			return errors.New("proto message validated earlier")
+		}
 
 		resp, err := prwe.client.Do(req)
 		if err != nil {
