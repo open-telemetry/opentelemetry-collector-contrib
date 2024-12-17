@@ -701,7 +701,7 @@ func extractIDFromLog(log plog.LogRecord) (string, string) {
 	if len(match) == 2 {
 		batch = match[0]
 	}
-	// in case of otlp recevier, batch_index and item_index are part of attributes.
+	// in case of otlp receiver, batch_index and item_index are part of attributes.
 	if batchIndex, ok := log.Attributes().Get("batch_index"); ok {
 		batch = batchIndex.AsString()
 	}
