@@ -5,6 +5,7 @@ package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentele
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"strings"
 
@@ -25,14 +26,12 @@ type cumulativeToDeltaProcessor struct {
 	cancelFunc         context.CancelFunc
 }
 
-func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
+func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) (*cumulativeToDeltaProcessor, error) {
 	ctx, cancel := context.WithCancel(context.Background())
+
 	p := &cumulativeToDeltaProcessor{
-		logger:             logger,
-		deltaCalculator:    tracking.NewMetricTracker(ctx, logger, config.MaxStaleness, config.InitialValue),
-		cancelFunc:         cancel,
-		includeMetricTypes: getMetricTypeFilter(config.Include.MetricTypes),
-		excludeMetricTypes: getMetricTypeFilter(config.Exclude.MetricTypes),
+		logger:     logger,
+		cancelFunc: cancel,
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
@@ -40,10 +39,29 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 	if len(config.Exclude.Metrics) > 0 {
 		p.excludeFS, _ = filterset.CreateFilterSet(config.Exclude.Metrics, &config.Exclude.Config)
 	}
-	return p
+
+	if len(config.Include.MetricTypes) > 0 {
+		includeMetricTypeFilter, err := getMetricTypeFilter(config.Include.MetricTypes)
+		if err != nil {
+			return nil, err
+		}
+		p.includeMetricTypes = includeMetricTypeFilter
+	}
+
+	if len(config.Exclude.MetricTypes) > 0 {
+		excludeMetricTypeFilter, err := getMetricTypeFilter(config.Exclude.MetricTypes)
+		if err != nil {
+			return nil, err
+		}
+		p.excludeMetricTypes = excludeMetricTypeFilter
+	}
+
+	p.deltaCalculator = tracking.NewMetricTracker(ctx, logger, config.MaxStaleness, config.InitialValue)
+
+	return p, nil
 }
 
-func getMetricTypeFilter(types []string) map[pmetric.MetricType]bool {
+func getMetricTypeFilter(types []string) (map[pmetric.MetricType]bool, error) {
 	res := map[pmetric.MetricType]bool{}
 	for _, t := range types {
 		switch strings.ToLower(t) {
@@ -52,9 +70,10 @@ func getMetricTypeFilter(types []string) map[pmetric.MetricType]bool {
 		case strings.ToLower(pmetric.MetricTypeHistogram.String()):
 			res[pmetric.MetricTypeHistogram] = true
 		default:
+			return nil, fmt.Errorf("unsupported metric type filter: %s", t)
 		}
 	}
-	return res
+	return res, nil
 }
 
 // processMetrics implements the ProcessMetricsFunc type.

@@ -5,6 +5,7 @@ package cumulativetodeltaprocessor
 
 import (
 	"context"
+	"errors"
 	"math"
 	"testing"
 	"time"
@@ -117,6 +118,7 @@ type cumulativeToDeltaTest struct {
 	exclude    MatchMetrics
 	inMetrics  pmetric.Metrics
 	outMetrics pmetric.Metrics
+	wantError  error
 }
 
 func TestCumulativeToDeltaProcessor(t *testing.T) {
@@ -604,6 +606,20 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					isCumulative: []bool{false},
 				}),
 		},
+		{
+			name: "cumulative_to_delta_unsupported_include_metric_type",
+			include: MatchMetrics{
+				MetricTypes: []string{"summary"},
+			},
+			wantError: errors.New("unsupported metric type filter: summary"),
+		},
+		{
+			name: "cumulative_to_delta_unsupported_exclude_metric_type",
+			include: MatchMetrics{
+				MetricTypes: []string{"summary"},
+			},
+			wantError: errors.New("unsupported metric type filter: summary"),
+		},
 	}
 
 	for _, test := range testCases {
@@ -621,6 +637,12 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				cfg,
 				next,
 			)
+
+			if test.wantError != nil {
+				require.ErrorContains(t, err, test.wantError.Error())
+				require.Nil(t, mgp)
+				return
+			}
 			assert.NotNil(t, mgp)
 			assert.NoError(t, err)
 
