@@ -24,7 +24,7 @@ func TestProduce(t *testing.T) {
 		UnixSeconds:    0x618aa3a8,
 		SequenceNumber: 838987416,
 		SourceId:       256,
-		FlowSets: []interface{}{
+		FlowSets: []any{
 			netflow.DataFlowSet{
 				FlowSetHeader: netflow.FlowSetHeader{
 					Id:     260,
@@ -57,7 +57,7 @@ func TestProduce(t *testing.T) {
 	messages, err := otelLogsProducer.Produce(message, &producer.ProduceArgs{})
 	require.NoError(t, err)
 	require.NotNil(t, messages)
-	assert.Equal(t, 1, len(messages))
+	assert.Len(t, messages, 1)
 
 	pm, ok := messages[0].(*protoproducer.ProtoProducerMessage)
 	assert.True(t, ok)

@@ -118,13 +118,14 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 
 	var decodeFunc utils.DecoderFunc
 	var p utils.FlowPipe
-	if nr.config.Scheme == "sflow" {
+	switch nr.config.Scheme {
+	case "sflow":
 		p = utils.NewSFlowPipe(cfgPipe)
-	} else if nr.config.Scheme == "netflow" {
+	case "netflow":
 		p = utils.NewNetFlowPipe(cfgPipe)
-	} else if nr.config.Scheme == "flow" {
+	case "flow":
 		p = utils.NewFlowPipe(cfgPipe)
-	} else {
+	default:
 		return nil, fmt.Errorf("scheme does not exist: %s", nr.config.Scheme)
 	}
 
@@ -141,23 +142,20 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 // We don't want the receiver to stop if there is an error processing a packet
 func (nr *netflowReceiver) handleErrors() {
 	for err := range nr.udpReceiver.Errors() {
-		// Receiver was closed, exit
-		if errors.Is(err, net.ErrClosed) {
+		switch {
+		case errors.Is(err, net.ErrClosed):
 			nr.logger.Info("UDP receiver closed, exiting error handler")
 			return
 
-			// This is the type of error we want to log
-		} else if !errors.Is(err, netflow.ErrorTemplateNotFound) && !errors.Is(err, debug.PanicError) {
+		case !errors.Is(err, netflow.ErrorTemplateNotFound) && !errors.Is(err, debug.PanicError):
 			nr.logger.Error("receiver error", zap.Error(err))
 			continue
 
-			// A template was not found, this is not a big deal and can happen
-		} else if errors.Is(err, netflow.ErrorTemplateNotFound) {
+		case errors.Is(err, netflow.ErrorTemplateNotFound):
 			nr.logger.Warn("template was not found for this message")
 			continue
 
-			// These are pretty bad and should not happen
-		} else if errors.Is(err, debug.PanicError) {
+		case errors.Is(err, debug.PanicError):
 			var pErrMsg *debug.PanicErrorMessage
 			if errors.As(err, &pErrMsg) {
 				nr.logger.Error("panic error", zap.String("panic", pErrMsg.Inner))

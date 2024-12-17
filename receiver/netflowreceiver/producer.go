@@ -22,7 +22,7 @@ type OtelLogsProducerWrapper struct {
 }
 
 // Produce converts the message into a list log records and sends them to log consumer
-func (o *OtelLogsProducerWrapper) Produce(msg interface{}, args *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
+func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) ([]producer.ProducerMessage, error) {
 	// First we let the proto producer parse the message
 	// All the netflow protocol and structure is handled by the proto producer
 	flowMessageSet, err := o.wrapped.Produce(msg, args)
@@ -39,10 +39,9 @@ func (o *OtelLogsProducerWrapper) Produce(msg interface{}, args *producer.Produc
 
 	// A single netflow packet can contain multiple flow messages
 	for _, msg := range flowMessageSet {
-
 		// Convert each one to the Otel semantic dictionary format
-		otelMessage, err := convertToOtel(msg)
-		if err != nil {
+		otelMessage, innerErr := convertToOtel(msg)
+		if innerErr != nil {
 			continue
 		}
 
@@ -51,21 +50,21 @@ func (o *OtelLogsProducerWrapper) Produce(msg interface{}, args *producer.Produc
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(otelMessage.Flow.TimeReceived))
 
 		// The bytes of the message in JSON format
-		m, err := json.Marshal(otelMessage)
-		if err != nil {
+		m, innerErr := json.Marshal(otelMessage)
+		if innerErr != nil {
 			continue
 		}
 
 		// Convert to a map[string]
 		// https://opentelemetry.io/docs/specs/otel/logs/data-model/#type-mapstring-any
-		sec := map[string]interface{}{}
-		if err = json.Unmarshal(m, &sec); err != nil {
+		sec := map[string]any{}
+		if innerErr = json.Unmarshal(m, &sec); innerErr != nil {
 			continue
 		}
 
 		// Set the map to the log record body
-		err = logRecord.Body().SetEmptyMap().FromRaw(sec)
-		if err != nil {
+		innerErr = logRecord.Body().SetEmptyMap().FromRaw(sec)
+		if innerErr != nil {
 			continue
 		}
 	}
