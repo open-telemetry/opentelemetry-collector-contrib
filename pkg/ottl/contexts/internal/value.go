@@ -90,8 +90,8 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 				if err != nil {
 					return nil, err
 				}
-				resString, ok := res.(string)
-				if !ok {
+				resString, okk := res.(string)
+				if !okk {
 					return nil, fmt.Errorf("err")
 				}
 				s = &resString
