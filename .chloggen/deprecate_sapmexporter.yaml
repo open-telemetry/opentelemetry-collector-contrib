@@ -21,9 +21,9 @@ subtext: |
   ```yaml
     exporters:
         otlphttp:
-            traces_endpoint: "${INGEST_URL}/v2/trace/otlp"
+            traces_endpoint: "${SPLUNK_INGEST_URL}/v2/trace/otlp"
             headers:
-                "X-SF-Token": "${ACCESS_TOKEN}"
+                "X-SF-Token": "${SPLUNK_ACCESS_TOKEN}"
     ```
 
 # If your change doesn't affect end users or the exported elements of any package,
