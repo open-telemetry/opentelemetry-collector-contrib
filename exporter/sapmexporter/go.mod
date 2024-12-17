@@ -1,12 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
 
-go 1.22.7
-
-toolchain go1.23.4
+go 1.22.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/jaegertracing/jaeger v1.64.0
+	github.com/jaegertracing/jaeger v1.62.0
 	github.com/klauspost/compress v1.17.11
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.116.0
