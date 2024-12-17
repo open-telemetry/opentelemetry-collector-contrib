@@ -33,7 +33,7 @@ func HandleHTTPCode(resp *http.Response) error {
 		http.StatusText(resp.StatusCode))
 
 	// Check if there is any error text returned by Splunk that we can append to the error message
-	if resp.Body != nil {
+	if resp.ContentLength > 0 {
 		var jsonResponse map[string]any
 		bodyString, _ := io.ReadAll(resp.Body)
 		resp.Body = io.NopCloser(bytes.NewBuffer(bodyString))

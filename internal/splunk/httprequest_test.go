@@ -29,7 +29,7 @@ func TestConsumeMetrics(t *testing.T) {
 		wantThrottleErr  bool
 		wantErrMessage   bool
 		noErrMessage     bool
-		response_ok      bool
+		responseOk       bool
 	}{
 		{
 			name:             "response_forbidden",
@@ -72,6 +72,7 @@ func TestConsumeMetrics(t *testing.T) {
 			name:             "response_ok",
 			httpResponseCode: http.StatusOK,
 			respBody:         "{\"text\":\"ok\"}",
+			responseOk:       true,
 		},
 	}
 	for _, tt := range tests {
@@ -87,6 +88,7 @@ func TestConsumeMetrics(t *testing.T) {
 
 			if tt.respBody != "" {
 				resp.Body = io.NopCloser(strings.NewReader(tt.respBody))
+				resp.ContentLength = int64(len(tt.respBody))
 			}
 
 			err := HandleHTTPCode(resp)
