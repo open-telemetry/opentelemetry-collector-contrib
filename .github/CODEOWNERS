@@ -64,7 +64,6 @@ exporter/googlemanagedprometheusexporter/         @open-telemetry/collector-cont
 exporter/honeycombmarkerexporter/                 @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
 exporter/influxdbexporter/                        @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/kafkaexporter/                           @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
-exporter/kineticaexporter/                        @open-telemetry/collector-contrib-approvers @TylerHelmuth
 exporter/loadbalancingexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                    @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                          @open-telemetry/collector-contrib-approvers @yotamloe
@@ -313,6 +312,7 @@ reports/distributions/k8s.yaml     @open-telemetry/collector-contrib-approvers
 
 ## UNMAINTAINED components
 
+exporter/kineticaexporter/                        @open-telemetry/collector-contrib-approvers 
 exporter/opensearchexporter/                      @open-telemetry/collector-contrib-approvers 
 extension/observer/ecstaskobserver/               @open-telemetry/collector-contrib-approvers 
 receiver/jmxreceiver/                             @open-telemetry/collector-contrib-approvers 

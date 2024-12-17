@@ -423,6 +423,7 @@ update-otel:$(MULTIMOD)
 	$(MAKE) genoteltestbedcol
 	$(MAKE) oteltestbedcol
 	$(MAKE) remove-toolchain
+	git add . && git commit -s -m "[chore] mod and toolchain tidy" ; \
 
 .PHONY: otel-from-tree
 otel-from-tree:
