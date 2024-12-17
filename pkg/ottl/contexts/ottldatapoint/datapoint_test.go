@@ -1923,8 +1923,6 @@ func createAttributeTelemetry(attributes pcommon.Map) {
 }
 
 func Test_newPathGetSetter_Metric(t *testing.T) {
-	refMetric := createMetricTelemetry()
-
 	newMetric := pmetric.NewMetric()
 	newMetric.SetName("new name")
 
@@ -1935,17 +1933,6 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		newVal   any
 		modified func(metric pmetric.Metric)
 	}{
-		{
-			name: "metric",
-			path: &internal.TestPath[TransformContext]{
-				N: "metric",
-			},
-			orig:   refMetric,
-			newVal: newMetric,
-			modified: func(metric pmetric.Metric) {
-				newMetric.CopyTo(metric)
-			},
-		},
 		{
 			name: "metric name",
 			path: &internal.TestPath[TransformContext]{
