@@ -17,16 +17,16 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -84,7 +84,7 @@ func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, opti
 	)
 }
 
-func newProfilesProcessor(cfg component.Config, nextProfilesConsumer consumerprofiles.Profiles, options ...option) (processorprofiles.Profiles, error) {
+func newProfilesProcessor(cfg component.Config, nextProfilesConsumer xconsumer.Profiles, options ...option) (xprocessor.Profiles, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	set := processortest.NewNopSettings()
@@ -118,7 +118,7 @@ type multiTest struct {
 	tp processor.Traces
 	mp processor.Metrics
 	lp processor.Logs
-	pp processorprofiles.Profiles
+	pp xprocessor.Profiles
 
 	nextTrace    *consumertest.TracesSink
 	nextMetrics  *consumertest.MetricsSink
