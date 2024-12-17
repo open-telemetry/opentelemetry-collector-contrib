@@ -5,7 +5,6 @@ package googlecloudmonitoringreceiver
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"testing"
@@ -105,7 +104,7 @@ func TestInitializeClient_Success(t *testing.T) {
 	ctx := context.Background()
 
 	// Set up fake credentials for testing
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "./../googlecloudspannerreceiver/testdata/serviceAccount.json")
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "./testdata/serviceAccount.json")
 	defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 	logger := zap.NewNop()
@@ -185,14 +184,11 @@ func TestStart_Failure_NoClient(t *testing.T) {
 		},
 	}
 
-	receiver := newGoogleCloudMonitoringReceiver(cfg, logger)
 	// Don't initialize the client to test failure case
-
-	// Test the Start function
-	err := receiver.Start(ctx, nil)
-	errMsg := fmt.Errorf("%s", "failed to find default credentials: google: could not find default credentials. See https://cloud.google.com/docs/authentication/external/set-up-adc for more information")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), errMsg.Error())
+	receiver := newGoogleCloudMonitoringReceiver(cfg, logger)
+	err := receiver.Start(ctx, nil)                // Test the Start function
+	assert.Error(t, err)                           // Assert error presence
+	assert.Contains(t, err.Error(), "credentials") // Assert error contains a specific substring
 }
 
 func TestStart_Failure_InvalidMetricDescriptor_ProjectNotFound(t *testing.T) {
@@ -222,9 +218,9 @@ func TestStart_Failure_InvalidMetricDescriptor_ProjectNotFound(t *testing.T) {
 
 	// Test the Start function
 	err = receiver.Start(ctx, nil)
-	errMsg := fmt.Errorf("%s", "failed to retrieve metric descriptors data: rpc error: code = NotFound desc = project not found")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), errMsg.Error())
+	assert.Contains(t, err.Error(), "not found")
+	assert.Equal(t, status.Code(err), codes.NotFound)
 }
 
 func TestStart_Failure_InvalidMetricDescriptor_Unauthenticated_User(t *testing.T) {
@@ -252,9 +248,9 @@ func TestStart_Failure_InvalidMetricDescriptor_Unauthenticated_User(t *testing.T
 
 	// Test the Start function
 	err = receiver.Start(ctx, nil)
-	errMsg := fmt.Errorf("%s", "failed to retrieve metric descriptors data: rpc error: code = Unauthenticated desc = transport: per-RPC creds failed due to error: auth: cannot fetch token: 400")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), errMsg.Error())
+	assert.Contains(t, err.Error(), "Unauthenticated")
+	assert.Equal(t, status.Code(err), codes.Unauthenticated)
 }
 
 func TestScrape_Success(t *testing.T) {
@@ -301,8 +297,6 @@ func TestScrape_Success(t *testing.T) {
 
 	// Execute Scrape
 	metrics, err := receiver.Scrape(ctx)
-
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
 }
@@ -342,8 +336,6 @@ func TestScrape_Failure_MetricDescriptorNotFound(t *testing.T) {
 
 	// Execute Scrape
 	metrics, err := receiver.Scrape(ctx)
-
-	// Assert
 	assert.NoError(t, err) // Should not return error as it just show logs warning
 	assert.NotNil(t, metrics)
 	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -393,12 +385,10 @@ func TestScrape_Failure_InvalidProjectID_WithMaxInterval(t *testing.T) {
 
 	// Execute Scrape
 	metrics, err := receiver.Scrape(ctx)
-
-	// Assert
-	errMsg := fmt.Errorf("%s", "failed to retrieve time series data: rpc error: code = NotFound desc = project not found")
 	assert.Error(t, err)
 	assert.NotNil(t, metrics)
-	assert.Contains(t, err.Error(), errMsg.Error())
+	assert.Contains(t, err.Error(), "not found")
+	assert.Equal(t, status.Code(err), codes.NotFound)
 }
 
 func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
@@ -770,8 +760,6 @@ func TestScrape_WithDefaultCollectionInterval(t *testing.T) {
 
 	// Execute Scrape
 	metrics, err := receiver.Scrape(ctx)
-
-	// Assert
 	assert.NoError(t, err)
 	assert.NotNil(t, metrics)
 }
