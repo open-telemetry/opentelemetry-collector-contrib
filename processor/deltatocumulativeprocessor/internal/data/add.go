@@ -67,6 +67,9 @@ func (dp Histogram) Add(in Histogram) Histogram {
 	return dp
 }
 
+// getDeltaScale computes how many times the histograms need to be downscaled to ensure
+// the bucket range after thei merge fits within maxBuckets.
+// This logic assumes that trailing and leading zeros are going to be removed.
 func getDeltaScale(arel, brel pmetric.ExponentialHistogramDataPointBuckets) expo.Scale {
 	a, b := expo.Abs(arel), expo.Abs(brel)
 
