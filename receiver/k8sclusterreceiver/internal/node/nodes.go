@@ -151,6 +151,10 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	meta[conventions.AttributeK8SNodeName] = node.Name
 	meta[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
+	// Node can have many additional conditions (gke has 18 on v1.29). Bad thresholds/implementations
+	// of custom conditions can cause value to oscillate between true/false frequently. So, only sending the node
+	// pressure conditions that are set by kubelet to avoid noise.
+	// https://pkg.go.dev/k8s.io/api/core/v1#NodeConditionType
 	kubeletConditions := map[corev1.NodeConditionType]struct{}{
 		corev1.NodeReady:              {},
 		corev1.NodeMemoryPressure:     {},
