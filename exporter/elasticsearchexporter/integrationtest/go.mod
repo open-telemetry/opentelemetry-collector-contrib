@@ -7,11 +7,11 @@ toolchain go1.22.8
 require (
 	github.com/elastic/go-docappender/v2 v2.3.2
 	github.com/gorilla/mux v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.116.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.116.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.0.0-00010101000000-000000000000
 	github.com/shirou/gopsutil/v4 v4.24.11
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.116.1-0.20241220212031-7c2639723f67
