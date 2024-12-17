@@ -35,45 +35,44 @@ var histogramBucketSamples = []struct {
 	sum          int64
 }{
 	{
-		[]uint64{0, 0, 0, 0, 0},
-		0,
-	},
-
-	{
-		[]uint64{0, 1, 0, 0, 0},
-		1,
+		[]uint64{0, 0, 1, 0, 0, 0, 3, 4, 1, 1, 0, 0, 0, 0, 0},
+		3940,
 	},
 	{
-		[]uint64{0, 1, 0, 1, 0},
-		4,
+		[]uint64{0, 0, 0, 0, 0, 0, 2, 4, 4, 0, 0, 0, 0, 0, 0},
+		4455,
 	},
 	{
-		[]uint64{1, 1, 1, 0, 0},
-		3,
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 4, 3, 2, 0, 0, 0, 0, 0},
+		5337,
 	},
 	{
-		[]uint64{0, 0, 1, 2, 1},
-		12,
+		[]uint64{0, 0, 1, 0, 1, 0, 2, 2, 1, 3, 0, 0, 0, 0, 0},
+		4477,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0},
-		0,
+		[]uint64{0, 0, 0, 0, 0, 1, 3, 2, 2, 2, 0, 0, 0, 0, 0},
+		4670,
 	},
 	{
-		[]uint64{0, 1, 0, 0, 0},
-		1,
+		[]uint64{0, 0, 0, 1, 1, 0, 1, 1, 1, 5, 0, 0, 0, 0, 0},
+		5670,
 	},
 	{
-		[]uint64{0, 2, 0, 0, 0},
-		2,
+		[]uint64{0, 0, 0, 0, 0, 2, 1, 1, 4, 2, 0, 0, 0, 0, 0},
+		5091,
 	},
 	{
-		[]uint64{1, 0, 1, 1, 0},
-		5,
+		[]uint64{0, 0, 2, 0, 0, 0, 2, 4, 1, 1, 0, 0, 0, 0, 0},
+		3420,
 	},
 	{
-		[]uint64{2, 0, 1, 0, 1},
-		6,
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 3, 2, 4, 0, 0, 0, 0, 0},
+		5917,
+	},
+	{
+		[]uint64{0, 0, 1, 0, 1, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0},
+		3988,
 	},
 }
 
@@ -145,8 +144,8 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 							Exemplars:  w.exemplars,
 							Count:      iteration,
 							Sum:        sum,
-							// Simple bounds assumption
-							Bounds:       []float64{0, 1, 2, 3, 4},
+							// Bounds from https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk.md#explicit-bucket-histogram-aggregation
+							Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},
 							BucketCounts: bucketCounts,
 						},
 					},
