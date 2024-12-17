@@ -22,8 +22,7 @@ type StatefulSetClient interface {
 	StatefulSetInfos() []*StatefulSetInfo
 }
 
-type noOpStatefulSetClient struct {
-}
+type noOpStatefulSetClient struct{}
 
 func (nd *noOpStatefulSetClient) StatefulSetInfos() []*StatefulSetInfo {
 	return []*StatefulSetInfo{}

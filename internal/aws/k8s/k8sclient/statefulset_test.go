@@ -98,5 +98,5 @@ func TestStatefulSetClient(t *testing.T) {
 func TestTransformFuncStatefulSet(t *testing.T) {
 	info, err := transformFuncStatefulSet(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
