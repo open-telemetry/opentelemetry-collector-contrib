@@ -244,7 +244,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 					currentValue = currentValue.SetEmptyMap().PutEmpty(resString)
 				}
 				currentValue.SetEmptySlice()
-				for k := 0; k < int(*&resInt); k++ {
+				for k := 0; k < int(resInt); k++ {
 					currentValue.Slice().AppendEmpty()
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
