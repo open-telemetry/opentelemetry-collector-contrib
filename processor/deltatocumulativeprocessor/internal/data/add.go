@@ -68,13 +68,15 @@ func (dp Histogram) Add(in Histogram) Histogram {
 }
 
 // getDeltaScale computes how many times the histograms need to be downscaled to ensure
-// the bucket range after thei merge fits within maxBuckets.
+// the bucket range after their merge fits within maxBuckets.
 // This logic assumes that trailing and leading zeros are going to be removed.
 func getDeltaScale(arel, brel pmetric.ExponentialHistogramDataPointBuckets) expo.Scale {
 	a, b := expo.Abs(arel), expo.Abs(brel)
 
 	lo := min(a.Lower(), b.Lower())
 	up := max(a.Upper(), b.Upper())
+
+	// Skip leading and trailing zeros.
 	for lo < up && a.Abs(lo) == 0 && b.Abs(lo) == 0 {
 		lo++
 	}
@@ -82,6 +84,7 @@ func getDeltaScale(arel, brel pmetric.ExponentialHistogramDataPointBuckets) expo
 		up--
 	}
 
+	// Keep downscaling until the number of buckets is within the limit.
 	var deltaScale expo.Scale
 	for up-lo > maxBuckets {
 		lo /= 2
@@ -103,7 +106,7 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 		hi.SetScale(lo.Scale())
 	}
 
-	// Downscale if an expected number of buckets is too large after the merge.
+	// Downscale if an expected number of buckets after the merge is too large.
 	if deltaScale := max(getDeltaScale(dp.Positive(), in.Positive()), getDeltaScale(dp.Negative(), in.Negative())); deltaScale > 0 {
 		from := expo.Scale(dp.Scale())
 		to := expo.Scale(dp.Scale()) - deltaScale
