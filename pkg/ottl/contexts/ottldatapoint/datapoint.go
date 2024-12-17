@@ -393,7 +393,6 @@ func accessAttributesKey(key []ottl.Key[TransformContext]) ottl.StandardGetSette
 			case pmetric.SummaryDataPoint:
 				return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), key, val)
 			}
-			// TODO
 			return nil
 		},
 	}

@@ -317,7 +317,6 @@ func accessSpanEventAttributesKey(key []ottl.Key[TransformContext]) ottl.Standar
 		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
 			return internal.SetMapValue[TransformContext](ctx, tCtx, tCtx.GetSpanEvent().Attributes(), key, val)
 		},
-		// TODO
 	}
 }
 

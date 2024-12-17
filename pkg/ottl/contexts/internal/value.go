@@ -71,27 +71,57 @@ func SetValue(value pcommon.Value, val any) error {
 func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
 	val := value
 	var ok bool
-	for i := 0; i < len(keys); i++ {
+	for count := 0; count < len(keys); count++ {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := keys[i].String(ctx, tCtx)
+			s, err := keys[count].String(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 			if s == nil {
-				return nil, fmt.Errorf("map must be indexed by a string")
+				p, err := keys[count].PathGetter(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				if p == nil {
+					return nil, errors.New("map must be indexed by a string")
+				}
+				res, err := p.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				resString, ok := res.(string)
+				if !ok {
+					return nil, fmt.Errorf("err")
+				}
+				s = &resString
 			}
 			val, ok = val.Map().Get(*s)
 			if !ok {
 				return nil, nil
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := keys[i].Int(ctx, tCtx)
+			i, err := keys[count].Int(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 			if i == nil {
-				return nil, fmt.Errorf("slice must be indexed by an int")
+				p, err := keys[count].PathGetter(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				if p == nil {
+					return nil, errors.New("slice must be indexed by an int")
+				}
+				res, err := p.Get(ctx, tCtx)
+				if err != nil {
+					return nil, err
+				}
+				resInt, ok := res.(int64)
+				if !ok {
+					return nil, fmt.Errorf("err")
+				}
+				i = &resInt
 			}
 			if int(*i) >= val.Slice().Len() || int(*i) < 0 {
 				return nil, fmt.Errorf("index %v out of bounds", *i)
@@ -117,15 +147,30 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 		return err
 	}
 
-	for i := 0; i < len(keys); i++ {
+	for count := 0; count < len(keys); count++ {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := keys[i].String(ctx, tCtx)
+			s, err := keys[count].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
 			if s == nil {
-				return errors.New("map must be indexed by a string")
+				p, err := keys[count].PathGetter(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+				if p == nil {
+					return errors.New("map must be indexed by a string")
+				}
+				res, err := p.Get(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+				resString, ok := res.(string)
+				if !ok {
+					return fmt.Errorf("err")
+				}
+				s = &resString
 			}
 			potentialValue, ok := currentValue.Map().Get(*s)
 			if !ok {
@@ -134,23 +179,38 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				currentValue = potentialValue
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := keys[i].Int(ctx, tCtx)
+			i, err := keys[count].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
 			if i == nil {
-				return errors.New("slice must be indexed by an int")
+				p, err := keys[count].PathGetter(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+				if p == nil {
+					return errors.New("slice must be indexed by an int")
+				}
+				res, err := p.Get(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+				resInt, ok := res.(int64)
+				if !ok {
+					return fmt.Errorf("err")
+				}
+				i = &resInt
 			}
 			if int(*i) >= currentValue.Slice().Len() || int(*i) < 0 {
 				return fmt.Errorf("index %v out of bounds", *i)
 			}
 			currentValue = currentValue.Slice().At(int(*i))
 		case pcommon.ValueTypeEmpty:
-			s, err := keys[i].String(ctx, tCtx)
+			s, err := keys[count].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
-			i, err := keys[i].Int(ctx, tCtx)
+			i, err := keys[count].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -164,7 +224,30 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
 			default:
-				return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
+				p, err := keys[count].PathGetter(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+				if p == nil {
+					return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
+				}
+				res, err := p.Get(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+				resInt, ok := res.(int64)
+				if !ok {
+					resString, ok := res.(string)
+					if !ok {
+						return fmt.Errorf("err")
+					}
+					currentValue = currentValue.SetEmptyMap().PutEmpty(resString)
+				}
+				currentValue.SetEmptySlice()
+				for k := 0; k < int(*&resInt); k++ {
+					currentValue.Slice().AppendEmpty()
+				}
+				currentValue = currentValue.Slice().AppendEmpty()
 			}
 		default:
 			return fmt.Errorf("type %v does not support string indexing", currentValue.Type())

@@ -22,7 +22,23 @@ func GetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 		return nil, err
 	}
 	if i == nil {
-		return nil, fmt.Errorf("non-integer indexing is not supported")
+		p, err := keys[0].PathGetter(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if p != nil {
+			res, err := p.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			resInt, ok := res.(int64)
+			if !ok {
+				return nil, fmt.Errorf("err")
+			}
+			i = &resInt
+		} else {
+			return nil, fmt.Errorf("non-integer indexing is not supported")
+		}
 	}
 
 	idx := int(*i)
@@ -44,7 +60,23 @@ func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 		return err
 	}
 	if i == nil {
-		return fmt.Errorf("non-integer indexing is not supported")
+		p, err := keys[0].PathGetter(ctx, tCtx)
+		if err != nil {
+			return err
+		}
+		if p != nil {
+			res, err := p.Get(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+			resInt, ok := res.(int64)
+			if !ok {
+				return fmt.Errorf("err")
+			}
+			i = &resInt
+		} else {
+			return fmt.Errorf("non-integer indexing is not supported")
+		}
 	}
 
 	idx := int(*i)

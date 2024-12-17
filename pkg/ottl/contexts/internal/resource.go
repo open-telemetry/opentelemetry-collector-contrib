@@ -61,7 +61,6 @@ func accessResourceAttributesKey[K ResourceContext](keys []ottl.Key[K]) ottl.Sta
 		Setter: func(ctx context.Context, tCtx K, val any) error {
 			return SetMapValue[K](ctx, tCtx, tCtx.GetResource().Attributes(), keys, val)
 		},
-		// TODO
 	}
 }
 
