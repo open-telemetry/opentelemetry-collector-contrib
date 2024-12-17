@@ -103,28 +103,11 @@ func (p *Parser[K]) parsePathContext(path *path) (string, []field, error) {
 	}
 
 	if hasPathContextNames {
-		if ok, contextName := p.isPathToContextRootData(path); ok {
-			return contextName, []field{{}}, nil
-		}
 		originalText := buildOriginalText(path)
 		return "", nil, fmt.Errorf(`missing context name for path "%s", possibly valid options are: %s`, originalText, p.buildPathContextNamesText(originalText))
 	}
 
 	return "", path.Fields, nil
-}
-
-// When a path has no dots separators (e.g.: resource), the grammar extracts it into the
-// path.Fields slice, letting the path.Context empty. This function verifies if a given
-// path is accessing any configured (ottl.WithPathContextNames) object root, returning
-// true and the resolved context name.
-func (p *Parser[K]) isPathToContextRootData(pat *path) (bool, string) {
-	// If the context value is filled, or it has multiple fields, it means the path
-	// has at least one dot on it.
-	if pat.Context != "" || len(pat.Fields) != 1 || len(pat.Fields[0].Keys) > 0 {
-		return false, ""
-	}
-	_, ok := p.pathContextNames[pat.Fields[0].Name]
-	return ok, pat.Fields[0].Name
 }
 
 func (p *Parser[K]) buildPathContextNamesText(path string) string {

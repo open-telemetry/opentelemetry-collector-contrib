@@ -88,7 +88,7 @@ func (s *priorityContextInferrer) infer(statements []string) (string, error) {
 
 		statementPaths, statementFunctions, statementEnums := s.getParsedStatementHints(parsed)
 		for _, p := range statementPaths {
-			candidate := s.getContextCandidate(p)
+			candidate := p.Context
 			candidatePriority, ok := s.contextPriority[candidate]
 			if !ok {
 				candidatePriority = math.MaxInt
@@ -168,26 +168,6 @@ func (s *priorityContextInferrer) inferFromLowerContexts(
 		if ok {
 			return lowerCandidate
 		}
-	}
-	return ""
-}
-
-// When a path has no dots separators (e.g.: resource), the grammar extracts it into the
-// path.Fields slice, letting the path.Context empty. This function returns either the
-// path.Context string or, if it's eligible and meets certain conditions, the first
-// path.Fields name.
-func (s *priorityContextInferrer) getContextCandidate(p path) string {
-	if p.Context != "" {
-		return p.Context
-	}
-	// If it has multiple fields or keys, it means the path has at least one dot on it,
-	// and isn't a context access.
-	if len(p.Fields) != 1 || len(p.Fields[0].Keys) > 0 {
-		return ""
-	}
-	_, ok := s.contextPriority[p.Fields[0].Name]
-	if ok {
-		return p.Fields[0].Name
 	}
 	return ""
 }

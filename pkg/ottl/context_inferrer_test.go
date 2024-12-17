@@ -90,33 +90,6 @@ func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
 			expected:   "span",
 		},
 		{
-			name:     "with statement context root object",
-			priority: []string{"resource", "foo"},
-			candidates: map[string]*priorityContextInferrerCandidate{
-				"resource": defaultDummyPriorityContextInferrerCandidate,
-			},
-			statements: []string{"set(foo.attributes[\"body\"], resource)"},
-			expected:   "resource",
-		},
-		{
-			name:     "with non-eligible statement context root object",
-			priority: []string{"resource", "foo"},
-			candidates: map[string]*priorityContextInferrerCandidate{
-				"foo": defaultDummyPriorityContextInferrerCandidate,
-			},
-			statements: []string{"set(foo.attributes[\"body\"], resource[\"foo\"])"},
-			expected:   "foo",
-		},
-		{
-			name:     "with non-prioritized statement context root object",
-			priority: []string{"foo"},
-			candidates: map[string]*priorityContextInferrerCandidate{
-				"bar": defaultDummyPriorityContextInferrerCandidate,
-			},
-			statements: []string{"set(resource, bar.attributes[\"body\"])"},
-			expected:   "bar",
-		},
-		{
 			name:       "inferred path context with missing function",
 			priority:   []string{"foo", "datapoint", "metric"},
 			statements: []string{`set(metric.is_foo, true) where metric.name == "foo"`},
