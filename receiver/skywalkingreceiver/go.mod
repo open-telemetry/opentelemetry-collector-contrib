@@ -4,9 +4,9 @@ go 1.22.0
 
 require (
 	github.com/gorilla/mux v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.116.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.116.0
 	go.opentelemetry.io/collector/component/componentstatus v0.116.0
