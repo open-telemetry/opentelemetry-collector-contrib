@@ -8,9 +8,9 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/jaegertracing/jaeger v1.64.0
 	github.com/klauspost/compress v1.17.11
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.116.0
 	github.com/signalfx/sapm-proto v0.17.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.22.1-0.20241220212031-7c2639723f67
