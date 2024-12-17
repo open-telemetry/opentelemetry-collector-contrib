@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/jaegertracing/jaeger v1.62.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/idutils v0.116.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67
