@@ -5,7 +5,8 @@ package ec2
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -56,7 +57,7 @@ func TestClusterNameFromEC2Tags(t *testing.T) {
 			name: "missing cluster name tag",
 			ec2Tags: &ec2.DescribeTagsOutput{
 				NextToken: strp("NextToken"),
-				Tags: []*ec2.TagDescription{
+				Tags: []types.TagDescription{
 					{Key: strp("some key"), Value: strp("some value")},
 				},
 			},
@@ -66,7 +67,7 @@ func TestClusterNameFromEC2Tags(t *testing.T) {
 			name: "cluster name tag only has the prefix",
 			ec2Tags: &ec2.DescribeTagsOutput{
 				NextToken: strp("NextToken"),
-				Tags: []*ec2.TagDescription{
+				Tags: []types.TagDescription{
 					{Key: strp("some key"), Value: strp("some value")},
 					{Key: strp("kubernetes.io/cluster/"), Value: strp("some value")},
 				},
@@ -77,7 +78,7 @@ func TestClusterNameFromEC2Tags(t *testing.T) {
 			name: "cluster name is available",
 			ec2Tags: &ec2.DescribeTagsOutput{
 				NextToken: strp("NextToken"),
-				Tags: []*ec2.TagDescription{
+				Tags: []types.TagDescription{
 					{Key: strp("some key"), Value: strp("some value")},
 					{Key: strp("kubernetes.io/cluster/myclustername"), Value: strp("some value")},
 				},
