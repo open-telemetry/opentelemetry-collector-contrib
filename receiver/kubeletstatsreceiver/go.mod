@@ -5,11 +5,11 @@ go 1.22.0
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.116.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.116.0
 	go.opentelemetry.io/collector/component/componenttest v0.116.0
@@ -76,8 +76,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.115.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.115.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.116.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.116.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
