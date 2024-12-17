@@ -286,7 +286,7 @@ func (c *Config) Validate() error {
 		}
 		switch info.Mode().Perm() {
 		// Matches JMX agent requirements for password file.
-		case 0400, 0600:
+		case 0o400, 0o600:
 		default:
 			return fmt.Errorf("`password_file` read access must be restricted to owner-only: %s", c.PasswordFile)
 		}

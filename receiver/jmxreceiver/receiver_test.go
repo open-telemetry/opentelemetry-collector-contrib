@@ -44,7 +44,7 @@ keystore: keypass
 truststore = trustpass
 `
 	passwordFilePath := filepath.Join(t.TempDir(), "test.properties")
-	require.NoError(t, os.WriteFile(passwordFilePath, []byte(passwordFileContents), 0600))
+	require.NoError(t, os.WriteFile(passwordFilePath, []byte(passwordFileContents), 0o600))
 	tests := []struct {
 		name           string
 		config         *Config
