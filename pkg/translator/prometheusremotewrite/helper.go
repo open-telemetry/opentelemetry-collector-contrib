@@ -37,7 +37,7 @@ const (
 	createdSuffix = "_created"
 	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
 	// according to the prometheus specification
-	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
+	// https://github.com/prometheus/OpenMetrics/blob/v1.0.0/specification/OpenMetrics.md#exemplars
 	maxExemplarRunes = 128
 	infoType         = "info"
 )

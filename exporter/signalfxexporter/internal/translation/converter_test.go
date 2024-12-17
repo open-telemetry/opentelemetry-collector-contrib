@@ -1358,9 +1358,8 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := NewMetricsConverter(zap.NewNop(), tt.fields.metricTranslator, nil, nil, tt.fields.nonAlphanumericDimChars, false, true)
 			require.NoError(t, err)
-			if got := c.ConvertDimension(tt.args.dim); got != tt.want {
-				t.Errorf("ConvertDimension() = %v, want %v", got, tt.want)
-			}
+			got := c.ConvertDimension(tt.args.dim)
+			assert.Equal(t, tt.want, got, "ConvertDimension() = %v, want %v", got, tt.want)
 		})
 	}
 }
