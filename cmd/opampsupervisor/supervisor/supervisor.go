@@ -1243,7 +1243,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 
 func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
 	err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-		LastRemoteConfigHash: s.remoteConfig.ConfigHash,
+		LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
 		Status:               status,
 		ErrorMessage:         errorMessage,
 	})

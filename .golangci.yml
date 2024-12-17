@@ -134,6 +134,15 @@ linters-settings:
       - suite-subtest-run
       - encoded-compare # has false positives that cannot be fixed with testifylint-fix
     enable-all: true
+  thelper:
+    test:
+      begin: false
+    benchmark:
+      begin: false
+    tb:
+      begin: false
+    fuzz:
+      begin: false
 
 linters:
   enable:
@@ -156,6 +165,7 @@ linters:
     - staticcheck
     - tenv
     - testifylint
+    - thelper
     - unconvert
     - unparam
     - unused

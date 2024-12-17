@@ -1109,8 +1109,8 @@ func TestEncodeLogOtelMode(t *testing.T) {
 // helper function that creates the OTel LogRecord from the test structure
 func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
-	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))
-	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano())))
+	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controlled by tests
+	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano()))) //nolint:gosec // this input is controlled by tests
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
@@ -1245,7 +1245,7 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	logRecords := scopeLogs.LogRecords()
-	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano()) // nolint:gosec // UnixNano is positive and thus safe to convert to signed integer.
 
 	logRecord := logRecords.AppendEmpty()
 	logRecord.SetObservedTimestamp(observedTimestamp)
