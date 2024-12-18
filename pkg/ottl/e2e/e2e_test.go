@@ -1124,6 +1124,11 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			statement: `Len(attributes) + Len(attributes)`,
 			want:      int64(14),
 		},
+		{
+			name:      "Nested converter operations",
+			statement: `Hex(Len(attributes) + Len(attributes))`,
+			want:      "000000000000000e",
+		},
 	}
 
 	for _, tt := range tests {

@@ -2148,7 +2148,9 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "resolve context value",
 			valueExpression: `attributes`,
 			expected: map[string]any{
-				"foo": "bar",
+				"attributes": map[string]any{
+					"foo": "bar",
+				},
 			},
 			tCtx: map[string]any{
 				"attributes": map[string]any{
