@@ -103,7 +103,7 @@ func (e *LogEmitter) ProcessBatch(ctx context.Context, entries []*entry.Entry) e
 	return nil
 }
 
-// appendEntry appends the entry to the current batch. If maxBatchSize is reached, a new batch will be made, and the old batch
+// appendEntries appends the entry to the current batch. If maxBatchSize is reached, a new batch will be made, and the old batch
 // (which should be flushed) will be returned
 func (e *LogEmitter) appendEntries(entries []*entry.Entry) []*entry.Entry {
 	e.batchMux.Lock()

@@ -36,7 +36,7 @@ type Operator interface {
 
 	// CanProcess indicates if the operator will process entries from other operators.
 	CanProcess() bool
-	// Process processes a batch of entries from an operator.
+	// ProcessBatch processes a batch of entries from an operator.
 	ProcessBatch(context.Context, []*entry.Entry) error
 	// Process will process an entry from an operator.
 	Process(context.Context, *entry.Entry) error
