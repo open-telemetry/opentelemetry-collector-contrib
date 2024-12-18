@@ -53,8 +53,8 @@ func buildOriginalKeysText(keys []key) string {
 			if k.String != nil {
 				builder.WriteString(*k.String)
 			}
-			if k.Path != nil {
-				builder.WriteString(buildOriginalText(k.Path))
+			if k.Expression != nil && k.Expression.Path != nil {
+				builder.WriteString(buildOriginalText(k.Expression.Path))
 			}
 			builder.WriteString("]")
 		}
@@ -217,8 +217,8 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 	ks := make([]Key[K], len(keys))
 	for i := range keys {
 		var par GetSetter[K]
-		if keys[i].Path != nil {
-			arg, err := p.buildGetSetterFromPath(keys[i].Path)
+		if keys[i].Expression != nil && keys[i].Expression.Path != nil {
+			arg, err := p.buildGetSetterFromPath(keys[i].Expression.Path)
 			if err != nil {
 				return nil, err
 			}
