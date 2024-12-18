@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.116.0
-	github.com/prometheus/prometheus v0.54.1
+	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/wal v1.1.8
 	go.opentelemetry.io/collector/component v0.116.0

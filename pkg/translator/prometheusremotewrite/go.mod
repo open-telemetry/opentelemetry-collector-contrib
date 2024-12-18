@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.116.0
 	github.com/prometheus/common v0.61.0
-	github.com/prometheus/prometheus v0.54.1
+	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/featuregate v1.22.0
 	go.opentelemetry.io/collector/pdata v1.22.0

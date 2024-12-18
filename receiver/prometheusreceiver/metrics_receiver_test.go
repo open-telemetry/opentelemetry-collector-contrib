@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	gokitlog "github.com/go-kit/log"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/common/promslog"
 	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1621,7 +1621,7 @@ scrape_configs:
   static_configs:
     - targets:
       - %s
-        `, strings.TrimPrefix(svr.URL, "http://")), false, gokitlog.NewNopLogger())
+        `, strings.TrimPrefix(svr.URL, "http://")), promslog.NewNopLogger())
 	require.NoError(t, err)
 	set := receivertest.NewNopSettings()
 	receiver := newPrometheusReceiver(set, &Config{
