@@ -224,9 +224,7 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 	var missingContextOffsets []int
 	for _, it := range paths {
 		if _, ok := p.pathContextNames[it.Context]; !ok {
-			if skip, _ := p.isPathToContextRootData(&it); !skip {
-				missingContextOffsets = append(missingContextOffsets, it.Pos.Offset)
-			}
+			missingContextOffsets = append(missingContextOffsets, it.Pos.Offset)
 		}
 	}
 

@@ -55,16 +55,3 @@ func (k *TestKey[K]) String(_ context.Context, _ K) (*string, error) {
 func (k *TestKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.I, nil
 }
-
-// isPathToContextRoot return true if the given path is accessing the context's root object
-// instead of specific fields.
-func isPathToContextRoot[T any](path ottl.Path[T], ctx string) bool {
-	if path == nil {
-		return true
-	}
-	// path with matching context and empty name/keys/next
-	return path.Context() == ctx &&
-		path.Name() == "" &&
-		len(path.Keys()) == 0 &&
-		path.Next() == nil
-}
