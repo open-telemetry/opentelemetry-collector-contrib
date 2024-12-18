@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -42,7 +42,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
-	pp, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 
@@ -61,7 +61,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
-	pp, err = factory.(processorprofiles.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	pp, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 
