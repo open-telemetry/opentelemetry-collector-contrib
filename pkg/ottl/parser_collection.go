@@ -282,7 +282,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, 
 	}
 
 	if inferredContext == "" {
-		return *new(R), fmt.Errorf("unable to infer context from statements %+q, path's first segment must be a valid context name", statementsValues)
+		return *new(R), fmt.Errorf("unable to infer context from statements %+q, path's first segment must be a valid context name: %+q", statementsValues, pc.supportedContextNames())
 	}
 
 	_, ok := pc.contextParsers[inferredContext]
