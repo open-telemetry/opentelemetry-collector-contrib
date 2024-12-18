@@ -116,6 +116,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 func getMockTransportChannel() *mockTransportChannel {
 	transportChannelMock := mockTransportChannel{}
 	transportChannelMock.On("Send", mock.Anything)
+	transportChannelMock.On("Flush", mock.Anything)
 	return &transportChannelMock
 }
 

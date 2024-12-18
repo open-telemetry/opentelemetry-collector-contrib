@@ -28,6 +28,7 @@ components:
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
@@ -62,6 +63,7 @@ components:
         - awsproxy
         - basicauth
         - bearertokenauth
+        - cgroupruntime
         - db_storage
         - docker_observer
         - ecs_observer
@@ -132,6 +134,7 @@ components:
         - fluentforward
         - github
         - googlecloudmonitoring
+        - googlecloudpubsub
         - googlecloudspanner
         - haproxy
         - hostmetrics
@@ -177,6 +180,7 @@ components:
         - snowflake
         - solace
         - splunk_hec
+        - splunkenterprise
         - sqlquery
         - sqlserver
         - sshcheck

@@ -85,6 +85,14 @@ This exporter follows default credential resolution for the
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the 
 credential configuration.
 
+## Metric Attributes
+By setting attributes on your metrics you can change how individual metrics are sent to CloudWatch. Attributes can be set in code or using components like the [Attribute Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor).
+
+The AWS EMF Exporter will interpret the following metric attributes to change how it publishes metrics to CloudWatch:
+
+| Attribute Name    | Description                                                            | Default |
+| :---------------- | :--------------------------------------------------------------------- | ------- |
+| `aws.emf.storage_resolution` | This attribute should be set to an integer value of `1` or `60`. When sending the metric value to CloudWatch use the specified storage resolution value. CloudWatch currently supports a storage resolution of `1` or `60` to indicate 1 second or 60 second resolution. | `aws.emf.storage_resolution = 60` |
 
 ## Configuration Examples
 
