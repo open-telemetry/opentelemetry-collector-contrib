@@ -22,19 +22,11 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return nil, err
 	}
 	if s == nil {
-		p, err := keys[0].PathGetter(ctx, tCtx)
+		resString, err := FetchValueFromPath[K, string](ctx, tCtx, keys[0])
 		if err != nil {
-			return nil, err
-		}
-		res, err := p.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
-		resString, ok := res.(string)
-		if !ok {
 			return nil, fmt.Errorf("non-string indexing is not supported")
 		}
-		s = &resString
+		s = resString
 	}
 
 	val, ok := m.Get(*s)
@@ -55,19 +47,11 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return err
 	}
 	if s == nil {
-		p, err := keys[0].PathGetter(ctx, tCtx)
+		resString, err := FetchValueFromPath[K, string](ctx, tCtx, keys[0])
 		if err != nil {
-			return err
-		}
-		res, err := p.Get(ctx, tCtx)
-		if err != nil {
-			return err
-		}
-		resString, ok := res.(string)
-		if !ok {
 			return fmt.Errorf("non-string indexing is not supported")
 		}
-		s = &resString
+		s = resString
 	}
 
 	currentValue, ok := m.Get(*s)
@@ -75,4 +59,20 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		currentValue = m.PutEmpty(*s)
 	}
 	return setIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
+}
+
+func FetchValueFromPath[K any, T int64 | string](ctx context.Context, tCtx K, key ottl.Key[K]) (*T, error) {
+	p, err := key.PathGetter(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	res, err := p.Get(ctx, tCtx)
+	if err != nil {
+		return nil, err
+	}
+	resVal, ok := res.(T)
+	if !ok {
+		return nil, fmt.Errorf("casting not successfull")
+	}
+	return &resVal, nil
 }
