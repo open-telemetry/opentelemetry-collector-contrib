@@ -6,6 +6,7 @@ package otel // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datastream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
@@ -14,7 +15,7 @@ func EncodeAttributes(document *objmodel.Document, attributeMap pcommon.Map) {
 	attributeMap.CopyTo(attrsCopy)
 	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
 		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+		case datastream.DataStreamType, datastream.DataStreamDataset, datastream.DataStreamNamespace:
 			// At this point the data_stream attributes are expected to be in the record attributes,
 			// updated by the router.
 			// Move them to the top of the document and remove them from the record

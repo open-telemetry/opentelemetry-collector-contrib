@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datastream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/encoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/encoder/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/encoder/log"
@@ -544,7 +545,7 @@ func metricOTelHash(dp dataPoint, scopeAttrs pcommon.Map, unit string) uint32 {
 func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
 	m.Range(func(k string, v pcommon.Value) bool {
 		switch k {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+		case datastream.DataStreamType, datastream.DataStreamDataset, datastream.DataStreamNamespace:
 			return true
 		}
 		if slices.Contains(extra, k) {
@@ -605,6 +606,6 @@ func safeUint64ToInt64(v uint64) int64 {
 	if v > math.MaxInt64 {
 		return math.MaxInt64
 	} else {
-		return int64(v) // nolint:goset // overflow checked
+		return int64(v) // nolint:gosec // overflow checked
 	}
 }

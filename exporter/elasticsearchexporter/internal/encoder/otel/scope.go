@@ -6,6 +6,7 @@ package otel // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datastream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
@@ -26,7 +27,7 @@ func EncodeScope(document *objmodel.Document, scope pcommon.InstrumentationScope
 	scope.Attributes().CopyTo(scopeAttrMap)
 	scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
 		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+		case datastream.DataStreamType, datastream.DataStreamDataset, datastream.DataStreamNamespace:
 			return true
 		}
 		return false

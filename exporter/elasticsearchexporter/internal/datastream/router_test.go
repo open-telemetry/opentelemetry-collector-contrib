@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package elasticsearchexporter
+package datastream
 
 import (
 	"fmt"
@@ -21,21 +21,21 @@ type routeTestCase struct {
 func createRouteTests(dsType string) []routeTestCase {
 	renderWantRoute := func(dsType, dsDataset string, otel bool) string {
 		if otel {
-			return fmt.Sprintf("%s-%s.otel-%s", dsType, dsDataset, defaultDataStreamNamespace)
+			return fmt.Sprintf("%s-%s.otel-%s", dsType, dsDataset, DefaultDataStreamNamespace)
 		}
-		return fmt.Sprintf("%s-%s-%s", dsType, dsDataset, defaultDataStreamNamespace)
+		return fmt.Sprintf("%s-%s-%s", dsType, dsDataset, DefaultDataStreamNamespace)
 	}
 
 	return []routeTestCase{
 		{
 			name: "default",
 			otel: false,
-			want: renderWantRoute(dsType, defaultDataStreamDataset, false),
+			want: renderWantRoute(dsType, DefaultDataStreamDataset, false),
 		},
 		{
 			name: "otel",
 			otel: true,
-			want: renderWantRoute(dsType, defaultDataStreamDataset, true),
+			want: renderWantRoute(dsType, DefaultDataStreamDataset, true),
 		},
 		{
 			name:      "default with receiver scope name",
@@ -53,45 +53,45 @@ func createRouteTests(dsType string) []routeTestCase {
 			name:      "default with non-receiver scope name",
 			otel:      false,
 			scopeName: "some_other_scope_name",
-			want:      renderWantRoute(dsType, defaultDataStreamDataset, false),
+			want:      renderWantRoute(dsType, DefaultDataStreamDataset, false),
 		},
 		{
 			name:      "otel with non-receiver scope name",
 			otel:      true,
 			scopeName: "some_other_scope_name",
-			want:      renderWantRoute(dsType, defaultDataStreamDataset, true),
+			want:      renderWantRoute(dsType, DefaultDataStreamDataset, true),
 		},
 	}
 }
 
 func TestRouteLogRecord(t *testing.T) {
-	tests := createRouteTests(defaultDataStreamTypeLogs)
+	tests := createRouteTests(DefaultDataStreamTypeLogs)
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ds := routeLogRecord(pcommon.NewMap(), pcommon.NewMap(), pcommon.NewMap(), "", tc.otel, tc.scopeName)
+			ds := RouteLogRecord(pcommon.NewMap(), pcommon.NewMap(), pcommon.NewMap(), "", tc.otel, tc.scopeName)
 			assert.Equal(t, tc.want, ds)
 		})
 	}
 }
 
 func TestRouteDataPoint(t *testing.T) {
-	tests := createRouteTests(defaultDataStreamTypeMetrics)
+	tests := createRouteTests(DefaultDataStreamTypeMetrics)
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ds := routeDataPoint(pcommon.NewMap(), pcommon.NewMap(), pcommon.NewMap(), "", tc.otel, tc.scopeName)
+			ds := RouteDataPoint(pcommon.NewMap(), pcommon.NewMap(), pcommon.NewMap(), "", tc.otel, tc.scopeName)
 			assert.Equal(t, tc.want, ds)
 		})
 	}
 }
 
 func TestRouteSpan(t *testing.T) {
-	tests := createRouteTests(defaultDataStreamTypeTraces)
+	tests := createRouteTests(DefaultDataStreamTypeTraces)
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ds := routeSpan(pcommon.NewMap(), pcommon.NewMap(), pcommon.NewMap(), "", tc.otel, tc.scopeName)
+			ds := RouteSpan(pcommon.NewMap(), pcommon.NewMap(), pcommon.NewMap(), "", tc.otel, tc.scopeName)
 			assert.Equal(t, tc.want, ds)
 		})
 	}

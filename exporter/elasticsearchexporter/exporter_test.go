@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datastream"
 )
 
 func TestExporterLogs(t *testing.T) {
@@ -320,12 +322,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				datastream.IndexPrefix: "attrprefix-",
+				datastream.IndexSuffix: suffix,
 			},
 			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				datastream.IndexPrefix: prefix,
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -350,12 +352,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				dataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
+				datastream.DataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset",
-				dataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
+				datastream.DataStreamDataset:   "resource.dataset",
+				datastream.DataStreamNamespace: "resource.namespace.-\\/*?\"<>| ,#:",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -406,12 +408,12 @@ func TestExporterLogs(t *testing.T) {
 		})
 		mustSendLogs(t, exporter, newLogsWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				datastream.IndexPrefix: "attrprefix-",
+				datastream.IndexSuffix: suffix,
 			},
 			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				datastream.IndexPrefix: prefix,
 			},
 		))
 		rec.WaitItems(1)
@@ -773,12 +775,12 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				indexSuffix: "-data.point.suffix",
+				datastream.IndexSuffix: "-data.point.suffix",
 			},
 			nil,
 			map[string]any{
-				indexPrefix: "resource.prefix-",
-				indexSuffix: "-resource.suffix",
+				datastream.IndexPrefix: "resource.prefix-",
+				datastream.IndexSuffix: "-resource.suffix",
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
@@ -805,12 +807,12 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				dataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
+				datastream.DataStreamNamespace: "data.point.namespace.-\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
-				dataStreamNamespace: "resource.namespace",
+				datastream.DataStreamDataset:   "resource.dataset.\\/*?\"<>| ,#:",
+				datastream.DataStreamNamespace: "resource.namespace",
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
@@ -855,8 +857,8 @@ func TestExporterMetrics(t *testing.T) {
 			barOtherDp.SetDoubleValue(1.0)
 			barOtherIndexDp := barDps.AppendEmpty()
 			fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
-				"dp.attribute":      "dp.attribute.value",
-				dataStreamNamespace: "bar",
+				"dp.attribute":                 "dp.attribute.value",
+				datastream.DataStreamNamespace: "bar",
 			})
 			barOtherIndexDp.SetDoubleValue(1.0)
 
@@ -871,14 +873,14 @@ func TestExporterMetrics(t *testing.T) {
 		metrics := pmetric.NewMetrics()
 		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
 		fillAttributeMap(resourceMetrics.Resource().Attributes(), map[string]any{
-			dataStreamNamespace: "resource.namespace",
+			datastream.DataStreamNamespace: "resource.namespace",
 		})
 		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
 		addToMetricSlice(scopeA.Metrics())
 
 		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
 		fillAttributeMap(scopeB.Scope().Attributes(), map[string]any{
-			dataStreamDataset: "scope.b",
+			datastream.DataStreamDataset: "scope.b",
 		})
 		addToMetricSlice(scopeB.Metrics())
 
@@ -1467,12 +1469,12 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				datastream.IndexPrefix: "attrprefix-",
+				datastream.IndexSuffix: suffix,
 			},
 			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				datastream.IndexPrefix: prefix,
 			},
 		))
 
@@ -1497,11 +1499,11 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				dataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
+				datastream.DataStreamDataset: "span.dataset.\\/*?\"<>| ,#:",
 			},
 			nil,
 			map[string]any{
-				dataStreamDataset: "resource.dataset",
+				datastream.DataStreamDataset: "resource.dataset",
 			},
 		))
 
@@ -1556,12 +1558,12 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				datastream.IndexPrefix: "attrprefix-",
+				datastream.IndexSuffix: suffix,
 			},
 			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				datastream.IndexPrefix: prefix,
 			},
 		))
 		rec.WaitItems(1)

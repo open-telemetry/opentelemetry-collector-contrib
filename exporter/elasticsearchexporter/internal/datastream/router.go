@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
+package datastream // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/ecs/internal/datastream"
 
 import (
 	"fmt"
@@ -18,6 +18,27 @@ const (
 	maxDataStreamBytes       = 100
 	disallowedNamespaceRunes = "\\/*?\"<>| ,#:"
 	disallowedDatasetRunes   = "-\\/*?\"<>| ,#:"
+
+	IndexPrefix = "elasticsearch.index.prefix"
+	IndexSuffix = "elasticsearch.index.suffix"
+)
+
+var (
+	// RouteLogRecord returns the name of the index to send the log record to according to data stream routing related attributes.
+	// This function may mutate record attributes.
+	RouteLogRecord = routeWithDefaults(DefaultDataStreamTypeLogs)
+
+	// RouteDataPoint returns the name of the index to send the data point to according to data stream routing related attributes.
+	// This function may mutate record attributes.
+	RouteDataPoint = routeWithDefaults(DefaultDataStreamTypeMetrics)
+
+	// RouteSpan returns the name of the index to send the span to according to data stream routing related attributes.
+	// This function may mutate record attributes.
+	RouteSpan = routeWithDefaults(DefaultDataStreamTypeTraces)
+
+	// RouteSpanEvent returns the name of the index to send the span event to according to data stream routing related attributes.
+	// This function may mutate record attributes.
+	RouteSpanEvent = routeWithDefaults(DefaultDataStreamTypeLogs)
 )
 
 // Sanitize the datastream fields (dataset, namespace) to apply restrictions
@@ -60,12 +81,12 @@ func routeWithDefaults(defaultDSType string) func(
 		// 2. read elasticsearch.index.* from attributes
 		// 3. receiver-based routing
 		// 4. use default hardcoded data_stream.*
-		dataset, datasetExists := getFromAttributes(dataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
-		namespace, namespaceExists := getFromAttributes(dataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
+		dataset, datasetExists := getFromAttributes(DataStreamDataset, DefaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
+		namespace, namespaceExists := getFromAttributes(DataStreamNamespace, DefaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
 		dataStreamMode := datasetExists || namespaceExists
 		if !dataStreamMode {
-			prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
-			suffix, suffixExists := getFromAttributes(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
+			prefix, prefixExists := getFromAttributes(IndexPrefix, "", resourceAttr, scopeAttr, recordAttr)
+			suffix, suffixExists := getFromAttributes(IndexSuffix, "", resourceAttr, scopeAttr, recordAttr)
 			if prefixExists || suffixExists {
 				return fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 			}
@@ -90,28 +111,19 @@ func routeWithDefaults(defaultDSType string) func(
 		dataset = sanitizeDataStreamField(dataset, disallowedDatasetRunes, datasetSuffix)
 		namespace = sanitizeDataStreamField(namespace, disallowedNamespaceRunes, "")
 
-		recordAttr.PutStr(dataStreamDataset, dataset)
-		recordAttr.PutStr(dataStreamNamespace, namespace)
-		recordAttr.PutStr(dataStreamType, defaultDSType)
+		recordAttr.PutStr(DataStreamDataset, dataset)
+		recordAttr.PutStr(DataStreamNamespace, namespace)
+		recordAttr.PutStr(DataStreamType, defaultDSType)
 
 		return fmt.Sprintf("%s-%s-%s", defaultDSType, dataset, namespace)
 	}
 }
 
-var (
-	// routeLogRecord returns the name of the index to send the log record to according to data stream routing related attributes.
-	// This function may mutate record attributes.
-	routeLogRecord = routeWithDefaults(defaultDataStreamTypeLogs)
-
-	// routeDataPoint returns the name of the index to send the data point to according to data stream routing related attributes.
-	// This function may mutate record attributes.
-	routeDataPoint = routeWithDefaults(defaultDataStreamTypeMetrics)
-
-	// routeSpan returns the name of the index to send the span to according to data stream routing related attributes.
-	// This function may mutate record attributes.
-	routeSpan = routeWithDefaults(defaultDataStreamTypeTraces)
-
-	// routeSpanEvent returns the name of the index to send the span event to according to data stream routing related attributes.
-	// This function may mutate record attributes.
-	routeSpanEvent = routeWithDefaults(defaultDataStreamTypeLogs)
-)
+func getFromAttributes(name string, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {
+	for _, attributeMap := range attributeMaps {
+		if value, exists := attributeMap.Get(name); exists {
+			return value.AsString(), true
+		}
+	}
+	return defaultValue, false
+}

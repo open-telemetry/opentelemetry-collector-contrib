@@ -5,8 +5,5 @@ package otel // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 // TODO: remove const repetition
 const (
-	dataStreamType      = "data_stream.type"
-	dataStreamDataset   = "data_stream.dataset"
-	dataStreamNamespace = "data_stream.namespace"
 	mappingHintsAttrKey = "elasticsearch.mapping.hints"
 )
