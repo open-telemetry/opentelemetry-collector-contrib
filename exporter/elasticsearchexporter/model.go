@@ -13,7 +13,6 @@ import (
 	"hash/fnv"
 	"math"
 	"slices"
-	"strings"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
@@ -27,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/exphistogram"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/otel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -134,9 +134,9 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	m.encodeAttributesOTelMode(&document, record.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	otel.EncodeAttributes(&document, record.Attributes())
+	otel.EncodeResource(&document, resource, resourceSchemaURL)
+	otel.EncodeScope(&document, scope, scopeSchemaURL)
 
 	// Body
 	setOTelLogBody(&document, record.Body(), record.Attributes())
@@ -298,9 +298,9 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 		document.AddString("unit", metric.Unit())
 
-		m.encodeAttributesOTelMode(&document, dp.Attributes())
-		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+		otel.EncodeAttributes(&document, dp.Attributes())
+		otel.EncodeResource(&document, resource, resourceSchemaURL)
+		otel.EncodeScope(&document, scope, scopeSchemaURL)
 	}
 
 	if dp.HasMappingHint(hintDocCount) {
@@ -540,72 +540,6 @@ func (dp numberDataPoint) DocCount() uint64 {
 
 var errInvalidNumberDataPoint = errors.New("invalid number data point")
 
-func (m *encodeModel) encodeResourceOTelMode(document *objmodel.Document, resource pcommon.Resource, resourceSchemaURL string) {
-	resourceMapVal := pcommon.NewValueMap()
-	resourceMap := resourceMapVal.Map()
-	if resourceSchemaURL != "" {
-		resourceMap.PutStr("schema_url", resourceSchemaURL)
-	}
-	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
-	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
-	resource.Attributes().CopyTo(resourceAttrMap)
-	resourceAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
-		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
-			return true
-		}
-		return false
-	})
-	mergeGeolocation(resourceAttrMap)
-	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
-}
-
-func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pcommon.InstrumentationScope, scopeSchemaURL string) {
-	scopeMapVal := pcommon.NewValueMap()
-	scopeMap := scopeMapVal.Map()
-	if scope.Name() != "" {
-		scopeMap.PutStr("name", scope.Name())
-	}
-	if scope.Version() != "" {
-		scopeMap.PutStr("version", scope.Version())
-	}
-	if scopeSchemaURL != "" {
-		scopeMap.PutStr("schema_url", scopeSchemaURL)
-	}
-	scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-	scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-	scope.Attributes().CopyTo(scopeAttrMap)
-	scopeAttrMap.RemoveIf(func(key string, _ pcommon.Value) bool {
-		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
-			return true
-		}
-		return false
-	})
-	mergeGeolocation(scopeAttrMap)
-	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
-}
-
-func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
-	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
-	attributeMap.CopyTo(attrsCopy)
-	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
-		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
-			// At this point the data_stream attributes are expected to be in the record attributes,
-			// updated by the router.
-			// Move them to the top of the document and remove them from the record
-			document.AddAttribute(key, val)
-			return true
-		case mappingHintsAttrKey:
-			return true
-		}
-		return false
-	})
-	mergeGeolocation(attrsCopy)
-	document.AddAttributes("attributes", attrsCopy)
-}
-
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
 	var document objmodel.Document
 	switch m.mode {
@@ -632,7 +566,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("kind", span.Kind().String())
 	document.AddUInt("duration", uint64(span.EndTimestamp()-span.StartTimestamp()))
 
-	m.encodeAttributesOTelMode(&document, span.Attributes())
+	otel.EncodeAttributes(&document, span.Attributes())
 
 	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
 	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
@@ -656,8 +590,8 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("status.message", span.Status().Message())
 	document.AddString("status.code", span.Status().Code().String())
 
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	otel.EncodeResource(&document, resource, resourceSchemaURL)
+	otel.EncodeScope(&document, scope, scopeSchemaURL)
 
 	return document
 }
@@ -695,9 +629,9 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	document.AddTraceID("trace_id", span.TraceID())
 	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
 
-	m.encodeAttributesOTelMode(&document, spanEvent.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
+	otel.EncodeAttributes(&document, spanEvent.Attributes())
+	otel.EncodeResource(&document, resource, resourceSchemaURL)
+	otel.EncodeScope(&document, scope, scopeSchemaURL)
 
 	return &document
 }
@@ -926,79 +860,6 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 func sliceHash(h hash.Hash, s pcommon.Slice) {
 	for i := 0; i < s.Len(); i++ {
 		valueHash(h, s.At(i))
-	}
-}
-
-// mergeGeolocation mutates attributes map to merge all `geo.location.{lon,lat}`,
-// and namespaced `*.geo.location.{lon,lat}` to unnamespaced and namespaced `geo.location`.
-// This is to match the geo_point type in Elasticsearch.
-func mergeGeolocation(attributes pcommon.Map) {
-	const (
-		lonKey    = "geo.location.lon"
-		latKey    = "geo.location.lat"
-		mergedKey = "geo.location"
-	)
-	// Prefix is the attribute name without lonKey or latKey suffix
-	// e.g. prefix of "foo.bar.geo.location.lon" is "foo.bar.", prefix of "geo.location.lon" is "".
-	prefixToGeo := make(map[string]struct {
-		lon, lat       float64
-		lonSet, latSet bool
-	})
-	setLon := func(prefix string, v float64) {
-		g := prefixToGeo[prefix]
-		g.lon = v
-		g.lonSet = true
-		prefixToGeo[prefix] = g
-	}
-	setLat := func(prefix string, v float64) {
-		g := prefixToGeo[prefix]
-		g.lat = v
-		g.latSet = true
-		prefixToGeo[prefix] = g
-	}
-	attributes.RemoveIf(func(key string, val pcommon.Value) bool {
-		if val.Type() != pcommon.ValueTypeDouble {
-			return false
-		}
-
-		if key == lonKey {
-			setLon("", val.Double())
-			return true
-		} else if key == latKey {
-			setLat("", val.Double())
-			return true
-		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
-			prefix := namespace + "."
-			setLon(prefix, val.Double())
-			return true
-		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
-			prefix := namespace + "."
-			setLat(prefix, val.Double())
-			return true
-		}
-		return false
-	})
-
-	for prefix, geo := range prefixToGeo {
-		if geo.lonSet && geo.latSet {
-			key := prefix + mergedKey
-			// Geopoint expressed as an array with the format: [lon, lat]
-			s := attributes.PutEmptySlice(key)
-			s.EnsureCapacity(2)
-			s.AppendEmpty().SetDouble(geo.lon)
-			s.AppendEmpty().SetDouble(geo.lat)
-			continue
-		}
-
-		// Place the attributes back if lon and lat are not present together
-		if geo.lonSet {
-			key := prefix + lonKey
-			attributes.PutDouble(key, geo.lon)
-		}
-		if geo.latSet {
-			key := prefix + latKey
-			attributes.PutDouble(key, geo.lat)
-		}
 	}
 }
 
