@@ -69,6 +69,47 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessLogs_InferredResourceContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td plog.Logs)
+	}{
+		{
+			statement: `set(resource.attributes["test"], "pass")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(resource.attributes["test"], "pass") where resource.attributes["host.name"] == "wrong"`,
+			want: func(_ plog.Logs) {
+			},
+		},
+		{
+			statement: `set(resource.schema_url, "test_schema_url")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_ProcessLogs_ScopeContext(t *testing.T) {
 	tests := []struct {
 		statement string
@@ -97,6 +138,47 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			td := constructLogs()
 			processor, err := NewProcessor([]common.ContextStatements{{Context: "scope", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessLogs_InferredScopeContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td plog.Logs)
+	}{
+		{
+			statement: `set(scope.attributes["test"], "pass") where scope.name == "scope"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(scope.attributes["test"], "pass") where scope.version == 2`,
+			want: func(_ plog.Logs) {
+			},
+		},
+		{
+			statement: `set(scope.schema_url, "test_schema_url")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -364,6 +446,260 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessLogs_InferredLogContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(td plog.Logs)
+	}{
+		{
+			statement: `set(log.attributes["test"], "pass") where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `keep_keys(log.attributes, ["http.method"]) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.method",
+					"get")
+			},
+		},
+		{
+			statement: `set(log.severity_text, "ok") where log.attributes["http.path"] == "/health"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityText("ok")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).SetSeverityText("ok")
+			},
+		},
+		{
+			statement: `replace_pattern(log.attributes["http.method"], "get", "post")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.method", "post")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("http.method", "post")
+			},
+		},
+		{
+			statement: `replace_all_patterns(log.attributes, "value", "get", "post")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.method", "post")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("http.method", "post")
+			},
+		},
+		{
+			statement: `replace_all_patterns(log.attributes, "key", "http.url", "url")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.method", "get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.path", "/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("flags", "A|B|C")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("total.string", "123456789")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("http.method", "get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("http.path", "/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("url", "http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("flags", "C|D")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("total.string", "345678")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], "pass") where log.dropped_attributes_count == 1`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], "pass") where log.flags == 1`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], "pass") where log.severity_number == SEVERITY_NUMBER_TRACE`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(log.severity_number, SEVERITY_NUMBER_TRACE2) where log.severity_number == 1`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityNumber(2)
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], "pass") where log.trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], "pass") where log.span_id == SpanID(0x0102030405060708)`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], "pass") where IsMatch(log.body, "operation[AC]")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `delete_key(log.attributes, "http.url") where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.method",
+					"get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.path",
+					"/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("total.string",
+					"123456789")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("flags",
+					"A|B|C")
+			},
+		},
+		{
+			statement: `delete_matching_keys(log.attributes, "http.*t.*") where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("http.url",
+					"http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("flags",
+					"A|B|C")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("total.string",
+					"123456789")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], Concat([log.attributes["http.method"], log.attributes["http.url"]], ": ")) where log.body == Concat(["operation", "A"], "")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "get: http://localhost/health")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], Split(log.attributes["flags"], "|"))`,
+			want: func(td plog.Logs) {
+				v1 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
+				v2 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutEmptySlice("test")
+				v2.AppendEmpty().SetStr("C")
+				v2.AppendEmpty().SetStr("D")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], Split(log.attributes["flags"], "|")) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				newValue := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				newValue.AppendEmpty().SetStr("A")
+				newValue.AppendEmpty().SetStr("B")
+				newValue.AppendEmpty().SetStr("C")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], Split(log.attributes["not_exist"], "|"))`,
+			want:      func(_ plog.Logs) {},
+		},
+		{
+			statement: `set(log.attributes["test"], Substring(log.attributes["total.string"], 3, 3))`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "456")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "678")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], Substring(log.attributes["total.string"], 3, 3)) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "456")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], Substring(log.attributes["not_exist"], 3, 3))`,
+			want:      func(_ plog.Logs) {},
+		},
+		{
+			statement: `set(log.attributes["test"], ["A", "B", "C"]) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				v1 := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutEmptySlice("test")
+				v1.AppendEmpty().SetStr("A")
+				v1.AppendEmpty().SetStr("B")
+				v1.AppendEmpty().SetStr("C")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], ConvertCase(log.body, "lower")) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "operationa")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], ConvertCase(log.body, "upper")) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "OPERATIONA")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], ConvertCase(log.body, "snake")) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "operation_a")
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], ConvertCase(log.body, "camel")) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "OperationA")
+			},
+		},
+		{
+			statement: `merge_maps(log.attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("json_test", "pass")
+			},
+		},
+		{
+			statement: `limit(log.attributes, 0, []) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
+			},
+		},
+		{
+			statement: `set(log.attributes["test"], Log(1)) where log.body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutDouble("test", 0.0)
+			},
+		},
+		{
+			statement: `replace_match(log.body["metadata"]["uid"], "*", "12345")`,
+			want:      func(_ plog.Logs) {},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_ProcessLogs_MixContext(t *testing.T) {
 	tests := []struct {
 		name             string
@@ -468,6 +804,96 @@ func Test_ProcessLogs_MixContext(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructLogs()
 			processor, err := NewProcessor(tt.contextStatments, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
+func Test_ProcessLogs_InferredMixContext(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td plog.Logs)
+	}{
+		{
+			name: "set resource and then use",
+			contextStatements: []common.ContextStatements{
+				{
+					Statements: []string{`set(resource.attributes["test"], "pass")`},
+				},
+				{
+					Statements: []string{`set(log.attributes["test"], "pass") where resource.attributes["test"] == "pass"`},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "set scope and then use",
+			contextStatements: []common.ContextStatements{
+				{
+					Statements: []string{`set(scope.attributes["test"], "pass")`},
+				},
+				{
+					Statements: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "order matters",
+			contextStatements: []common.ContextStatements{
+				{
+					Statements: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
+				},
+				{
+					Statements: []string{`set(scope.attributes["test"], "pass")`},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "reuse context",
+			contextStatements: []common.ContextStatements{
+				{
+					Statements: []string{`set(scope.attributes["test"], "pass")`},
+				},
+				{
+					Statements: []string{`set(log.attributes["test"], "pass") where instrumentation_scope.attributes["test"] == "pass"`},
+				},
+				{
+					Statements: []string{`set(scope.attributes["test"], "fail")`},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "fail")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
