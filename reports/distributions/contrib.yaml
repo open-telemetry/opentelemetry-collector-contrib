@@ -159,6 +159,7 @@ components:
         - namedpipe
         - nginx
         - nsxt
+        - ntp
         - opencensus
         - oracledb
         - otelarrow
