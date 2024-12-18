@@ -232,9 +232,9 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 }
 
 var (
-	parser           = newParser[parsedStatement]()
-	conditionParser  = newParser[booleanExpression]()
-	expressionParser = newParser[value]()
+	parser                = newParser[parsedStatement]()
+	conditionParser       = newParser[booleanExpression]()
+	valueExpressionParser = newParser[value]()
 )
 
 func parseStatement(raw string) (*parsedStatement, error) {
@@ -263,8 +263,8 @@ func parseCondition(raw string) (*booleanExpression, error) {
 	return parsed, nil
 }
 
-func parseExpression(raw string) (*value, error) {
-	parsed, err := expressionParser.ParseString("", raw)
+func parseValueExpression(raw string) (*value, error) {
+	parsed, err := valueExpressionParser.ParseString("", raw)
 	if err != nil {
 		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
 	}
@@ -454,16 +454,16 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return c.logicOp == And && atLeastOneMatch, nil
 }
 
-type Expression[K any] struct {
+type ValueExpression[K any] struct {
 	getter Getter[K]
 }
 
-func (e *Expression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
+func (e *ValueExpression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.getter.Get(ctx, tCtx)
 }
 
-func (p *Parser[K]) ParseExpression(raw string) (*Expression[K], error) {
-	parsed, err := parseExpression(raw)
+func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error) {
+	parsed, err := parseValueExpression(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +472,7 @@ func (p *Parser[K]) ParseExpression(raw string) (*Expression[K], error) {
 		return nil, err
 	}
 
-	return &Expression[K]{
+	return &ValueExpression[K]{
 		getter: getter,
 	}, nil
 }

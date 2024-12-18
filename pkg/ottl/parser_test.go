@@ -2130,6 +2130,61 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
+func Test_parseValueExpression_full(t *testing.T) {
+	time1 := time.Now()
+	time2 := time1.Add(5 * time.Second)
+	tests := []struct {
+		name            string
+		valueExpression string
+		tCtx            any
+		expected        any
+	}{
+		{
+			name:            "string value",
+			valueExpression: `"fido"`,
+			expected:        "fido",
+		},
+		{
+			name:            "resolve context value",
+			valueExpression: `attributes`,
+			expected: map[string]any{
+				"foo": "bar",
+			},
+			tCtx: map[string]any{
+				"attributes": map[string]any{
+					"foo": "bar",
+				},
+			},
+		},
+		{
+			name:            "resolve math expression",
+			valueExpression: `time2 - time1`,
+			expected:        5 * time.Second,
+			tCtx: map[string]time.Time{
+				"time1": time1,
+				"time2": time2,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.valueExpression, func(t *testing.T) {
+			p, _ := NewParser(
+				CreateFactoryMap[any](),
+				testParsePath[any],
+				componenttest.NewNopTelemetrySettings(),
+				WithEnumParser[any](testParseEnum),
+			)
+			parsed, err := p.ParseValueExpression(tt.valueExpression)
+			assert.NoError(t, err)
+
+			v, err := parsed.Eval(context.Background(), tt.tCtx)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, v)
+		})
+	}
+}
+
 func Test_ParseStatements_Error(t *testing.T) {
 	statements := []string{
 		`set(`,
@@ -2333,6 +2388,39 @@ func Test_parseCondition(t *testing.T) {
 			ast, err := parseCondition(tt.condition)
 			if (err != nil) != (tt.wantErr || tt.wantErrContaining != "") {
 				t.Errorf("parseCondition(%s) error = %v, wantErr %v", tt.condition, err, tt.wantErr)
+				t.Errorf("AST: %+v", ast)
+				return
+			}
+			if tt.wantErrContaining != "" {
+				require.ErrorContains(t, err, tt.wantErrContaining)
+			}
+		})
+	}
+}
+
+// This test doesn't validate parser results, simply checks whether the parse succeeds or not.
+// It's a fast way to check a large range of possible syntaxes.
+func Test_parseValueExpression(t *testing.T) {
+	converterNameErrorPrefix := "converter names must start with an uppercase letter"
+	editorWithIndexErrorPrefix := "only paths and converters may be indexed"
+
+	tests := []struct {
+		valueExpression   string
+		wantErr           bool
+		wantErrContaining string
+	}{
+		{valueExpression: `time_end - time_end`},
+		{valueExpression: `Test("foo")`},
+		{valueExpression: `test("foo")`, wantErr: true, wantErrContaining: converterNameErrorPrefix},
+		{valueExpression: `test(animal)["kind"]`, wantErrContaining: editorWithIndexErrorPrefix},
+	}
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.valueExpression, "_")
+		t.Run(name, func(t *testing.T) {
+			ast, err := parseValueExpression(tt.valueExpression)
+			if (err != nil) != (tt.wantErr || tt.wantErrContaining != "") {
+				t.Errorf("parseCondition(%s) error = %v, wantErr %v", tt.valueExpression, err, tt.wantErr)
 				t.Errorf("AST: %+v", ast)
 				return
 			}
