@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -81,13 +82,15 @@ type dockerEventPoller struct {
 	logger       *zap.Logger
 	eventHandler func(context.Context, *events.Message) error
 	backoff      *backoff.ExponentialBackOff
+	sync.WaitGroup
 }
 
 func newDockerEventPoller(
 	config *Config,
 	client *docker.Client,
 	logger *zap.Logger,
-	handler func(context.Context, *events.Message) error) *dockerEventPoller {
+	handler func(context.Context, *events.Message) error,
+) *dockerEventPoller {
 	return &dockerEventPoller{
 		config:       config,
 		client:       client,
@@ -133,6 +136,8 @@ func (d *dockerEventPoller) Start(ctx context.Context) {
 }
 
 func (d *dockerEventPoller) processEvents(ctx context.Context, eventChan <-chan events.Message, errChan <-chan error) error {
+	d.Add(1)
+	defer d.Done()
 	processedOnce := false
 	for {
 		select {
@@ -196,6 +201,9 @@ func (r *logsReceiver) consumeDockerEvent(ctx context.Context, event *events.Mes
 func (r *logsReceiver) Shutdown(_ context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
+	}
+	if r.eventPoller != nil {
+		r.eventPoller.Wait()
 	}
 	return nil
 }

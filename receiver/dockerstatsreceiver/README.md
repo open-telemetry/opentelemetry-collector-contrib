@@ -40,6 +40,7 @@ The following settings are for both logs and metrics receiver:
     `!my*container` will exclude all containers whose image name doesn't match the blob `my*container`.
 - `timeout` (default = `5s`): The request timeout for any docker daemon query.
 - `api_version` (default = `"1.25"`): The Docker client API version (must be 1.25+). Must be input as a string, not a float (e.g. `"1.40"` instead of `1.40`). [Docker API versions](https://docs.docker.com/engine/api/).
+Note: If different settings are needed for logs/metrics receivers, a new receiver config should be created entirely.
 
 Only for metrics receiver:
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
