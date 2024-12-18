@@ -7,7 +7,7 @@ change_type: bug_fix
 component: opampsupervisor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Supervisor clears config timeout and reports 'Applied' remote config status when a nop config is received.
+note: Report an 'Applied' remote config status when an empty config is received.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36682]
