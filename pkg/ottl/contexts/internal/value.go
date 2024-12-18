@@ -83,16 +83,13 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 				if err != nil {
 					return nil, err
 				}
-				if p == nil {
-					return nil, errors.New("map must be indexed by a string")
-				}
 				res, err := p.Get(ctx, tCtx)
 				if err != nil {
 					return nil, err
 				}
 				resString, okk := res.(string)
 				if !okk {
-					return nil, fmt.Errorf("err")
+					return nil, errors.New("map must be indexed by a string")
 				}
 				s = &resString
 			}
@@ -110,16 +107,13 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 				if err != nil {
 					return nil, err
 				}
-				if p == nil {
-					return nil, errors.New("slice must be indexed by an int")
-				}
 				res, err := p.Get(ctx, tCtx)
 				if err != nil {
 					return nil, err
 				}
 				resInt, ok := res.(int64)
 				if !ok {
-					return nil, fmt.Errorf("err")
+					return nil, errors.New("slice must be indexed by an int")
 				}
 				i = &resInt
 			}
@@ -159,16 +153,13 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				if err != nil {
 					return err
 				}
-				if p == nil {
-					return errors.New("map must be indexed by a string")
-				}
 				res, err := p.Get(ctx, tCtx)
 				if err != nil {
 					return err
 				}
 				resString, ok := res.(string)
 				if !ok {
-					return fmt.Errorf("err")
+					return errors.New("map must be indexed by a string")
 				}
 				s = &resString
 			}
@@ -188,16 +179,13 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				if err != nil {
 					return err
 				}
-				if p == nil {
-					return errors.New("slice must be indexed by an int")
-				}
 				res, err := p.Get(ctx, tCtx)
 				if err != nil {
 					return err
 				}
 				resInt, ok := res.(int64)
 				if !ok {
-					return fmt.Errorf("err")
+					return errors.New("slice must be indexed by an int")
 				}
 				i = &resInt
 			}
@@ -228,9 +216,6 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				if err != nil {
 					return err
 				}
-				if p == nil {
-					return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
-				}
 				res, err := p.Get(ctx, tCtx)
 				if err != nil {
 					return err
@@ -239,7 +224,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				if !ok {
 					resString, ok := res.(string)
 					if !ok {
-						return fmt.Errorf("err")
+						return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
 					}
 					currentValue = currentValue.SetEmptyMap().PutEmpty(resString)
 				}

@@ -26,19 +26,15 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		if err != nil {
 			return nil, err
 		}
-		if p != nil {
-			res, err := p.Get(ctx, tCtx)
-			if err != nil {
-				return nil, err
-			}
-			resString, ok := res.(string)
-			if !ok {
-				return nil, fmt.Errorf("err")
-			}
-			s = &resString
-		} else {
+		res, err := p.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		resString, ok := res.(string)
+		if !ok {
 			return nil, fmt.Errorf("non-string indexing is not supported")
 		}
+		s = &resString
 	}
 
 	val, ok := m.Get(*s)
@@ -63,19 +59,15 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		if err != nil {
 			return err
 		}
-		if p != nil {
-			res, err := p.Get(ctx, tCtx)
-			if err != nil {
-				return err
-			}
-			resString, ok := res.(string)
-			if !ok {
-				return fmt.Errorf("err")
-			}
-			s = &resString
-		} else {
+		res, err := p.Get(ctx, tCtx)
+		if err != nil {
+			return err
+		}
+		resString, ok := res.(string)
+		if !ok {
 			return fmt.Errorf("non-string indexing is not supported")
 		}
+		s = &resString
 	}
 
 	currentValue, ok := m.Get(*s)
