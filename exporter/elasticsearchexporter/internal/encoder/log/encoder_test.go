@@ -39,7 +39,7 @@ func TestEncodeLog(t *testing.T) {
 	})
 
 	t.Run("dedot true", func(t *testing.T) {
-		e := &defaultEncoder{}
+		e := &defaultEncoder{dedot: true}
 		td := mockResourceLogs()
 		td.Resource().Attributes().PutStr("foo.bar", "baz")
 		logByte, err := e.EncodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
