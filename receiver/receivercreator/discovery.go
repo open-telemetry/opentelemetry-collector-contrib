@@ -28,9 +28,8 @@ const (
 	scraperHint          = "scraper"
 	configHint           = "config"
 
-	logsReceiver              = "filelog"
-	defaultLogPathPattern     = "/var/log/pods/%s_%s_%s/%s/*.log"
-	filelogOperatorsConfigKey = "operators"
+	logsReceiver          = "filelog"
+	defaultLogPathPattern = "/var/log/pods/%s_%s_%s/%s/*.log"
 )
 
 // k8sHintsBuilder creates configurations from hints provided as Pod's annotations.
@@ -212,10 +211,10 @@ func createLogsConfig(
 	logPath := fmt.Sprintf(defaultLogPathPattern, namespace, podName, podUID, containerName)
 	cont := []any{map[string]any{"id": "container-parser", "type": "container"}}
 	defaultConfMap := userConfigMap{
-		"include":                 []string{logPath},
-		"include_file_path":       true,
-		"include_file_name":       false,
-		filelogOperatorsConfigKey: cont,
+		"include":           []string{logPath},
+		"include_file_path": true,
+		"include_file_name": false,
+		"operators":         cont,
 	}
 
 	configStr, found := getHintAnnotation(annotations, otelLogsHints, configHint, scopeSuffix)
@@ -228,29 +227,8 @@ func createLogsConfig(
 		logger.Debug("could not unmarshal configuration from hint", zap.Error(err))
 	}
 
-	containerOpFound := false
 	for k, v := range userConf {
-		if k == filelogOperatorsConfigKey {
-			vlist, ok := v.([]any)
-			if !ok {
-				logger.Debug("could not parse operators configuration from hint", zap.Any("config", userConf))
-			}
-			for _, op := range vlist {
-				operator, ok := op.(map[string]any)
-				if !ok {
-					logger.Debug("could not parse operator configuration from hint", zap.Any("operator", op))
-				}
-				if operator["type"] == "container" {
-					containerOpFound = true
-				}
-			}
-			if !containerOpFound {
-				// if no container operator found then just extend the list
-				// otherwise we just use the user provided operators as-is
-				vlist = append(cont, vlist...)
-			}
-			defaultConfMap[k] = vlist
-		} else if k == "include" {
+		if k == "include" {
 			// path cannot be other than the one of the target container
 			continue
 		} else {

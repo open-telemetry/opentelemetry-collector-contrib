@@ -543,7 +543,7 @@ operators:
   - id: container-parser
     type: container
 ```
-This default can be extended using the respective annotation:
+This default can be extended or overridden using the respective annotation:
 `io.opentelemetry.discovery.logs/config`
 
 **Example:**
@@ -553,16 +553,13 @@ io.opentelemetry.discovery.logs/config: |
   include_file_name: true
   max_log_size: "2MiB"
   operators:
+    - type: container
+      id: container-parser
     - type: regex_parser
       regex: "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"
 ```
 
-Note that individual settings are overridden by the configuration provided by the hints while the operators list
-is extended keeping first the `container` parser. If `container` parser is explicitly set by the user the default
-will be overridden.
-
 `include` cannot be overridden and is fixed to discovered container's log file path.
-
 
 #### Support multiple target containers
 
@@ -573,6 +570,8 @@ For example:
 io.opentelemetry.discovery.logs.busybox/config: |
   max_log_size: "3MiB"
   operators:
+    - type: container
+      id: container-parser
     - id: some
       type: add
       field: attributes.tag
@@ -691,6 +690,8 @@ spec:
         io.opentelemetry.discovery.logs.redis/config: |
           max_log_size: "4MiB"
           operators:
+            - type: container
+              id: container-parser
             - id: some
               type: add
               field: attributes.tag

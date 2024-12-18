@@ -230,12 +230,16 @@ func TestK8sHintsBuilderLogs(t *testing.T) {
 include_file_name: true
 max_log_size: "2MiB"
 operators:
+- type: container
+  id: container-parser
 - type: regex_parser
   regex: "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"`
 	configNginx := `
 include_file_name: true
 max_log_size: "4MiB"
 operators:
+- type: container
+  id: container-parser
 - type: add
   field: attributes.tag
   value: beta`
@@ -614,6 +618,8 @@ func TestCreateLogsConfig(t *testing.T) {
 include_file_name: true
 max_log_size: "2MiB"
 operators:
+- type: container
+  id: container-parser
 - type: regex_parser
   regex: "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"`
 	tests := map[string]struct {
