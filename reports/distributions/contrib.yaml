@@ -134,6 +134,7 @@ components:
         - fluentforward
         - github
         - googlecloudmonitoring
+        - googlecloudpubsub
         - googlecloudspanner
         - haproxy
         - hostmetrics
@@ -179,6 +180,7 @@ components:
         - snowflake
         - solace
         - splunk_hec
+        - splunkenterprise
         - sqlquery
         - sqlserver
         - sshcheck

@@ -41,7 +41,7 @@ var SpanSymbolTable = map[ottl.EnumSymbol]ottl.Enum{
 
 func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
-		return accessSpan[K](), nil
+		return nil, FormatDefaultErrorMessage("span", "span", SpanContextName, SpanRef)
 	}
 	switch path.Name() {
 	case "trace_id":
@@ -135,20 +135,6 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 		return accessStatus[K](), nil
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), SpanContextName, SpanRef)
-	}
-}
-
-func accessSpan[K SpanContext]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetSpan(), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newSpan, ok := val.(ptrace.Span); ok {
-				newSpan.CopyTo(tCtx.GetSpan())
-			}
-			return nil
-		},
 	}
 }
 
