@@ -24,11 +24,11 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetFaasVersion("faas.version-val")
 			rb.SetGcpCloudRunJobExecution("gcp.cloud_run.job.execution-val")
 			rb.SetGcpCloudRunJobTaskIndex("gcp.cloud_run.job.task_index-val")
-			rb.SetGcpGceInstanceGroupManagerName("gcp.gce.instance.group.manager.name-val")
-			rb.SetGcpGceInstanceGroupManagerRegion("gcp.gce.instance.group.manager.region-val")
-			rb.SetGcpGceInstanceGroupManagerZone("gcp.gce.instance.group.manager.zone-val")
 			rb.SetGcpGceInstanceHostname("gcp.gce.instance.hostname-val")
 			rb.SetGcpGceInstanceName("gcp.gce.instance.name-val")
+			rb.SetGcpGceInstanceGroupManagerName("gcp.gce.instance_group_manager.name-val")
+			rb.SetGcpGceInstanceGroupManagerRegion("gcp.gce.instance_group_manager.region-val")
+			rb.SetGcpGceInstanceGroupManagerZone("gcp.gce.instance_group_manager.zone-val")
 			rb.SetHostID("host.id-val")
 			rb.SetHostName("host.name-val")
 			rb.SetHostType("host.type-val")
@@ -104,21 +104,6 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "gcp.cloud_run.job.task_index-val", val.Str())
 			}
-			val, ok = res.Attributes().Get("gcp.gce.instance.group.manager.name")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "gcp.gce.instance.group.manager.name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("gcp.gce.instance.group.manager.region")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "gcp.gce.instance.group.manager.region-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("gcp.gce.instance.group.manager.zone")
-			assert.True(t, ok)
-			if ok {
-				assert.EqualValues(t, "gcp.gce.instance.group.manager.zone-val", val.Str())
-			}
 			val, ok = res.Attributes().Get("gcp.gce.instance.hostname")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
@@ -128,6 +113,21 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "gcp.gce.instance.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance_group_manager.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance_group_manager.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance_group_manager.region")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance_group_manager.region-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance_group_manager.zone")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance_group_manager.zone-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.id")
 			assert.True(t, ok)

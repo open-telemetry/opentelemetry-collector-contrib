@@ -38,11 +38,11 @@ type ResourceAttributesConfig struct {
 	FaasVersion                      ResourceAttributeConfig `mapstructure:"faas.version"`
 	GcpCloudRunJobExecution          ResourceAttributeConfig `mapstructure:"gcp.cloud_run.job.execution"`
 	GcpCloudRunJobTaskIndex          ResourceAttributeConfig `mapstructure:"gcp.cloud_run.job.task_index"`
-	GcpGceInstanceGroupManagerName   ResourceAttributeConfig `mapstructure:"gcp.gce.instance.group.manager.name"`
-	GcpGceInstanceGroupManagerRegion ResourceAttributeConfig `mapstructure:"gcp.gce.instance.group.manager.region"`
-	GcpGceInstanceGroupManagerZone   ResourceAttributeConfig `mapstructure:"gcp.gce.instance.group.manager.zone"`
 	GcpGceInstanceHostname           ResourceAttributeConfig `mapstructure:"gcp.gce.instance.hostname"`
 	GcpGceInstanceName               ResourceAttributeConfig `mapstructure:"gcp.gce.instance.name"`
+	GcpGceInstanceGroupManagerName   ResourceAttributeConfig `mapstructure:"gcp.gce.instance_group_manager.name"`
+	GcpGceInstanceGroupManagerRegion ResourceAttributeConfig `mapstructure:"gcp.gce.instance_group_manager.region"`
+	GcpGceInstanceGroupManagerZone   ResourceAttributeConfig `mapstructure:"gcp.gce.instance_group_manager.zone"`
 	HostID                           ResourceAttributeConfig `mapstructure:"host.id"`
 	HostName                         ResourceAttributeConfig `mapstructure:"host.name"`
 	HostType                         ResourceAttributeConfig `mapstructure:"host.type"`
@@ -84,6 +84,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		GcpCloudRunJobTaskIndex: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		GcpGceInstanceHostname: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		GcpGceInstanceName: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		GcpGceInstanceGroupManagerName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -92,12 +98,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		GcpGceInstanceGroupManagerZone: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		GcpGceInstanceHostname: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		GcpGceInstanceName: ResourceAttributeConfig{
-			Enabled: false,
 		},
 		HostID: ResourceAttributeConfig{
 			Enabled: true,

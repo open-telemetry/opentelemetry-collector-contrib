@@ -168,8 +168,8 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeHostType:              "n1-standard1",
 				conventions.AttributeCloudRegion:           "us-central1",
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
-				"gcp.gce.instance.group.manager.name":      "my-gke-node",
-				"gcp.gce.instance.group.manager.region":    "us-central1",
+				"gcp.gce.instance_group_manager.name":      "my-gke-node",
+				"gcp.gce.instance_group_manager.region":    "us-central1",
 			},
 		},
 		{

@@ -19,11 +19,11 @@
 | faas.version | The faas.version | Any Str | true |
 | gcp.cloud_run.job.execution | The Job execution name | Any Str | true |
 | gcp.cloud_run.job.task_index | The Job execution task index | Any Str | true |
-| gcp.gce.instance.group.manager.name | The name of an instanceGroupManager. | Any Str | true |
-| gcp.gce.instance.group.manager.region | The region of a regional instanceGroupManager. | Any Str | true |
-| gcp.gce.instance.group.manager.zone | The zone of a zonal instanceGroupManager. | Any Str | true |
 | gcp.gce.instance.hostname | The hostname of the GCE instance. | Any Str | false |
 | gcp.gce.instance.name | The name of the GCE instance. | Any Str | false |
+| gcp.gce.instance_group_manager.name | The name of an instanceGroupManager. | Any Str | true |
+| gcp.gce.instance_group_manager.region | The region of a regional instanceGroupManager. | Any Str | true |
+| gcp.gce.instance_group_manager.zone | The zone of a zonal instanceGroupManager. | Any Str | true |
 | host.id | The host.id | Any Str | true |
 | host.name | The host.name | Any Str | true |
 | host.type | The host.type | Any Str | true |
