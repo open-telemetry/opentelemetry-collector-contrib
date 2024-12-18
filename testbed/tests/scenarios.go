@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"path"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -22,7 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-var performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+var (
+	batchRegex                                           = regexp.MustCompile(` batch_index=(\S+) `)
+	itemRegex                                            = regexp.MustCompile(` item_index=(\S+) `)
+	performanceResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
+)
 
 type ProcessorNameAndConfigBody struct {
 	Name string
@@ -658,9 +663,8 @@ func getLogsID(logToRetry []plog.Logs) []string {
 		logRecord := logElement.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 		for index := 0; index < logRecord.Len(); index++ {
 			logObj := logRecord.At(index)
-			itemIndex, _ := logObj.Attributes().Get("item_index")
-			batchIndex, _ := logObj.Attributes().Get("batch_index")
-			result = append(result, fmt.Sprintf("%s%s", batchIndex.AsString(), itemIndex.AsString()))
+			itemIndex, batchIndex := extractIDFromLog(logObj)
+			result = append(result, fmt.Sprintf("%s%s", batchIndex, itemIndex))
 		}
 	}
 	return result
@@ -683,4 +687,26 @@ func allElementsExistInSlice(slice1, slice2 []string) bool {
 	}
 
 	return true
+}
+
+// in case of filelog receiver, the batch_index and item_index are a part of log body.
+// we use regex to extract them
+func extractIDFromLog(log plog.LogRecord) (string, string) {
+	var batch, item string
+	match := batchRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	match = itemRegex.FindStringSubmatch(log.Body().AsString())
+	if len(match) == 2 {
+		batch = match[0]
+	}
+	// in case of otlp receiver, batch_index and item_index are part of attributes.
+	if batchIndex, ok := log.Attributes().Get("batch_index"); ok {
+		batch = batchIndex.AsString()
+	}
+	if itemIndex, ok := log.Attributes().Get("item_index"); ok {
+		item = itemIndex.AsString()
+	}
+	return batch, item
 }
