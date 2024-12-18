@@ -192,8 +192,10 @@ func TestDockerEventPolling(t *testing.T) {
 		},
 	}
 
-	mockDockerEngine, err := createEventsMockServer(t, []string{filepath.Join(mockFolder, "single_container", "events.json"),
-		filepath.Join(mockFolder, "single_container", "events2.json")})
+	mockDockerEngine, err := createEventsMockServer(t, []string{
+		filepath.Join(mockFolder, "single_container", "events.json"),
+		filepath.Join(mockFolder, "single_container", "events2.json"),
+	})
 	require.NoError(t, err)
 	defer mockDockerEngine.Close()
 	mockLogsConsumer := &consumertest.LogsSink{}
