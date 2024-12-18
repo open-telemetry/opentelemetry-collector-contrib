@@ -72,7 +72,7 @@ func FetchValueFromPath[K any, T int64 | string](ctx context.Context, tCtx K, ke
 	}
 	resVal, ok := res.(T)
 	if !ok {
-		return nil, fmt.Errorf("casting not successfull")
+		return nil, fmt.Errorf("casting not successful")
 	}
 	return &resVal, nil
 }
