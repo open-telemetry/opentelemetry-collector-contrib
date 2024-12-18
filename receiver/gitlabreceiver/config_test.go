@@ -33,6 +33,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 				},
 				Path:       defaultPath,
 				HealthPath: defaultHealthPath,
+				GitlabHeaders: []string{
+					defaultUserAgentHeader,
+					defaultGitlabInstanceHeader,
+					defaultGitlabWebhookUUIDHeader,
+					defaultGitlabEventHeader,
+					defaultGitlabEventUUIDHeader,
+					defaultIdempotencyKeyHeader,
+				},
 			},
 		},
 		cfg, "failed to create default config")
@@ -64,7 +72,15 @@ func TestLoadConfig(t *testing.T) {
 			Path:       "some/path",
 			HealthPath: "health/path",
 			RequiredHeaders: map[string]configopaque.String{
-				"key-present": "value-present",
+				"key1-present": "value1-present",
+			},
+			GitlabHeaders: []string{
+				defaultUserAgentHeader,
+				defaultGitlabInstanceHeader,
+				defaultGitlabWebhookUUIDHeader,
+				defaultGitlabEventHeader,
+				defaultGitlabEventUUIDHeader,
+				defaultIdempotencyKeyHeader,
 			},
 		},
 	}
@@ -73,9 +89,15 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, expectedConfig, r0)
 
+	// r1 requires multiple headers and overwrites gitlab default headers
 	expectedConfig.WebHook.RequiredHeaders = map[string]configopaque.String{
-		"key-present":  "value-present",
+		"key1-present": "value1-present",
 		"key2-present": "value2-present",
+	}
+
+	expectedConfig.WebHook.GitlabHeaders = []string{
+		"header1",
+		"header2",
 	}
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)

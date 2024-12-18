@@ -16,9 +16,21 @@ import (
 const (
 	defaultReadTimeout  = 500 * time.Millisecond
 	defaultWriteTimeout = 500 * time.Millisecond
-	defaultPath         = "/events"
-	defaultHealthPath   = "/health"
-	defaultEndpoint     = "localhost:8080"
+
+	defaultEndpoint = "localhost:8080"
+
+	defaultPath       = "/events"
+	defaultHealthPath = "/health"
+)
+
+const (
+	// GitLab default headers: https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#delivery-headers
+	defaultUserAgentHeader         = "User-Agent"
+	defaultGitlabInstanceHeader    = "X-Gitlab-Instance"
+	defaultGitlabWebhookUUIDHeader = "X-Gitlab-Webhook-UUID"
+	defaultGitlabEventHeader       = "X-Gitlab-Event"
+	defaultGitlabEventUUIDHeader   = "X-Gitlab-Event-UUID"
+	defaultIdempotencyKeyHeader    = "Idempotency-Key"
 )
 
 var (
@@ -34,11 +46,15 @@ type Config struct {
 }
 
 type WebHook struct {
-	confighttp.ServerConfig `mapstructure:",squash"`       // squash ensures fields are correctly decoded in embedded struct
-	Path                    string                         `mapstructure:"path"`             // path for data collection. Default is /events
-	HealthPath              string                         `mapstructure:"health_path"`      // path for health check api. Default is /health_check
-	RequiredHeaders         map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have
-	Secret                  string                         `mapstructure:"secret"`           // secret for webhook
+	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	Path       string `mapstructure:"path"`        // path for data collection. default is /events
+	HealthPath string `mapstructure:"health_path"` // path for health check api. default is /health_check
+
+	RequiredHeaders map[string]configopaque.String `mapstructure:"required_headers"` // optional setting to set one or more required headers for all requests to have (except the health check)
+	GitlabHeaders   []string                       `mapstructure:"gitlab_headers"`   // optional setting to overwrite the by default required GitLab headers for all requests to have (except the health check)
+
+	Secret string `mapstructure:"secret"` // secret for webhook
 }
 
 func createDefaultConfig() component.Config {
@@ -48,6 +64,14 @@ func createDefaultConfig() component.Config {
 				Endpoint:     defaultEndpoint,
 				ReadTimeout:  defaultReadTimeout,
 				WriteTimeout: defaultWriteTimeout,
+			},
+			GitlabHeaders: []string{
+				defaultUserAgentHeader,
+				defaultGitlabInstanceHeader,
+				defaultGitlabWebhookUUIDHeader,
+				defaultGitlabEventHeader,
+				defaultGitlabEventUUIDHeader,
+				defaultIdempotencyKeyHeader,
 			},
 			Path:       defaultPath,
 			HealthPath: defaultHealthPath,

@@ -7,7 +7,7 @@ receivers:
       path: "some/path"
       health_path: "health/path"
       required_headers:
-        key-present: value-present
+        key1-present: "value1-present"
 
   gitlab/customname:
     webhook:
@@ -17,9 +17,12 @@ receivers:
       path: "some/path"
       health_path: "health/path"
       required_headers:
-        key-present: value-present
-        key2-present: value2-present 
-        
+        key1-present: "value1-present"
+        key2-present: "value2-present" 
+      gitlab_headers: 
+        - "header1"
+        - "header2"
+                
 processors:
   nop:
 

@@ -10,4 +10,4 @@ status:
 tests:
   config:
     webhook:
-      endpoint: "localhost:8080"
+      endpoint: "localhost:0" #dynamic port allocation to avoid falky tests

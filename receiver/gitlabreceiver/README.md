@@ -32,7 +32,8 @@ The WebHook configuration exposes the following settings:
 * `path`: (default = `/events`) - The path for Action events to be sent to.
 * `health_path`: (default = `/health`) - The path for health checks.
 * `secret`: (optional) - The secret used to [validate the payload](https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#custom-headers).
-* `required_header`: (optional) - The required header key and value for incoming requests.
+* `required_headers`: (optional) - One or more required header key and value pairs for incoming requests.
+* `gitlab_headers`: (default = see GitLab headers in [config.go](./config.go)) - One or more required header keys set by GitLab for incoming requests.
 
 The WebHook configuration block also accepts all the [confighttp](https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#ServerConfig)
 settings.
@@ -47,9 +48,10 @@ receivers:
             path: /events
             health_path: /health
             secret: ${env:SECRET_STRING_VAR}
-            required_header:
-                key: "X-GitLab-Event"
-                value: "pipeline"
+            required_headers:
+                WAF-Header: "value"
+            gitlab_headers: 
+                - "X-Gitlab-Event"
 ```
 
 For tracing, all configuration is set under the `webhook` key. The full set
