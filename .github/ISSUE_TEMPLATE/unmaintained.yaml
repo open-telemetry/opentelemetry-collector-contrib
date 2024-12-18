@@ -143,6 +143,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/core/idutils
       - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
