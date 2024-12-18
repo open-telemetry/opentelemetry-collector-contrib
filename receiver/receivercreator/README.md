@@ -514,8 +514,7 @@ The hints are evaluated per container by extracting the annotations from each [`
 
 ### Supported logs annotations
 
-This feature enables `filelog` receiver along with the `container` parser in order to collect logs from the discovered
-Pods.
+This feature enables `filelog` receiver in order to collect logs from the discovered Pods.
 
 #### Enable/disable discovery
 
@@ -523,15 +522,8 @@ Pods.
 
 By default `"false"`.
 
-The following configuration can be used:
-
-```yaml
-receiver_creator/logs:
-  watch_observers: [ k8s_observer ]
-  discovery:
-    enabled: true
-```
 #### Define configuration
+
 The default configuration for the `filelog` receiver is the following:
 
 ```yaml
