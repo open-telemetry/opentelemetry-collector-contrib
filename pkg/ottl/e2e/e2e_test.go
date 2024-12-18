@@ -329,6 +329,12 @@ func Test_e2e_converters(t *testing.T) {
 		statement string
 		want      func(tCtx ottllog.TransformContext)
 	}{
+		// {
+		// 	statement: `set(attributes[ConvertCase(attributes["A|B|C"], "upper")], "myvalue")`,
+		// 	want: func(tCtx ottllog.TransformContext) {
+		// 		tCtx.GetLogRecord().Attributes().PutStr("SOMETHING", "myvalue")
+		// 	},
+		// },
 		{
 			statement: `set(attributes[attributes["flags"]], "something33")`,
 			want: func(tCtx ottllog.TransformContext) {
@@ -341,12 +347,6 @@ func Test_e2e_converters(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("something", "something2")
 			},
 		},
-		// {
-		// 	statement: `set(attributes[ConvertCase(attributes["A|B|C"], "upper")], "myvalue")`,
-		// 	want: func(tCtx ottllog.TransformContext) {
-		// 		tCtx.GetLogRecord().Attributes().PutStr("SOMETHING", "myvalue")
-		// 	},
-		// },
 		{
 			statement: `set(body, attributes[attributes["foo"][attributes["slice"]][attributes["int_value"]]])`,
 			want: func(tCtx ottllog.TransformContext) {

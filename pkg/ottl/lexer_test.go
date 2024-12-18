@@ -139,20 +139,6 @@ func Test_lexer(t *testing.T) {
 			{"Punct", "]"},
 			{"Punct", "]"},
 		}},
-		// {"Dynamic path", `attributes[ConvertCase(attributes["foo"], "upper")]`, false, []result{
-		// 	{"Lowercase", "attributes"},
-		// 	{"Punct", "["},
-		// 	{"Uppercase", "ConvertCase"},
-		// 	{"LParen", "("},
-		// 	{"Lowercase", "attributes"},
-		// 	{"Punct", "["},
-		// 	{"String", `"foo"`},
-		// 	{"Punct", "]"},
-		// 	{"Punct", ","},
-		// 	{"String", "upper"},
-		// 	{"RParen", ")"},
-		// 	{"Punct", "]"},
-		// }},
 	}
 
 	for _, tt := range tests {
