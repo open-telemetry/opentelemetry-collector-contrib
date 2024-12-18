@@ -454,14 +454,21 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return c.logicOp == And && atLeastOneMatch, nil
 }
 
+// ValueExpression represents an expression that resolves to a value. The returned value can be of any type,
+// and the expression can be either a literal value, a path value within the context, or the result of a converter and/or
+// a mathematical expression.
+// This Allows other components using this library to extract data from the context of the incoming signal using OTTL.
 type ValueExpression[K any] struct {
 	getter Getter[K]
 }
 
+// Eval evaluates the given expression and returns the value the expression resolves to.
 func (e *ValueExpression[K]) Eval(ctx context.Context, tCtx K) (any, error) {
 	return e.getter.Get(ctx, tCtx)
 }
 
+// ParseValueExpression parses an expression string into a ValueExpression. The ValueExpression's Eval
+// method can then be used to extract the value from the context of the incoming signal.
 func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error) {
 	parsed, err := parseValueExpression(raw)
 	if err != nil {
