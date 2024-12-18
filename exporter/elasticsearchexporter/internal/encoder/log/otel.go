@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package log // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/ecs/internal/log"
+package log // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/ecs/internal/encoder/log"
 
 import (
 	"bytes"
@@ -9,8 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/encoder/otel"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/otel"
 )
 
 type otelEncoder struct {

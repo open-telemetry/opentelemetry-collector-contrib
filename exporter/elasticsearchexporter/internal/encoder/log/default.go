@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package log // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/ecs/internal/log"
+package log // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/ecs/internal/encoder/log"
 
 import (
 	"bytes"
