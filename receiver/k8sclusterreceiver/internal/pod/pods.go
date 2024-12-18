@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	// Keys for pod metadata.
+	// Keys for pod metadata and entity attributes. These are NOT used by resource attributes.
 	podCreationTime = "pod.creation_timestamp"
 	podPhase        = "k8s.pod.phase"
 	podStatusReason = "k8s.pod.status_reason"

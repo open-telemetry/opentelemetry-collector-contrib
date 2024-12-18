@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	// Keys for node metadata.
-	nodeCreationTime = "node.creation_timestamp"
+	// Keys for node metadata and entity attributes. These are NOT used by resource attributes.
+	nodeCreationTime       = "node.creation_timestamp"
+	k8sNodeConditionPrefix = "k8s.node.condition"
 )
 
 // Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
@@ -165,7 +166,7 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 
 	for _, c := range node.Status.Conditions {
 		if _, ok := kubeletConditions[c.Type]; ok {
-			meta[fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(string(c.Type)))] = strings.ToLower(string(c.Status))
+			meta[fmt.Sprintf("%s_%s", k8sNodeConditionPrefix, strcase.ToSnake(string(c.Type)))] = strings.ToLower(string(c.Status))
 		}
 	}
 
