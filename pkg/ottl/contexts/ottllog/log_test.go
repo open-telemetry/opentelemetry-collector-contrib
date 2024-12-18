@@ -29,7 +29,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, refIS, refResource := createTelemetry("string")
+	refLog, _, _ := createTelemetry("string")
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -53,13 +53,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name                    string
-		path                    ottl.Path[TransformContext]
-		orig                    any
-		newVal                  any
-		modified                func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
-		bodyType                string
-		skipWithPathContextTest bool
+		name     string
+		path     ottl.Path[TransformContext]
+		orig     any
+		newVal   any
+		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		bodyType string
 	}{
 		{
 			name: "time",
@@ -599,37 +598,10 @@ func Test_newPathGetSetter(t *testing.T) {
 				log.SetDroppedAttributesCount(20)
 			},
 		},
-		{
-			name: "instrumentation_scope",
-			path: &internal.TestPath[TransformContext]{
-				N: "instrumentation_scope",
-			},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(_ plog.LogRecord, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewInstrumentationScope().CopyTo(il)
-			},
-			skipWithPathContextTest: true,
-		},
-		{
-			name: "resource",
-			path: &internal.TestPath[TransformContext]{
-				N: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ plog.LogRecord, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-			skipWithPathContextTest: true,
-		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
 	// It ensures all exiting field access also work when the path context is set.
 	for _, tt := range slices.Clone(tests) {
-		if tt.skipWithPathContextTest {
-			continue
-		}
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])

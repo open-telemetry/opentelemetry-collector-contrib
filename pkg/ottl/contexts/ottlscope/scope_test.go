@@ -19,7 +19,7 @@ import (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refIS, refResource := createTelemetry()
+	refIS, _ := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -37,12 +37,11 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name                    string
-		path                    ottl.Path[TransformContext]
-		orig                    any
-		newVal                  any
-		modified                func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
-		skipWithPathContextTest bool
+		name     string
+		path     ottl.Path[TransformContext]
+		orig     any
+		newVal   any
+		modified func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
 	}{
 		{
 			name: "cache",
@@ -385,37 +384,10 @@ func Test_newPathGetSetter(t *testing.T) {
 				is.SetVersion("next")
 			},
 		},
-		{
-			name: "resource",
-			path: &internal.TestPath[TransformContext]{
-				N: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-			skipWithPathContextTest: true,
-		},
-		{
-			name: "resource with context",
-			path: &internal.TestPath[TransformContext]{
-				C: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-			skipWithPathContextTest: true,
-		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
 	// It ensures all exiting field access also work when the path context is set.
 	for _, tt := range slices.Clone(tests) {
-		if tt.skipWithPathContextTest {
-			continue
-		}
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])

@@ -28,7 +28,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refSpan, refIS, refResource := createTelemetry()
+	refSpan, _, _ := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -55,12 +55,11 @@ func Test_newPathGetSetter(t *testing.T) {
 	newMap["k2"] = newMap2
 
 	tests := []struct {
-		name                    string
-		path                    ottl.Path[TransformContext]
-		orig                    any
-		newVal                  any
-		modified                func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
-		skipWithPathContextTest bool
+		name     string
+		path     ottl.Path[TransformContext]
+		orig     any
+		newVal   any
+		modified func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
 	}{
 		{
 			name: "cache",
@@ -652,61 +651,10 @@ func Test_newPathGetSetter(t *testing.T) {
 				span.Status().SetMessage("bad span")
 			},
 		},
-		{
-			name: "instrumentation_scope",
-			path: &internal.TestPath[TransformContext]{
-				N: "instrumentation_scope",
-			},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(_ ptrace.Span, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewInstrumentationScope().CopyTo(il)
-			},
-			skipWithPathContextTest: true,
-		},
-		{
-			name: "instrumentation_scope context",
-			path: &internal.TestPath[TransformContext]{
-				C: "instrumentation_scope",
-			},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(_ ptrace.Span, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewInstrumentationScope().CopyTo(il)
-			},
-			skipWithPathContextTest: true,
-		},
-		{
-			name: "resource",
-			path: &internal.TestPath[TransformContext]{
-				N: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ ptrace.Span, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-			skipWithPathContextTest: true,
-		},
-		{
-			name: "resource context",
-			path: &internal.TestPath[TransformContext]{
-				C: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ ptrace.Span, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-			skipWithPathContextTest: true,
-		},
 	}
 	// Copy all tests cases and sets the path.Context value to the generated ones.
 	// It ensures all exiting field access also work when the path context is set.
 	for _, tt := range slices.Clone(tests) {
-		if tt.skipWithPathContextTest {
-			continue
-		}
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])

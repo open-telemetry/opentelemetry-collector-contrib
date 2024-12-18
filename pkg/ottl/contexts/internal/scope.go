@@ -22,8 +22,8 @@ type InstrumentationScopeContext interface {
 }
 
 func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
-	if isPathToContextRoot(path, InstrumentationScopeContextName) || isPathToContextRoot(path, ScopeContextName) {
-		return accessInstrumentationScope[K](), nil
+	if path == nil {
+		return nil, FormatDefaultErrorMessage(InstrumentationScopeContextName, InstrumentationScopeContextName, "Instrumentation Scope", InstrumentationScopeRef)
 	}
 	switch path.Name() {
 	case "name":
@@ -42,20 +42,6 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.
 		return accessInstrumentationScopeSchemaURLItem[K](), nil
 	default:
 		return nil, FormatDefaultErrorMessage(path.Name(), path.String(), "Instrumentation Scope", InstrumentationScopeRef)
-	}
-}
-
-func accessInstrumentationScope[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
-	return ottl.StandardGetSetter[K]{
-		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetInstrumentationScope(), nil
-		},
-		Setter: func(_ context.Context, tCtx K, val any) error {
-			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(tCtx.GetInstrumentationScope())
-			}
-			return nil
-		},
 	}
 }
 

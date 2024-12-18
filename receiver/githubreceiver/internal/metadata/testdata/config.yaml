@@ -1,29 +1,25 @@
 default:
 all_set:
   metrics:
-    vcs.repository.change.count:
+    vcs.change.count:
       enabled: true
-    vcs.repository.change.time_open:
+    vcs.change.duration:
       enabled: true
-    vcs.repository.change.time_to_approval:
+    vcs.change.time_to_approval:
       enabled: true
-    vcs.repository.change.time_to_merge:
+    vcs.change.time_to_merge:
       enabled: true
-    vcs.repository.contributor.count:
+    vcs.contributor.count:
+      enabled: true
+    vcs.ref.count:
+      enabled: true
+    vcs.ref.lines_delta:
+      enabled: true
+    vcs.ref.revisions_delta:
+      enabled: true
+    vcs.ref.time:
       enabled: true
     vcs.repository.count:
-      enabled: true
-    vcs.repository.ref.count:
-      enabled: true
-    vcs.repository.ref.lines_added:
-      enabled: true
-    vcs.repository.ref.lines_deleted:
-      enabled: true
-    vcs.repository.ref.revisions_ahead:
-      enabled: true
-    vcs.repository.ref.revisions_behind:
-      enabled: true
-    vcs.repository.ref.time:
       enabled: true
   resource_attributes:
     organization.name:
@@ -32,29 +28,25 @@ all_set:
       enabled: true
 none_set:
   metrics:
-    vcs.repository.change.count:
+    vcs.change.count:
       enabled: false
-    vcs.repository.change.time_open:
+    vcs.change.duration:
       enabled: false
-    vcs.repository.change.time_to_approval:
+    vcs.change.time_to_approval:
       enabled: false
-    vcs.repository.change.time_to_merge:
+    vcs.change.time_to_merge:
       enabled: false
-    vcs.repository.contributor.count:
+    vcs.contributor.count:
+      enabled: false
+    vcs.ref.count:
+      enabled: false
+    vcs.ref.lines_delta:
+      enabled: false
+    vcs.ref.revisions_delta:
+      enabled: false
+    vcs.ref.time:
       enabled: false
     vcs.repository.count:
-      enabled: false
-    vcs.repository.ref.count:
-      enabled: false
-    vcs.repository.ref.lines_added:
-      enabled: false
-    vcs.repository.ref.lines_deleted:
-      enabled: false
-    vcs.repository.ref.revisions_ahead:
-      enabled: false
-    vcs.repository.ref.revisions_behind:
-      enabled: false
-    vcs.repository.ref.time:
       enabled: false
   resource_attributes:
     organization.name:

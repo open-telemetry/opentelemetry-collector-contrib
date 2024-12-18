@@ -60,12 +60,12 @@ type esDataReceiver struct {
 
 type dataReceiverOption func(*esDataReceiver)
 
-func newElasticsearchDataReceiver(t testing.TB, opts ...dataReceiverOption) *esDataReceiver {
+func newElasticsearchDataReceiver(tb testing.TB, opts ...dataReceiverOption) *esDataReceiver {
 	r := &esDataReceiver{
 		DataReceiverBase:  testbed.DataReceiverBase{},
-		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(tb)),
 		decodeBulkRequest: true,
-		t:                 t,
+		t:                 tb,
 	}
 	for _, opt := range opts {
 		opt(r)
