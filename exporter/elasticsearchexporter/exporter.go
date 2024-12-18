@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/log"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
@@ -45,11 +46,7 @@ func newExporter(
 	index string,
 	dynamicIndex bool,
 ) *elasticsearchExporter {
-	model := &encodeModel{
-		dedot: cfg.Mapping.Dedot,
-		mode:  cfg.MappingMode(),
-	}
-
+	model := newEncodeModel(cfg.Mapping.Dedot, cfg.MappingMode())
 	otel := model.mode == mapping.ModeOTel
 
 	userAgent := fmt.Sprintf(
@@ -132,7 +129,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 						return cerr
 					}
 
-					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
+					if errors.Is(err, log.ErrInvalidTypeForBodyMapMode) {
 						e.Logger.Warn("dropping log record", zap.Error(err))
 						continue
 					}
@@ -174,7 +171,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	document, err := e.model.EncodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
