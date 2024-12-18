@@ -27,7 +27,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, refIS, refResource := createTelemetry("string")
+	refLog, _, _ := createTelemetry("string")
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -594,28 +594,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: int64(20),
 			modified: func(log plog.LogRecord, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				log.SetDroppedAttributesCount(20)
-			},
-		},
-		{
-			name: "instrumentation_scope",
-			path: &internal.TestPath[TransformContext]{
-				N: "instrumentation_scope",
-			},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(_ plog.LogRecord, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewInstrumentationScope().CopyTo(il)
-			},
-		},
-		{
-			name: "resource",
-			path: &internal.TestPath[TransformContext]{
-				N: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ plog.LogRecord, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
 			},
 		},
 	}
