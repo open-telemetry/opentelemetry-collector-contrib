@@ -5,7 +5,6 @@ package e2e
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 	"time"
@@ -1141,7 +1140,7 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 
 			tCtx := constructLogTransformContext()
 			val, err := valueExpr.Eval(context.Background(), tCtx)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 
 			assert.Equal(t, tt.want, val)
 		})
