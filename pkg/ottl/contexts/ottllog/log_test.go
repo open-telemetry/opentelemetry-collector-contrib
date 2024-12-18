@@ -649,12 +649,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		expected any
 	}{
 		{
-			name:     "resource",
-			path:     &internal.TestPath[TransformContext]{N: "resource"},
-			expected: resource,
-		},
-		{
-			name: "resource field",
+			name: "resource",
 			path: &internal.TestPath[TransformContext]{C: "", N: "resource", NextPath: &internal.TestPath[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
@@ -666,12 +661,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			expected: "val",
 		},
 		{
-			name:     "resource context",
-			path:     &internal.TestPath[TransformContext]{C: "resource"},
-			expected: resource,
-		},
-		{
-			name: "resource field with context",
+			name: "resource with context",
 			path: &internal.TestPath[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
 				&internal.TestKey[TransformContext]{
 					S: ottltest.Strp("str"),
@@ -681,21 +671,11 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 		{
 			name:     "instrumentation_scope",
-			path:     &internal.TestPath[TransformContext]{N: "instrumentation_scope"},
-			expected: instrumentationScope,
-		},
-		{
-			name:     "instrumentation_scope field",
 			path:     &internal.TestPath[TransformContext]{N: "instrumentation_scope", NextPath: &internal.TestPath[TransformContext]{N: "name"}},
 			expected: instrumentationScope.Name(),
 		},
 		{
-			name:     "instrumentation_scope context",
-			path:     &internal.TestPath[TransformContext]{C: "instrumentation_scope"},
-			expected: instrumentationScope,
-		},
-		{
-			name:     "instrumentation_scope field with context",
+			name:     "instrumentation_scope with context",
 			path:     &internal.TestPath[TransformContext]{C: "instrumentation_scope", N: "name"},
 			expected: instrumentationScope.Name(),
 		},

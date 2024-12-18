@@ -433,12 +433,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		expected any
 	}{
 		{
-			name:     "resource",
-			path:     &internal.TestPath[TransformContext]{N: "resource"},
-			expected: resource,
-		},
-		{
-			name: "resource field",
+			name: "resource",
 			path: &internal.TestPath[TransformContext]{C: "", N: "resource", NextPath: &internal.TestPath[TransformContext]{
 				N: "attributes",
 				KeySlice: []ottl.Key[TransformContext]{
@@ -450,12 +445,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			expected: "bar",
 		},
 		{
-			name:     "resource context",
-			path:     &internal.TestPath[TransformContext]{C: "resource"},
-			expected: resource,
-		},
-		{
-			name: "resource field with context",
+			name: "resource with context",
 			path: &internal.TestPath[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
 				&internal.TestKey[TransformContext]{
 					S: ottltest.Strp("foo"),

@@ -335,18 +335,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "scope",
-			path: &TestPath[*instrumentationScopeContext]{
-				C: "scope",
-			},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(is pcommon.InstrumentationScope) {
-				pcommon.NewInstrumentationScope().CopyTo(is)
-			},
-		},
-		{
-			name: "scope field",
+			name: "scope with context",
 			path: &TestPath[*instrumentationScopeContext]{
 				C: "scope",
 				N: "name",
