@@ -239,6 +239,15 @@ operators:
 - type: add
   field: attributes.tag
   value: beta`
+	configReplaceContainer := `
+operators:
+- type: container
+  id: replaced
+- type: regex_parser
+  regex: "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"`
+	configReplaceInclude := `
+include:
+- /var/log/pod/x/foo.log`
 
 	tests := map[string]struct {
 		inputEndpoint    observer.Endpoint
@@ -421,6 +430,71 @@ operators:
 			expectedReceiver: receiverTemplate{},
 			wantError:        true,
 			ignoreReceivers:  []string{},
+		}, `logs_pod_level_hints_replace_container_operator`: {
+			inputEndpoint: observer.Endpoint{
+				ID:     "namespace/pod-2-UID/filelog(redis)",
+				Target: "1.2.3.4:",
+				Details: &observer.PodContainer{
+					Name: "redis", Pod: observer.Pod{
+						Name:      "pod-2",
+						Namespace: "default",
+						UID:       "pod-2-UID",
+						Labels:    map[string]string{"env": "prod"},
+						Annotations: map[string]string{
+							otelLogsHints + "/enabled": "true",
+							otelLogsHints + "/config":  configReplaceContainer,
+						},
+					},
+				},
+			},
+			expectedReceiver: receiverTemplate{
+				receiverConfig: receiverConfig{
+					id: id,
+					config: userConfigMap{
+						"include":           []string{"/var/log/pods/default_pod-2_pod-2-UID/redis/*.log"},
+						"include_file_name": false,
+						"include_file_path": true,
+						"operators": []any{
+							map[string]any{"id": "replaced", "type": "container"},
+							map[string]any{"type": "regex_parser", "regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"},
+						},
+					},
+				}, signals: receiverSignals{metrics: false, logs: true, traces: false},
+			},
+			wantError:       false,
+			ignoreReceivers: []string{},
+		}, `logs_pod_level_hints_do_not_replace_path`: {
+			inputEndpoint: observer.Endpoint{
+				ID:     "namespace/pod-2-UID/filelog(redis)",
+				Target: "1.2.3.4:",
+				Details: &observer.PodContainer{
+					Name: "redis", Pod: observer.Pod{
+						Name:      "pod-2",
+						Namespace: "default",
+						UID:       "pod-2-UID",
+						Labels:    map[string]string{"env": "prod"},
+						Annotations: map[string]string{
+							otelLogsHints + "/enabled": "true",
+							otelLogsHints + "/config":  configReplaceInclude,
+						},
+					},
+				},
+			},
+			expectedReceiver: receiverTemplate{
+				receiverConfig: receiverConfig{
+					id: id,
+					config: userConfigMap{
+						"include":           []string{"/var/log/pods/default_pod-2_pod-2-UID/redis/*.log"},
+						"include_file_name": false,
+						"include_file_path": true,
+						"operators": []any{
+							map[string]any{"id": "container-parser", "type": "container"},
+						},
+					},
+				}, signals: receiverSignals{metrics: false, logs: true, traces: false},
+			},
+			wantError:       false,
+			ignoreReceivers: []string{},
 		},
 	}
 

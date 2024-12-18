@@ -228,14 +228,31 @@ func createLogsConfig(
 		logger.Debug("could not unmarshal configuration from hint", zap.Error(err))
 	}
 
+	containerOpFound := false
 	for k, v := range userConf {
 		if k == filelogOperatorsConfigKey {
 			vlist, ok := v.([]any)
 			if !ok {
 				logger.Debug("could not parse operators configuration from hint", zap.Any("config", userConf))
 			}
-			vlist = append(cont, vlist...)
+			for _, op := range vlist {
+				operator, ok := op.(map[string]any)
+				if !ok {
+					logger.Debug("could not parse operator configuration from hint", zap.Any("operator", op))
+				}
+				if operator["type"] == "container" {
+					containerOpFound = true
+				}
+			}
+			if !containerOpFound {
+				// if no container operator found then just extend the list
+				// otherwise we just use the user provided operators as-is
+				vlist = append(cont, vlist...)
+			}
 			defaultConfMap[k] = vlist
+		} else if k == "include" {
+			// path cannot be other than the one of the target container
+			continue
 		} else {
 			defaultConfMap[k] = v
 		}

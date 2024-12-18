@@ -558,7 +558,10 @@ io.opentelemetry.discovery.logs/config: |
 ```
 
 Note that individual settings are overridden by the configuration provided by the hints while the operators list
-is extended keeping first the `container` parser.
+is extended keeping first the `container` parser. If `container` parser is explicitly set by the user the default
+will be overridden.
+
+`include` cannot be overridden and is fixed to discovered container's log file path.
 
 
 #### Support multiple target containers
