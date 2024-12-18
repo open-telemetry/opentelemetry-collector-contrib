@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package encoder // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/ecs/internal/encoder"
+package encoder // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/encoder"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datastream // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/ecs/internal/datastream"
+package datastream // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datastream"
 
 import (
 	"fmt"
