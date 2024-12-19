@@ -40,11 +40,12 @@ func TestSpanPathGetSetter(t *testing.T) {
 	newStatus.SetMessage("new status")
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*spanContext]
-		orig     any
-		newVal   any
-		modified func(span ptrace.Span)
+		name                 string
+		path                 ottl.Path[*spanContext]
+		orig                 any
+		newVal               any
+		modified             func(span ptrace.Span)
+		expectedSetterErrMsg string
 	}{
 		{
 			name: "trace_id",
@@ -101,7 +102,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 			path: &TestPath[*spanContext]{
 				N: "trace_state",
 			},
-			orig:   "key1=val1,key2=val2",
+			orig:   "key1=val1,key2=val2,ot=th:c",
 			newVal: "key=newVal",
 			modified: func(span ptrace.Span) {
 				span.TraceState().FromRaw("key=newVal")
@@ -120,8 +121,20 @@ func TestSpanPathGetSetter(t *testing.T) {
 			orig:   "val1",
 			newVal: "newVal",
 			modified: func(span ptrace.Span) {
-				span.TraceState().FromRaw("key1=newVal,key2=val2")
+				span.TraceState().FromRaw("key1=newVal,key2=val2,ot=th:c")
 			},
+		},
+		{
+			name: "trace_state adjusted count",
+			path: &TestPath[*spanContext]{
+				N: "trace_state",
+				NextPath: &TestPath[*spanContext]{
+					N: "adjusted_count",
+				},
+			},
+			orig:                 float64(4),
+			newVal:               float64(1), // setters not allowed
+			expectedSetterErrMsg: "adjusted count cannot be set",
 		},
 		{
 			name: "parent_span_id",
@@ -613,6 +626,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
+			if tt.expectedSetterErrMsg != "" {
+				assert.ErrorContains(t, err, tt.expectedSetterErrMsg)
+				return
+			}
 			assert.NoError(t, err)
 
 			expectedSpan := createSpan()
@@ -627,7 +644,7 @@ func createSpan() ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
-	span.TraceState().FromRaw("key1=val1,key2=val2")
+	span.TraceState().FromRaw("key1=val1,key2=val2,ot=th:c")
 	span.SetParentSpanID(spanID2)
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
