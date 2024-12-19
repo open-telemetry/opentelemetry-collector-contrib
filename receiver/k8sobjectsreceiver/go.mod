@@ -5,8 +5,8 @@ go 1.22.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.116.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.116.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.116.0
@@ -143,7 +143,7 @@ retract (
 	v0.65.0
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest => ../../pkg/k8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
