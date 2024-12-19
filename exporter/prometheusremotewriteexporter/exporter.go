@@ -53,6 +53,12 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
+var converterPool = sync.Pool{
+	New: func() any {
+		return prometheusremotewrite.NewPrometheusConverter()
+	},
+}
+
 type buffer struct {
 	protobuf *proto.Buffer
 	snappy   []byte
@@ -191,8 +197,10 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
+		converter := converterPool.Get().(*prometheusremotewrite.PrometheusConverter)
+		defer converterPool.Put(converter)
 
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
+		tsMap, err := converter.FromMetrics(md, prwe.exporterSettings)
 		if err != nil {
 			prwe.telemetry.recordTranslationFailure(ctx)
 			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
