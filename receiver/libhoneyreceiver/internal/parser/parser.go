@@ -122,7 +122,8 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 			ls.Scope().SetName(ss.LibraryName)
 			ls.Scope().SetVersion(ss.LibraryVersion)
 			foundScopes.Scope[scopeName].ScopeLogs.MoveAndAppendTo(ls.LogRecords())
-
+		}
+		if ss.ScopeSpans.Len() > 0 {
 			tr := resultTraces.ResourceSpans().AppendEmpty()
 			tr.SetSchemaUrl(semconv.SchemaURL)
 			tr.Resource().Attributes().PutStr(semconv.AttributeServiceName, ss.ServiceName)

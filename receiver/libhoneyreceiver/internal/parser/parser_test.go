@@ -111,7 +111,7 @@ func TestToPdata(t *testing.T) {
 			events: []libhoneyevent.LibhoneyEvent{
 				{
 					Data: map[string]any{
-						"meta.signal_type": "span",
+						"meta.signal_type": "trace",
 						"trace.trace_id":   hex.EncodeToString(traceID),
 						"trace.span_id":    hex.EncodeToString(spanID),
 						"name":             "test-span",
