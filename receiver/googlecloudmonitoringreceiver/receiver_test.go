@@ -5,7 +5,9 @@ package googlecloudmonitoringreceiver
 
 import (
 	"context"
+	"errors"
 	"net"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -104,7 +106,7 @@ func TestInitializeClient_Success(t *testing.T) {
 	ctx := context.Background()
 
 	// Set up fake credentials for testing
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "./testdata/serviceAccount.json")
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "./testdata/serviceAccount.json")
 	defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 	logger := zap.NewNop()
@@ -142,7 +144,12 @@ func TestStart_Success(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -195,7 +202,12 @@ func TestStart_Failure_InvalidMetricDescriptor_ProjectNotFound(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -220,18 +232,23 @@ func TestStart_Failure_InvalidMetricDescriptor_ProjectNotFound(t *testing.T) {
 	err = receiver.Start(ctx, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "not found")
-	assert.Equal(t, status.Code(err), codes.NotFound)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestStart_Failure_InvalidMetricDescriptor_Unauthenticated_User(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	// Set up fake credentials for testing
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "./../googlecloudspannerreceiver/testdata/serviceAccount.json")
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "./../googlecloudspannerreceiver/testdata/serviceAccount.json")
 	defer os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
 
 	logger := zap.NewNop()
@@ -250,7 +267,7 @@ func TestStart_Failure_InvalidMetricDescriptor_Unauthenticated_User(t *testing.T
 	err = receiver.Start(ctx, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Unauthenticated")
-	assert.Equal(t, status.Code(err), codes.Unauthenticated)
+	assert.Equal(t, codes.Unauthenticated, status.Code(err))
 }
 
 func TestScrape_Success(t *testing.T) {
@@ -258,7 +275,12 @@ func TestScrape_Success(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -306,7 +328,12 @@ func TestScrape_Failure_MetricDescriptorNotFound(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -346,7 +373,12 @@ func TestScrape_Failure_InvalidProjectID_WithMaxInterval(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -388,7 +420,7 @@ func TestScrape_Failure_InvalidProjectID_WithMaxInterval(t *testing.T) {
 	assert.Error(t, err)
 	assert.NotNil(t, metrics)
 	assert.Contains(t, err.Error(), "not found")
-	assert.Equal(t, status.Code(err), codes.NotFound)
+	assert.Equal(t, codes.NotFound, status.Code(err))
 }
 
 func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
@@ -396,7 +428,12 @@ func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -532,7 +569,7 @@ func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
 				assert.Equal(t, "test-instance", timeSeries.Metric.Labels["instance_name"])
 
 				// Verify TimeSeries Points
-				assert.Equal(t, 1, len(timeSeries.Points))
+				assert.Len(t, timeSeries.Points, 1)
 				assert.Equal(t, 0.75, timeSeries.Points[0].Value.GetDoubleValue())
 
 				// Verify MetricKind
@@ -601,7 +638,7 @@ func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
 				}, timeSeries.Metric.Labels)
 
 				// Verify Points
-				assert.Equal(t, 1, len(timeSeries.Points))
+				assert.Len(t, timeSeries.Points, 1)
 				point := timeSeries.Points[0]
 				distribution := point.Value.GetDistributionValue()
 
@@ -679,7 +716,7 @@ func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
 				}, timeSeries.Metric.Labels)
 
 				// Verify Points
-				assert.Equal(t, 1, len(timeSeries.Points))
+				assert.Len(t, timeSeries.Points, 1)
 				point := timeSeries.Points[0]
 
 				// Verify Value
@@ -698,7 +735,7 @@ func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
 				endTime := interval.EndTime.AsTime()
 				assert.True(t, startTime.Before(endTime))
 				duration := endTime.Sub(startTime)
-				assert.True(t, duration >= time.Hour)
+				assert.GreaterOrEqual(t, duration, time.Hour)
 			},
 		},
 	}
@@ -724,7 +761,12 @@ func TestScrape_WithDefaultCollectionInterval(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -768,7 +810,12 @@ func TestGoogleCloudMonitoringReceiver(t *testing.T) {
 	ctx := context.Background()
 	testServer, err := NewFakeMetricTestServer()
 	require.NoError(t, err)
-	go testServer.srv.Serve(testServer.lis)
+	go func() {
+		err = testServer.srv.Serve(testServer.lis)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Logf("Server exited with error: %v", err)
+		}
+	}()
 	defer testServer.srv.Stop()
 
 	clientOpts := []option.ClientOption{
@@ -800,7 +847,8 @@ func TestGoogleCloudMonitoringReceiver(t *testing.T) {
 	// Validate metric descriptors
 	assert.Contains(t, receiver.metricDescriptors, "custom.googleapis.com/fake_metric")
 
-	receiver.Shutdown(ctx)
+	err = receiver.Shutdown(ctx)
+	require.NoError(t, err)
 }
 
 func (s *fakeMetricServiceServer) ListMetricDescriptors(

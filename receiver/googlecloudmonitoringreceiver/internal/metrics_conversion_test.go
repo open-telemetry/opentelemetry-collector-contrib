@@ -346,7 +346,7 @@ func TestConvertSumToMetrics(t *testing.T) {
 			tt.validateMetric(t, result)
 
 			logs := observedLogs.TakeAll()
-			assert.Equal(t, tt.expectedLogs, len(logs))
+			assert.Len(t, logs, tt.expectedLogs)
 		})
 	}
 }
@@ -503,7 +503,7 @@ func TestConvertDeltaToMetrics(t *testing.T) {
 			tt.validateMetric(t, result)
 
 			logs := observedLogs.TakeAll()
-			assert.Equal(t, tt.expectedLogs, len(logs))
+			assert.Len(t, logs, tt.expectedLogs)
 		})
 	}
 }
