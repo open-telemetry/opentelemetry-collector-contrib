@@ -214,6 +214,14 @@ The total time spent performing operations.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.queries_per_sec
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
 ### mongodb.session.count
 
 The total number of active sessions.

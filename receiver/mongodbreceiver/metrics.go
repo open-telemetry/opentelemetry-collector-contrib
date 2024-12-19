@@ -220,6 +220,10 @@ func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, er
 
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	// Collect operation counts first
+	currentCounts := make(map[string]int64)
+	fmt.Println("SCRAPER COUNTS @@@@@@@@@@@@@@@@@@@@: ", s.prevCounts)
+
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcounters", operationVal}
 		metricName := "mongodb.operation.count"
@@ -228,8 +232,17 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
+
+		// Record the raw count
 		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
+
+		currentCounts[operationVal] = val
+		s.recordOperationPerSecond(now, operationVal, val)
 	}
+
+	// Store current counts for next iteration
+	s.prevCounts = currentCounts
+	s.prevTimestamp = now
 }
 
 func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
@@ -242,6 +255,25 @@ func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M,
 			continue
 		}
 		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
+	}
+}
+
+func (s *mongodbScraper) recordOperationPerSecond(now pcommon.Timestamp, operationVal string, currentCount int64) {
+	if s.prevTimestamp > 0 {
+		timeDelta := float64(now-s.prevTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevCount, exists := s.prevCounts[operationVal]; exists {
+				delta := currentCount - prevCount
+				queriesPerSec := float64(delta) / timeDelta
+
+				switch operationVal {
+				case "query":
+					s.mb.RecordMongodbQueriesPerSecDataPoint(now, queriesPerSec)
+				default:
+					fmt.Printf("Unhandled operation: %s\n", operationVal)
+				}
+			}
+		}
 	}
 }
 

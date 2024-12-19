@@ -55,6 +55,8 @@ all_set:
       enabled: true
     mongodb.operation.time:
       enabled: true
+    mongodb.queries_per_sec:
+      enabled: true
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
@@ -123,6 +125,8 @@ none_set:
     mongodb.operation.repl.count:
       enabled: false
     mongodb.operation.time:
+      enabled: false
+    mongodb.queries_per_sec:
       enabled: false
     mongodb.session.count:
       enabled: false

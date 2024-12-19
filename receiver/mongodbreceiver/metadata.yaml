@@ -358,6 +358,14 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [ ]
+  mongodb.queries_per_sec:
+    description: The number of queries executed per second.
+    unit: "{query}/s"
+    enabled: true
+    gauge:
+      value_type: double
+      aggregation_temporality: delta  # For rate, delta temporality is appropriate
+      monotonic: false  # Allow values to fluctuate    
 
 tests:
   config:

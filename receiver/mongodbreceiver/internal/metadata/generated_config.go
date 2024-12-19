@@ -55,6 +55,7 @@ type MetricsConfig struct {
 	MongodbOperationLatencyTime   MetricConfig `mapstructure:"mongodb.operation.latency.time"`
 	MongodbOperationReplCount     MetricConfig `mapstructure:"mongodb.operation.repl.count"`
 	MongodbOperationTime          MetricConfig `mapstructure:"mongodb.operation.time"`
+	MongodbQueriesPerSec          MetricConfig `mapstructure:"mongodb.queries_per_sec"`
 	MongodbSessionCount           MetricConfig `mapstructure:"mongodb.session.count"`
 	MongodbStorageSize            MetricConfig `mapstructure:"mongodb.storage.size"`
 	MongodbUptime                 MetricConfig `mapstructure:"mongodb.uptime"`
@@ -141,6 +142,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MongodbOperationTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbQueriesPerSec: MetricConfig{
 			Enabled: true,
 		},
 		MongodbSessionCount: MetricConfig{

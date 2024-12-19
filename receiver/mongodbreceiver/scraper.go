@@ -37,19 +37,23 @@ var (
 )
 
 type mongodbScraper struct {
-	logger       *zap.Logger
-	config       *Config
-	client       client
-	mongoVersion *version.Version
-	mb           *metadata.MetricsBuilder
+	logger        *zap.Logger
+	config        *Config
+	client        client
+	mongoVersion  *version.Version
+	mb            *metadata.MetricsBuilder
+	prevTimestamp pcommon.Timestamp
+	prevCounts    map[string]int64
 }
 
 func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
 	return &mongodbScraper{
-		logger:       settings.Logger,
-		config:       config,
-		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		mongoVersion: unknownVersion(),
+		logger:        settings.Logger,
+		config:        config,
+		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion:  unknownVersion(),
+		prevTimestamp: pcommon.Timestamp(0),
+		prevCounts:    make(map[string]int64),
 	}
 }
 
