@@ -244,6 +244,12 @@ type value struct {
 	List           *list            `parser:"| @@)"`
 }
 
+func (v *value) checkForCustomError() error {
+	validator := &grammarCustomErrorsVisitor{}
+	v.accept(validator)
+	return validator.join()
+}
+
 func (v *value) accept(vis grammarVisitor) {
 	vis.visitValue(v)
 	if v.Literal != nil {
