@@ -116,10 +116,12 @@ func (ipp *inProcessCollector) GetProcessMon() *process.Process {
 
 func (ipp *inProcessCollector) GetTotalConsumption() *ResourceConsumption {
 	return &ResourceConsumption{
-		CPUPercentAvg: 0,
-		CPUPercentMax: 0,
-		RAMMiBAvg:     0,
-		RAMMiBMax:     0,
+		CPUPercentAvg:   0,
+		CPUPercentMax:   0,
+		CPUPercentLimit: 0,
+		RAMMiBAvg:       0,
+		RAMMiBMax:       0,
+		RAMMiBLimit:     0,
 	}
 }
 
