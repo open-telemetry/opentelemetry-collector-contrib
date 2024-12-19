@@ -186,6 +186,7 @@ func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName
 
 func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	s.recordConnections(now, doc, dbName, errs)
+	s.recordFlowControlLagTime(now, doc, dbName, errs)
 	s.recordDocumentOperations(now, doc, dbName, errs)
 	s.recordMemoryUsage(now, doc, dbName, errs)
 	s.recordLockAcquireCounts(now, doc, dbName, errs)
