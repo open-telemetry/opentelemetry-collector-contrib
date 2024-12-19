@@ -203,19 +203,8 @@ When submitting a component to the community, consider breaking it down into sep
   * This PR is usually trivial to review, so the size limit does not apply to
     it.
   * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
-  * Before submitting a PR, run the following commands from the root of the repository to ensure your new component is meeting the repo linting expectations:
-    * `make checkdoc`
-    * `make checkmetadata`
-    * `make checkapi`
-    * `make goporto`
-    * `make crosslink`
-    * `make gotidy`
-    * `make genotelcontribcol`
-    * `make genoteltestbedcol`
-    * `make generate`
-    * `make multimod-verify`
-    * `make generate-gh-issue-templates`
-    * `make addlicense`
+  * As always, ensure you generate a changelog template (refer to [Adding a Changelog Entry](#adding-a-changelog-entry)).
+  * Before submitting a PR, run `make checks` from the root of the repository to ensure your new component is meeting the repo linting expectations.
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
