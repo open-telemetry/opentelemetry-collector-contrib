@@ -50,7 +50,7 @@ func Test_trim(t *testing.T) {
 				},
 			},
 			replacement: ottl.Optional[string]{},
-			expected:    " this is a test ",
+			expected:    "this is a test",
 			shouldError: false,
 		},
 		{
