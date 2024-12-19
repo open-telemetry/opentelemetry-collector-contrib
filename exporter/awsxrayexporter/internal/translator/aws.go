@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -90,7 +91,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 			sdkLanguage = value.Str()
 		case conventions.AttributeTelemetrySDKVersion:
 			sdkVersion = value.Str()
-		case conventions.AttributeTelemetryAutoVersion:
+		case conventions.AttributeTelemetryAutoVersion, conventionsv127.AttributeTelemetryDistroVersion:
 			autoVersion = value.Str()
 		case conventions.AttributeContainerID:
 			containerID = value.Str()
