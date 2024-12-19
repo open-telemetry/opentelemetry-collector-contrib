@@ -78,7 +78,7 @@ func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventionsv127.AttributeHTTPRequestMethod] = "GET"
 	attributes[conventionsv127.AttributeURLScheme] = "https"
-	attributes[conventionsv127.AttributeServerAddress] = "api.example.com"
+	attributes[conventions.AttributeHTTPHost] = "api.example.com"
 	attributes[conventionsv127.AttributeURLQuery] = "/users/junit"
 	attributes[conventionsv127.AttributeHTTPResponseStatusCode] = 200
 	attributes["user.id"] = "junit"
@@ -125,9 +125,9 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventionsv127.AttributeHTTPRequestMethod] = http.MethodGet
 	attributes[conventionsv127.AttributeURLScheme] = "http"
-	attributes[conventionsv127.AttributeServerAddress] = "kb234.example.com"
-	attributes[conventionsv127.AttributeServerPort] = 8080
-	attributes[conventionsv127.AttributeNetworkPeerAddress] = "10.8.17.36"
+	attributes[conventions.AttributeNetPeerName] = "kb234.example.com"
+	attributes[conventions.AttributeNetPeerPort] = 8080
+	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
 	attributes[conventionsv127.AttributeURLQuery] = "/users/junit"
 	attributes[conventionsv127.AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPClientSpan(attributes)
