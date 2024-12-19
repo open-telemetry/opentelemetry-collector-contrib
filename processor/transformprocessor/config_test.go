@@ -147,9 +147,81 @@ func TestLoadConfig(t *testing.T) {
 			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
 			errorLen: 3,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "flat_configuration"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Statements: []string{`set(resource.attributes["name"], "bear")`},
+					},
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "mixed_configuration_styles"),
+			expected: &Config{
+				ErrorMode: ottl.PropagateError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "span",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+				},
+				MetricStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+				},
+				LogStatements: []common.ContextStatements{
+					{
+						Statements: []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
+					},
+					{
+						Context: "resource",
+						Statements: []string{
+							`set(attributes["name"], "bear")`,
+							`keep_keys(attributes, ["http.method", "http.path"])`,
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		t.Run(tt.id.Name(), func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 			assert.NoError(t, err)
 
