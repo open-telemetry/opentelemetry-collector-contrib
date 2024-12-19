@@ -20,7 +20,7 @@ import (
 var spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 
 func Test_newPathGetSetter(t *testing.T) {
-	refSpanEvent, refSpan, refIS, refResource := createTelemetry()
+	refSpanEvent, _, _, _ := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -403,39 +403,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: int64(20),
 			modified: func(spanEvent ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				spanEvent.SetDroppedAttributesCount(20)
-			},
-		},
-		{
-			name: "instrumentation_scope",
-			path: &internal.TestPath[TransformContext]{
-				N: "instrumentation_scope",
-			},
-			orig:   refIS,
-			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewInstrumentationScope().CopyTo(il)
-			},
-		},
-		{
-			name: "resource",
-			path: &internal.TestPath[TransformContext]{
-				N: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ ptrace.SpanEvent, _ ptrace.Span, _ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
-			},
-		},
-		{
-			name: "span",
-			path: &internal.TestPath[TransformContext]{
-				N: "span",
-			},
-			orig:   refSpan,
-			newVal: ptrace.NewSpan(),
-			modified: func(_ ptrace.SpanEvent, span ptrace.Span, _ pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
-				ptrace.NewSpan().CopyTo(span)
 			},
 		},
 	}

@@ -32,7 +32,7 @@ You can build locally the Docker image with:
 make docker-telemetrygen
 ```
 
-Using github actions, we also push a docker image on commit to main or on release to this [Github docker registry](https://github.com/open-telemetry/opentelemetry-collector-contrib/pkgs/container/opentelemetry-collector-contrib%2Ftelemetrygen).
+Using github actions, we also push a docker image on commit to main or on release to this [Github docker registry](https://github.com/orgs/open-telemetry/packages/container/package/opentelemetry-collector-contrib%2Ftelemetrygen).
 
 ## Running
 

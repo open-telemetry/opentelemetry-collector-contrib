@@ -97,7 +97,7 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 	return ld
 }
 
-func testLogsExporter(ld plog.Logs, t *testing.T, cfg *Config) error {
+func testLogsExporter(t *testing.T, ld plog.Logs, cfg *Config) error {
 	var err error
 	params := exportertest.NewNopSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
@@ -146,7 +146,7 @@ func newTestTraces() ptrace.Traces {
 	return td
 }
 
-func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) error {
+func testTracesExporter(t *testing.T, td ptrace.Traces, cfg *Config) error {
 	params := exportertest.NewNopSettings()
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	if err != nil {
@@ -196,10 +196,10 @@ func TestExportErrors(tester *testing.T) {
 		}
 		td := newTestTracesWithAttributes()
 		ld := testdata.GenerateLogs(10)
-		err := testTracesExporter(td, tester, cfg)
+		err := testTracesExporter(tester, td, cfg)
 		fmt.Println(err.Error())
 		require.Error(tester, err)
-		err = testLogsExporter(ld, tester, cfg)
+		err = testLogsExporter(tester, ld, cfg)
 		fmt.Println(err.Error())
 		server.Close()
 		require.Error(tester, err)
@@ -253,7 +253,7 @@ func TestPushTraceData(tester *testing.T) {
 	res := td.ResourceSpans().At(0).Resource()
 	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
-	err := testTracesExporter(td, tester, &cfg)
+	err := testTracesExporter(tester, td, &cfg)
 	require.NoError(tester, err)
 	var newSpan logzioSpan
 	decoded, _ := gUnzipData(recordedRequests)
@@ -286,7 +286,7 @@ func TestPushLogsData(tester *testing.T) {
 	res := ld.ResourceLogs().At(0).Resource()
 	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
-	err := testLogsExporter(ld, tester, &cfg)
+	err := testLogsExporter(tester, ld, &cfg)
 	require.NoError(tester, err)
 	var jsonLog map[string]any
 	decoded, _ := gUnzipData(recordedRequests)
