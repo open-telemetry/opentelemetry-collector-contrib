@@ -5,6 +5,7 @@ package resourceprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,6 +66,6 @@ func TestInvalidAttributeActions(t *testing.T) {
 	_, err = factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, nil)
 	assert.Error(t, err)
 
-	_, err = factory.(processorprofiles.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	_, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, nil)
 	assert.Error(t, err)
 }

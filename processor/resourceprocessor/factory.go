@@ -5,14 +5,13 @@ package resourceprocessor // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor/internal/metadata"
@@ -22,13 +21,13 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 // NewFactory returns a new factory for the Resource processor.
 func NewFactory() processor.Factory {
-	return processorprofiles.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processorprofiles.WithTraces(createTracesProcessor, metadata.TracesStability),
-		processorprofiles.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
-		processorprofiles.WithLogs(createLogsProcessor, metadata.LogsStability),
-		processorprofiles.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
+		xprocessor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
 	)
 }
 
@@ -101,18 +100,18 @@ func createProfilesProcessor(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextConsumer consumerprofiles.Profiles,
-) (processorprofiles.Profiles, error) {
+	nextConsumer xconsumer.Profiles,
+) (xprocessor.Profiles, error) {
 	attrProc, err := attraction.NewAttrProc(&attraction.Settings{Actions: cfg.(*Config).AttributesActions})
 	if err != nil {
 		return nil, err
 	}
 	proc := resourceProcessor{logger: set.Logger, attrProc: attrProc}
-	return processorhelperprofiles.NewProfiles(
+	return xprocessorhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
 		proc.processProfiles,
-		processorhelperprofiles.WithCapabilities(processorCapabilities))
+		xprocessorhelper.WithCapabilities(processorCapabilities))
 }
