@@ -310,17 +310,13 @@ generate: install-tools
 	PATH="$$PWD/.tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
 	$(MAKE) gofmt
 
-.PHONY: githubgen-install
-githubgen-install:
-	cd cmd/githubgen && $(GOCMD) install .
-
 .PHONY: gengithub
-gengithub: githubgen-install
-	githubgen
+gengithub:
+	$(GITHUBGEN) --skipgithub
 
 .PHONY: gendistributions
-gendistributions: githubgen-install
-	githubgen distributions
+gendistributions:
+	$(GITHUBGEN) distributions
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
@@ -557,8 +553,7 @@ clean:
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen issue-templates
+	$(GITHUBGEN) issue-templates
 
 .PHONY: checks
 checks:
