@@ -11,7 +11,7 @@ import (
 )
 
 type SetArguments[K any] struct {
-	Target ottl.GetSetter[K]
+	Target ottl.Setter[K]
 	Value  ottl.Getter[K]
 }
 
@@ -29,7 +29,7 @@ func createSetFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	return set(args.Target, args.Value), nil
 }
 
-func set[K any](target ottl.GetSetter[K], value ottl.Getter[K]) ottl.ExprFunc[K] {
+func set[K any](target ottl.Setter[K], value ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := value.Get(ctx, tCtx)
 		if err != nil {

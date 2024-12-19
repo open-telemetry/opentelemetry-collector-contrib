@@ -79,7 +79,7 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 				return nil, err
 			}
 			if s == nil {
-				resString, err := FetchValueFromPath[K, string](ctx, tCtx, keys[count])
+				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
 				if err != nil {
 					return nil, errors.New("map must be indexed by a string")
 				}
@@ -95,7 +95,7 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 				return nil, err
 			}
 			if i == nil {
-				resInt, err := FetchValueFromPath[K, int64](ctx, tCtx, keys[count])
+				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
 				if err != nil {
 					return nil, errors.New("slice must be indexed by an int")
 				}
@@ -133,7 +133,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				return err
 			}
 			if s == nil {
-				resString, err := FetchValueFromPath[K, string](ctx, tCtx, keys[count])
+				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
 				if err != nil {
 					return errors.New("map must be indexed by a string")
 				}
@@ -151,7 +151,7 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				return err
 			}
 			if i == nil {
-				resInt, err := FetchValueFromPath[K, int64](ctx, tCtx, keys[count])
+				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
 				if err != nil {
 					return errors.New("slice must be indexed by an int")
 				}
@@ -180,8 +180,8 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
 			default:
-				resString, errString := FetchValueFromPath[K, string](ctx, tCtx, keys[count])
-				resInt, errInt := FetchValueFromPath[K, int64](ctx, tCtx, keys[count])
+				resString, errString := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
+				resInt, errInt := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
 				switch {
 				case errInt == nil:
 					currentValue.SetEmptySlice()

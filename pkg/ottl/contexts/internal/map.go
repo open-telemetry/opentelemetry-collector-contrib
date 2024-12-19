@@ -22,7 +22,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return nil, err
 	}
 	if s == nil {
-		resString, err := FetchValueFromPath[K, string](ctx, tCtx, keys[0])
+		resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[0])
 		if err != nil {
 			return nil, fmt.Errorf("non-string indexing is not supported")
 		}
@@ -47,7 +47,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 		return err
 	}
 	if s == nil {
-		resString, err := FetchValueFromPath[K, string](ctx, tCtx, keys[0])
+		resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[0])
 		if err != nil {
 			return fmt.Errorf("non-string indexing is not supported")
 		}
@@ -61,8 +61,8 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	return setIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
 }
 
-func FetchValueFromPath[K any, T int64 | string](ctx context.Context, tCtx K, key ottl.Key[K]) (*T, error) {
-	p, err := key.PathGetter(ctx, tCtx)
+func FetchValueFromExpression[K any, T int64 | string](ctx context.Context, tCtx K, key ottl.Key[K]) (*T, error) {
+	p, err := key.ExpressionGetter(ctx, tCtx)
 	if err != nil {
 		return nil, err
 	}
