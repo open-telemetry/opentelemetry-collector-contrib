@@ -260,9 +260,7 @@ func Test_export(t *testing.T) {
 		// The following is a handler function that reads the sent httpRequest, unmarshal, and checks if the WriteRequest
 		// preserves the TimeSeries data correctly
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		require.NotNil(t, body)
 		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
@@ -452,9 +450,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		buf := make([]byte, len(body))
 		dest, err := snappy.Decode(buf, body)

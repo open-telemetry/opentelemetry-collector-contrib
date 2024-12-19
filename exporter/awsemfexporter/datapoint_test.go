@@ -2035,7 +2035,7 @@ func TestGetDataPoints(t *testing.T) {
 		rm := tc.metric.ResourceMetrics().At(0)
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		metric := metrics.At(metrics.Len() - 1)
-		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metric.Type())
+		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metric.Type(), 0)
 
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.isPrometheusMetrics {
@@ -2095,7 +2095,7 @@ func TestGetDataPoints(t *testing.T) {
 		metric := pmetric.NewMetric()
 		metric.SetName("foo")
 		metric.SetUnit("Count")
-		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", pmetric.MetricTypeEmpty)
+		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", pmetric.MetricTypeEmpty, 0)
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
 
@@ -2139,7 +2139,7 @@ func benchmarkGetAndCalculateDeltaDataPoints(b *testing.B, bucketLength int) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < metrics.Len(); i++ {
-			metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
+			metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type(), 0)
 			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())
 
 			for i := 0; i < dps.Len(); i++ {
