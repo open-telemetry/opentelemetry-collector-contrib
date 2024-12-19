@@ -53,7 +53,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 		common.HostSysEnvKey: "testdata/sys",
 		common.HostVarEnvKey: "testdata/var",
 	})
-	expectedConfig.Scrapers = map[string]internal.Config{cpuscraper.TypeStr: cpuScraperCfg}
+	expectedConfig.Scrapers = map[component.Type]internal.Config{cpuscraper.Type: cpuScraperCfg}
 
 	assert.Equal(t, expectedConfig, cfg)
 }
