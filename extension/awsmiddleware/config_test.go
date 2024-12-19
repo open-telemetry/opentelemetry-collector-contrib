@@ -14,9 +14,10 @@ import (
 )
 
 func TestGetConfigurer(t *testing.T) {
-	id := component.NewID(component.DataTypeMetrics)
-	nopExtension, err := extensiontest.NewNopBuilder().Create(context.Background(), extensiontest.NewNopSettings())
-	require.Error(t, err)
+	id := component.MustNewID("test")
+	nopFactory := extensiontest.NewNopFactory()
+	nopExtension, err := nopFactory.Create(context.Background(), extensiontest.NewNopSettings(), nopFactory.CreateDefaultConfig())
+	require.NoError(t, err)
 	middlewareExtension := new(MockMiddlewareExtension)
 	middlewareExtension.On("Handlers").Return(nil, nil)
 	testCases := map[string]struct {
