@@ -2412,9 +2412,14 @@ func Test_parseValueExpression(t *testing.T) {
 		wantErrContaining string
 	}{
 		{valueExpression: `time_end - time_end`},
+		{valueExpression: `time_end - time_end - attributes["foo"]`},
 		{valueExpression: `Test("foo")`},
+		{valueExpression: `Test(Test("foo")) - attributes["bar"]`},
+		{valueExpression: `Test(Test("foo")) - attributes["bar"]"`, wantErr: true},
 		{valueExpression: `test("foo")`, wantErr: true, wantErrContaining: converterNameErrorPrefix},
 		{valueExpression: `test(animal)["kind"]`, wantErrContaining: editorWithIndexErrorPrefix},
+		{valueExpression: `Test("a"")foo"`, wantErr: true},
+		{valueExpression: `Test("a"") == 1"`, wantErr: true},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
