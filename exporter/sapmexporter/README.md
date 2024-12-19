@@ -25,9 +25,6 @@ exporters:
     headers:
         "X-SF-Token": "${SPLUNK_ACCESS_TOKEN}"
 ```
-
-
-
 The SAPM exporter builds on the Jaeger proto and adds additional batching on top. This allows
 the collector to export traces from multiples nodes/services in a single batch. The SAPM proto
 and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
