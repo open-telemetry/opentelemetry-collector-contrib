@@ -117,21 +117,21 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 		)
 
 		matchCount := len(p.router.routes)
-		for key, route := range p.router.routes {
+		for _, route := range p.router.routes {
 			_, isMatch, err := route.statement.Execute(ctx, ltx)
 			if err != nil {
 				if p.config.ErrorMode == ottl.PropagateError {
 					return err
 				}
 				p.group("", groups, p.router.defaultExporters, rlogs)
-				p.recordNonRoutedResourceLogs(ctx, key, rlogs)
+				p.recordNonRoutedResourceLogs(ctx, route.key, rlogs)
 				continue
 			}
 			if !isMatch {
 				matchCount--
 				continue
 			}
-			p.group(key, groups, route.exporters, rlogs)
+			p.group(route.key, groups, route.exporters, rlogs)
 		}
 
 		if matchCount == 0 {
@@ -152,14 +152,14 @@ func (p *logProcessor) group(
 	key string,
 	groups map[string]logsGroup,
 	exporters []exporter.Logs,
-	spans plog.ResourceLogs,
+	logs plog.ResourceLogs,
 ) {
 	group, ok := groups[key]
 	if !ok {
 		group.logs = plog.NewLogs()
 		group.exporters = exporters
 	}
-	spans.CopyTo(group.logs.ResourceLogs().AppendEmpty())
+	logs.CopyTo(group.logs.ResourceLogs().AppendEmpty())
 	groups[key] = group
 }
 
