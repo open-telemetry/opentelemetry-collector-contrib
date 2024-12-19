@@ -371,41 +371,66 @@ func TestLargeFileOnce(t *testing.T) {
 }
 
 func TestMemoryLimiterHit(t *testing.T) {
-	otlpreceiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-	otlpreceiver.WithRetry(`
+	tests := []struct {
+		name     string
+		sender   func() testbed.DataSender
+		receiver func() testbed.DataReceiver
+	}{
+		{
+			name: "otlp",
+			sender: func() testbed.DataSender {
+				return testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
+			},
+		},
+		{
+			name: "filelog",
+			sender: func() testbed.DataSender {
+				return datasenders.NewFileLogWriter().WithRetry(`
+    retry_on_failure:
+      enabled: true
+`)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			otlpreceiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+			otlpreceiver.WithRetry(`
     retry_on_failure:
       enabled: true
       max_interval: 5s
 `)
-	otlpreceiver.WithQueue(`
+			otlpreceiver.WithQueue(`
     sending_queue:
-      enabled: true
-      queue_size: 100000
-      num_consumers: 20
+       enabled: true
+       queue_size: 100000
+       num_consumers: 20
 `)
-	otlpreceiver.WithTimeout(`
+			otlpreceiver.WithTimeout(`
     timeout: 0s
 `)
-	processors := []ProcessorNameAndConfigBody{
-		{
-			Name: "memory_limiter",
-			Body: `
+			processors := []ProcessorNameAndConfigBody{
+				{
+					Name: "memory_limiter",
+					Body: `
   memory_limiter:
     check_interval: 1s
     limit_mib: 300
     spike_limit_mib: 150
 `,
-		},
+				},
+			}
+			ScenarioMemoryLimiterHit(
+				t,
+				test.sender(),
+				otlpreceiver,
+				testbed.LoadOptions{
+					DataItemsPerSecond: 100000,
+					ItemsPerBatch:      1000,
+					Parallel:           1,
+					MaxDelay:           20 * time.Second,
+				},
+				performanceResultsSummary, 100, processors)
+		})
 	}
-	ScenarioMemoryLimiterHit(
-		t,
-		testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		otlpreceiver,
-		testbed.LoadOptions{
-			DataItemsPerSecond: 100000,
-			ItemsPerBatch:      1000,
-			Parallel:           1,
-			MaxDelay:           20 * time.Second,
-		},
-		performanceResultsSummary, 100, processors)
 }
