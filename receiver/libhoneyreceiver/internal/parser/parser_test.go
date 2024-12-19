@@ -96,10 +96,12 @@ func TestToPdata(t *testing.T) {
 		wantSpans int
 	}{
 		{
-			name:    "empty events",
-			dataset: "test-dataset",
-			events:  []libhoneyevent.LibhoneyEvent{},
-			cfg:     testCfg,
+			name:      "empty events",
+			dataset:   "test-dataset",
+			events:    []libhoneyevent.LibhoneyEvent{},
+			cfg:       testCfg,
+			wantLogs:  0,
+			wantSpans: 0,
 		},
 		{
 			name:    "single span",
@@ -107,7 +109,7 @@ func TestToPdata(t *testing.T) {
 			events: []libhoneyevent.LibhoneyEvent{
 				{
 					Data: map[string]interface{}{
-						"meta.signal_type": "trace",
+						"meta.signal_type": "span",
 						"trace.trace_id":   hex.EncodeToString(traceID),
 						"trace.span_id":    hex.EncodeToString(spanID),
 						"name":             "test-span",
@@ -121,6 +123,7 @@ func TestToPdata(t *testing.T) {
 				},
 			},
 			cfg:       testCfg,
+			wantLogs:  0,
 			wantSpans: 1,
 		},
 		{
@@ -135,19 +138,17 @@ func TestToPdata(t *testing.T) {
 					MsgPackTimestamp: &now,
 				},
 			},
-			cfg:      testCfg,
-			wantLogs: 1,
+			cfg:       testCfg,
+			wantLogs:  1,
+			wantSpans: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logs, traces := ToPdata(tt.dataset, tt.events, tt.cfg, *logger)
-			if tt.name == "single span" {
-				assert.Equal(t, tt.wantSpans, traces.SpanCount())
-			} else if tt.name == "single log" {
-				assert.Equal(t, tt.wantLogs, logs.LogRecordCount())
-			}
+			assert.Equal(t, tt.wantSpans, traces.SpanCount())
+			assert.Equal(t, tt.wantLogs, logs.LogRecordCount())
 		})
 	}
 }
