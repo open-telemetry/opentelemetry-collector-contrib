@@ -94,7 +94,25 @@ func (l *LibhoneyEvent) DebugString() string {
 
 // SignalType returns the type of signal this event represents. Only log is implemented for now.
 func (l *LibhoneyEvent) SignalType() (string, error) {
-	return "log", nil
+	if sig, ok := l.Data["meta.signal_type"]; ok {
+		switch sig {
+		case "trace":
+			if atype, ok := l.Data["meta.annotation_type"]; ok {
+				if atype == "span_event" {
+					return "span_event", nil
+				} else if atype == "link" {
+					return "span_link", nil
+				}
+				return "span", errors.New("invalid annotation type, but probably a span")
+			}
+			return "span", nil
+		case "log":
+			return "log", nil
+		default:
+			return "log", errors.New("invalid meta.signal_type")
+		}
+	}
+	return "log", errors.New("missing meta.signal_type and meta.annotation_type")
 }
 
 // GetService returns the service name from the event or the dataset name if no service name is found.
@@ -233,6 +251,24 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 		}
 	}
 	return nil
+}
+
+// GetParentID returns the parent id from the event or an error if it's not found
+func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
+	if pid, ok := l.Data[fieldName]; ok {
+		pid := strings.ReplaceAll(pid.(string), "-", "")
+		pidByteArray, err := hex.DecodeString(pid)
+		if err == nil {
+			if len(pidByteArray) == 32 {
+				pidByteArray = pidByteArray[8:24]
+			} else if len(pidByteArray) >= 16 {
+				pidByteArray = pidByteArray[0:16]
+			}
+			return trc.SpanID(pidByteArray), nil
+		}
+		return trc.SpanID{}, errors.New("parent id is not a valid span id")
+	}
+	return trc.SpanID{}, errors.New("parent id not found")
 }
 
 // ToPTraceSpan converts a LibhoneyEvent to a Pdata Span
