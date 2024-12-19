@@ -216,13 +216,28 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 	}
 	ks := make([]Key[K], len(keys))
 	for i := range keys {
-		var par GetSetter[K]
-		if keys[i].Expression != nil && keys[i].Expression.Path != nil {
-			arg, err := p.buildGetSetterFromPath(keys[i].Expression.Path)
-			if err != nil {
-				return nil, err
+		var par Getter[K]
+		if keys[i].Expression != nil {
+			if keys[i].Expression.Path != nil {
+				arg, err := p.buildGetSetterFromPath(keys[i].Expression.Path)
+				if err != nil {
+					return nil, err
+				}
+				par = arg
 			}
-			par = arg
+			if f := keys[i].Expression.Float; f != nil {
+				par = literal[K]{value: *f}
+			}
+			if i := keys[i].Expression.Int; i != nil {
+				par = literal[K]{value: *i}
+			}
+			if keys[i].Expression.Converter != nil {
+				g, err := p.newGetterFromConverter(*keys[i].Expression.Converter)
+				if err != nil {
+					return nil, err
+				}
+				par = g
+			}
 		}
 		ks[i] = &baseKey[K]{
 			s: keys[i].String,
@@ -247,7 +262,7 @@ type Key[K any] interface {
 	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
 
-	PathGetter(context.Context, K) (GetSetter[K], error)
+	PathGetter(context.Context, K) (Getter[K], error)
 }
 
 var _ Key[any] = &baseKey[any]{}
@@ -255,7 +270,7 @@ var _ Key[any] = &baseKey[any]{}
 type baseKey[K any] struct {
 	s *string
 	i *int64
-	p GetSetter[K]
+	p Getter[K]
 }
 
 func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -266,7 +281,7 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
 }
 
-func (k *baseKey[K]) PathGetter(_ context.Context, _ K) (GetSetter[K], error) {
+func (k *baseKey[K]) PathGetter(_ context.Context, _ K) (Getter[K], error) {
 	return k.p, nil
 }
 
