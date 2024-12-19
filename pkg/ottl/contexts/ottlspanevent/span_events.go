@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	// Experimental: *NOTE* this constant is subject to change or removal in the future.
 	ContextName            = "spanevent"
 	contextNameDescription = "Span Event"
 )
@@ -111,6 +112,8 @@ func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySet
 // EnablePathContextNames enables the support to path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
+//
+// Experimental: *NOTE* this option is subject to change or removal in the future.
 func EnablePathContextNames() Option {
 	return func(p *ottl.Parser[TransformContext]) {
 		ottl.WithPathContextNames[TransformContext]([]string{
