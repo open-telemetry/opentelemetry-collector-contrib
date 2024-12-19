@@ -1,0 +1,21 @@
+file_format: 1.0.0
+
+schema_url: https://example.com/testdata/schema_sections/metrics_rename_attributes/1.1.0
+
+versions:
+  1.1.0:
+    metrics:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              kubernetes.cluster.name: koobernetes.cluster.name
+        - rename_attributes:
+            attribute_map:
+              koobernetes.cluster.name: k8s.cluster.name
+        - rename_attributes:
+            attribute_map:
+              docker.image.name: d4r.image.name
+            apply_to_metrics:
+              - testMetricTwo
+  #  this has to be here
+  1.0.0:

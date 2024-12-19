@@ -1,0 +1,17 @@
+file_format: 1.0.0
+
+schema_url: https://example.com/testdata/schema_sections/all/1.1.0
+
+versions:
+  1.1.0:
+    all:
+      changes:
+        - rename_attributes:
+            attribute_map:
+              kubernetes.cluster.name: koobernetes.cluster.name
+              docker.image.name: d4r.image.name
+        - rename_attributes:
+            attribute_map:
+              koobernetes.cluster.name: k8s.cluster.name
+  #  this has to be here
+  1.0.0:

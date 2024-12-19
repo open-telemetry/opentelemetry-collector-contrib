@@ -1,0 +1,17 @@
+file_format: 1.0.0
+
+schema_url: https://example.com/testdata/schema_sections/span_events_rename_spans/1.1.0
+
+versions:
+  1.1.0:
+    span_events:
+      changes:
+        - rename_events:
+            name_map:
+              testEvent1: testEventUno
+              testEvent2: testEventTwo
+        - rename_events:
+            name_map:
+              testEventUno: testEventOne
+  #  this has to be here
+  1.0.0:
