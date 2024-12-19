@@ -53,8 +53,16 @@ func buildOriginalKeysText(keys []key) string {
 			if k.String != nil {
 				builder.WriteString(*k.String)
 			}
-			if k.Expression != nil && k.Expression.Path != nil {
-				builder.WriteString(buildOriginalText(k.Expression.Path))
+			if k.Expression != nil {
+				if k.Expression.Path != nil {
+					builder.WriteString(buildOriginalText(k.Expression.Path))
+				}
+				if k.Expression.Float != nil {
+					builder.WriteString(strconv.FormatFloat(*k.Expression.Float, 'f', 10, 64))
+				}
+				if k.Expression.Int != nil {
+					builder.WriteString(strconv.FormatInt(*k.Expression.Int, 10))
+				}
 			}
 			builder.WriteString("]")
 		}
@@ -262,7 +270,11 @@ type Key[K any] interface {
 	// If Key experiences an error retrieving the value it is returned.
 	Int(context.Context, K) (*int64, error)
 
-	PathGetter(context.Context, K) (Getter[K], error)
+	// ExpressionGetter returns a Getter to the expression, that can be
+	// part of the path.
+	// If the Key does not have an expression the returned value is nil.
+	// If Key experiences an error retrieving the value it is returned.
+	ExpressionGetter(context.Context, K) (Getter[K], error)
 }
 
 var _ Key[any] = &baseKey[any]{}
@@ -281,7 +293,7 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.i, nil
 }
 
-func (k *baseKey[K]) PathGetter(_ context.Context, _ K) (Getter[K], error) {
+func (k *baseKey[K]) ExpressionGetter(_ context.Context, _ K) (Getter[K], error) {
 	return k.p, nil
 }
 

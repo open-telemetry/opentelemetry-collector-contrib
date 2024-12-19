@@ -57,6 +57,6 @@ func (k *TestKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.I, nil
 }
 
-func (k *TestKey[K]) PathGetter(_ context.Context, _ K) (ottl.Getter[K], error) {
+func (k *TestKey[K]) ExpressionGetter(_ context.Context, _ K) (ottl.Getter[K], error) {
 	return k.P, nil
 }
