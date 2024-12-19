@@ -1,18 +1,2 @@
-receivers:
-  hostmetrics:
-    scrapers:
-      invalidscraperkey:
-
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    metrics:
-      receivers: [hostmetrics]
-      processors: [nop]
-      exporters: [nop]
+scrapers:
+  invalidscraperkey:
