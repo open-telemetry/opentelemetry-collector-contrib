@@ -276,8 +276,9 @@ type field struct {
 }
 
 type key struct {
-	String *string `parser:"'[' (@String "`
-	Int    *int64  `parser:"| @Int) ']'"`
+	String     *string          `parser:"'[' (@String "`
+	Int        *int64           `parser:"| @Int"`
+	Expression *mathExprLiteral `parser:"| @@ ) ']'"`
 }
 
 type list struct {

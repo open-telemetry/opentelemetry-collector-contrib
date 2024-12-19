@@ -16,6 +16,14 @@ import (
 )
 
 func Test_GetSliceValue_Invalid(t *testing.T) {
+	getSetter := &ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
+			return nil, nil
+		},
+		Setter: func(_ context.Context, tCtx any, val any) error {
+			return nil
+		},
+	}
 	tests := []struct {
 		name string
 		keys []ottl.Key[any]
@@ -26,6 +34,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("key"),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("non-integer indexing is not supported"),
@@ -35,6 +44,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(1),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
@@ -44,6 +54,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(-1),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
@@ -53,9 +64,11 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(0),
+					P: getSetter,
 				},
 				&TestKey[any]{
 					S: ottltest.Strp("string"),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
@@ -79,6 +92,14 @@ func Test_GetSliceValue_NilKey(t *testing.T) {
 }
 
 func Test_SetSliceValue_Invalid(t *testing.T) {
+	getSetter := &ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (any, error) {
+			return nil, nil
+		},
+		Setter: func(_ context.Context, tCtx any, val any) error {
+			return nil
+		},
+	}
 	tests := []struct {
 		name string
 		keys []ottl.Key[any]
@@ -89,6 +110,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("key"),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("non-integer indexing is not supported"),
@@ -98,6 +120,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(1),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
@@ -107,6 +130,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(-1),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
@@ -116,9 +140,11 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(0),
+					P: getSetter,
 				},
 				&TestKey[any]{
 					S: ottltest.Strp("string"),
+					P: getSetter,
 				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
