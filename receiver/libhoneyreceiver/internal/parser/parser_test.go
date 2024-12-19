@@ -65,8 +65,10 @@ func TestToPdata(t *testing.T) {
 	// Create test trace and span IDs
 	traceID := make([]byte, 16)
 	spanID := make([]byte, 8)
-	hex.Decode(traceID, []byte("1234567890abcdef1234567890abcdef"))
-	hex.Decode(spanID, []byte("1234567890abcdef"))
+	_, err := hex.Decode(traceID, []byte("1234567890abcdef1234567890abcdef"))
+	require.NoError(t, err)
+	_, err = hex.Decode(spanID, []byte("1234567890abcdef"))
+	require.NoError(t, err)
 
 	testCfg := libhoneyevent.FieldMapConfig{
 		Attributes: libhoneyevent.AttributesConfig{
@@ -108,7 +110,7 @@ func TestToPdata(t *testing.T) {
 			dataset: "test-dataset",
 			events: []libhoneyevent.LibhoneyEvent{
 				{
-					Data: map[string]interface{}{
+					Data: map[string]any{
 						"meta.signal_type": "span",
 						"trace.trace_id":   hex.EncodeToString(traceID),
 						"trace.span_id":    hex.EncodeToString(spanID),
@@ -131,7 +133,7 @@ func TestToPdata(t *testing.T) {
 			dataset: "test-dataset",
 			events: []libhoneyevent.LibhoneyEvent{
 				{
-					Data: map[string]interface{}{
+					Data: map[string]any{
 						"meta.signal_type": "log",
 						"message":          "test log message",
 					},
@@ -153,6 +155,17 @@ func TestToPdata(t *testing.T) {
 	}
 }
 
+// Helper function to verify attributes
+func verifyAttributes(t *testing.T, expected, actual pcommon.Map) {
+	expected.Range(func(k string, v pcommon.Value) bool {
+		got, ok := actual.Get(k)
+		assert.True(t, ok, "missing attribute %s", k)
+		assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
+		assert.Equal(t, v, got, "wrong value for attribute %s", k)
+		return true
+	})
+}
+
 func TestAddSpanEventsToSpan(t *testing.T) {
 	logger := zap.NewNop()
 	now := time.Now()
@@ -171,7 +184,7 @@ func TestAddSpanEventsToSpan(t *testing.T) {
 
 	events := []libhoneyevent.LibhoneyEvent{
 		{
-			Data: map[string]interface{}{
+			Data: map[string]any{
 				"name":   "event1",
 				"string": "value",
 				"int":    42,
@@ -190,13 +203,7 @@ func TestAddSpanEventsToSpan(t *testing.T) {
 	assert.Equal(t, pcommon.Timestamp(now.UnixNano()), event.Timestamp())
 
 	attrs := event.Attributes()
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		got, ok := event.Attributes().Get(k)
-		assert.True(t, ok, "missing attribute %s", k)
-		assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
-		assert.Equal(t, v, got, "wrong value for attribute %s", k)
-		return true
-	})
+	verifyAttributes(t, attrs, event.Attributes())
 }
 
 func TestAddSpanLinksToSpan(t *testing.T) {
@@ -219,14 +226,16 @@ func TestAddSpanLinksToSpan(t *testing.T) {
 	// Create test trace and span IDs for the link
 	linkTraceIDHex := make([]byte, 16)
 	linkSpanIDHex := make([]byte, 8)
-	hex.Decode(linkTraceIDHex, []byte("abcdef1234567890abcdef1234567890"))
-	hex.Decode(linkSpanIDHex, []byte("abcdef1234567890"))
+	_, err := hex.Decode(linkTraceIDHex, []byte("abcdef1234567890abcdef1234567890"))
+	require.NoError(t, err)
+	_, err = hex.Decode(linkSpanIDHex, []byte("abcdef1234567890"))
+	require.NoError(t, err)
 	linkTraceID := pcommon.TraceID(linkTraceIDHex)
 	linkSpanID := pcommon.SpanID(linkSpanIDHex)
 
 	links := []libhoneyevent.LibhoneyEvent{
 		{
-			Data: map[string]interface{}{
+			Data: map[string]any{
 				"trace.link.trace_id": hex.EncodeToString(linkTraceIDHex),
 				"trace.link.span_id":  hex.EncodeToString(linkSpanIDHex),
 				"trace.trace_id":      "1234567890abcdef1234567890abcdef",
@@ -248,11 +257,5 @@ func TestAddSpanLinksToSpan(t *testing.T) {
 
 	// Verify attributes
 	attrs := link.Attributes()
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		got, ok := link.Attributes().Get(k)
-		assert.True(t, ok, "missing attribute %s", k)
-		assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
-		assert.Equal(t, v, got, "wrong value for attribute %s", k)
-		return true
-	})
+	verifyAttributes(t, attrs, link.Attributes())
 }

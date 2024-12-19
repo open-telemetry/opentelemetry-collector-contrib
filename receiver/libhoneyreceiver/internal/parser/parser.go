@@ -97,11 +97,11 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 		for i := 0; i < ss.ScopeSpans.Len(); i++ {
 			sp := ss.ScopeSpans.At(i)
 			spId := trc.SpanID(sp.SpanID())
-			
+
 			if speArr, ok := spanEvents[spId]; ok {
 				addSpanEventsToSpan(sp, speArr, alreadyUsedFields, &logger)
 			}
-			
+
 			if splArr, ok := spanLinks[spId]; ok {
 				addSpanLinksToSpan(sp, splArr, alreadyUsedFields, &logger)
 			}
@@ -162,7 +162,7 @@ func addSpanEventsToSpan(sp ptrace.Span, events []libhoneyevent.LibhoneyEvent, a
 			case bool:
 				newEvent.Attributes().PutBool(lkey, lval)
 			default:
-				logger.Warn("SpanEvent data type issue", 
+				logger.Warn("SpanEvent data type issue",
 					zap.String("trace.trace_id", sp.TraceID().String()),
 					zap.String("trace.span_id", sp.SpanID().String()),
 					zap.String("key", lkey))
