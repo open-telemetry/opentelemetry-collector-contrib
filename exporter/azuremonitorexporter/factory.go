@@ -8,23 +8,39 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
-var errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
+var (
+	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
+	exporters                      = sharedcomponent.NewSharedComponents()
+)
+
+type AzureMonitorExporter interface {
+	component.Component
+	consumeTraces(_ context.Context, td ptrace.Traces) error
+	consumeMetrics(_ context.Context, md pmetric.Metrics) error
+	consumeLogs(_ context.Context, ld plog.Logs) error
+}
 
 // NewFactory returns a factory for Azure Monitor exporter.
 func NewFactory() exporter.Factory {
-	f := &factory{}
+	f := &factory{
+		loggerInitOnce: sync.Once{},
+	}
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -35,7 +51,7 @@ func NewFactory() exporter.Factory {
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
 type factory struct {
-	tChannel transportChannel
+	loggerInitOnce sync.Once
 }
 
 func createDefaultConfig() component.Config {
@@ -44,6 +60,7 @@ func createDefaultConfig() component.Config {
 		MaxBatchInterval:  10 * time.Second,
 		SpanEventsEnabled: false,
 		QueueSettings:     exporterhelper.NewDefaultQueueConfig(),
+		ShutdownTimeout:   1 * time.Second,
 	}
 }
 
@@ -52,18 +69,21 @@ func (f *factory) createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	exporterConfig, ok := cfg.(*Config)
-
+	f.initLogger(set.Logger)
+	config, ok := cfg.(*Config)
 	if !ok {
 		return nil, errUnexpectedConfigurationType
 	}
+	ame := getOrCreateAzureMonitorExporter(cfg, set)
 
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
-	if errInstrumentationKeyOrConnectionString != nil {
-		return nil, errInstrumentationKeyOrConnectionString
-	}
-
-	return newTracesExporter(exporterConfig, tc, set)
+	return exporterhelper.NewTraces(
+		context.TODO(),
+		set,
+		cfg,
+		ame.consumeTraces,
+		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithStart(ame.Start),
+		exporterhelper.WithShutdown(ame.Shutdown))
 }
 
 func (f *factory) createLogsExporter(
@@ -71,18 +91,21 @@ func (f *factory) createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exporterConfig, ok := cfg.(*Config)
-
+	f.initLogger(set.Logger)
+	config, ok := cfg.(*Config)
 	if !ok {
 		return nil, errUnexpectedConfigurationType
 	}
+	ame := getOrCreateAzureMonitorExporter(cfg, set)
 
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
-	if errInstrumentationKeyOrConnectionString != nil {
-		return nil, errInstrumentationKeyOrConnectionString
-	}
-
-	return newLogsExporter(exporterConfig, tc, set)
+	return exporterhelper.NewLogs(
+		context.TODO(),
+		set,
+		cfg,
+		ame.consumeLogs,
+		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithStart(ame.Start),
+		exporterhelper.WithShutdown(ame.Shutdown))
 }
 
 func (f *factory) createMetricsExporter(
@@ -90,49 +113,40 @@ func (f *factory) createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	exporterConfig, ok := cfg.(*Config)
-
+	f.initLogger(set.Logger)
+	config, ok := cfg.(*Config)
 	if !ok {
 		return nil, errUnexpectedConfigurationType
 	}
+	ame := getOrCreateAzureMonitorExporter(cfg, set)
 
-	tc, errInstrumentationKeyOrConnectionString := f.getTransportChannel(exporterConfig, set.Logger)
-	if errInstrumentationKeyOrConnectionString != nil {
-		return nil, errInstrumentationKeyOrConnectionString
-	}
-
-	return newMetricsExporter(exporterConfig, tc, set)
+	return exporterhelper.NewMetrics(
+		context.TODO(),
+		set,
+		cfg,
+		ame.consumeMetrics,
+		exporterhelper.WithQueue(config.QueueSettings),
+		exporterhelper.WithStart(ame.Start),
+		exporterhelper.WithShutdown(ame.Shutdown))
 }
 
-// Configures the transport channel.
-// This method is not thread-safe
-func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) (transportChannel, error) {
-	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
-	// This default channel handles batching, appropriate retries, and is backed by memory.
-	if f.tChannel == nil {
-		connectionVars, err := parseConnectionString(exporterConfig)
-		if err != nil {
-			return nil, err
-		}
+func getOrCreateAzureMonitorExporter(cfg component.Config, set exporter.Settings) AzureMonitorExporter {
+	conf := cfg.(*Config)
+	ame := exporters.GetOrAdd(set.ID, func() component.Component {
+		return newAzureMonitorExporter(conf, set)
+	})
 
-		exporterConfig.InstrumentationKey = configopaque.String(connectionVars.InstrumentationKey)
-		exporterConfig.Endpoint = connectionVars.IngestionURL
-		telemetryConfiguration := appinsights.NewTelemetryConfiguration(string(exporterConfig.InstrumentationKey))
-		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
-		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
-		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval
-		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
+	c := ame.Unwrap()
+	return c.(AzureMonitorExporter)
+}
 
-		f.tChannel = telemetryClient.Channel()
-
-		// Don't even bother enabling the AppInsights diagnostics listener unless debug logging is enabled
+func (f *factory) initLogger(logger *zap.Logger) {
+	f.loggerInitOnce.Do(func() {
 		if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
 			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
 				logger.Debug(msg)
 				return nil
 			})
 		}
-	}
-
-	return f.tChannel, nil
+	})
 }
