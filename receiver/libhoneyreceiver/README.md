@@ -45,20 +45,21 @@ The following setting is required for refinery traffic since:
         - "/1/batch"
       include_metadata: true
     auth_api: https://api.honeycomb.io
-    resources:
-      service_name: service_name
-    scopes:
-      library_name: library.name
-      library_version: library.version
-    attributes:
-      trace_id: trace_id
-      parent_id: parent_id
-      span_id: span_id
-      name: name
-      error: error
-      spankind: span.kind
-      durationFields:
-        - duration_ms
+    fields:
+      resources:
+        service_name: service_name
+      scopes:
+        library_name: library.name
+        library_version: library.version
+      attributes:
+        trace_id: trace_id
+        parent_id: parent_id
+        span_id: span_id
+        name: name
+        error: error
+        spankind: span.kind
+        durationFields:
+          - duration_ms
 ```
 
 ### Telemetry data types supported
