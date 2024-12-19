@@ -28,7 +28,7 @@ func GetDatasetFromRequest(path string) (string, error) {
 }
 
 // ToPdata converts a list of LibhoneyEvents to a Pdata Logs object
-func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyevent.FieldMapConfig, logger zap.Logger) plog.Logs {
+func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyevent.FieldMapConfig, logger zap.Logger) (plog.Logs, ptrace.Traces) {
 	foundServices := libhoneyevent.ServiceHistory{}
 	foundServices.NameCount = make(map[string]int)
 	foundScopes := libhoneyevent.ScopeHistory{}
@@ -70,6 +70,7 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	}
 
 	resultLogs := plog.NewLogs()
+	resultTraces := ptrace.NewTraces()
 
 	for scopeName, ss := range foundScopes.Scope {
 		if ss.ScopeLogs.Len() > 0 {
@@ -81,8 +82,17 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 			ls.Scope().SetName(ss.LibraryName)
 			ls.Scope().SetVersion(ss.LibraryVersion)
 			foundScopes.Scope[scopeName].ScopeLogs.MoveAndAppendTo(ls.LogRecords())
+
+			tr := resultTraces.ResourceSpans().AppendEmpty()
+			tr.SetSchemaUrl(semconv.SchemaURL)
+			tr.Resource().Attributes().PutStr(semconv.AttributeServiceName, ss.ServiceName)
+
+			ts := tr.ScopeSpans().AppendEmpty()
+			ts.Scope().SetName(ss.LibraryName)
+			ts.Scope().SetVersion(ss.LibraryVersion)
+			foundScopes.Scope[scopeName].ScopeSpans.MoveAndAppendTo(ts.Spans())
 		}
 	}
 
-	return resultLogs
+	return resultLogs, resultTraces
 }
