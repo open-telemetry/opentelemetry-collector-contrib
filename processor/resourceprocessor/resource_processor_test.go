@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -135,7 +135,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 
 			// Test profiles consumer
 			tpn := new(consumertest.ProfilesSink)
-			rpp, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), tt.config, tpn)
+			rpp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), tt.config, tpn)
 			require.NoError(t, err)
 			assert.True(t, rpp.Capabilities().MutatesData)
 
