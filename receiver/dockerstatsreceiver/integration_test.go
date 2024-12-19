@@ -250,13 +250,21 @@ func TestContainerLifecycleEventsIntegration(t *testing.T) {
 	require.NoError(t, nginxContainer.Terminate(ctx))
 
 	assert.Eventuallyf(t, func() bool {
-		return hasDockerEvents(consumer.AllLogs(), redisID, []string{
+		return hasDockerEvents(consumer.AllLogs(), nginxID, []string{
 			"docker.container.die",
 			"docker.container.stop",
 		})
 	}, 5*time.Second, 1*time.Second, "failed to receive container stop/die events")
 
+	consumer.Reset()
 	require.NoError(t, redisContainer.Terminate(ctx))
+
+	assert.Eventuallyf(t, func() bool {
+		return hasDockerEvents(consumer.AllLogs(), redisID, []string{
+			"docker.container.die",
+			"docker.container.stop",
+		})
+	}, 5*time.Second, 1*time.Second, "failed to receive container stop/die events")
 	assert.NoError(t, recv.Shutdown(ctx))
 }
 
@@ -268,7 +276,7 @@ func TestFilteredContainerEventsIntegration(t *testing.T) {
 	f, config := factory()
 	// Only receive events from redis containers
 	config.Logs.Filters = map[string][]string{
-		"image": {"*redis*"},
+		"image": {"redis"},
 	}
 
 	consumer := new(consumertest.LogsSink)
@@ -295,8 +303,16 @@ func TestFilteredContainerEventsIntegration(t *testing.T) {
 		})
 	}, 5*time.Second, 1*time.Second, "failed to receive redis container events")
 
+	consumer.Reset()
 	require.NoError(t, nginxContainer.Terminate(ctx))
 	require.NoError(t, redisContainer.Terminate(ctx))
+	assert.Eventuallyf(t, func() bool {
+		return hasDockerEvents(consumer.AllLogs(), redisID, []string{
+			"docker.container.die",
+			"docker.container.stop",
+		})
+	}, 5*time.Second, 1*time.Second, "failed to receive container stop/die events")
+
 	assert.NoError(t, recv.Shutdown(ctx))
 }
 
