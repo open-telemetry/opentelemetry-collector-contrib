@@ -458,7 +458,7 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest => ../../pkg/k8stest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../../receiver/dockerstatsreceiver
 

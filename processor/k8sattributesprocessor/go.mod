@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.116.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest v0.116.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.22.0
 	go.opentelemetry.io/collector/component v0.116.0
@@ -146,7 +146,7 @@ retract (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/k8stest => ../../pkg/k8stest
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.54.0 => cloud.google.com/go v0.110.10
