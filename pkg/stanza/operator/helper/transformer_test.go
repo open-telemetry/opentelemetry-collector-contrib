@@ -151,6 +151,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 			Context: []zapcore.Field{
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "drop_quiet"),
+				zap.Any("entry", testEntry),
 			},
 		},
 	}
@@ -241,6 +242,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 			Context: []zapcore.Field{
 				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
 				zap.Any("action", "send_quiet"),
+				zap.Any("entry", testEntry),
 			},
 		},
 	}
