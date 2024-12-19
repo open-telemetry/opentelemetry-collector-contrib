@@ -6,27 +6,28 @@ package transport // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"fmt"
 	"net"
+	"os"
 )
 
-type udpServer struct {
+type udsServer struct {
 	packetServer
 }
 
-// Ensure that Server is implemented on UDP Server.
-var _ (Server) = (*udpServer)(nil)
+// Ensure that Server is implemented on UDS Server.
+var _ (Server) = (*udsServer)(nil)
 
-// NewUDPServer creates a transport.Server using UDP as its transport.
-func NewUDPServer(transport Transport, address string) (Server, error) {
+// NewUDSServer creates a transport.Server using Unixgram as its transport.
+func NewUDSServer(transport Transport, socketPath string) (Server, error) {
 	if !transport.IsPacketTransport() {
-		return nil, fmt.Errorf("NewUDPServer with %s: %w", transport.String(), ErrUnsupportedPacketTransport)
+		return nil, fmt.Errorf("NewUDSServer with %s: %w", transport.String(), ErrUnsupportedPacketTransport)
 	}
 
-	conn, err := net.ListenPacket(transport.String(), address)
+	conn, err := net.ListenPacket(transport.String(), socketPath)
 	if err != nil {
 		return nil, fmt.Errorf("starting to listen %s socket: %w", transport.String(), err)
 	}
 
-	return &udpServer{
+	return &udsServer{
 		packetServer: packetServer{
 			packetConn: conn,
 			transport:  transport,
@@ -35,6 +36,7 @@ func NewUDPServer(transport Transport, address string) (Server, error) {
 }
 
 // Close closes the server.
-func (u *udpServer) Close() error {
+func (u *udsServer) Close() error {
+	os.Remove(u.packetConn.LocalAddr().String())
 	return u.packetConn.Close()
 }
