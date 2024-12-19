@@ -27,6 +27,12 @@ all_set:
       enabled: true
     gcp.gce.instance.name:
       enabled: true
+    gcp.gce.instance_group_manager.name:
+      enabled: true
+    gcp.gce.instance_group_manager.region:
+      enabled: true
+    gcp.gce.instance_group_manager.zone:
+      enabled: true
     host.id:
       enabled: true
     host.name:
@@ -62,6 +68,12 @@ none_set:
     gcp.gce.instance.hostname:
       enabled: false
     gcp.gce.instance.name:
+      enabled: false
+    gcp.gce.instance_group_manager.name:
+      enabled: false
+    gcp.gce.instance_group_manager.region:
+      enabled: false
+    gcp.gce.instance_group_manager.zone:
       enabled: false
     host.id:
       enabled: false
