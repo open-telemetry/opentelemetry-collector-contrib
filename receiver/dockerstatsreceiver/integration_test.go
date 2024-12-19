@@ -7,6 +7,7 @@ package dockerstatsreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -219,6 +220,7 @@ func TestContainerLifecycleEventsIntegration(t *testing.T) {
 
 	// no events should be received before container starts
 	assert.Never(t, func() bool {
+		fmt.Printf("%v", consumer.AllLogs())
 		return len(consumer.AllLogs()) > 0
 	}, 5*time.Second, 1*time.Second, "received unexpected events")
 
