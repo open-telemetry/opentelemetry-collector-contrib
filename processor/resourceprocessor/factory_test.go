@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 )
@@ -37,6 +38,14 @@ func TestCreateProcessor(t *testing.T) {
 	mp, err := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
+
+	lp, err := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, lp)
+
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, pp)
 }
 
 func TestInvalidAttributeActions(t *testing.T) {
@@ -51,5 +60,11 @@ func TestInvalidAttributeActions(t *testing.T) {
 	assert.Error(t, err)
 
 	_, err = factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	assert.Error(t, err)
+
+	_, err = factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, nil)
+	assert.Error(t, err)
+
+	_, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, nil)
 	assert.Error(t, err)
 }
