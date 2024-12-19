@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -25,7 +26,6 @@ const (
 	ExceptionEventName              = "exception"
 	AwsIndividualHTTPEventName      = "HTTP request failure"
 	AwsIndividualHTTPErrorEventType = "aws.http.error.event"
-	AwsIndividualHTTPErrorCodeAttr  = "http.response.status_code"
 	AwsIndividualHTTPErrorMsgAttr   = "aws.http.error_message"
 )
 
@@ -91,7 +91,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				parsed := parseException(exceptionType, message, stacktrace, isRemote, language)
 				exceptions = append(exceptions, parsed...)
 			} else if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
-				errorCode, ok1 := event.Attributes().Get(AwsIndividualHTTPErrorCodeAttr)
+				errorCode, ok1 := event.Attributes().Get(conventionsv127.AttributeHTTPResponseStatusCode)
 				errorMessage, ok2 := event.Attributes().Get(AwsIndividualHTTPErrorMsgAttr)
 				if ok1 && ok2 {
 					eventEpochTime := event.Timestamp().AsTime().UnixMicro()
@@ -155,6 +155,9 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	}
 
 	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
+	if !ok {
+		val, ok = span.Attributes().Get(conventionsv127.AttributeHTTPResponseStatusCode)
+	}
 
 	// The segment status for http spans will be based on their http.statuscode as we found some http
 	// spans does not fill with status.Code() but always filled with http.statuscode

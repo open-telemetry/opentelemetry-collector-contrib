@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -360,6 +361,23 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 	assert.True(t, *awsData.XRay.AutoInstrumentation)
 }
 
+func TestJavaAutoInstrumentationStable(t *testing.T) {
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventionsv127.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().PutStr(conventionsv127.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventionsv127.AttributeTelemetrySDKVersion, "1.2.3")
+	resource.Attributes().PutStr(conventionsv127.AttributeTelemetryDistroVersion, "3.4.5")
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "opentelemetry for java", *awsData.XRay.SDK)
+	assert.Equal(t, "1.2.3", *awsData.XRay.SDKVersion)
+	assert.True(t, *awsData.XRay.AutoInstrumentation)
+}
+
 func TestGoSDK(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
@@ -387,6 +405,21 @@ func TestCustomSDK(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
 	assert.Equal(t, "opentracing for java", *awsData.XRay.SDK)
+	assert.Equal(t, "2.0.3", *awsData.XRay.SDKVersion)
+}
+
+func TestCustomSDKForLanguage(t *testing.T) {
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "test for java")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "2.0.3")
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "test for java", *awsData.XRay.SDK)
 	assert.Equal(t, "2.0.3", *awsData.XRay.SDKVersion)
 }
 
