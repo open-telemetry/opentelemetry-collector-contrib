@@ -71,27 +71,35 @@ func SetValue(value pcommon.Value, val any) error {
 func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
 	val := value
 	var ok bool
-	for i := 0; i < len(keys); i++ {
+	for count := 0; count < len(keys); count++ {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := keys[i].String(ctx, tCtx)
+			s, err := keys[count].String(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 			if s == nil {
-				return nil, fmt.Errorf("map must be indexed by a string")
+				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
+				if err != nil {
+					return nil, errors.New("map must be indexed by a string")
+				}
+				s = resString
 			}
 			val, ok = val.Map().Get(*s)
 			if !ok {
 				return nil, nil
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := keys[i].Int(ctx, tCtx)
+			i, err := keys[count].Int(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 			if i == nil {
-				return nil, fmt.Errorf("slice must be indexed by an int")
+				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
+				if err != nil {
+					return nil, errors.New("slice must be indexed by an int")
+				}
+				i = resInt
 			}
 			if int(*i) >= val.Slice().Len() || int(*i) < 0 {
 				return nil, fmt.Errorf("index %v out of bounds", *i)
@@ -117,15 +125,19 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 		return err
 	}
 
-	for i := 0; i < len(keys); i++ {
+	for count := 0; count < len(keys); count++ {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := keys[i].String(ctx, tCtx)
+			s, err := keys[count].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
 			if s == nil {
-				return errors.New("map must be indexed by a string")
+				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
+				if err != nil {
+					return errors.New("map must be indexed by a string")
+				}
+				s = resString
 			}
 			potentialValue, ok := currentValue.Map().Get(*s)
 			if !ok {
@@ -134,23 +146,27 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				currentValue = potentialValue
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := keys[i].Int(ctx, tCtx)
+			i, err := keys[count].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
 			if i == nil {
-				return errors.New("slice must be indexed by an int")
+				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
+				if err != nil {
+					return errors.New("slice must be indexed by an int")
+				}
+				i = resInt
 			}
 			if int(*i) >= currentValue.Slice().Len() || int(*i) < 0 {
 				return fmt.Errorf("index %v out of bounds", *i)
 			}
 			currentValue = currentValue.Slice().At(int(*i))
 		case pcommon.ValueTypeEmpty:
-			s, err := keys[i].String(ctx, tCtx)
+			s, err := keys[count].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
-			i, err := keys[i].Int(ctx, tCtx)
+			i, err := keys[count].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -164,7 +180,20 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
 			default:
-				return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
+				resString, errString := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
+				resInt, errInt := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
+				switch {
+				case errInt == nil:
+					currentValue.SetEmptySlice()
+					for k := 0; k < int(*resInt); k++ {
+						currentValue.Slice().AppendEmpty()
+					}
+					currentValue = currentValue.Slice().AppendEmpty()
+				case errString == nil:
+					currentValue = currentValue.SetEmptyMap().PutEmpty(*resString)
+				default:
+					return errors.New("neither a string nor an int index was given, this is an error in the OTTL")
+				}
 			}
 		default:
 			return fmt.Errorf("type %v does not support string indexing", currentValue.Type())
