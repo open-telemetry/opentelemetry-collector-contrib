@@ -78,6 +78,16 @@ func TestLoadConfig(t *testing.T) {
 					}
 					return m
 				}(),
+				MinDockerRetryWait: 1 * time.Second,
+				MaxDockerRetryWait: 30 * time.Second,
+				Logs: EventsConfig{
+					Filters: map[string][]string{
+						"type":  {"container", "image"},
+						"event": {"start", "stop", "die"},
+					},
+					Since: "2024-01-01T00:00:00Z",
+					Until: "2024-01-02T00:00:00Z",
+				},
 			},
 		},
 	}
@@ -98,28 +108,134 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidateErrors(t *testing.T) {
-	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig(), Config: docker.Config{
-		DockerAPIVersion: "1.25",
-	}}
-	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
-
-	cfg = &Config{
-		Config: docker.Config{
-			DockerAPIVersion: "1.21",
-			Endpoint:         "someEndpoint",
+	tests := []struct {
+		name        string
+		cfg         *Config
+		expectedErr string
+	}{
+		{
+			name: "missing endpoint",
+			cfg: &Config{
+				Config: docker.Config{
+					DockerAPIVersion: "1.25",
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: "endpoint must be specified",
 		},
-		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
-	}
-	assert.Equal(t, `"api_version" 1.21 must be at least 1.25`, component.ValidateConfig(cfg).Error())
-
-	cfg = &Config{
-		Config: docker.Config{
-			Endpoint:         "someEndpoint",
-			DockerAPIVersion: "1.25",
+		{
+			name: "outdated api version",
+			cfg: &Config{
+				Config: docker.Config{
+					DockerAPIVersion: "1.21",
+					Endpoint:         "someEndpoint",
+				},
+				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
+			},
+			expectedErr: `"api_version" 1.21 must be at least 1.25`,
 		},
-		ControllerConfig: scraperhelper.ControllerConfig{},
+		{
+			name: "missing collection interval",
+			cfg: &Config{
+				Config: docker.Config{
+					Endpoint:         "someEndpoint",
+					DockerAPIVersion: "1.25",
+				},
+				ControllerConfig: scraperhelper.ControllerConfig{},
+			},
+			expectedErr: `"collection_interval": requires positive value`,
+		},
+		{
+			name: "negative min retry wait",
+			cfg: &Config{
+				Config: docker.Config{
+					Endpoint:         "unix:///var/run/docker.sock",
+					DockerAPIVersion: "1.25",
+				},
+				MinDockerRetryWait: -1 * time.Second,
+				MaxDockerRetryWait: 30 * time.Second,
+			},
+			expectedErr: "min_docker_retry_wait must be positive, got -1s",
+		},
+		{
+			name: "negative max retry wait",
+			cfg: &Config{
+				Config: docker.Config{
+					Endpoint:         "unix:///var/run/docker.sock",
+					DockerAPIVersion: "1.25",
+				},
+				MinDockerRetryWait: 1 * time.Second,
+				MaxDockerRetryWait: -1 * time.Second,
+			},
+			expectedErr: "max_docker_retry_wait must be positive, got -1s",
+		},
+		{
+			name: "max less than min",
+			cfg: &Config{
+				Config: docker.Config{
+					Endpoint:         "unix:///var/run/docker.sock",
+					DockerAPIVersion: "1.25",
+				},
+				MinDockerRetryWait: 30 * time.Second,
+				MaxDockerRetryWait: 1 * time.Second,
+			},
+			expectedErr: "max_docker_retry_wait must not be less than min_docker_retry_wait",
+		},
+		{
+			name: "invalid since timestamp",
+			cfg: &Config{
+				Config: docker.Config{
+					Endpoint:         "unix:///var/run/docker.sock",
+					DockerAPIVersion: "1.25",
+				},
+				MinDockerRetryWait: 1 * time.Second,
+				MaxDockerRetryWait: 30 * time.Second,
+				Logs: EventsConfig{
+					Since: "not-a-timestamp",
+				},
+			},
+			expectedErr: "logs.since must be a Unix timestamp or RFC3339 time",
+		},
+		{
+			name: "future since timestamp",
+			cfg: &Config{
+				Config: docker.Config{
+					Endpoint:         "unix:///var/run/docker.sock",
+					DockerAPIVersion: "1.25",
+				},
+				ControllerConfig:   scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
+				MinDockerRetryWait: 1 * time.Second,
+				MaxDockerRetryWait: 30 * time.Second,
+				Logs: EventsConfig{
+					Since: time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+				},
+			},
+			expectedErr: "logs.since cannot be in the future",
+		},
+		{
+			name: "since after until",
+			cfg: &Config{
+				Config: docker.Config{
+					Endpoint:         "unix:///var/run/docker.sock",
+					DockerAPIVersion: "1.25",
+				},
+				MinDockerRetryWait: 1 * time.Second,
+				MaxDockerRetryWait: 30 * time.Second,
+				Logs: EventsConfig{
+					Since: "2024-01-02T00:00:00Z",
+					Until: "2024-01-01T00:00:00Z",
+				},
+			},
+			expectedErr: "logs.since must not be after logs.until",
+		},
 	}
-	assert.Equal(t, `"collection_interval": requires positive value`, component.ValidateConfig(cfg).Error())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := component.ValidateConfig(tt.cfg)
+			assert.ErrorContains(t, err, tt.expectedErr)
+		})
+	}
 }
 
 func TestApiVersionCustomError(t *testing.T) {

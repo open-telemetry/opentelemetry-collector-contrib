@@ -21,6 +21,7 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
@@ -36,7 +37,20 @@ func createDefaultConfig() component.Config {
 			Timeout:          scs.Timeout,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MinDockerRetryWait:   time.Second,
+		MaxDockerRetryWait:   10 * time.Second,
+		Logs:                 EventsConfig{},
 	}
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	config component.Config,
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
+	dockerConfig := config.(*Config)
+	return newLogsReceiver(params, dockerConfig, consumer), nil
 }
 
 func createMetricsReceiver(
