@@ -96,38 +96,7 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 
 	if r.cfg.AuthAPI != "" {
 		httpMux.HandleFunc("/1/auth", func(resp http.ResponseWriter, req *http.Request) {
-			authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
-			authReq, err := http.NewRequest(http.MethodGet, authURL, nil)
-			if err != nil {
-				errJSON, _ := json.Marshal(`{"error": "failed to create AuthInfo request"}`)
-				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
-				return
-			}
-			authReq.Header.Set("x-honeycomb-team", req.Header.Get("x-honeycomb-team"))
-			var authClient http.Client
-			authResp, err := authClient.Do(authReq)
-			if err != nil {
-				errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", "%s"}`, err.Error()))
-				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
-				return
-			}
-			defer authResp.Body.Close()
-
-			switch {
-			case authResp.StatusCode == http.StatusUnauthorized:
-				errJSON, _ := json.Marshal(`"error": "received 401 response for AuthInfo request from Honeycomb API - check your API key"}`)
-				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
-				return
-			case authResp.StatusCode > 299:
-				errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "bad response code from API", "status_code", %d}`, authResp.StatusCode))
-				writeResponse(resp, "json", http.StatusBadRequest, errJSON)
-				return
-			}
-			authRawBody, _ := io.ReadAll(authResp.Body)
-			_, err = resp.Write(authRawBody)
-			if err != nil {
-				r.settings.Logger.Info("couldn't write http response")
-			}
+			r.handleAuth(resp, req)
 		})
 	}
 
@@ -179,6 +148,41 @@ func (r *libhoneyReceiver) registerTraceConsumer(tc consumer.Traces) {
 
 func (r *libhoneyReceiver) registerLogConsumer(tc consumer.Logs) {
 	r.nextLogs = tc
+}
+
+func (r *libhoneyReceiver) handleAuth(resp http.ResponseWriter, req *http.Request) {
+	authURL := fmt.Sprintf("%s/1/auth", r.cfg.AuthAPI)
+	authReq, err := http.NewRequest(http.MethodGet, authURL, nil)
+	if err != nil {
+		errJSON, _ := json.Marshal(`{"error": "failed to create AuthInfo request"}`)
+		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
+		return
+	}
+	authReq.Header.Set("x-honeycomb-team", req.Header.Get("x-honeycomb-team"))
+	var authClient http.Client
+	authResp, err := authClient.Do(authReq)
+	if err != nil {
+		errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "failed to send request to auth api endpoint", "message", "%s"}`, err.Error()))
+		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
+		return
+	}
+	defer authResp.Body.Close()
+
+	switch {
+	case authResp.StatusCode == http.StatusUnauthorized:
+		errJSON, _ := json.Marshal(`"error": "received 401 response for AuthInfo request from Honeycomb API - check your API key"}`)
+		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
+		return
+	case authResp.StatusCode > 299:
+		errJSON, _ := json.Marshal(fmt.Sprintf(`"error": "bad response code from API", "status_code", %d}`, authResp.StatusCode))
+		writeResponse(resp, "json", http.StatusBadRequest, errJSON)
+		return
+	}
+	authRawBody, _ := io.ReadAll(authResp.Body)
+	_, err = resp.Write(authRawBody)
+	if err != nil {
+		r.settings.Logger.Info("couldn't write http response")
+	}
 }
 
 func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Request) {
