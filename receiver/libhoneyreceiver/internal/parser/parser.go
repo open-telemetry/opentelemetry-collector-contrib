@@ -96,98 +96,14 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	for _, ss := range foundScopes.Scope {
 		for i := 0; i < ss.ScopeSpans.Len(); i++ {
 			sp := ss.ScopeSpans.At(i)
-
 			spId := trc.SpanID(sp.SpanID())
+			
 			if speArr, ok := spanEvents[spId]; ok {
-				// call to new function in libhoneyevent.
-				for _, spe := range speArr {
-					newEvent := sp.Events().AppendEmpty()
-					newEvent.SetTimestamp(pcommon.Timestamp(spe.MsgPackTimestamp.UnixNano()))
-					newEvent.SetName(spe.Data["name"].(string))
-					for lkey, lval := range spe.Data {
-						if slices.Contains(alreadyUsedFields, lkey) {
-							continue
-						}
-						if lkey == "meta.annotation_type" || lkey == "meta.signal_type" {
-							continue
-						}
-						switch lval := lval.(type) {
-						case string:
-							newEvent.Attributes().PutStr(lkey, lval)
-						case int:
-							newEvent.Attributes().PutInt(lkey, int64(lval))
-						case int64, int16, int32:
-							intv := lval.(int64)
-							newEvent.Attributes().PutInt(lkey, intv)
-						case float64:
-							newEvent.Attributes().PutDouble(lkey, lval)
-						case bool:
-							newEvent.Attributes().PutBool(lkey, lval)
-						default:
-							logger.Warn("SpanEvent data type issue", zap.String("trace.trace_id", sp.TraceID().String()), zap.String("trace.span_id", sp.SpanID().String()), zap.String("key", lkey))
-						}
-					}
-				}
+				addSpanEventsToSpan(sp, speArr, alreadyUsedFields, &logger)
 			}
+			
 			if splArr, ok := spanLinks[spId]; ok {
-				for _, spl := range splArr {
-					newLink := sp.Links().AppendEmpty()
-
-					if linkTraceStr, ok := spl.Data["trace.link.trace_id"]; ok {
-						tidByteArray, err := hex.DecodeString(linkTraceStr.(string))
-						if err != nil {
-							logger.Warn("span link invalid", zap.String("missing.attribute", "trace.link.trace_id"), zap.String("span link contents", spl.DebugString()))
-							continue
-						}
-						if len(tidByteArray) >= 32 {
-							tidByteArray = tidByteArray[0:32]
-						}
-						newLink.SetTraceID(pcommon.TraceID(tidByteArray))
-					} else {
-						logger.Warn("span link missing attributes", zap.String("missing.attribute", "trace.link.trace_id"), zap.String("span link contents", spl.DebugString()))
-						continue
-					}
-					if linkSpanStr, ok := spl.Data["trace.link.span_id"]; ok {
-						sidByteArray, err := hex.DecodeString(linkSpanStr.(string))
-						if err != nil {
-							logger.Warn("span link invalid", zap.String("missing.attribute", "trace.link.span_id"), zap.String("span link contents", spl.DebugString()))
-							continue
-						}
-						if len(sidByteArray) >= 16 {
-							sidByteArray = sidByteArray[0:16]
-						}
-						newLink.SetSpanID(pcommon.SpanID(sidByteArray))
-					} else {
-						logger.Warn("span link missing attributes", zap.String("missing.attribute", "trace.link.span_id"), zap.String("span link contents", spl.DebugString()))
-						continue
-					}
-					for lkey, lval := range spl.Data {
-						if len(lkey) > 10 && lkey[:11] == "trace.link." {
-							continue
-						}
-						if slices.Contains(alreadyUsedFields, lkey) {
-							continue
-						}
-						if lkey == "meta.annotation_type" || lkey == "meta.signal_type" {
-							continue
-						}
-						switch lval := lval.(type) {
-						case string:
-							newLink.Attributes().PutStr(lkey, lval)
-						case int:
-							newLink.Attributes().PutInt(lkey, int64(lval))
-						case int64, int16, int32:
-							intv := lval.(int64)
-							newLink.Attributes().PutInt(lkey, intv)
-						case float64:
-							newLink.Attributes().PutDouble(lkey, lval)
-						case bool:
-							newLink.Attributes().PutBool(lkey, lval)
-						default:
-							logger.Warn("SpanLink data type issue", zap.String("trace.trace_id", sp.TraceID().String()), zap.String("trace.span_id", sp.SpanID().String()), zap.String("key", lkey))
-						}
-					}
-				}
+				addSpanLinksToSpan(sp, splArr, alreadyUsedFields, &logger)
 			}
 		}
 	}
@@ -219,4 +135,112 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	}
 
 	return resultLogs, resultTraces
+}
+
+func addSpanEventsToSpan(sp ptrace.Span, events []libhoneyevent.LibhoneyEvent, alreadyUsedFields []string, logger *zap.Logger) {
+	for _, spe := range events {
+		newEvent := sp.Events().AppendEmpty()
+		newEvent.SetTimestamp(pcommon.Timestamp(spe.MsgPackTimestamp.UnixNano()))
+		newEvent.SetName(spe.Data["name"].(string))
+		for lkey, lval := range spe.Data {
+			if slices.Contains(alreadyUsedFields, lkey) {
+				continue
+			}
+			if lkey == "meta.annotation_type" || lkey == "meta.signal_type" {
+				continue
+			}
+			switch lval := lval.(type) {
+			case string:
+				newEvent.Attributes().PutStr(lkey, lval)
+			case int:
+				newEvent.Attributes().PutInt(lkey, int64(lval))
+			case int64, int16, int32:
+				intv := lval.(int64)
+				newEvent.Attributes().PutInt(lkey, intv)
+			case float64:
+				newEvent.Attributes().PutDouble(lkey, lval)
+			case bool:
+				newEvent.Attributes().PutBool(lkey, lval)
+			default:
+				logger.Warn("SpanEvent data type issue", 
+					zap.String("trace.trace_id", sp.TraceID().String()),
+					zap.String("trace.span_id", sp.SpanID().String()),
+					zap.String("key", lkey))
+			}
+		}
+	}
+}
+
+func addSpanLinksToSpan(sp ptrace.Span, links []libhoneyevent.LibhoneyEvent, alreadyUsedFields []string, logger *zap.Logger) {
+	for _, spl := range links {
+		newLink := sp.Links().AppendEmpty()
+
+		if linkTraceStr, ok := spl.Data["trace.link.trace_id"]; ok {
+			tidByteArray, err := hex.DecodeString(linkTraceStr.(string))
+			if err != nil {
+				logger.Warn("span link invalid",
+					zap.String("missing.attribute", "trace.link.trace_id"),
+					zap.String("span link contents", spl.DebugString()))
+				continue
+			}
+			if len(tidByteArray) >= 32 {
+				tidByteArray = tidByteArray[0:32]
+			}
+			newLink.SetTraceID(pcommon.TraceID(tidByteArray))
+		} else {
+			logger.Warn("span link missing attributes",
+				zap.String("missing.attribute", "trace.link.trace_id"),
+				zap.String("span link contents", spl.DebugString()))
+			continue
+		}
+
+		if linkSpanStr, ok := spl.Data["trace.link.span_id"]; ok {
+			sidByteArray, err := hex.DecodeString(linkSpanStr.(string))
+			if err != nil {
+				logger.Warn("span link invalid",
+					zap.String("missing.attribute", "trace.link.span_id"),
+					zap.String("span link contents", spl.DebugString()))
+				continue
+			}
+			if len(sidByteArray) >= 16 {
+				sidByteArray = sidByteArray[0:16]
+			}
+			newLink.SetSpanID(pcommon.SpanID(sidByteArray))
+		} else {
+			logger.Warn("span link missing attributes",
+				zap.String("missing.attribute", "trace.link.span_id"),
+				zap.String("span link contents", spl.DebugString()))
+			continue
+		}
+
+		for lkey, lval := range spl.Data {
+			if len(lkey) > 10 && lkey[:11] == "trace.link." {
+				continue
+			}
+			if slices.Contains(alreadyUsedFields, lkey) {
+				continue
+			}
+			if lkey == "meta.annotation_type" || lkey == "meta.signal_type" {
+				continue
+			}
+			switch lval := lval.(type) {
+			case string:
+				newLink.Attributes().PutStr(lkey, lval)
+			case int:
+				newLink.Attributes().PutInt(lkey, int64(lval))
+			case int64, int16, int32:
+				intv := lval.(int64)
+				newLink.Attributes().PutInt(lkey, intv)
+			case float64:
+				newLink.Attributes().PutDouble(lkey, lval)
+			case bool:
+				newLink.Attributes().PutBool(lkey, lval)
+			default:
+				logger.Warn("SpanLink data type issue",
+					zap.String("trace.trace_id", sp.TraceID().String()),
+					zap.String("trace.span_id", sp.SpanID().String()),
+					zap.String("key", lkey))
+			}
+		}
+	}
 }
