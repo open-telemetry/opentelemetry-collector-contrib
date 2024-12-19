@@ -198,7 +198,8 @@ func TestLibhoneyReceiver_AuthEndpoint(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, tt.apiKey, r.Header.Get("x-honeycomb-team"))
 				w.WriteHeader(tt.mockResponse.StatusCode)
-				io.Copy(w, tt.mockResponse.Body)
+				_, err := io.Copy(w, tt.mockResponse.Body)
+				assert.NoError(t, err, "failed to copy response body")
 			}))
 			defer ts.Close()
 
@@ -206,9 +207,12 @@ func TestLibhoneyReceiver_AuthEndpoint(t *testing.T) {
 			req.Header.Set("x-honeycomb-team", tt.apiKey)
 			w := httptest.NewRecorder()
 
-			r.server = &http.Server{Handler: http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
-				r.handleAuth(resp, req)
-			})}
+			r.server = &http.Server{
+				Handler: http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+					r.handleAuth(resp, req)
+				}),
+				ReadHeaderTimeout: 3 * time.Second,
+			}
 
 			resp := w.Result()
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)

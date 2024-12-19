@@ -84,7 +84,7 @@ func TestLibhoneyEvent_UnmarshalJSON(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, test.want.Data, got.Data)
 		gotTime, timeErr := time.Parse(time.RFC3339Nano, got.Time)
-		assert.Nil(t, timeErr)
+		assert.NoError(t, timeErr)
 		assert.WithinDuration(t, time.Now(), gotTime, time.Second)
 		assert.Equal(t, test.want.Samplerate, got.Samplerate)
 		assert.NotNil(t, got.MsgPackTimestamp)
