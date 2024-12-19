@@ -9,7 +9,7 @@ status:
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv, ChrsMark]
 
-sem_conv_version: 1.18.0
+sem_conv_version: 1.27.0
 
 resource_attributes:
   k8s.namespace.uid:
