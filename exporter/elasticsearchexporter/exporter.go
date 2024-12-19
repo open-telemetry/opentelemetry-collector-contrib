@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datastream"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/encoder/log"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
@@ -44,12 +47,8 @@ func newExporter(
 	index string,
 	dynamicIndex bool,
 ) *elasticsearchExporter {
-	model := &encodeModel{
-		dedot: cfg.Mapping.Dedot,
-		mode:  cfg.MappingMode(),
-	}
-
-	otel := model.mode == MappingOTel
+	model := newEncodeModel(cfg.Mapping.Dedot, cfg.MappingMode())
+	otel := model.mode == mapping.ModeOTel
 
 	userAgent := fmt.Sprintf(
 		"%s/%s (%s/%s)",
@@ -131,7 +130,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 						return cerr
 					}
 
-					if errors.Is(err, ErrInvalidTypeForBodyMapMode) {
+					if errors.Is(err, log.ErrInvalidTypeForBodyMapMode) {
 						e.Logger.Warn("dropping log record", zap.Error(err))
 						continue
 					}
@@ -162,7 +161,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
+		fIndex = datastream.RouteLogRecord(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -173,7 +172,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+	document, err := e.model.EncodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
@@ -326,7 +325,7 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
+		fIndex = datastream.RouteDataPoint(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -400,7 +399,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, span.Name())
+		fIndex = datastream.RouteSpan(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, span.Name())
 	}
 
 	if e.logstashFormat.Enabled {
@@ -430,7 +429,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 ) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpanEvent(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
+		fIndex = datastream.RouteSpanEvent(spanEvent.Attributes(), scope.Attributes(), resource.Attributes(), fIndex, e.otel, scope.Name())
 	}
 
 	if e.logstashFormat.Enabled {
