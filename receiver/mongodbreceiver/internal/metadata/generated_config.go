@@ -37,6 +37,7 @@ type MetricsConfig struct {
 	MongodbDatabaseCount          MetricConfig `mapstructure:"mongodb.database.count"`
 	MongodbDocumentOperationCount MetricConfig `mapstructure:"mongodb.document.operation.count"`
 	MongodbExtentCount            MetricConfig `mapstructure:"mongodb.extent.count"`
+	MongodbFlowcontrolLagTime     MetricConfig `mapstructure:"mongodb.flowcontrol.lag.time"`
 	MongodbGlobalLockTime         MetricConfig `mapstructure:"mongodb.global_lock.time"`
 	MongodbHealth                 MetricConfig `mapstructure:"mongodb.health"`
 	MongodbIndexAccessCount       MetricConfig `mapstructure:"mongodb.index.access.count"`
@@ -87,6 +88,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MongodbExtentCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbFlowcontrolLagTime: MetricConfig{
 			Enabled: true,
 		},
 		MongodbGlobalLockTime: MetricConfig{
