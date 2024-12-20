@@ -30,6 +30,28 @@
 			"$numberInt": "3"
 		}
 	},
+	"flowControl": {
+		"enabled": true,
+		"targetRateLimit": {
+			"$numberInt": "3"
+		},
+		"timeAcquiringMicros": {
+			"$numberLong": "10000"
+		},
+		"locksPerKiloOp": {
+			"$numberInt": "3"
+		},
+		"sustainerRate": {
+			"$numberInt": "3"
+		},
+		"isLagged": true,
+		"isLaggedCount": {
+			"$numberInt": "3"
+		},
+		"isLaggedTimeMicros": {
+			"$numberLong": "10000"
+		}
+	},
 	"globalLock": {
 		"activeClients": {
 			"readers": {
