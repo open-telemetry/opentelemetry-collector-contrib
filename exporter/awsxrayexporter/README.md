@@ -65,6 +65,7 @@ comparable AWS X-Ray Daemon configuration values.
 | `local_mode`                 | Local mode to skip EC2 instance metadata check.                                                                    | false   |
 | `resource_arn`               | Amazon Resource Name (ARN) of the AWS resource running the collector.                                              |         |
 | `role_arn`                   | IAM role to upload segments to a different account.                                                                |         |
+| `external_id`                | Shared identitier used when assuming an IAM role in an external AWS account.                                       |         |
 | `indexed_attributes`         | List of attribute names to be converted to X-Ray annotations.                                                      |         |
 | `index_all_attributes`       | Enable or disable conversion of all OpenTelemetry attributes to X-Ray annotations.                                 | false   |
 | `aws_log_groups`             | List of log group names for CloudWatch.                                                                            | []      |
