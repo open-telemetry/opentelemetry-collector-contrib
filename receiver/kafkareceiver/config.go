@@ -4,6 +4,7 @@
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -52,8 +53,10 @@ type Config struct {
 	SessionTimeout time.Duration `mapstructure:"session_timeout"`
 	// Heartbeat interval for the Kafka consumer
 	HeartbeatInterval time.Duration `mapstructure:"heartbeat_interval"`
-	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs)
+	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs). If topics_regex is used, this field must remain empty.
 	Topic string `mapstructure:"topic"`
+	// Name pattern of the kafka topics to consume from. If topic is used, this field must remain empty.
+	TopicRegex string `mapstructure:"topic_regex"`
 	// Encoding of the messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 	// The consumer group that receiver will be consuming messages from (default "otel-collector")
@@ -96,5 +99,8 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
+	if len(cfg.Topic) > 0 && len(cfg.TopicRegex) > 0 {
+		return fmt.Errorf("only one setting 'topic' or 'topics_regex' can be used")
+	}
 	return nil
 }
