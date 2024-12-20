@@ -19,10 +19,9 @@ receivers:
       required_headers:
         key1-present: "value1-present"
         key2-present: "value2-present" 
-      gitlab_headers: 
-        - "header1"
-        - "header2"
-                
+        User-Agent: "GitLab/1.2.3-custom-version"        
+        X-Gitlab-Instance: "https://gitlab.self-hosted.xyz"
+        
 processors:
   nop:
 

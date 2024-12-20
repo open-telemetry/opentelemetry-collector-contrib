@@ -23,28 +23,31 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t,
-		&Config{
-			WebHook: WebHook{
-				ServerConfig: confighttp.ServerConfig{
-					Endpoint:     defaultEndpoint,
-					ReadTimeout:  defaultReadTimeout,
-					WriteTimeout: defaultWriteTimeout,
+	expectedConfig := &Config{
+		WebHook: WebHook{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint:     defaultEndpoint,
+				ReadTimeout:  defaultReadTimeout,
+				WriteTimeout: defaultWriteTimeout,
+			},
+			Path:       defaultPath,
+			HealthPath: defaultHealthPath,
+			GitlabHeaders: GitlabHeaders{
+				Customizable: map[string]string{
+					defaultUserAgentHeader:      "",
+					defaultGitlabInstanceHeader: "https://gitlab.com",
 				},
-				Path:       defaultPath,
-				HealthPath: defaultHealthPath,
-				GitlabHeaders: []string{
-					defaultUserAgentHeader,
-					defaultGitlabInstanceHeader,
-					defaultGitlabWebhookUUIDHeader,
-					defaultGitlabEventHeader,
-					defaultGitlabEventUUIDHeader,
-					defaultIdempotencyKeyHeader,
+				Fixed: map[string]string{
+					defaultGitlabWebhookUUIDHeader: "",
+					defaultGitlabEventHeader:       "Pipeline Hook",
+					defaultGitlabEventUUIDHeader:   "",
+					defaultIdempotencyKeyHeader:    "",
 				},
 			},
 		},
-		cfg, "failed to create default config")
+	}
 
+	assert.Equal(t, expectedConfig, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -74,13 +77,17 @@ func TestLoadConfig(t *testing.T) {
 			RequiredHeaders: map[string]configopaque.String{
 				"key1-present": "value1-present",
 			},
-			GitlabHeaders: []string{
-				defaultUserAgentHeader,
-				defaultGitlabInstanceHeader,
-				defaultGitlabWebhookUUIDHeader,
-				defaultGitlabEventHeader,
-				defaultGitlabEventUUIDHeader,
-				defaultIdempotencyKeyHeader,
+			GitlabHeaders: GitlabHeaders{
+				Customizable: map[string]string{
+					defaultUserAgentHeader:      "",
+					defaultGitlabInstanceHeader: "https://gitlab.com",
+				},
+				Fixed: map[string]string{
+					defaultGitlabWebhookUUIDHeader: "",
+					defaultGitlabEventHeader:       "Pipeline Hook",
+					defaultGitlabEventUUIDHeader:   "",
+					defaultIdempotencyKeyHeader:    "",
+				},
 			},
 		},
 	}
@@ -91,13 +98,23 @@ func TestLoadConfig(t *testing.T) {
 
 	// r1 requires multiple headers and overwrites gitlab default headers
 	expectedConfig.WebHook.RequiredHeaders = map[string]configopaque.String{
-		"key1-present": "value1-present",
-		"key2-present": "value2-present",
+		"key1-present":      "value1-present",
+		"key2-present":      "value2-present",
+		"User-Agent":        "GitLab/1.2.3-custom-version",
+		"X-Gitlab-Instance": "https://gitlab.self-hosted.xyz",
 	}
 
-	expectedConfig.WebHook.GitlabHeaders = []string{
-		"header1",
-		"header2",
+	expectedConfig.WebHook.GitlabHeaders = GitlabHeaders{
+		Customizable: map[string]string{
+			defaultUserAgentHeader:      "GitLab/1.2.3-custom-version",
+			defaultGitlabInstanceHeader: "https://gitlab.self-hosted.xyz",
+		},
+		Fixed: map[string]string{
+			defaultGitlabWebhookUUIDHeader: "",
+			defaultGitlabEventHeader:       "Pipeline Hook",
+			defaultGitlabEventUUIDHeader:   "",
+			defaultIdempotencyKeyHeader:    "",
+		},
 	}
 
 	r1 := cfg.Receivers[component.NewIDWithName(metadata.Type, "customname")].(*Config)
