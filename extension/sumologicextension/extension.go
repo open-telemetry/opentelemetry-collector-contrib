@@ -20,8 +20,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
 	ps "github.com/mitchellh/go-ps"
