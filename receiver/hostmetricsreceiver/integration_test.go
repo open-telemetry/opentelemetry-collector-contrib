@@ -72,7 +72,6 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 				rCfg.RootPath = rootPath
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
 				pCfg.SetRootPath(rootPath)
-				pCfg.SetEnvMap(setGoPsutilEnvVars(rootPath, &osEnv{}))
 				rCfg.Scrapers = map[component.Type]internal.Config{
 					processscraper.Type: pCfg,
 				}
@@ -102,7 +101,6 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 				rCfg.CollectionInterval = time.Second
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
 				pCfg.SetRootPath(badRootPath)
-				pCfg.SetEnvMap(setGoPsutilEnvVars(badRootPath, &osEnv{}))
 				rCfg.Scrapers = map[component.Type]internal.Config{
 					processscraper.Type: pCfg,
 				}

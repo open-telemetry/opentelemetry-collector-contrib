@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/net"
 	"go.opentelemetry.io/collector/component"
@@ -73,7 +72,6 @@ func newNetworkScraper(_ context.Context, settings receiver.Settings, cfg *Confi
 }
 
 func (s *networkScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -84,20 +82,20 @@ func (s *networkScraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *networkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *networkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errors scrapererror.ScrapeErrors
 
-	err := s.recordNetworkCounterMetrics()
+	err := s.recordNetworkCounterMetrics(ctx)
 	if err != nil {
 		errors.AddPartial(networkMetricsLen, err)
 	}
 
-	err = s.recordNetworkConnectionsMetrics()
+	err = s.recordNetworkConnectionsMetrics(ctx)
 	if err != nil {
 		errors.AddPartial(connectionsMetricsLen, err)
 	}
 
-	err = s.recordNetworkConntrackMetrics()
+	err = s.recordNetworkConntrackMetrics(ctx)
 	if err != nil {
 		errors.AddPartial(connectionsMetricsLen, err)
 	}
@@ -105,8 +103,7 @@ func (s *networkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), errors.Combine()
 }
 
-func (s *networkScraper) recordNetworkCounterMetrics() error {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
+func (s *networkScraper) recordNetworkCounterMetrics(ctx context.Context) error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	// get total stats only
@@ -156,12 +153,11 @@ func (s *networkScraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCounters
 	}
 }
 
-func (s *networkScraper) recordNetworkConnectionsMetrics() error {
+func (s *networkScraper) recordNetworkConnectionsMetrics(ctx context.Context) error {
 	if !s.config.Metrics.SystemNetworkConnections.Enabled {
 		return nil
 	}
 
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	connections, err := s.connections(ctx, "tcp")

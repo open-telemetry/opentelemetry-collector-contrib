@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -70,22 +69,6 @@ var systemSpecificMetrics = map[string][]string{
 	"freebsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.count"},
 	"openbsd": {"system.filesystem.inodes.usage", "system.paging.faults", "system.processes.created", "system.processes.count"},
 	"solaris": {"system.filesystem.inodes.usage", "system.paging.faults"},
-}
-
-type testEnv struct {
-	env map[string]string
-}
-
-var _ environment = (*testEnv)(nil)
-
-func (e *testEnv) Lookup(k string) (string, bool) {
-	v, ok := e.env[k]
-	return v, ok
-}
-
-func (e *testEnv) Set(k, v string) error {
-	e.env[k] = v
-	return nil
 }
 
 func TestGatherMetrics_EndToEnd(t *testing.T) {
@@ -205,8 +188,6 @@ type mockConfig struct{}
 
 func (m *mockConfig) SetRootPath(_ string) {}
 
-func (m *mockConfig) SetEnvMap(_ common.EnvMap) {}
-
 type errFactory struct{}
 
 func (m *errFactory) CreateDefaultConfig() internal.Config { return &mockConfig{} }
@@ -221,9 +202,8 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 		scraperFactories = tmp
 	}()
 
-	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[component.Type]internal.Config{component.MustNewType("error"): &mockConfig{}}}
-	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
+	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
 	require.Error(t, err)
 }
 
@@ -235,9 +215,8 @@ func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 		scraperFactories = tmp
 	}()
 
-	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[component.Type]internal.Config{mockType: &mockConfig{}}}
-	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, sink)
+	_, err := NewFactory().CreateMetrics(context.Background(), creationSet, cfg, consumertest.NewNop())
 	require.Error(t, err)
 }
 
