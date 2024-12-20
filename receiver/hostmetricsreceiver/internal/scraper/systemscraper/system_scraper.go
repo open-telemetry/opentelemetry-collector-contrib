@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -34,7 +33,6 @@ func newUptimeScraper(_ context.Context, settings receiver.Settings, cfg *Config
 }
 
 func (s *systemsScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -46,7 +44,6 @@ func (s *systemsScraper) start(ctx context.Context, _ component.Host) error {
 
 func (s *systemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 
 	uptime, err := s.uptime(ctx)
 	if err != nil {

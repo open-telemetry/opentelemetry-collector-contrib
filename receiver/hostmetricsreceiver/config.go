@@ -85,8 +85,6 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		}
 
 		scraperCfg.SetRootPath(cfg.RootPath)
-		envMap := setGoPsutilEnvVars(cfg.RootPath, &osEnv{})
-		scraperCfg.SetEnvMap(envMap)
 
 		cfg.Scrapers[key] = scraperCfg
 	}
