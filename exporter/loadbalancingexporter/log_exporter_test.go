@@ -112,7 +112,7 @@ func TestLogExporterShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestConsumeLogs(t *testing.T) {
@@ -149,7 +149,7 @@ func TestConsumeLogs(t *testing.T) {
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
@@ -302,14 +302,14 @@ func TestConsumeLogs_ConcurrentResolverChange(t *testing.T) {
 	consumeStarted := make(chan struct{})
 	consumeDone := make(chan struct{})
 
-	// imitate a slow exporter
-	te := &mockLogsExporter{Component: mockComponent{}}
-	te.consumelogsfn = func(_ context.Context, _ plog.Logs) error {
-		close(consumeStarted)
-		time.Sleep(50 * time.Millisecond)
-		return te.consumeErr
-	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		// imitate a slow exporter
+		te := &mockLogsExporter{Component: mockComponent{}}
+		te.consumelogsfn = func(_ context.Context, _ plog.Logs) error {
+			close(consumeStarted)
+			time.Sleep(50 * time.Millisecond)
+			return te.consumeErr
+		}
 		return te, nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
@@ -466,7 +466,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				return
 			case <-ticker.C:
 				go func() {
-					require.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
+					assert.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
 				}()
 			}
 		}
@@ -488,8 +488,8 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	mu.Unlock()
-	require.Greater(t, counter1.Load(), int64(0))
-	require.Greater(t, counter2.Load(), int64(0))
+	require.Positive(t, counter1.Load())
+	require.Positive(t, counter2.Load())
 }
 
 func randomLogs() plog.Logs {

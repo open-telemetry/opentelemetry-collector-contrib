@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
-func TestNewLogsProcessor(t *testing.T) {
+func TestNewLogs(t *testing.T) {
 	tests := []struct {
 		name         string
 		nextConsumer consumer.Logs
@@ -210,7 +210,7 @@ func TestLogsSampling(t *testing.T) {
 func TestLogsSamplingState(t *testing.T) {
 	// This hard-coded TraceID will sample at 50% and not at 49%.
 	// The equivalent randomness is 0x80000000000000.
-	var defaultTID = mustParseTID("fefefefefefefefefe80000000000000")
+	defaultTID := mustParseTID("fefefefefefefefefe80000000000000")
 
 	tests := []struct {
 		name     string
@@ -385,7 +385,6 @@ func TestLogsSamplingState(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
-
 			sink := new(consumertest.LogsSink)
 			cfg := &Config{}
 			if tt.cfg != nil {
@@ -411,10 +410,10 @@ func TestLogsSamplingState(t *testing.T) {
 			require.NoError(t, err)
 
 			if len(tt.log) == 0 {
-				require.Equal(t, 0, len(observed.All()), "should not have logs: %v", observed.All())
+				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
 				require.Equal(t, "", tt.log)
 			} else {
-				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "logs sampler")
 				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), tt.log)
 			}
@@ -422,7 +421,7 @@ func TestLogsSamplingState(t *testing.T) {
 			sampledData := sink.AllLogs()
 
 			if tt.sampled {
-				require.Equal(t, 1, len(sampledData))
+				require.Len(t, sampledData, 1)
 				assert.Equal(t, 1, sink.LogRecordCount())
 				got := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 				gotAttrs := got.Attributes()
@@ -473,7 +472,6 @@ func TestLogsMissingRandomness(t *testing.T) {
 			{100, traceIDAttributeSource, false, true},
 		} {
 			t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed, "_", mode), func(t *testing.T) {
-
 				ctx := context.Background()
 				logs := plog.NewLogs()
 				record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -504,20 +502,20 @@ func TestLogsMissingRandomness(t *testing.T) {
 
 				sampledData := sink.AllLogs()
 				if tt.sampled {
-					require.Equal(t, 1, len(sampledData))
+					require.Len(t, sampledData, 1)
 					assert.Equal(t, 1, sink.LogRecordCount())
 				} else {
-					require.Equal(t, 0, len(sampledData))
+					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.LogRecordCount())
 				}
 
 				if tt.pct != 0 {
 					// pct==0 bypasses the randomness check
-					require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+					require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 					require.Contains(t, observed.All()[0].Message, "logs sampler")
 					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
 				} else {
-					require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
+					require.Empty(t, observed.All(), "should have no logs: %v", observed.All())
 				}
 			})
 		}

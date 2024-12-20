@@ -97,11 +97,11 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
-	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
+	logsReceiver, err := factory.CreateLogs(context.Background(), set, cfg, lc)
 	if err != nil {
 		return fmt.Errorf("failed to create logs receiver: %w", err)
 	}
-	tracesReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+	tracesReceiver, err := factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {
 		return fmt.Errorf("failed to create traces receiver: %w", err)
 	}

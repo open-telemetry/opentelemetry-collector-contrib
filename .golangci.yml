@@ -132,6 +132,14 @@ linters-settings:
   predeclared:
     ignore: copy
 
+  testifylint:
+    disable:
+      - float-compare
+      - require-error
+      - suite-subtest-run
+      - encoded-compare # has false positives that cannot be fixed with testifylint-fix
+    enable-all: true
+
 linters:
   enable:
     - decorder
@@ -152,10 +160,13 @@ linters:
     - revive
     - staticcheck
     - tenv
+    - testifylint
     - unconvert
     - unparam
     - unused
+    - usestdlibvars
     - wastedassign
+    - whitespace
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

@@ -222,7 +222,6 @@ func TestErrs(t *testing.T) {
 			require.Equal(t, r1.IntValue(), r2.IntValue())
 		})
 	}
-
 }
 
 func time(ts int) pcommon.Timestamp {

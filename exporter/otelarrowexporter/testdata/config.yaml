@@ -25,6 +25,11 @@ keepalive:
   timeout: 30s
   permit_without_stream: true
 balancer_name: "experimental"
+batcher:
+  enabled: true
+  flush_timeout: 200ms
+  min_size_items: 1000
+  max_size_items: 10000
 arrow:
   num_streams: 2
   disabled: false

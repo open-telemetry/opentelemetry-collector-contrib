@@ -6,7 +6,7 @@ package sqlserverreceiver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -110,7 +110,8 @@ func TestSuccessfulScrape(t *testing.T) {
 		assert.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp()))
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder()))
 	}
 }
 
@@ -164,7 +165,6 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 	}
 
 	return metrics, nil
-
 }
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
@@ -179,7 +179,7 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
 	default:
-		return nil, fmt.Errorf("No valid query found")
+		return nil, errors.New("No valid query found")
 	}
 
 	if err != nil {

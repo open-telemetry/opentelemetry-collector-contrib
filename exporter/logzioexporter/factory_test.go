@@ -25,8 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateTracesExporter(t *testing.T) {
-
+func TestCreateTraces(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -37,7 +36,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopSettings()
-	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -60,12 +59,12 @@ func TestGenerateUrl(t *testing.T) {
 		{"", "EU", "https://listener-eu.logz.io:8071/?token=token"},
 	}
 	for _, test := range generateURLTests {
+		clientConfig := confighttp.NewDefaultClientConfig()
+		clientConfig.Endpoint = test.endpoint
 		cfg := &Config{
-			Region: test.region,
-			Token:  "token",
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: test.endpoint,
-			},
+			Region:       test.region,
+			Token:        "token",
+			ClientConfig: clientConfig,
 		}
 		output, _ := generateEndpoint(cfg)
 		require.Equal(t, test.expected, output)
@@ -92,6 +91,6 @@ func TestGetListenerURL(t *testing.T) {
 	}
 	for _, test := range getListenerURLTests {
 		output := getListenerURL(test.arg1)
-		require.Equal(t, output, test.expected)
+		require.Equal(t, test.expected, output)
 	}
 }

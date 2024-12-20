@@ -22,6 +22,7 @@ body:
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
+      - confmap/provider/aesprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
@@ -59,7 +60,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/honeycombmarker
       - exporter/influxdb
-      - exporter/instana
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing
@@ -141,8 +141,10 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/datadog
       - pkg/experimentalmetricmetadata
       - pkg/golden
+      - pkg/kafka/topic
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil
@@ -150,7 +152,9 @@ body:
       - pkg/sampling
       - pkg/stanza
       - pkg/stanza/fileconsumer
+      - pkg/status
       - pkg/translator/azure
+      - pkg/translator/azurelogs
       - pkg/translator/jaeger
       - pkg/translator/loki
       - pkg/translator/opencensus
@@ -180,20 +184,6 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
-      - processor/resourcedetection/internal/aws/ec2
-      - processor/resourcedetection/internal/aws/ecs
-      - processor/resourcedetection/internal/aws/eks
-      - processor/resourcedetection/internal/aws/elasticbeanstalk
-      - processor/resourcedetection/internal/aws/lambda
-      - processor/resourcedetection/internal/azure
-      - processor/resourcedetection/internal/azure/aks
-      - processor/resourcedetection/internal/consul
-      - processor/resourcedetection/internal/docker
-      - processor/resourcedetection/internal/gcp
-      - processor/resourcedetection/internal/heroku
-      - processor/resourcedetection/internal/k8snode
-      - processor/resourcedetection/internal/openshift
-      - processor/resourcedetection/internal/system
       - processor/routing
       - processor/schema
       - processor/span
@@ -229,7 +219,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
-      - receiver/gitprovider
+      - receiver/github
       - receiver/googlecloudmonitoring
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
@@ -255,6 +245,7 @@ body:
       - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
+      - receiver/ntp
       - receiver/opencensus
       - receiver/oracledb
       - receiver/osquery
@@ -263,6 +254,7 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
+      - receiver/prometheusremotewrite
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
@@ -285,7 +277,9 @@ body:
       - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
+      - receiver/systemd
       - receiver/tcplog
+      - receiver/tlscheck
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront

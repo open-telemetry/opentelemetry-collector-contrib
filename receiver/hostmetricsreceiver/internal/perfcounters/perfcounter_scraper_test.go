@@ -165,7 +165,7 @@ func Test_PerfCounterScraper(t *testing.T) {
 					break
 				}
 			}
-			assert.Equalf(t, test.includeTotal, includesTotal, "_Total was returned: %v (expected the opposite)", test.includeTotal, includesTotal)
+			assert.Equalf(t, test.includeTotal, includesTotal, "_Total was returned: %v (expected the opposite)", includesTotal)
 		})
 	}
 }

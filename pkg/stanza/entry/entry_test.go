@@ -185,7 +185,7 @@ func TestCopyNil(t *testing.T) {
 	require.Equal(t, "", cp.SeverityText)
 	require.Equal(t, map[string]any{}, cp.Attributes)
 	require.Equal(t, map[string]any{}, cp.Resource)
-	require.Equal(t, nil, cp.Body)
+	require.Nil(t, cp.Body)
 	require.Equal(t, []byte{}, cp.TraceID)
 	require.Equal(t, []byte{}, cp.SpanID)
 	require.Equal(t, []byte{}, cp.TraceFlags)
@@ -275,8 +275,7 @@ func TestReadToInterfaceMapWithMissingField(t *testing.T) {
 	field := NewAttributeField("label")
 	dest := map[string]any{}
 	err := entry.readToInterfaceMap(field, &dest)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "can not be read as a map[string]any")
+	require.ErrorContains(t, err, "can not be read as a map[string]any")
 }
 
 func TestReadToStringMapWithMissingField(t *testing.T) {
@@ -284,8 +283,7 @@ func TestReadToStringMapWithMissingField(t *testing.T) {
 	field := NewAttributeField("label")
 	dest := map[string]string{}
 	err := entry.readToStringMap(field, &dest)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "can not be read as a map[string]string")
+	require.ErrorContains(t, err, "can not be read as a map[string]string")
 }
 
 func TestReadToInterfaceMissingField(t *testing.T) {
@@ -293,8 +291,7 @@ func TestReadToInterfaceMissingField(t *testing.T) {
 	field := NewAttributeField("label")
 	var dest any
 	err := entry.readToInterface(field, &dest)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "can not be read as a any")
+	require.ErrorContains(t, err, "can not be read as a any")
 }
 
 func TestDefaultTimestamps(t *testing.T) {

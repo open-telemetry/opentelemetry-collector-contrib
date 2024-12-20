@@ -39,8 +39,7 @@ func TestRedisRunnable(t *testing.T) {
 func TestNewReceiver_invalid_endpoint(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid endpoint")
+	assert.ErrorContains(t, err, "invalid endpoint")
 }
 
 func TestNewReceiver_invalid_auth_error(t *testing.T) {
@@ -51,7 +50,6 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 		},
 	}
 	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
+	assert.ErrorContains(t, err, "failed to load TLS config")
 	assert.Nil(t, r)
 }

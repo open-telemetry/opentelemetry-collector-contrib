@@ -1,0 +1,79 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: All logs Sum
+            name: sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "4.1"
+                  timeUnixNano: "1678390948396984000"
+              isMonotonic: true
+          - description: Sum if ...
+            name: sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "4.1"
+                  timeUnixNano: "1678390948396984000"
+              isMonotonic: true
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: All logs Sum
+            name: sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "6.1"
+                  timeUnixNano: "1678390948396988000"
+              isMonotonic: true
+          - description: Sum if ...
+            name: sum.if
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "6.1"
+                  timeUnixNano: "1678390948396988000"
+              isMonotonic: true
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: All logs Sum
+            name: sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "6.1"
+                  timeUnixNano: "1678390948396990000"
+              isMonotonic: true
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: All logs Sum
+            name: sum.all
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "6.1"
+                  timeUnixNano: "1678390948396992000"
+              isMonotonic: true

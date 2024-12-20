@@ -3,8 +3,8 @@ type: clickhouse
 status:
   class: exporter
   stability:
-    alpha: [traces, metrics]
-    beta: [logs]
+    alpha: [metrics]
+    beta: [traces, logs]
   distributions: [contrib]
   codeowners:
     active: [hanjm, dmitryax, Frapschen, SpencerTorres]

@@ -21,9 +21,9 @@ import (
 
 // Config defines configuration for Sumo Logic exporter.
 type Config struct {
-	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
@@ -63,17 +63,16 @@ type Config struct {
 
 // createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
-	return confighttp.ClientConfig{
-		Timeout:     defaultTimeout,
-		Compression: DefaultCompressEncoding,
-		Auth: &configauth.Authentication{
-			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
-		},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Timeout = defaultTimeout
+	clientConfig.Compression = DefaultCompressEncoding
+	clientConfig.Auth = &configauth.Authentication{
+		AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 	}
+	return clientConfig
 }
 
 func (cfg *Config) Validate() error {
-
 	if cfg.CompressEncoding != nil {
 		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
 	}

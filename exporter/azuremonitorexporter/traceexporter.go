@@ -31,7 +31,6 @@ func (v *traceVisitor) visit(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	span ptrace.Span) (ok bool) {
-
 	envelopes, err := spanToEnvelopes(resource, scope, span, v.exporter.config.SpanEventsEnabled, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
@@ -70,7 +69,7 @@ func newTracesExporter(config *Config, transportChannel transportChannel, set ex
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		config,

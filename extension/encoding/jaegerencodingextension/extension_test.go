@@ -23,7 +23,7 @@ func TestExtension_Start(t *testing.T) {
 			name: "jaegerProtobuf",
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), factory.CreateDefaultConfig())
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(), factory.CreateDefaultConfig())
 			},
 		},
 		{
@@ -32,7 +32,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "xyz"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 			},
 			expectedErr: "unsupported protocol: \"xyz\"",
 		},

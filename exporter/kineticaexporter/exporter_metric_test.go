@@ -34,8 +34,6 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	t.Run("push success", func(t *testing.T) {
 		exporter := newTestMetricsExporter(t)
 		mustPushMetricsData(t, exporter, simpleMetrics(3))
-
-		require.Equal(t, 15, 15)
 	})
 }
 
@@ -468,7 +466,6 @@ func handleShowTable(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
 		return
 	}
-
 }
 
 func getShowTableResponse(requestBody string) []byte {
@@ -488,7 +485,6 @@ func getShowTableResponse(requestBody string) []byte {
 	default:
 		return []byte("")
 	}
-
 }
 
 // setupTestMain function (runs before tests start)

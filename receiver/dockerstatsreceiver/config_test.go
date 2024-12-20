@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
@@ -47,13 +48,15 @@ func TestLoadConfig(t *testing.T) {
 					InitialDelay:       time.Second,
 					Timeout:            20 * time.Second,
 				},
+				Config: docker.Config{
+					Endpoint:         "http://example.com/",
+					DockerAPIVersion: "1.40",
 
-				Endpoint:         "http://example.com/",
-				DockerAPIVersion: "1.40",
-
-				ExcludedImages: []string{
-					"undesired-container",
-					"another-*-container",
+					Timeout: 20 * time.Second,
+					ExcludedImages: []string{
+						"undesired-container",
+						"another-*-container",
+					},
 				},
 
 				ContainerLabelsToMetricLabels: map[string]string{
@@ -95,19 +98,25 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidateErrors(t *testing.T) {
-	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig()}
+	cfg := &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig(), Config: docker.Config{
+		DockerAPIVersion: "1.25",
+	}}
 	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{
-		DockerAPIVersion: "1.21",
-		Endpoint:         "someEndpoint",
+		Config: docker.Config{
+			DockerAPIVersion: "1.21",
+			Endpoint:         "someEndpoint",
+		},
 		ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: 1 * time.Second},
 	}
 	assert.Equal(t, `"api_version" 1.21 must be at least 1.25`, component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{
-		Endpoint:         "someEndpoint",
-		DockerAPIVersion: "1.25",
+		Config: docker.Config{
+			Endpoint:         "someEndpoint",
+			DockerAPIVersion: "1.25",
+		},
 		ControllerConfig: scraperhelper.ControllerConfig{},
 	}
 	assert.Equal(t, `"collection_interval": requires positive value`, component.ValidateConfig(cfg).Error())
@@ -118,8 +127,7 @@ func TestApiVersionCustomError(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := sub.Unmarshal(cfg)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(),
+	assert.ErrorContains(t, err,
 		`Hint: You may want to wrap the 'api_version' value in quotes (api_version: "1.40")`,
 	)
 

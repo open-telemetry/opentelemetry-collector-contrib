@@ -40,9 +40,9 @@ type Config struct {
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
 // Validate the configuration for errors. This is required by component.Config.

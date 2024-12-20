@@ -205,6 +205,10 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 				} else {
 					// Parsing log record to Splunk event.
 					event := mapLogRecordToSplunkEvent(rl.Resource(), logRecord, c.config)
+					if event == nil {
+						// TODO record this drop as a metric
+						continue
+					}
 
 					// JSON encoding event and writing to buffer.
 					var err error
@@ -607,7 +611,6 @@ func (c *client) stop(context.Context) error {
 }
 
 func (c *client) start(ctx context.Context, host component.Host) (err error) {
-
 	httpClient, err := buildHTTPClient(ctx, c.config, host, c.telemetrySettings)
 	if err != nil {
 		return err
@@ -632,7 +635,6 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 }
 
 func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *url.URL) error {
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthCheckURL.String(), nil)
 	if err != nil {
 		return consumererror.NewPermanent(err)

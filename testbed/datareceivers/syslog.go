@@ -45,7 +45,7 @@ func (cr *SyslogDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc co
 
 	set := receivertest.NewNopSettings()
 	var err error
-	cr.receiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
+	cr.receiver, err = factory.CreateLogs(context.Background(), set, cfg, lc)
 	if err != nil {
 		return err
 	}

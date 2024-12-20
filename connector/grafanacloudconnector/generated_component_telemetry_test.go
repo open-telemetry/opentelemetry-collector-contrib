@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -24,14 +25,20 @@ type componentTestTelemetry struct {
 }
 
 func (tt *componentTestTelemetry) NewSettings() connector.Settings {
-	settings := connectortest.NewNopSettings()
-	settings.MeterProvider = tt.meterProvider
-	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
+	set := connectortest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("grafanacloud"))
+	set.TelemetrySettings = tt.newTelemetrySettings()
+	return set
+}
+
+func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = tt.meterProvider
+	set.MetricsLevel = configtelemetry.LevelDetailed
+	set.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
 		return tt.meterProvider
 	}
-	settings.ID = component.NewID(component.MustNewType("grafanacloud"))
-
-	return settings
+	return set
 }
 
 func setupTestTelemetry() componentTestTelemetry {

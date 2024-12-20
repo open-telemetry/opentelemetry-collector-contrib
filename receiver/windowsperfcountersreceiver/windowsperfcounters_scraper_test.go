@@ -219,7 +219,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			} else {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
-				assert.Equal(t, log.Level, zapcore.WarnLevel)
+				assert.Equal(t, zapcore.WarnLevel, log.Level)
 				assert.Equal(t, test.startMessage, log.Message)
 				assert.Equal(t, "error", log.Context[0].Key)
 				assert.EqualError(t, log.Context[0].Interface.(error), test.startErr)
@@ -241,6 +241,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				// The check only takes the first instance of multi-instance counters and assumes that the other instances would be included.
 				pmetrictest.IgnoreSubsequentDataPoints("cpu.idle"),
 				pmetrictest.IgnoreSubsequentDataPoints("processor.time"),
+				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreScopeMetricsOrder(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricValues(),
@@ -530,7 +531,6 @@ func TestScrape(t *testing.T) {
 
 			curMetricsNum := 0
 			for _, pc := range test.cfg.PerfCounters {
-
 				for counterIdx, counterCfg := range pc.Counters {
 					counterValues := test.mockPerfCounters[counterIdx].counterValues
 					scrapeErr := test.mockPerfCounters[counterIdx].scrapeErr

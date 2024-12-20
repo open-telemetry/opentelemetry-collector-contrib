@@ -71,7 +71,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 	}
 	for _, test := range convertLogRecordToJSONTests {
 		output := convertLogRecordToJSON(test.log, test.log.Attributes())
-		require.Equal(t, output, test.expected)
+		require.Equal(t, test.expected, output)
 	}
 }
 
@@ -83,13 +83,13 @@ func TestSetTimeStamp(t *testing.T) {
 	}))
 	defer func() { server.Close() }()
 	ld := generateLogsOneEmptyTimestamp()
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = server.URL
+	clientConfig.Compression = configcompression.TypeGzip
 	cfg := &Config{
-		Region: "us",
-		Token:  "token",
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint:    server.URL,
-			Compression: configcompression.TypeGzip,
-		},
+		Region:       "us",
+		Token:        "token",
+		ClientConfig: clientConfig,
 	}
 	var err error
 	params := exportertest.NewNopSettings()

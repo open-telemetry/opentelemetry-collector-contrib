@@ -297,7 +297,6 @@ func TestFileMetricsExporter(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestFileMetricsExporterError(t *testing.T) {

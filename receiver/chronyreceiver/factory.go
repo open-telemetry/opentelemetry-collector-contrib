@@ -28,15 +28,15 @@ func newMetricsReceiver(
 	ctx context.Context,
 	set receiver.Settings,
 	rCfg component.Config,
-	consumer consumer.Metrics) (receiver.Metrics, error) {
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
 	cfg, ok := rCfg.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("wrong config provided: %w", errInvalidValue)
 	}
 
 	s := newScraper(ctx, cfg, set)
-	scraper, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
+	scraper, err := scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(func(_ context.Context, _ component.Host) error {
 			chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
@@ -52,6 +52,6 @@ func newMetricsReceiver(
 		&cfg.ControllerConfig,
 		set,
 		consumer,
-		scraperhelper.AddScraper(scraper),
+		scraperhelper.AddScraperWithType(metadata.Type, scraper),
 	)
 }

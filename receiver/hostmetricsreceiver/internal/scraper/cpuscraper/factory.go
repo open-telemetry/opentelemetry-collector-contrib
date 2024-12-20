@@ -39,8 +39,7 @@ func (f *Factory) CreateMetricsScraper(
 	cfg := config.(*Config)
 	s := newCPUScraper(ctx, settings, cfg)
 
-	return scraperhelper.NewScraper(
-		TypeStr,
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 	)

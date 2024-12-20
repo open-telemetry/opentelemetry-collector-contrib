@@ -25,9 +25,9 @@ type Config struct {
 
 	// Timeout is the maximum duration allowed to connecting and sending the
 	// data to the Carbon/Graphite backend. The default value is 5s.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`     // squash ensures fields are correctly decoded in embedded struct.
-	QueueConfig                    exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	RetryConfig                    configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueConfig     exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	RetryConfig     configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	ResourceToTelemetryConfig resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
@@ -41,7 +41,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Negative timeouts are not acceptable, since all sends will fail.
-	if cfg.Timeout < 0 {
+	if cfg.TimeoutSettings.Timeout < 0 {
 		return errors.New("'timeout' must be non-negative")
 	}
 

@@ -31,7 +31,6 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t,
-		cfg,
 		&Config{
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
@@ -185,5 +184,5 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, cfg)
 }

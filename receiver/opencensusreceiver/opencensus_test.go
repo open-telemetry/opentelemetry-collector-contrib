@@ -207,7 +207,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
-	req.Header.Set("Access-Control-Request-Method", "POST")
+	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
 
 	client := &http.Client{}
 	defer client.CloseIdleConnections()
@@ -228,7 +228,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wan
 	wantAllowMethods := ""
 	if wantAllowed {
 		wantAllowOrigin = origin
-		wantAllowMethods = "POST"
+		wantAllowMethods = http.MethodPost
 	}
 
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
@@ -303,7 +303,6 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 }
 
 func TestStartListenerClosed(t *testing.T) {
-
 	addr := testutil.GetAvailableLocalAddress(t)
 
 	// Set the buffer count to 1 to make it flush the test span immediately.
@@ -502,8 +501,8 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 	exportBidiFn := func(
 		t *testing.T,
 		cc *grpc.ClientConn,
-		msg *agenttracepb.ExportTraceServiceRequest) error {
-
+		msg *agenttracepb.ExportTraceServiceRequest,
+	) error {
 		acc := agenttracepb.NewTraceServiceClient(cc)
 		stream, err := acc.Export(context.Background())
 		require.NoError(t, err)
@@ -584,7 +583,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 					assert.Equal(t, ingestionState.expectedCode, status.Code())
 				}
 
-				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllTraces()))
+				require.Len(t, sink.AllTraces(), tt.expectedReceivedBatches)
 				require.NoError(t, testTel.CheckReceiverTraces("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}
@@ -660,8 +659,8 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 	exportBidiFn := func(
 		t *testing.T,
 		cc *grpc.ClientConn,
-		msg *agentmetricspb.ExportMetricsServiceRequest) error {
-
+		msg *agentmetricspb.ExportMetricsServiceRequest,
+	) error {
 		acc := agentmetricspb.NewMetricsServiceClient(cc)
 		stream, err := acc.Export(context.Background())
 		require.NoError(t, err)
@@ -719,7 +718,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.NotNil(t, ocr)
 
 				ocr.metricsConsumer = sink
-				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
 				cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -742,7 +741,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 					assert.Equal(t, ingestionState.expectedCode, status.Code())
 				}
 
-				require.Equal(t, tt.expectedReceivedBatches, len(sink.AllMetrics()))
+				require.Len(t, sink.AllMetrics(), tt.expectedReceivedBatches)
 				require.NoError(t, testTel.CheckReceiverMetrics("grpc", int64(tt.expectedReceivedBatches), int64(tt.expectedIngestionBlockedRPCs)))
 			})
 		}

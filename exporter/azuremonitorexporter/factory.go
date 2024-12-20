@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 		MaxBatchSize:      1024,
 		MaxBatchInterval:  10 * time.Second,
 		SpanEventsEnabled: false,
-		QueueSettings:     exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:     exporterhelper.NewDefaultQueueConfig(),
 	}
 }
 
@@ -114,7 +114,6 @@ func (f *factory) createMetricsExporter(
 // Configures the transport channel.
 // This method is not thread-safe
 func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) (transportChannel, error) {
-
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
 	if f.tChannel == nil {

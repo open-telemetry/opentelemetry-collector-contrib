@@ -53,7 +53,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200,"tenant.id":"1"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -105,7 +106,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200},"resources":{"tenant.id":"11"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -148,7 +150,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -191,7 +194,8 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 									{
 										Line: `{"attributes":{"http.status":200,"tenant.id":"31"},"resources":{"tenant.id":"21"}}`,
 									},
-								}},
+								},
+							},
 						},
 					},
 				},
@@ -218,7 +222,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 			for tenant, request := range requests {
 				want, ok := tt.expected[tenant]
-				assert.Equal(t, ok, true)
+				assert.True(t, ok)
 
 				streams := request.Streams
 				for s := 0; s < len(streams); s++ {

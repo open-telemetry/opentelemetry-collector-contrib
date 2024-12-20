@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -42,7 +43,7 @@ func TestFactory(t *testing.T) {
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}, rCfg)
 
-	r, err := f.CreateTracesReceiver(
+	r, err := f.CreateTraces(
 		context.Background(), receivertest.NewNopSettings(),
 		cfg, consumertest.NewNop(),
 	)
@@ -107,9 +108,9 @@ func newNopHostWithExporters() component.Host {
 	return &nopHostWithExporters{Host: newNopHost()}
 }
 
-func (n *nopHostWithExporters) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
+func (n *nopHostWithExporters) GetExporters() map[pipeline.Signal]map[component.ID]component.Component {
+	return map[pipeline.Signal]map[component.ID]component.Component{
+		pipeline.SignalMetrics: {
 			component.MustNewIDWithName("nop", "withoutmetadata"): MockExporter{},
 			component.MustNewIDWithName("nop", "withmetadata"):    mockExporterWithK8sMetadata{},
 		},

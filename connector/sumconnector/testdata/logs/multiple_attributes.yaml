@@ -1,0 +1,127 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - metrics:
+          - description: Log sum by attributes
+            name: log.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "4.2"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678390948397879000"
+                - asDouble: "0"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678390948397879000"
+              isMonotonic: true
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: foo
+        - key: resource.optional
+          value:
+            stringValue: notbar
+    scopeMetrics:
+      - metrics:
+          - description: Log sum by attributes
+            name: log.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "4.2"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678390948397882000"
+                - asDouble: "4"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678390948397882000"
+              isMonotonic: true
+  - resource:
+      attributes:
+        - key: resource.required
+          value:
+            stringValue: notfoo
+    scopeMetrics:
+      - metrics:
+          - description: Log sum by attributes
+            name: log.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "4.2"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678390948397884000"
+                - asDouble: "4"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678390948397884000"
+              isMonotonic: true
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Log sum by attributes
+            name: log.sum.by_attr
+            sum:
+              aggregationTemporality: 1
+              dataPoints:
+                - asDouble: "4.2"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: bar
+                  timeUnixNano: "1678390948397886000"
+                - asDouble: "4"
+                  attributes:
+                    - key: log.required
+                      value:
+                        stringValue: foo
+                    - key: log.optional
+                      value:
+                        stringValue: notbar
+                  timeUnixNano: "1678390948397886000"
+              isMonotonic: true

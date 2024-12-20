@@ -26,7 +26,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [otel-linux-arm64, macos-14]
         group:
           - receiver-0
           - receiver-1
@@ -46,7 +45,7 @@ jobs:
           - cmd-1
           - other
     timeout-minutes: 30
-    runs-on: ${{ matrix.os }}
+    runs-on: otel-linux-arm64
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -61,7 +60,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-build-cache-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: go-build-cache-otel-linux-arm64-go-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload

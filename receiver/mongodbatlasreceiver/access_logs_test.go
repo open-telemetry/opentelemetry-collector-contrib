@@ -103,7 +103,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	}))
 
 	lr.SetObservedTimestamp(now)
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 444000000, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 444000000, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberInfo)
 	lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
@@ -125,7 +125,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 
 	lr.SetObservedTimestamp(now)
 	// Second log does not have internal timestamp in ISO8601, it has external in unixDate format with less precision
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 0, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 0, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText(plog.SeverityNumberWarn.String())
 

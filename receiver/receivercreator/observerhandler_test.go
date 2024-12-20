@@ -321,7 +321,6 @@ func TestOnAddForTraces(t *testing.T) {
 				t.Fatalf("unexpected startedComponent: %T", v)
 			}
 			require.Equal(t, test.expectedReceiverConfig, actualConfig)
-
 		})
 	}
 }
@@ -465,11 +464,6 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	m.t.Fatal("GetExporters")
-	return nil
-}
-
 func newMockRunner(t *testing.T) *mockRunner {
 	cs := receivertest.NewNopSettings()
 	return &mockRunner{
@@ -511,15 +505,7 @@ type reportingHost struct {
 	reportFunc func(event *componentstatus.Event)
 }
 
-func (nh *reportingHost) GetFactory(component.Kind, component.Type) component.Factory {
-	return nil
-}
-
 func (nh *reportingHost) GetExtensions() map[component.ID]component.Component {
-	return nil
-}
-
-func (nh *reportingHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	return nil
 }
 

@@ -71,7 +71,7 @@ var container1StatusWaiting = v1.ContainerStatus{
 	RestartCount: 1,
 	Image:        "container-image-1",
 	ImageID:      "12345",
-	ContainerID:  "82389",
+	ContainerID:  "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
 	Started:      nil,
 }
 
@@ -80,9 +80,10 @@ var container2StatusRunning = v1.ContainerStatus{
 	State: v1.ContainerState{
 		Running: &v1.ContainerStateRunning{StartedAt: metav1.Now()},
 	},
-	Ready:   true,
-	Image:   "container-image-1",
-	Started: pointerBool(true),
+	Ready:       true,
+	Image:       "container-image-1",
+	Started:     pointerBool(true),
+	ContainerID: "containerd://a808232bb4a57d421bb16f20dc9ab2a441343cb0aae8c369dc375838c7a49fd7",
 }
 
 var podWithNamedPorts = func() *v1.Pod {
@@ -166,6 +167,12 @@ var ingress = &networkingv1.Ingress{
 		},
 	},
 }
+
+var ingressV2 = func() *networkingv1.Ingress {
+	i2 := ingress.DeepCopy()
+	i2.Labels["env"] = "hardening"
+	return i2
+}()
 
 var ingressMultipleHost = &networkingv1.Ingress{
 	ObjectMeta: metav1.ObjectMeta{

@@ -16,9 +16,9 @@ import (
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
 	Endpoint string `mapstructure:"endpoint"`
@@ -90,7 +90,6 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-
 	return nil
 }
 
@@ -145,7 +144,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 func (cfg *Config) getProducerOptions() pulsar.ProducerOptions {
 	producerOptions := pulsar.ProducerOptions{
 		Topic:                           cfg.Topic,
-		SendTimeout:                     cfg.Timeout,
+		SendTimeout:                     cfg.TimeoutSettings.Timeout,
 		BatcherBuilderType:              cfg.Producer.BatcherBuilderType.ToPulsar(),
 		BatchingMaxMessages:             cfg.Producer.BatchingMaxMessages,
 		BatchingMaxPublishDelay:         cfg.Producer.BatchingMaxPublishDelay,

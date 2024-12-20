@@ -31,10 +31,6 @@ type consumerScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
-func (s *consumerScraper) Name() string {
-	return consumersScraperName
-}
-
 func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
@@ -168,7 +164,8 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings) (scraperhelper.Scraper, error) {
+	settings receiver.Settings,
+) (scraperhelper.Scraper, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)
@@ -184,8 +181,7 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
-	return scraperhelper.NewScraper(
-		s.Name(),
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),

@@ -61,12 +61,12 @@ func createMetricsReceiver(
 	}
 
 	snmpScraper := newScraper(params.Logger, snmpConfig, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
+	scraper, err := scraperhelper.NewScraperWithoutType(snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ControllerConfig, params, consumer, scraperhelper.AddScraperWithType(metadata.Type, scraper))
 }
 
 // addMissingConfigDefaults adds any missing config parameters that have defaults

@@ -41,7 +41,7 @@ func (pds *prometheusDataSender) Start() error {
 	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exp, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

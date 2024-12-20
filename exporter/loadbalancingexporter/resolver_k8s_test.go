@@ -100,7 +100,6 @@ func TestK8sResolve(t *testing.T) {
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
-
 			},
 			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
@@ -138,7 +137,6 @@ func TestK8sResolve(t *testing.T) {
 				_, err = suiteCtx.clientset.CoreV1().Endpoints(args.namespace).
 					Patch(context.TODO(), args.service, types.MergePatchType, data, metav1.PatchOptions{})
 				return err
-
 			},
 			verifyFn: func(ctx *suiteContext, _ args) error {
 				if _, err := ctx.resolver.resolve(context.Background()); err != nil {
@@ -245,7 +243,7 @@ func Test_newK8sResolver(t *testing.T) {
 			_, tb := getTelemetryAssets(t)
 			got, err := newK8sResolver(fake.NewSimpleClientset(), tt.args.logger, tt.args.service, tt.args.ports, defaultListWatchTimeout, tb)
 			if tt.wantErr != nil {
-				require.Error(t, err, tt.wantErr)
+				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.wantNil, got == nil)

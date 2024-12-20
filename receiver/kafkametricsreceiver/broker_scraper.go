@@ -34,10 +34,6 @@ const (
 	logRetentionHours = "log.retention.hours"
 )
 
-func (s *brokerScraper) Name() string {
-	return brokersScraperName
-}
-
 func (s *brokerScraper) start(_ context.Context, _ component.Host) error {
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
@@ -51,8 +47,7 @@ func (s *brokerScraper) shutdown(context.Context) error {
 }
 
 func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
-
-	var scrapeErrors = scrapererror.ScrapeErrors{}
+	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	if s.client == nil {
 		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
@@ -108,14 +103,14 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings) (scraperhelper.Scraper, error) {
+	settings receiver.Settings,
+) (scraperhelper.Scraper, error) {
 	s := brokerScraper{
 		settings:     settings,
 		config:       cfg,
 		saramaConfig: saramaConfig,
 	}
-	return scraperhelper.NewScraper(
-		s.Name(),
+	return scraperhelper.NewScraperWithoutType(
 		s.scrape,
 		scraperhelper.WithStart(s.start),
 		scraperhelper.WithShutdown(s.shutdown),

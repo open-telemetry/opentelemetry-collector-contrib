@@ -13,7 +13,6 @@ import (
 var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
 
 type Config struct {
-
 	// Google Cloud Project ID where the Pubsub client will connect to
 	ProjectID string `mapstructure:"project"`
 	// User agent that will be used by the Pubsub client to connect to the service
@@ -23,7 +22,7 @@ type Config struct {
 	// Only has effect if Endpoint is not ""
 	Insecure bool `mapstructure:"insecure"`
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// The fully qualified resource name of the Pubsub subscription
 	Subscription string `mapstructure:"subscription"`

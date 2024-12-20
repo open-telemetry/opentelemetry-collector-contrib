@@ -60,7 +60,6 @@ type signalfxExporter struct {
 	hostMetadataSyncer *hostmetadata.Syncer
 	converter          *translation.MetricsConverter
 	dimClient          *dimensions.DimensionClient
-	cancelFn           func()
 }
 
 // newSignalFxExporter returns a new SignalFx exporter.
@@ -100,6 +99,9 @@ func newSignalFxExporter(
 }
 
 func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err error) {
+	if se.converter != nil {
+		se.converter.Start()
+	}
 	ingestURL, err := se.config.getIngestURL()
 	if err != nil {
 		return err
@@ -129,8 +131,6 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
-	cancellable, cancelFn := context.WithCancel(ctx)
-	se.cancelFn = cancelFn
 
 	apiURL, err := se.config.getAPIURL()
 	if err != nil {
@@ -138,7 +138,6 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 	}
 
 	dimClient := dimensions.NewDimensionClient(
-		cancellable,
 		dimensions.DimensionClientOptions{
 			Token:        se.config.AccessToken,
 			APIURL:       apiURL,
@@ -185,7 +184,6 @@ func newEventExporter(config *Config, createSettings exporter.Settings) (*signal
 		logger:            createSettings.Logger,
 		telemetrySettings: createSettings.TelemetrySettings,
 	}, nil
-
 }
 
 func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) error {
@@ -235,8 +233,12 @@ func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (se *signalfxExporter) shutdown(_ context.Context) error {
-	if se.cancelFn != nil {
-		se.cancelFn()
+	if se.dimClient != nil {
+		se.dimClient.Shutdown()
+	}
+
+	if se.converter != nil {
+		se.converter.Shutdown()
 	}
 	return nil
 }

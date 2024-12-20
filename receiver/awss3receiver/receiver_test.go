@@ -67,24 +67,8 @@ type hostWithExtensions struct {
 	extensions map[component.ID]component.Component
 }
 
-func (h hostWithExtensions) Start(context.Context, component.Host) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) Shutdown(context.Context) error {
-	panic("unsupported")
-}
-
-func (h hostWithExtensions) GetFactory(component.Kind, component.Type) component.Factory {
-	panic("unsupported")
-}
-
 func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
 	return h.extensions
-}
-
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	panic("unsupported")
 }
 
 type nonEncodingExtension struct{}

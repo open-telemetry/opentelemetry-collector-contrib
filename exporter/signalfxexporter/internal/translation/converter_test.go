@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -1094,7 +1094,7 @@ func Test_MetricDataToSignalFxV2WithHistogramBuckets(t *testing.T) {
 			// of those is not deterministic.
 			sortDimensions(tt.wantSfxDataPoints)
 			sortDimensions(gotSfxDataPoints)
-			assert.Equal(t, tt.wantCount, len(gotSfxDataPoints))
+			assert.Len(t, gotSfxDataPoints, tt.wantCount)
 			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
 		})
 	}
@@ -1176,7 +1176,6 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 	c, err := NewMetricsConverter(zap.NewNop(), translator, nil, nil, "_-.", false, true)
 	require.NoError(t, err)
 	assert.EqualValues(t, expected, c.MetricsToSignalFxV2(md))
-
 }
 
 func TestInvalidNumberOfDimensions(t *testing.T) {
@@ -1193,7 +1192,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	}
 	c, err := NewMetricsConverter(logger, nil, nil, nil, "_-.", false, true)
 	require.NoError(t, err)
-	assert.EqualValues(t, 1, len(c.MetricsToSignalFxV2(md)))
+	assert.Len(t, c.MetricsToSignalFxV2(md), 1)
 	// No log message should be printed
 	require.Equal(t, 0, observedLogs.Len())
 
@@ -1216,7 +1215,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 			Value: fmt.Sprint("dim_val_", i),
 		})
 	}
-	assert.EqualValues(t, 0, len(c.MetricsToSignalFxV2(mdInvalid)))
+	assert.Empty(t, c.MetricsToSignalFxV2(mdInvalid))
 	require.Equal(t, 1, observedLogs.Len())
 	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
 	assert.ElementsMatch(t, []zap.Field{

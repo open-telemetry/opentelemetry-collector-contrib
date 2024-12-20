@@ -38,17 +38,16 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsReceiver(_ context.Context, params receiver.Settings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotSSHCheck
 	}
 
 	sshcheckScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
+	scraper, err := scraperhelper.NewScraperWithoutType(sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraperWithType(metadata.Type, scraper))
 }

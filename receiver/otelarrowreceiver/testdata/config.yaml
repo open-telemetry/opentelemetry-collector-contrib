@@ -27,5 +27,6 @@ protocols:
         permit_without_stream: true
   arrow:
     memory_limit_mib: 123
-    admission_limit_mib: 80
-    waiter_limit: 100
+admission:
+  request_limit_mib: 80
+  waiting_limit_mib: 100

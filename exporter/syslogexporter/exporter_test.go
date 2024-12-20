@@ -37,7 +37,7 @@ func exampleLog(t *testing.T) plog.LogRecord {
 	buffer.Body().SetStr(originalForm)
 	timestamp := "2003-08-24T05:14:15-07:00"
 	timeStr, err := time.Parse(time.RFC3339, timestamp)
-	require.NoError(t, err, "failed to start test syslog server")
+	assert.NoError(t, err, "failed to start test syslog server")
 	ts := pcommon.NewTimestampFromTime(timeStr)
 	buffer.SetTimestamp(ts)
 	attrMap := map[string]any{"proc_id": "8710", "message": "It's time to make the do-nuts.",
@@ -130,7 +130,6 @@ func prepareExporterTest(t *testing.T, cfg *Config, invalidExporter bool) *expor
 		srv: testServer,
 		exp: exp,
 	}
-
 }
 
 func createTestConfig() *Config {
@@ -148,7 +147,7 @@ func TestSyslogExportSuccess(t *testing.T) {
 		buffer := exampleLog(t)
 		logs := logRecordsToLogs(buffer)
 		err := test.exp.pushLogsData(context.Background(), logs)
-		require.NoError(t, err, "could not send message")
+		assert.NoError(t, err, "could not send message")
 	}()
 	err := test.srv.SetDeadline(time.Now().Add(time.Second * 1))
 	require.NoError(t, err, "cannot set deadline")
@@ -157,7 +156,7 @@ func TestSyslogExportSuccess(t *testing.T) {
 	defer conn.Close()
 	b, err := io.ReadAll(conn)
 	require.NoError(t, err, "could not read all")
-	assert.Equal(t, string(b), expectedForm)
+	assert.Equal(t, expectedForm, string(b))
 }
 
 func TestSyslogExportFail(t *testing.T) {
@@ -168,7 +167,7 @@ func TestSyslogExportFail(t *testing.T) {
 	consumerErr := test.exp.pushLogsData(context.Background(), logs)
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
-	assert.Equal(t, ok, true)
+	assert.True(t, ok)
 	consumerLogs := consumererror.Logs.Data(consumerErrorLogs)
 	rls := consumerLogs.ResourceLogs()
 	require.Equal(t, 1, rls.Len())
@@ -187,7 +186,6 @@ func TestSyslogExportFail(t *testing.T) {
 }
 
 func TestTLSConfig(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		network     string
@@ -218,7 +216,6 @@ func TestTLSConfig(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-
 			exporter, err := initExporter(
 				&Config{Endpoint: "test.com",
 					Network:    testInstance.network,
@@ -233,7 +230,6 @@ func TestTLSConfig(t *testing.T) {
 			} else {
 				assert.Nil(t, exporter.tlsConfig)
 			}
-
 		})
 	}
 }

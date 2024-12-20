@@ -78,8 +78,10 @@ func (r *mockReceiver) setExportError(err error) {
 type mockTracesReceiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	mockReceiver
-	exportResponse func() ptraceotlp.ExportResponse
-	lastRequest    ptrace.Traces
+	exportResponse      func() ptraceotlp.ExportResponse
+	lastRequest         ptrace.Traces
+	hasMetadata         bool
+	spanCountByMetadata map[string]int
 }
 
 func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
@@ -88,8 +90,14 @@ func (r *mockTracesReceiver) Export(ctx context.Context, req ptraceotlp.ExportRe
 	r.totalItems.Add(int32(td.SpanCount()))
 	r.mux.Lock()
 	defer r.mux.Unlock()
-	r.lastRequest = td
 	r.metadata, _ = metadata.FromIncomingContext(ctx)
+	if r.hasMetadata {
+		v1 := r.metadata.Get("key1")
+		v2 := r.metadata.Get("key2")
+		hashKey := fmt.Sprintf("%s|%s", v1, v2)
+		r.spanCountByMetadata[hashKey] += (td.SpanCount())
+	}
+	r.lastRequest = td
 	return r.exportResponse(), r.exportError
 }
 
@@ -322,7 +330,7 @@ func TestSendTraces(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -394,7 +402,7 @@ func TestSendTraces(t *testing.T) {
 	// Test the static metadata
 	md = rcv.getMetadata()
 	require.EqualValues(t, expectedHeader, md.Get("header"))
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	// Test the caller's dynamic metadata
@@ -464,7 +472,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings()
-			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+			exp, err := factory.CreateTraces(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
 
@@ -521,7 +529,7 @@ func TestSendMetrics(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -566,8 +574,8 @@ func TestSendMetrics(t *testing.T) {
 	assert.EqualValues(t, md, rcv.getLastRequest())
 
 	mdata := rcv.getMetadata()
-	require.EqualValues(t, mdata.Get("header"), expectedHeader)
-	require.Equal(t, len(mdata.Get("User-Agent")), 1)
+	require.EqualValues(t, expectedHeader, mdata.Get("header"))
+	require.Len(t, mdata.Get("User-Agent"), 1)
 	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
@@ -618,7 +626,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -676,7 +684,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -730,7 +738,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	set := exportertest.NewNopSettings()
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -815,7 +823,7 @@ func TestSendLogData(t *testing.T) {
 	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
-	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	defer func() {
@@ -858,7 +866,7 @@ func TestSendLogData(t *testing.T) {
 	assert.EqualValues(t, ld, rcv.getLastRequest())
 
 	md := rcv.getMetadata()
-	require.Equal(t, len(md.Get("User-Agent")), 1)
+	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	st := status.New(codes.InvalidArgument, "Invalid argument")
@@ -931,7 +939,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 
 	set := exportertest.NewNopSettings()
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -1074,7 +1082,6 @@ func (r *mockTracesReceiver) startStreamMockArrowTraces(t *testing.T, statusFor 
 		MockArrowTracesServiceServer: svc,
 	})
 	svc.EXPECT().ArrowTraces(gomock.Any()).Times(1).DoAndReturn(doer)
-
 }
 
 func TestSendArrowFailedTraces(t *testing.T) {
@@ -1101,7 +1108,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 
 	set := exportertest.NewNopSettings()
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -1125,8 +1132,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	// Send two trace items.
 	td := testdata.GenerateTraces(2)
 	err = exp.ConsumeTraces(context.Background(), td)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "test failed")
+	assert.ErrorContains(t, err, "test failed")
 
 	// Wait until it is received.
 	assert.Eventually(t, func() bool {
@@ -1166,7 +1172,7 @@ func TestUserDialOptions(t *testing.T) {
 
 	set := exportertest.NewNopSettings()
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
-	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -1186,6 +1192,6 @@ func TestUserDialOptions(t *testing.T) {
 	err = exp.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
 
-	require.Equal(t, len(rcv.getMetadata().Get("User-Agent")), 1)
+	require.Len(t, rcv.getMetadata().Get("User-Agent"), 1)
 	require.Contains(t, rcv.getMetadata().Get("User-Agent")[0], testAgent)
 }

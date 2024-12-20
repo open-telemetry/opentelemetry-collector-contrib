@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
@@ -116,7 +116,7 @@ func TestTracesExporterShutdown(t *testing.T) {
 	res := p.Shutdown(context.Background())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestConsumeTraces(t *testing.T) {
@@ -131,7 +131,7 @@ func TestConsumeTraces(t *testing.T) {
 	p, err := newTracesExporter(ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, traceIDRouting)
+	assert.Equal(t, traceIDRouting, p.routingKey)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -153,7 +153,7 @@ func TestConsumeTraces(t *testing.T) {
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 // This test validates that exporter is can concurrently change the endpoints while consuming traces.
@@ -163,13 +163,13 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	consumeDone := make(chan struct{})
 
 	// imitate a slow exporter
-	te := &mockTracesExporter{Component: mockComponent{}}
-	te.ConsumeTracesFn = func(_ context.Context, _ ptrace.Traces) error {
-		close(consumeStarted)
-		time.Sleep(50 * time.Millisecond)
-		return te.consumeErr
-	}
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
+		te := &mockTracesExporter{Component: mockComponent{}}
+		te.ConsumeTracesFn = func(_ context.Context, _ ptrace.Traces) error {
+			close(consumeStarted)
+			time.Sleep(50 * time.Millisecond)
+			return te.consumeErr
+		}
 		return te, nil
 	}
 	lb, err := newLoadBalancer(ts.Logger, simpleConfig(), componentFactory, tb)
@@ -179,7 +179,7 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	p, err := newTracesExporter(ts, simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, traceIDRouting)
+	assert.Equal(t, traceIDRouting, p.routingKey)
 
 	endpoints := []string{"endpoint-1"}
 	lb.res = &mockResolver{
@@ -222,7 +222,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	p, err := newTracesExporter(ts, serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, svcRouting)
+	assert.Equal(t, svcRouting, p.routingKey)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -245,7 +245,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
 
 	// verify
-	assert.Nil(t, res)
+	assert.NoError(t, res)
 }
 
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
@@ -271,7 +271,7 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
-			assert.Equal(t, err, nil)
+			assert.NoError(t, err)
 			assert.Equal(t, res, tt.res)
 		})
 	}
@@ -373,7 +373,7 @@ func TestBuildExporterConfig(t *testing.T) {
 	grpcSettings.Endpoint = "the-endpoint"
 	assert.Equal(t, grpcSettings, exporterCfg.ClientConfig)
 
-	assert.Equal(t, defaultCfg.TimeoutSettings, exporterCfg.TimeoutSettings)
+	assert.Equal(t, defaultCfg.TimeoutConfig, exporterCfg.TimeoutConfig)
 	assert.Equal(t, defaultCfg.QueueConfig, exporterCfg.QueueConfig)
 	assert.Equal(t, defaultCfg.RetryConfig, exporterCfg.RetryConfig)
 }
@@ -407,7 +407,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.Len(t, sink.AllTraces(), 1)
-	assert.Equal(t, sink.AllTraces()[0].SpanCount(), 2)
+	assert.Equal(t, 2, sink.AllTraces()[0].SpanCount())
 }
 
 func TestNoTracesInBatch(t *testing.T) {
@@ -569,7 +569,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				return
 			case <-ticker.C:
 				go func() {
-					require.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
+					assert.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
 				}()
 			}
 		}
@@ -591,8 +591,8 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	mu.Unlock()
-	require.Greater(t, counter1.Load(), int64(0))
-	require.Greater(t, counter2.Load(), int64(0))
+	require.Positive(t, counter1.Load())
+	require.Positive(t, counter2.Load())
 }
 
 func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {

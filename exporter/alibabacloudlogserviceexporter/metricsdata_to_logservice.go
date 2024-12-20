@@ -227,7 +227,6 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 					float64(bucket),
 				))
 		}
-
 	}
 	return logs
 }
@@ -289,7 +288,6 @@ func metricsDataToLogServiceData(
 	_ *zap.Logger,
 	md pmetric.Metrics,
 ) (logs []*sls.Log) {
-
 	resMetrics := md.ResourceMetrics()
 	for i := 0; i < resMetrics.Len(); i++ {
 		resMetricSlice := resMetrics.At(i)

@@ -68,7 +68,8 @@ func (q Query) Validate() error {
 }
 
 type LogsCfg struct {
-	BodyColumn string `mapstructure:"body_column"`
+	BodyColumn       string   `mapstructure:"body_column"`
+	AttributeColumns []string `mapstructure:"attribute_columns"`
 }
 
 func (config LogsCfg) Validate() error {

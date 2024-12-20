@@ -189,7 +189,6 @@ func assertPagingUtilizationMetricValid(t *testing.T, hostPagingUtilizationMetri
 }
 
 func assertPagingOperationsMetricValid(t *testing.T, pagingMetric []pmetric.Metric, startTime pcommon.Timestamp, removeAttribute bool) {
-
 	type test struct {
 		name        string
 		description string

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -347,26 +347,25 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-
 			groupedMetrics := make(map[any]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
 			assert.NoError(t, err)
 			assert.NotNil(t, groupedMetrics)
-			assert.Equal(t, 3, len(groupedMetrics))
+			assert.Len(t, groupedMetrics, 3)
 
 			for _, v := range groupedMetrics {
 				assert.Equal(t, tc.expectedNamespace, v.metadata.namespace)
 				switch {
 				case v.metadata.metricDataType == pmetric.MetricTypeSum:
-					assert.Equal(t, 2, len(v.metrics))
+					assert.Len(t, v.metrics, 2)
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterSumMetrics, v.metrics)
 				case v.metadata.metricDataType == pmetric.MetricTypeGauge:
-					assert.Equal(t, 2, len(v.metrics))
+					assert.Len(t, v.metrics, 2)
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterGaugeMetrics, v.metrics)
 				case v.metadata.metricDataType == pmetric.MetricTypeHistogram:
-					assert.Equal(t, 1, len(v.metrics))
+					assert.Len(t, v.metrics, 1)
 					assert.Equal(t, tc.timerLabels, v.labels)
 					assert.Equal(t, timerMetrics, v.metrics)
 				default:
@@ -383,7 +382,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(groupedMetrics))
+		assert.Empty(t, groupedMetrics)
 	})
 }
 
@@ -459,7 +458,6 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 			assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
 		})
 	}
-
 }
 
 func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
@@ -1493,7 +1491,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		// Have to perform this hacky equality check because the metric names might not
 		// be in the right order due to map iteration
 		assert.Equal(t, expectedLog.Entry, log.Entry)
-		assert.Equal(t, 2, len(log.Context))
+		assert.Len(t, log.Context, 2)
 		assert.Equal(t, expectedLog.Context[0], log.Context[0])
 		isMatch := false
 		possibleOrders := []zapcore.Field{
@@ -1557,7 +1555,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		seen := make([]bool, 3)
 		for _, log := range logs.AllUntimed() {
 			assert.Equal(t, expectedEntry, log.Entry)
-			assert.Equal(t, 1, len(log.Context))
+			assert.Len(t, log.Context, 1)
 			hasMatch := false
 			for i, expectedCtx := range expectedContexts {
 				if !seen[i] && log.Context[0].Equals(expectedCtx) {
@@ -1957,9 +1955,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 
 			cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
 			if len(tc.expectedDims) == 0 {
-				assert.Equal(t, 0, len(cWMeasurements))
+				assert.Empty(t, cWMeasurements)
 			} else {
-				assert.Equal(t, 1, len(cWMeasurements))
+				assert.Len(t, cWMeasurements, 1)
 				dims := cWMeasurements[0].Dimensions
 				assertDimsEqual(t, tc.expectedDims, dims)
 			}
@@ -1984,7 +1982,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		groupedMetric := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetric, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2007,7 +2005,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2030,7 +2028,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2053,7 +2051,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2071,7 +2069,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(b, err)
+		assert.NoError(b, err)
 	}
 }
 
@@ -2140,7 +2138,7 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 	}
 	logger := zap.NewNop()
 	err := m.init(logger)
-	assert.Nil(b, err)
+	assert.NoError(b, err)
 	config := &Config{
 		MetricDeclarations:    []*MetricDeclaration{m},
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -2335,7 +2333,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.NotNil(t, groupedMetrics)
-			assert.Equal(t, 1, len(groupedMetrics))
+			assert.Len(t, groupedMetrics, 1)
 
 			for _, actual := range groupedMetrics {
 				assert.Equal(t, test.outLogGroupName, actual.metadata.logGroup)
@@ -2366,7 +2364,7 @@ func TestTranslateOtToGroupedMetricForInitialDeltaValue(t *testing.T) {
 			assert.NoError(t, err)
 
 			assert.NotNil(t, groupedMetrics)
-			assert.Equal(t, 1, len(groupedMetrics))
+			assert.Len(t, groupedMetrics, 1)
 
 			for _, actual := range groupedMetrics {
 				assert.True(t, actual.metadata.retainInitialValueForDelta)

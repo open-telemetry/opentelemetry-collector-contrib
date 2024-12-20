@@ -13,7 +13,7 @@ import (
 
 	"github.com/Showmax/go-fqdn"
 	"github.com/shirou/gopsutil/v4/cpu"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 
@@ -199,7 +199,6 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 
 			ips = append(ips, ip)
 		}
-
 	}
 	return ips, err
 }

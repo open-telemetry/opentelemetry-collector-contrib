@@ -1,9 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
 package dimensions // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
 
 import (
@@ -20,12 +17,11 @@ type ReqSender struct {
 	client               *http.Client
 	requests             chan *http.Request
 	workerCount          uint
-	ctx                  context.Context
 	additionalDimensions map[string]string
 	runningWorkers       *atomic.Int64
 }
 
-func NewReqSender(ctx context.Context, client *http.Client,
+func NewReqSender(client *http.Client,
 	workerCount uint, diagnosticDimensions map[string]string) *ReqSender {
 	return &ReqSender{
 		client:               client,
@@ -33,36 +29,41 @@ func NewReqSender(ctx context.Context, client *http.Client,
 		// Unbuffered so that it blocks clients
 		requests:       make(chan *http.Request),
 		workerCount:    workerCount,
-		ctx:            ctx,
 		runningWorkers: &atomic.Int64{},
 	}
 }
 
 // Send sends the request. Not thread-safe.
-func (rs *ReqSender) Send(req *http.Request) {
+func (rs *ReqSender) Send(ctx context.Context, req *http.Request) {
 	// Slight optimization to avoid spinning up unnecessary workers if there
 	// aren't ever that many dim updates. Once workers start, they remain for the
 	// duration of the agent.
 	select {
+	case <-ctx.Done():
+		return
 	case rs.requests <- req:
 		return
 	default:
 		if rs.runningWorkers.Load() < int64(rs.workerCount) {
-			go rs.processRequests()
+			go rs.processRequests(ctx)
 		}
 
-		// Block until we can get through a request
-		rs.requests <- req
+		// Block until we can get through a request, unless context has been cancelled.
+		select {
+		case <-ctx.Done():
+			return
+		case rs.requests <- req:
+		}
 	}
 }
 
-func (rs *ReqSender) processRequests() {
+func (rs *ReqSender) processRequests(ctx context.Context) {
 	rs.runningWorkers.Add(1)
 	defer rs.runningWorkers.Add(-1)
 
 	for {
 		select {
-		case <-rs.ctx.Done():
+		case <-ctx.Done():
 			return
 		case req := <-rs.requests:
 			if err := rs.sendRequest(req); err != nil {

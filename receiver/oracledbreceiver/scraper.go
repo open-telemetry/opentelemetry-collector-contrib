@@ -75,7 +75,7 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 	}
-	return scraperhelper.NewScraper(metadata.Type.String(), s.scrape, scraperhelper.WithShutdown(s.shutdown), scraperhelper.WithStart(s.start))
+	return scraperhelper.NewScraperWithoutType(s.scrape, scraperhelper.WithShutdown(s.shutdown), scraperhelper.WithStart(s.start))
 }
 
 func (s *scraper) start(context.Context, component.Host) error {

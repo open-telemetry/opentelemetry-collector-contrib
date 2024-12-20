@@ -138,7 +138,7 @@ func Test_Heartbeat_success(t *testing.T) {
 				require.NoError(t, err)
 				return len(got) != 0
 			}, time.Second, 10*time.Millisecond)
-			assert.Greater(t, got[0], int64(0), "there should be at least one success metric datapoint")
+			assert.Positive(t, got[0], "there should be at least one success metric datapoint")
 			attrs, err := getAttributes(reader, sentMetricsName)
 			require.NoError(t, err)
 			assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), attrs[0])
@@ -161,7 +161,7 @@ func Test_Heartbeat_failure(t *testing.T) {
 		require.NoError(t, err)
 		return len(got) != 0
 	}, time.Second, 10*time.Millisecond)
-	assert.Greater(t, got[0], int64(0), "there should be at least one failure metric datapoint")
+	assert.Positive(t, got[0], "there should be at least one failure metric datapoint")
 	attrs, err := getAttributes(reader, defaultHBFailedMetricsName)
 	require.NoError(t, err)
 	assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), attrs[0])

@@ -30,14 +30,14 @@ func TestClient(t *testing.T) {
 	require.Equal(t, "hello", string(resp))
 	require.True(t, tr.closed)
 	require.Equal(t, baseURL.String()+"/stats", tr.url)
-	require.Equal(t, 1, len(tr.header))
+	require.Len(t, tr.header, 1)
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
-	require.Equal(t, "GET", tr.method)
+	require.Equal(t, http.MethodGet, tr.method)
 }
 
 func TestNewClientProvider(t *testing.T) {
 	baseURL, _ := url.Parse("http://localhost:8080")
-	provider := NewClientProvider(*baseURL, confighttp.ClientConfig{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	provider := NewClientProvider(*baseURL, confighttp.NewDefaultClientConfig(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, provider)
 	_, ok := provider.(*defaultClientProvider)
 	require.True(t, ok)
@@ -49,7 +49,7 @@ func TestNewClientProvider(t *testing.T) {
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client, err := defaultClient(context.Background(), *endpoint, confighttp.ClientConfig{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, err := defaultClient(context.Background(), *endpoint, confighttp.NewDefaultClientConfig(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())

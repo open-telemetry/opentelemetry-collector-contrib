@@ -24,6 +24,8 @@ const (
 	PortType EndpointType = "port"
 	// PodType is a pod endpoint.
 	PodType EndpointType = "pod"
+	// PodContainerType is a pod's container endpoint.
+	PodContainerType EndpointType = "pod.container"
 	// K8sServiceType is a service endpoint.
 	K8sServiceType EndpointType = "k8s.service"
 	// K8sIngressType is a ingress endpoint.
@@ -216,6 +218,31 @@ func (p *Pod) Env() EndpointEnv {
 
 func (p *Pod) Type() EndpointType {
 	return PodType
+}
+
+// PodContainer is a discovered k8s pod's container
+type PodContainer struct {
+	// Name of the container
+	Name string
+	// Image of the container
+	Image string
+	// ContainerID is the id of the container exposing the Endpoint
+	ContainerID string
+	// Pod is the k8s pod in which the container is running
+	Pod Pod
+}
+
+func (p *PodContainer) Env() EndpointEnv {
+	return map[string]any{
+		"container_name":  p.Name,
+		"container_id":    p.ContainerID,
+		"container_image": p.Image,
+		"pod":             p.Pod.Env(),
+	}
+}
+
+func (p *PodContainer) Type() EndpointType {
+	return PodContainerType
 }
 
 // Port is an endpoint that has a target as well as a port.

@@ -65,7 +65,7 @@ func TestFetcher_FetchAndDecorate(t *testing.T) {
 	ctx := context.Background()
 	tasks, err := f.fetchAndDecorate(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, nTasks, len(tasks))
+	assert.Len(t, tasks, nTasks)
 	assert.Equal(t, "s0", aws.StringValue(tasks[0].Service.ServiceArn))
 }
 
@@ -78,7 +78,7 @@ func TestFetcher_GetDiscoverableTasks(t *testing.T) {
 		ctx := context.Background()
 		tasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, nTasks, len(tasks))
+		assert.Len(t, tasks, nTasks)
 	})
 
 	t.Run("with non discoverable tasks", func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestFetcher_GetDiscoverableTasks(t *testing.T) {
 		require.NoError(t, err)
 
 		// Expect 2 tasks, with LaunchType Fargate and EC2 with non-nil ContainerInstanceArn
-		assert.Equal(t, 2, len(tasks))
+		assert.Len(t, tasks, 2)
 		assert.Equal(t, ecs.LaunchTypeFargate, aws.StringValue(tasks[0].LaunchType))
 		assert.Equal(t, ecs.LaunchTypeEc2, aws.StringValue(tasks[1].LaunchType))
 	})
@@ -178,7 +178,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		ctx := context.Background()
 		rawTasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, nTasks, len(rawTasks))
+		assert.Len(t, rawTasks, nTasks)
 
 		tasks, err := f.attachTaskDefinition(ctx, rawTasks)
 		require.NoError(t, err)
@@ -216,7 +216,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		ctx := context.Background()
 		rawTasks, err := f.getDiscoverableTasks(ctx)
 		require.NoError(t, err)
-		assert.Equal(t, nTasks, len(rawTasks))
+		assert.Len(t, rawTasks, nTasks)
 
 		tasks, err := f.attachTaskDefinition(ctx, rawTasks)
 		require.NoError(t, err)
@@ -225,7 +225,7 @@ func TestFetcher_AttachContainerInstance(t *testing.T) {
 		err = f.attachContainerInstance(ctx, tasks)
 		require.NoError(t, err)
 		assert.Nil(t, tasks[0].EC2)
-		// task instance pattern is  0 1 0 1 ..., nFargateInstances = 3 so the 4th task is running on instance 1
+		// task instance pattern is 0 1 0 1 ..., nFargateInstances = 3 so the 4th task is running on instance 1
 		assert.Equal(t, "i-1", aws.StringValue(tasks[nFargateInstances].EC2.InstanceId))
 	})
 }
@@ -238,7 +238,7 @@ func TestFetcher_GetAllServices(t *testing.T) {
 	ctx := context.Background()
 	services, err := f.getAllServices(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, nServices, len(services))
+	assert.Len(t, services, nServices)
 }
 
 func TestFetcher_AttachService(t *testing.T) {
@@ -263,7 +263,6 @@ func TestFetcher_AttachService(t *testing.T) {
 		deployID := i % nServices
 		task.TaskDefinitionArn = aws.String(fmt.Sprintf("def%d:1", deployID))
 		task.StartedBy = aws.String(fmt.Sprintf("deploy%d", deployID))
-
 	}))
 
 	ctx := context.Background()

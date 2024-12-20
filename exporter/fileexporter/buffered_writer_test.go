@@ -87,5 +87,4 @@ func BenchmarkWriter(b *testing.B) {
 			})
 		}
 	}
-
 }

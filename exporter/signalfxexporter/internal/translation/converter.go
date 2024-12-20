@@ -65,6 +65,12 @@ func NewMetricsConverter(
 	}, nil
 }
 
+func (c *MetricsConverter) Start() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Start()
+	}
+}
+
 // MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints
 // and if processHistograms is set, histogram metrics are not converted to SFx format.
 // It returns those datapoints and the number of time series that had to be
@@ -159,6 +165,12 @@ func (c *MetricsConverter) ConvertDimension(dim string) string {
 		res = c.metricTranslator.translateDimension(dim)
 	}
 	return filterKeyChars(res, c.datapointValidator.nonAlphanumericDimChars)
+}
+
+func (c *MetricsConverter) Shutdown() {
+	if c.metricTranslator != nil {
+		c.metricTranslator.Shutdown()
+	}
 }
 
 // Values obtained from https://dev.splunk.com/observability/docs/datamodel/ingest#Criteria-for-metric-and-dimension-names-and-values

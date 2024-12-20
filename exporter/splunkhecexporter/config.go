@@ -65,9 +65,9 @@ type HecTelemetry struct {
 
 // Config defines configuration for Splunk exporter.
 type Config struct {
-	confighttp.ClientConfig      `mapstructure:",squash"`
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	confighttp.ClientConfig   `mapstructure:",squash"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
@@ -141,7 +141,6 @@ type Config struct {
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
-
 	out, err = url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
 		return out, err

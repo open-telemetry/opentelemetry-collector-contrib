@@ -216,10 +216,10 @@ func TestGetMetadataUpdate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			delta := GetMetadataUpdate(tt.args.oldMdata, tt.args.newMdata)
 			if tt.metadataDelta != nil {
-				require.Equal(t, 1, len(delta))
+				require.Len(t, delta, 1)
 				require.Equal(t, *tt.metadataDelta, delta[0].MetadataDelta)
 			} else {
-				require.Zero(t, len(delta))
+				require.Empty(t, delta)
 			}
 		})
 	}

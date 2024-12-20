@@ -66,7 +66,7 @@ func Test_batchTimeSeries(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
-			assert.Equal(t, tt.numExpectedRequests, len(requests))
+			assert.Len(t, requests, tt.numExpectedRequests)
 			if tt.numExpectedRequests <= 1 {
 				assert.Equal(t, math.MaxInt, state.nextTimeSeriesBufferSize)
 				assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
@@ -100,7 +100,7 @@ func Test_batchTimeSeriesUpdatesStateForLargeBatches(t *testing.T) {
 	requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
 
 	assert.NoError(t, err)
-	assert.Equal(t, 18, len(requests))
+	assert.Len(t, requests, 18)
 	assert.Equal(t, len(requests[len(requests)-2].Timeseries)*2, state.nextTimeSeriesBufferSize)
 	assert.Equal(t, math.MaxInt, state.nextMetricMetadataBufferSize)
 	assert.Equal(t, 36, state.nextRequestBufferSize)
@@ -134,7 +134,7 @@ func Benchmark_batchTimeSeries(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
 		assert.NoError(b, err)
-		assert.Equal(b, 18, len(requests))
+		assert.Len(b, requests, 18)
 	}
 }
 
@@ -233,7 +233,7 @@ func TestEnsureTimeseriesPointsAreSortedByTimestamp(t *testing.T) {
 			},
 		},
 	}
-	assert.Equal(t, got, want)
+	assert.Equal(t, want, got)
 
 	// For a full sanity/logical check, assert that EVERY
 	// Sample has a Timestamp bigger than its prior values.

@@ -103,7 +103,6 @@ func makeSummary(i int) types.HttpInstanceSummary {
 	}
 }
 func mockDiscovery(*servicediscovery.DiscoverInstancesInput) (*servicediscovery.DiscoverInstancesOutput, error) {
-
 	s := &servicediscovery.DiscoverInstancesOutput{
 		Instances: []types.HttpInstanceSummary{
 			makeSummary(1),

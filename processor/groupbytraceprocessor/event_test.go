@@ -495,7 +495,7 @@ func TestForceShutdown(t *testing.T) {
 	duration := time.Since(start)
 
 	// verify
-	assert.True(t, duration > 20*time.Millisecond)
+	assert.Greater(t, duration, 20*time.Millisecond)
 
 	// wait for shutdown goroutine to end
 	time.Sleep(100 * time.Millisecond)
@@ -541,5 +541,5 @@ func assertGaugeNotCreated(t *testing.T, name string, tt componentTestTelemetry)
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.reader.Collect(context.Background(), &md))
 	got := tt.getMetric(name, md)
-	assert.Equal(t, got, metricdata.Metrics{}, "gauge exists already but shouldn't")
+	assert.Equal(t, metricdata.Metrics{}, got, "gauge exists already but shouldn't")
 }

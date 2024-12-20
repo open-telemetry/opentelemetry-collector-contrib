@@ -24,7 +24,7 @@ func Test_SimpleHealthCheck(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", port)
-	e, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	e, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -37,7 +37,7 @@ func Test_SimpleHealthCheck(t *testing.T) {
 	var buf bytes.Buffer
 	_, err = io.Copy(&buf, resp.Body)
 	require.NoError(t, err)
-	assert.Equal(t, `{"status":"Server not available","upSince":"0001-01-01T00:00:00Z","uptime":""}`, buf.String())
+	assert.JSONEq(t, `{"status":"Server not available","upSince":"0001-01-01T00:00:00Z","uptime":""}`, buf.String())
 	err = e.(*healthCheckExtension).Ready()
 	require.NoError(t, err)
 	resp, err = http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/", port))

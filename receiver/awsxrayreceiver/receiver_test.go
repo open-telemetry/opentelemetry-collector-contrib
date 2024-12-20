@@ -263,7 +263,8 @@ func createAndOptionallyStartReceiver(
 	t *testing.T,
 	csu consumer.Traces,
 	start bool,
-	set receiver.Settings) (string, receiver.Traces, *observer.ObservedLogs) {
+	set receiver.Settings,
+) (string, receiver.Traces, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)

@@ -69,32 +69,32 @@ func TestMetricName(t *testing.T) {
 }
 
 func TestIsNode(t *testing.T) {
-	assert.Equal(t, true, IsNode(TypeNode))
-	assert.Equal(t, true, IsNode(TypeNodeNet))
-	assert.Equal(t, true, IsNode(TypeNodeFS))
-	assert.Equal(t, true, IsNode(TypeNodeDiskIO))
-	assert.Equal(t, false, IsNode(TypePod))
+	assert.True(t, IsNode(TypeNode))
+	assert.True(t, IsNode(TypeNodeNet))
+	assert.True(t, IsNode(TypeNodeFS))
+	assert.True(t, IsNode(TypeNodeDiskIO))
+	assert.False(t, IsNode(TypePod))
 }
 
 func TestIsInstance(t *testing.T) {
-	assert.Equal(t, true, IsInstance(TypeInstance))
-	assert.Equal(t, true, IsInstance(TypeInstanceNet))
-	assert.Equal(t, true, IsInstance(TypeInstanceFS))
-	assert.Equal(t, true, IsInstance(TypeInstanceDiskIO))
-	assert.Equal(t, false, IsInstance(TypePod))
+	assert.True(t, IsInstance(TypeInstance))
+	assert.True(t, IsInstance(TypeInstanceNet))
+	assert.True(t, IsInstance(TypeInstanceFS))
+	assert.True(t, IsInstance(TypeInstanceDiskIO))
+	assert.False(t, IsInstance(TypePod))
 }
 
 func TestIsContainer(t *testing.T) {
-	assert.Equal(t, true, IsContainer(TypeContainer))
-	assert.Equal(t, true, IsContainer(TypeContainerDiskIO))
-	assert.Equal(t, true, IsContainer(TypeContainerFS))
-	assert.Equal(t, false, IsContainer(TypePod))
+	assert.True(t, IsContainer(TypeContainer))
+	assert.True(t, IsContainer(TypeContainerDiskIO))
+	assert.True(t, IsContainer(TypeContainerFS))
+	assert.False(t, IsContainer(TypePod))
 }
 
 func TestIsPod(t *testing.T) {
-	assert.Equal(t, true, IsPod(TypePod))
-	assert.Equal(t, true, IsPod(TypePodNet))
-	assert.Equal(t, false, IsPod(TypeInstance))
+	assert.True(t, IsPod(TypePod))
+	assert.True(t, IsPod(TypePodNet))
+	assert.False(t, IsPod(TypeInstance))
 }
 
 func convertToInt64(value any) int64 {
@@ -132,8 +132,8 @@ func convertToFloat64(value any) float64 {
 }
 
 func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string]any, tags map[string]string,
-	expectedUnits map[string]string) {
-
+	expectedUnits map[string]string,
+) {
 	rms := md.ResourceMetrics()
 	assert.Equal(t, 1, rms.Len())
 
@@ -145,7 +145,7 @@ func checkMetricsAreExpected(t *testing.T, md pmetric.Metrics, fields map[string
 	for key, val := range tags {
 		log.Printf("key=%v value=%v", key, val)
 		attr, ok := attributes.Get(key)
-		assert.Equal(t, true, ok)
+		assert.True(t, ok)
 		if key == Timestamp {
 			timeUnixNano, _ = strconv.ParseUint(val, 10, 64)
 			val = strconv.FormatUint(timeUnixNano/uint64(time.Millisecond), 10)
@@ -265,7 +265,6 @@ func TestConvertToOTLPMetricsForClusterMetrics(t *testing.T) {
 	}
 	md = ConvertToOTLPMetrics(fields, tags, zap.NewNop())
 	checkMetricsAreExpected(t, md, fields, tags, expectedUnits)
-
 }
 
 func TestConvertToOTLPMetricsForContainerMetrics(t *testing.T) {

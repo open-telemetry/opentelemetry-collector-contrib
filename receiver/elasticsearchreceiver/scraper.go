@@ -404,7 +404,6 @@ func (r *elasticsearchScraper) scrapeIndicesMetrics(ctx context.Context, now pco
 	}
 
 	indexStats, err := r.client.IndexStats(ctx, r.cfg.Indices)
-
 	if err != nil {
 		errs.AddPartial(63, err)
 		return

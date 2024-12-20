@@ -123,7 +123,6 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *sfxReceiver) Start(ctx context.Context, host component.Host) error {
-
 	if r.server != nil {
 		return nil
 	}

@@ -65,13 +65,13 @@ func TestPushLogData(t *testing.T) {
 			// prepare
 			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				decPayload, err := snappy.Decode(nil, encPayload)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				err = proto.Unmarshal(decPayload, actualPushRequest)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 			}))
 			defer ts.Close()
 
@@ -82,7 +82,7 @@ func TestPushLogData(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -241,14 +241,14 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			// prepare
 			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				decPayload, err := snappy.Decode(nil, encPayload)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				pr := &push.PushRequest{}
 				err = proto.Unmarshal(decPayload, pr)
-				require.NoError(t, err)
+				assert.NoError(t, err)
 
 				actualPushRequestPerTenant[r.Header.Get("X-Scope-OrgID")] = pr
 			}))
@@ -261,7 +261,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -276,7 +276,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			assert.Equal(t, len(actualPushRequestPerTenant), len(tC.expected))
 			for tenant, request := range actualPushRequestPerTenant {
 				pr, ok := tC.expected[tenant]
-				assert.Equal(t, ok, true)
+				assert.True(t, ok)
 
 				expectedLabel := pr.label
 				expectedLine := pr.line

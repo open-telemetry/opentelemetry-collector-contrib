@@ -67,7 +67,6 @@ func (s *alertmanagerExporter) convertEventSliceToArray(eventSlice ptrace.SpanEv
 }
 
 func (s *alertmanagerExporter) extractEvents(td ptrace.Traces) []*alertmanagerEvent {
-
 	// Stitch parent trace ID and span ID
 	rss := td.ResourceSpans()
 	var events []*alertmanagerEvent
@@ -107,7 +106,6 @@ func createAnnotations(event *alertmanagerEvent) model.LabelSet {
 }
 
 func (s *alertmanagerExporter) convertEventsToAlertPayload(events []*alertmanagerEvent) []model.Alert {
-
 	payload := make([]model.Alert, len(events))
 
 	for i, event := range events {
@@ -126,13 +124,12 @@ func (s *alertmanagerExporter) convertEventsToAlertPayload(events []*alertmanage
 }
 
 func (s *alertmanagerExporter) postAlert(ctx context.Context, payload []model.Alert) error {
-
 	msg, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("error marshaling alert to JSON: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", s.endpoint, bytes.NewBuffer(msg))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, bytes.NewBuffer(msg))
 	if err != nil {
 		return fmt.Errorf("error creating HTTP request: %w", err)
 	}
@@ -162,7 +159,6 @@ func (s *alertmanagerExporter) postAlert(ctx context.Context, payload []model.Al
 }
 
 func (s *alertmanagerExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
-
 	events := s.extractEvents(td)
 
 	if len(events) == 0 {
@@ -180,7 +176,6 @@ func (s *alertmanagerExporter) pushTraces(ctx context.Context, td ptrace.Traces)
 }
 
 func (s *alertmanagerExporter) start(ctx context.Context, host component.Host) error {
-
 	client, err := s.config.ClientConfig.ToClient(ctx, host, s.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
@@ -190,7 +185,6 @@ func (s *alertmanagerExporter) start(ctx context.Context, host component.Host) e
 }
 
 func (s *alertmanagerExporter) shutdown(context.Context) error {
-
 	if s.client != nil {
 		s.client.CloseIdleConnections()
 	}
@@ -198,7 +192,6 @@ func (s *alertmanagerExporter) shutdown(context.Context) error {
 }
 
 func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *alertmanagerExporter {
-
 	return &alertmanagerExporter{
 		config:            cfg,
 		settings:          set,
@@ -211,12 +204,11 @@ func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *aler
 }
 
 func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.Settings) (exporter.Traces, error) {
-
 	config := cfg.(*Config)
 
 	s := newAlertManagerExporter(config, set.TelemetrySettings)
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		cfg,

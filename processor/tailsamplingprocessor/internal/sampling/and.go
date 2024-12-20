@@ -20,7 +20,6 @@ func NewAnd(
 	logger *zap.Logger,
 	subpolicies []PolicyEvaluator,
 ) PolicyEvaluator {
-
 	return &And{
 		subpolicies: subpolicies,
 		logger:      logger,
@@ -39,7 +38,6 @@ func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *Trac
 		if decision == NotSampled || decision == InvertNotSampled {
 			return decision, nil
 		}
-
 	}
 	return Sampled, nil
 }

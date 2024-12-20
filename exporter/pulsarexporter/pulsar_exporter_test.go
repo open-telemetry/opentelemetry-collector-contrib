@@ -29,7 +29,6 @@ func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
-
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
@@ -80,6 +79,8 @@ type mockProducer struct {
 	name  string
 }
 
+var _ pulsar.Producer = (*mockProducer)(nil)
+
 func (c *mockProducer) Topic() string {
 	return c.topic
 }
@@ -101,6 +102,10 @@ func (c *mockProducer) LastSequenceID() int64 {
 }
 
 func (c *mockProducer) Flush() error {
+	return nil
+}
+
+func (c *mockProducer) FlushWithCtx(context.Context) error {
 	return nil
 }
 

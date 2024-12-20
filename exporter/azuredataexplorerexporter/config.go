@@ -16,22 +16,23 @@ import (
 
 // Config defines configuration for Azure Data Explorer Exporter
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-	ClusterURI                     string              `mapstructure:"cluster_uri"`
-	ApplicationID                  string              `mapstructure:"application_id"`
-	ApplicationKey                 configopaque.String `mapstructure:"application_key"`
-	TenantID                       string              `mapstructure:"tenant_id"`
-	ManagedIdentityID              string              `mapstructure:"managed_identity_id"`
-	Database                       string              `mapstructure:"db_name"`
-	MetricTable                    string              `mapstructure:"metrics_table_name"`
-	LogTable                       string              `mapstructure:"logs_table_name"`
-	TraceTable                     string              `mapstructure:"traces_table_name"`
-	MetricTableMapping             string              `mapstructure:"metrics_table_json_mapping"`
-	LogTableMapping                string              `mapstructure:"logs_table_json_mapping"`
-	TraceTableMapping              string              `mapstructure:"traces_table_json_mapping"`
-	IngestionType                  string              `mapstructure:"ingestion_type"`
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	ClusterURI                string              `mapstructure:"cluster_uri"`
+	ApplicationID             string              `mapstructure:"application_id"`
+	ApplicationKey            configopaque.String `mapstructure:"application_key"`
+	TenantID                  string              `mapstructure:"tenant_id"`
+	ManagedIdentityID         string              `mapstructure:"managed_identity_id"`
+	UseAzureAuth              bool                `mapstructure:"use_azure_auth"`
+	Database                  string              `mapstructure:"db_name"`
+	MetricTable               string              `mapstructure:"metrics_table_name"`
+	LogTable                  string              `mapstructure:"logs_table_name"`
+	TraceTable                string              `mapstructure:"traces_table_name"`
+	MetricTableMapping        string              `mapstructure:"metrics_table_json_mapping"`
+	LogTableMapping           string              `mapstructure:"logs_table_json_mapping"`
+	TraceTableMapping         string              `mapstructure:"traces_table_json_mapping"`
+	IngestionType             string              `mapstructure:"ingestion_type"`
 }
 
 // Validate checks if the exporter configuration is valid
@@ -46,9 +47,23 @@ func (adxCfg *Config) Validate() error {
 	if isClusterURIEmpty {
 		return errors.New(`clusterURI config is mandatory`)
 	}
-	// Parameters for AD App Auth or Managed Identity Auth are mandatory
-	if isAppAuthEmpty && isManagedAuthEmpty {
-		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] are needed for auth`)
+	// Parameters for AD App Auth or Managed Identity Auth or Default Auth are mandatory
+	authMethods := 0
+
+	if !isAppAuthEmpty {
+		authMethods++
+	}
+
+	if !isManagedAuthEmpty {
+		authMethods++
+	}
+
+	if adxCfg.UseAzureAuth {
+		authMethods++
+	}
+
+	if authMethods != 1 {
+		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_azure_auth"] must be provided for auth`)
 	}
 
 	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {

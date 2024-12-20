@@ -172,7 +172,7 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	auth = base64.StdEncoding.EncodeToString([]byte("username:fromfile"))
 
 	_, err = ext.Authenticate(context.Background(), map[string][]string{"authorization": {"Basic " + auth}})
-	assert.Error(t, errInvalidCredentials, err)
+	assert.ErrorIs(t, errInvalidCredentials, err)
 }
 
 func TestBasicAuth_SupportedHeaders(t *testing.T) {
@@ -265,7 +265,7 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	expectedMd := map[string]string{
 		"authorization": fmt.Sprintf("Basic %s", authCreds),
 	}
-	assert.Equal(t, md, expectedMd)
+	assert.Equal(t, expectedMd, md)
 	assert.NoError(t, err)
 	assert.True(t, credential.RequireTransportSecurity())
 
@@ -273,7 +273,6 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 }
 
 func TestBasicAuth_ClientInvalid(t *testing.T) {
-
 	t.Run("invalid username format", func(t *testing.T) {
 		ext := newClientAuthExtension(&Config{
 			ClientAuth: &ClientAuthSettings{

@@ -22,8 +22,7 @@ const (
 )
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // Type gets the type of the scraper config created by this Factory.
 func (f *Factory) Type() string {
@@ -68,6 +67,5 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		TypeStr, s.scrape, scraperhelper.WithStart(s.start))
+	return scraperhelper.NewScraperWithoutType(s.scrape, scraperhelper.WithStart(s.start))
 }

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
@@ -33,7 +33,7 @@ func createDefaultConfig() component.Config {
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
 		AddrConfig: confignet.AddrConfig{
-			Endpoint:  localhostgate.EndpointForPort(defaultPort),
+			Endpoint:  testutil.EndpointForPort(defaultPort),
 			Transport: udppoller.Transport,
 		},
 		ProxyServer: proxy.DefaultConfig(),
@@ -44,7 +44,8 @@ func createTracesReceiver(
 	_ context.Context,
 	params receiver.Settings,
 	cfg component.Config,
-	consumer consumer.Traces) (receiver.Traces, error) {
+	consumer consumer.Traces,
+) (receiver.Traces, error) {
 	rcfg := cfg.(*Config)
 	return newReceiver(rcfg, consumer, params)
 }

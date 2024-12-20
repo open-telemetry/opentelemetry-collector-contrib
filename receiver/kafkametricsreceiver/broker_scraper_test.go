@@ -5,7 +5,7 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -47,11 +47,6 @@ func TestBrokerShutdown_closed(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
-func TestBrokerScraper_Name(t *testing.T) {
-	s := brokerScraper{}
-	assert.Equal(t, s.Name(), brokersScraperName)
-}
-
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
@@ -71,7 +66,7 @@ func TestBrokerScraperStart(t *testing.T) {
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("new client failed")
+		return nil, errors.New("new client failed")
 	}
 	sc := sarama.NewConfig()
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
@@ -83,7 +78,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 
 func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, fmt.Errorf("new client failed")
+		return nil, errors.New("new client failed")
 	}
 	sc := sarama.NewConfig()
 	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
@@ -110,7 +105,7 @@ func TestBrokerScraper_empty_resource_attribute(t *testing.T) {
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
 	_, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias")
-	require.Equal(t, false, ok)
+	require.False(t, ok)
 }
 
 func TestBrokerScraper_scrape(t *testing.T) {
