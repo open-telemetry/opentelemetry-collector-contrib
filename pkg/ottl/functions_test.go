@@ -2525,6 +2525,13 @@ func Test_baseKey_Int(t *testing.T) {
 }
 
 func Test_newKey(t *testing.T) {
+	ps, _ := NewParser[any](
+		defaultFunctionsForTests(),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+		WithPathContextNames[any]([]string{"log"}),
+	)
 	keys := []key{
 		{
 			String: ottltest.Strp("foo"),
@@ -2533,7 +2540,7 @@ func Test_newKey(t *testing.T) {
 			String: ottltest.Strp("bar"),
 		},
 	}
-	ks := newKeys[any](keys)
+	ks, _ := ps.newKeys(keys)
 
 	assert.Len(t, ks, 2)
 
