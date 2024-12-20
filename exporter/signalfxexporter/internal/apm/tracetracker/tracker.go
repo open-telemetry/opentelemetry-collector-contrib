@@ -69,8 +69,6 @@ type ActiveServiceTracker struct {
 func (a *ActiveServiceTracker) LoadHostIDDimCorrelations() {
 	// asynchronously fetch all services and environments for each hostIDDim at startup
 	for dimName, dimValue := range a.hostIDDims {
-		dimName := dimName
-		dimValue := dimValue
 		a.correlationClient.Get(dimName, dimValue, func(correlations map[string][]string) {
 			if services, ok := correlations["sf_services"]; ok {
 				for _, service := range services {
@@ -179,8 +177,6 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 	// container / pod level stuff
 	// this cache is necessary to identify environments associated with a kubernetes pod or container id
 	for sourceAttr, dimName := range a.dimsToSyncSource {
-		sourceAttr := sourceAttr
-		dimName := dimName
 		if val, ok := attrs.Get(sourceAttr); ok {
 			// Note that the value is not set on the cache key.  We only send the first environment received for a
 			// given pod/container, and we never delete the values set on the container/pod dimension.
@@ -239,8 +235,6 @@ func (a *ActiveServiceTracker) processService(res pcommon.Resource, now time.Tim
 	// container / pod level stuff (this should not directly affect the active service count)
 	// this cache is necessary to identify services associated with a kubernetes pod or container id
 	for sourceAttr, dimName := range a.dimsToSyncSource {
-		sourceAttr := sourceAttr
-		dimName := dimName
 		if val, ok := res.Attributes().Get(sourceAttr); ok {
 			// Note that the value is not set on the cache key.  We only send the first service received for a
 			// given pod/container, and we never delete the values set on the container/pod dimension.
