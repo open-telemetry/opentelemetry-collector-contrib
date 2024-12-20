@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -289,6 +290,112 @@ func TestLibhoneyEvent_GetScope(t *testing.T) {
 				assert.NoError(t, err)
 			}
 			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestToPTraceSpan(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		name    string
+		event   LibhoneyEvent
+		want    func(ptrace.Span)
+		wantErr bool
+	}{
+		{
+			name: "basic span conversion",
+			event: LibhoneyEvent{
+				Time:             now.Format(time.RFC3339),
+				MsgPackTimestamp: &now,
+				Data: map[string]any{
+					"name":           "test-span",
+					"trace.span_id":  "1234567890abcdef",
+					"trace.trace_id": "1234567890abcdef1234567890abcdef",
+					"duration_ms":    100.0,
+					"error":          true,
+					"status_message": "error message",
+					"kind":           "server",
+					"string_attr":    "value",
+					"int_attr":       42,
+					"bool_attr":      true,
+				},
+				Samplerate: 1,
+			},
+			want: func(s ptrace.Span) {
+				s.SetName("test-span")
+				s.SetSpanID([8]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetTraceID([16]byte{0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef})
+				s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+				s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(100 * time.Millisecond)))
+				s.Status().SetCode(ptrace.StatusCodeError)
+				s.Status().SetMessage("error message")
+				s.SetKind(ptrace.SpanKindServer)
+				s.Attributes().PutStr("string_attr", "value")
+				s.Attributes().PutInt("int_attr", 42)
+				s.Attributes().PutBool("bool_attr", true)
+			},
+		},
+	}
+
+	alreadyUsedFields := []string{"name", "trace.span_id", "trace.trace_id", "duration_ms", "status.code", "status.message", "kind"}
+	testCfg := FieldMapConfig{
+		Attributes: AttributesConfig{
+			Name:           "name",
+			TraceID:        "trace.trace_id",
+			SpanID:         "trace.span_id",
+			ParentID:       "trace.parent_id",
+			Error:          "error",
+			SpanKind:       "kind",
+			DurationFields: []string{"duration_ms"},
+		},
+		Resources: ResourcesConfig{
+			ServiceName: "service.name",
+		},
+		Scopes: ScopesConfig{
+			LibraryName:    "library.name",
+			LibraryVersion: "library.version",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			err := tt.event.ToPTraceSpan(&span, &alreadyUsedFields, testCfg, *zap.NewNop())
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			if tt.want != nil {
+				want := ptrace.NewSpan()
+				tt.want(want)
+
+				// Check basic fields
+				assert.Equal(t, want.Name(), span.Name())
+				assert.Equal(t, want.SpanID(), span.SpanID())
+				assert.Equal(t, want.TraceID(), span.TraceID())
+				assert.Equal(t, want.StartTimestamp(), span.StartTimestamp())
+				assert.Equal(t, want.EndTimestamp(), span.EndTimestamp())
+				assert.Equal(t, want.Kind(), span.Kind())
+
+				// Check status
+				assert.Equal(t, want.Status().Code(), span.Status().Code())
+				assert.Equal(t, want.Status().Message(), span.Status().Message())
+
+				// Check attributes
+				want.Attributes().Range(func(k string, v pcommon.Value) bool {
+					got, ok := span.Attributes().Get(k)
+					assert.True(t, ok, "missing attribute %s", k)
+					assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
+					assert.Equal(t, v, got, "wrong value for attribute %s", k)
+					return true
+				})
+
+				// Verify no fewer attributes, extras are expected
+				assert.LessOrEqual(t, want.Attributes().Len(), span.Attributes().Len())
+			}
 		})
 	}
 }

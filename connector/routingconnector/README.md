@@ -39,7 +39,7 @@ The `match_once` field is deprecated as of `v0.116.0`. The deprecation schedule 
 
 It is recommended to set `match_once: true` until `v0.117.0` and then remove all usage of the field before `v0.120.0`.
 
-For detailed guidance on how to migrate configuration from `match_once: false` to `match_once: true`, see [Config Migration](#config-migration.md).
+For detailed guidance on how to migrate configuration from `match_once: false` to `match_once: true`, see [Config Migration](#config-migration).
 
 ## Configuration
 
