@@ -98,7 +98,9 @@ are then also available for the use within association rules. Available attribut
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
 
-Additional container level attributes can be extracted provided that certain resource attributes are provided:
+Additional container level attributes can be extracted. If a pod contains more than one container,
+either the `container.id`, or the `k8s.container.name` attribute must be provided in the incoming resource attributes to
+correctly associate the matching container to the resource:
 
 1. If the `container.id` resource attribute is provided, the following additional attributes will be available:
    - k8s.container.name
