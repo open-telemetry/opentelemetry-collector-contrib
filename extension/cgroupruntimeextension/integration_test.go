@@ -9,8 +9,11 @@ package cgroupruntimeextension // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
@@ -63,6 +66,21 @@ func cgroupMaxCPU(filename string) (quota int64, period uint64, err error) {
 	return quota, period, err
 }
 
+func startMockECSServer() *httptest.Server {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		response := map[string]interface{}{
+			"DockerID": "container-id",
+			"Limits": map[string]interface{}{
+				"CPU": 2.0,
+			},
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	})
+
+	return httptest.NewServer(handler)
+}
+
 func TestCgroupV2SudoIntegration(t *testing.T) {
 	checkCgroupSystem(t)
 	pointerInt64 := func(val int64) *int64 {
@@ -81,6 +99,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 		config             *Config
 		expectedGoMaxProcs int
 		expectedGoMemLimit int64
+		setECSMetadataURI  bool
 	}{
 		{
 			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
@@ -143,6 +162,24 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 			expectedGoMaxProcs: runtime.GOMAXPROCS(-1),
 			// 134217728 * 0.1
 			expectedGoMemLimit: 13421772,
+		},
+		{
+			name:            "running on AWS ECS with 90% of max cgroup memory and 2 GOMAXPROCS",
+			cgroupCpuQuota:  pointerInt64(-1),
+			cgroupCpuPeriod: 8000,
+			cgroupMaxMemory: 134217728, // 128 MB
+			config: &Config{
+				GoMaxProcs: GoMaxProcsConfig{
+					Enabled: true,
+				},
+				GoMemLimit: GoMemLimitConfig{
+					Enabled: true,
+					Ratio:   0.9,
+				},
+			},
+			expectedGoMaxProcs: 22,
+			expectedGoMemLimit: 120795955, // 134217728 * 0.9
+			setECSMetadataURI:  true,
 		},
 	}
 
@@ -219,6 +256,13 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 				},
 			})
 			require.NoError(t, err)
+
+			if test.setECSMetadataURI {
+				server := startMockECSServer()
+				defer server.Close()
+				os.Setenv("ECS_CONTAINER_METADATA_URI_V4", server.URL)
+				defer os.Unsetenv("ECS_CONTAINER_METADATA_URI_V4")
+			}
 
 			factory := NewFactory()
 			ctx := context.Background()
