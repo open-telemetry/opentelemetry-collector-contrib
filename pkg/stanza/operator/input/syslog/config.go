@@ -30,15 +30,17 @@ func NewConfig() *Config {
 // NewConfigWithID creates a new input config with default values
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
+		InputConfig:  helper.NewInputConfig(operatorID, operatorType),
+		ParserConfig: syslog.NewConfigWithID(operatorID + "_internal_parser").ParserConfig,
 	}
 }
 
 type Config struct {
-	helper.InputConfig `mapstructure:",squash"`
-	syslog.BaseConfig  `mapstructure:",squash"`
-	TCP                *tcp.BaseConfig `mapstructure:"tcp"`
-	UDP                *udp.BaseConfig `mapstructure:"udp"`
+	helper.InputConfig  `mapstructure:",squash"`
+	helper.ParserConfig `mapstructure:"parser"`
+	syslog.BaseConfig   `mapstructure:",squash"`
+	TCP                 *tcp.BaseConfig `mapstructure:"tcp"`
+	UDP                 *udp.BaseConfig `mapstructure:"udp"`
 }
 
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
@@ -47,11 +49,10 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	syslogParserCfg := syslog.NewConfigWithID(inputBase.ID() + "_internal_tcp")
+	syslogParserCfg := syslog.NewConfig()
 	syslogParserCfg.BaseConfig = c.BaseConfig
-	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
-	syslogParserCfg.OutputIDs = c.OutputIDs
-	syslogParserCfg.MaxOctets = c.MaxOctets
+	syslogParserCfg.ParserConfig = c.ParserConfig
+	syslogParserCfg.ParserConfig.OutputIDs = c.InputConfig.OutputIDs
 	syslogParser, err := syslogParserCfg.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)

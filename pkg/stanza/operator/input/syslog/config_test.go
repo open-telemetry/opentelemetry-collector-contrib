@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
@@ -63,6 +65,30 @@ func TestUnmarshal(t *testing.T) {
 					cfg.UDP.Encoding = "utf-16"
 					cfg.UDP.SplitConfig.LineStartPattern = "ABC"
 					cfg.UDP.SplitConfig.LineEndPattern = ""
+					return cfg
+				}(),
+			},
+			{
+				Name:      "with_parser_config",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.Protocol = "rfc5424"
+					cfg.Location = "foo"
+					cfg.ParserConfig.OnError = "drop"
+					cfg.ParserConfig.ParseFrom = entry.NewBodyField("from")
+					cfg.ParserConfig.ParseTo = entry.RootableField{Field: entry.NewBodyField("log")}
+					parseField := entry.NewBodyField("severity_field")
+					severityParser := helper.NewSeverityConfig()
+					severityParser.ParseFrom = &parseField
+					mapping := map[string]any{
+						"critical": "5xx",
+						"error":    "4xx",
+						"info":     "3xx",
+						"debug":    "2xx",
+					}
+					severityParser.Mapping = mapping
+					cfg.SeverityConfig = &severityParser
 					return cfg
 				}(),
 			},
