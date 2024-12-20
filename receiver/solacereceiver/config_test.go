@@ -52,6 +52,29 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "brokerString"),
+			expected: &Config{
+				Broker: []string{"myHost:5671"},
+				Auth: Authentication{
+					PlainText: &SaslPlainTextConfig{
+						Username: "otel",
+						Password: "otel01$",
+					},
+				},
+				Queue:      "queue://#trace-profile123",
+				MaxUnacked: 1234,
+				TLS: configtls.ClientConfig{
+					Insecure:           false,
+					InsecureSkipVerify: false,
+				},
+				Flow: FlowControl{
+					DelayedRetry: &FlowControlDelayedRetry{
+						Delay: 1 * time.Second,
+					},
+				},
+			},
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "noauth"),
 			expectedErr: errMissingAuthDetails,
 		},
@@ -113,6 +136,18 @@ func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
 	}
 	err := cfg.Validate()
 	assert.Equal(t, errInvalidDelayedRetryDelay, err)
+}
+
+func TestConfigValidateBroker(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Queue = "someQueue"
+	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	cfg.Broker = []string{}
+	err := component.ValidateConfig(cfg)
+	assert.Equal(t, errInvalidBroker, err)
+	cfg.Broker = []string{"broker1:5671", "broker2:5671"}
+	err = component.ValidateConfig(cfg)
+	assert.Equal(t, errInvalidBroker, err)
 }
 
 func TestConfigValidateSuccess(t *testing.T) {

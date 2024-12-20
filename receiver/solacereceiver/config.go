@@ -24,11 +24,12 @@ var (
 	errMissingXauth2Params      = errors.New("missing xauth2 text auth params: Username, Bearer")
 	errMissingFlowControl       = errors.New("missing flow control configuration: DelayedRetry must be selected")
 	errInvalidDelayedRetryDelay = errors.New("delayed_retry.delay must > 0")
+	errInvalidBroker            = errors.New("exactly one broker must be specified")
 )
 
 // Config defines configuration for Solace receiver.
 type Config struct {
-	// The list of solace brokers (default localhost:5671)
+	// The solace broker (default localhost:5671). It's a slice because of legacy reasons but it supports only one element.
 	Broker []string `mapstructure:"broker"`
 
 	// The name of the solace queue to consume from, it is required parameter
@@ -56,6 +57,9 @@ func (cfg *Config) Validate() error {
 		return errMissingFlowControl
 	} else if cfg.Flow.DelayedRetry.Delay <= 0 {
 		return errInvalidDelayedRetryDelay
+	}
+	if len(cfg.Broker) != 1 {
+		return errInvalidBroker
 	}
 	return nil
 }
