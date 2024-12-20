@@ -11,5 +11,14 @@ import (
 
 func LogFunctions() map[string]ottl.Factory[ottllog.TransformContext] {
 	// No logs-only functions yet.
-	return ottlfuncs.StandardFuncs[ottllog.TransformContext]()
+	functions := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
+
+	logFunctions := ottl.CreateFactoryMap[ottllog.TransformContext](
+		newUnrollFactory(),
+	)
+
+	for k, v := range logFunctions {
+		functions[k] = v
+	}
+	return functions
 }
