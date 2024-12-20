@@ -9,6 +9,7 @@ import (
 	"runtime/debug"
 
 	"github.com/KimMachineGun/automemlimit/memlimit"
+	gomaxecs "github.com/rdforte/gomaxecs/maxprocs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/automaxprocs/maxprocs"
@@ -42,9 +43,17 @@ func createExtension(_ context.Context, set extension.Settings, cfg component.Co
 	cgroupConfig := cfg.(*Config)
 	return newCgroupRuntime(cgroupConfig, set.Logger,
 		func() (undoFunc, error) {
-			undo, err := maxprocs.Set(maxprocs.Logger(func(str string, params ...any) {
-				set.Logger.Debug(fmt.Sprintf(str, params))
-			}))
+			var undo func()
+			var err error
+			if gomaxecs.IsECS() {
+				undo, err = gomaxecs.Set(gomaxecs.WithLogger(func(str string, params ...any) {
+					set.Logger.Debug(fmt.Sprintf(str, params))
+				}))
+			} else {
+				undo, err = maxprocs.Set(maxprocs.Logger(func(str string, params ...any) {
+					set.Logger.Debug(fmt.Sprintf(str, params))
+				}))
+			}
 			return undoFunc(undo), err
 		},
 		func(ratio float64) (undoFunc, error) {
