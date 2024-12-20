@@ -28,3 +28,18 @@ udp:
     multiline:
       line_start_pattern: ABC
       line_end_pattern: ""
+with_parser_config:
+  type: syslog_input
+  protocol: rfc5424
+  location: foo
+  parser:
+    on_error: drop
+    parse_from: body.from
+    parse_to: body.log
+    severity:
+      parse_from: body.severity_field
+      mapping:
+        critical: 5xx
+        error: 4xx
+        info: 3xx
+        debug: 2xx
