@@ -64,10 +64,7 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 			logger.Warn("parent id not found")
 		}
 
-		action, err := lhe.SignalType()
-		if err != nil {
-			logger.Warn("signal type unclear")
-		}
+		action := lhe.SignalType(logger)
 		switch action {
 		case "span":
 			spanService, _ := lhe.GetService(cfg, &foundServices, dataset)

@@ -93,26 +93,29 @@ func (l *LibhoneyEvent) DebugString() string {
 }
 
 // SignalType returns the type of signal this event represents. Only log is implemented for now.
-func (l *LibhoneyEvent) SignalType() (string, error) {
+func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
 	if sig, ok := l.Data["meta.signal_type"]; ok {
 		switch sig {
 		case "trace":
 			if atype, ok := l.Data["meta.annotation_type"]; ok {
 				if atype == "span_event" {
-					return "span_event", nil
+					return "span_event"
 				} else if atype == "link" {
-					return "span_link", nil
+					return "span_link"
 				}
-				return "span", errors.New("invalid annotation type, but probably a span")
+				logger.Warn("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
+				return "span"
 			}
-			return "span", nil
+			return "span"
 		case "log":
-			return "log", nil
+			return "log"
 		default:
-			return "log", errors.New("invalid meta.signal_type")
+			logger.Warn("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
+			return "log"
 		}
 	}
-	return "log", errors.New("missing meta.signal_type and meta.annotation_type")
+	logger.Warn("missing meta.signal_type and meta.annotation_type")
+	return "log"
 }
 
 // GetService returns the service name from the event or the dataset name if no service name is found.
