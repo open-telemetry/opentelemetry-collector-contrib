@@ -3,8 +3,8 @@ type: interval
 status:
   class: processor
   stability:
-    development: [metrics]
-  distributions: []
+    alpha: [metrics]
+  distributions: [contrib, k8s]
   warnings: [Statefulness]
   codeowners:
     active: [RichieSams, sh0rez]
