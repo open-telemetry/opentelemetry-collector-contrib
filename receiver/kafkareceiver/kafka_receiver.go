@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
+	"regexp"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -130,7 +132,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 	}, nil
 }
 
-func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
+var createKafkaClient = func(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.ClientID = config.ClientID
 	saramaConfig.Metadata.Full = config.Metadata.Full
@@ -160,6 +162,38 @@ func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup
 		return nil, err
 	}
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
+}
+
+var createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+	saramaConfig := sarama.NewConfig()
+	saramaConfig.ClientID = config.ClientID
+	saramaConfig.Metadata.Full = config.Metadata.Full
+	saramaConfig.Metadata.Retry.Max = config.Metadata.Retry.Max
+	saramaConfig.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
+	saramaConfig.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
+	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
+	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
+	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
+	saramaConfig.Consumer.Fetch.Min = config.MinFetchSize
+	saramaConfig.Consumer.Fetch.Default = config.DefaultFetchSize
+	saramaConfig.Consumer.Fetch.Max = config.MaxFetchSize
+
+	var err error
+	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
+		return nil, err
+	}
+	if config.ResolveCanonicalBootstrapServersOnly {
+		saramaConfig.Net.ResolveCanonicalBootstrapServers = true
+	}
+	if config.ProtocolVersion != "" {
+		if saramaConfig.Version, err = sarama.ParseKafkaVersion(config.ProtocolVersion); err != nil {
+			return nil, err
+		}
+	}
+	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
+		return nil, err
+	}
+	return sarama.NewClusterAdmin(config.Brokers, saramaConfig)
 }
 
 func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
@@ -212,6 +246,10 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 			headers: c.headers,
 		}
 	}
+	if len(c.config.TopicRegex) != 0 {
+		c.consumeLoopWG.Add(1)
+		go c.checkNewTopics(ctx)
+	}
 	c.consumeLoopWG.Add(1)
 	go c.consumeLoop(ctx, consumerGroup)
 	<-consumerGroup.ready
@@ -231,6 +269,81 @@ func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.Co
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return
+		}
+	}
+}
+
+func (c *kafkaTracesConsumer) checkNewTopics(ctx context.Context) {
+	defer c.consumeLoopWG.Done()
+	var currentTopics []string
+	var admin sarama.ClusterAdmin
+
+	admin, err := createKafkaClusterAdmin(ctx, c.config)
+	if err != nil {
+		c.settings.Logger.Error("Cluster admin failed", zap.Error(err))
+		return
+	}
+	defer admin.Close()
+
+	// Helper function to recreate the consumer group
+	recreateConsumerGroup := func(topics []string) error {
+		c.topics = topics
+		if c.consumerGroup != nil {
+			// Close the existing consumer group
+			c.settings.Logger.Info("Closing existing consumer group...")
+			err := c.consumerGroup.Close()
+			if err != nil {
+				return err
+			}
+		}
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Periodically check for new topics
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+			return
+		case <-ticker.C:
+			// Fetch the list of topics
+			topics, err := admin.ListTopics()
+			if err != nil {
+				c.settings.Logger.Error("Failed to list topics: ", zap.Error(err))
+				continue
+			}
+
+			// Extract topic names from the response
+			var topicNames []string
+			for topic := range topics {
+				topicNames = append(topicNames, topic)
+			}
+
+			// Filter topics
+			var subTopics []string
+			reg, _ := regexp.Compile(c.config.TopicRegex)
+			for _, t := range topicNames {
+				if reg.MatchString(t) {
+					subTopics = append(subTopics, t)
+				}
+			}
+
+			// Check if there are new topics
+			if !equalStringSlices(currentTopics, subTopics) {
+				c.settings.Logger.Info("New topics detected, recreating consumer group...")
+				err := recreateConsumerGroup(subTopics)
+				if err != nil {
+					c.settings.Logger.Error("Failed to recreate consumer group: ", zap.Error(err))
+					continue
+				}
+				currentTopics = subTopics
+			}
 		}
 	}
 }
@@ -320,6 +433,10 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 			headers: c.headers,
 		}
 	}
+	if len(c.config.TopicRegex) != 0 {
+		c.consumeLoopWG.Add(1)
+		go c.checkNewTopics(ctx)
+	}
 	c.consumeLoopWG.Add(1)
 	go c.consumeLoop(ctx, metricsConsumerGroup)
 	<-metricsConsumerGroup.ready
@@ -339,6 +456,81 @@ func (c *kafkaMetricsConsumer) consumeLoop(ctx context.Context, handler sarama.C
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return
+		}
+	}
+}
+
+func (c *kafkaMetricsConsumer) checkNewTopics(ctx context.Context) {
+	defer c.consumeLoopWG.Done()
+	var currentTopics []string
+	var admin sarama.ClusterAdmin
+
+	admin, err := createKafkaClusterAdmin(ctx, c.config)
+	if err != nil {
+		c.settings.Logger.Error("Cluster admin failed", zap.Error(err))
+		return
+	}
+	defer admin.Close()
+
+	// Helper function to recreate the consumer group
+	recreateConsumerGroup := func(topics []string) error {
+		c.topics = topics
+		if c.consumerGroup != nil {
+			// Close the existing consumer group
+			c.settings.Logger.Info("Closing existing consumer group...")
+			err := c.consumerGroup.Close()
+			if err != nil {
+				return err
+			}
+		}
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Periodically check for new topics
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+			return
+		case <-ticker.C:
+			// Fetch the list of topics
+			topics, err := admin.ListTopics()
+			if err != nil {
+				c.settings.Logger.Error("Failed to list topics: ", zap.Error(err))
+				continue
+			}
+
+			// Extract topic names from the response
+			var topicNames []string
+			for topic := range topics {
+				topicNames = append(topicNames, topic)
+			}
+
+			// Filter topics
+			var subTopics []string
+			reg, _ := regexp.Compile(c.config.TopicRegex)
+			for _, t := range topicNames {
+				if reg.MatchString(t) {
+					subTopics = append(subTopics, t)
+				}
+			}
+
+			// Check if there are new topics
+			if !equalStringSlices(currentTopics, subTopics) {
+				c.settings.Logger.Info("New topics detected, recreating consumer group...")
+				err := recreateConsumerGroup(subTopics)
+				if err != nil {
+					c.settings.Logger.Error("Failed to recreate consumer group: ", zap.Error(err))
+					continue
+				}
+				currentTopics = subTopics
+			}
 		}
 	}
 }
@@ -431,6 +623,10 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 			headers: c.headers,
 		}
 	}
+	if len(c.config.TopicRegex) != 0 {
+		c.consumeLoopWG.Add(1)
+		go c.checkNewTopics(ctx)
+	}
 	c.consumeLoopWG.Add(1)
 	go c.consumeLoop(ctx, logsConsumerGroup)
 	<-logsConsumerGroup.ready
@@ -450,6 +646,80 @@ func (c *kafkaLogsConsumer) consumeLoop(ctx context.Context, handler sarama.Cons
 		if ctx.Err() != nil {
 			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
 			return
+		}
+	}
+}
+
+func (c *kafkaLogsConsumer) checkNewTopics(ctx context.Context) {
+	defer c.consumeLoopWG.Done()
+	var currentTopics []string
+	var admin sarama.ClusterAdmin
+	admin, err := createKafkaClusterAdmin(ctx, c.config)
+	if err != nil {
+		c.settings.Logger.Error("Cluster admin failed", zap.Error(err))
+		return
+	}
+	defer admin.Close()
+
+	// Helper function to recreate the consumer group
+	recreateConsumerGroup := func(topics []string) error {
+		c.topics = topics
+		if c.consumerGroup != nil {
+			// Close the existing consumer group
+			c.settings.Logger.Info("Closing existing consumer group...")
+			err := c.consumerGroup.Close()
+			if err != nil {
+				return err
+			}
+		}
+		fmt.Println()
+		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Periodically check for new topics
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			c.settings.Logger.Info("Consumer stopped", zap.Error(ctx.Err()))
+			return
+		case <-ticker.C:
+			// Fetch the list of topics
+			topics, err := admin.ListTopics()
+			if err != nil {
+				c.settings.Logger.Error("Failed to list topics: ", zap.Error(err))
+				continue
+			}
+
+			// Extract topic names from the response
+			var topicNames []string
+			for topic := range topics {
+				topicNames = append(topicNames, topic)
+			}
+
+			// Filter topics
+			var subTopics []string
+			reg, _ := regexp.Compile(c.config.TopicRegex)
+			for _, t := range topicNames {
+				if reg.MatchString(t) {
+					subTopics = append(subTopics, t)
+				}
+			}
+			// Check if there are new topics
+			if !equalStringSlices(currentTopics, subTopics) {
+				c.settings.Logger.Info("New topics detected, recreating consumer group...")
+				err := recreateConsumerGroup(subTopics)
+				if err != nil {
+					c.settings.Logger.Error("Failed to recreate consumer group: ", zap.Error(err))
+					continue
+				}
+				currentTopics = subTopics
+			}
 		}
 	}
 }
@@ -791,4 +1061,21 @@ func encodingToComponentID(encoding string) (*component.ID, error) {
 	}
 	id := component.NewID(componentType)
 	return &id, nil
+}
+
+// equalStringSlices checks if two slices of strings have the same content
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	aMap := make(map[string]struct{}, len(a))
+	for _, v := range a {
+		aMap[v] = struct{}{}
+	}
+	for _, v := range b {
+		if _, ok := aMap[v]; !ok {
+			return false
+		}
+	}
+	return true
 }

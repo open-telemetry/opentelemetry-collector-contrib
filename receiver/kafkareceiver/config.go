@@ -52,8 +52,10 @@ type Config struct {
 	SessionTimeout time.Duration `mapstructure:"session_timeout"`
 	// Heartbeat interval for the Kafka consumer
 	HeartbeatInterval time.Duration `mapstructure:"heartbeat_interval"`
-	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs)
+	// The name of the kafka topic to consume from (default "otlp_spans" for traces, "otlp_metrics" for metrics, "otlp_logs" for logs). If "topic_regex" is used then "topic" is ignored.
 	Topic string `mapstructure:"topic"`
+	// Name pattern of the kafka topics to consume from. It takes precedence over "topic".
+	TopicRegex string `mapstructure:"topic_regex"`
 	// Encoding of the messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 	// The consumer group that receiver will be consuming messages from (default "otel-collector")

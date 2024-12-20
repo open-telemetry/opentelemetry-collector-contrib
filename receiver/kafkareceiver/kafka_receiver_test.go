@@ -6,6 +6,7 @@ package kafkareceiver
 import (
 	"context"
 	"errors"
+	"github.com/stretchr/testify/mock"
 	"sync"
 	"testing"
 	"time"
@@ -90,6 +91,19 @@ func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
+}
+
+func TestNewTracesReceiver_literal_topic(t *testing.T) {
+	c := Config{
+		Topic:    "myTopic",
+		Encoding: defaultEncoding,
+	}
+	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
+	time.Sleep(6 * time.Second)
+	assert.True(t, equalStringSlices([]string{"myTopic"}, r.topics))
 }
 
 func TestTracesReceiverStart(t *testing.T) {
@@ -394,6 +408,143 @@ func TestTracesReceiver_encoding_extension(t *testing.T) {
 	}, 10*time.Second, time.Millisecond*100)
 }
 
+type MockClusterAdmin struct {
+	mock.Mock
+	sarama.ClusterAdmin
+}
+
+func (m *MockClusterAdmin) ListTopics() (map[string]sarama.TopicDetail, error) {
+	args := m.Called()
+	return args.Get(0).(map[string]sarama.TopicDetail), args.Error(1)
+}
+
+func (m *MockClusterAdmin) Close() error {
+	return m.Called().Error(0)
+}
+
+type MockKafkaConsumerGroup struct {
+	mock.Mock
+	sarama.ConsumerGroup
+}
+
+func (m *MockKafkaConsumerGroup) Close() error {
+	return m.Called().Error(0)
+}
+
+func TestTracesCheckNewTopics_ListTopicsError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	topicRegexPattern := "^topic[0-9]$"
+
+	mockConsumerGroup := &MockKafkaConsumerGroup{}
+	mockAdmin := &MockClusterAdmin{}
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{}, errors.New("list topics failed")).Once()
+	mockAdmin.On("Close").Return(nil).Once()
+
+	// Override the createKafkaClusterAdmin function to return the mock admin
+	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
+	createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+		return mockAdmin, nil
+	}
+
+	wg := &sync.WaitGroup{}
+	set := receivertest.NewNopSettings()
+
+	consumer := &kafkaTracesConsumer{
+		config:        Config{TopicRegex: topicRegexPattern},
+		consumerGroup: mockConsumerGroup,
+		topics:        []string{},
+		settings:      set,
+		consumeLoopWG: wg,
+	}
+
+	wg.Add(1)
+	go consumer.checkNewTopics(ctx)
+	time.Sleep(6 * time.Second)
+	assert.Equal(t, []string{}, consumer.topics)
+	cancel()
+	wg.Wait()
+	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	mockAdmin.AssertExpectations(t)
+}
+
+func TestTracesCheckNewTopics_TopicsChangeDetected(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	topicRegexPattern := "^topic[0-9]$"
+
+	mockAdmin := &MockClusterAdmin{}
+	// During first check new topics matching the regex are detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topic2": {},
+	}, nil).Once()
+
+	// During the second check only one new topic which doesn't match a regex is detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topic2": {},
+		"topics": {},
+	}, nil).Once()
+
+	// During the third check one topic matching a regex is detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topics": {},
+	}, nil).Once()
+	mockAdmin.On("Close").Return(nil).Once()
+
+	mockConsumerGroup := &MockKafkaConsumerGroup{}
+	// ConsumerGroup should be Closed and restarted two times. First time when new matching topics are
+	// detected and second time when matching topic is deleted.
+	mockConsumerGroup.On("Close").Return(nil).Twice()
+
+	// Override the createKafkaClusterAdmin function
+	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
+	createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+		return mockAdmin, nil
+	}
+	// Override the createKafkaClient function
+	originalCreateKafkaClient := createKafkaClient
+	createKafkaClient = func(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
+		return mockConsumerGroup, nil
+	}
+
+	wg := &sync.WaitGroup{}
+	set := receivertest.NewNopSettings()
+
+	consumer := &kafkaTracesConsumer{
+		config:        Config{TopicRegex: topicRegexPattern},
+		consumerGroup: mockConsumerGroup,
+		topics:        []string{},
+		settings:      set,
+		consumeLoopWG: wg,
+	}
+
+	wg.Add(1)
+	go consumer.checkNewTopics(ctx)
+
+	time.Sleep(7 * time.Second)
+	// Expect first detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1", "topic2"}, consumer.topics))
+
+	time.Sleep(5 * time.Second)
+	// Expect second detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1", "topic2"}, consumer.topics))
+
+	time.Sleep(5 * time.Second)
+	// Expect third detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1"}, consumer.topics))
+
+	cancel()
+	wg.Wait()
+	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	createKafkaClient = originalCreateKafkaClient
+
+	mockAdmin.AssertExpectations(t)
+	mockConsumerGroup.AssertExpectations(t)
+}
+
 func TestNewMetricsReceiver_version_err(t *testing.T) {
 	c := Config{
 		Encoding:        defaultEncoding,
@@ -449,6 +600,19 @@ func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
+}
+
+func TestNewMetricsReceiver_literal_topic(t *testing.T) {
+	c := Config{
+		Topic:    "myTopic",
+		Encoding: defaultEncoding,
+	}
+	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
+	time.Sleep(6 * time.Second)
+	assert.True(t, equalStringSlices([]string{"myTopic"}, r.topics))
 }
 
 func TestMetricsReceiverStartConsume(t *testing.T) {
@@ -737,6 +901,120 @@ func TestMetricsReceiver_encoding_extension(t *testing.T) {
 	}, 10*time.Second, time.Millisecond*100)
 }
 
+func TestMetricsCheckNewTopics_ListTopicsError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	topicRegexPattern := "^topic[0-9]$"
+
+	mockConsumerGroup := &MockKafkaConsumerGroup{}
+	mockAdmin := &MockClusterAdmin{}
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{}, errors.New("list topics failed")).Once()
+	mockAdmin.On("Close").Return(nil).Once()
+
+	// Override the createKafkaClusterAdmin function to return the mock admin
+	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
+	createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+		return mockAdmin, nil
+	}
+
+	wg := &sync.WaitGroup{}
+	set := receivertest.NewNopSettings()
+
+	consumer := &kafkaMetricsConsumer{
+		config:        Config{TopicRegex: topicRegexPattern},
+		consumerGroup: mockConsumerGroup,
+		topics:        []string{},
+		settings:      set,
+		consumeLoopWG: wg,
+	}
+
+	wg.Add(1)
+	go consumer.checkNewTopics(ctx)
+	time.Sleep(6 * time.Second)
+	assert.Equal(t, []string{}, consumer.topics)
+	cancel()
+	wg.Wait()
+	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	mockAdmin.AssertExpectations(t)
+}
+
+func TestMetricsCheckNewTopics_TopicsChangeDetected(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	topicRegexPattern := "^topic[0-9]$"
+
+	mockAdmin := &MockClusterAdmin{}
+	// During first check new topics matching the regex are detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topic2": {},
+	}, nil).Once()
+
+	// During the second check only one new topic which doesn't match a regex is detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topic2": {},
+		"topics": {},
+	}, nil).Once()
+
+	// During the third check one topic matching a regex is detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topics": {},
+	}, nil).Once()
+	mockAdmin.On("Close").Return(nil).Once()
+
+	mockConsumerGroup := &MockKafkaConsumerGroup{}
+	// ConsumerGroup should be Closed and restarted two times. First time when new matching topics are
+	// detected and second time when matching topic is deleted.
+	mockConsumerGroup.On("Close").Return(nil)
+
+	// Override the createKafkaClusterAdmin function
+	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
+	createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+		return mockAdmin, nil
+	}
+	// Override the createKafkaClient function
+	originalCreateKafkaClient := createKafkaClient
+	createKafkaClient = func(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
+		return mockConsumerGroup, nil
+	}
+
+	wg := &sync.WaitGroup{}
+	set := receivertest.NewNopSettings()
+
+	consumer := &kafkaMetricsConsumer{
+		config:        Config{TopicRegex: topicRegexPattern},
+		consumerGroup: mockConsumerGroup,
+		topics:        []string{},
+		settings:      set,
+		consumeLoopWG: wg,
+	}
+
+	wg.Add(1)
+	go consumer.checkNewTopics(ctx)
+
+	time.Sleep(7 * time.Second)
+	// Expect first detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1", "topic2"}, consumer.topics))
+
+	time.Sleep(5 * time.Second)
+	// Expect second detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1", "topic2"}, consumer.topics))
+
+	time.Sleep(5 * time.Second)
+	// Expect third detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1"}, consumer.topics))
+
+	cancel()
+	wg.Wait()
+
+	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	createKafkaClient = originalCreateKafkaClient
+	mockAdmin.AssertExpectations(t)
+	mockConsumerGroup.AssertExpectations(t)
+}
+
 func TestNewLogsReceiver_version_err(t *testing.T) {
 	c := Config{
 		Encoding:        defaultEncoding,
@@ -794,6 +1072,19 @@ func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.EqualError(t, err, errInvalidInitialOffset.Error())
+}
+
+func TestNewLogsReceiver_literal_topic(t *testing.T) {
+	c := Config{
+		Topic:    "myTopic",
+		Encoding: defaultEncoding,
+	}
+	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), consumertest.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, r)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
+	time.Sleep(6 * time.Second)
+	assert.True(t, equalStringSlices([]string{"myTopic"}, r.topics))
 }
 
 func TestLogsReceiverStart(t *testing.T) {
@@ -1218,6 +1509,174 @@ func TestLogsReceiver_encoding_extension(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
 	}, 10*time.Second, time.Millisecond*100)
+}
+
+func TestLogsCheckNewTopics_ListTopicsError(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	topicRegexPattern := "^topic[0-9]$"
+
+	mockConsumerGroup := &MockKafkaConsumerGroup{}
+	mockAdmin := &MockClusterAdmin{}
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{}, errors.New("list topics failed")).Once()
+	mockAdmin.On("Close").Return(nil).Once()
+
+	// Override the createKafkaClusterAdmin function to return the mock admin
+	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
+	createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+		return mockAdmin, nil
+	}
+
+	wg := &sync.WaitGroup{}
+	set := receivertest.NewNopSettings()
+
+	consumer := &kafkaLogsConsumer{
+		config:        Config{TopicRegex: topicRegexPattern},
+		consumerGroup: mockConsumerGroup,
+		topics:        []string{},
+		settings:      set,
+		consumeLoopWG: wg,
+	}
+
+	wg.Add(1)
+	go consumer.checkNewTopics(ctx)
+	time.Sleep(6 * time.Second)
+	assert.Equal(t, []string{}, consumer.topics)
+	cancel()
+	wg.Wait()
+	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	mockAdmin.AssertExpectations(t)
+}
+
+func TestLogsCheckNewTopics_TopicsChangeDetected(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	topicRegexPattern := "^topic[0-9]$"
+
+	mockAdmin := &MockClusterAdmin{}
+	// During first check new topics matching the regex are detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topic2": {},
+	}, nil).Once()
+
+	// During the second check only one new topic which doesn't match a regex is detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topic2": {},
+		"topics": {},
+	}, nil).Once()
+
+	// During the third check one topic matching a regex is detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topics": {},
+	}, nil).Once()
+	mockAdmin.On("Close").Return(nil).Once()
+
+	mockConsumerGroup := &MockKafkaConsumerGroup{}
+	// ConsumerGroup should be Closed and restarted two times. First time when new matching topics are
+	// detected and second time when matching topic is deleted.
+	mockConsumerGroup.On("Close").Return(nil).Twice()
+
+	// Override the createKafkaClusterAdmin function
+	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
+	createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+		return mockAdmin, nil
+	}
+	// Override the createKafkaClient function
+	originalCreateKafkaClient := createKafkaClient
+	createKafkaClient = func(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
+		return mockConsumerGroup, nil
+	}
+
+	wg := &sync.WaitGroup{}
+	set := receivertest.NewNopSettings()
+
+	consumer := &kafkaLogsConsumer{
+		config:        Config{TopicRegex: topicRegexPattern},
+		consumerGroup: mockConsumerGroup,
+		topics:        []string{},
+		settings:      set,
+		consumeLoopWG: wg,
+	}
+
+	wg.Add(1)
+	go consumer.checkNewTopics(ctx)
+
+	time.Sleep(7 * time.Second)
+	// Expect first detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1", "topic2"}, consumer.topics))
+
+	time.Sleep(5 * time.Second)
+	// Expect second detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1", "topic2"}, consumer.topics))
+
+	time.Sleep(5 * time.Second)
+	// Expect third detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1"}, consumer.topics))
+
+	cancel()
+	wg.Wait()
+
+	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	createKafkaClient = originalCreateKafkaClient
+	mockAdmin.AssertExpectations(t)
+	mockConsumerGroup.AssertExpectations(t)
+}
+
+func TestTopicRegexOverrideTopic(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	topicRegexPattern := "^topic[0-9]$"
+
+	mockAdmin := &MockClusterAdmin{}
+	// During first check new topics matching the regex are detected
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
+		"topic1": {},
+		"topic2": {},
+	}, nil).Once()
+	mockAdmin.On("Close").Return(nil).Once()
+
+	mockConsumerGroup := &MockKafkaConsumerGroup{}
+	mockConsumerGroup.On("Close").Return(nil).Once()
+
+	// Override the createKafkaClusterAdmin function
+	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
+	createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
+		return mockAdmin, nil
+	}
+	// Override the createKafkaClient function
+	originalCreateKafkaClient := createKafkaClient
+	createKafkaClient = func(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
+		return mockConsumerGroup, nil
+	}
+
+	wg := &sync.WaitGroup{}
+	set := receivertest.NewNopSettings()
+
+	consumer := &kafkaLogsConsumer{
+		config:        Config{TopicRegex: topicRegexPattern, Topic: "myTopic"},
+		consumerGroup: mockConsumerGroup,
+		topics:        []string{},
+		settings:      set,
+		consumeLoopWG: wg,
+	}
+
+	wg.Add(1)
+	go consumer.checkNewTopics(ctx)
+
+	time.Sleep(7 * time.Second)
+	// Expect first detection of topics
+	assert.True(t, equalStringSlices([]string{"topic1", "topic2"}, consumer.topics))
+
+	cancel()
+	wg.Wait()
+
+	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	createKafkaClient = originalCreateKafkaClient
+	mockAdmin.AssertExpectations(t)
+	mockConsumerGroup.AssertExpectations(t)
 }
 
 func TestToSaramaInitialOffset_earliest(t *testing.T) {
