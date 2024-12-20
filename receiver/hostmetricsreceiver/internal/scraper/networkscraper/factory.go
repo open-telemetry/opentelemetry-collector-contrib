@@ -6,6 +6,7 @@ package networkscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 
@@ -15,10 +16,8 @@ import (
 
 // This file implements Factory for Network scraper.
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "network"
-)
+// Type the value of "type" key in configuration.
+var Type = component.MustNewType("network")
 
 // Factory is the Factory for scraper.
 type Factory struct{}

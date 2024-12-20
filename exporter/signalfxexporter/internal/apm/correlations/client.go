@@ -191,10 +191,10 @@ func (cc *Client) Correlate(cor *Correlation, cb CorrelateCB) {
 					cor.Logger(cc.log).WithFields(log.Fields{"method": http.MethodPut}).Info("Updated dimension")
 				}
 			case http.StatusTeapot:
-				max := &ErrMaxEntries{}
-				err = json.Unmarshal(body, max)
+				maxEntry := &ErrMaxEntries{}
+				err = json.Unmarshal(body, maxEntry)
 				if err == nil {
-					err = max
+					err = maxEntry
 				}
 			}
 			if err != nil {

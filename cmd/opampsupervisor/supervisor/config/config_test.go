@@ -663,12 +663,8 @@ agent:
 					Telemetry: DefaultSupervisor().Telemetry,
 				}
 
-				require.NoError(t, os.Setenv("TEST_ENDPOINT", "ws://localhost/v1/opamp"))
-				require.NoError(t, os.Setenv("TEST_EXECUTABLE_PATH", executablePath))
-				defer func() {
-					require.NoError(t, os.Unsetenv("TEST_ENDPOINT"))
-					require.NoError(t, os.Unsetenv("TEST_EXECUTABLE_PATH"))
-				}()
+				t.Setenv("TEST_ENDPOINT", "ws://localhost/v1/opamp")
+				t.Setenv("TEST_EXECUTABLE_PATH", executablePath)
 
 				cfgPath := setupSupervisorConfigFile(t, tmpDir, config)
 				runSupervisorConfigLoadTest(t, cfgPath, expected, nil)

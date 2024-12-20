@@ -14,9 +14,8 @@ import (
 )
 
 func TestStaleness(t *testing.T) {
-	max := 1 * time.Second
 	stalenessMap := NewStaleness[int](
-		max,
+		1*time.Second,
 		make(streams.HashMap[int]),
 	)
 
