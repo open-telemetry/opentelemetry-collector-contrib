@@ -1796,12 +1796,12 @@ If the `target` is not a string or does not exist, the `Split` Converter will re
 
 ```Trim(target, Optional[replacement])```
 
-The `Trim` Converter removes the leading and trailing character (default: whitespace).
+The `Trim` Converter removes the leading and trailing character (default: a space character).
 
 If the `target` is not a string or does not exist, the `Trim` Converter will return an error.
 
 `target` is a string.
-`replacement` is an optional string representing the character to replace with (default: whitespace).
+`replacement` is an optional string representing the character to replace with (default: a space character).
 
 Examples:
 
