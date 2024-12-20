@@ -15,7 +15,7 @@ issues: [29017]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: "The OTTL contexts have a new option `EnablePathContextNames` to enabled support to expressing statements context via path names"
+subtext: "The OTTL contexts have a new option `EnablePathContextNames` to enable support for expressing a statement's context via path names in the statement"
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
