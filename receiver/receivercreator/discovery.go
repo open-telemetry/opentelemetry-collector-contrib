@@ -166,7 +166,7 @@ func (builder *k8sHintsBuilder) createLogsReceiver(
 		builder.logger)
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, containerName), userConfMap)
-	recTemplate.signals = receiverSignals{false, true, false}
+	recTemplate.signals = receiverSignals{metrics: false, logs: true, traces: false}
 
 	return &recTemplate, err
 }
@@ -230,10 +230,10 @@ func createLogsConfig(
 	for k, v := range userConf {
 		if k == "include" {
 			// path cannot be other than the one of the target container
+			logger.Warn("include setting cannot be set through annotation's hints")
 			continue
-		} else {
-			defaultConfMap[k] = v
 		}
+		defaultConfMap[k] = v
 	}
 
 	return defaultConfMap
