@@ -354,6 +354,55 @@ func newMetricMongodbCollectionCount(cfg MetricConfig) metricMongodbCollectionCo
 	return m
 }
 
+type metricMongodbCommandsPerSec struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.commands_per_sec metric with initial data.
+func (m *metricMongodbCommandsPerSec) init() {
+	m.data.SetName("mongodb.commands_per_sec")
+	m.data.SetDescription("The number of queries executed per second.")
+	m.data.SetUnit("{command}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbCommandsPerSec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbCommandsPerSec) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbCommandsPerSec) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbCommandsPerSec(cfg MetricConfig) metricMongodbCommandsPerSec {
+	m := metricMongodbCommandsPerSec{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -611,6 +660,55 @@ func newMetricMongodbDatabaseCount(cfg MetricConfig) metricMongodbDatabaseCount 
 	return m
 }
 
+type metricMongodbDeletesPerSec struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.deletes_per_sec metric with initial data.
+func (m *metricMongodbDeletesPerSec) init() {
+	m.data.SetName("mongodb.deletes_per_sec")
+	m.data.SetDescription("The number of queries executed per second.")
+	m.data.SetUnit("{delete}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbDeletesPerSec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbDeletesPerSec) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbDeletesPerSec) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbDeletesPerSec(cfg MetricConfig) metricMongodbDeletesPerSec {
+	m := metricMongodbDeletesPerSec{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbDocumentOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -708,6 +806,55 @@ func (m *metricMongodbExtentCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbExtentCount(cfg MetricConfig) metricMongodbExtentCount {
 	m := metricMongodbExtentCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbGetmoresPerSec struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.getmores_per_sec metric with initial data.
+func (m *metricMongodbGetmoresPerSec) init() {
+	m.data.SetName("mongodb.getmores_per_sec")
+	m.data.SetDescription("The number of queries executed per second.")
+	m.data.SetUnit("{getmore}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbGetmoresPerSec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbGetmoresPerSec) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbGetmoresPerSec) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbGetmoresPerSec(cfg MetricConfig) metricMongodbGetmoresPerSec {
+	m := metricMongodbGetmoresPerSec{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -963,6 +1110,55 @@ func (m *metricMongodbIndexSize) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbIndexSize(cfg MetricConfig) metricMongodbIndexSize {
 	m := metricMongodbIndexSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbInsertsPerSec struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.inserts_per_sec metric with initial data.
+func (m *metricMongodbInsertsPerSec) init() {
+	m.data.SetName("mongodb.inserts_per_sec")
+	m.data.SetDescription("The number of queries executed per second.")
+	m.data.SetUnit("{insert}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbInsertsPerSec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbInsertsPerSec) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbInsertsPerSec) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbInsertsPerSec(cfg MetricConfig) metricMongodbInsertsPerSec {
+	m := metricMongodbInsertsPerSec{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1804,6 +2000,55 @@ func newMetricMongodbStorageSize(cfg MetricConfig) metricMongodbStorageSize {
 	return m
 }
 
+type metricMongodbUpdatesPerSec struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.updates_per_sec metric with initial data.
+func (m *metricMongodbUpdatesPerSec) init() {
+	m.data.SetName("mongodb.updates_per_sec")
+	m.data.SetDescription("The number of queries executed per second.")
+	m.data.SetUnit("{update}/s")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricMongodbUpdatesPerSec) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbUpdatesPerSec) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbUpdatesPerSec) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbUpdatesPerSec(cfg MetricConfig) metricMongodbUpdatesPerSec {
+	m := metricMongodbUpdatesPerSec{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMongodbUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1867,18 +2112,22 @@ type MetricsBuilder struct {
 	resourceAttributeExcludeFilter      map[string]filter.Filter
 	metricMongodbCacheOperations        metricMongodbCacheOperations
 	metricMongodbCollectionCount        metricMongodbCollectionCount
+	metricMongodbCommandsPerSec         metricMongodbCommandsPerSec
 	metricMongodbConnectionCount        metricMongodbConnectionCount
 	metricMongodbCursorCount            metricMongodbCursorCount
 	metricMongodbCursorTimeoutCount     metricMongodbCursorTimeoutCount
 	metricMongodbDataSize               metricMongodbDataSize
 	metricMongodbDatabaseCount          metricMongodbDatabaseCount
+	metricMongodbDeletesPerSec          metricMongodbDeletesPerSec
 	metricMongodbDocumentOperationCount metricMongodbDocumentOperationCount
 	metricMongodbExtentCount            metricMongodbExtentCount
+	metricMongodbGetmoresPerSec         metricMongodbGetmoresPerSec
 	metricMongodbGlobalLockTime         metricMongodbGlobalLockTime
 	metricMongodbHealth                 metricMongodbHealth
 	metricMongodbIndexAccessCount       metricMongodbIndexAccessCount
 	metricMongodbIndexCount             metricMongodbIndexCount
 	metricMongodbIndexSize              metricMongodbIndexSize
+	metricMongodbInsertsPerSec          metricMongodbInsertsPerSec
 	metricMongodbLockAcquireCount       metricMongodbLockAcquireCount
 	metricMongodbLockAcquireTime        metricMongodbLockAcquireTime
 	metricMongodbLockAcquireWaitCount   metricMongodbLockAcquireWaitCount
@@ -1895,6 +2144,7 @@ type MetricsBuilder struct {
 	metricMongodbQueriesPerSec          metricMongodbQueriesPerSec
 	metricMongodbSessionCount           metricMongodbSessionCount
 	metricMongodbStorageSize            metricMongodbStorageSize
+	metricMongodbUpdatesPerSec          metricMongodbUpdatesPerSec
 	metricMongodbUptime                 metricMongodbUptime
 }
 
@@ -1924,18 +2174,22 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		buildInfo:                           settings.BuildInfo,
 		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(mbc.Metrics.MongodbCacheOperations),
 		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(mbc.Metrics.MongodbCollectionCount),
+		metricMongodbCommandsPerSec:         newMetricMongodbCommandsPerSec(mbc.Metrics.MongodbCommandsPerSec),
 		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(mbc.Metrics.MongodbConnectionCount),
 		metricMongodbCursorCount:            newMetricMongodbCursorCount(mbc.Metrics.MongodbCursorCount),
 		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(mbc.Metrics.MongodbCursorTimeoutCount),
 		metricMongodbDataSize:               newMetricMongodbDataSize(mbc.Metrics.MongodbDataSize),
 		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(mbc.Metrics.MongodbDatabaseCount),
+		metricMongodbDeletesPerSec:          newMetricMongodbDeletesPerSec(mbc.Metrics.MongodbDeletesPerSec),
 		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(mbc.Metrics.MongodbDocumentOperationCount),
 		metricMongodbExtentCount:            newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
+		metricMongodbGetmoresPerSec:         newMetricMongodbGetmoresPerSec(mbc.Metrics.MongodbGetmoresPerSec),
 		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
 		metricMongodbHealth:                 newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
 		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(mbc.Metrics.MongodbIndexAccessCount),
 		metricMongodbIndexCount:             newMetricMongodbIndexCount(mbc.Metrics.MongodbIndexCount),
 		metricMongodbIndexSize:              newMetricMongodbIndexSize(mbc.Metrics.MongodbIndexSize),
+		metricMongodbInsertsPerSec:          newMetricMongodbInsertsPerSec(mbc.Metrics.MongodbInsertsPerSec),
 		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(mbc.Metrics.MongodbLockAcquireCount),
 		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(mbc.Metrics.MongodbLockAcquireTime),
 		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(mbc.Metrics.MongodbLockAcquireWaitCount),
@@ -1952,6 +2206,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMongodbQueriesPerSec:          newMetricMongodbQueriesPerSec(mbc.Metrics.MongodbQueriesPerSec),
 		metricMongodbSessionCount:           newMetricMongodbSessionCount(mbc.Metrics.MongodbSessionCount),
 		metricMongodbStorageSize:            newMetricMongodbStorageSize(mbc.Metrics.MongodbStorageSize),
+		metricMongodbUpdatesPerSec:          newMetricMongodbUpdatesPerSec(mbc.Metrics.MongodbUpdatesPerSec),
 		metricMongodbUptime:                 newMetricMongodbUptime(mbc.Metrics.MongodbUptime),
 		resourceAttributeIncludeFilter:      make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:      make(map[string]filter.Filter),
@@ -2045,18 +2300,22 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricMongodbCacheOperations.emit(ils.Metrics())
 	mb.metricMongodbCollectionCount.emit(ils.Metrics())
+	mb.metricMongodbCommandsPerSec.emit(ils.Metrics())
 	mb.metricMongodbConnectionCount.emit(ils.Metrics())
 	mb.metricMongodbCursorCount.emit(ils.Metrics())
 	mb.metricMongodbCursorTimeoutCount.emit(ils.Metrics())
 	mb.metricMongodbDataSize.emit(ils.Metrics())
 	mb.metricMongodbDatabaseCount.emit(ils.Metrics())
+	mb.metricMongodbDeletesPerSec.emit(ils.Metrics())
 	mb.metricMongodbDocumentOperationCount.emit(ils.Metrics())
 	mb.metricMongodbExtentCount.emit(ils.Metrics())
+	mb.metricMongodbGetmoresPerSec.emit(ils.Metrics())
 	mb.metricMongodbGlobalLockTime.emit(ils.Metrics())
 	mb.metricMongodbHealth.emit(ils.Metrics())
 	mb.metricMongodbIndexAccessCount.emit(ils.Metrics())
 	mb.metricMongodbIndexCount.emit(ils.Metrics())
 	mb.metricMongodbIndexSize.emit(ils.Metrics())
+	mb.metricMongodbInsertsPerSec.emit(ils.Metrics())
 	mb.metricMongodbLockAcquireCount.emit(ils.Metrics())
 	mb.metricMongodbLockAcquireTime.emit(ils.Metrics())
 	mb.metricMongodbLockAcquireWaitCount.emit(ils.Metrics())
@@ -2073,6 +2332,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMongodbQueriesPerSec.emit(ils.Metrics())
 	mb.metricMongodbSessionCount.emit(ils.Metrics())
 	mb.metricMongodbStorageSize.emit(ils.Metrics())
+	mb.metricMongodbUpdatesPerSec.emit(ils.Metrics())
 	mb.metricMongodbUptime.emit(ils.Metrics())
 
 	for _, op := range options {
@@ -2115,6 +2375,11 @@ func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Times
 	mb.metricMongodbCollectionCount.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordMongodbCommandsPerSecDataPoint adds a data point to mongodb.commands_per_sec metric.
+func (mb *MetricsBuilder) RecordMongodbCommandsPerSecDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbCommandsPerSec.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordMongodbConnectionCountDataPoint adds a data point to mongodb.connection.count metric.
 func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, connectionTypeAttributeValue AttributeConnectionType) {
 	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String())
@@ -2140,6 +2405,11 @@ func (mb *MetricsBuilder) RecordMongodbDatabaseCountDataPoint(ts pcommon.Timesta
 	mb.metricMongodbDatabaseCount.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordMongodbDeletesPerSecDataPoint adds a data point to mongodb.deletes_per_sec metric.
+func (mb *MetricsBuilder) RecordMongodbDeletesPerSecDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbDeletesPerSec.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordMongodbDocumentOperationCountDataPoint adds a data point to mongodb.document.operation.count metric.
 func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
 	mb.metricMongodbDocumentOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
@@ -2148,6 +2418,11 @@ func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommo
 // RecordMongodbExtentCountDataPoint adds a data point to mongodb.extent.count metric.
 func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbGetmoresPerSecDataPoint adds a data point to mongodb.getmores_per_sec metric.
+func (mb *MetricsBuilder) RecordMongodbGetmoresPerSecDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbGetmoresPerSec.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbGlobalLockTimeDataPoint adds a data point to mongodb.global_lock.time metric.
@@ -2173,6 +2448,11 @@ func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp,
 // RecordMongodbIndexSizeDataPoint adds a data point to mongodb.index.size metric.
 func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbInsertsPerSecDataPoint adds a data point to mongodb.inserts_per_sec metric.
+func (mb *MetricsBuilder) RecordMongodbInsertsPerSecDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbInsertsPerSec.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbLockAcquireCountDataPoint adds a data point to mongodb.lock.acquire.count metric.
@@ -2253,6 +2533,11 @@ func (mb *MetricsBuilder) RecordMongodbSessionCountDataPoint(ts pcommon.Timestam
 // RecordMongodbStorageSizeDataPoint adds a data point to mongodb.storage.size metric.
 func (mb *MetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricMongodbStorageSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordMongodbUpdatesPerSecDataPoint adds a data point to mongodb.updates_per_sec metric.
+func (mb *MetricsBuilder) RecordMongodbUpdatesPerSecDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricMongodbUpdatesPerSec.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordMongodbUptimeDataPoint adds a data point to mongodb.uptime metric.

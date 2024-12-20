@@ -233,13 +233,13 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 			continue
 		}
 
-		// Record the raw count
 		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
 
 		currentCounts[operationVal] = val
 		s.recordOperationPerSecond(now, operationVal, val)
 	}
 
+	// For telegraf metrics to get QPS for opcounters
 	// Store current counts for next iteration
 	s.prevCounts = currentCounts
 	s.prevTimestamp = now
@@ -269,6 +269,16 @@ func (s *mongodbScraper) recordOperationPerSecond(now pcommon.Timestamp, operati
 				switch operationVal {
 				case "query":
 					s.mb.RecordMongodbQueriesPerSecDataPoint(now, queriesPerSec)
+				case "insert":
+					s.mb.RecordMongodbInsertsPerSecDataPoint(now, queriesPerSec)
+				case "command":
+					s.mb.RecordMongodbCommandsPerSecDataPoint(now, queriesPerSec)
+				case "getmore":
+					s.mb.RecordMongodbGetmoresPerSecDataPoint(now, queriesPerSec)
+				case "delete":
+					s.mb.RecordMongodbDeletesPerSecDataPoint(now, queriesPerSec)
+				case "update":
+					s.mb.RecordMongodbUpdatesPerSecDataPoint(now, queriesPerSec)
 				default:
 					fmt.Printf("Unhandled operation: %s\n", operationVal)
 				}

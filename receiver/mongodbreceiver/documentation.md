@@ -34,6 +34,14 @@ The number of collections.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {collections} | Sum | Int | Cumulative | false |
 
+### mongodb.commands_per_sec
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
 ### mongodb.connection.count
 
 The number of connections.
@@ -80,6 +88,14 @@ The number of existing databases.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {databases} | Sum | Int | Cumulative | false |
 
+### mongodb.deletes_per_sec
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
 ### mongodb.document.operation.count
 
 The number of document operations executed.
@@ -101,6 +117,14 @@ The number of extents.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {extents} | Sum | Int | Cumulative | false |
+
+### mongodb.getmores_per_sec
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
 
 ### mongodb.global_lock.time
 
@@ -139,6 +163,14 @@ Sum of the space allocated to all indexes in the database, including free index 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
+
+### mongodb.inserts_per_sec
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
 
 ### mongodb.memory.usage
 
@@ -239,6 +271,14 @@ If collection data is compressed it reflects the compressed size.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | true |
+
+### mongodb.updates_per_sec
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
 
 ## Optional Metrics
 

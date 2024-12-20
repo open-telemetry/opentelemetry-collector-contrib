@@ -78,6 +78,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordMongodbCommandsPerSecDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordMongodbConnectionCountDataPoint(ts, 1, AttributeConnectionTypeActive)
 
 			defaultMetricsCount++
@@ -98,11 +102,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordMongodbDeletesPerSecDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, AttributeOperationInsert)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbExtentCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbGetmoresPerSecDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -122,6 +134,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbIndexSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbInsertsPerSecDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
@@ -180,6 +196,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMongodbStorageSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbUpdatesPerSecDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMongodbUptimeDataPoint(ts, 1)
@@ -241,6 +261,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.commands_per_sec":
+					assert.False(t, validatedMetrics["mongodb.commands_per_sec"], "Found a duplicate in the metrics slice: mongodb.commands_per_sec")
+					validatedMetrics["mongodb.commands_per_sec"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of queries executed per second.", ms.At(i).Description())
+					assert.Equal(t, "{command}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.connection.count":
 					assert.False(t, validatedMetrics["mongodb.connection.count"], "Found a duplicate in the metrics slice: mongodb.connection.count")
 					validatedMetrics["mongodb.connection.count"] = true
@@ -314,6 +346,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.deletes_per_sec":
+					assert.False(t, validatedMetrics["mongodb.deletes_per_sec"], "Found a duplicate in the metrics slice: mongodb.deletes_per_sec")
+					validatedMetrics["mongodb.deletes_per_sec"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of queries executed per second.", ms.At(i).Description())
+					assert.Equal(t, "{delete}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.document.operation.count":
 					assert.False(t, validatedMetrics["mongodb.document.operation.count"], "Found a duplicate in the metrics slice: mongodb.document.operation.count")
 					validatedMetrics["mongodb.document.operation.count"] = true
@@ -345,6 +389,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.getmores_per_sec":
+					assert.False(t, validatedMetrics["mongodb.getmores_per_sec"], "Found a duplicate in the metrics slice: mongodb.getmores_per_sec")
+					validatedMetrics["mongodb.getmores_per_sec"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of queries executed per second.", ms.At(i).Description())
+					assert.Equal(t, "{getmore}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.global_lock.time":
 					assert.False(t, validatedMetrics["mongodb.global_lock.time"], "Found a duplicate in the metrics slice: mongodb.global_lock.time")
 					validatedMetrics["mongodb.global_lock.time"] = true
@@ -416,6 +472,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.inserts_per_sec":
+					assert.False(t, validatedMetrics["mongodb.inserts_per_sec"], "Found a duplicate in the metrics slice: mongodb.inserts_per_sec")
+					validatedMetrics["mongodb.inserts_per_sec"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of queries executed per second.", ms.At(i).Description())
+					assert.Equal(t, "{insert}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.lock.acquire.count":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.count")
 					validatedMetrics["mongodb.lock.acquire.count"] = true
@@ -675,6 +743,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mongodb.updates_per_sec":
+					assert.False(t, validatedMetrics["mongodb.updates_per_sec"], "Found a duplicate in the metrics slice: mongodb.updates_per_sec")
+					validatedMetrics["mongodb.updates_per_sec"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of queries executed per second.", ms.At(i).Description())
+					assert.Equal(t, "{update}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "mongodb.uptime":
 					assert.False(t, validatedMetrics["mongodb.uptime"], "Found a duplicate in the metrics slice: mongodb.uptime")
 					validatedMetrics["mongodb.uptime"] = true

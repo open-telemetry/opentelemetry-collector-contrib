@@ -156,7 +156,52 @@ resourceMetrics:
                 - asInt: "100"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-              unit: '{query}/s}'            
+              unit: '{query}/s}'
+          - description: The total number of insertions per second.
+            name: mongodb.inserts_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{insert}/s}'    
+          - description: The total number of commands per second.
+            name: mongodb.commands_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{command}/s}'  
+          - description: The total number of getmores per second.
+            name: mongodb.getmores_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{getmore}/s}' 
+          - description: The total number of deletes per second.
+            name: mongodb.deletes_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{delete}/s}'      
+          - description: The total number of updates per second.
+            name: mongodb.updates_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{update}/s}'                          
           - description: The latency of operations.
             gauge:
               dataPoints:

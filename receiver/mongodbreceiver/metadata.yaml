@@ -364,8 +364,48 @@ metrics:
     enabled: true
     gauge:
       value_type: double
-      aggregation_temporality: delta  # For rate, delta temporality is appropriate
-      monotonic: false  # Allow values to fluctuate    
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.inserts_per_sec:
+    description: The number of insertions executed per second.
+    unit: "{insert}/s"
+    enabled: true
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.commands_per_sec:
+    description: The number of commands executed per second.
+    unit: "{command}/s"
+    enabled: true
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.getmores_per_sec:
+    description: The number of getmores executed per second.
+    unit: "{getmore}/s"
+    enabled: true
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.deletes_per_sec:
+    description: The number of deletes executed per second.
+    unit: "{delete}/s"
+    enabled: true
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false 
+  mongodb.updates_per_sec:
+    description: The number of updates executed per second.
+    unit: "{update}/s"
+    enabled: true
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
 
 tests:
   config:

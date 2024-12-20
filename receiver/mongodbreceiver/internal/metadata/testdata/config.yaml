@@ -5,6 +5,8 @@ all_set:
       enabled: true
     mongodb.collection.count:
       enabled: true
+    mongodb.commands_per_sec:
+      enabled: true
     mongodb.connection.count:
       enabled: true
     mongodb.cursor.count:
@@ -15,9 +17,13 @@ all_set:
       enabled: true
     mongodb.database.count:
       enabled: true
+    mongodb.deletes_per_sec:
+      enabled: true
     mongodb.document.operation.count:
       enabled: true
     mongodb.extent.count:
+      enabled: true
+    mongodb.getmores_per_sec:
       enabled: true
     mongodb.global_lock.time:
       enabled: true
@@ -28,6 +34,8 @@ all_set:
     mongodb.index.count:
       enabled: true
     mongodb.index.size:
+      enabled: true
+    mongodb.inserts_per_sec:
       enabled: true
     mongodb.lock.acquire.count:
       enabled: true
@@ -60,6 +68,8 @@ all_set:
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
+      enabled: true
+    mongodb.updates_per_sec:
       enabled: true
     mongodb.uptime:
       enabled: true
@@ -76,6 +86,8 @@ none_set:
       enabled: false
     mongodb.collection.count:
       enabled: false
+    mongodb.commands_per_sec:
+      enabled: false
     mongodb.connection.count:
       enabled: false
     mongodb.cursor.count:
@@ -86,9 +98,13 @@ none_set:
       enabled: false
     mongodb.database.count:
       enabled: false
+    mongodb.deletes_per_sec:
+      enabled: false
     mongodb.document.operation.count:
       enabled: false
     mongodb.extent.count:
+      enabled: false
+    mongodb.getmores_per_sec:
       enabled: false
     mongodb.global_lock.time:
       enabled: false
@@ -99,6 +115,8 @@ none_set:
     mongodb.index.count:
       enabled: false
     mongodb.index.size:
+      enabled: false
+    mongodb.inserts_per_sec:
       enabled: false
     mongodb.lock.acquire.count:
       enabled: false
@@ -131,6 +149,8 @@ none_set:
     mongodb.session.count:
       enabled: false
     mongodb.storage.size:
+      enabled: false
+    mongodb.updates_per_sec:
       enabled: false
     mongodb.uptime:
       enabled: false
