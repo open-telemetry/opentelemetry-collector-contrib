@@ -115,9 +115,23 @@ stability-tests: otelcontribcol
 gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
 
+.PHONY: tidylist
+tidylist: $(CROSSLINK)
+	cd internal/tidylist && \
+	$(CROSSLINK) tidylist \
+		--validate \
+		--allow-circular allow-circular.txt \
+		--skip cmd/otelcontribcol/go.mod \
+		--skip cmd/oteltestbedcol/go.mod \
+		tidylist.txt
+
+# internal/tidylist/tidylist.txt lists modules in topological order, to ensure `go mod tidy` converges.
 .PHONY: gotidy
 gotidy:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="tidy"
+	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
+		echo "Tidying $$mod"; \
+		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $?; \
+	done
 
 .PHONY: remove-toolchain
 remove-toolchain:
