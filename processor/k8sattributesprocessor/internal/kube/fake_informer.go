@@ -40,7 +40,7 @@ func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 }
 
 func (f *FakeInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
-	return nil, nil
+	return f, nil
 }
 
 func (f *FakeInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {
@@ -165,7 +165,7 @@ func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cach
 }
 
 func (f *NoOpInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) (cache.ResourceEventHandlerRegistration, error) {
-	return nil, nil
+	return f, nil
 }
 
 func (f *NoOpInformer) RemoveEventHandler(_ cache.ResourceEventHandlerRegistration) error {

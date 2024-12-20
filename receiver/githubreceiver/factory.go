@@ -7,11 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
@@ -20,9 +23,17 @@ import (
 
 // This file implements a factory for the github receiver
 
+const (
+	defaultReadTimeout  = 500 * time.Millisecond
+	defaultWriteTimeout = 500 * time.Millisecond
+	defaultPath         = "/events"
+	defaultHealthPath   = "/health"
+	defaultEndpoint     = "localhost:8080"
+)
+
 var (
 	scraperFactories = map[string]internal.ScraperFactory{
-		metadata.Type.String(): &githubscraper.Factory{},
+		githubscraper.TypeStr: &githubscraper.Factory{},
 	}
 
 	errConfigNotValid = errors.New("configuration is not valid for the github receiver")
@@ -34,6 +45,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
 	)
 }
 
@@ -50,12 +62,15 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-		// TODO: metrics builder configuration may need to be in each sub scraper,
-		// TODO: for right now setting here because the metrics in this receiver will apply to all
-		// TODO: scrapers defined as a common set of github
-		// TODO: aqp completely remove these comments if the metrics build config
-		// needs to be defined in each scraper
-		// MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		WebHook: WebHook{
+			ServerConfig: confighttp.ServerConfig{
+				Endpoint:     defaultEndpoint,
+				ReadTimeout:  defaultReadTimeout,
+				WriteTimeout: defaultWriteTimeout,
+			},
+			Path:       defaultPath,
+			HealthPath: defaultHealthPath,
+		},
 	}
 }
 
@@ -86,6 +101,21 @@ func createMetricsReceiver(
 	)
 }
 
+func createTracesReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	cfg component.Config,
+	consumer consumer.Traces,
+) (receiver.Traces, error) {
+	// check that the configuration is valid
+	conf, ok := cfg.(*Config)
+	if !ok {
+		return nil, errConfigNotValid
+	}
+
+	return newTracesReceiver(params, conf, consumer)
+}
+
 func createAddScraperOpts(
 	ctx context.Context,
 	params receiver.Settings,
@@ -100,7 +130,7 @@ func createAddScraperOpts(
 			return nil, fmt.Errorf("failed to create scraper %q: %w", key, err)
 		}
 
-		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(githubScraper))
+		scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, githubScraper))
 	}
 
 	return scraperControllerOptions, nil
@@ -112,13 +142,13 @@ func createGitHubScraper(
 	key string,
 	cfg internal.Config,
 	factories map[string]internal.ScraperFactory,
-) (scraper scraperhelper.Scraper, err error) {
+) (s scraper.Metrics, err error) {
 	factory := factories[key]
 	if factory == nil {
 		return nil, fmt.Errorf("factory not found for scraper %q", key)
 	}
 
-	scraper, err = factory.CreateMetricsScraper(ctx, params, cfg)
+	s, err = factory.CreateMetricsScraper(ctx, params, cfg)
 	if err != nil {
 		return nil, err
 	}

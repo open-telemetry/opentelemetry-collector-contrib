@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -48,9 +47,7 @@ func newBQTest(t *testing.T, maxAdmit, maxWait uint64) bqTest {
 		sdkmetric.WithReader(reader),
 	)
 	settings.MeterProvider = provider
-	settings.LeveledMeterProvider = func(_ configtelemetry.Level) metric.MeterProvider {
-		return settings.MeterProvider
-	}
+	settings.MetricsLevel = configtelemetry.LevelDetailed
 
 	bq, err := NewBoundedQueue(component.MustNewID("admission_testing"), settings, maxAdmit, maxWait)
 	require.NoError(t, err)

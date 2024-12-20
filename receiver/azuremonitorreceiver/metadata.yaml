@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [nslaughter, codeboten]
+    active: [nslaughter]
 
 resource_attributes:
   azuremonitor.tenant_id:

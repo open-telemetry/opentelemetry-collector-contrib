@@ -37,6 +37,8 @@ func (exporter *metricExporter) onMetricData(_ context.Context, metricData pmetr
 		}
 	}
 
+	// Flush the transport channel to force the telemetry to be sent
+	exporter.transportChannel.Flush()
 	return nil
 }
 

@@ -5,14 +5,15 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.opentelemetry.io/collector/processor/processorhelper/processorhelperprofiles"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -27,13 +28,13 @@ var (
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() processor.Factory {
-	return processorprofiles.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processorprofiles.WithTraces(createTracesProcessor, metadata.TracesStability),
-		processorprofiles.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
-		processorprofiles.WithLogs(createLogsProcessor, metadata.LogsStability),
-		processorprofiles.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
+		xprocessor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
 	)
 }
 
@@ -44,6 +45,7 @@ func createDefaultConfig() component.Config {
 		Extract: ExtractConfig{
 			Metadata: enabledAttributes(),
 		},
+		WaitForMetadataTimeout: 10 * time.Second,
 	}
 }
 
@@ -78,8 +80,8 @@ func createProfilesProcessor(
 	ctx context.Context,
 	params processor.Settings,
 	cfg component.Config,
-	nextProfilesConsumer consumerprofiles.Profiles,
-) (processorprofiles.Profiles, error) {
+	nextProfilesConsumer xconsumer.Profiles,
+) (xprocessor.Profiles, error) {
 	return createProfilesProcessorWithOptions(ctx, params, cfg, nextProfilesConsumer)
 }
 
@@ -147,20 +149,20 @@ func createProfilesProcessorWithOptions(
 	ctx context.Context,
 	set processor.Settings,
 	cfg component.Config,
-	nextProfilesConsumer consumerprofiles.Profiles,
+	nextProfilesConsumer xconsumer.Profiles,
 	options ...option,
-) (processorprofiles.Profiles, error) {
+) (xprocessor.Profiles, error) {
 	kp := createKubernetesProcessor(set, cfg, options...)
 
-	return processorhelperprofiles.NewProfiles(
+	return xprocessorhelper.NewProfiles(
 		ctx,
 		set,
 		cfg,
 		nextProfilesConsumer,
 		kp.processProfiles,
-		processorhelperprofiles.WithCapabilities(consumerCapabilities),
-		processorhelperprofiles.WithStart(kp.Start),
-		processorhelperprofiles.WithShutdown(kp.Shutdown),
+		xprocessorhelper.WithCapabilities(consumerCapabilities),
+		xprocessorhelper.WithStart(kp.Start),
+		xprocessorhelper.WithShutdown(kp.Shutdown),
 	)
 }
 
@@ -201,6 +203,11 @@ func createProcessorOpts(cfg component.Config) []option {
 	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
 
 	opts = append(opts, withExcludes(oCfg.Exclude))
+
+	opts = append(opts, withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout))
+	if oCfg.WaitForMetadata {
+		opts = append(opts, withWaitForMetadata(true))
+	}
 
 	return opts
 }

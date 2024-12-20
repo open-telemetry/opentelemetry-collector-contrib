@@ -266,7 +266,6 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		test := test
 		t.Run(test.testName, func(t *testing.T) {
 			sentryEvent, err := sentryEventFromError(test.errorMessage, test.errorType, test.sampleSentrySpan)
 			if sentryEvent != nil {
@@ -371,7 +370,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
 			attrs: map[string]any{
-				conventions.AttributeHTTPMethod: "GET",
+				conventions.AttributeHTTPMethod: http.MethodGet,
 			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",

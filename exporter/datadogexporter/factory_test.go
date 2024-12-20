@@ -300,7 +300,7 @@ func TestOnlyMetadata(t *testing.T) {
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
-		API:          APIConfig{Key: "notnull"},
+		API:          APIConfig{Key: "aaaaaaa"},
 		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		Traces:       TracesConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		OnlyMetadata: true,
@@ -308,6 +308,7 @@ func TestOnlyMetadata(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			ReporterPeriod: 30 * time.Minute,
 		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)

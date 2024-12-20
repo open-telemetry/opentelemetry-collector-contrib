@@ -672,6 +672,7 @@ func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
 
 	assert.Equal(t, expected, was)
 }
+
 func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
 	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
 	// ObservedTimestamp should be used

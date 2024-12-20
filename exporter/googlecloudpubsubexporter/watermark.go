@@ -12,9 +12,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type metricsWatermarkFunc func(metrics pmetric.Metrics, processingTime time.Time, allowedDrift time.Duration) time.Time
-type logsWatermarkFunc func(logs plog.Logs, processingTime time.Time, allowedDrift time.Duration) time.Time
-type tracesWatermarkFunc func(traces ptrace.Traces, processingTime time.Time, allowedDrift time.Duration) time.Time
+type (
+	metricsWatermarkFunc func(metrics pmetric.Metrics, processingTime time.Time, allowedDrift time.Duration) time.Time
+	logsWatermarkFunc    func(logs plog.Logs, processingTime time.Time, allowedDrift time.Duration) time.Time
+	tracesWatermarkFunc  func(traces ptrace.Traces, processingTime time.Time, allowedDrift time.Duration) time.Time
+)
 
 type collectFunc func(timestamp pcommon.Timestamp) bool
 
@@ -33,9 +35,9 @@ type collector struct {
 func (c *collector) earliest(timestamp pcommon.Timestamp) bool {
 	t := timestamp.AsTime()
 	if t.Before(c.calculatedTime) {
-		min := c.processingTime.Add(-c.allowedDrift)
-		if t.Before(min) {
-			c.calculatedTime = min
+		minTime := c.processingTime.Add(-c.allowedDrift)
+		if t.Before(minTime) {
+			c.calculatedTime = minTime
 			return true
 		}
 		c.calculatedTime = t
