@@ -72,7 +72,6 @@ func BenchmarkWriter(b *testing.B) {
 			"raw-file":         tempfile(b),
 			"buffered-file":    newBufferedWriteCloser(tempfile(b)),
 		} {
-			w := w
 			b.Run(fmt.Sprintf("%s_%d_bytes", name, payloadSize), func(b *testing.B) {
 				b.ReportAllocs()
 				b.ResetTimer()
