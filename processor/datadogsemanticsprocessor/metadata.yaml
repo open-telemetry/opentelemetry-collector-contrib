@@ -1,0 +1,9 @@
+type: datadogsemantics
+
+status:
+  class: processor
+  stability:
+    development: [logs, metrics, traces]
+  distributions: [contrib]
+  codeowners:
+    active: [IbraheemA]
