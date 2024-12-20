@@ -129,6 +129,8 @@ func TestBasicTranslation(t *testing.T) {
 		name                          string
 		overrideIncomingDatadogFields bool
 		in                            []testutil.OTLPResourceSpan
+		metaOverride                  map[string]string
+		metricsOverride               map[string]float64
 		fn                            func(*ptrace.Traces)
 	}{
 		{
@@ -245,6 +247,8 @@ func TestBasicTranslation(t *testing.T) {
 		{
 			name:                          "don't overrideIncomingDatadogFields",
 			overrideIncomingDatadogFields: false,
+			metaOverride:                  map[string]string{"env": "specified-env"},
+			metricsOverride:               map[string]float64{semconv.AttributeHTTPStatusCode: 500.0},
 			in: []testutil.OTLPResourceSpan{
 				{
 					LibName:    "libname",
@@ -261,17 +265,13 @@ func TestBasicTranslation(t *testing.T) {
 							ParentID: [8]byte{0, 0, 0, 0, 0, 0, 0, 1},
 							Kind:     ptrace.SpanKindServer,
 							Attributes: map[string]interface{}{
-								"datadog.service":   "specified-service",
-								"datadog.resource":  "specified-resource",
-								"datadog.name":      "specified-operation",
-								"datadog.trace_id":  "123456789",
-								"datadog.span_id":   "987654321",
-								"datadog.parent_id": "123456789",
-								"datadog.type":      "specified-type",
-								// TODO: Update testutil.NewOTLPTracesRequest to support map[string]interface{},
-								//  then update this test to override meta and metrics.
-								//"datadog.meta":                  map[string]interface{}{"env": "specified-env"},
-								//"datadog.metrics":               map[string]interface{}{semconv.AttributeHTTPStatusCode: 500},
+								"datadog.service":               "specified-service",
+								"datadog.resource":              "specified-resource",
+								"datadog.name":                  "specified-operation",
+								"datadog.trace_id":              "123456789",
+								"datadog.span_id":               "987654321",
+								"datadog.parent_id":             "123456789",
+								"datadog.type":                  "specified-type",
 								"operation.name":                "test-operation",
 								semconv.AttributeHTTPStatusCode: 200,
 							},
@@ -296,14 +296,12 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "123456789", ddParentID.AsString())
 				ddType, _ := span.Attributes().Get("datadog.type")
 				require.Equal(t, "specified-type", ddType.AsString())
-				// TODO: Update testutil.NewOTLPTracesRequest to support map[string]interface{},
-				//  then update this test to check the values of meta and metrics.
-				//meta, _ := span.Attributes().Get("datadog.meta")
-				//env, _ := meta.Map().Get("env")
-				//require.Equal(t, "specified-env", env.AsString())
-				//metrics, _ := span.Attributes().Get("datadog.metrics")
-				//statusCode, _ := metrics.Map().Get(semconv.AttributeHTTPStatusCode)
-				//require.Equal(t, 500.0, statusCode.Double())
+				meta, _ := span.Attributes().Get("datadog.meta")
+				env, _ := meta.Map().Get("env")
+				require.Equal(t, "specified-env", env.AsString())
+				metrics, _ := span.Attributes().Get("datadog.metrics")
+				statusCode, _ := metrics.Map().Get(semconv.AttributeHTTPStatusCode)
+				require.Equal(t, 500.0, statusCode.Double())
 			},
 		},
 	}
@@ -318,6 +316,22 @@ func TestBasicTranslation(t *testing.T) {
 		)
 
 		traces := testutil.NewOTLPTracesRequest(tt.in)
+
+		// TODO: Update testutil.NewOTLPTracesRequest to support map[string]interface{}, then update this test to
+		//  specify meta and metrics along with other attributes instead of using separate fields.
+		sattr := traces.Traces().ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
+		if tt.metaOverride != nil {
+			meta := sattr.PutEmptyMap("datadog.meta")
+			for k, v := range tt.metaOverride {
+				meta.PutStr(k, v)
+			}
+		}
+		if tt.metricsOverride != nil {
+			metrics := sattr.PutEmptyMap("datadog.metrics")
+			for k, v := range tt.metricsOverride {
+				metrics.PutDouble(k, v)
+			}
+		}
 
 		m.testConsume(context.Background(),
 			traces.Traces(),
