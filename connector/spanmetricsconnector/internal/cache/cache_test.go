@@ -41,7 +41,6 @@ func TestNewCache(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := NewCache[string, string](tt.args.size)
@@ -122,7 +121,6 @@ func TestCache_Get(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			c := tt.lruCache()
@@ -162,7 +160,6 @@ func TestCache_RemoveEvictedItems(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cache, err := tt.lruCache()
@@ -212,7 +209,6 @@ func TestCache_PurgeItems(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cache, err := tt.lruCache()

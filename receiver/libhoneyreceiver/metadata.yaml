@@ -3,6 +3,7 @@ type: libhoney
 status:
   class: receiver
   stability:
-    development: [traces, logs]
+    alpha: [traces, logs]
+  distributions: [contrib]
   codeowners:
     active: [TylerHelmuth]

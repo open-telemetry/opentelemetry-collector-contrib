@@ -1579,8 +1579,6 @@ func TestWatch(t *testing.T) {
 			wg.Add(len(watchers))
 
 			for svc, watcher := range watchers {
-				svc := svc
-				watcher := watcher
 				go func() {
 					resp, err := watcher.Recv()
 					// Ensure there are not any unread messages

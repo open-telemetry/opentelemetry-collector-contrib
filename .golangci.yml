@@ -146,11 +146,11 @@ linters-settings:
 
 linters:
   enable:
+    - copyloopvar
     - decorder
     - depguard
     - errcheck
     - errorlint
-    - exportloopref
     - exhaustive
     - gci
     - gocritic
@@ -181,5 +181,8 @@ issues:
       linters:
         - gosec
     - text: "G402:"
+      linters:
+        - gosec
+    - text: "G115:"
       linters:
         - gosec
