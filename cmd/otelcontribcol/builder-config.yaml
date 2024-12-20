@@ -174,6 +174,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.116.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver v0.116.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.116.0
@@ -443,6 +444,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../receiver/datadogreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ../../receiver/chronyreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver => ../../extension/observer/ecstaskobserver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver => ../../receiver/libhoneyreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver => ../../receiver/lokireceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver => ../../receiver/filestatsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter => ../../exporter/awss3exporter
