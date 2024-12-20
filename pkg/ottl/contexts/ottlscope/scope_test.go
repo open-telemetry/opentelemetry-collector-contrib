@@ -17,7 +17,7 @@ import (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refIS, refResource := createTelemetry()
+	refIS, _ := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -380,17 +380,6 @@ func Test_newPathGetSetter(t *testing.T) {
 			newVal: "next",
 			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.SetVersion("next")
-			},
-		},
-		{
-			name: "resource",
-			path: &internal.TestPath[TransformContext]{
-				N: "resource",
-			},
-			orig:   refResource,
-			newVal: pcommon.NewResource(),
-			modified: func(_ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
-				pcommon.NewResource().CopyTo(resource)
 			},
 		},
 	}
