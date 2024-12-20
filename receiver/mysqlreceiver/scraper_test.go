@@ -125,6 +125,37 @@ func TestScrape(t *testing.T) {
 	})
 }
 
+func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
+
+	expectedFile := filepath.Join("testdata", "scraper", "expected_oob.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Username = "otel"
+	cfg.Password = "otel"
+	cfg.AddrConfig = confignet.AddrConfig{Endpoint: "localhost:3306"}
+
+	scraper := newMySQLScraper(receivertest.NewNopSettings(), cfg)
+	scraper.sqlclient = &mockClient{
+		globalStatsFile:             "global_stats_oob",
+		innodbStatsFile:             "innodb_stats_empty",
+		tableIoWaitsFile:            "table_io_waits_stats_empty",
+		indexIoWaitsFile:            "index_io_waits_stats_empty",
+		tableStatsFile:              "table_stats_empty",
+		statementEventsFile:         "statement_events_empty",
+		tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
+		replicaStatusFile:           "replica_stats_empty",
+	}
+
+	scraper.renameCommands = true
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
 var _ client = (*mockClient)(nil)
 
 type mockClient struct {
