@@ -16,8 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 )
 
 var _ consumer.Metrics = &metricStatements{}
@@ -169,99 +167,83 @@ func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pm
 	return nil
 }
 
-type MetricParserCollection struct {
-	parserCollection
-	metricParser    ottl.Parser[ottlmetric.TransformContext]
-	dataPointParser ottl.Parser[ottldatapoint.TransformContext]
-}
+type MetricParserCollection ottl.ParserCollection[consumer.Metrics]
 
-type MetricParserCollectionOption func(*MetricParserCollection) error
+type MetricParserCollectionOption ottl.ParserCollectionOption[consumer.Metrics]
 
 func WithMetricParser(functions map[string]ottl.Factory[ottlmetric.TransformContext]) MetricParserCollectionOption {
-	return func(mp *MetricParserCollection) error {
-		metricParser, err := ottlmetric.NewParser(functions, mp.settings)
+	return func(pc *ottl.ParserCollection[consumer.Metrics]) error {
+		metricParser, err := ottlmetric.NewParser(functions, pc.Settings, ottlmetric.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
-		mp.metricParser = metricParser
-		return nil
+		return ottl.WithParserCollectionContext(ottlmetric.ContextName, &metricParser, convertMetricStatements)(pc)
 	}
 }
 
 func WithDataPointParser(functions map[string]ottl.Factory[ottldatapoint.TransformContext]) MetricParserCollectionOption {
-	return func(mp *MetricParserCollection) error {
-		dataPointParser, err := ottldatapoint.NewParser(functions, mp.settings)
+	return func(pc *ottl.ParserCollection[consumer.Metrics]) error {
+		dataPointParser, err := ottldatapoint.NewParser(functions, pc.Settings, ottldatapoint.EnablePathContextNames())
 		if err != nil {
 			return err
 		}
-		mp.dataPointParser = dataPointParser
-		return nil
+		return ottl.WithParserCollectionContext(ottldatapoint.ContextName, &dataPointParser, convertDataPointStatements)(pc)
 	}
 }
 
 func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption {
-	return func(mp *MetricParserCollection) error {
-		mp.errorMode = errorMode
-		return nil
-	}
+	return MetricParserCollectionOption(ottl.WithParserCollectionErrorMode[consumer.Metrics](errorMode))
 }
 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
-	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
+	pcOptions := []ottl.ParserCollectionOption[consumer.Metrics]{
+		withCommonContextParsers[consumer.Metrics](),
+		ottl.EnableParserCollectionModifiedStatementLogging[consumer.Metrics](true),
+	}
+
+	for _, option := range options {
+		pcOptions = append(pcOptions, ottl.ParserCollectionOption[consumer.Metrics](option))
+	}
+
+	pc, err := ottl.NewParserCollection(settings, pcOptions...)
 	if err != nil {
 		return nil, err
 	}
-	sp, err := ottlscope.NewParser(ScopeFunctions(), settings)
-	if err != nil {
-		return nil, err
-	}
-	mpc := &MetricParserCollection{
-		parserCollection: parserCollection{
-			settings:       settings,
-			resourceParser: rp,
-			scopeParser:    sp,
-		},
-	}
 
-	for _, op := range options {
-		err := op(mpc)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return mpc, nil
+	mpc := MetricParserCollection(*pc)
+	return &mpc, nil
 }
 
-func (pc MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Metrics, error) {
-	switch contextStatements.Context {
-	case Metric:
-		parseStatements, err := pc.metricParser.ParseStatements(contextStatements.Statements)
-		if err != nil {
-			return nil, err
-		}
-		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForMetric, contextStatements.Conditions, pc.parserCollection, filterottl.StandardMetricFuncs())
-		if errGlobalBoolExpr != nil {
-			return nil, errGlobalBoolExpr
-		}
-		mStatements := ottlmetric.NewStatementSequence(parseStatements, pc.settings, ottlmetric.WithStatementSequenceErrorMode(pc.errorMode))
-		return metricStatements{mStatements, globalExpr}, nil
-	case DataPoint:
-		parsedStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
-		if err != nil {
-			return nil, err
-		}
-		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForDataPoint, contextStatements.Conditions, pc.parserCollection, filterottl.StandardDataPointFuncs())
-		if errGlobalBoolExpr != nil {
-			return nil, errGlobalBoolExpr
-		}
-		dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.settings, ottldatapoint.WithStatementSequenceErrorMode(pc.errorMode))
-		return dataPointStatements{dpStatements, globalExpr}, nil
-	default:
-		statements, err := pc.parseCommonContextStatements(contextStatements)
-		if err != nil {
-			return nil, err
-		}
-		return statements, nil
+func convertMetricStatements(pc *ottl.ParserCollection[consumer.Metrics], _ *ottl.Parser[ottlmetric.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottlmetric.TransformContext]) (consumer.Metrics, error) {
+	contextStatements, err := toContextStatements(statements)
+	if err != nil {
+		return nil, err
 	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForMetric, contextStatements.Conditions, pc.ErrorMode, pc.Settings, filterottl.StandardMetricFuncs())
+	if errGlobalBoolExpr != nil {
+		return nil, errGlobalBoolExpr
+	}
+	mStatements := ottlmetric.NewStatementSequence(parsedStatements, pc.Settings, ottlmetric.WithStatementSequenceErrorMode(pc.ErrorMode))
+	return metricStatements{mStatements, globalExpr}, nil
+}
+
+func convertDataPointStatements(pc *ottl.ParserCollection[consumer.Metrics], _ *ottl.Parser[ottldatapoint.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottldatapoint.TransformContext]) (consumer.Metrics, error) {
+	contextStatements, err := toContextStatements(statements)
+	if err != nil {
+		return nil, err
+	}
+	globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForDataPoint, contextStatements.Conditions, pc.ErrorMode, pc.Settings, filterottl.StandardDataPointFuncs())
+	if errGlobalBoolExpr != nil {
+		return nil, errGlobalBoolExpr
+	}
+	dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.Settings, ottldatapoint.WithStatementSequenceErrorMode(pc.ErrorMode))
+	return dataPointStatements{dpStatements, globalExpr}, nil
+}
+
+func (mpc *MetricParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Metrics, error) {
+	pc := ottl.ParserCollection[consumer.Metrics](*mpc)
+	if contextStatements.Context != "" {
+		return pc.ParseStatementsWithContext(string(contextStatements.Context), contextStatements, true)
+	}
+	return pc.ParseStatements(contextStatements)
 }
