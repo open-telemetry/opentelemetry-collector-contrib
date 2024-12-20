@@ -69,6 +69,6 @@ func safeUint64ToInt64(v uint64) int64 {
 	if v > math.MaxInt64 {
 		return math.MaxInt64
 	} else {
-		return int64(v) // nolint:goset // overflow checked
+		return int64(v) // nolint:gosec // overflow checked
 	}
 }
