@@ -218,7 +218,7 @@ receiver/cloudfoundryreceiver/                    @open-telemetry/collector-cont
 receiver/collectdreceiver/                        @open-telemetry/collector-contrib-approvers @atoulme
 receiver/couchdbreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/datadogreceiver/                         @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @MovieStoreGuy
-receiver/dockerstatsreceiver/                     @open-telemetry/collector-contrib-approvers @jamesmoessis
+receiver/dockerstatsreceiver/                     @open-telemetry/collector-contrib-approvers @jamesmoessis @spiffyy99
 receiver/elasticsearchreceiver/                   @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/expvarreceiver/                          @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/filelogreceiver/                         @open-telemetry/collector-contrib-approvers @djaglowski
