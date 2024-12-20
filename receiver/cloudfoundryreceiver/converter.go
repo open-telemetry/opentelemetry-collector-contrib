@@ -41,7 +41,7 @@ var allowResourceAttributes = featuregate.GlobalRegistry().MustRegister(
 	"cloudfoundry.resourceAttributes.allow",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, envelope tags are copied to the metrics as resource attributes instead of datapoint attributes"),
-	featuregate.WithRegisterFromVersion("v0.109.0"),
+	featuregate.WithRegisterFromVersion("v0.117.0"),
 )
 
 func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pmetric.MetricSlice, startTime time.Time) {
