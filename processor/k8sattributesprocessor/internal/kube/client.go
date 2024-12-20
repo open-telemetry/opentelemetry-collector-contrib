@@ -23,10 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
@@ -40,20 +38,23 @@ var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                      sync.RWMutex
-	deleteMut              sync.Mutex
-	logger                 *zap.Logger
-	kc                     kubernetes.Interface
-	informer               cache.SharedInformer
-	namespaceInformer      cache.SharedInformer
-	nodeInformer           cache.SharedInformer
-	replicasetInformer     cache.SharedInformer
-	replicasetRegex        *regexp.Regexp
-	cronJobRegex           *regexp.Regexp
-	deleteQueue            []deleteRequest
-	stopCh                 chan struct{}
-	waitForMetadata        bool
-	waitForMetadataTimeout time.Duration
+	m                             sync.RWMutex
+	deleteMut                     sync.Mutex
+	logger                        *zap.Logger
+	informer                      cache.SharedInformer
+	podHandlerRegistration        cache.ResourceEventHandlerRegistration
+	namespaceInformer             cache.SharedInformer
+	namespaceHandlerRegistration  cache.ResourceEventHandlerRegistration
+	nodeInformer                  cache.SharedInformer
+	nodeHandlerRegistration       cache.ResourceEventHandlerRegistration
+	replicasetInformer            cache.SharedInformer
+	replicasetHandlerRegistration cache.ResourceEventHandlerRegistration
+	replicasetRegex               *regexp.Regexp
+	cronJobRegex                  *regexp.Regexp
+	deleteQueue                   []deleteRequest
+	stopCh                        chan struct{}
+	waitForMetadata               bool
+	waitForMetadataTimeout        time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -89,15 +90,11 @@ var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 // New initializes a new k8s Client.
 func New(
 	set component.TelemetrySettings,
-	apiCfg k8sconfig.APIConfig,
 	rules ExtractionRules,
 	filters Filters,
 	associations []Association,
 	exclude Excludes,
-	newClientSet APIClientsetProvider,
-	newInformer InformerProvider,
-	newNamespaceInformer InformerProviderNamespace,
-	newReplicaSetInformer InformerProviderReplicaSet,
+	informerProviders *InformerProviders,
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 ) (Client, error) {
@@ -124,15 +121,6 @@ func New(
 	c.Namespaces = map[string]*Namespace{}
 	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
-	if newClientSet == nil {
-		newClientSet = k8sconfig.MakeClient
-	}
-
-	kc, err := newClientSet(apiCfg)
-	if err != nil {
-		return nil, err
-	}
-	c.kc = kc
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -143,56 +131,52 @@ func New(
 		zap.String("labelSelector", labelSelector.String()),
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
-	if newInformer == nil {
-		newInformer = newSharedInformer
-	}
 
-	if newNamespaceInformer == nil {
-		switch {
-		case c.extractNamespaceLabelsAnnotations():
-			// if rules to extract metadata from namespace is configured use namespace shared informer containing
-			// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
-			newNamespaceInformer = newNamespaceSharedInformer
-		case rules.ClusterUID:
-			// use kube-system shared informer to only watch kube-system namespace
-			// reducing overhead of watching all the namespaces
-			newNamespaceInformer = newKubeSystemSharedInformer
-		default:
-			newNamespaceInformer = NewNoOpInformer
+	podTransformFunc := func(object any) (any, error) {
+		originalPod, success := object.(*api_v1.Pod)
+		if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+			return object, nil
 		}
+
+		return removeUnnecessaryPodData(originalPod, c.Rules), nil
 	}
-
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-	err = c.informer.SetTransform(
-		func(object any) (any, error) {
-			originalPod, success := object.(*api_v1.Pod)
-			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-				return object, nil
-			}
-
-			return removeUnnecessaryPodData(originalPod, c.Rules), nil
-		},
+	c.informer, err = informerProviders.PodInformerProvider(
+		c.Filters.Namespace,
+		labelSelector,
+		fieldSelector,
+		podTransformFunc,
+		c.stopCh,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	c.namespaceInformer = newNamespaceInformer(c.kc)
+	// if rules to extract metadata from namespace is configured use namespace shared informer containing
+	// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
+	if rules.extractNamespaceLabelsAnnotations() || rules.ClusterUID {
+		fs := fields.Everything()
+		if !rules.extractNamespaceLabelsAnnotations() {
+			fs = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace)
+		}
+		c.namespaceInformer, err = informerProviders.NamespaceInformerProvider(fs, c.stopCh)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	if rules.DeploymentName || rules.DeploymentUID {
-		if newReplicaSetInformer == nil {
-			newReplicaSetInformer = newReplicaSetSharedInformer
-		}
-		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
-		err = c.replicasetInformer.SetTransform(
-			func(object any) (any, error) {
-				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
-				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
-					return object, nil
-				}
+		transformFunc := func(object any) (any, error) {
+			originalReplicaset, success := object.(*apps_v1.ReplicaSet)
+			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+				return object, nil
+			}
 
-				return removeUnnecessaryReplicaSetData(originalReplicaset), nil
-			},
+			return removeUnnecessaryReplicaSetData(originalReplicaset), nil
+		}
+		c.replicasetInformer, err = informerProviders.ReplicaSetInformerProvider(
+			c.Filters.Namespace,
+			transformFunc,
+			c.stopCh,
 		)
 		if err != nil {
 			return nil, err
@@ -200,7 +184,10 @@ func New(
 	}
 
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
+		c.nodeInformer, err = informerProviders.NodeInformerProvider(c.Filters.Node, 5*time.Minute, c.stopCh)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c, err
@@ -208,8 +195,11 @@ func New(
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
+	var err error
+	c.m.Lock()
+	defer c.m.Unlock()
 	synced := make([]cache.InformerSynced, 0)
-	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.podHandlerRegistration, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
@@ -217,22 +207,22 @@ func (c *WatchClient) Start() error {
 	if err != nil {
 		return err
 	}
-	synced = append(synced, reg.HasSynced)
-	go c.informer.Run(c.stopCh)
+	synced = append(synced, c.podHandlerRegistration.HasSynced)
 
-	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
-	if err != nil {
-		return err
+	if c.namespaceInformer != nil {
+		c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleNamespaceAdd,
+			UpdateFunc: c.handleNamespaceUpdate,
+			DeleteFunc: c.handleNamespaceDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, c.namespaceHandlerRegistration.HasSynced)
 	}
-	synced = append(synced, reg.HasSynced)
-	go c.namespaceInformer.Run(c.stopCh)
 
-	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if c.replicasetInformer != nil {
+		c.replicasetHandlerRegistration, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
@@ -240,12 +230,11 @@ func (c *WatchClient) Start() error {
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.replicasetInformer.Run(c.stopCh)
+		synced = append(synced, c.replicasetHandlerRegistration.HasSynced)
 	}
 
 	if c.nodeInformer != nil {
-		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		c.nodeHandlerRegistration, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
 			DeleteFunc: c.handleNodeDelete,
@@ -253,10 +242,8 @@ func (c *WatchClient) Start() error {
 		if err != nil {
 			return err
 		}
-		synced = append(synced, reg.HasSynced)
-		go c.nodeInformer.Run(c.stopCh)
+		synced = append(synced, c.nodeHandlerRegistration.HasSynced)
 	}
-
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
 		t := time.AfterFunc(c.waitForMetadataTimeout, func() {
@@ -272,6 +259,42 @@ func (c *WatchClient) Start() error {
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
+	c.m.Lock()
+	defer c.m.Unlock()
+	var eventHandlerRemovalErrors []error
+	if c.podHandlerRegistration != nil {
+		if err := c.informer.RemoveEventHandler(c.podHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.podHandlerRegistration = nil
+	}
+
+	if c.namespaceHandlerRegistration != nil {
+		if err := c.namespaceInformer.RemoveEventHandler(c.namespaceHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.namespaceHandlerRegistration = nil
+	}
+
+	if c.replicasetInformer != nil && c.replicasetHandlerRegistration != nil {
+		if err := c.replicasetInformer.RemoveEventHandler(c.replicasetHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.replicasetHandlerRegistration = nil
+	}
+
+	if c.nodeInformer != nil && c.nodeHandlerRegistration != nil {
+		if err := c.nodeInformer.RemoveEventHandler(c.nodeHandlerRegistration); err != nil {
+			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
+		}
+		c.nodeHandlerRegistration = nil
+	}
+
+	if len(eventHandlerRemovalErrors) > 0 {
+		multiErr := errors.Join(eventHandlerRemovalErrors...)
+		c.logger.Error("error removing event handlers from informers", zap.Error(multiErr))
+	}
+
 	close(c.stopCh)
 }
 
@@ -983,22 +1006,6 @@ func (c *WatchClient) addOrUpdateNamespace(namespace *api_v1.Namespace) {
 		c.Namespaces[namespace.Name] = newNamespace
 	}
 	c.m.Unlock()
-}
-
-func (c *WatchClient) extractNamespaceLabelsAnnotations() bool {
-	for _, r := range c.Rules.Labels {
-		if r.From == MetadataFromNamespace {
-			return true
-		}
-	}
-
-	for _, r := range c.Rules.Annotations {
-		if r.From == MetadataFromNamespace {
-			return true
-		}
-	}
-
-	return false
 }
 
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
