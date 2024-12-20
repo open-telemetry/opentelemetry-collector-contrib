@@ -4,7 +4,6 @@
 package solarwindsapmsettingsextension
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -275,21 +274,26 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestResolveServiceNameBestEffort(t *testing.T) {
+func TestResolveServiceNameBestEffortNoEnv(t *testing.T) {
 	// Without any environment variables
 	require.Empty(t, resolveServiceNameBestEffort())
-	// With OTEL_SERVICE_NAME only
-	require.NoError(t, os.Setenv("OTEL_SERVICE_NAME", "otel_ser1"))
+}
+
+// With OTEL_SERVICE_NAME only
+func TestResolveServiceNameBestEffortOnlyOtelService(t *testing.T) {
+	t.Setenv("OTEL_SERVICE_NAME", "otel_ser1")
 	require.Equal(t, "otel_ser1", resolveServiceNameBestEffort())
-	require.NoError(t, os.Unsetenv("OTEL_SERVICE_NAME"))
-	// With AWS_LAMBDA_FUNCTION_NAME only
-	require.NoError(t, os.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda"))
+}
+
+// With AWS_LAMBDA_FUNCTION_NAME only
+func TestResolveServiceNameBestEffortOnlyAwsLambda(t *testing.T) {
+	t.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda")
 	require.Equal(t, "lambda", resolveServiceNameBestEffort())
-	require.NoError(t, os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME"))
-	// With both
-	require.NoError(t, os.Setenv("OTEL_SERVICE_NAME", "otel_ser1"))
-	require.NoError(t, os.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda"))
+}
+
+// With both
+func TestResolveServiceNameBestEffortBoth(t *testing.T) {
+	t.Setenv("OTEL_SERVICE_NAME", "otel_ser1")
+	t.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda")
 	require.Equal(t, "otel_ser1", resolveServiceNameBestEffort())
-	require.NoError(t, os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME"))
-	require.NoError(t, os.Unsetenv("OTEL_SERVICE_NAME"))
 }

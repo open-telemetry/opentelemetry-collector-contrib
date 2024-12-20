@@ -167,8 +167,8 @@ func (a *ActiveServiceTracker) processEnvironment(res pcommon.Resource, now time
 						a.hostEnvironmentCache.UpdateOrCreate(&CacheKey{value: environment}, now)
 					}
 					// nolint:errorlint
-					if max, ok := err.(*correlations.ErrMaxEntries); ok && max.MaxEntries > 0 {
-						a.hostEnvironmentCache.SetMaxSize(max.MaxEntries, now)
+					if maxEntry, ok := err.(*correlations.ErrMaxEntries); ok && maxEntry.MaxEntries > 0 {
+						a.hostEnvironmentCache.SetMaxSize(maxEntry.MaxEntries, now)
 					}
 				})
 			}
@@ -226,8 +226,8 @@ func (a *ActiveServiceTracker) processService(res pcommon.Resource, now time.Tim
 						a.hostServiceCache.UpdateOrCreate(&CacheKey{value: service}, now)
 					}
 					// nolint:errorlint
-					if max, ok := err.(*correlations.ErrMaxEntries); ok && max.MaxEntries > 0 {
-						a.hostServiceCache.SetMaxSize(max.MaxEntries, now)
+					if maxEntry, ok := err.(*correlations.ErrMaxEntries); ok && maxEntry.MaxEntries > 0 {
+						a.hostServiceCache.SetMaxSize(maxEntry.MaxEntries, now)
 					}
 				})
 			}
