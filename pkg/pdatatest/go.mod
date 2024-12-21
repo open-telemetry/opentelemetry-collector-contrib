@@ -6,8 +6,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.116.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.22.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.116.0
+	go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/pdata/pprofile v0.116.1-0.20241220212031-7c2639723f67
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -25,7 +25,7 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/grpc v1.69.0 // indirect
-	google.golang.org/protobuf v1.35.2 // indirect
+	google.golang.org/protobuf v1.36.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
