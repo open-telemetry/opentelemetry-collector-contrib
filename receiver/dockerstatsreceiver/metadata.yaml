@@ -3,6 +3,7 @@ type: docker_stats
 status:
   class: receiver
   stability:
+    development: [logs]
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
