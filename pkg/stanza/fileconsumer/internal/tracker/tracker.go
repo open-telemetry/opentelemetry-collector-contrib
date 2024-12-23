@@ -179,8 +179,10 @@ func (t *fileTracker) restoreArchiveIndex(ctx context.Context) {
 	if err != nil {
 		t.set.Logger.Error("error getting read index. Starting from 0", zap.Error(err))
 	} else if previousPollsToArchive < t.pollsToArchive {
-		// if archive size has increased, we just point the archive index at the end
-		t.archiveIndex = previousPollsToArchive
+		// if archive size has increased, we just increment the index until we enconter a nil value
+		for t.archiveIndex < t.pollsToArchive && t.isSet(ctx, t.archiveIndex) {
+			t.archiveIndex++
+		}
 	} else if previousPollsToArchive > t.pollsToArchive {
 		// we will only attempt to rewrite archive if the archive size has shrinked
 		t.set.Logger.Warn("polls_to_archive has changed. Will attempt to rewrite archive")
@@ -196,10 +198,12 @@ func (t *fileTracker) restoreArchiveIndex(ctx context.Context) {
 }
 
 func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive int) {
+	// Ensure archiveIndex is non-negative
 	if t.archiveIndex < 0 {
-		// safety check.
+		t.archiveIndex = 0
 		return
 	}
+	// Function to swap data between two indices
 	swapData := func(idx1, idx2 int) error {
 		val1, err := t.persister.Get(ctx, archiveKey(idx1))
 		if err != nil {
@@ -211,28 +215,26 @@ func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive
 		}
 		return t.persister.Batch(ctx, storage.SetOperation(archiveKey(idx1), val2), storage.SetOperation(archiveKey(idx2), val1))
 	}
+	// Calculate the least recent index, w.r.t. new archive size
 
 	leastRecentIndex := mod(t.archiveIndex-t.pollsToArchive, previousPollsToArchive)
+	// Refer archive.md for the detailed design
 
-	// If we need to start from the least recent poll, adjust the direction of the operation
-	if t.archiveIndex >= leastRecentIndex {
-		// start from least recent
+	if mod(t.archiveIndex-1, previousPollsToArchive) > t.pollsToArchive {
 		for i := 0; i < t.pollsToArchive; i++ {
 			if err := swapData(i, leastRecentIndex); err != nil {
-				t.set.Logger.Warn("error while swapping archive", zap.Error(err))
+				t.set.Logger.Error("error while swapping archive", zap.Error(err))
 			}
 			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
 		}
 		t.archiveIndex = 0
 	} else {
-		// start from most recent
-		count := previousPollsToArchive - leastRecentIndex
-		if val, _ := t.persister.Get(ctx, archiveKey(t.archiveIndex)); val == nil {
-			// if current index points at unset key, no need to do anything
+		if t.isSet(ctx, t.archiveIndex) {
+			// If the current index points at an unset key, no need to do anything
 			return
 		}
-		for i := t.archiveIndex; i < count; i++ {
-			if err := swapData(i, leastRecentIndex); err != nil {
+		for i := 0; i < t.pollsToArchive-t.archiveIndex; i++ {
+			if err := swapData(t.archiveIndex+i, leastRecentIndex); err != nil {
 				t.set.Logger.Warn("error while swapping archive", zap.Error(err))
 			}
 			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
@@ -241,10 +243,7 @@ func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive
 }
 
 func (t *fileTracker) removeExtraKeys(ctx context.Context) {
-	for i := t.pollsToArchive; ; i++ {
-		if val, err := t.persister.Get(ctx, archiveKey(i)); err != nil || val == nil {
-			break
-		}
+	for i := t.pollsToArchive; t.isSet(ctx, i); i++ {
 		if err := t.persister.Delete(ctx, archiveKey(i)); err != nil {
 			t.set.Logger.Error("error while cleaning extra keys", zap.Error(err))
 		}
@@ -309,6 +308,11 @@ func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Meta
 
 func (t *fileTracker) archiveEnabled() bool {
 	return t.pollsToArchive > 0 && t.persister != nil
+}
+
+func (t *fileTracker) isSet(ctx context.Context, index int) bool {
+	val, err := t.persister.Get(ctx, archiveKey(index))
+	return val != nil && err == nil
 }
 
 // FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
