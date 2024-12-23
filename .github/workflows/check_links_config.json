@@ -11,6 +11,9 @@
         },
         {
             "pattern": "^#"
+        },
+        {
+            "pattern": "https://blogs\\.oracle\\.com/developers/post/connecting-a-go-application-to-oracle-database"
         }
     ],
     "aliveStatusCodes": [429, 200]
