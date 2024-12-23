@@ -38,19 +38,19 @@ type fakeMetricServiceServer struct {
 	timeSeries        []*monitoringpb.TimeSeries
 }
 
-type MetricsTestServer struct {
+type metricsTestServer struct {
 	lis      net.Listener
 	srv      *grpc.Server
 	Endpoint string
 }
 
-func NewFakeMetricTestServer() (*MetricsTestServer, error) {
+func newFakeMetricTestServer() (*metricsTestServer, error) {
 	srv := grpc.NewServer()
 	lis, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return nil, err
 	}
-	testServer := &MetricsTestServer{
+	testServer := &metricsTestServer{
 		Endpoint: lis.Addr().String(),
 		lis:      lis,
 		srv:      srv,
@@ -142,7 +142,7 @@ func TestInitializeClient_Failure(t *testing.T) {
 
 func TestStart_Success(t *testing.T) {
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -200,7 +200,7 @@ func TestStart_Failure_NoClient(t *testing.T) {
 
 func TestStart_Failure_InvalidMetricDescriptor_ProjectNotFound(t *testing.T) {
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -237,7 +237,7 @@ func TestStart_Failure_InvalidMetricDescriptor_ProjectNotFound(t *testing.T) {
 
 func TestStart_Failure_InvalidMetricDescriptor_Unauthenticated_User(t *testing.T) {
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -273,7 +273,7 @@ func TestStart_Failure_InvalidMetricDescriptor_Unauthenticated_User(t *testing.T
 func TestScrape_Success(t *testing.T) {
 	// Setup fake server
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -326,7 +326,7 @@ func TestScrape_Success(t *testing.T) {
 func TestScrape_Failure_MetricDescriptorNotFound(t *testing.T) {
 	// Setup fake server
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -371,7 +371,7 @@ func TestScrape_Failure_MetricDescriptorNotFound(t *testing.T) {
 func TestScrape_Failure_InvalidProjectID_WithMaxInterval(t *testing.T) {
 	// Setup fake server
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -426,7 +426,7 @@ func TestScrape_Failure_InvalidProjectID_WithMaxInterval(t *testing.T) {
 func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
 	// Setup fake server
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -759,7 +759,7 @@ func TestConvertGCPTimeSeriesToMetrics(t *testing.T) {
 func TestScrape_WithDefaultCollectionInterval(t *testing.T) {
 	// Setup fake server
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
@@ -808,7 +808,7 @@ func TestScrape_WithDefaultCollectionInterval(t *testing.T) {
 
 func TestGoogleCloudMonitoringReceiver(t *testing.T) {
 	ctx := context.Background()
-	testServer, err := NewFakeMetricTestServer()
+	testServer, err := newFakeMetricTestServer()
 	require.NoError(t, err)
 	go func() {
 		err = testServer.srv.Serve(testServer.lis)
