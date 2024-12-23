@@ -35,6 +35,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/bmchelixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
