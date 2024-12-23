@@ -15,7 +15,7 @@ With archiving enabled, file offsets older than three poll cycles are stored on 
 
 - We stores the offsets older than three poll cycles on disk. If we use `polls_to_archive: 10`, the on-disk structure looks like following:
 ![on-disk](images/on-disk.png)
-    - Once we hit the limit of `polls_to_archive` poll cycles, we roll over and overrite oldest data. The on-disk structure represents a ring buffer
+    - Once we hit the limit of `polls_to_archive` poll cycles, we roll over and overwrite oldest data. The on-disk structure represents a ring buffer
 
 Basic terminology before we proceed further:
 1. `archiveIndex`: The `archiveIndex` refers to the on-disk position where the next data will be written.
@@ -24,7 +24,7 @@ Basic terminology before we proceed further:
 ### How does reading from archiving work?
 
 During reader creation, we group all the new (or unmatched) files and try to find a match in archive. From high level, it consists of following steps:
-1. We start from most recently writen index on archive and load the data from it.
+1. We start from most recently written index on archive and load the data from it.
 2. If we don't have any unmatched files, we exit the loop. 
 3. We loop through all the unmatched files and the file's fingerprint is cross referenced against archive'd data.
     a. If a match is found, we update the offset for the file
@@ -35,7 +35,7 @@ Let's take a few examples to understand this:
 - Consider the following structure,
 ![read-1](images/read-1.png)
     - Here, we have stored data for previous eight poll cycles (3 poll cycles in memory + 5 on disk)
-    - When we enter the reading mode, we first read data from most recently writen index.
+    - When we enter the reading mode, we first read data from most recently written index.
         - The most recently data is stored at `archiveIndex-1` because `archiveIndex` points to the position where the next data will be written.
     - After evaluating data at this index, we move to the next most recent index.
     - We continue this process until one of the following conditions is met:
@@ -43,9 +43,9 @@ Let's take a few examples to understand this:
         - We have read through the entire archive.
         - We encounter an empty value. This can happen if the archive is partially filled
             - In above diagram, once we reach at the beginning of the archive (i.e. index `0`), we roll over and proceed to the next most recent index. In this case, it is index `9`, which contains no data. 
-- Let's take one more example where we have overriten older data,
+- Let's take one more example where we have overwritten older data,
 ![read-2](images/read-2.png)
-    - Here, the archive is completely filled and we have rolled over overriting older data.
+    - Here, the archive is completely filled and we have rolled over overwriting older data.
     - `archiveIndex` points to `4` i.e. the least recent data.
     - We first load the most recent data (i.e. `archiveIndex-1`) and try to match offsets against it.
     - Once we evaulate data from this index, we move to previous index and we continue this process until read through the entire archive
@@ -67,7 +67,7 @@ Archive restoration is an important step if the user changes `polls_to_archive` 
 
 There are two cases to consider:
 1. When `polls_to_archive` has increased. In other words, new archive will be larger than older one.
-1. When `polls_to_archive` has decreased. In other words, the archive size has shrinked.
+1. When `polls_to_archive` has decreased. In other words, the archive size has shrunk.
 
 ### Case 1: `polls_to_archive` has increased
 This case is straightforward.
@@ -82,18 +82,18 @@ The previous archive size was `10` and later it got changed to `15`. We just mov
 
 There different sub-cases to consider. 
 
-#### Case 2.1: Most recently writen index is in bounds w.r.t. new `polls_to_archive`
+#### Case 2.1: Most recently written index is in bounds w.r.t. new `polls_to_archive`
 
-*Scenario 1: Most recently writen index is in bounds and we have overriten the data atleast once*
+*Scenario 1: Most recently written index is in bounds and we have overwritten the data atleast once*
 
 ![case-3](images/case-3.png)
 Following configurations are in for this case:
 - previous `polls_to_archive` was `10`
 - new `polls_to_archive` is `7`
-- most recently writen index is `5` (pointing to data `14`)
-- `t.archiveIndex` i.e. least recently writen index is `6`
+- most recently written index is `4` (pointing to data `14`)
+- `t.archiveIndex` i.e. least recently written index is `6`
 
-Here, we can see that most recently writen index (i.e. `5`) is in bounds w.r.t. new `polls_to_archive` (i.e. `7`). In other words, `most recently writen index < new polls_to_archive`. 
+Here, we can see that most recently written index (i.e. `4`) is in bounds w.r.t. new `polls_to_archive` (i.e. `7`). In other words, `most recently written index < new polls_to_archive`. 
 
 We now need to construct a new, smaller archive with 7 most recent elements. 
 These elements are (from most recent to least recent):
@@ -120,25 +120,25 @@ for i := 0; i < new_polls_to_archive-archiveIndex; i++ {
     storage[archiveIndex+i] = storage[least_recent_index] // rewrite on left side of storage
     least_recent_index++
 }
-// archiveIndex remains unchanged in this case, as it's already pointing at the least recently writen data.
+// archiveIndex remains unchanged in this case, as it's already pointing at the least recently written data.
 ```
 
-*Scenario 2: Most recently writen index is in bounds and we have not overriten the data*
+*Scenario 2: Most recently written index is in bounds and we have not overwritten the data*
 
 ![case-4](images/case-4.png)
 
 Following configurations are in for this case:
 - previous `polls_to_archive` was `10`
 - new `polls_to_archive` is `6`
-- most recently writen index is `5` (pointing to data `14`)
-- `t.archiveIndex` i.e. least recently writen index is `6`
+- most recently written index is `5` (pointing to data `14`)
+- `t.archiveIndex` i.e. least recently written index is `6`
 
 If the slot pointed by `archiveIndex` is nil, it means that we haven't rolled over and that the next slots are empty and we don't need to perform any swapping. 
 In above pseudocode, the first condition handles this scenario. 
 
-#### Case 2.2: Most recently writen index is out of bounds or at bounds w.r.t. new `polls_to_archive`
+#### Case 2.2: Most recently written index is out of bounds or at bounds w.r.t. new `polls_to_archive`
 
-*Scenario 1: Most recently writen index is out of bounds*
+*Scenario 1: Most recently written index is out of bounds*
 
 ![case-2](images/case-2.png)
 
@@ -146,11 +146,11 @@ Following configurations are in for this case:
 - previous `polls_to_archive` was `10`
 - new `polls_to_archive` is `5`
 - most recently writin index is `9`
-- `t.archiveIndex` i.e. least recently writen index is `0`
+- `t.archiveIndex` i.e. least recently written index is `0`
 
-Here, we can see that most recently writen index (i.e. `9`) is out of bounds w.r.t. new `polls_to_archive` (i.e. `5`). In other words, `most recently writen index > new polls_to_archive`. 
+Here, we can see that most recently written index (i.e. `9`) is out of bounds w.r.t. new `polls_to_archive` (i.e. `5`). In other words, `most recently written index > new polls_to_archive`. 
 
-We take five (because new `polls_to_archive` is `5`) most recently writen elements and construct a new, smaller archive.
+We take five (because new `polls_to_archive` is `5`) most recently written elements and construct a new, smaller archive.
 Pseudocode:
 
 ```go
@@ -161,12 +161,12 @@ for i := 0; i < new_polls_to_archive; i++ {
     storage[i] = storage[least_recent_index] // rewrite from beginning of storage
     least_recent_index++
 }
-archiveIndex = 0 // point archiveIndex least recently writen data
+archiveIndex = 0 // point archiveIndex least recently written data
 ```
 
 The new archive is represented by the lower list in the image above.
 
-*Scenario 2: Most recently writen index is at the bounds*
+*Scenario 2: Most recently written index is at the bounds*
 
 ![case-1](images/case-1.png)
 
