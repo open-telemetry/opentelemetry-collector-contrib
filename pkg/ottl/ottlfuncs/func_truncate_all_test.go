@@ -16,7 +16,8 @@ import (
 
 func Test_truncateAll(t *testing.T) {
 	input := pcommon.NewMap()
-	input.PutStr("test", "hello world")
+	// 19 bytes. "hello world, " is 13 bytes, "世界" is 6 bytes.
+	input.PutStr("test", "hello world, 世界")
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
@@ -57,7 +58,57 @@ func Test_truncateAll(t *testing.T) {
 			target: target,
 			limit:  100,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test", "hello world, 世界")
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate broken first utf8 character encoding - 1",
+			target: target,
+			limit:  14,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world, ")
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate broken first utf8 character encoding - 2",
+			target: target,
+			limit:  15,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world, ")
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate first utf8 character exactly",
+			target: target,
+			limit:  16,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world, 世")
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate broken second utf8 character encoding - 1",
+			target: target,
+			limit:  17,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world, 世")
+				expectedMap.PutInt("test2", 3)
+				expectedMap.PutBool("test3", true)
+			},
+		},
+		{
+			name:   "truncate broken second utf8 character encoding - 2",
+			target: target,
+			limit:  18,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world, 世")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -65,9 +116,9 @@ func Test_truncateAll(t *testing.T) {
 		{
 			name:   "truncate exact",
 			target: target,
-			limit:  11,
+			limit:  19,
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("test", "hello world, 世界")
 				expectedMap.PutInt("test2", 3)
 				expectedMap.PutBool("test3", true)
 			},
@@ -126,4 +177,26 @@ func Test_truncateAll_get_nil(t *testing.T) {
 
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
+}
+
+func Test_truncateAll_utf8_zero_limit(t *testing.T) {
+	input := pcommon.NewMap()
+	input.PutStr("test", "世界")
+
+	target := &ottl.StandardPMapGetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
+			return tCtx, nil
+		},
+	}
+
+	exprFunc, err := TruncateAll(target, 1)
+	assert.NoError(t, err)
+
+	result, err := exprFunc(nil, input)
+	assert.NoError(t, err)
+	assert.Nil(t, result)
+
+	expected := pcommon.NewMap()
+	expected.PutStr("test", "")
+	assert.Equal(t, expected, input)
 }
