@@ -83,7 +83,6 @@ func TestBatchedExporter(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			be, err := producer.NewBatcher(
 				SetPutRecordsOperation(tc.PutRecordsOP),

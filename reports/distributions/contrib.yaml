@@ -13,6 +13,7 @@ components:
         - routing
         - servicegraph
         - spanmetrics
+        - sum
     exporter:
         - alibabacloud_logservice
         - awscloudwatchlogs
@@ -79,6 +80,7 @@ components:
         - oidc
         - opamp
         - pprof
+        - redis_storage
         - sigv4auth
     processor:
         - attributes
@@ -150,6 +152,7 @@ components:
         - kafka
         - kafkametrics
         - kubeletstats
+        - libhoney
         - loki
         - memcached
         - mongodb
@@ -158,6 +161,7 @@ components:
         - namedpipe
         - nginx
         - nsxt
+        - ntp
         - opencensus
         - oracledb
         - otelarrow
