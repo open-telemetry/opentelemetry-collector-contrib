@@ -54,29 +54,29 @@ func TestValidateLogEventFailed(t *testing.T) {
 
 // eventBatch Tests
 func TestLogEventBatch_timestampWithin24Hours(t *testing.T) {
-	min := time.Date(2017, time.June, 20, 23, 38, 0, 0, time.Local)
-	max := min.Add(23 * time.Hour)
+	minDate := time.Date(2017, time.June, 20, 23, 38, 0, 0, time.Local)
+	maxDate := minDate.Add(23 * time.Hour)
 	logEventBatch := &eventBatch{
-		maxTimestampMs: max.UnixNano() / 1e6,
-		minTimestampMs: min.UnixNano() / 1e6,
+		maxTimestampMs: maxDate.UnixNano() / 1e6,
+		minTimestampMs: minDate.UnixNano() / 1e6,
 	}
 
 	// less than the min
-	target := min.Add(-1 * time.Hour)
+	target := minDate.Add(-1 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(-1 * time.Millisecond)
 	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	// more than the max
-	target = max.Add(1 * time.Hour)
+	target = maxDate.Add(1 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(1 * time.Millisecond)
 	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	// in between min and max
-	target = min.Add(2 * time.Hour)
+	target = minDate.Add(2 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 }
 
