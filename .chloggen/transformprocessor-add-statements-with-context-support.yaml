@@ -7,7 +7,7 @@ change_type: enhancement
 component: processor/transformprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Updated transformprocessor to support statements to reflect their context via path names
+note: Add support for expressing statement's context via path names.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [29017]
