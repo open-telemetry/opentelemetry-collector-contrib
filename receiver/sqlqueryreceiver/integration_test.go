@@ -125,7 +125,7 @@ var (
 		},
 		Driver:                   "oracle",
 		CurrentTimestampFunction: "SYSTIMESTAMP",
-		ConvertColumnName:        func(name string) string { return strings.ToUpper(name) },
+		ConvertColumnName:        strings.ToUpper,
 		ContainerRequest: testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
 				Context:    filepath.Join("testdata", "integration", "oracle"),
@@ -401,11 +401,10 @@ func insertSimpleLogs(t *testing.T, engine DbEngine, container testcontainers.Co
 	defer db.Close()
 
 	for newLogID := existingLogID + 1; newLogID <= existingLogID+newLogCount; newLogID++ {
-		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, %s, 'another log %d', 'TLSv1.2')", newLogID, engine.CurrentTimestampFunction, newLogID)
+		query := fmt.Sprintf("insert into simple_logs (id, insert_time, body, attribute) values (%d, %s, 'another log %d', 'TLSv1.2')", newLogID, engine.CurrentTimestampFunction, newLogID) // nolint:gosec // Ignore, not possible to use prepared statements here for currentTimestampFunction
 		_, err := db.Exec(query)
 		require.NoError(t, err)
 	}
-
 }
 
 func createTestLogsReceiver(t *testing.T, driver, dataSource string, receiverCreateSettings receiver.Settings) (*logsReceiver, *Config, *consumertest.LogsSink) {
