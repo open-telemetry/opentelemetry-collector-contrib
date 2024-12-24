@@ -124,6 +124,10 @@ all_set:
   resource_attributes:
     aws.volume.id:
       enabled: true
+    container.csi.plugin.name:
+      enabled: true
+    container.csi.volume.id:
+      enabled: true
     container.id:
       enabled: true
     fs.type:
@@ -277,6 +281,10 @@ none_set:
   resource_attributes:
     aws.volume.id:
       enabled: false
+    container.csi.plugin.name:
+      enabled: false
+    container.csi.volume.id:
+      enabled: false
     container.id:
       enabled: false
     fs.type:
@@ -308,6 +316,14 @@ none_set:
 filter_set_include:
   resource_attributes:
     aws.volume.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.csi.plugin.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.csi.volume.id:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -373,6 +389,14 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "aws.volume.id-val"
+    container.csi.plugin.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.csi.plugin.name-val"
+    container.csi.volume.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.csi.volume.id-val"
     container.id:
       enabled: true
       metrics_exclude:

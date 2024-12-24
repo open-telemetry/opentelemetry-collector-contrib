@@ -88,6 +88,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
+					ContainerCsiPluginName:       ResourceAttributeConfig{Enabled: true},
+					ContainerCsiVolumeID:         ResourceAttributeConfig{Enabled: true},
 					ContainerID:                  ResourceAttributeConfig{Enabled: true},
 					FsType:                       ResourceAttributeConfig{Enabled: true},
 					GcePdName:                    ResourceAttributeConfig{Enabled: true},
@@ -172,6 +174,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
+					ContainerCsiPluginName:       ResourceAttributeConfig{Enabled: false},
+					ContainerCsiVolumeID:         ResourceAttributeConfig{Enabled: false},
 					ContainerID:                  ResourceAttributeConfig{Enabled: false},
 					FsType:                       ResourceAttributeConfig{Enabled: false},
 					GcePdName:                    ResourceAttributeConfig{Enabled: false},
@@ -222,6 +226,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "all_set",
 			want: ResourceAttributesConfig{
 				AwsVolumeID:                  ResourceAttributeConfig{Enabled: true},
+				ContainerCsiPluginName:       ResourceAttributeConfig{Enabled: true},
+				ContainerCsiVolumeID:         ResourceAttributeConfig{Enabled: true},
 				ContainerID:                  ResourceAttributeConfig{Enabled: true},
 				FsType:                       ResourceAttributeConfig{Enabled: true},
 				GcePdName:                    ResourceAttributeConfig{Enabled: true},
@@ -242,6 +248,8 @@ func TestResourceAttributesConfig(t *testing.T) {
 			name: "none_set",
 			want: ResourceAttributesConfig{
 				AwsVolumeID:                  ResourceAttributeConfig{Enabled: false},
+				ContainerCsiPluginName:       ResourceAttributeConfig{Enabled: false},
+				ContainerCsiVolumeID:         ResourceAttributeConfig{Enabled: false},
 				ContainerID:                  ResourceAttributeConfig{Enabled: false},
 				FsType:                       ResourceAttributeConfig{Enabled: false},
 				GcePdName:                    ResourceAttributeConfig{Enabled: false},
