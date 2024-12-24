@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
-	conventionsv127 "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -21,13 +21,13 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	imageID := "ami-0123456789"
 	resource := pcommon.NewResource()
 	attrs := pcommon.NewMap()
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.PutStr(conventions.AttributeHostID, instanceID)
-	attrs.PutStr(conventions.AttributeHostType, hostType)
-	attrs.PutStr(conventions.AttributeHostImageID, imageID)
+	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSEC2)
+	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
+	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutStr(conventionsv112.AttributeHostID, instanceID)
+	attrs.PutStr(conventionsv112.AttributeHostType, hostType)
+	attrs.PutStr(conventionsv112.AttributeHostImageID, imageID)
 	attrs.CopyTo(resource.Attributes())
 
 	attributes := make(map[string]pcommon.Value)
@@ -61,21 +61,21 @@ func TestAwsFromEcsResource(t *testing.T) {
 	containerArn := "arn:aws:ecs:us-west-2:123456789123:container-instance/123"
 	resource := pcommon.NewResource()
 	attrs := pcommon.NewMap()
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, az)
-	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventions.AttributeContainerName, containerName)
-	attrs.PutStr(conventions.AttributeContainerID, containerID)
-	attrs.PutStr(conventions.AttributeHostID, instanceID)
-	attrs.PutStr(conventions.AttributeAWSECSClusterARN, clusterArn)
-	attrs.PutStr(conventions.AttributeAWSECSContainerARN, containerArn)
-	attrs.PutStr(conventions.AttributeAWSECSTaskARN, taskArn)
-	attrs.PutStr(conventions.AttributeAWSECSTaskFamily, family)
-	attrs.PutStr(conventions.AttributeAWSECSLaunchtype, launchType)
-	attrs.PutStr(conventions.AttributeHostType, "m5.xlarge")
+	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSECS)
+	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
+	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, az)
+	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventionsv112.AttributeContainerName, containerName)
+	attrs.PutStr(conventionsv112.AttributeContainerID, containerID)
+	attrs.PutStr(conventionsv112.AttributeHostID, instanceID)
+	attrs.PutStr(conventionsv112.AttributeAWSECSClusterARN, clusterArn)
+	attrs.PutStr(conventionsv112.AttributeAWSECSContainerARN, containerArn)
+	attrs.PutStr(conventionsv112.AttributeAWSECSTaskARN, taskArn)
+	attrs.PutStr(conventionsv112.AttributeAWSECSTaskFamily, family)
+	attrs.PutStr(conventionsv112.AttributeAWSECSLaunchtype, launchType)
+	attrs.PutStr(conventionsv112.AttributeHostType, "m5.xlarge")
 
 	attrs.CopyTo(resource.Attributes())
 
@@ -106,13 +106,13 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	versionLabel := "4"
 	resource := pcommon.NewResource()
 	attrs := pcommon.NewMap()
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.PutStr(conventions.AttributeServiceNamespace, "production")
-	attrs.PutStr(conventions.AttributeServiceInstanceID, deployID)
-	attrs.PutStr(conventions.AttributeServiceVersion, versionLabel)
+	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSElasticBeanstalk)
+	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
+	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutStr(conventionsv112.AttributeServiceNamespace, "production")
+	attrs.PutStr(conventionsv112.AttributeServiceInstanceID, deployID)
+	attrs.PutStr(conventionsv112.AttributeServiceVersion, versionLabel)
 	attrs.CopyTo(resource.Attributes())
 
 	attributes := make(map[string]pcommon.Value)
@@ -138,20 +138,20 @@ func TestAwsFromEksResource(t *testing.T) {
 	containerID := "0123456789A"
 	resource := pcommon.NewResource()
 	attrs := pcommon.NewMap()
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEKS)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventions.AttributeK8SClusterName, "production")
-	attrs.PutStr(conventions.AttributeK8SNamespaceName, "default")
-	attrs.PutStr(conventions.AttributeK8SDeploymentName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
-	attrs.PutStr(conventions.AttributeContainerName, containerName)
-	attrs.PutStr(conventions.AttributeContainerID, containerID)
-	attrs.PutStr(conventions.AttributeHostID, instanceID)
-	attrs.PutStr(conventions.AttributeHostType, "m5.xlarge")
+	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr(conventionsv112.AttributeCloudPlatform, conventionsv112.AttributeCloudPlatformAWSEKS)
+	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
+	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventionsv112.AttributeK8SClusterName, "production")
+	attrs.PutStr(conventionsv112.AttributeK8SNamespaceName, "default")
+	attrs.PutStr(conventionsv112.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.PutStr(conventionsv112.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
+	attrs.PutStr(conventionsv112.AttributeContainerName, containerName)
+	attrs.PutStr(conventionsv112.AttributeContainerID, containerID)
+	attrs.PutStr(conventionsv112.AttributeHostID, instanceID)
+	attrs.PutStr(conventionsv112.AttributeHostType, "m5.xlarge")
 	attrs.CopyTo(resource.Attributes())
 
 	attributes := make(map[string]pcommon.Value)
@@ -177,20 +177,20 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	containerID := "0123456789A"
 	resource := pcommon.NewResource()
 	attrs := pcommon.NewMap()
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.PutStr(conventions.AttributeContainerName, containerName)
-	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventions.AttributeK8SClusterName, "production")
-	attrs.PutStr(conventions.AttributeK8SNamespaceName, "default")
-	attrs.PutStr(conventions.AttributeK8SDeploymentName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
-	attrs.PutStr(conventions.AttributeContainerName, containerName)
-	attrs.PutStr(conventions.AttributeContainerID, containerID)
-	attrs.PutStr(conventions.AttributeHostID, instanceID)
-	attrs.PutStr(conventions.AttributeHostType, "m5.xlarge")
+	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
+	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutStr(conventionsv112.AttributeContainerName, containerName)
+	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventionsv112.AttributeK8SClusterName, "production")
+	attrs.PutStr(conventionsv112.AttributeK8SNamespaceName, "default")
+	attrs.PutStr(conventionsv112.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.PutStr(conventionsv112.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
+	attrs.PutStr(conventionsv112.AttributeContainerName, containerName)
+	attrs.PutStr(conventionsv112.AttributeContainerID, containerID)
+	attrs.PutStr(conventionsv112.AttributeHostID, instanceID)
+	attrs.PutStr(conventionsv112.AttributeHostType, "m5.xlarge")
 
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)
@@ -211,7 +211,7 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 func TestAwsWithRpcAttributes(t *testing.T) {
 	resource := pcommon.NewResource()
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeRPCMethod] = pcommon.NewValueStr("ListBuckets")
+	attributes[conventionsv112.AttributeRPCMethod] = pcommon.NewValueStr("ListBuckets")
 
 	_, awsData := makeAws(attributes, resource, nil)
 
@@ -234,7 +234,7 @@ func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 func TestAwsWithAwsSqsSemConvAttributes(t *testing.T) {
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeMessagingURL] = pcommon.NewValueStr(queueURL)
+	attributes[conventionsv112.AttributeMessagingURL] = pcommon.NewValueStr(queueURL)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
@@ -249,24 +249,24 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	containerID := "0123456789A"
 	resource := pcommon.NewResource()
 	attrs := pcommon.NewMap()
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "123456789")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-east-1c")
-	attrs.PutStr(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventions.AttributeK8SClusterName, "production")
-	attrs.PutStr(conventions.AttributeK8SNamespaceName, "default")
-	attrs.PutStr(conventions.AttributeK8SDeploymentName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
-	attrs.PutStr(conventions.AttributeContainerName, containerName)
-	attrs.PutStr(conventions.AttributeContainerID, containerID)
-	attrs.PutStr(conventions.AttributeHostID, instanceID)
-	attrs.PutStr(conventions.AttributeHostType, "m5.xlarge")
+	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "123456789")
+	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-east-1c")
+	attrs.PutStr(conventionsv112.AttributeContainerName, "signup_aggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventionsv112.AttributeK8SClusterName, "production")
+	attrs.PutStr(conventionsv112.AttributeK8SNamespaceName, "default")
+	attrs.PutStr(conventionsv112.AttributeK8SDeploymentName, "signup_aggregator")
+	attrs.PutStr(conventionsv112.AttributeK8SPodName, "my-deployment-65dcf7d447-ddjnl")
+	attrs.PutStr(conventionsv112.AttributeContainerName, containerName)
+	attrs.PutStr(conventionsv112.AttributeContainerID, containerID)
+	attrs.PutStr(conventionsv112.AttributeHostID, instanceID)
+	attrs.PutStr(conventionsv112.AttributeHostType, "m5.xlarge")
 
 	tableName := "WIDGET_TYPES"
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeRPCMethod] = pcommon.NewValueStr("IncorrectAWSSDKOperation")
+	attributes[conventionsv112.AttributeRPCMethod] = pcommon.NewValueStr("IncorrectAWSSDKOperation")
 	attributes[awsxray.AWSOperationAttribute] = pcommon.NewValueStr("PutItem")
 	attributes[awsxray.AWSRequestIDAttribute] = pcommon.NewValueStr("75107C82-EC8A-4F75-883F-4440B491B0AB")
 	attributes[awsxray.AWSTableNameAttribute] = pcommon.NewValueStr(tableName)
@@ -295,8 +295,8 @@ func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
 func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueSlice()
-	attributes[conventions.AttributeAWSDynamoDBTableNames].Slice().AppendEmpty().SetStr(tableName)
+	attributes[conventionsv112.AttributeAWSDynamoDBTableNames] = pcommon.NewValueSlice()
+	attributes[conventionsv112.AttributeAWSDynamoDBTableNames].Slice().AppendEmpty().SetStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
@@ -308,7 +308,7 @@ func TestAwsWithDynamoDbSemConvAttributes(t *testing.T) {
 func TestAwsWithDynamoDbSemConvAttributesString(t *testing.T) {
 	tableName := "MyTable"
 	attributes := make(map[string]pcommon.Value)
-	attributes[conventions.AttributeAWSDynamoDBTableNames] = pcommon.NewValueStr(tableName)
+	attributes[conventionsv112.AttributeAWSDynamoDBTableNames] = pcommon.NewValueStr(tableName)
 
 	filtered, awsData := makeAws(attributes, pcommon.NewResource(), nil)
 
@@ -332,9 +332,9 @@ func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 func TestJavaSDK(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "opentelemetry")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.2.3")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKVersion, "1.2.3")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -347,10 +347,10 @@ func TestJavaSDK(t *testing.T) {
 func TestJavaAutoInstrumentation(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "opentelemetry")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.2.3")
-	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "3.4.5")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKVersion, "1.2.3")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetryAutoVersion, "3.4.5")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -364,10 +364,10 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 func TestJavaAutoInstrumentationStable(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventionsv127.AttributeTelemetrySDKName, "opentelemetry")
-	resource.Attributes().PutStr(conventionsv127.AttributeTelemetrySDKLanguage, "java")
-	resource.Attributes().PutStr(conventionsv127.AttributeTelemetrySDKVersion, "1.2.3")
-	resource.Attributes().PutStr(conventionsv127.AttributeTelemetryDistroVersion, "3.4.5")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.2.3")
+	resource.Attributes().PutStr(conventions.AttributeTelemetryDistroVersion, "3.4.5")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -381,9 +381,9 @@ func TestJavaAutoInstrumentationStable(t *testing.T) {
 func TestGoSDK(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "opentelemetry")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "go")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "2.0.3")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKLanguage, "go")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKVersion, "2.0.3")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -396,9 +396,9 @@ func TestGoSDK(t *testing.T) {
 func TestCustomSDK(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "opentracing")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
-	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "2.0.3")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKName, "opentracing")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventionsv112.AttributeTelemetrySDKVersion, "2.0.3")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -418,7 +418,7 @@ func TestLogGroups(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	ava := resource.Attributes().PutEmptySlice(conventions.AttributeAWSLogGroupNames)
+	ava := resource.Attributes().PutEmptySlice(conventionsv112.AttributeAWSLogGroupNames)
 	ava.EnsureCapacity(2)
 	ava.AppendEmpty().SetStr("group1")
 	ava.AppendEmpty().SetStr("group2")
@@ -446,7 +446,7 @@ func TestLogGroupsFromArns(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	ava := resource.Attributes().PutEmptySlice(conventions.AttributeAWSLogGroupARNs)
+	ava := resource.Attributes().PutEmptySlice(conventionsv112.AttributeAWSLogGroupARNs)
 	ava.EnsureCapacity(2)
 	ava.AppendEmpty().SetStr(group1)
 	ava.AppendEmpty().SetStr(group2)
@@ -468,7 +468,7 @@ func TestLogGroupsFromStringResourceAttribute(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1")
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupNames, "group1")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -490,7 +490,7 @@ func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
 	resource := pcommon.NewResource()
 
 	// normal cases
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1&group2")
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupNames, "group1&group2")
 	filtered, awsData := makeAws(attributes, resource, nil)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -499,7 +499,7 @@ func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
 	assert.Contains(t, awsData.CWLogs, cwl2)
 
 	// with extra & at end
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1&group2&")
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupNames, "group1&group2&")
 	filtered, awsData = makeAws(attributes, resource, nil)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -508,7 +508,7 @@ func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
 	assert.Contains(t, awsData.CWLogs, cwl2)
 
 	// with extra & in the middle
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "group1&&group2")
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupNames, "group1&&group2")
 	filtered, awsData = makeAws(attributes, resource, nil)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -517,7 +517,7 @@ func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
 	assert.Contains(t, awsData.CWLogs, cwl2)
 
 	// with extra & at the beginning
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "&group1&group2")
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupNames, "&group1&group2")
 	filtered, awsData = makeAws(attributes, resource, nil)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -526,7 +526,7 @@ func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
 	assert.Contains(t, awsData.CWLogs, cwl2)
 
 	// with only &
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupNames, "&")
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupNames, "&")
 	filtered, awsData = makeAws(attributes, resource, nil)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
@@ -536,7 +536,7 @@ func TestLogGroupsWithAmpersandFromStringResourceAttribute(t *testing.T) {
 func TestLogGroupsInvalidType(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutInt(conventions.AttributeAWSLogGroupNames, 1)
+	resource.Attributes().PutInt(conventionsv112.AttributeAWSLogGroupNames, 1)
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -556,7 +556,7 @@ func TestLogGroupsArnsFromStringResourceAttributes(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupARNs, group1)
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupARNs, group1)
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
@@ -581,7 +581,7 @@ func TestLogGroupsArnsWithAmpersandFromStringResourceAttributes(t *testing.T) {
 
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
-	resource.Attributes().PutStr(conventions.AttributeAWSLogGroupARNs, "arn:aws:logs:us-east-1:123456789123:log-group:group1&arn:aws:logs:us-east-1:123456789123:log-group:group2")
+	resource.Attributes().PutStr(conventionsv112.AttributeAWSLogGroupARNs, "arn:aws:logs:us-east-1:123456789123:log-group:group1&arn:aws:logs:us-east-1:123456789123:log-group:group2")
 
 	filtered, awsData := makeAws(attributes, resource, nil)
 
