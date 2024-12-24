@@ -12,7 +12,8 @@ import (
 	// Postgres driver
 	_ "github.com/jackc/pgx/v5/stdlib"
 	// SQLite driver
-	_ "github.com/mattn/go-sqlite3"
+_ "github.com/glebarez/go-sqlite/compat"
+
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
