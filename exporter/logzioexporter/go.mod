@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
 
-go 1.22.0
+go 1.22.7
+
+toolchain go1.22.8
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
@@ -22,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.116.1-0.20241220212031-7c2639723f67
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241104194629-dd2ea8efbc28
 	google.golang.org/protobuf v1.36.1
 )
 
@@ -72,7 +74,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.116.1-0.20241220212031-7c2639723f67 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.57.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
