@@ -15,7 +15,7 @@
 
 ## Overview
 
-The OpenTelemetry Cgroup Auto-Config Extension is designed to optimize Go runtime performance in containerized environments by automatically configuring GOMAXPROCS and GOMEMLIMIT based on the Linux cgroup filesystem. This extension leverages [automaxprocs](https://github.com/uber-go/automaxprocs) and [automemlimit](https://github.com/KimMachineGun/automemlimit) packages to dynamically adjust Go runtime variables, ensuring efficient resource usage aligned with container limits.
+The OpenTelemetry Cgroup Auto-Config Extension is designed to optimize Go runtime performance in containerized environments by automatically configuring GOMAXPROCS and GOMEMLIMIT based on the Linux cgroup filesystem. This extension leverages [automaxprocs](https://github.com/uber-go/automaxprocs) or [gomaxecs](https://github.com/rdforte/gomaxecs) for AWS ECS Tasks and [automemlimit](https://github.com/KimMachineGun/automemlimit) packages to dynamically adjust Go runtime variables, ensuring efficient resource usage aligned with container limits.
 
 ## Configuration
 
