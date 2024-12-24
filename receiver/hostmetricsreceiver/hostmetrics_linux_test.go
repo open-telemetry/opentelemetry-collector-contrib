@@ -46,16 +46,16 @@ func TestLoadConfigRootPath(t *testing.T) {
 	expectedConfig.RootPath = "testdata"
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
 	cpuScraperCfg.SetRootPath("testdata")
-	cpuScraperCfg.SetEnvMap(common.EnvMap{
+	expectedConfig.Scrapers = map[component.Type]internal.Config{cpuscraper.Type: cpuScraperCfg}
+	assert.Equal(t, expectedConfig, cfg)
+	expectedEnvMap := common.EnvMap{
 		common.HostDevEnvKey: "testdata/dev",
 		common.HostEtcEnvKey: "testdata/etc",
 		common.HostRunEnvKey: "testdata/run",
 		common.HostSysEnvKey: "testdata/sys",
 		common.HostVarEnvKey: "testdata/var",
-	})
-	expectedConfig.Scrapers = map[component.Type]internal.Config{cpuscraper.Type: cpuScraperCfg}
-
-	assert.Equal(t, expectedConfig, cfg)
+	}
+	assert.Equal(t, expectedEnvMap, setGoPsutilEnvVars("testdata"))
 }
 
 func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {

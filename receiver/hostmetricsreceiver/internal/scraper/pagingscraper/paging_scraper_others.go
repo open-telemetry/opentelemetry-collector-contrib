@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
 	"go.opentelemetry.io/collector/component"
@@ -51,7 +50,6 @@ func newPagingScraper(_ context.Context, settings receiver.Settings, cfg *Config
 }
 
 func (s *pagingScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -61,7 +59,7 @@ func (s *pagingScraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *pagingScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *pagingScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapePagingUsageMetric()
@@ -69,7 +67,7 @@ func (s *pagingScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		errors.AddPartial(pagingUsageMetricsLen, err)
 	}
 
-	err = s.scrapePagingMetrics()
+	err = s.scrapePagingMetrics(ctx)
 	if err != nil {
 		errors.AddPartial(pagingMetricsLen, err)
 	}
@@ -109,8 +107,7 @@ func (s *pagingScraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp,
 	}
 }
 
-func (s *pagingScraper) scrapePagingMetrics() error {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
+func (s *pagingScraper) scrapePagingMetrics(ctx context.Context) error {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	swap, err := s.swapMemory(ctx)
 	if err != nil {

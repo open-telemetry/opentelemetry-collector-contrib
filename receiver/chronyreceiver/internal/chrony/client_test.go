@@ -66,7 +66,6 @@ func TestNew(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
 			cl, err := New(tc.addr, time.Second)
@@ -207,7 +206,6 @@ func TestGettingTrackingData(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
 

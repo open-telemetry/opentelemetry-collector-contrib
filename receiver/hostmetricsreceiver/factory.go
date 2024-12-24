@@ -6,7 +6,6 @@ package hostmetricsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/host"
@@ -106,19 +105,22 @@ func createLogsReceiver(
 func createAddScraperOptions(
 	ctx context.Context,
 	set receiver.Settings,
-	config *Config,
+	cfg *Config,
 	factories map[component.Type]internal.ScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
-	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
+	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(cfg.Scrapers))
 
-	for key, cfg := range config.Scrapers {
-		hostMetricsScraper, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
+	envMap := setGoPsutilEnvVars(cfg.RootPath)
+
+	for key, cfg := range cfg.Scrapers {
+		scrp, ok, err := createHostMetricsScraper(ctx, set, key, cfg, factories)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create scraper for key %q: %w", key, err)
 		}
 
 		if ok {
-			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, hostMetricsScraper))
+			scrp = internal.NewEnvVarScraper(scrp, envMap)
+			scraperControllerOptions = append(scraperControllerOptions, scraperhelper.AddScraper(metadata.Type, scrp))
 			continue
 		}
 
@@ -138,16 +140,4 @@ func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key co
 	ok = true
 	s, err = factory.CreateMetricsScraper(ctx, set, cfg)
 	return
-}
-
-type environment interface {
-	Lookup(k string) (string, bool)
-}
-
-type osEnv struct{}
-
-var _ environment = (*osEnv)(nil)
-
-func (e *osEnv) Lookup(k string) (string, bool) {
-	return os.LookupEnv(k)
 }
