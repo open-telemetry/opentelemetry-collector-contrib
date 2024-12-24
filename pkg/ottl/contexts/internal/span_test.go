@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -40,11 +41,12 @@ func TestSpanPathGetSetter(t *testing.T) {
 	newStatus.SetMessage("new status")
 
 	tests := []struct {
-		name     string
-		path     ottl.Path[*spanContext]
-		orig     any
-		newVal   any
-		modified func(span ptrace.Span)
+		name                 string
+		path                 ottl.Path[*spanContext]
+		orig                 any
+		newVal               any
+		modified             func(span ptrace.Span)
+		expectedSetterErrMsg string
 	}{
 		{
 			name: "trace_id",
@@ -101,7 +103,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 			path: &TestPath[*spanContext]{
 				N: "trace_state",
 			},
-			orig:   "key1=val1,key2=val2",
+			orig:   "key1=val1,key2=val2,ot=th:c",
 			newVal: "key=newVal",
 			modified: func(span ptrace.Span) {
 				span.TraceState().FromRaw("key=newVal")
@@ -120,8 +122,20 @@ func TestSpanPathGetSetter(t *testing.T) {
 			orig:   "val1",
 			newVal: "newVal",
 			modified: func(span ptrace.Span) {
-				span.TraceState().FromRaw("key1=newVal,key2=val2")
+				span.TraceState().FromRaw("key1=newVal,key2=val2,ot=th:c")
 			},
+		},
+		{
+			name: "trace_state adjusted count",
+			path: &TestPath[*spanContext]{
+				N: "trace_state",
+				NextPath: &TestPath[*spanContext]{
+					N: "adjusted_count",
+				},
+			},
+			orig:                 float64(4),
+			newVal:               float64(1), // setters not allowed
+			expectedSetterErrMsg: "adjusted count cannot be set",
 		},
 		{
 			name: "parent_span_id",
@@ -613,6 +627,10 @@ func TestSpanPathGetSetter(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
+			if tt.expectedSetterErrMsg != "" {
+				assert.ErrorContains(t, err, tt.expectedSetterErrMsg)
+				return
+			}
 			assert.NoError(t, err)
 
 			expectedSpan := createSpan()
@@ -623,11 +641,47 @@ func TestSpanPathGetSetter(t *testing.T) {
 	}
 }
 
+func TestAccessAdjustedCount(t *testing.T) {
+	for _, tc := range []struct {
+		tracestate string
+		want       float64
+		errMsg     string
+	}{
+		{tracestate: "", want: 1},
+		{tracestate: "invalid=p:8;th:8", want: 1},           // otel trace state nil, default to 1
+		{tracestate: "ot=notfound:8", want: 1},              // otel tvalue 0, default to 1
+		{tracestate: "ot=404:0", errMsg: "failed to parse"}, // invalid syntax
+		{tracestate: "ot=th:0", want: 1},                    // 100% sampling
+		{tracestate: "ot=th:8", want: 2},                    // 50% sampling
+		{tracestate: "ot=th:c", want: 4},                    // 25% sampling
+	} {
+		t.Run("tracestate/"+tc.tracestate, func(t *testing.T) {
+			span := ptrace.NewSpan()
+			span.TraceState().FromRaw(tc.tracestate)
+
+			accessor, err := SpanPathGetSetter[*spanContext](&TestPath[*spanContext]{
+				N: "trace_state",
+				NextPath: &TestPath[*spanContext]{
+					N: "adjusted_count",
+				},
+			})
+			require.NoError(t, err)
+			got, err := accessor.Get(context.Background(), newSpanContext(span))
+			if tc.errMsg != "" {
+				require.ErrorContains(t, err, tc.errMsg)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func createSpan() ptrace.Span {
 	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
-	span.TraceState().FromRaw("key1=val1,key2=val2")
+	span.TraceState().FromRaw("key1=val1,key2=val2,ot=th:c")
 	span.SetParentSpanID(spanID2)
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
