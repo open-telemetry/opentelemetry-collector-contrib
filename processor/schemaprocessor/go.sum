@@ -118,6 +118,8 @@ go.opentelemetry.io/otel/metric v1.32.0 h1:xV2umtmNcThh2/a/aCP+h64Xx5wsj8qqnkYZk
 go.opentelemetry.io/otel/metric v1.32.0/go.mod h1:jH7CIbbK6SH2V2wE16W05BHCtIDzauciCRLoc/SyMv8=
 go.opentelemetry.io/otel/schema v0.0.11 h1:yQwdrejRKrM/7vC6JLvQvfeqgh+FFT7RcTN4w9Q/Brw=
 go.opentelemetry.io/otel/schema v0.0.11/go.mod h1:kLQ2cK1Ulw7VklNjeJNJZ0TPPr96iXFLYR9MkJquRUg=
+go.opentelemetry.io/otel/schema v0.0.12 h1:X8NKrwH07Oe9SJruY/D1XmwHrb6D2+qrLs2POlZX7F4=
+go.opentelemetry.io/otel/schema v0.0.12/go.mod h1:+w+Q7DdGfykSNi+UU9GAQz5/rtYND6FkBJUWUXzZb0M=
 go.opentelemetry.io/otel/sdk v1.32.0 h1:RNxepc9vK59A8XsgZQouW8ue8Gkb4jpWtJm9ge5lEG4=
 go.opentelemetry.io/otel/sdk v1.32.0/go.mod h1:LqgegDBjKMmb2GC6/PrTnteJG39I8/vJCAP9LlJXEjU=
 go.opentelemetry.io/otel/sdk/metric v1.32.0 h1:rZvFnvmvawYb0alrYkjraqJq0Z4ZUJAiyYCU9snn1CU=

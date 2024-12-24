@@ -10,19 +10,19 @@ require (
 	go.opentelemetry.io/collector/component v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/semconv v0.116.1-0.20241220212031-7c2639723f67
-	go.opentelemetry.io/otel v1.32.0
-	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.8.0
-	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.8.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.32.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.32.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.32.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.32.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.32.0
-	go.opentelemetry.io/otel/log v0.8.0
-	go.opentelemetry.io/otel/sdk v1.32.0
-	go.opentelemetry.io/otel/sdk/log v0.8.0
-	go.opentelemetry.io/otel/sdk/metric v1.32.0
-	go.opentelemetry.io/otel/trace v1.32.0
+	go.opentelemetry.io/otel v1.33.0
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.9.0
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.9.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.33.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.33.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.33.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.33.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.33.0
+	go.opentelemetry.io/otel/log v0.9.0
+	go.opentelemetry.io/otel/sdk v1.33.0
+	go.opentelemetry.io/otel/sdk/log v0.9.0
+	go.opentelemetry.io/otel/sdk/metric v1.33.0
+	go.opentelemetry.io/otel/trace v1.33.0
 	go.opentelemetry.io/proto/otlp v1.4.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
