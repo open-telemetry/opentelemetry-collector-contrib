@@ -234,10 +234,25 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
 
-	// TODO: Check if Scope is already present by comparing labels "otel_scope_name" and "otel_scope_version"
-	// with Scope.Name and Scope.Version. If it is present, we should append to the existing Scope.
-	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge()
-	addDatapoints(m.DataPoints(), ls, ts)
+	scopeName := ls.Get("otel_scope_name")
+	scopeVersion := ls.Get("otel_scope_version")
+
+	// scopeExists is a flag to check if the name and version present in the labels are already present in the ResourceMetrics.
+	// If it is not present, we should create a new ScopeMetrics.
+	// Otherwise, we should append to the existing ScopeMetrics.
+	var scopeExists bool
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		scope := rm.ScopeMetrics().At(j)
+		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
+			scopeExists = true
+			break
+		}
+	}
+
+	if !scopeExists {
+		m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge()
+		addDatapoints(m.DataPoints(), ls, ts)
+	}
 }
 
 func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
