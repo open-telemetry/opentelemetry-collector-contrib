@@ -289,6 +289,14 @@ resourceMetrics:
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
+          - description: the amount of time flow control has spent being engaged since the last restart.
+            name: mongodb.flowcontrol.lag.time
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: ms
           - description: The number of times an index has been accessed.
             name: mongodb.index.access.count
             sum:
@@ -450,6 +458,14 @@ resourceMetrics:
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
+          - description: the amount of time flow control has spent being engaged since the last restart.
+            name: mongodb.flowcontrol.lag.time
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: ms
           - description: The number of times an index has been accessed.
             name: mongodb.index.access.count
             sum:
@@ -611,6 +627,14 @@ resourceMetrics:
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
+          - description: the amount of time flow control has spent being engaged since the last restart.
+            name: mongodb.flowcontrol.lag.time
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: ms
           - description: The number of indexes.
             name: mongodb.index.count
             sum:
@@ -759,6 +783,14 @@ resourceMetrics:
                   startTimeUnixNano: "1682363190502544000"
                   timeUnixNano: "1682363210513475000"
             unit: '{extents}'
+          - description: the amount of time flow control has spent being engaged since the last restart.
+            name: mongodb.flowcontrol.lag.time
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  startTimeUnixNano: "1682363190502544000"
+                  timeUnixNano: "1682363210513475000"
+            unit: ms
           - description: The number of times an index has been accessed.
             name: mongodb.index.access.count
             sum:
