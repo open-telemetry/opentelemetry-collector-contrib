@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.1
-	github.com/antchfx/xmlquery v1.4.2
-	github.com/antchfx/xpath v1.3.2
+	github.com/antchfx/xmlquery v1.4.3
+	github.com/antchfx/xpath v1.3.3
 	github.com/elastic/go-grok v0.3.1
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.4
