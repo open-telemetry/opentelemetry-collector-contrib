@@ -58,7 +58,7 @@ type BaseConfig struct {
 	MaxOctets                    int     `mapstructure:"max_octets,omitempty"`
 }
 
-// Build will build a JSON parser operator.
+// Build will build a syslog parser operator.
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	if c.ParserConfig.TimeParser == nil {
 		parseFromField := entry.NewAttributeField("timestamp")
