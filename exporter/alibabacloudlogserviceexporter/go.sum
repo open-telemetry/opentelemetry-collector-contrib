@@ -20,8 +20,6 @@ github.com/alibabacloud-go/tea-utils/v2 v2.0.1 h1:K6kwgo+UiYx+/kr6CO0PN5ACZDzE3n
 github.com/alibabacloud-go/tea-utils/v2 v2.0.1/go.mod h1:U5MTY10WwlquGPS34DOeomUGBB0gXbLueiq5Trwu0C4=
 github.com/alibabacloud-go/tea-xml v1.1.2 h1:oLxa7JUXm2EDFzMg+7oRsYc+kutgCVwm+bZlhhmvW5M=
 github.com/alibabacloud-go/tea-xml v1.1.2/go.mod h1:Rq08vgCcCAjHyRi/M7xlHKUykZCEtyBy9+DPF6GgEu8=
-github.com/aliyun/aliyun-log-go-sdk v0.1.83 h1:xdFXXsvhO5BedlO9EUSf/HJDHSCp6kQrwL4EKDnT/Zg=
-github.com/aliyun/aliyun-log-go-sdk v0.1.83/go.mod h1:qNjBnTjQl8UeHhGmoZ7iredr2xyVBD1Ueu3JgOALR5U=
 github.com/aliyun/aliyun-log-go-sdk v0.1.92 h1:T/jtel5AWV8Z55Xh6wvnzqP1puLluHR/1iA1DDqjD5s=
 github.com/aliyun/aliyun-log-go-sdk v0.1.92/go.mod h1:qNjBnTjQl8UeHhGmoZ7iredr2xyVBD1Ueu3JgOALR5U=
 github.com/aliyun/credentials-go v1.1.2 h1:qU1vwGIBb3UJ8BwunHDRFtAhS6jnQLnde/yk0+Ih2GY=
