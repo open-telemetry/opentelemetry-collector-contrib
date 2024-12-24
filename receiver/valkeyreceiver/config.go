@@ -21,16 +21,14 @@ type Config struct {
 	// The target endpoint.
 	confignet.AddrConfig `mapstructure:",squash"`
 
-	// TODO allow users to add additional resource key value pairs?
-
 	// Optional username. Use the specified Username to authenticate the current connection
 	// with one of the connections defined in the ACL list when connecting
-	// to a valkey 6.0 instance, or greater, that is using the valkey ACL system.
+	// to a valkey instance that is using the valkey ACL system.
 	Username string `mapstructure:"username"`
 
 	// Optional password. Must match the password specified in the
 	// requirepass server configuration option, or the user's password when connecting
-	// to a valkey 6.0 instance, or greater, that is using the valkey ACL system.
+	// to a valkey instance that is using the valkey ACL system.
 	Password configopaque.String `mapstructure:"password"`
 
 	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`

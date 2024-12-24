@@ -4,7 +4,6 @@ package valkeyreceiver
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/valkey-io/valkey-go"
@@ -38,15 +37,18 @@ func newValkeyClient(options valkey.ClientOption) (client, error) {
 
 // Retrieve Valkey INFO. We retrieve all of the 'sections'.
 func (c *valkeyClient) retrieveInfo(ctx context.Context) (map[string]string, error) {
-	attrs := make(map[string]string)
 	str, err := c.client.Do(ctx, c.client.B().Info().Build()).ToString()
 	if err != nil {
-		return attrs, err
+		return nil, err
 	}
 
-	lines := strings.Split(str, attrDelimiter)
+	return parseRawDataMap(str), nil
+}
+
+func parseRawDataMap(data string) map[string]string {
+	attrs := make(map[string]string)
+	lines := strings.Split(data, attrDelimiter)
 	for _, line := range lines {
-		fmt.Printf("Line: %s\n", line)
 		if len(line) == 0 || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -55,7 +57,7 @@ func (c *valkeyClient) retrieveInfo(ctx context.Context) (map[string]string, err
 			attrs[pair[0]] = pair[1]
 		}
 	}
-	return attrs, nil
+	return attrs
 }
 
 // close client to release connention pool.

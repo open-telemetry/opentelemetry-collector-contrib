@@ -2,7 +2,6 @@ package valkeyreceiver
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/valkeyreceiver/internal/metadata"
 	"github.com/valkey-io/valkey-go"
@@ -24,23 +22,18 @@ type valkeyScraper struct {
 	configInfo configInfo
 }
 
-func newValkeyScraper(cfg *Config, settings receiver.Settings) (scraper.Metrics, error) {
+func newValkeyScraper(cfg *Config, settings receiver.Settings) (*valkeyScraper, error) {
 	configInfo, err := newConfigInfo(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	vs := &valkeyScraper{
+	return &valkeyScraper{
 		cfg:        cfg,
 		settings:   settings.TelemetrySettings,
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		configInfo: configInfo,
-	}
-	return scraper.NewMetrics(
-		scraper.ScrapeMetricsFunc(vs.scrape),
-
-		scraper.WithShutdown(vs.shutdown),
-	)
+	}, nil
 }
 
 func (vs *valkeyScraper) shutdown(context.Context) error {
@@ -77,7 +70,6 @@ func (vs *valkeyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	vs.recordConnectionMetrics(now, result)
 
-	fmt.Printf("%#v", result)
 	return vs.mb.Emit(), nil
 }
 

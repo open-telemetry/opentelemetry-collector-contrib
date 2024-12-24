@@ -1,0 +1,33 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: The number of connections that are currently in state described by the state attribute
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: valkey.client.connection.state
+                      value:
+                        stringValue: blocked
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: valkey.client.connection.state
+                      value:
+                        stringValue: tracking
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: valkey.client.connection.state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: valkey.client.connection.count
+            unit: '{connection}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/valkeyreceiver
+          version: latest
