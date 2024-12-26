@@ -114,6 +114,15 @@ func TestValidateConfig(t *testing.T) {
 			},
 			err: "timeout must be a positive integer",
 		},
+		{
+			name: "invalid_config4",
+			config: &Config{
+				Endpoint: "https://helix:8080",
+				ApiKey:   "api_key",
+				Timeout:  0,
+			},
+			err: "timeout must be a positive integer",
+		},
 	}
 
 	for _, tt := range tests {

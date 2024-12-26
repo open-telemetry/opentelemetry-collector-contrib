@@ -29,7 +29,7 @@ func (c *Config) Validate() error {
 	if c.ApiKey == "" {
 		return errors.New("api key is required")
 	}
-	if c.Timeout < 0 {
+	if c.Timeout <= 0 {
 		return errors.New("timeout must be a positive integer")
 	}
 
