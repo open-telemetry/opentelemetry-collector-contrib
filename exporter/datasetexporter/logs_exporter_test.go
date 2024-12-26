@@ -27,8 +27,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestBuildBody(t *testing.T) {
@@ -560,7 +559,8 @@ func TestBuildEventFromLog(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			lr := testdata.GenerateLogsOneEmptyLogRecord()
+			lr := plog.NewLogs()
+			lr.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 			ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 			resource := lr.ResourceLogs().At(0).Resource()
 			scope := lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope()
@@ -568,7 +568,7 @@ func TestBuildEventFromLog(t *testing.T) {
 			fillAttributes(resource.Attributes(), false, "R")
 			fillAttributes(scope.Attributes(), false, "S")
 			fillAttributes(ld.Attributes(), false, "A")
-			ld.SetTimestamp(testdata.TestLogTimestamp)
+			ld.SetTimestamp(1581452773000000789)
 			if tt.includeSpanID {
 				ld.SetSpanID([8]byte{1, 1, 1, 1, 1, 1, 1, 1})
 			}
@@ -607,7 +607,7 @@ func TestBuildEventFromLog(t *testing.T) {
 }
 
 func TestBuildEventFromLogExportResources(t *testing.T) {
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr := testdata.GenerateLogs(1)
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	defaultAttrs := testLEventRaw.Attrs
@@ -640,7 +640,7 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 }
 
 func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr := testdata.GenerateLogs(1)
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	scope := pcommon.NewInstrumentationScope()
@@ -676,7 +676,7 @@ func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
 func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
 	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
 	// ObservedTimestamp should be used
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr := testdata.GenerateLogs(1)
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	ld.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
@@ -714,7 +714,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 	assert.Equal(t, currentTime, time.Unix(123456789, 0))
 	assert.Equal(t, "123456789000000000", strconv.FormatInt(currentTime.UnixNano(), 10))
 
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr := testdata.GenerateLogs(1)
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	ld.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, 0)))
@@ -821,20 +821,20 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 	}
 
-	lr1 := testdata.GenerateLogsOneLogRecord()
-	lr2 := testdata.GenerateLogsOneLogRecord()
+	lr1 := testdata.GenerateLogs(1)
+	lr2 := testdata.GenerateLogs(1)
 	// set attribute for the hostname, it should beat value from resource
 	lr2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(add_events.AttrServerHost, "serverHostFromAttribute")
 	lr2.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResource")
 	// set attribute serverHost and host.name attributes in the resource, serverHost will win
-	lr3 := testdata.GenerateLogsOneLogRecord()
+	lr3 := testdata.GenerateLogs(1)
 	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResourceServer")
 	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
 	// set attribute host.name in the resource attribute
-	lr4 := testdata.GenerateLogsOneLogRecord()
+	lr4 := testdata.GenerateLogs(1)
 	lr4.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
 	// set all possible values
-	lr5 := testdata.GenerateLogsOneLogRecord()
+	lr5 := testdata.GenerateLogs(1)
 	fillAttributes(lr5.ResourceLogs().At(0).Resource().Attributes(), true, "R")
 	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes(), true, "S")
 	fillAttributes(lr5.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(), true, "A")
@@ -1068,7 +1068,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 }
 
 func makeLogRecordWithSeverityNumberAndSeverityText(sevNum int, sevText string) plog.LogRecord {
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr := testdata.GenerateLogs(1)
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	ld.SetSeverityNumber(plog.SeverityNumber(sevNum))

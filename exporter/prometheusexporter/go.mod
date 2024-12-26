@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/promet
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.116.0
@@ -20,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/exporter/exportertest v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/pdata/testdata v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/receiver/receivertest v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/semconv v0.116.1-0.20241220212031-7c2639723f67
 	go.uber.org/goleak v1.3.0
@@ -122,6 +122,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect

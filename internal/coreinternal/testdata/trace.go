@@ -76,16 +76,6 @@ func GenerateTracesTwoSpansSameResourceOneDifferent() ptrace.Traces {
 	return td
 }
 
-func GenerateTracesManySpansSameResource(spanCount int) ptrace.Traces {
-	td := GenerateTracesOneEmptyInstrumentationLibrary()
-	rs0ils0 := td.ResourceSpans().At(0).ScopeSpans().At(0)
-	rs0ils0.Spans().EnsureCapacity(spanCount)
-	for i := 0; i < spanCount; i++ {
-		fillSpanOne(rs0ils0.Spans().AppendEmpty())
-	}
-	return td
-}
-
 func fillSpanOne(span ptrace.Span) {
 	span.SetName("operationA")
 	span.SetStartTimestamp(TestSpanStartTimestamp)

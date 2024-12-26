@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanp
 go 1.22.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.116.0
@@ -14,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.22.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/consumer/consumertest v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/pdata/testdata v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/pipeline v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/processor v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/processor/processortest v0.116.1-0.20241220212031-7c2639723f67
@@ -50,6 +50,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.116.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
@@ -59,7 +60,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/featuregate v1.22.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.116.1-0.20241220212031-7c2639723f67 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect

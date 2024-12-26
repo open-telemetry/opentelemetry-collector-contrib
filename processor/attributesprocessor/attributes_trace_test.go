@@ -11,12 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -59,6 +59,11 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 		input  ptrace.Traces
 		output ptrace.Traces
 	}
+	noScope := func() ptrace.Traces {
+		ns := ptrace.NewTraces()
+		ns.ResourceSpans().AppendEmpty()
+		return ns
+	}
 	// TODO: Add test for "nil" Span/Attributes. This needs support from data slices to allow to construct that.
 	testCases := []nilEmptyTestCase{
 		{
@@ -67,19 +72,14 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 			output: ptrace.NewTraces(),
 		},
 		{
-			name:   "one-empty-resource-spans",
-			input:  testdata.GenerateTracesOneEmptyResourceSpans(),
-			output: testdata.GenerateTracesOneEmptyResourceSpans(),
+			name:   "no-scope",
+			input:  noScope(),
+			output: noScope(),
 		},
 		{
-			name:   "no-libraries",
-			input:  testdata.GenerateTracesNoLibraries(),
-			output: testdata.GenerateTracesNoLibraries(),
-		},
-		{
-			name:   "one-empty-instrumentation-library",
-			input:  testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
-			output: testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
+			name:   "no-spans",
+			input:  testdata.GenerateTraces(0),
+			output: testdata.GenerateTraces(0),
 		},
 	}
 	factory := NewFactory()

@@ -17,11 +17,16 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+)
+
+var (
+	testMetricStartTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC))
+	testMetricTimestamp      = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC))
 )
 
 func Test_isValidAggregationTemporality(t *testing.T) {
@@ -574,13 +579,13 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		},
 		{
 			desc:      "with resource missing both service.name and service.instance.id resource attributes",
-			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
-			timestamp: testdata.TestMetricStartTimestamp,
+			resource:  testdata.GenerateMetrics(0).ResourceMetrics().At(0).Resource(),
+			timestamp: testMetricStartTimestamp,
 		},
 		{
 			desc:      "with resource including service.instance.id, and missing service.name resource attribute",
 			resource:  resourceWithOnlyServiceID,
-			timestamp: testdata.TestMetricStartTimestamp,
+			timestamp: testMetricStartTimestamp,
 			wantLabels: []prompb.Label{
 				{Name: model.MetricNameLabel, Value: "target_info"},
 				{Name: model.InstanceLabel, Value: "service-instance-id"},
@@ -590,7 +595,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		{
 			desc:      "with resource including service.name, and missing service.instance.id resource attribute",
 			resource:  resourceWithOnlyServiceName,
-			timestamp: testdata.TestMetricStartTimestamp,
+			timestamp: testMetricStartTimestamp,
 			wantLabels: []prompb.Label{
 				{Name: model.MetricNameLabel, Value: "target_info"},
 				{Name: model.JobLabel, Value: "service-name"},
@@ -600,7 +605,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		{
 			desc:      "with valid resource, with namespace",
 			resource:  resourceWithOnlyServiceName,
-			timestamp: testdata.TestMetricStartTimestamp,
+			timestamp: testMetricStartTimestamp,
 			settings:  Settings{Namespace: "foo"},
 			wantLabels: []prompb.Label{
 				{Name: model.MetricNameLabel, Value: "foo_target_info"},
@@ -611,7 +616,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		{
 			desc:      "with resource, with service attributes",
 			resource:  resourceWithServiceAttrs,
-			timestamp: testdata.TestMetricStartTimestamp,
+			timestamp: testMetricStartTimestamp,
 			wantLabels: []prompb.Label{
 				{Name: model.MetricNameLabel, Value: "target_info"},
 				{Name: model.InstanceLabel, Value: "service-instance-id"},
@@ -622,7 +627,7 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		{
 			desc:      "with resource, with only service attributes",
 			resource:  resourceWithOnlyServiceAttrs,
-			timestamp: testdata.TestMetricStartTimestamp,
+			timestamp: testMetricStartTimestamp,
 		},
 		{
 			// If there's no timestamp, target_info shouldn't be generated, since we don't know when the write is from.
@@ -659,9 +664,9 @@ func TestAddResourceTargetInfo(t *testing.T) {
 }
 
 func TestMostRecentTimestampInMetric(t *testing.T) {
-	laterTimestamp := pcommon.NewTimestampFromTime(testdata.TestMetricTime.Add(1 * time.Minute))
-	metricMultipleTimestamps := testdata.GenerateMetricsOneMetric().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	// the first datapoint timestamp is at testdata.TestMetricTime
+	laterTimestamp := testMetricTimestamp + 60*1000_000_000
+	metricMultipleTimestamps := testdata.GenerateMetrics(1).ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	// the first datapoint timestamp is at testMetricTime
 	metricMultipleTimestamps.Sum().DataPoints().At(1).SetTimestamp(laterTimestamp)
 	for _, tc := range []struct {
 		desc     string

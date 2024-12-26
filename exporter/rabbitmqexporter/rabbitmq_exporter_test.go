@@ -15,9 +15,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/testdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter/internal/publisher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 const (
@@ -103,7 +103,7 @@ func TestPublishMetrics(t *testing.T) {
 	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
 		return message.RoutingKey == routingKey && len(message.Body) > 0 && message.Exchange == ""
 	})).Return(nil)
-	err := exporter.publishMetrics(context.Background(), testdata.GenerateMetricsOneMetric())
+	err := exporter.publishMetrics(context.Background(), testdata.GenerateMetrics(1))
 
 	require.NoError(t, err)
 	pub.AssertExpectations(t)
@@ -115,7 +115,7 @@ func TestPublishTraces(t *testing.T) {
 	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
 		return message.RoutingKey == routingKey && len(message.Body) > 0 && message.Exchange == ""
 	})).Return(nil)
-	err := exporter.publishTraces(context.Background(), testdata.GenerateTracesOneSpan())
+	err := exporter.publishTraces(context.Background(), testdata.GenerateTraces(1))
 
 	require.NoError(t, err)
 	pub.AssertExpectations(t)
@@ -127,7 +127,7 @@ func TestPublishLogs(t *testing.T) {
 	pub.On("Publish", mock.Anything, mock.MatchedBy(func(message publisher.Message) bool {
 		return message.RoutingKey == routingKey && len(message.Body) > 0 && message.Exchange == ""
 	})).Return(nil)
-	err := exporter.publishLogs(context.Background(), testdata.GenerateLogsOneLogRecord())
+	err := exporter.publishLogs(context.Background(), testdata.GenerateLogs(1))
 
 	require.NoError(t, err)
 	pub.AssertExpectations(t)

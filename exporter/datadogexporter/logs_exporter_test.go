@@ -19,16 +19,18 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
+
+var logTime = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
 
 const timeFormatString = "2006-01-02T15:04:05.000Z07:00"
 
 func TestLogsExporter(t *testing.T) {
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr := testdata.GenerateLogs(1)
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	type args struct {
@@ -50,7 +52,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+					"@timestamp":           logTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -59,7 +61,7 @@ func TestLogsExporter(t *testing.T) {
 					"otel.severity_number": "9",
 					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
 					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+					"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 					"resource-attr":        "resource-attr-val-1",
 				},
 			},
@@ -68,7 +70,7 @@ func TestLogsExporter(t *testing.T) {
 			name: "message-attribute",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsOneLogRecord()
+					lrr := testdata.GenerateLogs(1)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("message", "hello")
 					return lrr
@@ -80,7 +82,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              "hello",
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+					"@timestamp":           logTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -89,7 +91,7 @@ func TestLogsExporter(t *testing.T) {
 					"otel.severity_number": "9",
 					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
 					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+					"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 					"resource-attr":        "resource-attr-val-1",
 				},
 			},
@@ -98,7 +100,7 @@ func TestLogsExporter(t *testing.T) {
 			name: "ddtags",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsOneLogRecord()
+					lrr := testdata.GenerateLogs(1)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("ddtags", "tag1:true")
 					return lrr
@@ -110,7 +112,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+					"@timestamp":           logTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -119,7 +121,7 @@ func TestLogsExporter(t *testing.T) {
 					"otel.severity_number": "9",
 					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
 					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+					"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 					"resource-attr":        "resource-attr-val-1",
 				},
 			},
@@ -128,7 +130,7 @@ func TestLogsExporter(t *testing.T) {
 			name: "ddtags submits same tags",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					lrr := testdata.GenerateLogs(2)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("ddtags", "tag1:true")
 					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
@@ -142,7 +144,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+					"@timestamp":           logTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -151,19 +153,19 @@ func TestLogsExporter(t *testing.T) {
 					"otel.severity_number": "9",
 					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
 					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+					"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 					"resource-attr":        "resource-attr-val-1",
 				},
 				{
 					"message":              "something happened",
 					"env":                  "dev",
 					"customer":             "acme",
-					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+					"@timestamp":           logTime.Format(timeFormatString),
 					"status":               "Info",
 					"ddtags":               "tag1:true,otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",
 					"otel.severity_number": "9",
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+					"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 					"resource-attr":        "resource-attr-val-1",
 				},
 			},
@@ -172,7 +174,7 @@ func TestLogsExporter(t *testing.T) {
 			name: "ddtags submits different tags",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					lrr := testdata.GenerateLogs(2)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("ddtags", "tag1:true")
 					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
@@ -186,7 +188,7 @@ func TestLogsExporter(t *testing.T) {
 					"message":              ld.Body().AsString(),
 					"app":                  "server",
 					"instance_num":         "1",
-					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+					"@timestamp":           logTime.Format(timeFormatString),
 					"status":               "Info",
 					"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 					"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -195,19 +197,19 @@ func TestLogsExporter(t *testing.T) {
 					"otel.severity_number": "9",
 					"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
 					"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+					"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 					"resource-attr":        "resource-attr-val-1",
 				},
 				{
 					"message":              "something happened",
 					"env":                  "dev",
 					"customer":             "acme",
-					"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+					"@timestamp":           logTime.Format(timeFormatString),
 					"status":               "Info",
 					"ddtags":               "tag2:true,otel_source:datadog_exporter",
 					"otel.severity_text":   "Info",
 					"otel.severity_number": "9",
-					"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+					"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 					"resource-attr":        "resource-attr-val-1",
 				},
 			},
@@ -246,7 +248,7 @@ func TestLogsExporter(t *testing.T) {
 }
 
 func TestLogsAgentExporter(t *testing.T) {
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr := testdata.GenerateLogs(1)
 	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	type args struct {
@@ -267,7 +269,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			want: testutil.JSONLogs{
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"app":                  "server",
 						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -276,7 +278,7 @@ func TestLogsAgentExporter(t *testing.T) {
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
 						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
@@ -292,7 +294,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			name: "message-attribute",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsOneLogRecord()
+					lrr := testdata.GenerateLogs(1)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("attr", "hello")
 					ldd.Attributes().PutStr("service.name", "service")
@@ -304,7 +306,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			want: testutil.JSONLogs{
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"app":                  "server",
 						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -313,7 +315,7 @@ func TestLogsAgentExporter(t *testing.T) {
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
 						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
@@ -334,7 +336,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			name: "ddtags",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsOneLogRecord()
+					lrr := testdata.GenerateLogs(1)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("ddtags", "tag1:true")
 					return lrr
@@ -344,7 +346,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			want: testutil.JSONLogs{
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"app":                  "server",
 						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -353,7 +355,7 @@ func TestLogsAgentExporter(t *testing.T) {
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
 						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
@@ -369,7 +371,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			name: "ddtags submits same tags",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					lrr := testdata.GenerateLogs(2)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("ddtags", "tag1:true")
 					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
@@ -382,7 +384,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			want: testutil.JSONLogs{
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"app":                  "server",
 						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -391,7 +393,7 @@ func TestLogsAgentExporter(t *testing.T) {
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
 						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
@@ -403,11 +405,11 @@ func TestLogsAgentExporter(t *testing.T) {
 				},
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"message":              "something happened",
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
 						"env":                  "dev",
@@ -424,7 +426,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			name: "ddtags submits different tags",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsTwoLogRecordsSameResource()
+					lrr := testdata.GenerateLogs(2)
 					ldd := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 					ldd.Attributes().PutStr("ddtags", "tag1:true")
 					ldd2 := lrr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1)
@@ -436,7 +438,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			want: testutil.JSONLogs{
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"app":                  "server",
 						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -445,7 +447,7 @@ func TestLogsAgentExporter(t *testing.T) {
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
 						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
@@ -457,11 +459,11 @@ func TestLogsAgentExporter(t *testing.T) {
 				},
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"message":              "something happened",
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
 						"env":                  "dev",
@@ -483,7 +485,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			want: testutil.JSONLogs{
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":           testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":           logTime.Format(timeFormatString),
 						"app":                  "server",
 						"dd.span_id":           fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 						"dd.trace_id":          fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -492,7 +494,7 @@ func TestLogsAgentExporter(t *testing.T) {
 						"otel.severity_number": "9",
 						"otel.severity_text":   "Info",
 						"otel.span_id":         traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
-						"otel.timestamp":       fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":       fmt.Sprintf("%d", logTime.UnixNano()),
 						"otel.trace_id":        traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 						"resource-attr":        "resource-attr-val-1",
 						"status":               "Info",
@@ -508,7 +510,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			name: "new-env-convention",
 			args: args{
 				ld: func() plog.Logs {
-					lrr := testdata.GenerateLogsOneLogRecord()
+					lrr := testdata.GenerateLogs(1)
 					lrr.ResourceLogs().At(0).Resource().Attributes().PutStr(conventions127.AttributeDeploymentEnvironmentName, "new_env")
 					return lrr
 				}(),
@@ -517,7 +519,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			want: testutil.JSONLogs{
 				{
 					"message": testutil.JSONLog{
-						"@timestamp":                  testdata.TestLogTime.Format(timeFormatString),
+						"@timestamp":                  logTime.Format(timeFormatString),
 						"app":                         "server",
 						"dd.span_id":                  fmt.Sprintf("%d", spanIDToUint64(ld.SpanID())),
 						"dd.trace_id":                 fmt.Sprintf("%d", traceIDToUint64(ld.TraceID())),
@@ -527,7 +529,7 @@ func TestLogsAgentExporter(t *testing.T) {
 						"otel.severity_number":        "9",
 						"otel.severity_text":          "Info",
 						"otel.span_id":                traceutil.SpanIDToHexOrEmptyString(ld.SpanID()),
-						"otel.timestamp":              fmt.Sprintf("%d", testdata.TestLogTime.UnixNano()),
+						"otel.timestamp":              fmt.Sprintf("%d", logTime.UnixNano()),
 						"otel.trace_id":               traceutil.TraceIDToHexOrEmptyString(ld.TraceID()),
 						"resource-attr":               "resource-attr-val-1",
 						"status":                      "Info",

@@ -12,9 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
@@ -81,7 +81,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 			jb: &jaeger.Batch{
 				Process: generateThriftProcess(),
 			},
-			td: testdata.GenerateTracesNoLibraries(),
+			td: testdata.GenerateTraces(0),
 		},
 
 		{

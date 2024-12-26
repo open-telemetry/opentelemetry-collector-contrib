@@ -95,6 +95,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/consumer/consumererror v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/exporter/exportertest v0.116.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/pdata/testdata v0.116.1-0.20241220212031-7c2639723f67
 )
 
 require (
@@ -352,7 +353,6 @@ require (
 	go.opentelemetry.io/collector/internal/memorylimiter v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.116.1-0.20241220212031-7c2639723f67 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/pipeline v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.116.1-0.20241220212031-7c2639723f67 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.116.1-0.20241220212031-7c2639723f67 // indirect

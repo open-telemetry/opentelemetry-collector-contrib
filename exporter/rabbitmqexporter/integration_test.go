@@ -20,8 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 const (
@@ -72,7 +71,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			}()
 
 			// Export and verify data is consumed
-			logs := testdata.GenerateLogsOneLogRecord()
+			logs := testdata.GenerateLogs(1)
 			err = exporter.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)
 			consumed := <-consumer
@@ -89,7 +88,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			stopTimeout := time.Second * 5
 			err = container.Stop(context.Background(), &stopTimeout)
 			require.NoError(t, err)
-			logs = testdata.GenerateLogsOneLogRecord()
+			logs = testdata.GenerateLogs(1)
 			err = exporter.ConsumeLogs(context.Background(), logs)
 			require.Error(t, err)
 
@@ -102,7 +101,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 				connection.Close()
 			}()
 
-			logs = testdata.GenerateLogsOneLogRecord()
+			logs = testdata.GenerateLogs(1)
 			err = exporter.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)
 			consumed = <-consumer

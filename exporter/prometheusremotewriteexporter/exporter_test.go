@@ -33,10 +33,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 // Test_NewPRWExporter checks that a new exporter instance with non-nil fields is initialized
@@ -388,7 +387,7 @@ func Test_PushMetrics(t *testing.T) {
 	invalidTypeBatch := testdata.GenerateMetricsMetricTypeInvalid()
 
 	// success cases
-	intSumBatch := testdata.GenerateMetricsManyMetricsSameResource(10)
+	intSumBatch := testdata.GenerateMetrics(10)
 
 	sumBatch := getMetricsFromMetricList(validMetrics1[validSum], validMetrics2[validSum])
 

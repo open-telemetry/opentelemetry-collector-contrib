@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -55,6 +55,11 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 		input  plog.Logs
 		output plog.Logs
 	}
+	noScope := func() plog.Logs {
+		ns := plog.NewLogs()
+		ns.ResourceLogs().AppendEmpty()
+		return ns
+	}
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
@@ -62,14 +67,14 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 			output: plog.NewLogs(),
 		},
 		{
-			name:   "one-empty-resource-logs",
-			input:  testdata.GenerateLogsOneEmptyResourceLogs(),
-			output: testdata.GenerateLogsOneEmptyResourceLogs(),
+			name:   "no-scope",
+			input:  noScope(),
+			output: noScope(),
 		},
 		{
-			name:   "no-libraries",
-			input:  testdata.GenerateLogsOneEmptyResourceLogs(),
-			output: testdata.GenerateLogsOneEmptyResourceLogs(),
+			name:   "no-logs",
+			input:  testdata.GenerateLogs(0),
+			output: testdata.GenerateLogs(0),
 		},
 	}
 	factory := NewFactory()

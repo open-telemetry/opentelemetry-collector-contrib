@@ -11,9 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestConsumeLogs(t *testing.T) {
@@ -62,7 +61,7 @@ func TestConsumeLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			consumer := NewLogs(tt.cfg, zap.NewNop(), tt.consumer)
-			err := consumer.ConsumeLogs(context.Background(), testdata.GenerateLogsTwoLogRecordsSameResource())
+			err := consumer.ConsumeLogs(context.Background(), testdata.GenerateLogs(2))
 			assert.Equal(t, tt.expectedErr, err)
 			if err == nil {
 				assert.Len(t, tt.consumer.AllLogs(), 1)
@@ -87,7 +86,7 @@ func TestConsumeLogs_ContextDeadline(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
 	defer cancel()
-	err := consumer.ConsumeLogs(ctx, testdata.GenerateLogsTwoLogRecordsSameResource())
+	err := consumer.ConsumeLogs(ctx, testdata.GenerateLogs(2))
 	assert.ErrorContains(t, err, "context is cancelled or timed out retry later")
 }
 
@@ -100,8 +99,8 @@ func TestConsumeLogs_PartialRetry(t *testing.T) {
 		MaxElapsedTime:  50 * time.Millisecond,
 	}, zap.NewNop(), sink)
 
-	logs := testdata.GenerateLogsTwoLogRecordsSameResource()
-	testdata.GenerateLogsOneLogRecordNoResource().ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
+	logs := testdata.GenerateLogs(2)
+	testdata.GenerateLogs(1).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 	assert.NoError(t, consumer.ConsumeLogs(context.Background(), logs))
 
 	// Verify the logs batch is broken into two parts, one with the partial error and one without.

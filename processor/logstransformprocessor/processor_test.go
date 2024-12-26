@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -161,8 +160,8 @@ func TestLogsTransformProcessor(t *testing.T) {
 }
 
 func generateLogData(messages []testLogMessage) plog.Logs {
-	ld := testdata.GenerateLogsOneEmptyResourceLogs()
-	scope := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
+	ld := plog.NewLogs()
+	scope := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 	for _, content := range messages {
 		log := scope.LogRecords().AppendEmpty()
 		content.body.CopyTo(log.Body())

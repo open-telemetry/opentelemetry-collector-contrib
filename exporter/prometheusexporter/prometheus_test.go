@@ -19,9 +19,9 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -140,7 +140,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	assert.NotNil(t, md)
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
@@ -403,7 +403,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	assert.NotNil(t, exp)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	assert.NotNil(t, md)
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))

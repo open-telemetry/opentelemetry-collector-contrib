@@ -8,12 +8,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
 func TestConvertResourceToAttributes(t *testing.T) {
-	md := testdata.GenerateMetricsOneMetric()
+	md := testdata.GenerateMetrics(1)
 	assert.NotNil(t, md)
 
 	// Before converting resource to labels
@@ -28,7 +27,7 @@ func TestConvertResourceToAttributes(t *testing.T) {
 }
 
 func TestConvertResourceToAttributesAllDataTypesEmptyDataPoint(t *testing.T) {
-	md := testdata.GenerateMetricsAllTypesEmptyDataPoint()
+	md := testdata.GenerateMetricsAllTypesEmpty()
 	assert.NotNil(t, md)
 
 	// Before converting resource to labels

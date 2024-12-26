@@ -12,9 +12,9 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -296,11 +296,11 @@ func TestSpan_Matching_True(t *testing.T) {
 }
 
 func TestServiceNameForResource(t *testing.T) {
-	td := testdata.GenerateTracesOneSpanNoResource()
+	td := testdata.GenerateTraces(0)
 	name := serviceNameForResource(td.ResourceSpans().At(0).Resource())
 	require.Equal(t, "<nil-service-name>", name)
 
-	td = testdata.GenerateTracesOneSpan()
+	td = testdata.GenerateTraces(1)
 	resource := td.ResourceSpans().At(0).Resource()
 	name = serviceNameForResource(resource)
 	require.Equal(t, "<nil-service-name>", name)

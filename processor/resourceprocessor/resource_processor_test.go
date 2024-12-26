@@ -13,10 +13,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
@@ -134,11 +134,12 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 }
 
 func generateTraceData(attributes map[string]string) ptrace.Traces {
-	td := testdata.GenerateTracesOneSpanNoResource()
+	td := testdata.GenerateTraces(1)
 	if attributes == nil {
 		return td
 	}
 	resource := td.ResourceSpans().At(0).Resource()
+	resource.Attributes().Clear()
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
@@ -146,11 +147,12 @@ func generateTraceData(attributes map[string]string) ptrace.Traces {
 }
 
 func generateMetricData(attributes map[string]string) pmetric.Metrics {
-	md := testdata.GenerateMetricsOneMetricNoResource()
+	md := testdata.GenerateMetrics(1)
 	if attributes == nil {
 		return md
 	}
 	resource := md.ResourceMetrics().At(0).Resource()
+	resource.Attributes().Clear()
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
@@ -158,11 +160,12 @@ func generateMetricData(attributes map[string]string) pmetric.Metrics {
 }
 
 func generateLogData(attributes map[string]string) plog.Logs {
-	ld := testdata.GenerateLogsOneLogRecordNoResource()
+	ld := testdata.GenerateLogs(1)
 	if attributes == nil {
 		return ld
 	}
 	resource := ld.ResourceLogs().At(0).Resource()
+	resource.Attributes().Clear()
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}

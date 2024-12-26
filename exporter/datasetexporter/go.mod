@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.22.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/config/configretry v1.22.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/exporter/exportertest v0.116.1-0.20241220212031-7c2639723f67
+	go.opentelemetry.io/collector/pdata/testdata v0.116.1-0.20241220212031-7c2639723f67
 )
 
 require (

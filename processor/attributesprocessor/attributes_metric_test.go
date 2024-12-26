@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -31,13 +31,13 @@ type metricTestCase struct {
 // runIndividualMetricTestCase is the common logic of passing metric data through a configured attributes processor.
 func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp processor.Metrics) {
 	t.Run(mt.name, func(t *testing.T) {
-		md := generateMetricData(mt.name, mt.inputAttributes)
+		md := generateMetricData(t, mt.name, mt.inputAttributes)
 		assert.NoError(t, mp.ConsumeMetrics(context.Background(), md))
-		require.NoError(t, pmetrictest.CompareMetrics(generateMetricData(mt.name, mt.expectedAttributes), md))
+		require.NoError(t, pmetrictest.CompareMetrics(generateMetricData(t, mt.name, mt.expectedAttributes), md))
 	})
 }
 
-func generateMetricData(resourceName string, attrs map[string]any) pmetric.Metrics {
+func generateMetricData(t testing.TB, resourceName string, attrs map[string]any) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().PutStr("name", resourceName)
@@ -45,7 +45,7 @@ func generateMetricData(resourceName string, attrs map[string]any) pmetric.Metri
 	m := sl.Metrics().AppendEmpty()
 	m.SetName("metric1")
 	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
-	dp.Attributes().FromRaw(attrs) //nolint:errcheck
+	assert.NoError(t, dp.Attributes().FromRaw(attrs))
 	dp.SetIntValue(1)
 	return md
 }
@@ -57,6 +57,11 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		input  pmetric.Metrics
 		output pmetric.Metrics
 	}
+	noScope := func() pmetric.Metrics {
+		ns := pmetric.NewMetrics()
+		ns.ResourceMetrics().AppendEmpty()
+		return ns
+	}
 	// TODO: Add test for "nil" Metric/Attributes. This needs support from data slices to allow to construct that.
 	metricTestCases := []nilEmptyMetricTestCase{
 		{
@@ -65,19 +70,14 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 			output: pmetric.NewMetrics(),
 		},
 		{
-			name:   "one-empty-resource-metrics",
-			input:  testdata.GenerateMetricsOneEmptyResourceMetrics(),
-			output: testdata.GenerateMetricsOneEmptyResourceMetrics(),
+			name:   "no-scope",
+			input:  noScope(),
+			output: noScope(),
 		},
 		{
-			name:   "no-libraries",
-			input:  testdata.GenerateMetricsNoLibraries(),
-			output: testdata.GenerateMetricsNoLibraries(),
-		},
-		{
-			name:   "one-empty-instrumentation-library",
-			input:  testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
-			output: testdata.GenerateMetricsOneEmptyInstrumentationLibrary(),
+			name:   "no-metrics",
+			input:  testdata.GenerateMetrics(0),
+			output: testdata.GenerateMetrics(0),
 		},
 	}
 	factory := NewFactory()
@@ -447,7 +447,7 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 	require.NotNil(b, mp)
 
 	for _, tc := range testCases {
-		md := generateMetricData(tc.name, tc.inputAttributes)
+		md := generateMetricData(b, tc.name, tc.inputAttributes)
 
 		b.Run(tc.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
@@ -455,6 +455,6 @@ func BenchmarkAttributes_FilterMetricsByName(b *testing.B) {
 			}
 		})
 
-		require.NoError(b, pmetrictest.CompareMetrics(generateMetricData(tc.name, tc.expectedAttributes), md))
+		require.NoError(b, pmetrictest.CompareMetrics(generateMetricData(b, tc.name, tc.expectedAttributes), md))
 	}
 }

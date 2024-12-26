@@ -24,10 +24,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func buildUnCompressor(compressor string) func([]byte) ([]byte, error) {
@@ -133,7 +132,7 @@ func TestFileTracesExporter(t *testing.T) {
 			require.IsType(t, &fileExporter{}, feI)
 			fe := feI.(*fileExporter)
 
-			td := testdata.GenerateTracesTwoSpansSameResource()
+			td := testdata.GenerateTraces(2)
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.consumeTraces(context.Background(), td))
 			assert.NoError(t, fe.consumeTraces(context.Background(), td))
@@ -182,7 +181,7 @@ func TestFileTracesExporterError(t *testing.T) {
 	}
 	require.NotNil(t, fe)
 
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	// Cannot call Start since we inject directly the WriterCloser.
 	assert.Error(t, fe.consumeTraces(context.Background(), td))
 	assert.NoError(t, fe.Shutdown(context.Background()))
@@ -265,7 +264,7 @@ func TestFileMetricsExporter(t *testing.T) {
 			}
 			require.NotNil(t, fe)
 
-			md := testdata.GenerateMetricsTwoMetrics()
+			md := testdata.GenerateMetrics(2)
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
 			assert.NoError(t, fe.consumeMetrics(context.Background(), md))
@@ -315,7 +314,7 @@ func TestFileMetricsExporterError(t *testing.T) {
 	}
 	require.NotNil(t, fe)
 
-	md := testdata.GenerateMetricsTwoMetrics()
+	md := testdata.GenerateMetrics(2)
 	// Cannot call Start since we inject directly the WriterCloser.
 	assert.Error(t, fe.consumeMetrics(context.Background(), md))
 	assert.NoError(t, fe.Shutdown(context.Background()))
@@ -398,7 +397,7 @@ func TestFileLogsExporter(t *testing.T) {
 			}
 			require.NotNil(t, fe)
 
-			ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+			ld := testdata.GenerateLogs(2)
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
 			assert.NoError(t, fe.consumeLogs(context.Background(), ld))
@@ -447,7 +446,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 	}
 	require.NotNil(t, fe)
 
-	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+	ld := testdata.GenerateLogs(2)
 	// Cannot call Start since we inject directly the WriterCloser.
 	assert.Error(t, fe.consumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
@@ -530,7 +529,7 @@ func TestFileProfilesExporter(t *testing.T) {
 			}
 			require.NotNil(t, fe)
 
-			pd := testdata.GenerateProfilesTwoProfilesSameResource()
+			pd := testdata.GenerateProfiles(2)
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.consumeProfiles(context.Background(), pd))
 			assert.NoError(t, fe.consumeProfiles(context.Background(), pd))
@@ -579,7 +578,7 @@ func TestFileProfilesExporterErrors(t *testing.T) {
 	}
 	require.NotNil(t, fe)
 
-	pd := testdata.GenerateProfilesTwoProfilesSameResource()
+	pd := testdata.GenerateProfiles(2)
 	// Cannot call Start since we inject directly the WriterCloser.
 	assert.Error(t, fe.consumeProfiles(context.Background(), pd))
 	assert.NoError(t, fe.Shutdown(context.Background()))
@@ -603,7 +602,7 @@ func TestExportMessageAsBuffer(t *testing.T) {
 	}
 	require.NotNil(t, fe)
 	//
-	ld := testdata.GenerateLogsManyLogRecordsSameResource(15000)
+	ld := testdata.GenerateLogs(15000)
 	marshaler := &plog.ProtoMarshaler{}
 	buf, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
@@ -674,10 +673,10 @@ func TestConcurrentlyCompress(t *testing.T) {
 		cld []byte
 		cpd []byte
 	)
-	td := testdata.GenerateTracesTwoSpansSameResource()
-	md := testdata.GenerateMetricsTwoMetrics()
-	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
-	pd := testdata.GenerateProfilesTwoProfilesSameResource()
+	td := testdata.GenerateTraces(2)
+	md := testdata.GenerateMetrics(2)
+	ld := testdata.GenerateLogs(2)
+	pd := testdata.GenerateProfiles(2)
 	go func() {
 		defer wg.Done()
 		buf, err := tracesMarshalers[formatTypeJSON].MarshalTraces(td)

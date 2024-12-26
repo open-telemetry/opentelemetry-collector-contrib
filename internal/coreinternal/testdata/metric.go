@@ -22,13 +22,12 @@ var (
 )
 
 const (
-	TestGaugeDoubleMetricName          = "gauge-double"
-	TestGaugeIntMetricName             = "gauge-int"
-	TestSumDoubleMetricName            = "counter-double"
-	TestSumIntMetricName               = "counter-int"
-	TestDoubleHistogramMetricName      = "double-histogram"
-	TestDoubleSummaryMetricName        = "double-summary"
-	TestExponentialHistogramMetricName = "exponential-histogram"
+	TestGaugeDoubleMetricName     = "gauge-double"
+	TestGaugeIntMetricName        = "gauge-int"
+	TestSumDoubleMetricName       = "counter-double"
+	TestSumIntMetricName          = "counter-int"
+	TestDoubleHistogramMetricName = "double-histogram"
+	TestDoubleSummaryMetricName   = "double-summary"
 )
 
 func GenerateMetricsOneEmptyResourceMetrics() pmetric.Metrics {
@@ -65,14 +64,6 @@ func GenerateMetricsOneMetric() pmetric.Metrics {
 	return md
 }
 
-func GenerateMetricsTwoMetrics() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	initSumIntMetric(rm0ils0.Metrics().AppendEmpty())
-	return md
-}
-
 func GenerateMetricsOneCounterOneSummaryMetrics() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 	rm0ils0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
@@ -99,35 +90,6 @@ func GenerateMetricsAllTypesNoDataPoints() pmetric.Metrics {
 	initMetric(ms.AppendEmpty(), TestSumIntMetricName, pmetric.MetricTypeSum)
 	initMetric(ms.AppendEmpty(), TestDoubleHistogramMetricName, pmetric.MetricTypeHistogram)
 	initMetric(ms.AppendEmpty(), TestDoubleSummaryMetricName, pmetric.MetricTypeSummary)
-	return md
-}
-
-func GenerateMetricsAllTypesEmptyDataPoint() pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	ms := ilm0.Metrics()
-
-	doubleGauge := ms.AppendEmpty()
-	initMetric(doubleGauge, TestGaugeDoubleMetricName, pmetric.MetricTypeGauge)
-	doubleGauge.Gauge().DataPoints().AppendEmpty()
-	intGauge := ms.AppendEmpty()
-	initMetric(intGauge, TestGaugeIntMetricName, pmetric.MetricTypeGauge)
-	intGauge.Gauge().DataPoints().AppendEmpty()
-	doubleSum := ms.AppendEmpty()
-	initMetric(doubleSum, TestSumDoubleMetricName, pmetric.MetricTypeSum)
-	doubleSum.Sum().DataPoints().AppendEmpty()
-	intSum := ms.AppendEmpty()
-	initMetric(intSum, TestSumIntMetricName, pmetric.MetricTypeSum)
-	intSum.Sum().DataPoints().AppendEmpty()
-	histogram := ms.AppendEmpty()
-	initMetric(histogram, TestDoubleHistogramMetricName, pmetric.MetricTypeHistogram)
-	histogram.Histogram().DataPoints().AppendEmpty()
-	summary := ms.AppendEmpty()
-	initMetric(summary, TestDoubleSummaryMetricName, pmetric.MetricTypeSummary)
-	summary.Summary().DataPoints().AppendEmpty()
-	exphist := ms.AppendEmpty()
-	initMetric(exphist, TestExponentialHistogramMetricName, pmetric.MetricTypeExponentialHistogram)
-	exphist.ExponentialHistogram().DataPoints().AppendEmpty()
 	return md
 }
 
@@ -288,14 +250,4 @@ func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType) {
 	case pmetric.MetricTypeSummary:
 		m.SetEmptySummary()
 	}
-}
-
-func GenerateMetricsManyMetricsSameResource(metricsCount int) pmetric.Metrics {
-	md := GenerateMetricsOneEmptyInstrumentationLibrary()
-	rs0ilm0 := md.ResourceMetrics().At(0).ScopeMetrics().At(0)
-	rs0ilm0.Metrics().EnsureCapacity(metricsCount)
-	for i := 0; i < metricsCount; i++ {
-		initSumIntMetric(rs0ilm0.Metrics().AppendEmpty())
-	}
-	return md
 }
