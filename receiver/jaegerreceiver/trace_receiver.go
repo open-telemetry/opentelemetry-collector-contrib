@@ -249,7 +249,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
 
-		jr.settings.Logger.Info("Starting Binary Thrift server",
+		jr.settings.Logger.Info("Starting UDP server for Binary Thrift",
 			zap.String("kind", "receiver"),
 			zap.String("name", "jaegerreceiver"),
 			zap.String("endpoint", jr.config.AgentBinaryThrift.Endpoint),
@@ -275,7 +275,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
 
-		jr.settings.Logger.Info("Starting Compact Thrift server",
+		jr.settings.Logger.Info("Starting UDP server for Compact Thrift",
 			zap.String("kind", "receiver"),
 			zap.String("name", "jaegerreceiver"),
 			zap.String("endpoint", jr.config.AgentCompactThrift.Endpoint),
@@ -293,7 +293,7 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.config.AgentHTTPEndpoint != "" {
 		jr.agentServer = httpserver.NewHTTPServer(jr.config.AgentHTTPEndpoint, &notImplementedConfigManager{}, metrics.NullFactory, jr.settings.Logger)
 
-		jr.settings.Logger.Info("Starting HTTP server",
+		jr.settings.Logger.Info("Starting HTTP server for Jaeger Agent",
 			zap.String("kind", "receiver"),
 			zap.String("name", "jaegerreceiver"),
 			zap.String("endpoint", jr.config.AgentHTTPEndpoint),
@@ -407,7 +407,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 			return err
 		}
 
-		jr.settings.Logger.Info("Starting HTTP collector server",
+		jr.settings.Logger.Info("Starting HTTP server for Jaeger Collector",
 			zap.String("kind", "receiver"),
 			zap.String("name", "jaegerreceiver"),
 			zap.String("endpoint", jr.config.HTTPServerConfig.Endpoint),
@@ -436,7 +436,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
 
-		jr.settings.Logger.Info("Starting gRPC collector server",
+		jr.settings.Logger.Info("Starting gRPC server for Jaeger Collector",
 			zap.String("kind", "receiver"),
 			zap.String("name", "jaegerreceiver"),
 			zap.String("endpoint", jr.config.GRPCServerConfig.NetAddr.Endpoint),
