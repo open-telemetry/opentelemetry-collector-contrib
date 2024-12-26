@@ -6,7 +6,7 @@ toolchain go1.22.8
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.23.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.116.0
