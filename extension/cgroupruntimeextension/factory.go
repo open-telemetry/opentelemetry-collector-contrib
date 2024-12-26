@@ -43,18 +43,14 @@ func createExtension(_ context.Context, set extension.Settings, cfg component.Co
 	cgroupConfig := cfg.(*Config)
 	return newCgroupRuntime(cgroupConfig, set.Logger,
 		func() (undoFunc, error) {
-			var undo func()
-			var err error
 			if gomaxecs.IsECS() {
-				undo, err = gomaxecs.Set(gomaxecs.WithLogger(func(str string, params ...any) {
-					set.Logger.Debug(fmt.Sprintf(str, params))
-				}))
-			} else {
-				undo, err = maxprocs.Set(maxprocs.Logger(func(str string, params ...any) {
+				return gomaxecs.Set(gomaxecs.WithLogger(func(str string, params ...any) {
 					set.Logger.Debug(fmt.Sprintf(str, params))
 				}))
 			}
-			return undoFunc(undo), err
+			return maxprocs.Set(maxprocs.Logger(func(str string, params ...any) {
+				set.Logger.Debug(fmt.Sprintf(str, params))
+			}))
 		},
 		func(ratio float64) (undoFunc, error) {
 			initial, err := memlimit.SetGoMemLimitWithOpts(memlimit.WithRatio(ratio))
