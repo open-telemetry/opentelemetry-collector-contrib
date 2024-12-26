@@ -5,33 +5,29 @@ package skywalkingencodingextension // import "github.com/open-telemetry/opentel
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
 const (
 	skywalkingProto = "skywalking_proto"
 )
 
-var _ encoding.TracesUnmarshalerExtension = &skywalkingExtension{}
-var _ ptrace.Unmarshaler = &skywalkingExtension{}
-
 type skywalkingExtension struct {
-	config      *Config
-	unmarshaler ptrace.Unmarshaler
-	//TODO:
-	//traceMarshaler    ptrace.Marshaler
-	//traceUnmarshaler  ptrace.Unmarshaler
-	//logMarshaler      plog.Marshaler
-	//logUnmarshaler    plog.Unmarshaler
-	//metricMarshaler   pmetric.Marshaler
-	//metricUnmarshaler pmetric.Unmarshaler
+	config *Config
 }
 
 func (e *skywalkingExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
-	return e.unmarshaler.UnmarshalTraces(buf)
+	segment := &agentV3.SegmentObject{}
+	err := proto.Unmarshal(buf, segment)
+	if err != nil {
+		return ptrace.Traces{}, err
+	}
+	return skywalking.ProtoToTraces(segment), nil
 }
 
 func (e *skywalkingExtension) Start(_ context.Context, _ component.Host) error {
