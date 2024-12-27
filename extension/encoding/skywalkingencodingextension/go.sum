@@ -105,6 +105,7 @@ go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67 h1:qJ2
 go.opentelemetry.io/collector/pdata v1.22.1-0.20241220212031-7c2639723f67/go.mod h1:u3EKrLq8yiwlpVNKpucpcDUqdl6RquaOqo3jXiN7jtg=
 go.opentelemetry.io/collector/semconv v0.116.0 h1:63xCZomsKJAWmKGWD3lnORiE3WKW6AO4LjnzcHzGx3Y=
 go.opentelemetry.io/collector/semconv v0.116.0/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
+go.opentelemetry.io/collector/semconv v0.116.1-0.20241220212031-7c2639723f67/go.mod h1:N6XE8Q0JKgBN2fAhkUQtqK9LT7rEGR6+Wu/Rtbal1iI=
 go.opentelemetry.io/otel v1.32.0 h1:WnBN+Xjcteh0zdk01SVqV55d/m62NJLJdIyb4y/WO5U=
 go.opentelemetry.io/otel v1.32.0/go.mod h1:00DCVSB0RQcnzlwyTfqtxSm+DRr9hpYrHjNGiBHVQIg=
 go.opentelemetry.io/otel/metric v1.32.0 h1:xV2umtmNcThh2/a/aCP+h64Xx5wsj8qqnkYZktzNa0M=
