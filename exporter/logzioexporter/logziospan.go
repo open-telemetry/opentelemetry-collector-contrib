@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 
 	"github.com/jaegertracing/jaeger/model"
-	"github.com/jaegertracing/jaeger/plugin/storage/es/spanstore/dbmodel"
 )
 
 const (
@@ -18,20 +17,20 @@ const (
 
 // logzioSpan is same as esSpan with a few different json field names and an addition on type field.
 type logzioSpan struct {
-	TraceID         dbmodel.TraceID     `json:"traceID"`
-	OperationName   string              `json:"operationName,omitempty"`
-	SpanID          dbmodel.SpanID      `json:"spanID"`
-	References      []dbmodel.Reference `json:"references"`
-	Flags           uint32              `json:"flags,omitempty"`
-	StartTime       uint64              `json:"startTime"`
-	StartTimeMillis uint64              `json:"startTimeMillis"`
-	Timestamp       uint64              `json:"@timestamp"`
-	Duration        uint64              `json:"duration"`
-	Tags            []dbmodel.KeyValue  `json:"JaegerTags,omitempty"`
-	Tag             map[string]any      `json:"JaegerTag,omitempty"`
-	Logs            []dbmodel.Log       `json:"logs"`
-	Process         dbmodel.Process     `json:"process,omitempty"`
-	Type            string              `json:"type"`
+	TraceID         TraceID        `json:"traceID"`
+	OperationName   string         `json:"operationName,omitempty"`
+	SpanID          SpanID         `json:"spanID"`
+	References      []Reference    `json:"references"`
+	Flags           uint32         `json:"flags,omitempty"`
+	StartTime       uint64         `json:"startTime"`
+	StartTimeMillis uint64         `json:"startTimeMillis"`
+	Timestamp       uint64         `json:"@timestamp"`
+	Duration        uint64         `json:"duration"`
+	Tags            []KeyValue     `json:"JaegerTags,omitempty"`
+	Tag             map[string]any `json:"JaegerTag,omitempty"`
+	Logs            []Log          `json:"logs"`
+	Process         Process        `json:"process,omitempty"`
+	Type            string         `json:"type"`
 }
 
 func getTagsValues(tags []model.KeyValue) []string {
@@ -45,7 +44,7 @@ func getTagsValues(tags []model.KeyValue) []string {
 // transformToLogzioSpanBytes receives a Jaeger span, converts it to logzio span and returns it as a byte array.
 // The main differences between Jaeger span and logzio span are arrays which are represented as maps
 func transformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
-	spanConverter := dbmodel.NewFromDomain(true, getTagsValues(span.Tags), tagDotReplacementCharacter)
+	spanConverter := NewFromDomain(true, getTagsValues(span.Tags), tagDotReplacementCharacter)
 	jsonSpan := spanConverter.FromDomainEmbedProcess(span)
 	newSpan := logzioSpan{
 		TraceID:         jsonSpan.TraceID,
@@ -67,8 +66,8 @@ func transformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
 }
 
 // transformToDbModelSpan coverts logz.io span to ElasticSearch span
-func (span *logzioSpan) transformToDbModelSpan() *dbmodel.Span {
-	return &dbmodel.Span{
+func (span *logzioSpan) transformToDbModelSpan() *Span {
+	return &Span{
 		OperationName:   span.OperationName,
 		Process:         span.Process,
 		Tags:            span.Tags,
