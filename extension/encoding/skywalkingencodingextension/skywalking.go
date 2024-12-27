@@ -11,8 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 )
 
-type skywalkingProtobufTrace struct {
-}
+type skywalkingProtobufTrace struct{}
 
 func (j skywalkingProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	segment := &agentV3.SegmentObject{}
