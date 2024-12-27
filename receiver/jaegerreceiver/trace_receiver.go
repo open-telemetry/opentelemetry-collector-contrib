@@ -15,8 +15,6 @@ import (
 
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
@@ -24,7 +22,6 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/metrics"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
-	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"go.opentelemetry.io/collector/component"
@@ -48,7 +45,6 @@ type configuration struct {
 
 	AgentCompactThrift ProtocolUDP
 	AgentBinaryThrift  ProtocolUDP
-	AgentHTTPEndpoint  string
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -168,22 +164,9 @@ func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.T
 }
 
 var (
-	_ agent.Agent                       = (*agentHandler)(nil)
-	_ api_v2.CollectorServiceServer     = (*jReceiver)(nil)
-	_ configmanager.ClientConfigManager = (*notImplementedConfigManager)(nil)
+	_ agent.Agent                   = (*agentHandler)(nil)
+	_ api_v2.CollectorServiceServer = (*jReceiver)(nil)
 )
-
-var errNotImplemented = errors.New("not implemented")
-
-type notImplementedConfigManager struct{}
-
-func (notImplementedConfigManager) GetSamplingStrategy(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
-	return nil, errNotImplemented
-}
-
-func (notImplementedConfigManager) GetBaggageRestrictions(_ context.Context, _ string) ([]*baggage.BaggageRestriction, error) {
-	return nil, errNotImplemented
-}
 
 type agentHandler struct {
 	nextConsumer consumer.Traces
@@ -275,18 +258,6 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			defer jr.goroutines.Done()
 			p.Serve()
 		}(processor)
-	}
-
-	if jr.config.AgentHTTPEndpoint != "" {
-		jr.agentServer = httpserver.NewHTTPServer(jr.config.AgentHTTPEndpoint, &notImplementedConfigManager{}, metrics.NullFactory, jr.settings.Logger)
-
-		jr.goroutines.Add(1)
-		go func() {
-			defer jr.goroutines.Done()
-			if err := jr.agentServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("jaeger agent server error: %w", err)))
-			}
-		}()
 	}
 
 	return nil

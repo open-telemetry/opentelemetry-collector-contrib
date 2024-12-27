@@ -5,9 +5,7 @@ package jaegerreceiver
 
 import (
 	"context"
-	"fmt"
 	"net"
-	"net/http"
 	"testing"
 	"time"
 
@@ -128,41 +126,6 @@ type mockSamplingHandler struct{}
 
 func (*mockSamplingHandler) GetSamplingStrategy(context.Context, *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
 	return &api_v2.SamplingStrategyResponse{StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC}, nil
-}
-
-func TestJaegerHTTP(t *testing.T) {
-	s, _ := initializeGRPCTestServer(t, func(s *grpc.Server) {
-		api_v2.RegisterSamplingManagerServer(s, &mockSamplingHandler{})
-	})
-	defer s.GracefulStop()
-
-	endpoint := testutil.GetAvailableLocalAddress(t)
-	config := &configuration{
-		AgentHTTPEndpoint: endpoint,
-	}
-	set := receivertest.NewNopSettings()
-	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
-
-	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "Start failed")
-
-	// allow http server to start
-	assert.Eventually(t, func() bool {
-		var conn net.Conn
-		conn, err = net.Dial("tcp", endpoint)
-		if err == nil && conn != nil {
-			conn.Close()
-			return true
-		}
-		return false
-	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
-
-	resp, err := http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
-	assert.NoError(t, err, "should not have failed to make request")
-	assert.NotNil(t, resp)
-	defer resp.Body.Close()
-	assert.Equal(t, 500, resp.StatusCode, "should have returned 200")
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
