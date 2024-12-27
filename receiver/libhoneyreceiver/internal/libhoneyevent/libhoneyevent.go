@@ -4,15 +4,21 @@
 package libhoneyevent // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 
 import (
+	"crypto/rand"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"slices"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	trc "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/eventtime"
@@ -87,8 +93,29 @@ func (l *LibhoneyEvent) DebugString() string {
 }
 
 // SignalType returns the type of signal this event represents. Only log is implemented for now.
-func (l *LibhoneyEvent) SignalType() (string, error) {
-	return "log", nil
+func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
+	if sig, ok := l.Data["meta.signal_type"]; ok {
+		switch sig {
+		case "trace":
+			if atype, ok := l.Data["meta.annotation_type"]; ok {
+				if atype == "span_event" {
+					return "span_event"
+				} else if atype == "link" {
+					return "span_link"
+				}
+				logger.Warn("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))
+				return "span"
+			}
+			return "span"
+		case "log":
+			return "log"
+		default:
+			logger.Warn("invalid meta.signal_type", zap.String("meta.signal_type", sig.(string)))
+			return "log"
+		}
+	}
+	logger.Warn("missing meta.signal_type and meta.annotation_type")
+	return "log"
 }
 
 // GetService returns the service name from the event or the dataset name if no service name is found.
@@ -124,6 +151,36 @@ func (l *LibhoneyEvent) GetScope(fields FieldMapConfig, seen *ScopeHistory, serv
 		return scopeKey, nil
 	}
 	return "libhoney.receiver", errors.New("library name not found")
+}
+
+func spanIDFrom(s string) trc.SpanID {
+	hash := fnv.New64a()
+	hash.Write([]byte(s))
+	n := hash.Sum64()
+	sid := trc.SpanID{}
+	binary.LittleEndian.PutUint64(sid[:], n)
+	return sid
+}
+
+func traceIDFrom(s string) trc.TraceID {
+	hash := fnv.New64a()
+	hash.Write([]byte(s))
+	n1 := hash.Sum64()
+	hash.Write([]byte(s))
+	n2 := hash.Sum64()
+	tid := trc.TraceID{}
+	binary.LittleEndian.PutUint64(tid[:], n1)
+	binary.LittleEndian.PutUint64(tid[8:], n2)
+	return tid
+}
+
+func generateAnId(length int) []byte {
+	token := make([]byte, length)
+	_, err := rand.Read(token)
+	if err != nil {
+		return []byte{}
+	}
+	return token
 }
 
 // SimpleScope is a simple struct to hold the scope data
@@ -194,6 +251,133 @@ func (l *LibhoneyEvent) ToPLogRecord(newLog *plog.LogRecord, alreadyUsedFields *
 			newLog.Attributes().PutBool(k, v)
 		default:
 			logger.Warn("Span data type issue", zap.Int64("timestamp", timeNs), zap.String("key", k))
+		}
+	}
+	return nil
+}
+
+// GetParentID returns the parent id from the event or an error if it's not found
+func (l *LibhoneyEvent) GetParentID(fieldName string) (trc.SpanID, error) {
+	if pid, ok := l.Data[fieldName]; ok {
+		pid := strings.ReplaceAll(pid.(string), "-", "")
+		pidByteArray, err := hex.DecodeString(pid)
+		if err == nil {
+			if len(pidByteArray) == 32 {
+				pidByteArray = pidByteArray[8:24]
+			} else if len(pidByteArray) >= 16 {
+				pidByteArray = pidByteArray[0:16]
+			}
+			return trc.SpanID(pidByteArray), nil
+		}
+		return trc.SpanID{}, errors.New("parent id is not a valid span id")
+	}
+	return trc.SpanID{}, errors.New("parent id not found")
+}
+
+// ToPTraceSpan converts a LibhoneyEvent to a Pdata Span
+func (l *LibhoneyEvent) ToPTraceSpan(newSpan *ptrace.Span, alreadyUsedFields *[]string, cfg FieldMapConfig, logger zap.Logger) error {
+	time_ns := l.MsgPackTimestamp.UnixNano()
+	logger.Debug("processing trace with", zap.Int64("timestamp", time_ns))
+
+	var parent_id trc.SpanID
+	if pid, ok := l.Data[cfg.Attributes.ParentID]; ok {
+		parent_id = spanIDFrom(pid.(string))
+		newSpan.SetParentSpanID(pcommon.SpanID(parent_id))
+	}
+
+	duration_ms := 0.0
+	for _, df := range cfg.Attributes.DurationFields {
+		if duration, okay := l.Data[df]; okay {
+			duration_ms = duration.(float64)
+			break
+		}
+	}
+	end_timestamp := time_ns + (int64(duration_ms) * 1000000)
+
+	if tid, ok := l.Data[cfg.Attributes.TraceID]; ok {
+		tid := strings.ReplaceAll(tid.(string), "-", "")
+		tidByteArray, err := hex.DecodeString(tid)
+		if err == nil {
+			if len(tidByteArray) >= 32 {
+				tidByteArray = tidByteArray[0:32]
+			}
+			newSpan.SetTraceID(pcommon.TraceID(tidByteArray))
+		} else {
+			newSpan.SetTraceID(pcommon.TraceID(traceIDFrom(tid)))
+		}
+	} else {
+		newSpan.SetTraceID(pcommon.TraceID(generateAnId(32)))
+	}
+
+	if sid, ok := l.Data[cfg.Attributes.SpanID]; ok {
+		sid := strings.ReplaceAll(sid.(string), "-", "")
+		sidByteArray, err := hex.DecodeString(sid)
+		if err == nil {
+			if len(sidByteArray) == 32 {
+				sidByteArray = sidByteArray[8:24]
+			} else if len(sidByteArray) >= 16 {
+				sidByteArray = sidByteArray[0:16]
+			}
+			newSpan.SetSpanID(pcommon.SpanID(sidByteArray))
+		} else {
+			newSpan.SetSpanID(pcommon.SpanID(spanIDFrom(sid)))
+		}
+	} else {
+		newSpan.SetSpanID(pcommon.SpanID(generateAnId(16)))
+	}
+
+	newSpan.SetStartTimestamp(pcommon.Timestamp(time_ns))
+	newSpan.SetEndTimestamp(pcommon.Timestamp(end_timestamp))
+
+	if spanName, ok := l.Data[cfg.Attributes.Name]; ok {
+		newSpan.SetName(spanName.(string))
+	}
+	if spanStatusMessge, ok := l.Data["status_message"]; ok {
+		newSpan.Status().SetMessage(spanStatusMessge.(string))
+	}
+	newSpan.Status().SetCode(ptrace.StatusCodeUnset)
+
+	if _, ok := l.Data[cfg.Attributes.Error]; ok {
+		newSpan.Status().SetCode(ptrace.StatusCodeError)
+	}
+
+	if spanKind, ok := l.Data[cfg.Attributes.SpanKind]; ok {
+		switch spanKind.(string) {
+		case "server":
+			newSpan.SetKind(ptrace.SpanKindServer)
+		case "client":
+			newSpan.SetKind(ptrace.SpanKindClient)
+		case "producer":
+			newSpan.SetKind(ptrace.SpanKindProducer)
+		case "consumer":
+			newSpan.SetKind(ptrace.SpanKindConsumer)
+		case "internal":
+			newSpan.SetKind(ptrace.SpanKindInternal)
+		default:
+			newSpan.SetKind(ptrace.SpanKindUnspecified)
+		}
+	}
+
+	newSpan.Attributes().PutInt("SampleRate", int64(l.Samplerate))
+
+	for k, v := range l.Data {
+		if slices.Contains(*alreadyUsedFields, k) {
+			continue
+		}
+		switch v := v.(type) {
+		case string:
+			newSpan.Attributes().PutStr(k, v)
+		case int:
+			newSpan.Attributes().PutInt(k, int64(v))
+		case int64, int16, int32:
+			intv := v.(int64)
+			newSpan.Attributes().PutInt(k, intv)
+		case float64:
+			newSpan.Attributes().PutDouble(k, v)
+		case bool:
+			newSpan.Attributes().PutBool(k, v)
+		default:
+			logger.Warn("Span data type issue", zap.String("trace.trace_id", newSpan.TraceID().String()), zap.String("trace.span_id", newSpan.SpanID().String()), zap.String("key", k))
 		}
 	}
 	return nil

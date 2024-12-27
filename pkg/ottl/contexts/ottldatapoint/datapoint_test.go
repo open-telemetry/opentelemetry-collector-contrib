@@ -5,10 +5,12 @@ package ottldatapoint
 
 import (
 	"context"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -56,6 +58,16 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 				cache.PutStr("temp", "new value")
 			},
 		},
+	}
+	// Copy all tests cases and sets the path.Context value to the generated ones.
+	// It ensures all exiting field access also work when the path context is set.
+	for _, tt := range slices.Clone(tests) {
+		testWithContext := tt
+		testWithContext.name = "with_path_context:" + tt.name
+		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])
+		pathWithContext.C = ContextName
+		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
+		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -474,6 +486,16 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
+	}
+	// Copy all tests cases and sets the path.Context value to the generated ones.
+	// It ensures all exiting field access also work when the path context is set.
+	for _, tt := range slices.Clone(tests) {
+		testWithContext := tt
+		testWithContext.name = "with_path_context:" + tt.name
+		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])
+		pathWithContext.C = ContextName
+		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
+		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -908,6 +930,16 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
+	}
+	// Copy all tests cases and sets the path.Context value to the generated ones.
+	// It ensures all exiting field access also work when the path context is set.
+	for _, tt := range slices.Clone(tests) {
+		testWithContext := tt
+		testWithContext.name = "with_path_context:" + tt.name
+		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])
+		pathWithContext.C = ContextName
+		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
+		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1427,6 +1459,16 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 	}
+	// Copy all tests cases and sets the path.Context value to the generated ones.
+	// It ensures all exiting field access also work when the path context is set.
+	for _, tt := range slices.Clone(tests) {
+		testWithContext := tt
+		testWithContext.name = "with_path_context:" + tt.name
+		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])
+		pathWithContext.C = ContextName
+		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
+		tests = append(tests, testWithContext)
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pep := pathExpressionParser{}
@@ -1846,6 +1888,16 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			},
 		},
 	}
+	// Copy all tests cases and sets the path.Context value to the generated ones.
+	// It ensures all exiting field access also work when the path context is set.
+	for _, tt := range slices.Clone(tests) {
+		testWithContext := tt
+		testWithContext.name = "with_path_context:" + tt.name
+		pathWithContext := *tt.path.(*internal.TestPath[TransformContext])
+		pathWithContext.C = ContextName
+		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
+		tests = append(tests, testWithContext)
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pep := pathExpressionParser{}
@@ -2016,6 +2068,17 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 				metric.Sum().SetIsMonotonic(false)
 			},
 		},
+		{
+			name: "metric field with context",
+			path: &internal.TestPath[TransformContext]{
+				C: "metric",
+				N: "type",
+			},
+			orig:   int64(pmetric.MetricTypeSum),
+			newVal: int64(pmetric.MetricTypeSum),
+			modified: func(_ pmetric.Metric) {
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -2140,6 +2203,86 @@ func Test_ParseEnum_False(t *testing.T) {
 			actual, err := parseEnum(tt.enumSymbol)
 			assert.Error(t, err)
 			assert.Nil(t, actual)
+		})
+	}
+}
+
+func Test_newPathGetSetter_higherContextPath(t *testing.T) {
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("foo", "bar")
+
+	metric := pmetric.NewMetric()
+	metric.SetName("metric")
+
+	instrumentationScope := pcommon.NewInstrumentationScope()
+	instrumentationScope.SetName("instrumentation_scope")
+
+	ctx := NewTransformContext(
+		pmetric.NewNumberDataPoint(),
+		metric,
+		pmetric.NewMetricSlice(),
+		instrumentationScope,
+		resource,
+		pmetric.NewScopeMetrics(),
+		pmetric.NewResourceMetrics())
+
+	tests := []struct {
+		name     string
+		path     ottl.Path[TransformContext]
+		expected any
+	}{
+		{
+			name: "resource",
+			path: &internal.TestPath[TransformContext]{C: "", N: "resource", NextPath: &internal.TestPath[TransformContext]{
+				N: "attributes",
+				KeySlice: []ottl.Key[TransformContext]{
+					&internal.TestKey[TransformContext]{
+						S: ottltest.Strp("foo"),
+					},
+				},
+			}},
+			expected: "bar",
+		},
+		{
+			name: "resource with context",
+			path: &internal.TestPath[TransformContext]{C: "resource", N: "attributes", KeySlice: []ottl.Key[TransformContext]{
+				&internal.TestKey[TransformContext]{
+					S: ottltest.Strp("foo"),
+				},
+			}},
+			expected: "bar",
+		},
+		{
+			name:     "metric",
+			path:     &internal.TestPath[TransformContext]{N: "metric", NextPath: &internal.TestPath[TransformContext]{N: "name"}},
+			expected: metric.Name(),
+		},
+		{
+			name:     "metric with context",
+			path:     &internal.TestPath[TransformContext]{C: "metric", N: "name"},
+			expected: metric.Name(),
+		},
+		{
+			name:     "instrumentation_scope",
+			path:     &internal.TestPath[TransformContext]{N: "instrumentation_scope", NextPath: &internal.TestPath[TransformContext]{N: "name"}},
+			expected: instrumentationScope.Name(),
+		},
+		{
+			name:     "instrumentation_scope with context",
+			path:     &internal.TestPath[TransformContext]{C: "instrumentation_scope", N: "name"},
+			expected: instrumentationScope.Name(),
+		},
+	}
+
+	pep := pathExpressionParser{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := pep.parsePath(tt.path)
+			require.NoError(t, err)
+
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
 }
