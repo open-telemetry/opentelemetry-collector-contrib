@@ -481,6 +481,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension => ../../extension/encoding/avrologencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension => ../../extension/encoding/jsonlogencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension => ../../extension/encoding/textencodingextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/skywalkingencodingextension => ../../extension/encoding/skywalkingencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension => ../../extension/encoding/jaegerencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension => ../../extension/remotetapextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension => ../../extension/opampextension
