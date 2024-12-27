@@ -73,6 +73,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.116.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/skywalkingencodingextension v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension v0.116.0
@@ -908,7 +909,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
-	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4 // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20241129131257-944118bb91b8 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
