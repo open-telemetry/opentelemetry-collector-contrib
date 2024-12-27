@@ -43,4 +43,6 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../../internal/coreinternal
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking => ../../../pkg/translator/skywalking
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../
