@@ -19,13 +19,14 @@ func TestExtension_Start(t *testing.T) {
 		getExtension func() (extension.Extension, error)
 		expectedErr  string
 	}{
+
 		{
 			name: "skywalkingProtobuf",
 			getExtension: func() (extension.Extension, error) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "skywalking_protocol"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 			},
 		},
 	}
