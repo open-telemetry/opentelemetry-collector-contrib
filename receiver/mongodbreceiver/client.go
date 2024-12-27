@@ -26,6 +26,7 @@ type client interface {
 	DBStats(ctx context.Context, DBName string) (bson.M, error)
 	TopStats(ctx context.Context) (bson.M, error)
 	IndexStats(ctx context.Context, DBName, collectionName string) ([]bson.M, error)
+	RunCommand(ctx context.Context, db string, command bson.M) (bson.M, error)
 }
 
 // mongodbClient is a mongodb metric scraper client
@@ -37,8 +38,8 @@ type mongodbClient struct {
 
 // newClient creates a new client to connect and query mongo for the
 // mongodbreceiver
-func newClient(ctx context.Context, config *Config, logger *zap.Logger) (client, error) {
-	driver, err := mongo.Connect(ctx, config.ClientOptions())
+var newClient = func(ctx context.Context, config *Config, logger *zap.Logger, secondary bool) (client, error) {
+	driver, err := mongo.Connect(ctx, config.ClientOptions(secondary))
 	if err != nil {
 		return nil, err
 	}

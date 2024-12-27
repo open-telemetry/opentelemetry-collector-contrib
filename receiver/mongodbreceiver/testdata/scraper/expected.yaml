@@ -201,7 +201,61 @@ resourceMetrics:
                 - asInt: "100"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-              unit: '{update}/s}'                                                         
+              unit: '{update}/s}'
+          - description: The total number replicated of queries per second.
+            name: mongodb.repl_queries_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{query}/s}'
+          - description: The total number replicated of insertions per second.
+            name: mongodb.repl_inserts_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{insert}/s}'    
+          - description: The total number of replicated commands per second.
+            name: mongodb.repl_commands_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{command}/s}'  
+          - description: The total number of replicated getmores per second.
+            name: mongodb.repl_getmores_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{getmore}/s}' 
+          - description: The total number of replicated deletes per second.
+            name: mongodb.repl_deletes_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{delete}/s}'      
+          - description: The total number of replicated updates per second.
+            name: mongodb.repl_updates_per_sec
+            gauge:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "100"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              unit: '{update}/s}'                                                                      
           - description: The latency of operations.
             gauge:
               dataPoints:

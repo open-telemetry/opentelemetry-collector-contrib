@@ -65,6 +65,18 @@ all_set:
       enabled: true
     mongodb.queries_per_sec:
       enabled: true
+    mongodb.repl_commands_per_sec:
+      enabled: true
+    mongodb.repl_deletes_per_sec:
+      enabled: true
+    mongodb.repl_getmores_per_sec:
+      enabled: true
+    mongodb.repl_inserts_per_sec:
+      enabled: true
+    mongodb.repl_queries_per_sec:
+      enabled: true
+    mongodb.repl_updates_per_sec:
+      enabled: true
     mongodb.session.count:
       enabled: true
     mongodb.storage.size:
@@ -145,6 +157,18 @@ none_set:
     mongodb.operation.time:
       enabled: false
     mongodb.queries_per_sec:
+      enabled: false
+    mongodb.repl_commands_per_sec:
+      enabled: false
+    mongodb.repl_deletes_per_sec:
+      enabled: false
+    mongodb.repl_getmores_per_sec:
+      enabled: false
+    mongodb.repl_inserts_per_sec:
+      enabled: false
+    mongodb.repl_queries_per_sec:
+      enabled: false
+    mongodb.repl_updates_per_sec:
       enabled: false
     mongodb.session.count:
       enabled: false

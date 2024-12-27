@@ -4,6 +4,7 @@
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -12,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -220,7 +222,6 @@ func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, er
 
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect operation counts first
 	currentCounts := make(map[string]int64)
 	fmt.Println("SCRAPER COUNTS @@@@@@@@@@@@@@@@@@@@: ", s.prevCounts)
 
@@ -246,15 +247,108 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 }
 
 func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	var replDoc bson.M = doc // Default to primary doc
+	var highestInsertCount int64 = -1
+
+	fmt.Println("IN OPERATION REPL SECONDARY CLIENTS@@@@@@@@@@@@@ :", len(s.secondaryClients))
+
+	if len(s.secondaryClients) > 0 {
+		ctx := context.Background()
+		for _, secondaryClient := range s.secondaryClients {
+			status, err := secondaryClient.ServerStatus(ctx, "admin")
+			if err != nil {
+				s.logger.Debug("Failed to get secondary server status", zap.Error(err))
+				continue
+			}
+
+			// Debug full server status
+			s.logger.Debug("Full secondary server status",
+				zap.Any("host", status["host"]),
+				zap.Any("stateStr", status["stateStr"]),
+				zap.Any("ismaster", status["ismaster"]),
+				zap.Any("secondary", status["secondary"]))
+
+			if opcountersRepl, ok := status["opcountersRepl"].(bson.M); ok {
+				s.logger.Debug("Got replication metrics",
+					zap.Any("raw", opcountersRepl),
+					zap.Any("host", status["host"]))
+
+				if insertCount, ok := opcountersRepl["insert"].(int64); ok {
+					s.logger.Debug("Comparing insert counts",
+						zap.Int64("current_highest", highestInsertCount),
+						zap.Int64("this_node", insertCount),
+						zap.Any("host", status["host"]))
+
+					if insertCount > highestInsertCount {
+						highestInsertCount = insertCount
+						replDoc = status
+						s.logger.Debug("Using these replication metrics",
+							zap.Int64("insert_count", insertCount),
+							zap.Any("host", status["host"]))
+					}
+				}
+			}
+		}
+	}
+
+	// Rest of the existing recordOperationsRepl logic using replDoc
+	currentCounts := make(map[string]int64)
+	fmt.Println("IN OPERATION REPL SCRAPER PREV COUNTS@@@@@@@@@@@@@ :", s.prevReplCounts)
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcountersRepl", operationVal}
 		metricName := "mongodb.operation.repl.count"
-		val, err := collectMetric(doc, metricPath)
+		val, err := collectMetric(replDoc, metricPath)
 		if err != nil {
+			s.logger.Debug("Failed to collect metric",
+				zap.String("operation", operationVal),
+				zap.Error(err))
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
+
+		s.logger.Debug("Collected repl metric",
+			zap.String("operation", operationVal),
+			zap.Int64("value", val))
+
 		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
+
+		currentCounts[operationVal] = val
+		s.recordReplOperationPerSecond(now, operationVal, val)
+	}
+	s.logger.Debug("Updated repl counts",
+		zap.Any("previous", s.prevReplCounts),
+		zap.Any("current", currentCounts))
+
+	s.prevReplCounts = currentCounts
+	s.prevReplTimestamp = now
+}
+
+func (s *mongodbScraper) recordReplOperationPerSecond(now pcommon.Timestamp, operationVal string, currentCount int64) {
+	if s.prevReplTimestamp > 0 {
+		timeDelta := float64(now-s.prevReplTimestamp) / 1e9
+		if timeDelta > 0 {
+			if prevReplCount, exists := s.prevReplCounts[operationVal]; exists {
+				delta := currentCount - prevReplCount
+				queriesPerSec := float64(delta) / timeDelta
+
+				switch operationVal {
+				case "query":
+					s.mb.RecordMongodbReplQueriesPerSecDataPoint(now, queriesPerSec)
+				case "insert":
+					s.mb.RecordMongodbReplInsertsPerSecDataPoint(now, queriesPerSec)
+				case "command":
+					s.mb.RecordMongodbReplCommandsPerSecDataPoint(now, queriesPerSec)
+				case "getmore":
+					s.mb.RecordMongodbReplGetmoresPerSecDataPoint(now, queriesPerSec)
+				case "delete":
+					s.mb.RecordMongodbReplDeletesPerSecDataPoint(now, queriesPerSec)
+				case "update":
+					s.mb.RecordMongodbReplUpdatesPerSecDataPoint(now, queriesPerSec)
+				default:
+					fmt.Printf("Unhandled repl operation: %s\n", operationVal)
+				}
+			}
+		}
 	}
 }
 

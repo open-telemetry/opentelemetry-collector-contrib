@@ -68,6 +68,14 @@ func (fc *fakeClient) IndexStats(ctx context.Context, dbName, collectionName str
 	return args.Get(0).([]bson.M), args.Error(1)
 }
 
+func (fc *fakeClient) RunCommand(ctx context.Context, db string, command bson.M) (bson.M, error) {
+	args := fc.Called(ctx, db, command)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
 func TestListDatabaseNames(t *testing.T) {
 	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
 

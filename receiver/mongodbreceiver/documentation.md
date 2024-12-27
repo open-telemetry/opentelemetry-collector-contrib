@@ -36,7 +36,7 @@ The number of collections.
 
 ### mongodb.commands_per_sec
 
-The number of queries executed per second.
+The number of commands executed per second.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -90,7 +90,7 @@ The number of existing databases.
 
 ### mongodb.deletes_per_sec
 
-The number of queries executed per second.
+The number of deletes executed per second.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -120,7 +120,7 @@ The number of extents.
 
 ### mongodb.getmores_per_sec
 
-The number of queries executed per second.
+The number of getmores executed per second.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -166,7 +166,7 @@ Sum of the space allocated to all indexes in the database, including free index 
 
 ### mongodb.inserts_per_sec
 
-The number of queries executed per second.
+The number of insertions executed per second.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -232,6 +232,20 @@ The number of operations executed.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.operation.repl.count
+
+The number of replicated operations executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
+
 ### mongodb.operation.time
 
 The total time spent performing operations.
@@ -254,6 +268,54 @@ The number of queries executed per second.
 | ---- | ----------- | ---------- |
 | {query}/s | Gauge | Double |
 
+### mongodb.repl_commands_per_sec
+
+The number of replicated commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.repl_deletes_per_sec
+
+The number of replicated deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.repl_getmores_per_sec
+
+The number of replicated getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
+### mongodb.repl_inserts_per_sec
+
+The number of replicated insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
+
+### mongodb.repl_queries_per_sec
+
+The number of replicated queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_updates_per_sec
+
+The number of replicated updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
+
 ### mongodb.session.count
 
 The total number of active sessions.
@@ -274,7 +336,7 @@ If collection data is compressed it reflects the compressed size.
 
 ### mongodb.updates_per_sec
 
-The number of queries executed per second.
+The number of updates executed per second.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -373,20 +435,6 @@ The latency of operations.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation with regards to latency | Str: ``read``, ``write``, ``command`` |
-
-### mongodb.operation.repl.count
-
-The number of replicated operations executed.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {operations} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
 ### mongodb.uptime
 
