@@ -285,8 +285,6 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 	if jr.config.AgentHTTPEndpoint != "" {
 		jr.agentServer = httpserver.NewHTTPServer(jr.config.AgentHTTPEndpoint, &notImplementedConfigManager{}, metrics.NullFactory, jr.settings.Logger)
 
-		jr.settings.Logger.Info("Starting HTTP server for Jaeger Agent", zap.String("endpoint", jr.config.AgentHTTPEndpoint))
-
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
@@ -395,7 +393,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 			return err
 		}
 
-		jr.settings.Logger.Info("Starting HTTP server for Jaeger Collector", zap.String("endpoint", jr.config.HTTPServerConfig.Endpoint))
+		jr.settings.Logger.Info("Starting HTTP server for Jaeger Thrift", zap.String("endpoint", jr.config.HTTPServerConfig.Endpoint))
 
 		jr.goroutines.Add(1)
 		go func() {
@@ -420,7 +418,7 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
 
-		jr.settings.Logger.Info("Starting gRPC server for Jaeger Collector", zap.String("endpoint", jr.config.GRPCServerConfig.NetAddr.Endpoint))
+		jr.settings.Logger.Info("Starting gRPC server for Jaeger Protobuf", zap.String("endpoint", jr.config.GRPCServerConfig.NetAddr.Endpoint))
 
 		jr.goroutines.Add(1)
 		go func() {
