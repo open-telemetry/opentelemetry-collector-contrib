@@ -141,7 +141,10 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	for _, label := range labels {
 		finalKey := prometheustranslator.NormalizeLabel(label.Name)
 		if existingValue, alreadyExists := l[finalKey]; alreadyExists {
-			l[finalKey] = existingValue + ";" + label.Value
+			// Only append to existing value if the new value is different
+			if existingValue != label.Value {
+				l[finalKey] = existingValue + ";" + label.Value
+			}
 		} else {
 			l[finalKey] = label.Value
 		}
