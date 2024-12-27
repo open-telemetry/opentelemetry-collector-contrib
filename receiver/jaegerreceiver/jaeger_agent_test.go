@@ -13,7 +13,6 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/model"
 	jaegerconvert "github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
-	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
 	jaegerthrift "github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -108,24 +106,6 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	assert.Error(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have been able to startTraceReception")
 
 	require.NoError(t, jr.Shutdown(context.Background()))
-}
-
-func initializeGRPCTestServer(t *testing.T, beforeServe func(server *grpc.Server), opts ...grpc.ServerOption) (*grpc.Server, net.Addr) {
-	server := grpc.NewServer(opts...)
-	lis, err := net.Listen("tcp", "localhost:0")
-	require.NoError(t, err)
-	beforeServe(server)
-	go func() {
-		err := server.Serve(lis)
-		assert.NoError(t, err)
-	}()
-	return server, lis.Addr()
-}
-
-type mockSamplingHandler struct{}
-
-func (*mockSamplingHandler) GetSamplingStrategy(context.Context, *api_v2.SamplingStrategyParameters) (*api_v2.SamplingStrategyResponse, error) {
-	return &api_v2.SamplingStrategyResponse{StrategyType: api_v2.SamplingStrategyType_PROBABILISTIC}, nil
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {
