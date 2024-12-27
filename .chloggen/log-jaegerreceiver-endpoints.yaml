@@ -4,10 +4,10 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: receiver/jaegerreceiver
+component: jaegerreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Log the endpoints of different server at which jaegerreceiver is listening to
+note: Log the endpoints of different servers started by jaegerreceiver
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36961]
@@ -16,7 +16,7 @@ issues: [36961]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  This change logs the endpoints of different server at which jaegerreceiver is listening to. It simplifies debugging by ensuring log messages match configuration settings.
+  This change logs the endpoints of different servers started by jaegerreceiver. It simplifies debugging by ensuring log messages match configuration settings.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
