@@ -5,12 +5,9 @@ package skywalkingencodingextension // import "github.com/open-telemetry/opentel
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"google.golang.org/protobuf/proto"
-
-	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
 const (
@@ -18,19 +15,16 @@ const (
 )
 
 type skywalkingExtension struct {
-	config *Config
+	config      *Config
+	unmarshaler ptrace.Unmarshaler
 }
 
 func (e *skywalkingExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
-	segment := &agentV3.SegmentObject{}
-	err := proto.Unmarshal(buf, segment)
-	if err != nil {
-		return ptrace.Traces{}, err
-	}
-	return skywalking.ProtoToTraces(segment), nil
+	return e.unmarshaler.UnmarshalTraces(buf)
 }
 
 func (e *skywalkingExtension) Start(_ context.Context, _ component.Host) error {
+	e.unmarshaler = skywalkingProtobufTrace{}
 	return nil
 }
 
