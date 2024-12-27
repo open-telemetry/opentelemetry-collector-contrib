@@ -19,7 +19,6 @@ func TestExtension_Start(t *testing.T) {
 		getExtension func() (extension.Extension, error)
 		expectedErr  string
 	}{
-
 		{
 			name: "skywalkingProtobuf",
 			getExtension: func() (extension.Extension, error) {
