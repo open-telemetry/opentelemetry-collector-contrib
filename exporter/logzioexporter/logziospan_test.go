@@ -42,7 +42,7 @@ func TestTransformToDbModelSpan(tester *testing.T) {
 	}
 	newSpan, err := transformToLogzioSpanBytes(&span)
 	require.NoError(tester, err)
-	var testLogzioSpan logzioSpan
+	var testLogzioSpan LogzioSpan
 	err = json.Unmarshal(newSpan, &testLogzioSpan)
 	require.NoError(tester, err)
 	dbModelSpan := testLogzioSpan.transformToDbModelSpan()

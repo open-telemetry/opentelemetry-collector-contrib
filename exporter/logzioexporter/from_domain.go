@@ -28,13 +28,13 @@ type FromDomain struct {
 
 // FromDomainEmbedProcess converts model.Span into json.Span format.
 // This format includes a ParentSpanID and an embedded Process.
-func (fd FromDomain) FromDomainEmbedProcess(span *model.Span) *Span {
+func (fd FromDomain) FromDomainEmbedProcess(span *model.Span) *LogzioSpan {
 	return fd.convertSpanEmbedProcess(span)
 }
 
-func (fd FromDomain) convertSpanInternal(span *model.Span) Span {
+func (fd FromDomain) convertSpanInternal(span *model.Span) LogzioSpan {
 	tags, tagsMap := fd.convertKeyValuesString(span.Tags)
-	return Span{
+	return LogzioSpan{
 		TraceID:         TraceID(span.TraceID.String()),
 		SpanID:          SpanID(span.SpanID.String()),
 		Flags:           uint32(span.Flags),
@@ -48,7 +48,7 @@ func (fd FromDomain) convertSpanInternal(span *model.Span) Span {
 	}
 }
 
-func (fd FromDomain) convertSpanEmbedProcess(span *model.Span) *Span {
+func (fd FromDomain) convertSpanEmbedProcess(span *model.Span) *LogzioSpan {
 	s := fd.convertSpanInternal(span)
 	s.Process = fd.convertProcess(span.Process)
 	s.References = fd.convertReferences(span)
