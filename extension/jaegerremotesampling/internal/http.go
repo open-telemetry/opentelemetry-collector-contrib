@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -25,14 +24,14 @@ var _ component.Component = (*SamplingHTTPServer)(nil)
 type SamplingHTTPServer struct {
 	telemetry     component.TelemetrySettings
 	settings      confighttp.ServerConfig
-	strategyStore samplingstrategy.Provider
+	strategyStore Provider
 
 	mux        *http.ServeMux
 	srv        *http.Server
 	shutdownWG *sync.WaitGroup
 }
 
-func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore samplingstrategy.Provider) (*SamplingHTTPServer, error) {
+func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore Provider) (*SamplingHTTPServer, error) {
 	if strategyStore == nil {
 		return nil, errMissingStrategyStore
 	}
