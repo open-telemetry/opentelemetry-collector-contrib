@@ -9,7 +9,6 @@ import (
 	"io"
 	"time"
 
-	grpcstore "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -19,7 +18,7 @@ import (
 
 type grpcRemoteStrategyStore struct {
 	headerAdditions map[string]configopaque.String
-	delegate        *grpcstore.ConfigManagerProxy
+	delegate        *ConfigManagerProxy
 	cache           serviceStrategyCache
 }
 
@@ -39,7 +38,7 @@ func NewRemoteStrategyStore(
 
 	return &grpcRemoteStrategyStore{
 		headerAdditions: grpcClientSettings.Headers,
-		delegate:        grpcstore.NewConfigManager(conn),
+		delegate:        NewConfigManager(conn),
 		cache:           cache,
 	}, cache
 }
