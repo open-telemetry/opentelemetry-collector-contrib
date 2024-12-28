@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -129,6 +130,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if precision, ok = precisions[precisionStr]; !ok {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "unrecognized precision '%s'", sanitize.String(precisionStr))
+			r.logger.Debug("unrecognized precision", "precision", sanitize.String(precisionStr))
 			return
 		}
 	}
@@ -145,6 +147,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse measurement on line %d", line)
+			r.logger.Debug("failed to parse measurement", "line", line, zap.Error(err))
 			return
 		}
 
@@ -155,6 +158,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse tag on line %d", line)
+			r.logger.Debug("failed to parse tag", "line", line, zap.Error(err))
 			return
 		}
 
@@ -165,6 +169,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse field on line %d", line)
+			r.logger.Debug("failed to parse field", "line", line, zap.Error(err))
 			return
 		}
 
@@ -172,12 +177,14 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse timestamp on line %d", line)
+			r.logger.Debug("failed to parse timestamp", "line", line, zap.Error(err))
 			return
 		}
 
 		if err = lpDecoder.Err(); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse line: %s", err.Error())
+			r.logger.Debug("failed to parse line", "line", line, zap.Error(err))
 			return
 		}
 
@@ -185,6 +192,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to append to the batch")
+			r.logger.Debug("failed to append to batch", "line", line, zap.Error(err))
 			return
 		}
 	}
@@ -197,7 +205,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		r.logger.Debug("failed to pass metrics to next consumer: %s", err)
+		r.logger.Debug("failed to pass metrics to next consumer", zap.Error(err))
 		return
 	}
 
