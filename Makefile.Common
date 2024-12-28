@@ -30,7 +30,7 @@ GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
-GOTEST_INTEGRATION_OPT_SUDO= $(GOTEST_INTEGRATION_OPT) -exec sudo -run Sudo
+GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
