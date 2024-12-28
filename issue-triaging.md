@@ -71,3 +71,52 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided.        |
 | `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                             |
 | `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor.                                                                                          |
+
+### State diagram
+
+Here is a diagram outlining the potential issue states and how issues move through different stages:
+
+```mermaid
+flowchart TD
+ subgraph graph1["**needs-triage**"]
+        n1(["Needs Triage"])
+  end
+ subgraph graph2["**waiting-for-codeowners**"]
+        n3["Waiting for Codeowners<br>to further validate the issue"]
+  end
+ subgraph graph3["**waiting-for-author**"]
+        n4["Waiting for author to provide more details"]
+  end
+ subgraph graph4["**help-wanted**"]
+        n8["Mark as help-wanted"]
+  end
+    n1 --> n2["Has good repro steps <br>and/or description?"]
+    n2 -- Yes --> n3
+    n2 -- No/Need more details --> n4
+    n2 -- Invalid configuration/alternative available --> n5(["Provide a detailed comment on the issue and close it."])
+    n3 --> n6["Codeowner has time<br>to fix it?"]
+    n6 -- Yes --> n7["Valid issue and to be fixed <br>by a codeowner"]
+    n6 -- No --> n8
+    n7 --> n9(["Issue closed once fix is merged"])
+    n8 --> n9
+    n4 -- Once enough detailsare available --> n2
+
+    n3@{ shape: rect}
+    n4@{ shape: rect}
+    n2@{ shape: diam}
+    n6@{ shape: diam}
+     n1:::Aqua
+     n3:::Ash
+     n4:::Ash
+     n8:::Ash
+     n2:::Ash
+     n2:::Peach
+     n5:::Rose
+     n6:::Peach
+     n7:::Ash
+     n9:::Rose
+    classDef Rose stroke-width:1px, stroke-dasharray:none, stroke:#FF5978, fill:#FFDFE5, color:#8E2236
+    classDef Aqua stroke-width:1px, stroke-dasharray:none, stroke:#46EDC8, fill:#DEFFF8, color:#378E7A
+    classDef Peach stroke-width:1px, stroke-dasharray:none, stroke:#FBB35A, fill:#FFEFDB, color:#8F632D
+    classDef Ash stroke-width:1px, stroke-dasharray:none, stroke:#999999, fill:#EEEEEE, color:#000000
+```
