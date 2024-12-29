@@ -43,8 +43,8 @@ type storedStrategies struct {
 
 type strategyLoader func() ([]byte, error)
 
-// NewProvider creates a strategy store that holds static sampling strategies.
-func NewProvider(options Options, logger *zap.Logger) (internal.Provider, error) {
+// newProvider creates a strategy store that holds static sampling strategies.
+func newProvider(options Options, logger *zap.Logger) (internal.Provider, error) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	h := &samplingProvider{
 		logger:     logger,
