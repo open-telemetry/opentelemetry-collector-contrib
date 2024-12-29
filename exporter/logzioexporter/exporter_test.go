@@ -255,7 +255,7 @@ func TestPushTraceData(tester *testing.T) {
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
 	err := testTracesExporter(tester, td, &cfg)
 	require.NoError(tester, err)
-	var newSpan LogzioSpan
+	var newSpan logzioSpan
 	decoded, _ := gUnzipData(recordedRequests)
 	requests := strings.Split(string(decoded), "\n")
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &newSpan))

@@ -24,10 +24,10 @@ func TestFromDomainEmbedProcess(t *testing.T) {
 
 	var span model.Span
 	require.NoError(t, jsonpb.Unmarshal(bytes.NewReader(domainStr), &span))
-	converter := NewFromDomain(false, nil, ":")
-	embeddedSpan := converter.FromDomainEmbedProcess(&span)
+	converter := newFromDomain(false, nil, ":")
+	embeddedSpan := converter.fromDomainEmbedProcess(&span)
 
-	var expectedSpan LogzioSpan
+	var expectedSpan logzioSpan
 	require.NoError(t, json.Unmarshal(jsonStr, &expectedSpan))
 
 	testJSONEncoding(t, jsonStr, embeddedSpan.transformToDbModelSpan())
@@ -61,8 +61,8 @@ func testJSONEncoding(t *testing.T, expectedStr []byte, object any) {
 func TestEmptyTags(t *testing.T) {
 	tags := make([]model.KeyValue, 0)
 	span := model.Span{Tags: tags, Process: &model.Process{Tags: tags}}
-	converter := NewFromDomain(false, nil, ":")
-	dbSpan := converter.FromDomainEmbedProcess(&span)
+	converter := newFromDomain(false, nil, ":")
+	dbSpan := converter.fromDomainEmbedProcess(&span)
 	assert.Empty(t, dbSpan.Tags)
 	assert.Empty(t, dbSpan.Tag)
 }
@@ -74,8 +74,8 @@ func TestTagMap(t *testing.T) {
 		model.Int64("b.b", 1),
 	}
 	span := model.Span{Tags: tags, Process: &model.Process{Tags: tags}}
-	converter := NewFromDomain(false, []string{"a", "b.b", "b*"}, ":")
-	dbSpan := converter.FromDomainEmbedProcess(&span)
+	converter := newFromDomain(false, []string{"a", "b.b", "b*"}, ":")
+	dbSpan := converter.fromDomainEmbedProcess(&span)
 
 	assert.Len(t, dbSpan.Tags, 1)
 	assert.Equal(t, "foo", dbSpan.Tags[0].Key)
