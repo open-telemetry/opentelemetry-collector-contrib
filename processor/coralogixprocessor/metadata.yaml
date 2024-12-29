@@ -7,4 +7,4 @@ status:
   distributions: []
   warnings: [Statefulness]
   codeowners:
-    active: [crobert-1, galrose]
+    active: [crobert-1, ilyamor]
