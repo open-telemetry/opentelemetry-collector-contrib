@@ -16,9 +16,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	ss "github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
 )
 
 // null represents "null" JSON value and
@@ -43,7 +44,7 @@ type storedStrategies struct {
 type strategyLoader func() ([]byte, error)
 
 // NewProvider creates a strategy store that holds static sampling strategies.
-func NewProvider(options Options, logger *zap.Logger) (ss.Provider, error) {
+func NewProvider(options Options, logger *zap.Logger) (internal.Provider, error) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	h := &samplingProvider{
 		logger:     logger,

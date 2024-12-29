@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jaegertracing/jaeger/pkg/testutils"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -101,10 +100,12 @@ func TestStrategyStoreWithFile(t *testing.T) {
 		"failed to unmarshal strategies: json: cannot unmarshal string into Go value of type jaegerremotesampling.strategies")
 
 	// Test default strategy
-	logger, buf := testutils.NewLogger()
+	zapCore, logs := observer.New(zap.InfoLevel)
+	logger := zap.New(zapCore)
 	provider, err := NewProvider(Options{}, logger)
 	require.NoError(t, err)
-	assert.Contains(t, buf.String(), "No sampling strategies source provided, using defaults")
+	message := logs.FilterMessage("No sampling strategies source provided, using defaults")
+	assert.Equal(t, 1, message.Len(), "Expected No sampling strategies provided log message")
 	s, err := provider.GetSamplingStrategy(context.Background(), "foo")
 	require.NoError(t, err)
 	assert.EqualValues(t, makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.001), *s)
@@ -127,11 +128,13 @@ func TestStrategyStoreWithFile(t *testing.T) {
 
 func TestStrategyStoreWithURL(t *testing.T) {
 	// Test default strategy when URL is temporarily unavailable.
-	logger, buf := testutils.NewLogger()
+	zapCore, logs := observer.New(zap.InfoLevel)
+	logger := zap.New(zapCore)
 	mockServer, _ := mockStrategyServer(t)
 	provider, err := NewProvider(Options{StrategiesFile: mockServer.URL + "/service-unavailable"}, logger)
 	require.NoError(t, err)
-	assert.Contains(t, buf.String(), "No sampling strategies found or URL is unavailable, using defaults")
+	message := logs.FilterMessage("No sampling strategies found or URL is unavailable, using defaults")
+	assert.Equal(t, 1, message.Len(), "Expected No sampling strategies found log message.")
 	s, err := provider.GetSamplingStrategy(context.Background(), "foo")
 	require.NoError(t, err)
 	assert.EqualValues(t, makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.001), *s)
@@ -161,12 +164,15 @@ func TestPerOperationSamplingStrategies(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		logger, buf := testutils.NewLogger()
+		zapCore, logs := observer.New(zap.InfoLevel)
+		logger := zap.New(zapCore)
 		provider, err := NewProvider(tc.options, logger)
-		assert.Contains(t, buf.String(), "Operation strategies only supports probabilistic sampling at the moment,"+
-			"'op2' defaulting to probabilistic sampling with probability 0.8")
-		assert.Contains(t, buf.String(), "Operation strategies only supports probabilistic sampling at the moment,"+
-			"'op4' defaulting to probabilistic sampling with probability 0.001")
+		message := logs.FilterMessage("Operation strategies only supports probabilistic sampling at the moment," +
+			"'op2' defaulting to probabilistic sampling with probability 0.800000")
+		assert.Equal(t, 1, message.Len(), "Expected Operation strategies only supports probabilistic sampling, op2 change to probability 0.8 log message")
+		message = logs.FilterMessage("Operation strategies only supports probabilistic sampling at the moment," +
+			"'op4' defaulting to probabilistic sampling with probability 0.001000")
+		assert.Equal(t, 1, message.Len(), "Expected Operation strategies only supports probabilistic sampling, op2 change to probability 0.8 log message")
 		require.NoError(t, err)
 
 		expected := makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.8)
@@ -243,9 +249,11 @@ func TestPerOperationSamplingStrategies(t *testing.T) {
 }
 
 func TestMissingServiceSamplingStrategyTypes(t *testing.T) {
-	logger, buf := testutils.NewLogger()
+	zapCore, logs := observer.New(zap.InfoLevel)
+	logger := zap.New(zapCore)
 	provider, err := NewProvider(Options{StrategiesFile: "fixtures/missing-service-types.json"}, logger)
-	assert.Contains(t, buf.String(), "Failed to parse sampling strategy")
+	message := logs.FilterMessage("Failed to parse sampling strategy")
+	assert.Equal(t, "Failed to parse sampling strategy", message.All()[0].Message)
 	require.NoError(t, err)
 
 	expected := makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, defaultSamplingProbability)
@@ -303,7 +311,8 @@ func TestParseStrategy(t *testing.T) {
 			expected: makeResponse(api_v2.SamplingStrategyType_RATE_LIMITING, 3),
 		},
 	}
-	logger, buf := testutils.NewLogger()
+	zapCore, logs := observer.New(zap.InfoLevel)
+	logger := zap.New(zapCore)
 	provider := &samplingProvider{logger: logger}
 	for _, test := range tests {
 		tt := test
@@ -311,13 +320,14 @@ func TestParseStrategy(t *testing.T) {
 			assert.EqualValues(t, tt.expected, *provider.parseStrategy(&tt.strategy.strategy))
 		})
 	}
-	assert.Empty(t, buf.String())
+	assert.Empty(t, logs.Len())
 
 	// Test nonexistent strategy type
 	actual := *provider.parseStrategy(&strategy{Type: "blah", Param: 3.5})
 	expected := makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, defaultSamplingProbability)
 	assert.EqualValues(t, expected, actual)
-	assert.Contains(t, buf.String(), "Failed to parse sampling strategy")
+	message := logs.FilterMessage("Failed to parse sampling strategy")
+	assert.Equal(t, 1, message.Len(), "Expected Failed to parse sampling strategy log message.")
 }
 
 func makeResponse(samplerType api_v2.SamplingStrategyType, param float64) (resp api_v2.SamplingStrategyResponse) {
