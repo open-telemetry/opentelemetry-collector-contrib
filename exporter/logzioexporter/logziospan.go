@@ -28,7 +28,7 @@ type logzioSpan struct {
 	Duration        uint64         `json:"duration"`
 	Tags            []keyValue     `json:"JaegerTags,omitempty"`
 	Tag             map[string]any `json:"JaegerTag,omitempty"`
-	Logs            []log          `json:"logs"`
+	Logs            []spanLog      `json:"logs"`
 	Process         process        `json:"process,omitempty"`
 	Type            string         `json:"type"`
 }

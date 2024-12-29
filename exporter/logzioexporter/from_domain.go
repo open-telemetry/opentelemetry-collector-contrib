@@ -2,7 +2,7 @@
 // Copyright (c) 2018 Uber Technologies, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package logzioexporter
+package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 
 import (
 	"strings"
@@ -55,8 +55,8 @@ type process struct {
 	Tag map[string]any `json:"tag,omitempty"`
 }
 
-// log is a log emitted in a span
-type log struct {
+// spanLog is a log emitted in a span
+type spanLog struct {
 	Timestamp uint64     `json:"timestamp"`
 	Fields    []keyValue `json:"fields"`
 }
@@ -91,7 +91,7 @@ type span struct {
 	Tags            []keyValue `json:"tags"`
 	// Alternative representation of tags for better kibana support
 	Tag     map[string]any `json:"tag,omitempty"`
-	Logs    []log          `json:"logs"`
+	Logs    []spanLog      `json:"logs"`
 	Process process        `json:"process,omitempty"`
 }
 
@@ -178,14 +178,14 @@ func (fd fromDomain) convertKeyValuesString(keyValues model.KeyValues) ([]keyVal
 	return kvs, tagsMap
 }
 
-func (fromDomain) convertLogs(logs []model.Log) []log {
-	out := make([]log, len(logs))
+func (fromDomain) convertLogs(logs []model.Log) []spanLog {
+	out := make([]spanLog, len(logs))
 	for i, l := range logs {
 		var kvs []keyValue
 		for _, kv := range l.Fields {
 			kvs = append(kvs, convertKeyValue(kv))
 		}
-		out[i] = log{
+		out[i] = spanLog{
 			Timestamp: model.TimeAsEpochMicroseconds(l.Timestamp),
 			Fields:    kvs,
 		}
