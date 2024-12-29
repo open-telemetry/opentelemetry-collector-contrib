@@ -7,7 +7,7 @@ change_type: enhancement
 component: extension/jaegerremotesampling
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: remove dependency on jaeger sampling
+note: remove dependency on jaeger internal code
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36976]
