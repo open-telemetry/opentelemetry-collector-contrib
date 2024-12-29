@@ -15,21 +15,21 @@ const (
 	tagDotReplacementCharacter = "@"
 )
 
-// logzioSpan is same as ESSpan with a few different json field names and an addition on type field.
+// logzioSpan is same as esSpan with a few different json field names and an addition on type field.
 type logzioSpan struct {
 	TraceID         TraceID        `json:"traceID"`
 	SpanID          SpanID         `json:"spanID"`
 	OperationName   string         `json:"operationName,omitempty"`
-	References      []Reference    `json:"references"`
+	References      []reference    `json:"references"`
 	Flags           uint32         `json:"flags,omitempty"`
 	StartTime       uint64         `json:"startTime"`
 	StartTimeMillis uint64         `json:"startTimeMillis"`
 	Timestamp       uint64         `json:"@timestamp"`
 	Duration        uint64         `json:"duration"`
-	Tags            []KeyValue     `json:"JaegerTags,omitempty"`
+	Tags            []keyValue     `json:"JaegerTags,omitempty"`
 	Tag             map[string]any `json:"JaegerTag,omitempty"`
-	Logs            []Log          `json:"logs"`
-	Process         Process        `json:"process,omitempty"`
+	Logs            []log          `json:"logs"`
+	Process         process        `json:"process,omitempty"`
 	Type            string         `json:"type"`
 }
 
@@ -66,19 +66,19 @@ func transformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
 }
 
 // only for testing transformToDbModelSpan coverts logz.io span to ElasticSearch span
-func (span *logzioSpan) transformToDbModelSpan() *Span {
-	return &Span{
-		OperationName:   span.OperationName,
-		Process:         span.Process,
-		Tags:            span.Tags,
-		Tag:             span.Tag,
-		References:      span.References,
-		Logs:            span.Logs,
-		Duration:        span.Duration,
-		StartTimeMillis: span.StartTimeMillis,
-		StartTime:       span.StartTime,
-		Flags:           span.Flags,
-		SpanID:          span.SpanID,
-		TraceID:         span.TraceID,
+func (logziospan *logzioSpan) transformToDbModelSpan() *span {
+	return &span{
+		OperationName:   logziospan.OperationName,
+		Process:         logziospan.Process,
+		Tags:            logziospan.Tags,
+		Tag:             logziospan.Tag,
+		References:      logziospan.References,
+		Logs:            logziospan.Logs,
+		Duration:        logziospan.Duration,
+		StartTimeMillis: logziospan.StartTimeMillis,
+		StartTime:       logziospan.StartTime,
+		Flags:           logziospan.Flags,
+		SpanID:          logziospan.SpanID,
+		TraceID:         logziospan.TraceID,
 	}
 }

@@ -19,7 +19,7 @@ type TraceID string
 // SpanID is the id of a span
 type SpanID string
 
-// ValueType is the type of a value stored in KeyValue struct.
+// ValueType is the type of a value stored in keyValue struct.
 type ValueType string
 
 const (
@@ -28,71 +28,71 @@ const (
 	// FollowsFrom means a span follows from another span
 	FollowsFrom ReferenceType = "FOLLOWS_FROM"
 
-	// StringType indicates a string value stored in KeyValue
+	// StringType indicates a string value stored in keyValue
 	StringType ValueType = "string"
-	// BoolType indicates a Boolean value stored in KeyValue
+	// BoolType indicates a Boolean value stored in keyValue
 	BoolType ValueType = "bool"
-	// Int64Type indicates a 64bit signed integer value stored in KeyValue
+	// Int64Type indicates a 64bit signed integer value stored in keyValue
 	Int64Type ValueType = "int64"
-	// Float64Type indicates a 64bit float value stored in KeyValue
+	// Float64Type indicates a 64bit float value stored in keyValue
 	Float64Type ValueType = "float64"
-	// BinaryType indicates an arbitrary byte array stored in KeyValue
+	// BinaryType indicates an arbitrary byte array stored in keyValue
 	BinaryType ValueType = "binary"
 )
 
-// Reference is a reference from one span to another
-type Reference struct {
+// reference is a reference from one span to another
+type reference struct {
 	RefType ReferenceType `json:"refType"`
 	TraceID TraceID       `json:"traceID"`
 	SpanID  SpanID        `json:"spanID"`
 }
 
-// Process is the process emitting a set of spans
-type Process struct {
+// process is the process emitting a set of spans
+type process struct {
 	ServiceName string     `json:"serviceName"`
-	Tags        []KeyValue `json:"tags"`
+	Tags        []keyValue `json:"tags"`
 	// Alternative representation of tags for better kibana support
 	Tag map[string]any `json:"tag,omitempty"`
 }
 
-// Log is a log emitted in a span
-type Log struct {
+// log is a log emitted in a span
+type log struct {
 	Timestamp uint64     `json:"timestamp"`
-	Fields    []KeyValue `json:"fields"`
+	Fields    []keyValue `json:"fields"`
 }
 
-// KeyValue is a key-value pair with typed value.
-type KeyValue struct {
+// keyValue is a key-value pair with typed value.
+type keyValue struct {
 	Key   string    `json:"key"`
 	Type  ValueType `json:"type,omitempty"`
 	Value any       `json:"value"`
 }
 
-// Service is the JSON struct for service:operation documents in ElasticSearch
-type Service struct {
+// service is the JSON struct for service:operation documents in ElasticSearch
+type service struct {
 	ServiceName   string `json:"serviceName"`
 	OperationName string `json:"operationName"`
 }
 
-// only for testing Span is ES database representation of the domain span.
-type Span struct {
+// only for testing span is ES database representation of the domain span.
+type span struct {
 	TraceID       TraceID     `json:"traceID"`
 	SpanID        SpanID      `json:"spanID"`
 	ParentSpanID  SpanID      `json:"parentSpanID,omitempty"` // deprecated
 	Flags         uint32      `json:"flags,omitempty"`
 	OperationName string      `json:"operationName"`
-	References    []Reference `json:"references"`
+	References    []reference `json:"references"`
 	StartTime     uint64      `json:"startTime"` // microseconds since Unix epoch
 	// ElasticSearch does not support a UNIX Epoch timestamp in microseconds,
 	// so Jaeger maps StartTime to a 'long' type. This extra StartTimeMillis field
 	// works around this issue, enabling timerange queries.
 	StartTimeMillis uint64     `json:"startTimeMillis"`
 	Duration        uint64     `json:"duration"` // microseconds
-	Tags            []KeyValue `json:"tags"`
+	Tags            []keyValue `json:"tags"`
 	// Alternative representation of tags for better kibana support
 	Tag     map[string]any `json:"tag,omitempty"`
-	Logs    []Log          `json:"logs"`
-	Process Process        `json:"process,omitempty"`
+	Logs    []log          `json:"logs"`
+	Process process        `json:"process,omitempty"`
 }
 
 // newFromDomain creates fromDomain used to convert model span to db span
@@ -111,8 +111,8 @@ type fromDomain struct {
 	tagDotReplacement string
 }
 
-// fromDomainEmbedProcess converts model.Span into json.Span format.
-// This format includes a ParentSpanID and an embedded Process.
+// fromDomainEmbedProcess converts model.span into json.span format.
+// This format includes a ParentSpanID and an embedded process.
 func (fd fromDomain) fromDomainEmbedProcess(span *model.Span) *logzioSpan {
 	return fd.convertSpanEmbedProcess(span)
 }
@@ -140,10 +140,10 @@ func (fd fromDomain) convertSpanEmbedProcess(span *model.Span) *logzioSpan {
 	return &s
 }
 
-func (fd fromDomain) convertReferences(span *model.Span) []Reference {
-	out := make([]Reference, 0, len(span.References))
+func (fd fromDomain) convertReferences(span *model.Span) []reference {
+	out := make([]reference, 0, len(span.References))
 	for _, ref := range span.References {
-		out = append(out, Reference{
+		out = append(out, reference{
 			RefType: fd.convertRefType(ref.RefType),
 			TraceID: TraceID(ref.TraceID.String()),
 			SpanID:  SpanID(ref.SpanID.String()),
@@ -159,9 +159,9 @@ func (fromDomain) convertRefType(refType model.SpanRefType) ReferenceType {
 	return ChildOf
 }
 
-func (fd fromDomain) convertKeyValuesString(keyValues model.KeyValues) ([]KeyValue, map[string]any) {
+func (fd fromDomain) convertKeyValuesString(keyValues model.KeyValues) ([]keyValue, map[string]any) {
 	var tagsMap map[string]any
-	var kvs []KeyValue
+	var kvs []keyValue
 	for _, kv := range keyValues {
 		if kv.GetVType() != model.BinaryType && (fd.allTagsAsFields || fd.tagKeysAsFields[kv.Key]) {
 			if tagsMap == nil {
@@ -173,37 +173,37 @@ func (fd fromDomain) convertKeyValuesString(keyValues model.KeyValues) ([]KeyVal
 		}
 	}
 	if kvs == nil {
-		kvs = make([]KeyValue, 0)
+		kvs = make([]keyValue, 0)
 	}
 	return kvs, tagsMap
 }
 
-func (fromDomain) convertLogs(logs []model.Log) []Log {
-	out := make([]Log, len(logs))
-	for i, log := range logs {
-		var kvs []KeyValue
-		for _, kv := range log.Fields {
+func (fromDomain) convertLogs(logs []model.Log) []log {
+	out := make([]log, len(logs))
+	for i, l := range logs {
+		var kvs []keyValue
+		for _, kv := range l.Fields {
 			kvs = append(kvs, convertKeyValue(kv))
 		}
-		out[i] = Log{
-			Timestamp: model.TimeAsEpochMicroseconds(log.Timestamp),
+		out[i] = log{
+			Timestamp: model.TimeAsEpochMicroseconds(l.Timestamp),
 			Fields:    kvs,
 		}
 	}
 	return out
 }
 
-func (fd fromDomain) convertProcess(process *model.Process) Process {
-	tags, tagsMap := fd.convertKeyValuesString(process.Tags)
-	return Process{
-		ServiceName: process.ServiceName,
+func (fd fromDomain) convertProcess(p *model.Process) process {
+	tags, tagsMap := fd.convertKeyValuesString(p.Tags)
+	return process{
+		ServiceName: p.ServiceName,
 		Tags:        tags,
 		Tag:         tagsMap,
 	}
 }
 
-func convertKeyValue(kv model.KeyValue) KeyValue {
-	return KeyValue{
+func convertKeyValue(kv model.KeyValue) keyValue {
+	return keyValue{
 		Key:   kv.Key,
 		Type:  ValueType(strings.ToLower(kv.VType.String())),
 		Value: kv.AsString(),
