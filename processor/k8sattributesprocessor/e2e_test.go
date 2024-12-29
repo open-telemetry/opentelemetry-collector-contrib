@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
@@ -1240,7 +1240,7 @@ func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.T
 	require.NoError(t, err, "failed creating traces receiver")
 	_, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, lc)
 	require.NoError(t, err, "failed creating logs receiver")
-	rcvr, err := f.(receiverprofiles.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, pc)
+	rcvr, err := f.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, pc)
 	require.NoError(t, err, "failed creating profiles receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	return func() {

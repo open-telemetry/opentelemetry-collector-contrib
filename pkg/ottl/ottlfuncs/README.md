@@ -835,6 +835,18 @@ Get all elements in the document with tag "a" that have an attribute "b" with va
 
 - `GetXML(body, "//a[@b='c']")`
 
+Get `foo` from `<a>foo</a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `hello` from `<a><![CDATA[hello]]></a>`
+
+- `GetXML(body, "/a/text()")`
+
+Get `bar` from `<a foo="bar"/>`
+
+- `GetXML(body, "/a/@foo")`
+
 ### Hex
 
 `Hex(value)`
@@ -1780,9 +1792,21 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
 
+### Trim
+
+```Trim(target, Optional[replacement])```
+
+The `Trim` Converter removes the leading and trailing character (default: a space character).
+
+If the `target` is not a string or does not exist, the `Trim` Converter will return an error.
+
+`target` is a string.
+`replacement` is an optional string representing the character to replace with (default: a space character).
+
 Examples:
 
-- `Split("A|B|C", "|")`
+- `Trim(" this is a test ", " ")`
+- `Trim("!!this is a test!!", "!!")`
 
 ### String
 

@@ -1,0 +1,96 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: resource.foo
+          value:
+            stringValue: foo
+        - key: resource.bar
+          value:
+            stringValue: bar
+    scopeSpans:
+      - scope: {}
+        spans:
+          - attributes:
+              - key: db.name
+                value:
+                  stringValue: main
+              - key: db.system
+                value:
+                  stringValue: mysql
+            endTimeUnixNano: "1581452772500000789"
+            name: db-span
+            parentSpanId: ""
+            startTimeUnixNano: "1581452772000000321"
+          - attributes:
+              - key: http.request.method
+                value:
+                  stringValue: POST
+              - key: url.full
+                value:
+                  stringValue: https://www.foo.bar/search?q=OpenTelemetry#SemConv
+              - key: http.response.status_code
+                value:
+                  intValue: 201
+            endTimeUnixNano: "1581452772900000789"
+            name: http-span
+            parentSpanId: ""
+            startTimeUnixNano: "1581452772000000321"
+          - attributes:
+              - key: messaging.system
+                value:
+                  stringValue: kafka
+              - key: messaging.destination.name
+                value:
+                  stringValue: TestTopic
+            endTimeUnixNano: "1581452772002000789"
+            name: msg-span
+            parentSpanId: ""
+            startTimeUnixNano: "1581452772000000321"
+          - attributes:
+              - key: db.name
+                value:
+                  stringValue: main
+              - key: db.system
+                value:
+                  stringValue: mysql
+            endTimeUnixNano: "1581452773000000789"
+            name: db-span-2
+            parentSpanId: "bcff497b5a47310f"
+            startTimeUnixNano: "1581452772000000321"
+          - attributes:
+              - key: http.request.method
+                value:
+                  stringValue: POST
+              - key: url.full
+                value:
+                  stringValue: https://www.foo.bar/search?q=OpenTelemetry#SemConv
+              - key: http.response.status_code
+                value:
+                  intValue: 201
+            endTimeUnixNano: "1581452783000000789"
+            name: http-span-2
+            parentSpanId: "bcff497b5a47310f"
+            startTimeUnixNano: "1581452772000000321"
+          - attributes:
+              - key: messaging.system
+                value:
+                  stringValue: kafka
+              - key: messaging.destination.name
+                value:
+                  stringValue: TestTopic
+            endTimeUnixNano: "1581452789000000789"
+            name: msg-span-2
+            parentSpanId: "bcff497b5a47310f"
+            startTimeUnixNano: "1581452772000000321"
+          - attributes:
+              - key: db.name
+                value:
+                  stringValue: main
+              - key: db.system
+                value:
+                  stringValue: mysql
+            endTimeUnixNano: "1581452772500000804"
+            name: th-value-8 # represents 2 sampled spans
+            parentSpanId: ""
+            startTimeUnixNano: "1581452772000000381"
+            traceState: "ot=th:8"
