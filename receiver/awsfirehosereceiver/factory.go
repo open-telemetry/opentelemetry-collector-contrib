@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/auto"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
@@ -32,6 +33,7 @@ var (
 		cwmetricstream.TypeStr:   true,
 		cwlog.TypeStr:            true,
 		otlpmetricstream.TypeStr: true,
+		auto.TypeStr:             true,
 	}
 )
 
@@ -59,17 +61,21 @@ func validateRecordType(recordType string) error {
 func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.MetricsUnmarshaler {
 	cwmsu := cwmetricstream.NewUnmarshaler(logger)
 	otlpv1msu := otlpmetricstream.NewUnmarshaler(logger)
+	autoUnmarshaler := auto.NewUnmarshaler(logger)
 	return map[string]unmarshaler.MetricsUnmarshaler{
 		cwmsu.Type():     cwmsu,
 		otlpv1msu.Type(): otlpv1msu,
+		auto.TypeStr:     autoUnmarshaler,
 	}
 }
 
 // defaultLogsUnmarshalers creates a map of the available logs unmarshalers.
 func defaultLogsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.LogsUnmarshaler {
 	u := cwlog.NewUnmarshaler(logger)
+	autoUnmarshaler := auto.NewUnmarshaler(logger)
 	return map[string]unmarshaler.LogsUnmarshaler{
-		u.Type(): u,
+		u.Type():     u,
+		auto.TypeStr: autoUnmarshaler,
 	}
 }
 

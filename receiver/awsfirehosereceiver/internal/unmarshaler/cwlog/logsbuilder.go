@@ -16,34 +16,36 @@ const (
 	attributeAWSCloudWatchLogStreamName = "aws.cloudwatch.log_stream_name"
 )
 
-// resourceAttributes are the CloudWatch log attributes that define a unique resource.
-type resourceAttributes struct {
-	owner, logGroup, logStream string
+// ResourceAttributes are the CloudWatch log attributes that define a unique resource.
+type ResourceAttributes struct {
+	Owner     string
+	LogGroup  string
+	LogStream string
 }
 
-// resourceLogsBuilder provides convenient access to the a Resource's LogRecordSlice.
-type resourceLogsBuilder struct {
+// ResourceLogsBuilder provides convenient access to a Resource's LogRecordSlice.
+type ResourceLogsBuilder struct {
 	rls plog.LogRecordSlice
 }
 
-// setAttributes applies the resourceAttributes to the provided Resource.
-func (ra *resourceAttributes) setAttributes(resource pcommon.Resource) {
+// setAttributes applies the ResourceAttributes to the provided Resource.
+func (ra *ResourceAttributes) setAttributes(resource pcommon.Resource) {
 	attrs := resource.Attributes()
-	attrs.PutStr(conventions.AttributeCloudAccountID, ra.owner)
-	attrs.PutStr(attributeAWSCloudWatchLogGroupName, ra.logGroup)
-	attrs.PutStr(attributeAWSCloudWatchLogStreamName, ra.logStream)
+	attrs.PutStr(conventions.AttributeCloudAccountID, ra.Owner)
+	attrs.PutStr(attributeAWSCloudWatchLogGroupName, ra.LogGroup)
+	attrs.PutStr(attributeAWSCloudWatchLogStreamName, ra.LogStream)
 }
 
-// newResourceLogsBuilder to capture logs for the Resource defined by the provided attributes.
-func newResourceLogsBuilder(logs plog.Logs, attrs resourceAttributes) *resourceLogsBuilder {
+// NewResourceLogsBuilder to capture logs for the Resource defined by the provided attributes.
+func NewResourceLogsBuilder(logs plog.Logs, attrs ResourceAttributes) *ResourceLogsBuilder {
 	rls := logs.ResourceLogs().AppendEmpty()
 	attrs.setAttributes(rls.Resource())
-	return &resourceLogsBuilder{rls.ScopeLogs().AppendEmpty().LogRecords()}
+	return &ResourceLogsBuilder{rls.ScopeLogs().AppendEmpty().LogRecords()}
 }
 
 // AddLog events to the LogRecordSlice. Resource attributes are captured when creating
-// the resourceLogsBuilder, so we only need to consider the LogEvents themselves.
-func (rlb *resourceLogsBuilder) AddLog(log cWLog) {
+// the ResourceLogsBuilder, so we only need to consider the LogEvents themselves.
+func (rlb *ResourceLogsBuilder) AddLog(log CWLog) {
 	for _, event := range log.LogEvents {
 		logLine := rlb.rls.AppendEmpty()
 		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
