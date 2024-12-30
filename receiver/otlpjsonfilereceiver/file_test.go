@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -44,7 +44,7 @@ func TestFileProfilesReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.ProfilesSink)
-	receiver, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+	receiver, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
@@ -257,7 +257,7 @@ func TestFileMixedSignals(t *testing.T) {
 	err = lr.Start(context.Background(), nil)
 	assert.NoError(t, err)
 	ps := new(consumertest.ProfilesSink)
-	pr, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), cs, cfg, ps)
+	pr, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), cs, cfg, ps)
 	assert.NoError(t, err)
 	err = pr.Start(context.Background(), nil)
 	assert.NoError(t, err)
