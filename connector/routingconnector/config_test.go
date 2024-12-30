@@ -27,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "traces.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalTraces, "otlp-all"),
 				},
@@ -52,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "metrics.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalMetrics, "otlp-all"),
 				},
@@ -77,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "logs.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalLogs, "otlp-all"),
 				},
@@ -249,6 +252,22 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 			error: `"metric" context is not supported with "match_once: false"`,
+		},
+		{
+			name: "datapoint context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "datapoint",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"datapoint" context is not supported with "match_once: false"`,
 		},
 		{
 			name: "log context with match_once false",
