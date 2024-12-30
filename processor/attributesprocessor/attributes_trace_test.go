@@ -93,8 +93,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	for i := range testCases {
-		tt := testCases[i]
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
 			assert.EqualValues(t, tt.output, tt.input)

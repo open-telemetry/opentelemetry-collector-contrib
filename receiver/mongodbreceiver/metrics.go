@@ -563,6 +563,9 @@ func collectMetric(document bson.M, path []string) (int64, error) {
 }
 
 func dig(document bson.M, path []string) (any, error) {
+	if len(path) == 0 {
+		return nil, errKeyNotFound
+	}
 	curItem, remainingPath := path[0], path[1:]
 	value := document[curItem]
 	if value == nil {
