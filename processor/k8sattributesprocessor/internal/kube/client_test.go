@@ -2098,7 +2098,7 @@ func TestWaitForMetadata(t *testing.T) {
 			labelSelector labels.Selector,
 			fieldSelector fields.Selector,
 			transformFunc cache.TransformFunc,
-			stopCh chan struct{},
+			stopCh <-chan struct{},
 		) (cache.SharedInformer, error) {
 			informer, err := NewFakeInformer(namespace, labelSelector, fieldSelector, transformFunc, stopCh)
 			if err != nil {
