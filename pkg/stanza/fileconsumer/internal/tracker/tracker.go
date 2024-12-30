@@ -4,10 +4,14 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
@@ -52,13 +56,19 @@ type fileTracker struct {
 	archiveIndex   int
 }
 
+var errInvalidValue = errors.New("invalid value")
+
+var archiveIndexKey = "knownFilesArchiveIndex"
+var archivePollsToArchiveKey = "knonwFilesPollsToArchive"
+
 func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
 	}
 	set.Logger = set.Logger.With(zap.String("tracker", "fileTracker"))
-	return &fileTracker{
+
+	t := &fileTracker{
 		set:               set,
 		maxBatchFiles:     maxBatchFiles,
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
@@ -68,6 +78,11 @@ func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, pollsToA
 		persister:         persister,
 		archiveIndex:      0,
 	}
+	if t.archiveEnabled() {
+		t.restoreArchiveIndex(context.Background())
+	}
+
+	return t
 }
 
 func (t *fileTracker) Add(reader *reader.Reader) {
@@ -131,7 +146,9 @@ func (t *fileTracker) EndPoll() {
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
 
 	// Instead of throwing it away, archive it.
-	t.archive(t.knownFiles[2])
+	if t.archiveEnabled() {
+		t.archive(t.knownFiles[2])
+	}
 	copy(t.knownFiles[1:], t.knownFiles)
 	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles)
 }
@@ -142,6 +159,109 @@ func (t *fileTracker) TotalReaders() int {
 		total += t.knownFiles[i].Len()
 	}
 	return total
+}
+
+func (t *fileTracker) restoreArchiveIndex(ctx context.Context) {
+	byteIndex, err := t.persister.Get(ctx, archiveIndexKey)
+	if err != nil {
+		t.set.Logger.Error("error while reading the archiveIndexKey. Starting from 0", zap.Error(err))
+		t.archiveIndex = 0
+		return
+	}
+
+	previousPollsToArchive, err := t.previousPollsToArchive(ctx)
+	if err != nil {
+		// if there's an error reading previousPollsToArchive, default to current value
+		previousPollsToArchive = t.pollsToArchive
+	}
+
+	t.archiveIndex, err = decodeIndex(byteIndex)
+	if err != nil {
+		t.set.Logger.Error("error getting read index. Starting from 0", zap.Error(err))
+	} else if previousPollsToArchive < t.pollsToArchive {
+		// if archive size has increased, we just increment the index until we enconter a nil value
+		for t.archiveIndex < t.pollsToArchive && t.isSet(ctx, t.archiveIndex) {
+			t.archiveIndex++
+		}
+	} else if previousPollsToArchive > t.pollsToArchive {
+		// we will only attempt to rewrite archive if the archive size has shrinked
+		t.set.Logger.Warn("polls_to_archive has changed. Will attempt to rewrite archive")
+		t.rewriteArchive(ctx, previousPollsToArchive)
+	}
+
+	t.removeExtraKeys(ctx)
+
+	// store current pollsToArchive
+	if err := t.persister.Set(ctx, archivePollsToArchiveKey, encodeIndex(t.pollsToArchive)); err != nil {
+		t.set.Logger.Error("Error storing polls_to_archive", zap.Error(err))
+	}
+}
+
+func (t *fileTracker) rewriteArchive(ctx context.Context, previousPollsToArchive int) {
+	// Ensure archiveIndex is non-negative
+	if t.archiveIndex < 0 {
+		t.archiveIndex = 0
+		return
+	}
+	// Function to swap data between two indices
+	swapData := func(idx1, idx2 int) error {
+		val1, err := t.persister.Get(ctx, archiveKey(idx1))
+		if err != nil {
+			return err
+		}
+		val2, err := t.persister.Get(ctx, archiveKey(idx2))
+		if err != nil {
+			return err
+		}
+		return t.persister.Batch(ctx, storage.SetOperation(archiveKey(idx1), val2), storage.SetOperation(archiveKey(idx2), val1))
+	}
+	// Calculate the least recent index, w.r.t. new archive size
+
+	leastRecentIndex := mod(t.archiveIndex-t.pollsToArchive, previousPollsToArchive)
+	// Refer archive.md for the detailed design
+
+	if mod(t.archiveIndex-1, previousPollsToArchive) > t.pollsToArchive {
+		for i := 0; i < t.pollsToArchive; i++ {
+			if err := swapData(i, leastRecentIndex); err != nil {
+				t.set.Logger.Error("error while swapping archive", zap.Error(err))
+			}
+			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
+		}
+		t.archiveIndex = 0
+	} else {
+		if t.isSet(ctx, t.archiveIndex) {
+			// If the current index points at an unset key, no need to do anything
+			return
+		}
+		for i := 0; i < t.pollsToArchive-t.archiveIndex; i++ {
+			if err := swapData(t.archiveIndex+i, leastRecentIndex); err != nil {
+				t.set.Logger.Warn("error while swapping archive", zap.Error(err))
+			}
+			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
+		}
+	}
+}
+
+func (t *fileTracker) removeExtraKeys(ctx context.Context) {
+	for i := t.pollsToArchive; t.isSet(ctx, i); i++ {
+		if err := t.persister.Delete(ctx, archiveKey(i)); err != nil {
+			t.set.Logger.Error("error while cleaning extra keys", zap.Error(err))
+		}
+	}
+}
+
+func (t *fileTracker) previousPollsToArchive(ctx context.Context) (int, error) {
+	byteIndex, err := t.persister.Get(ctx, archivePollsToArchiveKey)
+	if err != nil {
+		t.set.Logger.Error("error while reading the archiveIndexKey", zap.Error(err))
+		return 0, err
+	}
+	previousPollsToArchive, err := decodeIndex(byteIndex)
+	if err != nil {
+		t.set.Logger.Error("error while decoding previousPollsToArchive", zap.Error(err))
+		return 0, err
+	}
+	return previousPollsToArchive, nil
 }
 
 func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
@@ -162,19 +282,17 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	//                   start
 	//                   index
 
-	if t.pollsToArchive <= 0 || t.persister == nil {
-		return
-	}
-	if err := t.writeArchive(t.archiveIndex, metadata); err != nil {
+	index := t.archiveIndex
+	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive                      // increment the index
+	indexOp := storage.SetOperation(archiveIndexKey, encodeIndex(t.archiveIndex)) // batch the updated index with metadata
+	if err := t.writeArchive(index, metadata, indexOp); err != nil {
 		t.set.Logger.Error("error faced while saving to the archive", zap.Error(err))
 	}
-	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
 }
 
 // readArchive loads data from the archive for a given index and returns a fileset.Filset.
 func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
-	key := fmt.Sprintf("knownFiles%d", index)
-	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
+	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, archiveKey(index))
 	if err != nil {
 		return nil, err
 	}
@@ -184,9 +302,17 @@ func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata]
 }
 
 // writeArchive saves data to the archive for a given index and returns an error, if encountered.
-func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata]) error {
-	key := fmt.Sprintf("knownFiles%d", index)
-	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), key)
+func (t *fileTracker) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata], ops ...storage.Operation) error {
+	return checkpoint.SaveKey(context.Background(), t.persister, rmds.Get(), archiveKey(index), ops...)
+}
+
+func (t *fileTracker) archiveEnabled() bool {
+	return t.pollsToArchive > 0 && t.persister != nil
+}
+
+func (t *fileTracker) isSet(ctx context.Context, index int) bool {
+	val, err := t.persister.Get(ctx, archiveKey(index))
+	return val != nil && err == nil
 }
 
 // FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
@@ -295,3 +421,31 @@ func (t *noStateTracker) EndPoll() {}
 func (t *noStateTracker) TotalReaders() int { return 0 }
 
 func (t *noStateTracker) FindFiles([]*fingerprint.Fingerprint) []*reader.Metadata { return nil }
+
+func encodeIndex(val int) []byte {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+
+	// Encode the index
+	if err := enc.Encode(val); err != nil {
+		return buf.Bytes()
+	}
+	return nil
+}
+
+func decodeIndex(buf []byte) (int, error) {
+	var index int
+
+	// Decode the index
+	dec := json.NewDecoder(bytes.NewReader(buf))
+	err := dec.Decode(&index)
+	return max(index, 0), err
+}
+
+func archiveKey(i int) string {
+	return fmt.Sprintf("knownFiles%d", i)
+}
+
+func mod(x, y int) int {
+	return (x + y) % y
+}
