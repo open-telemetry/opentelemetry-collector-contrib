@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "sometoken"),
 			expected: &Config{
 				Scheme:      defaultScheme,
-				Header:      DefaultAuthHeader,
+				Header:      defaultHeader,
 				BearerToken: "sometoken",
 			},
 		},
@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "withscheme"),
 			expected: &Config{
 				Scheme:      "MyScheme",
-				Header:      DefaultAuthHeader,
+				Header:      defaultHeader,
 				BearerToken: "my-token",
 			},
 		},

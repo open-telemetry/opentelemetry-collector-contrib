@@ -15,7 +15,7 @@ import (
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.Equal(t, &Config{Scheme: defaultScheme}, cfg)
+	assert.Equal(t, &Config{Scheme: defaultScheme, Header: defaultHeader}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 

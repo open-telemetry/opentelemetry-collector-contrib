@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync/atomic"
 
 	"github.com/fsnotify/fsnotify"
@@ -173,7 +174,7 @@ func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 // PerRPCCredentials returns PerRPCAuth an implementation of credentials.PerRPCCredentials that
 func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &PerRPCAuth{
-		metadata: map[string]string{"authorization": b.authorizationValue()},
+		metadata: map[string]string{strings.ToLower(b.header): b.authorizationValue()},
 	}, nil
 }
 
@@ -187,9 +188,9 @@ func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTrippe
 
 // Authenticate checks whether the given context contains valid auth data.
 func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	auth, ok := headers["authorization"]
+	auth, ok := headers[strings.ToLower(b.header)]
 	if !ok {
-		auth, ok = headers["Authorization"]
+		auth, ok = headers[b.header]
 	}
 	if !ok || len(auth) == 0 {
 		return ctx, errors.New("missing or empty authorization header")
@@ -214,6 +215,6 @@ func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.R
 	if req2.Header == nil {
 		req2.Header = make(http.Header)
 	}
-	req2.Header.Set("Authorization", interceptor.auth.authorizationValue())
+	req2.Header.Set(interceptor.auth.header, interceptor.auth.authorizationValue())
 	return interceptor.baseTransport.RoundTrip(req2)
 }
