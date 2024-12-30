@@ -61,14 +61,17 @@ func strategiesJSON(probability float32) string {
 	return strategy
 }
 
-func deepCopy(s *api_v2.SamplingStrategyResponse) *api_v2.SamplingStrategyResponse {
+func deepCopy(s *api_v2.SamplingStrategyResponse) (*api_v2.SamplingStrategyResponse, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	dec := gob.NewDecoder(&buf)
-	enc.Encode(*s)
+	err := enc.Encode(*s)
+	if err != nil {
+		return nil, err
+	}
 	var copyValue api_v2.SamplingStrategyResponse
-	dec.Decode(&copyValue)
-	return &copyValue
+	err = dec.Decode(&copyValue)
+	return &copyValue, err
 }
 
 // Returns strategies in JSON format. Used for testing
@@ -80,7 +83,8 @@ func mockStrategyServer(t *testing.T) (*httptest.Server, *atomic.Pointer[string]
 	f := func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/bad-content":
-			w.Write([]byte("bad-content"))
+			_, err := w.Write([]byte("bad-content"))
+			assert.NoError(t, err)
 			return
 
 		case "/bad-status":
@@ -94,7 +98,8 @@ func mockStrategyServer(t *testing.T) (*httptest.Server, *atomic.Pointer[string]
 		default:
 			w.WriteHeader(http.StatusOK)
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(*strategy.Load()))
+			_, err := w.Write([]byte(*strategy.Load()))
+			assert.NoError(t, err)
 		}
 	}
 	mockserver := httptest.NewServer(http.HandlerFunc(f))
@@ -364,7 +369,8 @@ func TestDeepCopy(t *testing.T) {
 			SamplingRate: 0.5,
 		},
 	}
-	cp := deepCopy(s)
+	cp, err := deepCopy(s)
+	require.NoError(t, err)
 	assert.NotSame(t, cp, s)
 	assert.EqualValues(t, cp, s)
 }
@@ -380,7 +386,7 @@ func TestAutoUpdateStrategyWithFile(t *testing.T) {
 	srcFile, dstFile := "fixtures/strategies.json", tempFile.Name()
 	srcBytes, err := os.ReadFile(srcFile)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(dstFile, srcBytes, 0o644))
+	require.NoError(t, os.WriteFile(dstFile, srcBytes, 0o600))
 
 	ss, err := NewFileSource(Options{
 		StrategiesFile: dstFile,
@@ -401,7 +407,7 @@ func TestAutoUpdateStrategyWithFile(t *testing.T) {
 
 	// update file with new probability of 0.9
 	newStr := strings.Replace(string(srcBytes), "0.8", "0.9", 1)
-	require.NoError(t, os.WriteFile(dstFile, []byte(newStr), 0o644))
+	require.NoError(t, os.WriteFile(dstFile, []byte(newStr), 0o600))
 
 	// wait for reload timer
 	for i := 0; i < 1000; i++ { // wait up to 1sec
@@ -478,7 +484,7 @@ func TestAutoUpdateStrategyErrors(t *testing.T) {
 	assert.Len(t, logs.FilterMessage("failed to re-load sampling strategies").All(), 1)
 
 	// check bad file content
-	require.NoError(t, os.WriteFile(tempFile.Name(), []byte("bad value"), 0o644))
+	require.NoError(t, os.WriteFile(tempFile.Name(), []byte("bad value"), 0o600))
 	assert.Equal(t, "blah", provider.reloadSamplingStrategy(provider.samplingStrategyLoader(tempFile.Name()), "blah"))
 	assert.Len(t, logs.FilterMessage("failed to update sampling strategies").All(), 1)
 
@@ -521,7 +527,8 @@ func TestServiceNoPerOperationStrategies(t *testing.T) {
 				"comparing against stored snapshot. Use REGENERATE_SNAPSHOTS=true to rebuild snapshots.")
 
 			if regenerateSnapshots {
-				os.WriteFile(snapshotFile, strategyJson, 0o644)
+				err = os.WriteFile(snapshotFile, strategyJson, 0o600)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -553,7 +560,8 @@ func TestServiceNoPerOperationStrategiesDeprecatedBehavior(t *testing.T) {
 				"comparing against stored snapshot. Use REGENERATE_SNAPSHOTS=true to rebuild snapshots.")
 
 			if regenerateSnapshots {
-				os.WriteFile(snapshotFile, strategyJson, 0o644)
+				err = os.WriteFile(snapshotFile, strategyJson, 0o600)
+				require.NoError(t, err)
 			}
 		})
 	}
