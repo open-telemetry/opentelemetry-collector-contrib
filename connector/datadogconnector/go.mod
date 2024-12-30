@@ -37,11 +37,11 @@ require (
 	go.opentelemetry.io/collector/semconv v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/otel/metric v1.32.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.36.0
+	google.golang.org/protobuf v1.36.1
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.5.2 // indirect
+	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.138 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.60.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.60.1 // indirect
