@@ -10,10 +10,15 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
+const DefaultAuthHeader = "Authorization"
+
 // Config specifies how the Per-RPC bearer token based authentication data should be obtained.
 type Config struct {
 	// Scheme specifies the auth-scheme for the token. Defaults to "Bearer"
 	Scheme string `mapstructure:"scheme,omitempty"`
+
+	// Header specifies which http header to read the token from.  Defaults to "Authorization"
+	Header string `mapstructure:"header,omitempty"`
 
 	// BearerToken specifies the bearer token to use for every RPC.
 	BearerToken configopaque.String `mapstructure:"token,omitempty"`
@@ -31,6 +36,9 @@ var (
 func (cfg *Config) Validate() error {
 	if cfg.BearerToken == "" && cfg.Filename == "" {
 		return errNoTokenProvided
+	}
+	if cfg.Header == "" {
+		cfg.Header = DefaultAuthHeader
 	}
 	return nil
 }
