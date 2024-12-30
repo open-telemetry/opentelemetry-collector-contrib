@@ -25,7 +25,8 @@ import (
 )
 
 var writeV2RequestFixture = &writev2.Request{
-	Symbols: []string{"",
+	Symbols: []string{
+		"",
 		"__name__", "test_metric1",
 		"job", "service-x/test",
 		"instance", "107cn001",
