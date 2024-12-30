@@ -39,14 +39,14 @@ func NewDefaultInformerProviders(client kubernetes.Interface) *InformerProviders
 		labelSelector labels.Selector,
 		fieldSelector fields.Selector,
 		transformFunc cache.TransformFunc,
-		stopCh chan struct{},
+		stopCh <-chan struct{},
 	) (cache.SharedInformer, error) {
 		return newSharedInformer(client, namespace, labelSelector, fieldSelector, transformFunc, stopCh)
 	}
 
 	namespaceInformerProvider := func(
 		fs fields.Selector,
-		stopCh chan struct{},
+		stopCh <-chan struct{},
 	) (cache.SharedInformer, error) {
 		return newNamespaceSharedInformer(client, fs, stopCh)
 	}
@@ -54,7 +54,7 @@ func NewDefaultInformerProviders(client kubernetes.Interface) *InformerProviders
 	replicaSetInformerProvider := func(
 		namespace string,
 		transformFunc cache.TransformFunc,
-		stopCh chan struct{},
+		stopCh <-chan struct{},
 	) (cache.SharedInformer, error) {
 		return newReplicaSetSharedInformer(client, namespace, transformFunc, stopCh)
 	}
@@ -62,7 +62,7 @@ func NewDefaultInformerProviders(client kubernetes.Interface) *InformerProviders
 	nodeInformerProvider := func(
 		nodeName string,
 		watchSyncPeriod time.Duration,
-		stopCh chan struct{},
+		stopCh <-chan struct{},
 	) (cache.SharedInformer, error) {
 		return newNodeSharedInformer(client, nodeName, watchSyncPeriod, stopCh)
 	}
@@ -82,14 +82,14 @@ type InformerProvider func(
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
 	transformFunc cache.TransformFunc,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error)
 
 // InformerProviderNamespace defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client for fetching namespace objects.
 type InformerProviderNamespace func(
 	fieldSelector fields.Selector,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error)
 
 // InformerProviderNode defines a function type that returns a new SharedInformer. It is used to
@@ -97,7 +97,7 @@ type InformerProviderNamespace func(
 type InformerProviderNode func(
 	nodeName string,
 	watchSyncPeriod time.Duration,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error)
 
 // InformerProviderReplicaSet defines a function type that returns a new SharedInformer. It is used to
@@ -105,7 +105,7 @@ type InformerProviderNode func(
 type InformerProviderReplicaSet func(
 	namespace string,
 	transformFunc cache.TransformFunc,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error)
 
 func newSharedInformer(
@@ -114,7 +114,7 @@ func newSharedInformer(
 	ls labels.Selector,
 	fs fields.Selector,
 	transformFunc cache.TransformFunc,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -153,7 +153,7 @@ func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace strin
 func newNamespaceSharedInformer(
 	client kubernetes.Interface,
 	fs fields.Selector,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -189,7 +189,7 @@ func newReplicaSetSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
 	transformFunc cache.TransformFunc,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := cache.NewSharedInformer(
 		&cache.ListWatch{
@@ -225,7 +225,7 @@ func newNodeSharedInformer(
 	client kubernetes.Interface,
 	nodeName string,
 	watchSyncPeriod time.Duration,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := k8sconfig.NewNodeSharedInformer(client, nodeName, watchSyncPeriod)
 	go informer.Run(stopCh)

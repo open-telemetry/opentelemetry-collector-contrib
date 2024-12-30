@@ -35,7 +35,7 @@ func NewFakeInformer(
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
 	_ cache.TransformFunc,
-	closeCh chan struct{},
+	closeCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := &FakeInformer{
 		FakeController: &FakeController{},
@@ -81,7 +81,7 @@ type FakeNamespaceInformer struct {
 
 func NewFakeNamespaceInformer(
 	fs fields.Selector,
-	closeCh chan struct{},
+	closeCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := &FakeInformer{
 		FakeController: &FakeController{},
@@ -111,7 +111,7 @@ type FakeReplicaSetInformer struct {
 func NewFakeReplicaSetInformer(
 	_ string,
 	_ cache.TransformFunc,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := &FakeInformer{
 		FakeController: &FakeController{},
@@ -140,7 +140,7 @@ func (f *FakeReplicaSetInformer) GetController() cache.Controller {
 func NewFakeNodeInformer(
 	_ string,
 	_ time.Duration,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) (cache.SharedInformer, error) {
 	informer := &FakeInformer{
 		FakeController: &FakeController{},
@@ -185,7 +185,7 @@ type NoOpInformer struct {
 
 func NewNoOpInformer(
 	_ kubernetes.Interface,
-	stopCh chan struct{},
+	stopCh <-chan struct{},
 ) cache.SharedInformer {
 	informer := &NoOpInformer{
 		NoOpController: &NoOpController{},
