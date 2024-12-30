@@ -40,3 +40,7 @@ extension:
         enabled: true
         ratio: 0.8
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for information on how to contribute to this extension.
