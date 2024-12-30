@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/mapping"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -204,57 +206,10 @@ type MappingsSettings struct {
 	Dedot bool `mapstructure:"dedot"`
 }
 
-type MappingMode int
-
-// Enum values for MappingMode.
-const (
-	MappingNone MappingMode = iota
-	MappingECS
-	MappingOTel
-	MappingRaw
-	MappingBodyMap
-)
-
 var (
 	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
 	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
 )
-
-func (m MappingMode) String() string {
-	switch m {
-	case MappingNone:
-		return ""
-	case MappingECS:
-		return "ecs"
-	case MappingOTel:
-		return "otel"
-	case MappingRaw:
-		return "raw"
-	case MappingBodyMap:
-		return "bodymap"
-	default:
-		return ""
-	}
-}
-
-var mappingModes = func() map[string]MappingMode {
-	table := map[string]MappingMode{}
-	for _, m := range []MappingMode{
-		MappingNone,
-		MappingECS,
-		MappingOTel,
-		MappingRaw,
-		MappingBodyMap,
-	} {
-		table[strings.ToLower(m.String())] = m
-	}
-
-	// config aliases
-	table["no"] = MappingNone
-	table["none"] = MappingNone
-
-	return table
-}()
 
 const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 
@@ -270,7 +225,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
+	if _, ok := mapping.FindMode(cfg.Mapping.Mode); !ok {
 		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
@@ -366,15 +321,16 @@ func parseCloudID(input string) (*url.URL, error) {
 // MappingMode returns the mapping.mode defined in the given cfg
 // object. This method must be called after cfg.Validate() has been
 // called without returning an error.
-func (cfg *Config) MappingMode() MappingMode {
-	return mappingModes[cfg.Mapping.Mode]
+func (cfg *Config) MappingMode() mapping.Mode {
+	m, _ := mapping.FindMode(cfg.Mapping.Mode)
+	return m
 }
 
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	if cfg.Mapping.Dedup != nil {
 		logger.Warn("dedup is deprecated, and is always enabled")
 	}
-	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
+	if cfg.Mapping.Dedot && cfg.MappingMode() != mapping.ModeECS || !cfg.Mapping.Dedot && cfg.MappingMode() == mapping.ModeECS {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
 	}
 	if cfg.Retry.MaxRequests != 0 {
