@@ -2,7 +2,7 @@
 // Copyright (c) 2018 The Jaeger Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package filesource
+package filesource // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source/filesource"
 
 import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"

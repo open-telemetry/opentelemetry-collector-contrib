@@ -2,7 +2,7 @@
 // Copyright (c) 2018 The Jaeger Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package filesource
+package filesource // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source/filesource"
 
 // strategy defines a sampling strategy. Type can be "probabilistic" or "ratelimiting"
 // and Param will represent "sampling probability" and "max traces per second" respectively.
