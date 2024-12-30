@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 
 	"github.com/jaegertracing/jaeger/model"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/dbmodel"
 )
 
 const (
@@ -17,20 +19,20 @@ const (
 
 // logzioSpan is same as esSpan with a few different json field names and an addition on type field.
 type logzioSpan struct {
-	TraceID         TraceID        `json:"traceID"`
-	SpanID          SpanID         `json:"spanID"`
-	OperationName   string         `json:"operationName,omitempty"`
-	References      []reference    `json:"references"`
-	Flags           uint32         `json:"flags,omitempty"`
-	StartTime       uint64         `json:"startTime"`
-	StartTimeMillis uint64         `json:"startTimeMillis"`
-	Timestamp       uint64         `json:"@timestamp"`
-	Duration        uint64         `json:"duration"`
-	Tags            []keyValue     `json:"JaegerTags,omitempty"`
-	Tag             map[string]any `json:"JaegerTag,omitempty"`
-	Logs            []spanLog      `json:"logs"`
-	Process         process        `json:"process,omitempty"`
-	Type            string         `json:"type"`
+	TraceID         dbmodel.TraceID     `json:"traceID"`
+	OperationName   string              `json:"operationName,omitempty"`
+	SpanID          dbmodel.SpanID      `json:"spanID"`
+	References      []dbmodel.Reference `json:"references"`
+	Flags           uint32              `json:"flags,omitempty"`
+	StartTime       uint64              `json:"startTime"`
+	StartTimeMillis uint64              `json:"startTimeMillis"`
+	Timestamp       uint64              `json:"@timestamp"`
+	Duration        uint64              `json:"duration"`
+	Tags            []dbmodel.KeyValue  `json:"JaegerTags,omitempty"`
+	Tag             map[string]any      `json:"JaegerTag,omitempty"`
+	Logs            []dbmodel.Log       `json:"logs"`
+	Process         dbmodel.Process     `json:"process,omitempty"`
+	Type            string              `json:"type"`
 }
 
 func getTagsValues(tags []model.KeyValue) []string {
@@ -65,20 +67,20 @@ func transformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
 	return json.Marshal(newSpan)
 }
 
-// only for testing transformToDbModelSpan coverts logz.io span to ElasticSearch span
-func (logziospan *logzioSpan) transformToDbModelSpan() *span {
-	return &span{
-		OperationName:   logziospan.OperationName,
-		Process:         logziospan.Process,
-		Tags:            logziospan.Tags,
-		Tag:             logziospan.Tag,
-		References:      logziospan.References,
-		Logs:            logziospan.Logs,
-		Duration:        logziospan.Duration,
-		StartTimeMillis: logziospan.StartTimeMillis,
-		StartTime:       logziospan.StartTime,
-		Flags:           logziospan.Flags,
-		SpanID:          logziospan.SpanID,
-		TraceID:         logziospan.TraceID,
+// transformToDbModelSpan coverts logz.io span to ElasticSearch span
+func (span *logzioSpan) transformToDbModelSpan() *dbmodel.Span {
+	return &dbmodel.Span{
+		OperationName:   span.OperationName,
+		Process:         span.Process,
+		Tags:            span.Tags,
+		Tag:             span.Tag,
+		References:      span.References,
+		Logs:            span.Logs,
+		Duration:        span.Duration,
+		StartTimeMillis: span.StartTimeMillis,
+		StartTime:       span.StartTime,
+		Flags:           span.Flags,
+		SpanID:          span.SpanID,
+		TraceID:         span.TraceID,
 	}
 }
