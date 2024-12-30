@@ -126,7 +126,6 @@ func TestScrape(t *testing.T) {
 }
 
 func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
-
 	expectedFile := filepath.Join("testdata", "scraper", "expected_oob.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
