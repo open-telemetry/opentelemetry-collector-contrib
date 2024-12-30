@@ -44,6 +44,7 @@ var (
 // BearerTokenAuth is an implementation of auth.Client. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
 	scheme                   string
+	header                   string
 	authorizationValueAtomic atomic.Value
 
 	shutdownCH chan struct{}
@@ -60,6 +61,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	}
 	a := &BearerTokenAuth{
 		scheme:   cfg.Scheme,
+		header:   cfg.Header,
 		filename: cfg.Filename,
 		logger:   logger,
 	}
