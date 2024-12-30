@@ -22,7 +22,7 @@ import (
 )
 
 func TestFromDomainEmbedProcess(t *testing.T) {
-	domainStr, jsonStr := loadFixtures(t)
+	domainStr, jsonStr := loadModel(t)
 
 	var span model.Span
 	require.NoError(t, jsonpb.Unmarshal(bytes.NewReader(domainStr), &span))
@@ -35,8 +35,8 @@ func TestFromDomainEmbedProcess(t *testing.T) {
 	testJSONEncoding(t, jsonStr, embeddedSpan.transformToDbModelSpan())
 }
 
-// Loads and returns domain model and JSON model fixtures with given number i.
-func loadFixtures(t *testing.T) ([]byte, []byte) {
+// Loads and returns domain model and JSON model.
+func loadModel(t *testing.T) ([]byte, []byte) {
 	in := fmt.Sprintf("./testdata/span.json")
 	inStr, err := os.ReadFile(in)
 	require.NoError(t, err)
@@ -50,12 +50,9 @@ func testJSONEncoding(t *testing.T, expectedStr []byte, object any) {
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	enc.SetIndent("", "  ")
-
-	outFile := fmt.Sprintf("./testdata/es.json")
 	require.NoError(t, enc.Encode(object))
-
 	if !assert.Equal(t, string(expectedStr), buf.String()) {
-		err := os.WriteFile(outFile+"-actual.json", buf.Bytes(), 0o644)
+		err := os.WriteFile("model-actual.json", buf.Bytes(), 0o644)
 		require.NoError(t, err)
 	}
 }
