@@ -170,7 +170,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-
+		
 		if !ls.Has(labels.MetricName) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
 			continue
@@ -245,6 +245,7 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 		scope := rm.ScopeMetrics().At(j)
 		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
 			scopeExists = true
+			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
 			break
 		}
 	}
