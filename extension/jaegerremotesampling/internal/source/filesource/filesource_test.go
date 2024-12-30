@@ -1,7 +1,8 @@
+// Copyright The OpenTelemetry Authors
 // Copyright (c) 2018 The Jaeger Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package jaegerremotesampling
+package filesource
 
 import (
 	"context"
@@ -92,17 +93,17 @@ func mockStrategyServer(t *testing.T) (*httptest.Server, *atomic.Pointer[string]
 }
 
 func TestStrategyStoreWithFile(t *testing.T) {
-	_, err := newProvider(Options{StrategiesFile: "fileNotFound.json"}, zap.NewNop())
+	_, err := NewFileSource(Options{StrategiesFile: "fileNotFound.json"}, zap.NewNop())
 	require.ErrorContains(t, err, "failed to read strategies file fileNotFound.json")
 
-	_, err = newProvider(Options{StrategiesFile: "fixtures/bad_strategies.json"}, zap.NewNop())
+	_, err = NewFileSource(Options{StrategiesFile: "fixtures/bad_strategies.json"}, zap.NewNop())
 	require.EqualError(t, err,
-		"failed to unmarshal strategies: json: cannot unmarshal string into Go value of type jaegerremotesampling.strategies")
+		"failed to unmarshal strategies: json: cannot unmarshal string into Go value of type filesource.strategies")
 
 	// Test default strategy
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
-	provider, err := newProvider(Options{}, logger)
+	provider, err := NewFileSource(Options{}, logger)
 	require.NoError(t, err)
 	message := logs.FilterMessage("No sampling strategies source provided, using defaults")
 	assert.Equal(t, 1, message.Len(), "Expected No sampling strategies provided log message")
@@ -111,7 +112,7 @@ func TestStrategyStoreWithFile(t *testing.T) {
 	assert.EqualValues(t, makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.001), *s)
 
 	// Test reading strategies from a file
-	provider, err = newProvider(Options{StrategiesFile: "fixtures/strategies.json"}, logger)
+	provider, err = NewFileSource(Options{StrategiesFile: "fixtures/strategies.json"}, logger)
 	require.NoError(t, err)
 	s, err = provider.GetSamplingStrategy(context.Background(), "foo")
 	require.NoError(t, err)
@@ -131,7 +132,7 @@ func TestStrategyStoreWithURL(t *testing.T) {
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
 	mockServer, _ := mockStrategyServer(t)
-	provider, err := newProvider(Options{StrategiesFile: mockServer.URL + "/service-unavailable"}, logger)
+	provider, err := NewFileSource(Options{StrategiesFile: mockServer.URL + "/service-unavailable"}, logger)
 	require.NoError(t, err)
 	message := logs.FilterMessage("No sampling strategies found or URL is unavailable, using defaults")
 	assert.Equal(t, 1, message.Len(), "Expected No sampling strategies found log message.")
@@ -140,7 +141,7 @@ func TestStrategyStoreWithURL(t *testing.T) {
 	assert.EqualValues(t, makeResponse(api_v2.SamplingStrategyType_PROBABILISTIC, 0.001), *s)
 
 	// Test downloading strategies from a URL.
-	provider, err = newProvider(Options{StrategiesFile: mockServer.URL}, logger)
+	provider, err = NewFileSource(Options{StrategiesFile: mockServer.URL}, logger)
 	require.NoError(t, err)
 
 	s, err = provider.GetSamplingStrategy(context.Background(), "foo")
@@ -166,7 +167,7 @@ func TestPerOperationSamplingStrategies(t *testing.T) {
 	for _, tc := range tests {
 		zapCore, logs := observer.New(zap.InfoLevel)
 		logger := zap.New(zapCore)
-		provider, err := newProvider(tc.options, logger)
+		provider, err := NewFileSource(tc.options, logger)
 		message := logs.FilterMessage("Operation strategies only supports probabilistic sampling at the moment," +
 			"'op2' defaulting to probabilistic sampling with probability 0.800000")
 		assert.Equal(t, 1, message.Len(), "Expected Operation strategies only supports probabilistic sampling, op2 change to probability 0.8 log message")
@@ -251,7 +252,7 @@ func TestPerOperationSamplingStrategies(t *testing.T) {
 func TestMissingServiceSamplingStrategyTypes(t *testing.T) {
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
-	provider, err := newProvider(Options{StrategiesFile: "fixtures/missing-service-types.json"}, logger)
+	provider, err := NewFileSource(Options{StrategiesFile: "fixtures/missing-service-types.json"}, logger)
 	message := logs.FilterMessage("Failed to parse sampling strategy")
 	assert.Equal(t, "Failed to parse sampling strategy", message.All()[0].Message)
 	require.NoError(t, err)
@@ -369,7 +370,7 @@ func TestAutoUpdateStrategyWithFile(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(dstFile, srcBytes, 0o644))
 
-	ss, err := newProvider(Options{
+	ss, err := NewFileSource(Options{
 		StrategiesFile: dstFile,
 		ReloadInterval: time.Millisecond * 10,
 	}, zap.NewNop())
@@ -404,7 +405,7 @@ func TestAutoUpdateStrategyWithFile(t *testing.T) {
 
 func TestAutoUpdateStrategyWithURL(t *testing.T) {
 	mockServer, mockStrategy := mockStrategyServer(t)
-	ss, err := newProvider(Options{
+	ss, err := NewFileSource(Options{
 		StrategiesFile: mockServer.URL,
 		ReloadInterval: 10 * time.Millisecond,
 	}, zap.NewNop())
@@ -452,7 +453,7 @@ func TestAutoUpdateStrategyErrors(t *testing.T) {
 	zapCore, logs := observer.New(zap.InfoLevel)
 	logger := zap.New(zapCore)
 
-	s, err := newProvider(Options{
+	s, err := NewFileSource(Options{
 		StrategiesFile: "fixtures/strategies.json",
 		ReloadInterval: time.Hour,
 	}, logger)
@@ -486,7 +487,7 @@ func TestAutoUpdateStrategyErrors(t *testing.T) {
 func TestServiceNoPerOperationStrategies(t *testing.T) {
 	// given setup of strategy provider with no specific per operation sampling strategies
 	// and option "sampling.strategies.bugfix-5270=true"
-	provider, err := newProvider(Options{
+	provider, err := NewFileSource(Options{
 		StrategiesFile:             "fixtures/service_no_per_operation.json",
 		IncludeDefaultOpStrategies: true,
 	}, zap.NewNop())
@@ -519,7 +520,7 @@ func TestServiceNoPerOperationStrategiesDeprecatedBehavior(t *testing.T) {
 	// see https://github.com/jaegertracing/jaeger/issues/5270 for more details
 
 	// given setup of strategy provider with no specific per operation sampling strategies
-	provider, err := newProvider(Options{
+	provider, err := NewFileSource(Options{
 		StrategiesFile: "fixtures/service_no_per_operation.json",
 	}, zap.NewNop())
 	require.NoError(t, err)

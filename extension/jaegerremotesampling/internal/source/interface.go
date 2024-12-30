@@ -1,7 +1,8 @@
+// Copyright The OpenTelemetry Authors
 // Copyright (c) 2018 The Jaeger Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package source
 
 import (
 	"context"
@@ -10,8 +11,8 @@ import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 )
 
-// Provider keeps track of service specific sampling strategies.
-type Provider interface {
+// Source keeps track of service specific sampling strategies.
+type Source interface {
 	// Close() from io.Closer  stops the processor from calculating probabilities.
 	io.Closer
 

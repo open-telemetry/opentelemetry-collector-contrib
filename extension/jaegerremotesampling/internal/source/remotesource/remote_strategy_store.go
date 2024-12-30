@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
+package remotesource
 
 import (
 	"context"
@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source"
 )
 
 type grpcRemoteStrategyStore struct {
@@ -22,15 +24,15 @@ type grpcRemoteStrategyStore struct {
 	cache           serviceStrategyCache
 }
 
-// NewRemoteStrategyStore returns a StrategyStore that delegates to the configured Jaeger gRPC endpoint, making
+// NewRemoteSource returns a StrategyStore that delegates to the configured Jaeger gRPC endpoint, making
 // extension-configured enhancements (header additions only for now) to the gRPC context of every outbound gRPC call.
 // Note: it would be nice to expand the configuration surface to include an optional TTL-based caching behavior
 // for service-specific outbound GetSamplingStrategy calls.
-func NewRemoteStrategyStore(
+func NewRemoteSource(
 	conn *grpc.ClientConn,
 	grpcClientSettings *configgrpc.ClientConfig,
 	reloadInterval time.Duration,
-) (Provider, io.Closer) {
+) (source.Source, io.Closer) {
 	cache := newNoopStrategyCache()
 	if reloadInterval > 0 {
 		cache = newServiceStrategyCache(reloadInterval)

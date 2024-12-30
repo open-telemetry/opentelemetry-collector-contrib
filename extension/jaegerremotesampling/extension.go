@@ -11,7 +11,11 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/server/grpc"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/server/http"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source/filesource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source/remotesource"
 )
 
 var _ extension.Extension = (*jrsExtension)(nil)
@@ -22,7 +26,7 @@ type jrsExtension struct {
 
 	httpServer    component.Component
 	grpcServer    component.Component
-	samplingStore internal.Provider
+	samplingStore source.Source
 
 	closers []func() error
 }
@@ -42,11 +46,11 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	// - local file
 	// we can then use a simplified logic here to assign the appropriate store
 	if jrse.cfg.Source.File != "" {
-		opts := Options{
+		opts := filesource.Options{
 			StrategiesFile: jrse.cfg.Source.File,
 			ReloadInterval: jrse.cfg.Source.ReloadInterval,
 		}
-		ss, err := newProvider(opts, jrse.telemetry.Logger)
+		ss, err := filesource.NewFileSource(opts, jrse.telemetry.Logger)
 		if err != nil {
 			return fmt.Errorf("failed to create the local file strategy store: %w", err)
 		}
@@ -62,7 +66,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 			return fmt.Errorf("failed to create the remote strategy store: %w", err)
 		}
 		jrse.closers = append(jrse.closers, conn.Close)
-		remoteStore, closer := internal.NewRemoteStrategyStore(
+		remoteStore, closer := remotesource.NewRemoteSource(
 			conn,
 			jrse.cfg.Source.Remote,
 			jrse.cfg.Source.ReloadInterval,
@@ -72,7 +76,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	}
 
 	if jrse.cfg.HTTPServerConfig != nil {
-		httpServer, err := internal.NewHTTP(jrse.telemetry, *jrse.cfg.HTTPServerConfig, jrse.samplingStore)
+		httpServer, err := http.NewHTTP(jrse.telemetry, *jrse.cfg.HTTPServerConfig, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the HTTP server: %w", err)
 		}
@@ -84,7 +88,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	}
 
 	if jrse.cfg.GRPCServerConfig != nil {
-		grpcServer, err := internal.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerConfig, jrse.samplingStore)
+		grpcServer, err := grpc.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerConfig, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the gRPC server: %w", err)
 		}

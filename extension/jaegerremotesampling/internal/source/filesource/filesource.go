@@ -1,7 +1,8 @@
+// Copyright The OpenTelemetry Authors
 // Copyright (c) 2018 The Jaeger Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-package jaegerremotesampling
+package filesource
 
 import (
 	"bytes"
@@ -19,7 +20,7 @@ import (
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source"
 )
 
 // null represents "null" JSON value and
@@ -43,8 +44,8 @@ type storedStrategies struct {
 
 type strategyLoader func() ([]byte, error)
 
-// newProvider creates a strategy store that holds static sampling strategies.
-func newProvider(options Options, logger *zap.Logger) (internal.Provider, error) {
+// NewFileSource creates a strategy store that holds static sampling strategies.
+func NewFileSource(options Options, logger *zap.Logger) (source.Source, error) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	h := &samplingProvider{
 		logger:     logger,
