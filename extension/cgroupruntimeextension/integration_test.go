@@ -122,7 +122,6 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 		config             *Config
 		expectedGoMaxProcs int
 		expectedGoMemLimit int64
-		setECSMetadataURI  bool
 	}{
 		{
 			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
