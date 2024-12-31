@@ -59,15 +59,15 @@ func Start(cfg *Config) error {
 		return exp, err
 	}
 
-	if err = Run(cfg, expFunc, logger); err != nil {
+	if err = run(cfg, expFunc, logger); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Run executes the test scenario.
-func Run(c *Config, exp func() (sdklog.Exporter, error), logger *zap.Logger) error {
+// run executes the test scenario.
+func run(c *Config, exp func() (sdklog.Exporter, error), logger *zap.Logger) error {
 	if err := c.Validate(); err != nil {
 		return err
 	}

@@ -81,7 +81,7 @@ func init() {
 // Execute tries to run the input command
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		// TODO: Uncomment the line below when using Run instead of RunE in the xxxCmd functions
+		// TODO: Uncomment the line below when using run instead of RunE in the xxxCmd functions
 		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

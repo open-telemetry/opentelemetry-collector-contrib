@@ -58,7 +58,7 @@ func TestFixedNumberOfLogs(t *testing.T) {
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -82,7 +82,7 @@ func TestRateOfLogs(t *testing.T) {
 	}
 
 	// test
-	require.NoError(t, Run(cfg, expFunc, zap.NewNop()))
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of logs for the rate of 10/sec for half a second
@@ -107,7 +107,7 @@ func TestUnthrottled(t *testing.T) {
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	assert.Greater(t, len(m.logs), 100, "there should have been more than 100 logs, had %d", len(m.logs))
 }
@@ -129,7 +129,7 @@ func TestCustomBody(t *testing.T) {
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	assert.Equal(t, "custom body", m.logs[0].Body().AsString())
 }
@@ -144,7 +144,7 @@ func TestLogsWithNoTelemetryAttributes(t *testing.T) {
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -166,7 +166,7 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -195,7 +195,7 @@ func TestLogsWithMultipleTelemetryAttributes(t *testing.T) {
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -219,7 +219,7 @@ func TestLogsWithTraceIDAndSpanID(t *testing.T) {
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	// verify
 	require.Len(t, m.logs, qty)
@@ -276,7 +276,7 @@ func TestValidate(t *testing.T) {
 				return m, nil
 			}
 			logger, _ := zap.NewDevelopment()
-			require.EqualError(t, Run(tt.cfg, expFunc, logger), tt.wantErrMessage)
+			require.EqualError(t, run(tt.cfg, expFunc, logger), tt.wantErrMessage)
 		})
 	}
 }

@@ -66,7 +66,7 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 	time.Sleep(1 * time.Second)
 
 	// assert
@@ -89,7 +89,7 @@ func TestRateOfMetrics(t *testing.T) {
 	}
 
 	// act
-	require.NoError(t, Run(cfg, expFunc, zap.NewNop()))
+	require.NoError(t, run(cfg, expFunc, zap.NewNop()))
 
 	// assert
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
@@ -114,7 +114,7 @@ func TestUnthrottled(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	// assert
 	assert.Greater(t, len(m.rms), 100, "there should have been more than 100 metrics, had %d", len(m.rms))
@@ -131,7 +131,7 @@ func TestSumNoTelemetryAttrs(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -159,7 +159,7 @@ func TestGaugeNoTelemetryAttrs(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -187,7 +187,7 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -217,7 +217,7 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -247,7 +247,7 @@ func TestSumMultipleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -279,7 +279,7 @@ func TestGaugeMultipleTelemetryAttr(t *testing.T) {
 
 	// act
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, expFunc, logger))
+	require.NoError(t, run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
@@ -350,7 +350,7 @@ func TestValidate(t *testing.T) {
 				return m, nil
 			}
 			logger, _ := zap.NewDevelopment()
-			require.EqualError(t, Run(tt.cfg, expFunc, logger), tt.wantErrMessage)
+			require.EqualError(t, run(tt.cfg, expFunc, logger), tt.wantErrMessage)
 		})
 	}
 }
