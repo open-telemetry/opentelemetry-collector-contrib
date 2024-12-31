@@ -49,7 +49,7 @@ require (
 	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
 	github.com/elastic/go-elasticsearch/v7 v7.17.10 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.16.0 // indirect
+	github.com/elastic/go-elasticsearch/v8 v8.17.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/go-structform v0.0.12 // indirect
 	github.com/elastic/go-sysinfo v1.14.0 // indirect
