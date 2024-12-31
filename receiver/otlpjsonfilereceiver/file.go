@@ -220,17 +220,7 @@ func createProfilesReceiver(_ context.Context, settings receiver.Settings, confi
 	}
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token emit.Token) error {
 		p, _ := profilesUnmarshaler.UnmarshalProfiles(token.Body)
-		// Appends token.Attributes
-		for i := 0; i < p.ResourceProfiles().Len(); i++ {
-			resourceProfile := p.ResourceProfiles().At(i)
-			for j := 0; j < resourceProfile.ScopeProfiles().Len(); j++ {
-				scopeProfile := resourceProfile.ScopeProfiles().At(j)
-				for k := 0; k < scopeProfile.Profiles().Len(); k++ {
-					profile := scopeProfile.Profiles().At(k)
-					appendToMap(token, profile.Attributes())
-				}
-			}
-		}
+		// TODO Append token.Attributes
 		if p.ResourceProfiles().Len() != 0 {
 			_ = profiles.ConsumeProfiles(ctx, p)
 		}

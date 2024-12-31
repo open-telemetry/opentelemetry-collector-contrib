@@ -58,9 +58,6 @@ func TestFileProfilesReceiver(t *testing.T) {
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
 
-	// include_file_name is true by default
-	pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).Attributes().PutStr("log.file.name", "profiles.json")
-
 	require.Len(t, sink.AllProfiles(), 1)
 	assert.EqualValues(t, pd, sink.AllProfiles()[0])
 	err = receiver.Shutdown(context.Background())
