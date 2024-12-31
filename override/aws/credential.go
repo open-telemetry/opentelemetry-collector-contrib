@@ -6,10 +6,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-type credentialsProvider []func(string) credentials.Provider
-type CredentialsChainOverride struct {
-	credentialsProvider credentialsProvider
-}
+type (
+	credentialsProvider      []func(string) credentials.Provider
+	CredentialsChainOverride struct {
+		credentialsProvider credentialsProvider
+	}
+)
 
 var credentialsChainOverride *CredentialsChainOverride
 
