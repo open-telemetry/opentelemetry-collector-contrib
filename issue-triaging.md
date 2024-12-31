@@ -94,7 +94,8 @@ flowchart TD
     n2 -- Yes --> n3
     n2 -- No/Need more details --> n4
     n2 -- Invalid configuration/alternative available --> n5(["Provide a detailed comment on the issue and close it."])
-    n3 --> n6["Codeowner has time<br>to fix it?"]
+    n3 -- Invalid Issue --> n5
+    n3 -- Valid Issue -->  n6["Codeowner has time<br>to fix it?"]
     n6 -- Yes --> n7["Valid issue and to be fixed <br>by a codeowner"]
     n6 -- No --> n8
     n7 --> n9(["Issue closed once fix is merged"])
