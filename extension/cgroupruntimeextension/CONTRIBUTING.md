@@ -13,7 +13,7 @@ cd extension/cgroupruntimeextension
 docker run -ti --privileged --cgroupns=host -v $(pwd):/workspace -w /workspace debian:bookworm-slim
 ```
 
-Install Go and gcc to run the integration test
+Install the [Go version](https://go.dev/dl/) specified in the extension's [go.mod](./go.mod) and the GCC compiler to run the integration test. The following is an example command for Go `1.23.4` in and `amd64` system:
 
 ```bash
 apt update && apt install -y wget sudo gcc && wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz && export PATH=$PATH:/usr/local/go/bin && go version && rm go1.23.4.linux-amd64.tar.gz
