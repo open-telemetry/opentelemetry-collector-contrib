@@ -4,7 +4,7 @@ In order to contribute to this extension, it might be useful to have a working l
 
 ## Testing
 
-To run the integration tests locally for this extension, you can follow theses steps in a Linux environment.
+Some Linux distributions don't run systemd under cgroupv2, to run the integration tests locally for this extension you can follow these steps.
 
 Inside the extension folder, start a privileged docker container and share the code with the container
 
