@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/dbmodel"
+
 	"github.com/hashicorp/go-hclog"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/pkg/cache"
@@ -189,7 +191,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 			span.Process = batch.Process
 			span.Tags = exporter.dropEmptyTags(span.Tags)
 			span.Process.Tags = exporter.dropEmptyTags(span.Process.Tags)
-			logzioSpan, transformErr := transformToLogzioSpanBytes(span)
+			logzioSpan, transformErr := dbmodel.TransformToLogzioSpanBytes(span)
 			if transformErr != nil {
 				return transformErr
 			}

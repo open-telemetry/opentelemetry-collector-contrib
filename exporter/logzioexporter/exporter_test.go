@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/dbmodel"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -255,7 +257,7 @@ func TestPushTraceData(tester *testing.T) {
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)
 	err := testTracesExporter(tester, td, &cfg)
 	require.NoError(tester, err)
-	var newSpan logzioSpan
+	var newSpan dbmodel.LogzioSpan
 	decoded, _ := gUnzipData(recordedRequests)
 	requests := strings.Split(string(decoded), "\n")
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &newSpan))

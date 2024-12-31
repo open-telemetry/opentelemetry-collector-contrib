@@ -2,14 +2,12 @@
 // Copyright (c) 2018 Uber Technologies, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
+package dbmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 
 import (
 	"strings"
 
 	"github.com/jaegertracing/jaeger/model"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/dbmodel"
 )
 
 // newFromDomain creates fromDomain used to convert model span to db span
@@ -30,15 +28,15 @@ type fromDomain struct {
 
 // fromDomainEmbedProcess converts model.span into json.span format.
 // This format includes a ParentSpanID and an embedded process.
-func (fd fromDomain) fromDomainEmbedProcess(span *model.Span) *logzioSpan {
+func (fd fromDomain) fromDomainEmbedProcess(span *model.Span) *LogzioSpan {
 	return fd.convertSpanEmbedProcess(span)
 }
 
-func (fd fromDomain) convertSpanInternal(span *model.Span) logzioSpan {
+func (fd fromDomain) convertSpanInternal(span *model.Span) LogzioSpan {
 	tags, tagsMap := fd.convertKeyValuesString(span.Tags)
-	return logzioSpan{
-		TraceID:         dbmodel.TraceID(span.TraceID.String()),
-		SpanID:          dbmodel.SpanID(span.SpanID.String()),
+	return LogzioSpan{
+		TraceID:         TraceID(span.TraceID.String()),
+		SpanID:          SpanID(span.SpanID.String()),
 		Flags:           uint32(span.Flags),
 		OperationName:   span.OperationName,
 		StartTime:       model.TimeAsEpochMicroseconds(span.StartTime),
@@ -50,35 +48,35 @@ func (fd fromDomain) convertSpanInternal(span *model.Span) logzioSpan {
 	}
 }
 
-func (fd fromDomain) convertSpanEmbedProcess(span *model.Span) *logzioSpan {
+func (fd fromDomain) convertSpanEmbedProcess(span *model.Span) *LogzioSpan {
 	s := fd.convertSpanInternal(span)
 	s.Process = fd.convertProcess(span.Process)
 	s.References = fd.convertReferences(span)
 	return &s
 }
 
-func (fd fromDomain) convertReferences(span *model.Span) []dbmodel.Reference {
-	out := make([]dbmodel.Reference, 0, len(span.References))
+func (fd fromDomain) convertReferences(span *model.Span) []Reference {
+	out := make([]Reference, 0, len(span.References))
 	for _, ref := range span.References {
-		out = append(out, dbmodel.Reference{
+		out = append(out, Reference{
 			RefType: fd.convertRefType(ref.RefType),
-			TraceID: dbmodel.TraceID(ref.TraceID.String()),
-			SpanID:  dbmodel.SpanID(ref.SpanID.String()),
+			TraceID: TraceID(ref.TraceID.String()),
+			SpanID:  SpanID(ref.SpanID.String()),
 		})
 	}
 	return out
 }
 
-func (fromDomain) convertRefType(refType model.SpanRefType) dbmodel.ReferenceType {
+func (fromDomain) convertRefType(refType model.SpanRefType) ReferenceType {
 	if refType == model.FollowsFrom {
-		return dbmodel.FollowsFrom
+		return FollowsFrom
 	}
-	return dbmodel.ChildOf
+	return ChildOf
 }
 
-func (fd fromDomain) convertKeyValuesString(keyValues model.KeyValues) ([]dbmodel.KeyValue, map[string]any) {
+func (fd fromDomain) convertKeyValuesString(keyValues model.KeyValues) ([]KeyValue, map[string]any) {
 	var tagsMap map[string]any
-	var kvs []dbmodel.KeyValue
+	var kvs []KeyValue
 	for _, kv := range keyValues {
 		if kv.GetVType() != model.BinaryType && (fd.allTagsAsFields || fd.tagKeysAsFields[kv.Key]) {
 			if tagsMap == nil {
@@ -90,19 +88,19 @@ func (fd fromDomain) convertKeyValuesString(keyValues model.KeyValues) ([]dbmode
 		}
 	}
 	if kvs == nil {
-		kvs = make([]dbmodel.KeyValue, 0)
+		kvs = make([]KeyValue, 0)
 	}
 	return kvs, tagsMap
 }
 
-func (fromDomain) convertLogs(logs []model.Log) []dbmodel.Log {
-	out := make([]dbmodel.Log, len(logs))
+func (fromDomain) convertLogs(logs []model.Log) []Log {
+	out := make([]Log, len(logs))
 	for i, log := range logs {
-		var kvs []dbmodel.KeyValue
+		var kvs []KeyValue
 		for _, kv := range log.Fields {
 			kvs = append(kvs, convertKeyValue(kv))
 		}
-		out[i] = dbmodel.Log{
+		out[i] = Log{
 			Timestamp: model.TimeAsEpochMicroseconds(log.Timestamp),
 			Fields:    kvs,
 		}
@@ -110,19 +108,19 @@ func (fromDomain) convertLogs(logs []model.Log) []dbmodel.Log {
 	return out
 }
 
-func (fd fromDomain) convertProcess(process *model.Process) dbmodel.Process {
+func (fd fromDomain) convertProcess(process *model.Process) Process {
 	tags, tagsMap := fd.convertKeyValuesString(process.Tags)
-	return dbmodel.Process{
+	return Process{
 		ServiceName: process.ServiceName,
 		Tags:        tags,
 		Tag:         tagsMap,
 	}
 }
 
-func convertKeyValue(kv model.KeyValue) dbmodel.KeyValue {
-	return dbmodel.KeyValue{
+func convertKeyValue(kv model.KeyValue) KeyValue {
+	return KeyValue{
 		Key:   kv.Key,
-		Type:  dbmodel.ValueType(strings.ToLower(kv.VType.String())),
+		Type:  ValueType(strings.ToLower(kv.VType.String())),
 		Value: kv.AsString(),
 	}
 }

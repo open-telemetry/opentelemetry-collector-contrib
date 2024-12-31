@@ -1,8 +1,7 @@
 {
   "traceID": "0000000000000001",
-  "spanID": "0000000000000002",
-  "flags": 1,
   "operationName": "test-general-conversion",
+  "spanID": "0000000000000002",
   "references": [
     {
       "refType": "CHILD_OF",
@@ -20,10 +19,12 @@
       "spanID": "00000000000000ff"
     }
   ],
+  "flags": 1,
   "startTime": 1485467191639875,
   "startTimeMillis": 1485467191639,
+  "@timestamp": 0,
   "duration": 5,
-  "tags": [
+  "JaegerTags": [
     {
       "key": "peer.service",
       "type": "string",
@@ -86,5 +87,6 @@
         "value": "true"
       }
     ]
-  }
+  },
+  "type": ""
 }

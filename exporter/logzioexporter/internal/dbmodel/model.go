@@ -34,27 +34,6 @@ const (
 	BinaryType ValueType = "binary"
 )
 
-// Span is ES database representation of the domain span.
-type Span struct {
-	TraceID       TraceID     `json:"traceID"`
-	SpanID        SpanID      `json:"spanID"`
-	ParentSpanID  SpanID      `json:"parentSpanID,omitempty"` // deprecated
-	Flags         uint32      `json:"flags,omitempty"`
-	OperationName string      `json:"operationName"`
-	References    []Reference `json:"references"`
-	StartTime     uint64      `json:"startTime"` // microseconds since Unix epoch
-	// ElasticSearch does not support a UNIX Epoch timestamp in microseconds,
-	// so Jaeger maps StartTime to a 'long' type. This extra StartTimeMillis field
-	// works around this issue, enabling timerange queries.
-	StartTimeMillis uint64     `json:"startTimeMillis"`
-	Duration        uint64     `json:"duration"` // microseconds
-	Tags            []KeyValue `json:"tags"`
-	// Alternative representation of tags for better kibana support
-	Tag     map[string]any `json:"tag,omitempty"`
-	Logs    []Log          `json:"logs"`
-	Process Process        `json:"process,omitempty"`
-}
-
 // Reference is a reference from one span to another
 type Reference struct {
 	RefType ReferenceType `json:"refType"`
