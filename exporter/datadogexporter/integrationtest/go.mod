@@ -25,12 +25,12 @@ require (
 	go.opentelemetry.io/collector/processor/batchprocessor v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/receiver v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.116.1-0.20241220212031-7c2639723f67
-	go.opentelemetry.io/otel v1.32.0
-	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.8.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.32.0
-	go.opentelemetry.io/otel/sdk v1.32.0
-	go.opentelemetry.io/otel/sdk/log v0.8.0
-	go.opentelemetry.io/otel/trace v1.32.0
+	go.opentelemetry.io/otel v1.33.0
+	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.9.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.33.0
+	go.opentelemetry.io/otel/sdk v1.33.0
+	go.opentelemetry.io/otel/sdk/log v0.9.0
+	go.opentelemetry.io/otel/trace v1.33.0
 	google.golang.org/protobuf v1.36.1
 )
 
