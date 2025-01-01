@@ -1552,6 +1552,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter:                    make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                    make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["sqlserver.computer.name"] = filter.CreateFilter(mbc.ResourceAttributes.SqlserverComputerName.MetricsInclude)
 	}
