@@ -6,6 +6,7 @@ package cumulativetodeltaprocessor
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -61,6 +62,12 @@ func TestCreateProcessors(t *testing.T) {
 				processortest.NewNopSettings(),
 				cfg,
 				consumertest.NewNop())
+
+			if strings.Contains(k, "invalid") {
+				assert.Error(t, mErr)
+				assert.Nil(t, mp)
+				return
+			}
 			assert.NotNil(t, mp)
 			assert.NoError(t, mErr)
 			assert.NoError(t, mp.Shutdown(context.Background()))
