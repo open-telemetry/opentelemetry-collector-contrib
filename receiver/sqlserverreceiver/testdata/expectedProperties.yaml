@@ -4,6 +4,9 @@ resourceMetrics:
         - key: sqlserver.instance.name
           value:
             stringValue: ad8fb2b53dce
+        - key: server.address
+          value:
+            stringValue: 0.0.0.0
     scopeMetrics:
       - metrics:
           - description: The number of databases
