@@ -42,7 +42,7 @@ resourceMetrics:
                   scale: 1
                   zeroCount: 0
                   positive:
-                    bucketCounts: [0,0,0,0,0]
+                    bucketCounts: []
 
 -- out --
 resourceMetrics:
