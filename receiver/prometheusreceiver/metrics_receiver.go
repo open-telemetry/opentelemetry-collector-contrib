@@ -151,6 +151,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
+		EnableCreatedTimestampZeroIngestion: true,
 	}
 
 	if enableNativeHistogramsGate.IsEnabled() {
