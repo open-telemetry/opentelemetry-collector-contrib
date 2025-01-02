@@ -37,6 +37,8 @@ func TestScrape(t *testing.T) {
 	settings := receivertest.NewNopSettings()
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:6379"
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
+	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
 	scraper, err := newValkeyScraper(cfg, settings)
 	defer scraper.shutdown(context.Background())
 
@@ -49,5 +51,11 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(filepath.Join(goldenDir, "output-metrics.yaml"))
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreStartTimestamp()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.ChangeResourceAttributeValue("server.address", func(_ string) string {
+		return "localhost"
+	}),
+		pmetrictest.ChangeResourceAttributeValue("server.port", func(_ string) string {
+			return "6379"
+		}),
+	))
 }
