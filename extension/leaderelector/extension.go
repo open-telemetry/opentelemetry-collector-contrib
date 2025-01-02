@@ -56,7 +56,7 @@ func (lee *leaderElectionExtension) AmILeader() bool {
 // Start begins the extension's processing.
 func (lee *leaderElectionExtension) Start(_ context.Context, host component.Host) error {
 	// Implement your start logic here
-	lee.logger.Info("I am starting Leader Election!!")
+	lee.logger.Info("Starting Leader Elector	")
 
 	ctx := context.Background()
 	ctx, lee.cancel = context.WithCancel(ctx)
@@ -80,6 +80,6 @@ func (lee *leaderElectionExtension) Start(_ context.Context, host component.Host
 // Shutdown cleans up the extension when stopping.
 func (lee *leaderElectionExtension) Shutdown(ctx context.Context) error {
 	// Implement your shutdown logic here
-	lee.logger.Info("stopping leader elector")
+	lee.logger.Info("Stopping Leader Elector")
 	return nil
 }
