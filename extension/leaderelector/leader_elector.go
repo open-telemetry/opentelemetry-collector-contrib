@@ -2,7 +2,6 @@ package leaderelector
 
 import (
 	"context"
-	"fmt"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -40,7 +39,5 @@ func NewLeaderElector(
 		},
 	}
 
-	// Implement your leader elector creation logic here
-	fmt.Printf("Leader election configuration: %+v\n", leConfig)
 	return leaderelection.NewLeaderElector(leConfig)
 }

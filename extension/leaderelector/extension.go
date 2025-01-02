@@ -2,7 +2,6 @@ package leaderelector
 
 import (
 	"context"
-	"fmt"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
@@ -16,7 +15,6 @@ type LeaderElection interface {
 
 // Sets the callBack functions that can be invoked when the leader wins or loss the election
 func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading func(context.Context), onStopLeading func()) {
-	fmt.Printf("Setting callback functions!!!\n")
 	lee.onStartedLeading = onStartLeading
 	lee.onStoppedLeading = onStopLeading
 }
@@ -82,6 +80,6 @@ func (lee *leaderElectionExtension) Start(_ context.Context, host component.Host
 // Shutdown cleans up the extension when stopping.
 func (lee *leaderElectionExtension) Shutdown(ctx context.Context) error {
 	// Implement your shutdown logic here
-	lee.logger.Info("I a stopping!!")
+	lee.logger.Info("stopping leader elector")
 	return nil
 }
