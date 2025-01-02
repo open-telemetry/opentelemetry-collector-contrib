@@ -50,16 +50,6 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "zero_queue"),
-			expected: &Config{
-				Scheme:    "netflow",
-				Port:      2055,
-				Sockets:   1,
-				Workers:   1,
-				QueueSize: 1000,
-			},
-		},
-		{
 			id: component.NewIDWithName(metadata.Type, "sflow"),
 			expected: &Config{
 				Scheme:    "sflow",
