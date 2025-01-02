@@ -270,10 +270,14 @@ func (f *factory) createMetricsExporter(
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
 	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
 	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	// Don't start a `Reporter` if host metadata is disabled.
+	var metadataReporter *inframetadata.Reporter
+	if cfg.HostMetadata.Enabled {
+		metadataReporter, err = f.Reporter(set, pcfg)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+		}
 	}
 
 	if cfg.OnlyMetadata {
@@ -375,10 +379,14 @@ func (f *factory) createTracesExporter(
 	}
 
 	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	// Don't start a `Reporter` if host metadata is disabled.
+	var metadataReporter *inframetadata.Reporter
+	if cfg.HostMetadata.Enabled {
+		metadataReporter, err = f.Reporter(set, pcfg)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+		}
 	}
 
 	if cfg.OnlyMetadata {
@@ -463,10 +471,14 @@ func (f *factory) createLogsExporter(
 	// cancel() runs on shutdown
 
 	pcfg := newMetadataConfigfromConfig(cfg)
-	metadataReporter, err := f.Reporter(set, pcfg)
-	if err != nil {
-		cancel()
-		return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+	// Don't start a `Reporter` if host metadata is disabled.
+	var metadataReporter *inframetadata.Reporter
+	if cfg.HostMetadata.Enabled {
+		metadataReporter, err = f.Reporter(set, pcfg)
+		if err != nil {
+			cancel()
+			return nil, fmt.Errorf("failed to build host metadata reporter: %w", err)
+		}
 	}
 
 	attributesTranslator, err := f.AttributesTranslator(set.TelemetrySettings)

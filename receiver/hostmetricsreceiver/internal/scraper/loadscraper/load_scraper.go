@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/load"
 	"go.opentelemetry.io/collector/component"
@@ -44,7 +43,6 @@ func newLoadScraper(_ context.Context, settings receiver.Settings, cfg *Config) 
 
 // start
 func (s *loadScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -85,7 +83,6 @@ func (s *loadScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 
 	avgLoadValues, err := s.load(ctx)
 	if err != nil {
