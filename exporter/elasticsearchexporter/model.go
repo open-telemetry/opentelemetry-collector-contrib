@@ -178,21 +178,30 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
+	eventNameAttr, ok := record.Attributes().Get("event.name")
+	if record.EventName() != "" {
+		document.AddString("event_name", record.EventName())
+	} else if ok && eventNameAttr.Str() != "" {
+		document.AddString("event_name", eventNameAttr.Str())
+	}
+
 	m.encodeAttributesOTelMode(&document, record.Attributes())
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
 	// Body
-	setOTelLogBody(&document, record.Body(), record.Attributes())
+	setOTelLogBody(&document, record)
 
 	return document
 }
 
-func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcommon.Map) {
+func setOTelLogBody(doc *objmodel.Document, record plog.LogRecord) {
 	// Determine if this log record is an event, as they are mapped differently
 	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
-	_, isEvent := attributes.Get("event.name")
+	_, isEvent := record.Attributes().Get("event.name")
+	isEvent = isEvent || record.EventName() != ""
 
+	body := record.Body()
 	switch body.Type() {
 	case pcommon.ValueTypeMap:
 		if isEvent {
@@ -734,6 +743,8 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	}
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
+	document.AddString("event_name", spanEvent.Name())
+	// todo remove before GA, make sure Kibana uses event_name
 	document.AddString("attributes.event.name", spanEvent.Name())
 	document.AddSpanID("span_id", span.SpanID())
 	document.AddTraceID("trace_id", span.TraceID())
