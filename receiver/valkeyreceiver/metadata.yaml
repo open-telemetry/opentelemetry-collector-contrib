@@ -6,7 +6,7 @@ status:
     development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: []
+    active: [dmitryax, rogercoll]
 
 resource_attributes:
   valkey.version:

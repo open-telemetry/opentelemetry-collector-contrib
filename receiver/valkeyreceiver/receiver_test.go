@@ -33,14 +33,13 @@ var _ client = (*mockClient)(nil)
 
 func TestScrape(t *testing.T) {
 	// TODO: change to test table for testing multiple clients output
-	goldenDir := filepath.Join("testdata/all-metrics")
+	goldenDir := filepath.Join("testdata", "all-metrics")
 	settings := receivertest.NewNopSettings()
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:6379"
 	cfg.MetricsBuilderConfig.ResourceAttributes.ServerPort.Enabled = true
 	cfg.MetricsBuilderConfig.ResourceAttributes.ServerAddress.Enabled = true
 	scraper, err := newValkeyScraper(cfg, settings)
-	defer scraper.shutdown(context.Background())
 
 	require.NoError(t, err)
 	scraper.client = mockClient{}
@@ -58,4 +57,7 @@ func TestScrape(t *testing.T) {
 			return "6379"
 		}),
 	))
+
+	err = scraper.shutdown(context.Background())
+	require.NoError(t, err)
 }
