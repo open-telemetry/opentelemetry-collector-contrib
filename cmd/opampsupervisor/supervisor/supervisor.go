@@ -78,6 +78,13 @@ func (c *configState) equal(other *configState) bool {
 	return other.mergedConfig == c.mergedConfig && other.configMapIsEmpty == c.configMapIsEmpty
 }
 
+type agentStartStatus string
+
+var (
+	agentStarting    agentStartStatus = "starting"
+	agentNotStarting agentStartStatus = "notStarting"
+)
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -1000,22 +1007,27 @@ func (s *Supervisor) handleRestartCommand() error {
 	return err
 }
 
-func (s *Supervisor) startAgent() {
+func (s *Supervisor) startAgent() (agentStartStatus, error) {
 	if s.cfgState.Load().(*configState).configMapIsEmpty {
 		// Don't start the agent if there is no config to run
 		s.logger.Info("No config present, not starting agent.")
-		return
+		// need to manually trigger updating effective config
+		err := s.opampClient.UpdateEffectiveConfig(context.Background())
+		if err != nil {
+			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+		}
+		return agentNotStarting, nil
 	}
 
 	err := s.commander.Start(context.Background())
 	if err != nil {
 		s.logger.Error("Cannot start the agent", zap.Error(err))
-		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: fmt.Sprintf("Cannot start the agent: %v", err)})
+		startErr := fmt.Errorf("Cannot start the agent: %w", err)
+		err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: startErr.Error()})
 		if err != nil {
 			s.logger.Error("Failed to report OpAMP client health", zap.Error(err))
 		}
-
-		return
+		return "", startErr
 	}
 
 	s.agentHasStarted = false
@@ -1024,6 +1036,7 @@ func (s *Supervisor) startAgent() {
 	s.startHealthCheckTicker()
 
 	s.healthChecker = healthchecker.NewHTTPHealthChecker(fmt.Sprintf("http://%s", s.agentHealthCheckEndpoint))
+	return agentStarting, nil
 }
 
 func (s *Supervisor) startHealthCheckTicker() {
@@ -1090,7 +1103,11 @@ func (s *Supervisor) runAgentProcess() {
 	if _, err := os.Stat(s.agentConfigFilePath()); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.logger.Debug("Effective config found, starting agent initial time")
-		s.startAgent()
+		_, err := s.startAgent()
+		if err != nil {
+			s.logger.Error("starting agent failed", zap.Error(err))
+			s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+		}
 	}
 
 	restartTimer := time.NewTimer(0)
@@ -1114,7 +1131,17 @@ func (s *Supervisor) runAgentProcess() {
 			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
-			s.startAgent()
+			status, err := s.startAgent()
+			if err != nil {
+				s.logger.Error("starting agent with new config failed", zap.Error(err))
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			}
+
+			if status == agentNotStarting {
+				// not starting agent because of nop config, clear timer
+				configApplyTimeoutTimer.Stop()
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
+			}
 
 		case <-s.commander.Exited():
 			// the agent process exit is expected for restart command and will not attempt to restart
@@ -1146,7 +1173,11 @@ func (s *Supervisor) runAgentProcess() {
 
 		case <-restartTimer.C:
 			s.logger.Debug("Agent starting after start backoff")
-			s.startAgent()
+			_, err := s.startAgent()
+			if err != nil {
+				s.logger.Error("restarting agent failed", zap.Error(err))
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
+			}
 
 		case <-configApplyTimeoutTimer.C:
 			if s.lastHealthFromClient == nil || !s.lastHealthFromClient.Healthy {
@@ -1242,8 +1273,11 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 }
 
 func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, errorMessage string) {
+	if !s.config.Capabilities.ReportsRemoteConfig {
+		s.logger.Debug("supervisor is not configured to report remote config status")
+	}
 	err := s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-		LastRemoteConfigHash: s.remoteConfig.ConfigHash,
+		LastRemoteConfigHash: s.remoteConfig.GetConfigHash(),
 		Status:               status,
 		ErrorMessage:         errorMessage,
 	})

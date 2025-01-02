@@ -23,7 +23,7 @@ concurrency:
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v4
@@ -42,19 +42,22 @@ jobs:
             ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
   check-codeowners:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
+      - name: Gen githubgen tool
+        if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+        run: |
+          make githubgen-install
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - uses: actions/checkout@v4
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
           path: pr
       - name: Gen CODEOWNERS
-        if: github.repository == 'open-telemetry/opentelemetry-collector-contrib'
         run: |
-          make githubgen-install
           cd pr
           GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} githubgen
           git diff -s --exit-code || (echo 'Generated code is out of date, please apply this diff and commit the changes in this PR.' && git diff && exit 1)

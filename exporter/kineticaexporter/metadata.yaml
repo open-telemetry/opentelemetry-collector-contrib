@@ -3,7 +3,7 @@ type: kinetica
 status:
   class: exporter
   stability:
-    development: [metrics, traces, logs]
+    unmaintained: [metrics, traces, logs]
   distributions: []
   codeowners:
     active: [TylerHelmuth]

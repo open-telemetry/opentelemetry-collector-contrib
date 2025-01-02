@@ -51,7 +51,7 @@ func TestCreate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ex := createAnExtension(tt.cfg, t)
+			ex := createAnExtension(t, tt.cfg)
 			require.NoError(t, ex.Shutdown(context.TODO()))
 		})
 	}
@@ -67,7 +67,7 @@ func newNopSettings() extension.Settings {
 }
 
 // create extension
-func createAnExtension(c *Config, t *testing.T) extension.Extension {
+func createAnExtension(t *testing.T, c *Config) extension.Extension {
 	ex, err := newSolarwindsApmSettingsExtension(c, newNopSettings())
 	require.NoError(t, err)
 	require.NoError(t, ex.Start(context.TODO(), nil))
