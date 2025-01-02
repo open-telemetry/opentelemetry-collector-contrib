@@ -71,17 +71,17 @@ func SetValue(value pcommon.Value, val any) error {
 func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
 	val := value
 	var ok bool
-	for count := 0; count < len(keys); count++ {
+	for index := 0; index < len(keys); index++ {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := keys[count].String(ctx, tCtx)
+			s, err := keys[index].String(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 			if s == nil {
-				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
+				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[index])
 				if err != nil {
-					return nil, errors.New("map must be indexed by a string")
+					return nil, fmt.Errorf("unable to resolve a string index in map: %w", err)
 				}
 				s = resString
 			}
@@ -90,14 +90,14 @@ func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, 
 				return nil, nil
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := keys[count].Int(ctx, tCtx)
+			i, err := keys[index].Int(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
 			if i == nil {
-				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
+				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[index])
 				if err != nil {
-					return nil, errors.New("slice must be indexed by an int")
+					return nil, fmt.Errorf("unable to resolve an integer index in slice: %w", err)
 				}
 				i = resInt
 			}
@@ -125,17 +125,17 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 		return err
 	}
 
-	for count := 0; count < len(keys); count++ {
+	for index := 0; index < len(keys); index++ {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
-			s, err := keys[count].String(ctx, tCtx)
+			s, err := keys[index].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
 			if s == nil {
-				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
+				resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[index])
 				if err != nil {
-					return errors.New("map must be indexed by a string")
+					return fmt.Errorf("unable to resolve a string index in map: %w", err)
 				}
 				s = resString
 			}
@@ -146,14 +146,14 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				currentValue = potentialValue
 			}
 		case pcommon.ValueTypeSlice:
-			i, err := keys[count].Int(ctx, tCtx)
+			i, err := keys[index].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
 			if i == nil {
-				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
+				resInt, err := FetchValueFromExpression[K, int64](ctx, tCtx, keys[index])
 				if err != nil {
-					return errors.New("slice must be indexed by an int")
+					return fmt.Errorf("unable to resolve an integer index in slice: %w", err)
 				}
 				i = resInt
 			}
@@ -162,11 +162,11 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 			}
 			currentValue = currentValue.Slice().At(int(*i))
 		case pcommon.ValueTypeEmpty:
-			s, err := keys[count].String(ctx, tCtx)
+			s, err := keys[index].String(ctx, tCtx)
 			if err != nil {
 				return err
 			}
-			i, err := keys[count].Int(ctx, tCtx)
+			i, err := keys[index].Int(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -180,8 +180,8 @@ func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.
 				}
 				currentValue = currentValue.Slice().AppendEmpty()
 			default:
-				resString, errString := FetchValueFromExpression[K, string](ctx, tCtx, keys[count])
-				resInt, errInt := FetchValueFromExpression[K, int64](ctx, tCtx, keys[count])
+				resString, errString := FetchValueFromExpression[K, string](ctx, tCtx, keys[index])
+				resInt, errInt := FetchValueFromExpression[K, int64](ctx, tCtx, keys[index])
 				switch {
 				case errInt == nil:
 					currentValue.SetEmptySlice()

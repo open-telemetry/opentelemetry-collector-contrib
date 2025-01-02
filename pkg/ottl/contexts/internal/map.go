@@ -24,7 +24,7 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	if s == nil {
 		resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[0])
 		if err != nil {
-			return nil, fmt.Errorf("non-string indexing is not supported")
+			return nil, fmt.Errorf("unable to resolve a string index: %w", err)
 		}
 		s = resString
 	}
@@ -49,7 +49,7 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.
 	if s == nil {
 		resString, err := FetchValueFromExpression[K, string](ctx, tCtx, keys[0])
 		if err != nil {
-			return fmt.Errorf("non-string indexing is not supported")
+			return fmt.Errorf("unable to resolve a string index: %w", err)
 		}
 		s = resString
 	}
@@ -72,7 +72,7 @@ func FetchValueFromExpression[K any, T int64 | string](ctx context.Context, tCtx
 	}
 	resVal, ok := res.(T)
 	if !ok {
-		return nil, fmt.Errorf("casting not successful")
+		return nil, fmt.Errorf("could not resolve key for map/slice, expecting '%T' but got '%T'", resVal, res)
 	}
 	return &resVal, nil
 }
