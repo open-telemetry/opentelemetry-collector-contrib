@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"github.com/shirou/gopsutil/v4/common"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 )
@@ -24,18 +26,36 @@ type ScraperFactory interface {
 // Config is the configuration of a scraper.
 type Config interface {
 	SetRootPath(rootPath string)
-	SetEnvMap(envMap common.EnvMap)
 }
 
 type ScraperConfig struct {
-	RootPath string        `mapstructure:"-"`
-	EnvMap   common.EnvMap `mapstructure:"-"`
+	RootPath string `mapstructure:"-"`
 }
 
 func (p *ScraperConfig) SetRootPath(rootPath string) {
 	p.RootPath = rootPath
 }
 
-func (p *ScraperConfig) SetEnvMap(envMap common.EnvMap) {
-	p.EnvMap = envMap
+type EnvVarScraper struct {
+	delegate scraper.Metrics
+	envMap   common.EnvMap
+}
+
+func NewEnvVarScraper(delegate scraper.Metrics, envMap common.EnvMap) scraper.Metrics {
+	return &EnvVarScraper{delegate: delegate, envMap: envMap}
+}
+
+func (evs *EnvVarScraper) Start(ctx context.Context, host component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, evs.envMap)
+	return evs.delegate.Start(ctx, host)
+}
+
+func (evs *EnvVarScraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
+	ctx = context.WithValue(ctx, common.EnvKey, evs.envMap)
+	return evs.delegate.ScrapeMetrics(ctx)
+}
+
+func (evs *EnvVarScraper) Shutdown(ctx context.Context) error {
+	ctx = context.WithValue(ctx, common.EnvKey, evs.envMap)
+	return evs.delegate.Shutdown(ctx)
 }

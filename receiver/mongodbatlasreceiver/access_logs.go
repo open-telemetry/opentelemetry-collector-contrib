@@ -101,7 +101,6 @@ func (alr *accessLogsReceiver) Shutdown(_ context.Context) error {
 
 func (alr *accessLogsReceiver) startPolling(ctx context.Context) error {
 	for _, pc := range alr.cfg.Logs.Projects {
-		pc := pc
 		if pc.AccessLogs == nil || !pc.AccessLogs.IsEnabled() {
 			continue
 		}

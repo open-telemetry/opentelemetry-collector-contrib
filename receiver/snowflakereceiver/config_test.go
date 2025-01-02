@@ -90,9 +90,7 @@ func TestValidateConfig(t *testing.T) {
 		},
 	}
 
-	for i := range tests {
-		test := tests[i]
-
+	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 
