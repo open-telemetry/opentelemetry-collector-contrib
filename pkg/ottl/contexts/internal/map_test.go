@@ -34,49 +34,49 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(0),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("non-string indexing is not supported"),
+			err: fmt.Errorf("unable to resolve a string index: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("map"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					I: ottltest.Intp(0),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("map must be indexed by a string"),
+			err: fmt.Errorf("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index slice with string",
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("slice"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					S: ottltest.Strp("invalid"),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("slice must be indexed by an int"),
+			err: fmt.Errorf("unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'"),
 		},
 		{
 			name: "index too large",
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("slice"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					I: ottltest.Intp(1),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
@@ -86,11 +86,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("slice"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					I: ottltest.Intp(-1),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
@@ -100,11 +100,11 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("string"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					S: ottltest.Strp("string"),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
@@ -121,7 +121,7 @@ func Test_GetMapValue_Invalid(t *testing.T) {
 			s.AppendEmpty()
 
 			_, err := GetMapValue[any](context.Background(), nil, m, tt.keys)
-			assert.Equal(t, tt.err, err)
+			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
 }
@@ -166,49 +166,49 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					I: ottltest.Intp(0),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("non-string indexing is not supported"),
+			err: fmt.Errorf("unable to resolve a string index: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index map with int",
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("map"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					I: ottltest.Intp(0),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("map must be indexed by a string"),
+			err: fmt.Errorf("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
 		},
 		{
 			name: "index slice with string",
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("slice"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					S: ottltest.Strp("map"),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("slice must be indexed by an int"),
+			err: fmt.Errorf("unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'"),
 		},
 		{
 			name: "slice index too large",
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("slice"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					I: ottltest.Intp(1),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
 			err: fmt.Errorf("index 1 out of bounds"),
@@ -218,11 +218,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("slice"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					I: ottltest.Intp(-1),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
 			err: fmt.Errorf("index -1 out of bounds"),
@@ -232,11 +232,11 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			keys: []ottl.Key[any]{
 				&TestKey[any]{
 					S: ottltest.Strp("string"),
-					P: getSetter,
+					G: getSetter,
 				},
 				&TestKey[any]{
 					S: ottltest.Strp("string"),
-					P: getSetter,
+					G: getSetter,
 				},
 			},
 			err: fmt.Errorf("type Str does not support string indexing"),
@@ -253,7 +253,7 @@ func Test_SetMapValue_Invalid(t *testing.T) {
 			s.AppendEmpty()
 
 			err := SetMapValue[any](context.Background(), nil, m, tt.keys, "value")
-			assert.Equal(t, tt.err, err)
+			assert.Equal(t, tt.err.Error(), err.Error())
 		})
 	}
 }

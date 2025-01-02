@@ -250,7 +250,7 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 		ks[i] = &baseKey[K]{
 			s: keys[i].String,
 			i: keys[i].Int,
-			p: par,
+			g: par,
 		}
 	}
 	return ks, nil
@@ -282,7 +282,7 @@ var _ Key[any] = &baseKey[any]{}
 type baseKey[K any] struct {
 	s *string
 	i *int64
-	p Getter[K]
+	g Getter[K]
 }
 
 func (k *baseKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -294,7 +294,7 @@ func (k *baseKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 }
 
 func (k *baseKey[K]) ExpressionGetter(_ context.Context, _ K) (Getter[K], error) {
-	return k.p, nil
+	return k.g, nil
 }
 
 func (p *Parser[K]) parsePath(ip *basePath[K]) (GetSetter[K], error) {
