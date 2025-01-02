@@ -50,8 +50,6 @@ func (vs *valkeyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if vs.client == nil {
 		opts := valkey.ClientOption{
 			InitAddress: []string{vs.cfg.Endpoint},
-			Username:    vs.cfg.Username,
-			Password:    string(vs.cfg.Password),
 		}
 
 		var err error

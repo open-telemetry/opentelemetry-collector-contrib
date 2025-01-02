@@ -41,11 +41,6 @@ next consumer. The `collection_interval` configuration option tells this
 receiver the duration between runs. This value must be a string readable by
 Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
-- `username` (no default): Client username used to connect to a Valkey >=6.0 instance that is using the Valkey ACL system.
-- `password` (no default): The password used to access the Valkey instance;
-must match the password specified in the `requirepass` server configuration option in Valkey <6.0.
-For Valkey >=6.0, the user's password when connecting using the Valkey ACL system.
-- `transport` (default = `tcp`) Defines the network to use for connecting to the server. Valid Values are `tcp` or `Unix`
 - `tls`:
   - `insecure` (default = true): whether to disable client transport security for the exporter's connection.
   - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
@@ -56,23 +51,9 @@ Example:
 
 ```yaml
 receivers:
-  redis:
+  valkey:
     endpoint: "localhost:6379"
     collection_interval: 10s
-    password: ${env:VALKEY_PASSWORD}
-```
-
-> :information_source: As with all Open Telemetry configuration values, a
-reference to an environment variable is supported. For example, to pick up
-the value of an environment variable `VALKEY_PASSWORD`, you could use a
-configuration like the following:
-
-```yaml
-receivers:
-  redis:
-    endpoint: "localhost:6379"
-    collection_interval: 10s
-    password: ${env:VALKEY_PASSWORD}
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go).
