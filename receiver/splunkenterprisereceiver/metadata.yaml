@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions:
+  distributions: [contrib]
   codeowners:
     active: [shalper2, MovieStoreGuy, greatestusername]
 

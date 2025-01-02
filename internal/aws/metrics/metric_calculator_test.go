@@ -278,7 +278,5 @@ func TestSweep(t *testing.T) {
 	require.NoError(t, mwe.Shutdown())
 	for range sweepEvent { // nolint
 	}
-	if !closed.Load() {
-		t.Errorf("Sweeper did not terminate.")
-	}
+	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }

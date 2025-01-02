@@ -80,13 +80,8 @@ linters-settings:
   revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
-
-  gofmt:
-    # simplify code: gofmt with `-s` option, true by default
-    simplify: true
-    rewrite-rules:
-    - pattern: interface{}
-      replacement: any
+    rules:
+      - name: use-any
 
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
@@ -139,14 +134,23 @@ linters-settings:
       - suite-subtest-run
       - encoded-compare # has false positives that cannot be fixed with testifylint-fix
     enable-all: true
+  thelper:
+    test:
+      begin: false
+    benchmark:
+      begin: false
+    tb:
+      begin: false
+    fuzz:
+      begin: false
 
 linters:
   enable:
+    - copyloopvar
     - decorder
     - depguard
     - errcheck
     - errorlint
-    - exportloopref
     - exhaustive
     - gci
     - gocritic
@@ -161,6 +165,7 @@ linters:
     - staticcheck
     - tenv
     - testifylint
+    - thelper
     - unconvert
     - unparam
     - unused
@@ -176,5 +181,8 @@ issues:
       linters:
         - gosec
     - text: "G402:"
+      linters:
+        - gosec
+    - text: "G115:"
       linters:
         - gosec
