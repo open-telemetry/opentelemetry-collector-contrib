@@ -82,52 +82,44 @@ var baseProviderMock = providerMock{
 }
 
 var testCases = []struct {
-	name             string
-	goldenDir        string
-	context          ContextID
-	lookupAttributes []attribute.Key
+	name      string
+	goldenDir string
+	context   ContextID
 }{
 	{
-		name:             "default source.address attribute, not found",
-		goldenDir:        "no_source_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute, not found",
+		goldenDir: "no_source_address",
+		context:   resource,
 	},
 	{
-		name:             "default source.address attribute",
-		goldenDir:        "source_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute",
+		goldenDir: "source_address",
+		context:   resource,
 	},
 	{
-		name:             "default source.address attribute no geo metadata found by providers",
-		goldenDir:        "source_address_geo_not_found",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute no geo metadata found by providers",
+		goldenDir: "source_address_geo_not_found",
+		context:   resource,
 	},
 	{
-		name:             "default source.ip attribute with an unspecified IP address should be skipped",
-		goldenDir:        "unspecified_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.ip attribute with an unspecified IP address should be skipped",
+		goldenDir: "unspecified_address",
+		context:   resource,
 	},
 	{
-		name:             "custom source attributes",
-		goldenDir:        "custom_sources",
-		context:          resource,
-		lookupAttributes: []attribute.Key{"ip", "host.ip"},
+		name:      "custom source attributes",
+		goldenDir: "custom_sources",
+		context:   resource,
 	},
 	{
-		name:             "do not add resource attributes with an invalid ip",
-		goldenDir:        "invalid_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "do not add resource attributes with an invalid ip",
+		goldenDir: "invalid_address",
+		context:   resource,
 	},
 	{
-		name:             "source address located in inner attributes",
-		goldenDir:        "attribute_source_address",
-		context:          record,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "source address located in inner attributes",
+		goldenDir: "attribute_source_address",
+		context:   record,
 	},
 }
 
