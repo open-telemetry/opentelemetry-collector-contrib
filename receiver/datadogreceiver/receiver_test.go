@@ -111,7 +111,6 @@ func TestDatadogServer(t *testing.T) {
 			expectContent: "{}",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -277,7 +276,6 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 }`,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address

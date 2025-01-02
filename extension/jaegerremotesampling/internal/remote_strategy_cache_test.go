@@ -247,11 +247,10 @@ func Test_serviceStrategyCache_Concurrency(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(numThreads)
 	for i := 0; i < numThreads; i++ {
-		ii := i
 		go func() {
 			for j := 0; j < numIterationsPerThread; j++ {
 				for _, svcName := range []string{
-					fmt.Sprintf("thread-specific-service-%d", ii),
+					fmt.Sprintf("thread-specific-service-%d", i),
 					"contended-for-service",
 				} {
 					if _, ok := cache.get(context.Background(), svcName); !ok {

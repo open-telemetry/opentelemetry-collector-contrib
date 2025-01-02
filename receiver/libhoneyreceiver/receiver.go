@@ -231,13 +231,20 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 		}
 	}
 
-	otlpLogs := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
+	otlpLogs, otlpTraces := parser.ToPdata(dataset, libhoneyevents, r.cfg.FieldMapConfig, *r.settings.Logger)
 
 	numLogs := otlpLogs.LogRecordCount()
 	if numLogs > 0 {
 		ctx := r.obsreport.StartLogsOp(context.Background())
 		err = r.nextLogs.ConsumeLogs(ctx, otlpLogs)
 		r.obsreport.EndLogsOp(ctx, "protobuf", numLogs, err)
+	}
+
+	numTraces := otlpTraces.SpanCount()
+	if numTraces > 0 {
+		ctx := r.obsreport.StartTracesOp(context.Background())
+		err = r.nextTraces.ConsumeTraces(ctx, otlpTraces)
+		r.obsreport.EndTracesOp(ctx, "protobuf", numTraces, err)
 	}
 
 	if err != nil {

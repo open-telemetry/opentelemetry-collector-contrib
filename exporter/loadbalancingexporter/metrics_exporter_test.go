@@ -287,9 +287,6 @@ func TestSplitMetrics(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -334,9 +331,6 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -443,9 +437,6 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		// Purposely make a copy since we're running in a goroutine due to t.Parallel()
-		tc := tc
-
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
