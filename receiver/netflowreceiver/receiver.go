@@ -131,7 +131,7 @@ func (nr *netflowReceiver) buildDecodeFunc() (utils.DecoderFunc, error) {
 
 	decodeFunc = p.DecodeFlow
 
-	// We wrap panics while decoding the message to habndle them later
+	// We wrap panics while decoding the message to handle them later
 	decodeFunc = debug.PanicDecoderWrapper(decodeFunc)
 
 	return decodeFunc, nil
