@@ -9,9 +9,12 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -34,6 +37,8 @@ const (
 )
 
 var errInvalidInitialOffset = errors.New("invalid initial offset")
+
+var errMemoryLimiterDataRefused = errors.New("data refused due to high memory usage")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
@@ -205,6 +210,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		messageMarking:    c.messageMarking,
 		headerExtractor:   &nopHeaderExtractor{},
 		telemetryBuilder:  c.telemetryBuilder,
+		backOff:           newExponentialBackOff(c.config.ErrorBackOff),
 	}
 	if c.headerExtraction {
 		consumerGroup.headerExtractor = &headerExtractor{
@@ -216,6 +222,20 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	go c.consumeLoop(ctx, consumerGroup)
 	<-consumerGroup.ready
 	return nil
+}
+
+func newExponentialBackOff(config configretry.BackOffConfig) *backoff.ExponentialBackOff {
+	if !config.Enabled {
+		return nil
+	}
+	backOff := backoff.NewExponentialBackOff()
+	backOff.InitialInterval = config.InitialInterval
+	backOff.RandomizationFactor = config.RandomizationFactor
+	backOff.Multiplier = config.Multiplier
+	backOff.MaxInterval = config.MaxInterval
+	backOff.MaxElapsedTime = config.MaxElapsedTime
+	backOff.Reset()
+	return backOff
 }
 
 func (c *kafkaTracesConsumer) consumeLoop(ctx context.Context, handler sarama.ConsumerGroupHandler) {
@@ -481,6 +501,7 @@ type tracesConsumerGroupHandler struct {
 	autocommitEnabled bool
 	messageMarking    MessageMarking
 	headerExtractor   HeaderExtractor
+	backOff           *backoff.ExponentialBackOff
 }
 
 type metricsConsumerGroupHandler struct {
@@ -582,7 +603,17 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
 				}
+				if errorRequiresBackoff(err) && c.backOff != nil {
+					select {
+					case <-session.Context().Done():
+						return nil
+					case <-time.After(c.backOff.NextBackOff()):
+					}
+				}
 				return err
+			}
+			if c.backOff != nil {
+				c.backOff.Reset()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -598,6 +629,10 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			return nil
 		}
 	}
+}
+
+func errorRequiresBackoff(err error) bool {
+	return err.Error() == errMemoryLimiterDataRefused.Error()
 }
 
 func (c *metricsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
