@@ -38,4 +38,5 @@ resourceMetrics:
                         stringValue: Action
                   timeUnixNano: "1684632870521947236"
             name: genre.imdb
-        scope: {}
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver

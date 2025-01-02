@@ -93,6 +93,35 @@ func Test_WithParserCollectionContext_UnsupportedContext(t *testing.T) {
 	require.ErrorContains(t, err, `context "bar" must be a valid "*ottl.Parser[interface {}]" path context name`)
 }
 
+func Test_WithParserCollectionContext_contextInferrerCandidates(t *testing.T) {
+	pc, err := NewParserCollection[any](component.TelemetrySettings{},
+		WithParserCollectionContext("foo", mockParser(t, WithPathContextNames[any]([]string{"foo", "bar"})), newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), newNopParsedStatementConverter[any]()),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, pc.contextInferrer)
+	require.Contains(t, pc.contextInferrerCandidates, "foo")
+
+	validEnumSymbol := EnumSymbol("TEST_ENUM")
+	invalidEnumSymbol := EnumSymbol("DUMMY")
+
+	fooCandidate := pc.contextInferrerCandidates["foo"]
+	assert.NotNil(t, fooCandidate)
+	assert.True(t, fooCandidate.hasFunctionName("set"))
+	assert.False(t, fooCandidate.hasFunctionName("dummy"))
+	assert.True(t, fooCandidate.hasEnumSymbol(&validEnumSymbol))
+	assert.False(t, fooCandidate.hasEnumSymbol(&invalidEnumSymbol))
+	assert.Nil(t, fooCandidate.getLowerContexts("foo"))
+
+	barCandidate := pc.contextInferrerCandidates["bar"]
+	assert.NotNil(t, barCandidate)
+	assert.True(t, barCandidate.hasFunctionName("set"))
+	assert.False(t, barCandidate.hasFunctionName("dummy"))
+	assert.True(t, barCandidate.hasEnumSymbol(&validEnumSymbol))
+	assert.False(t, barCandidate.hasEnumSymbol(&invalidEnumSymbol))
+	assert.Equal(t, []string{"foo"}, barCandidate.getLowerContexts("bar"))
+}
+
 func Test_WithParserCollectionErrorMode(t *testing.T) {
 	pc, err := NewParserCollection[any](
 		componenttest.NewNopTelemetrySettings(),
@@ -253,14 +282,18 @@ func Test_ParseStatements_ContextInferenceError(t *testing.T) {
 }
 
 func Test_ParseStatements_UnknownContextError(t *testing.T) {
-	pc, err := NewParserCollection[any](component.TelemetrySettings{})
+	pc, err := NewParserCollection[any](component.TelemetrySettings{},
+		WithParserCollectionContext("bar", mockParser(t, WithPathContextNames[any]([]string{"bar"})), newNopParsedStatementConverter[any]()),
+		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), newNopParsedStatementConverter[any]()),
+	)
 	require.NoError(t, err)
 	pc.contextInferrer = &mockStaticContextInferrer{"foo"}
 
 	statements := mockStatementsGetter{values: []string{`set(foo.attributes["bar"], "foo")`}}
 	_, err = pc.ParseStatements(statements)
 
-	assert.ErrorContains(t, err, `unknown context "foo"`)
+	assert.ErrorContains(t, err, `context "foo" inferred from the statements`)
+	assert.ErrorContains(t, err, "is not a supported context")
 }
 
 func Test_ParseStatements_ParseStatementsError(t *testing.T) {

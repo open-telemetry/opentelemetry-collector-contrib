@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/metadata"
 )
 
@@ -44,21 +45,23 @@ func createDefaultConfig() component.Config {
 			TracesURLPaths: defaultTracesURLPaths,
 		},
 		AuthAPI: "",
-		Resources: ResourcesConfig{
-			ServiceName: "service.name",
-		},
-		Scopes: ScopesConfig{
-			LibraryName:    "library.name",
-			LibraryVersion: "library.version",
-		},
-		Attributes: AttributesConfig{
-			TraceID:        "trace.trace_id",
-			SpanID:         "trace.span_id",
-			ParentID:       "trace.parent_id",
-			Name:           "name",
-			Error:          "error",
-			SpanKind:       "span.kind",
-			DurationFields: durationFieldsArr,
+		FieldMapConfig: libhoneyevent.FieldMapConfig{
+			Resources: libhoneyevent.ResourcesConfig{
+				ServiceName: "service.name",
+			},
+			Scopes: libhoneyevent.ScopesConfig{
+				LibraryName:    "library.name",
+				LibraryVersion: "library.version",
+			},
+			Attributes: libhoneyevent.AttributesConfig{
+				TraceID:        "trace.trace_id",
+				SpanID:         "trace.span_id",
+				ParentID:       "trace.parent_id",
+				Name:           "name",
+				Error:          "error",
+				SpanKind:       "span.kind",
+				DurationFields: durationFieldsArr,
+			},
 		},
 	}
 }

@@ -90,7 +90,7 @@ func TestScrape(t *testing.T) {
 				test.mutateMetricsConfig(t, &metricsBuilderConfig.Metrics)
 			}
 			cfg := &Config{MetricsBuilderConfig: metricsBuilderConfig}
-			cfg.EnvMap = common.EnvMap{
+			envMap := common.EnvMap{
 				common.HostProcEnvKey:    "/proc",
 				common.HostSysEnvKey:     "/sys",
 				common.HostEtcEnvKey:     "/etc",
@@ -99,16 +99,17 @@ func TestScrape(t *testing.T) {
 				common.HostDevEnvKey:     "/dev",
 				common.HostProcMountinfo: "",
 			}
+			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
 			scraper, err := newProcessScraper(receivertest.NewNopSettings(), cfg)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
 			scraper.getProcessCreateTime = func(processHandle, context.Context) (int64, error) { return createTime, nil }
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
-			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			err = scraper.start(ctx, componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-			md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(ctx)
 			// may receive some partial errors as a result of attempting to:
 			// a) read native system processes on Windows (e.g. Registry process)
 			// b) read info on processes that have just terminated

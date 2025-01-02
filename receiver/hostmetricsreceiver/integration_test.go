@@ -41,8 +41,8 @@ func Test_ProcessScrape(t *testing.T) {
 					Config: filterset.Config{MatchType: filterset.Regexp},
 					Names:  []string{"sleep"},
 				}
-				rCfg.Scrapers = map[string]internal.Config{
-					"process": pCfg,
+				rCfg.Scrapers = map[component.Type]internal.Config{
+					processscraper.Type: pCfg,
 				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
@@ -72,9 +72,8 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 				rCfg.RootPath = rootPath
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
 				pCfg.SetRootPath(rootPath)
-				pCfg.SetEnvMap(setGoPsutilEnvVars(rootPath, &osEnv{}))
-				rCfg.Scrapers = map[string]internal.Config{
-					"process": pCfg,
+				rCfg.Scrapers = map[component.Type]internal.Config{
+					processscraper.Type: pCfg,
 				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
@@ -102,9 +101,8 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 				rCfg.CollectionInterval = time.Second
 				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
 				pCfg.SetRootPath(badRootPath)
-				pCfg.SetEnvMap(setGoPsutilEnvVars(badRootPath, &osEnv{}))
-				rCfg.Scrapers = map[string]internal.Config{
-					"process": pCfg,
+				rCfg.Scrapers = map[component.Type]internal.Config{
+					processscraper.Type: pCfg,
 				}
 				rCfg.RootPath = badRootPath
 			}),

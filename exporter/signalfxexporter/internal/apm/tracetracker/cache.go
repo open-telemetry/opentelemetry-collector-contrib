@@ -52,10 +52,10 @@ func (t *TimeoutCache) IsFull() bool {
 	return false
 }
 
-func (t *TimeoutCache) SetMaxSize(max int64, now time.Time) {
+func (t *TimeoutCache) SetMaxSize(maxSize int64, now time.Time) {
 	t.Lock()
 	defer t.Unlock()
-	t.maxSize = max
+	t.maxSize = maxSize
 	t.maxSizeExpiryTS = now.Add(time.Hour * 1)
 }
 

@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/load"
 	"github.com/shirou/gopsutil/v4/process"
@@ -39,7 +38,7 @@ type processesScraper struct {
 
 	// for mocking gopsutil
 	getMiscStats func(context.Context) (*load.MiscStat, error)
-	getProcesses func() ([]proc, error)
+	getProcesses func(context.Context) ([]proc, error)
 	bootTime     func(context.Context) (uint64, error)
 }
 
@@ -59,8 +58,7 @@ func newProcessesScraper(_ context.Context, settings receiver.Settings, cfg *Con
 		settings:     settings,
 		config:       cfg,
 		getMiscStats: load.MiscWithContext,
-		getProcesses: func() ([]proc, error) {
-			ctx := context.WithValue(context.Background(), common.EnvKey, cfg.EnvMap)
+		getProcesses: func(ctx context.Context) ([]proc, error) {
 			ps, err := process.ProcessesWithContext(ctx)
 			ret := make([]proc, len(ps))
 			for i := range ps {
@@ -73,7 +71,6 @@ func newProcessesScraper(_ context.Context, settings receiver.Settings, cfg *Con
 }
 
 func (s *processesScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -83,14 +80,14 @@ func (s *processesScraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *processesScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *processesScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	md := pmetric.NewMetrics()
 	metrics := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	metrics.EnsureCapacity(metricsLength)
 
-	processMetadata, err := s.getProcessesMetadata()
+	processMetadata, err := s.getProcessesMetadata(ctx)
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLength)
 	}

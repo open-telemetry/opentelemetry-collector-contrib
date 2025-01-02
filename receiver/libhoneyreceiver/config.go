@@ -11,18 +11,19 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/libhoneyreceiver/internal/libhoneyevent"
 )
 
 // Config represents the receiver config settings within the collector's config.yaml
 type Config struct {
-	HTTP       *HTTPConfig      `mapstructure:"http"`
-	AuthAPI    string           `mapstructure:"auth_api"`
-	Wrapper    string           `mapstructure:"wrapper"`
-	Resources  ResourcesConfig  `mapstructure:"resources"`
-	Scopes     ScopesConfig     `mapstructure:"scopes"`
-	Attributes AttributesConfig `mapstructure:"attributes"`
+	HTTP           *HTTPConfig                  `mapstructure:"http"`
+	AuthAPI        string                       `mapstructure:"auth_api"`
+	Wrapper        string                       `mapstructure:"wrapper"`
+	FieldMapConfig libhoneyevent.FieldMapConfig `mapstructure:"fields"`
 }
 
+// HTTPConfig defines the configuration for the HTTP server receiving traces.
 type HTTPConfig struct {
 	*confighttp.ServerConfig `mapstructure:",squash"`
 
@@ -30,25 +31,7 @@ type HTTPConfig struct {
 	TracesURLPaths []string `mapstructure:"traces_url_paths,omitempty"`
 }
 
-type ResourcesConfig struct {
-	ServiceName string `mapstructure:"service_name"`
-}
-
-type ScopesConfig struct {
-	LibraryName    string `mapstructure:"library_name"`
-	LibraryVersion string `mapstructure:"library_version"`
-}
-
-type AttributesConfig struct {
-	TraceID        string   `mapstructure:"trace_id"`
-	ParentID       string   `mapstructure:"parent_id"`
-	SpanID         string   `mapstructure:"span_id"`
-	Name           string   `mapstructure:"name"`
-	Error          string   `mapstructure:"error"`
-	SpanKind       string   `mapstructure:"spankind"`
-	DurationFields []string `mapstructure:"durationFields"`
-}
-
+// Validate ensures the HTTP configuration is set.
 func (cfg *Config) Validate() error {
 	if cfg.HTTP == nil {
 		return errors.New("must specify at least one protocol when using the arbitrary JSON receiver")
@@ -56,6 +39,7 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+// Unmarshal unmarshals the configuration from the given configuration and then checks for errors.
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 	// first load the config normally
 	err := conf.Unmarshal(cfg)

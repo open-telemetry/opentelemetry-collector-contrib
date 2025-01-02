@@ -170,15 +170,15 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 		if histDP.HasMin() {
 			// Min is always a gauge.
 			minDP := dps.appendPoint(name+"_min", &sfxMetricTypeGauge, ts, dims)
-			min := histDP.Min()
-			minDP.Value.DoubleValue = &min
+			minVal := histDP.Min()
+			minDP.Value.DoubleValue = &minVal
 		}
 
 		if histDP.HasMax() {
 			// Max is always a gauge.
 			maxDP := dps.appendPoint(name+"_max", &sfxMetricTypeGauge, ts, dims)
-			max := histDP.Max()
-			maxDP.Value.DoubleValue = &max
+			maxVal := histDP.Max()
+			maxDP.Value.DoubleValue = &maxVal
 		}
 
 		// Drop Histogram Buckets if flag is set.
