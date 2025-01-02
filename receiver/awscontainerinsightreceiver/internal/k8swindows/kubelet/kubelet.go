@@ -11,13 +11,13 @@ import (
 	"os"
 	"strconv"
 
+	"go.uber.org/zap"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"go.uber.org/zap"
-	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 // SummaryProvider represents receiver to get container metric from Kubelet.
@@ -76,7 +76,7 @@ func (sp *SummaryProvider) GetMetrics() ([]*stores.CIMetricImpl, error) {
 }
 
 // getContainerMetrics returns container level metrics from kubelet summary.
-func (sp *SummaryProvider) getContainerMetrics(pod stats.PodStats) ([]*stores.CIMetricImpl, error) {
+func (sp *SummaryProvider) getContainerMetrics(pod stats.PodStats) ([]*stores.CIMetricImpl, error) { //nolint:unparam
 	var metrics []*stores.CIMetricImpl
 
 	for _, container := range pod.Containers {
@@ -146,7 +146,7 @@ func (sp *SummaryProvider) getPodMetrics(summary *stats.Summary) ([]*stores.CIMe
 }
 
 // getNodeMetrics returns Node level metrics from kubelet summary.
-func (sp *SummaryProvider) getNodeMetrics(summary *stats.Summary) ([]*stores.CIMetricImpl, error) {
+func (sp *SummaryProvider) getNodeMetrics(summary *stats.Summary) ([]*stores.CIMetricImpl, error) { //nolint:unparam
 	var metrics []*stores.CIMetricImpl
 
 	if summary == nil {

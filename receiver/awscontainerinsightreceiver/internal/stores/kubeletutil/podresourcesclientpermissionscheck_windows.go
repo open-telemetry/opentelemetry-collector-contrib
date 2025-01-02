@@ -11,6 +11,6 @@ import (
 	"os"
 )
 
-func checkPodResourcesSocketPermissions(info os.FileInfo) error {
+func checkPodResourcesSocketPermissions(_ os.FileInfo) error {
 	return errors.New("not implemented on Windows")
 }

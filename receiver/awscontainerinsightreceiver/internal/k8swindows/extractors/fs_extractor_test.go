@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestFSStats(t *testing.T) {
@@ -54,7 +54,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(podRawMetric, nil, containerType)
 	}
 
-	assert.Equal(t, len(cMetrics), 0)
+	assert.Empty(t, cMetrics)
 
 	// container type for eks
 	containerType = containerinsight.TypeContainer

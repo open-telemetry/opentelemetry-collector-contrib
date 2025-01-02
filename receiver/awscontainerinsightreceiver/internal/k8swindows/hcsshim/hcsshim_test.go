@@ -10,11 +10,6 @@ import (
 	"testing"
 	"time"
 
-	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
-	cTestUtils "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/extractors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/testutils"
-
 	"github.com/Microsoft/hcsshim"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -22,6 +17,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	cTestUtils "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/extractors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/testutils"
 )
 
 // MockKubeletProvider Mock provider implements KubeletProvider interface.
@@ -36,7 +36,7 @@ type MockKubeletProvider struct {
 	t      *testing.T
 }
 
-func (m *MockHCSClient) GetContainerStats(containerId string) (hcsshim.Statistics, error) {
+func (m *MockHCSClient) GetContainerStats(_ string) (hcsshim.Statistics, error) {
 	return hcsshim.Statistics{
 		Timestamp: time.Now(),
 	}, nil
@@ -50,7 +50,7 @@ func (m *MockHCSClient) GetEndpointList() ([]hcsshim.HNSEndpoint, error) {
 	}}, nil
 }
 
-func (m *MockHCSClient) GetEndpointStat(endpointId string) (hcsshim.HNSEndpointStats, error) {
+func (m *MockHCSClient) GetEndpointStat(_ string) (hcsshim.HNSEndpointStats, error) {
 	return hcsshim.HNSEndpointStats{
 		BytesReceived:          44340,
 		BytesSent:              3432,
@@ -128,7 +128,7 @@ func TestGetPodToContainerMap(t *testing.T) {
 	assert.Len(t, podContainerMap, 1)
 	assert.Contains(t, podContainerMap, "podidq3erqwezdfa3q34q34dfdf")
 	assert.Len(t, podContainerMap["podidq3erqwezdfa3q34q34dfdf"].Containers, 1)
-	assert.Equal(t, podContainerMap["podidq3erqwezdfa3q34q34dfdf"].Containers[0].Id, "1234123412341afasdfa12342343134")
+	assert.Equal(t, "1234123412341afasdfa12342343134", podContainerMap["podidq3erqwezdfa3q34q34dfdf"].Containers[0].Id)
 }
 
 func TestGetPodMetrics(t *testing.T) {
@@ -142,9 +142,9 @@ func TestGetPodMetrics(t *testing.T) {
 	metrics, err := hsp.getPodMetrics()
 	assert.NoError(t, err)
 
-	assert.Equal(t, len(metrics), 1)
+	assert.Len(t, metrics, 1)
 	podMetric := metrics[0]
-	assert.Equal(t, podMetric.GetMetricType(), ci.TypePodNet)
+	assert.Equal(t, ci.TypePodNet, podMetric.GetMetricType())
 	assert.NotNil(t, podMetric.GetTag(ci.PodIDKey))
 	assert.NotNil(t, podMetric.GetTag(ci.PodNameKey))
 	assert.NotNil(t, podMetric.GetTag(ci.K8sNamespace))

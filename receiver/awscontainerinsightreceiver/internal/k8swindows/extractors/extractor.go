@@ -9,10 +9,10 @@ package extractors // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"time"
 
+	"github.com/Microsoft/hcsshim"
+
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"github.com/Microsoft/hcsshim"
 )
 
 // CPUStat for Pod, Container and Node.
@@ -70,7 +70,7 @@ type HCSNetworkStat struct {
 // HCSStat Stats from HCS.
 type HCSStat struct {
 	Time time.Time
-	Id   string
+	Id   string //nolint:revive
 	Name string
 
 	CPU *hcsshim.ProcessorStats
@@ -81,7 +81,7 @@ type HCSStat struct {
 // RawMetric Represent Container, Pod, Node Metric  Extractors.
 // Kubelet summary and HNS stats will be converted to Raw Metric for parsing by Extractors.
 type RawMetric struct {
-	Id              string
+	Id              string //nolint:revive
 	Name            string
 	Namespace       string
 	Time            time.Time

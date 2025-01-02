@@ -7,12 +7,12 @@
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/extractors"
 
 import (
+	"go.uber.org/zap"
+
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 	cExtractor "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
-
-	"go.uber.org/zap"
 )
 
 type FileSystemMetricExtractor struct {
@@ -21,10 +21,7 @@ type FileSystemMetricExtractor struct {
 }
 
 func (f *FileSystemMetricExtractor) HasValue(rawMetric RawMetric) bool {
-	if !rawMetric.Time.IsZero() {
-		return true
-	}
-	return false
+	return !rawMetric.Time.IsZero()
 }
 
 func (f *FileSystemMetricExtractor) GetValue(rawMetric RawMetric, _ cExtractor.CPUMemInfoProvider, containerType string) []*stores.CIMetricImpl {

@@ -7,15 +7,15 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows/kubelet"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
-
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
 )
 
 // KubeletProvider Represents interface to kubelet.
-type KubeletProvider interface {
+type KubeletProvider interface { //nolint:revive
 	GetSummary() (*stats.Summary, error)
 	GetPods() ([]corev1.Pod, error)
 }
