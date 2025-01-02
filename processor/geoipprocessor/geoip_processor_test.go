@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -121,6 +120,11 @@ var testCases = []struct {
 		goldenDir: "attribute_source_address",
 		context:   record,
 	},
+	{
+		name:      "client address located in inner attributes",
+		goldenDir: "attribute_client_address",
+		context:   record,
+	},
 }
 
 func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T) {
@@ -197,7 +201,6 @@ func TestProcessor(t *testing.T) {
 	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
 		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
 			return attribute.NewSet([]attribute.KeyValue{
-				semconv.SourceAddress("1.2.3.4"),
 				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
 				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
 				attribute.String(conventions.AttributeGeoContinentName, "Europe"),
