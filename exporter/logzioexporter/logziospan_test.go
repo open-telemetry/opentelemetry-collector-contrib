@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package dbmodel
+package logzioexporter
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ import (
 )
 
 func TestTransformToLogzioSpanBytes(tester *testing.T) {
-	inStr, err := os.ReadFile("../../testdata/span.json")
+	inStr, err := os.ReadFile("./testdata/span.json")
 	require.NoError(tester, err, "error opening sample span file")
 
 	var span model.Span
@@ -22,7 +22,7 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 	if err != nil {
 		fmt.Println("json.Unmarshal")
 	}
-	newSpan, err := TransformToLogzioSpanBytes(&span)
+	newSpan, err := transformToLogzioSpanBytes(&span)
 	require.NoError(tester, err)
 	m := make(map[string]any)
 	err = json.Unmarshal(newSpan, &m)

@@ -1,8 +1,9 @@
+// Copyright The OpenTelemetry Authors
 // Copyright (c) 2019 The Jaeger Authors.
 // Copyright (c) 2018 Uber Technologies, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package dbmodel
+package logzioexporter
 
 import (
 	"bytes"
@@ -13,10 +14,11 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/jaegertracing/jaeger/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/dbmodel"
 )
 
 func TestFromDomainEmbedProcess(t *testing.T) {
@@ -27,7 +29,7 @@ func TestFromDomainEmbedProcess(t *testing.T) {
 	converter := newFromDomain(false, nil, ":")
 	embeddedSpan := converter.fromDomainEmbedProcess(&span)
 
-	var expectedSpan LogzioSpan
+	var expectedSpan logzioSpan
 	require.NoError(t, json.Unmarshal(jsonStr, &expectedSpan))
 
 	testJSONEncoding(t, jsonStr, embeddedSpan)
@@ -35,11 +37,9 @@ func TestFromDomainEmbedProcess(t *testing.T) {
 
 // Loads and returns domain model and JSON model.
 func loadModel(t *testing.T) ([]byte, []byte) {
-	in := fmt.Sprintf("../../testdata/span.json")
-	inStr, err := os.ReadFile(in)
+	inStr, err := os.ReadFile("./testdata/span.json")
 	require.NoError(t, err)
-	out := fmt.Sprintf("../../testdata/logziospan.json")
-	outStr, err := os.ReadFile(out)
+	outStr, err := os.ReadFile("./testdata/logziospan.json")
 	require.NoError(t, err)
 	return inStr, outStr
 }
@@ -50,7 +50,7 @@ func testJSONEncoding(t *testing.T, expectedStr []byte, object any) {
 	enc.SetIndent("", "  ")
 	require.NoError(t, enc.Encode(object))
 	if !assert.Equal(t, string(expectedStr), buf.String()) {
-		err := os.WriteFile("model-actual.json", buf.Bytes(), 0o644)
+		err := os.WriteFile("model-actual.json", buf.Bytes(), 0o600)
 		require.NoError(t, err)
 	}
 }
@@ -95,35 +95,35 @@ func TestConvertKeyValueValue(t *testing.T) {
 	key := "key"
 	tests := []struct {
 		kv       model.KeyValue
-		expected KeyValue
+		expected dbmodel.KeyValue
 	}{
 		{
 			kv:       model.Bool(key, true),
-			expected: KeyValue{Key: key, Value: "true", Type: "bool"},
+			expected: dbmodel.KeyValue{Key: key, Value: "true", Type: "bool"},
 		},
 		{
 			kv:       model.Bool(key, false),
-			expected: KeyValue{Key: key, Value: "false", Type: "bool"},
+			expected: dbmodel.KeyValue{Key: key, Value: "false", Type: "bool"},
 		},
 		{
 			kv:       model.Int64(key, int64(1499)),
-			expected: KeyValue{Key: key, Value: "1499", Type: "int64"},
+			expected: dbmodel.KeyValue{Key: key, Value: "1499", Type: "int64"},
 		},
 		{
 			kv:       model.Float64(key, float64(15.66)),
-			expected: KeyValue{Key: key, Value: "15.66", Type: "float64"},
+			expected: dbmodel.KeyValue{Key: key, Value: "15.66", Type: "float64"},
 		},
 		{
 			kv:       model.String(key, longString),
-			expected: KeyValue{Key: key, Value: longString, Type: "string"},
+			expected: dbmodel.KeyValue{Key: key, Value: longString, Type: "string"},
 		},
 		{
 			kv:       model.Binary(key, []byte(longString)),
-			expected: KeyValue{Key: key, Value: hex.EncodeToString([]byte(longString)), Type: "binary"},
+			expected: dbmodel.KeyValue{Key: key, Value: hex.EncodeToString([]byte(longString)), Type: "binary"},
 		},
 		{
 			kv:       model.KeyValue{VType: 1500, Key: key},
-			expected: KeyValue{Key: key, Value: "unknown type 1500", Type: "1500"},
+			expected: dbmodel.KeyValue{Key: key, Value: "unknown type 1500", Type: "1500"},
 		},
 	}
 
