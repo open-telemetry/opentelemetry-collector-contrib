@@ -70,7 +70,20 @@ func (vs *valkeyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	vs.recordConnectionMetrics(now, result)
 
-	return vs.mb.Emit(), nil
+	rb := vs.mb.NewResourceBuilder()
+	rb.SetValkeyVersion(getValkeyVersion(result))
+	rb.SetServerAddress(vs.configInfo.Address)
+	rb.SetServerPort(vs.configInfo.Port)
+	return vs.mb.Emit(metadata.WithResource(rb.Emit())), nil
+}
+
+// getValkeyVersion retrieves version string from 'redis_version' Valkey info key-value pairs
+// e.g. "redis_version:5.0.7"
+func getValkeyVersion(info map[string]string) string {
+	if str, ok := info["redis_version"]; ok {
+		return str
+	}
+	return "unknown"
 }
 
 func (vs *valkeyScraper) recordConnectionMetrics(now pcommon.Timestamp, info map[string]string) {

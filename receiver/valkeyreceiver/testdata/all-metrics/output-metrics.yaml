@@ -1,5 +1,15 @@
 resourceMetrics:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: valkey.version
+          value:
+            stringValue: 7.2.4
+        - key: server.address
+          value:
+            stringValue: localhost
+        - key: server.port
+          value:
+            stringValue: "32787"
     scopeMetrics:
       - metrics:
           - description: The number of connections that are currently in state described by the state attribute
