@@ -8,13 +8,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/valkey-io/valkey-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/valkeyreceiver/internal/metadata"
-	"github.com/valkey-io/valkey-go"
 )
 
 type valkeyScraper struct {

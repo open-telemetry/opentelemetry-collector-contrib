@@ -5,15 +5,15 @@ package valkeyreceiver
 
 import (
 	"context"
+	_ "embed"
 	"path/filepath"
 	"testing"
 
-	_ "embed"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 //go:embed testdata/all-metrics/raw_info.txt
