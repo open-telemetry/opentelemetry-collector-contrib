@@ -7,6 +7,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Pages found in the buffer pool without having to read from disk.
@@ -28,6 +31,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of processes that are currently blocked
@@ -49,6 +55,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of users connected to the SQL Server.
@@ -70,6 +79,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of lock requests resulting in a wait.
@@ -91,6 +103,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of read operations that were throttled in the last second
@@ -112,6 +127,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of write operations that were throttled in the last second
@@ -133,6 +151,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of write operations that were throttled in the last second
@@ -154,6 +175,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: The number of read operations that were throttled in the last second
@@ -175,6 +199,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of batch requests received by SQL Server.
@@ -196,6 +223,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of SQL compilations needed.
@@ -217,6 +247,9 @@ resourceMetrics:
         - key: server.address
           value:
             stringValue: 0.0.0.0
+        - key: server.port
+          value:
+            intValue: "1433"
     scopeMetrics:
       - metrics:
           - description: Number of SQL recompilations needed.
