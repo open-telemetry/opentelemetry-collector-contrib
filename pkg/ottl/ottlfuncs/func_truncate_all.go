@@ -6,6 +6,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
+	"unicode/utf8"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -47,7 +48,16 @@ func TruncateAll[K any](target ottl.PMapGetter[K], limit int64) (ottl.ExprFunc[K
 		val.Range(func(_ string, value pcommon.Value) bool {
 			stringVal := value.Str()
 			if int64(len(stringVal)) > limit {
-				value.SetStr(stringVal[:limit])
+				truncatedStr := stringVal[:limit]
+				for !utf8.ValidString(truncatedStr) {
+					limit--
+					if limit == 0 {
+						value.SetStr("")
+						return true
+					}
+					truncatedStr = stringVal[:limit]
+				}
+				value.SetStr(truncatedStr)
 			}
 			return true
 		})
