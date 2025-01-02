@@ -233,12 +233,6 @@ func (p *Parser[K]) newKeys(keys []key) ([]Key[K], error) {
 				}
 				par = arg
 			}
-			if f := keys[i].Expression.Float; f != nil {
-				par = literal[K]{value: *f}
-			}
-			if i := keys[i].Expression.Int; i != nil {
-				par = literal[K]{value: *i}
-			}
 			if keys[i].Expression.Converter != nil {
 				g, err := p.newGetterFromConverter(*keys[i].Expression.Converter)
 				if err != nil {
