@@ -21,7 +21,7 @@ type resourceAttributes struct {
 	owner, logGroup, logStream string
 }
 
-// resourceLogsBuilder provides convenient access to the a Resource's LogRecordSlice.
+// resourceLogsBuilder provides convenient access to the Resource's LogRecordSlice.
 type resourceLogsBuilder struct {
 	rls plog.LogRecordSlice
 }

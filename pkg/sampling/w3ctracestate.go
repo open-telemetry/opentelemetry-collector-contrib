@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// W3CTraceState represents the a parsed W3C `tracestate` header.
+// W3CTraceState represents the parsed W3C `tracestate` header.
 //
 // This type receives and passes through `tracestate` fields defined
 // by all vendors, while it parses and validates the

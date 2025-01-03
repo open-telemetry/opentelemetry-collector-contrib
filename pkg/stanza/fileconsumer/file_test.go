@@ -467,7 +467,7 @@ func TestMultipleEmpty(t *testing.T) {
 	sink.ExpectNoCallsUntil(t, time.Second)
 }
 
-// TestLeadingEmpty tests that the the operator handles a leading
+// TestLeadingEmpty tests that the operator handles a leading
 // newline, and does not read the file multiple times
 func TestLeadingEmpty(t *testing.T) {
 	t.Parallel()

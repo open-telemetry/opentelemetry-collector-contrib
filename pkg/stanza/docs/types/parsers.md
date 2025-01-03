@@ -5,7 +5,7 @@ Parser operators are used to isolate values from a string. There are two classes
 ### Simple Parsers
 
 Simple parsers perform a very specific operation where the result is assigned to a predetermined field in the log data model.
-For example, the [`time_parser`](../operators/time_parser.md) will parse a timestamp and assign it to the a log record's `Timestamp` field.
+For example, the [`time_parser`](../operators/time_parser.md) will parse a timestamp and assign it to the log record's `Timestamp` field.
 
 List of simple parsers:
 - [`time_parser`](../operators/time_parser.md)
@@ -53,4 +53,4 @@ List of embeddable operations:
 - [`severity`](./severity.md)
 - [`trace`](./trace.md)
 - [`scope_name`](./scope_name.md)
-- `body`: A field that should be assigned to a the log body.
+- `body`: A field that should be assigned to the log body.

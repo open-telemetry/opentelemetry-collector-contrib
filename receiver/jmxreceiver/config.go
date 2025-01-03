@@ -54,7 +54,7 @@ type Config struct {
 	RemoteProfile string `mapstructure:"remote_profile"`
 	// The SASL/DIGEST-MD5 realm
 	Realm string `mapstructure:"realm"`
-	// Array of additional JARs to be added to the the class path when launching the JMX Metric Gatherer JAR
+	// Array of additional JARs to be added to the class path when launching the JMX Metric Gatherer JAR
 	AdditionalJars []string `mapstructure:"additional_jars"`
 	// Map of resource attributes used by the Java SDK Autoconfigure to set resource attributes
 	ResourceAttributes map[string]string `mapstructure:"resource_attributes"`
