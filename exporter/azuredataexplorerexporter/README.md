@@ -30,7 +30,7 @@ One authentication method is required:
   - `application_key` (no default): The cluster secret corresponding to the client id.
   - `tenant_id` (no default): The tenant id where the application_id is referenced from.
 - Managed identity:
-  - `managed_identity_id` (no default): The managed identity id to authenticate with. Set to "system" for system-assigned managed identity. Set the MI client Id (GUID) for user-assigned managed identity.
+  - `managed_identity_id` (no default): The managed identity id to authenticate with. Set to "system" for system-assigned managed identity. Set the MI client ID (GUID) for user-assigned managed identity.
 - Default authentication:
   - `use_azure_auth` (default: false): Set to true to use the Azure [default authentication](https://learn.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication?tabs=bash#2-authenticate-with-azure).
 
@@ -61,7 +61,7 @@ exporters:
   azuredataexplorer:
     # Kusto cluster uri
     cluster_uri: "https://CLUSTER.kusto.windows.net"
-    # Client Id
+    # Client ID
     application_id: "f80da32c-108c-415c-a19e-643f461a677a"
     # The client secret for the client
     application_key: "xx-xx-xx-xx"
@@ -69,7 +69,7 @@ exporters:
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
     # A managed identity id to authenticate with. 
     # Set to "system" for system-assigned managed identity.
-    # Set the MI client Id (GUID) for user-assigned managed identity.
+    # Set the MI client ID (GUID) for user-assigned managed identity.
     managed_identity_id: "z80da32c-108c-415c-a19e-643f461a677a"
     # Database for the logs
     db_name: "oteldb"
