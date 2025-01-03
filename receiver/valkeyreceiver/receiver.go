@@ -5,6 +5,7 @@ package valkeyreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/valkeyreceiver/internal/metadata"
 )
@@ -23,6 +25,7 @@ type valkeyScraper struct {
 	cfg        *Config
 	mb         *metadata.MetricsBuilder
 	configInfo configInfo
+	logger     *zap.Logger
 }
 
 func newValkeyScraper(cfg *Config, settings receiver.Settings) (*valkeyScraper, error) {
@@ -36,6 +39,7 @@ func newValkeyScraper(cfg *Config, settings receiver.Settings) (*valkeyScraper, 
 		settings:   settings.TelemetrySettings,
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		configInfo: configInfo,
+		logger:     settings.Logger,
 	}, nil
 }
 
@@ -56,8 +60,7 @@ func (vs *valkeyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if opts.TLSConfig, err = vs.cfg.TLS.LoadTLSConfig(context.Background()); err != nil {
 			return pmetric.Metrics{}, err
 		}
-		vs.client, err = newValkeyClient(opts)
-		if err != nil {
+		if vs.client, err = newValkeyClient(opts, vs.logger); err != nil {
 			return pmetric.Metrics{}, err
 		}
 	}
@@ -92,6 +95,8 @@ func (vs *valkeyScraper) recordConnectionMetrics(now pcommon.Timestamp, info map
 		if val, ok := info[infoKey]; ok {
 			if i, err := strconv.ParseInt(val, 10, 64); err == nil {
 				vs.mb.RecordValkeyClientConnectionCountDataPoint(now, i, attribute)
+			} else {
+				vs.logger.Error(fmt.Errorf("could not parse field %s from key %s as integer: %w", val, infoKey, err).Error())
 			}
 		}
 	}

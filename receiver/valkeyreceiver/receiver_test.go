@@ -22,7 +22,7 @@ var raw_info string
 type mockClient struct{}
 
 func (mockClient) retrieveInfo(context.Context) (map[string]string, error) {
-	return parseRawDataMap(raw_info), nil
+	return parseRawDataMap(raw_info)
 }
 
 func (mockClient) close() error {

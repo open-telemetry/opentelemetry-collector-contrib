@@ -4,9 +4,11 @@ package valkeyreceiver // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/valkey-io/valkey-go"
+	"go.uber.org/zap"
 )
 
 var attrDelimiter = "\r\n"
@@ -27,7 +29,7 @@ type valkeyClient struct {
 var _ client = (*valkeyClient)(nil)
 
 // Creates a new real Valkey client from the passed-in valkey.Options.
-func newValkeyClient(options valkey.ClientOption) (client, error) {
+func newValkeyClient(options valkey.ClientOption, logger *zap.Logger) (client, error) {
 	innerClient, err := valkey.NewClient(options)
 	if err != nil {
 		return nil, err
@@ -42,10 +44,10 @@ func (c *valkeyClient) retrieveInfo(ctx context.Context) (map[string]string, err
 		return nil, err
 	}
 
-	return parseRawDataMap(str), nil
+	return parseRawDataMap(str)
 }
 
-func parseRawDataMap(data string) map[string]string {
+func parseRawDataMap(data string) (map[string]string, error) {
 	attrs := make(map[string]string)
 	lines := strings.Split(data, attrDelimiter)
 	for _, line := range lines {
@@ -55,9 +57,11 @@ func parseRawDataMap(data string) map[string]string {
 		pair := strings.Split(line, ":")
 		if len(pair) == 2 { // defensive, should always == 2
 			attrs[pair[0]] = pair[1]
+		} else {
+			fmt.Errorf("could not split line %q using \":\" as delimiter", line)
 		}
 	}
-	return attrs
+	return attrs, nil
 }
 
 // close client to release connection pool.
