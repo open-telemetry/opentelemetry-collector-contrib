@@ -7,13 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"jaeger"
-	"regexp"
-	"strings"
 	"time"
-	"zipkincore"
-
 	thrift "github.com/apache/thrift/lib/go/thrift"
+	"strings"
+	"regexp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/thrift-gen/jaeger"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/thrift-gen/zipkincore"
+
 )
 
 // (needed to ensure safety because of naive import list construction.)
@@ -23,7 +23,6 @@ var _ = errors.New
 var _ = context.Background
 var _ = time.Now
 var _ = bytes.Equal
-
 // (needed by validator.)
 var _ = strings.Contains
 var _ = regexp.MatchString
@@ -33,3 +32,4 @@ var _ = zipkincore.GoUnusedProtection__
 
 func init() {
 }
+

@@ -7,6 +7,16 @@ THRIFT=docker run --rm -u ${shell id -u} -v "${PWD}:/data" $(THRIFT_IMG) thrift
 THRIFT_GO_ARGS=thrift_import="github.com/apache/thrift/lib/go/thrift"
 THRIFT_GEN_DIR=thrift-gen
 
+JAEGER_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
+
+# sed on Mac does not support the same syntax for in-place updates as sed on Linux
+# When running on MacOS it's best to install gsed and run Makefile with SED=gsed
+ifeq ($(GOOS),darwin)
+	SED=gsed
+else
+	SED=sed
+endif
+
 .PHONY: thrift-image
 thrift-image:
 	$(THRIFT) -version
