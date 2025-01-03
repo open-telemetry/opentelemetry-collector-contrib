@@ -27,7 +27,7 @@ exporters:
 ```
 The SAPM exporter builds on the Jaeger proto and adds additional batching on top. This allows
 the collector to export traces from multiples nodes/services in a single batch. The SAPM proto
-and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
+and some useful related utilities is in [signalfx/sapm-proto](https://github.com/signalfx/sapm-proto/).
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md),
