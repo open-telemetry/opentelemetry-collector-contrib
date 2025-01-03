@@ -60,7 +60,7 @@ func parseRawDataMap(data string) map[string]string {
 	return attrs
 }
 
-// close client to release connention pool.
+// close client to release connection pool.
 func (c *valkeyClient) close() error {
 	c.client.Close()
 	return nil
