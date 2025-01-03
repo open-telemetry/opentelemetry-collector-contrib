@@ -130,7 +130,7 @@ func TestPipeline(t *testing.T) {
 		operator2.On("Outputs").Return([]operator.Operator{operator1})
 
 		_, err := NewDirectedPipeline([]operator.Operator{operator1, operator2})
-		require.ErrorContains(t, err, "can not process")
+		require.ErrorContains(t, err, "cannot process")
 	})
 
 	t.Run("DuplicateEdges", func(t *testing.T) {

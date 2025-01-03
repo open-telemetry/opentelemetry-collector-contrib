@@ -154,7 +154,7 @@ func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precisio
 		case dataPoint.DoubleValue() != 0.0:
 			dataPoint.SetDoubleValue(math.Round(dataPoint.DoubleValue()*factor) / factor)
 		case dataPoint.IntValue() != 0:
-			panic(fmt.Sprintf("integers can not have float precision ignored: %v", dataPoints.At(i)))
+			panic(fmt.Sprintf("integers cannot have float precision ignored: %v", dataPoints.At(i)))
 		}
 	}
 }

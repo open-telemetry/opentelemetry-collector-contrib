@@ -83,5 +83,5 @@ func TestOutputOperatorSetOutputs(t *testing.T) {
 	}
 
 	err := output.SetOutputs([]operator.Operator{})
-	require.ErrorContains(t, err, "Operator can not output")
+	require.ErrorContains(t, err, "Operator cannot output")
 }

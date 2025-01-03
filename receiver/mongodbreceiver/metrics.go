@@ -191,7 +191,7 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 		return
 	}
 	if storageEngine != "wiredTiger" {
-		// mongodb is using a different storage engine and this metric can not be collected
+		// mongodb is using a different storage engine and this metric cannot be collected
 		return
 	}
 
@@ -252,7 +252,7 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 		return
 	}
 	if storageEngine != "wiredTiger" {
-		// mongodb is using a different storage engine and this metric can not be collected
+		// mongodb is using a different storage engine and this metric cannot be collected
 		return
 	}
 

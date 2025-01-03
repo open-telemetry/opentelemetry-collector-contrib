@@ -275,7 +275,7 @@ func TestReadToInterfaceMapWithMissingField(t *testing.T) {
 	field := NewAttributeField("label")
 	dest := map[string]any{}
 	err := entry.readToInterfaceMap(field, &dest)
-	require.ErrorContains(t, err, "can not be read as a map[string]any")
+	require.ErrorContains(t, err, "cannot be read as a map[string]any")
 }
 
 func TestReadToStringMapWithMissingField(t *testing.T) {
@@ -283,7 +283,7 @@ func TestReadToStringMapWithMissingField(t *testing.T) {
 	field := NewAttributeField("label")
 	dest := map[string]string{}
 	err := entry.readToStringMap(field, &dest)
-	require.ErrorContains(t, err, "can not be read as a map[string]string")
+	require.ErrorContains(t, err, "cannot be read as a map[string]string")
 }
 
 func TestReadToInterfaceMissingField(t *testing.T) {
@@ -291,7 +291,7 @@ func TestReadToInterfaceMissingField(t *testing.T) {
 	field := NewAttributeField("label")
 	var dest any
 	err := entry.readToInterface(field, &dest)
-	require.ErrorContains(t, err, "can not be read as a any")
+	require.ErrorContains(t, err, "cannot be read as a any")
 }
 
 func TestDefaultTimestamps(t *testing.T) {

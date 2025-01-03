@@ -84,9 +84,9 @@ func (i *InputOperator) CanProcess() bool {
 
 // Process will always return an error if called.
 func (i *InputOperator) Process(_ context.Context, _ *entry.Entry) error {
-	i.Logger().Error("Operator received an entry, but can not process")
+	i.Logger().Error("Operator received an entry, but cannot process")
 	return errors.NewError(
-		"Operator can not process logs.",
+		"Operator cannot process logs.",
 		"Ensure that operator is not configured to receive logs from other operators",
 	)
 }

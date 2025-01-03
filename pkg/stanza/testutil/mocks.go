@@ -87,7 +87,7 @@ func (f *FakeOutput) Type() string { return "fake_output" }
 func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {
 	f.Received <- entry
 	if f.processWithError {
-		return errors.NewError("Operator can not process logs.", "")
+		return errors.NewError("Operator cannot process logs.", "")
 	}
 	return nil
 }

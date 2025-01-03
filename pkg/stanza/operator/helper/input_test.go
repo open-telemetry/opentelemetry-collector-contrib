@@ -88,7 +88,7 @@ func TestInputOperatorProcess(t *testing.T) {
 	ctx := context.Background()
 	err := input.Process(ctx, entry)
 	require.Error(t, err)
-	require.Equal(t, "Operator can not process logs.", err.Error())
+	require.Equal(t, "Operator cannot process logs.", err.Error())
 }
 
 func TestInputOperatorNewEntry(t *testing.T) {

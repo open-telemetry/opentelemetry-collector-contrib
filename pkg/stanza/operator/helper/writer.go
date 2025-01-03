@@ -87,7 +87,7 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 		}
 
 		if !operator.CanProcess() {
-			return fmt.Errorf("operator '%s' can not process entries", operatorID)
+			return fmt.Errorf("operator '%s' cannot process entries", operatorID)
 		}
 
 		outputOperators[i] = operator

@@ -75,7 +75,7 @@ func (entry *Entry) Read(field FieldInterface, dest any) error {
 	case *any:
 		return entry.readToInterface(field, dest)
 	default:
-		return fmt.Errorf("can not read to unsupported type '%T'", dest)
+		return fmt.Errorf("cannot read to unsupported type '%T'", dest)
 	}
 }
 
@@ -83,7 +83,7 @@ func (entry *Entry) Read(field FieldInterface, dest any) error {
 func (entry *Entry) readToInterface(field FieldInterface, dest *any) error {
 	val, ok := entry.Get(field)
 	if !ok {
-		return fmt.Errorf("field '%s' is missing and can not be read as a any", field)
+		return fmt.Errorf("field '%s' is missing and cannot be read as a any", field)
 	}
 
 	*dest = val
@@ -94,7 +94,7 @@ func (entry *Entry) readToInterface(field FieldInterface, dest *any) error {
 func (entry *Entry) readToString(field FieldInterface, dest *string) error {
 	val, ok := entry.Get(field)
 	if !ok {
-		return fmt.Errorf("field '%s' is missing and can not be read as a string", field)
+		return fmt.Errorf("field '%s' is missing and cannot be read as a string", field)
 	}
 
 	switch typed := val.(type) {
@@ -103,7 +103,7 @@ func (entry *Entry) readToString(field FieldInterface, dest *string) error {
 	case []byte:
 		*dest = string(typed)
 	default:
-		return fmt.Errorf("field '%s' of type '%T' can not be cast to a string", field, val)
+		return fmt.Errorf("field '%s' of type '%T' cannot be cast to a string", field, val)
 	}
 
 	return nil
@@ -113,13 +113,13 @@ func (entry *Entry) readToString(field FieldInterface, dest *string) error {
 func (entry *Entry) readToInterfaceMap(field FieldInterface, dest *map[string]any) error {
 	val, ok := entry.Get(field)
 	if !ok {
-		return fmt.Errorf("field '%s' is missing and can not be read as a map[string]any", field)
+		return fmt.Errorf("field '%s' is missing and cannot be read as a map[string]any", field)
 	}
 
 	if m, ok := val.(map[string]any); ok {
 		*dest = m
 	} else {
-		return fmt.Errorf("field '%s' of type '%T' can not be cast to a map[string]any", field, val)
+		return fmt.Errorf("field '%s' of type '%T' cannot be cast to a map[string]any", field, val)
 	}
 
 	return nil
@@ -129,7 +129,7 @@ func (entry *Entry) readToInterfaceMap(field FieldInterface, dest *map[string]an
 func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]string) error {
 	val, ok := entry.Get(field)
 	if !ok {
-		return fmt.Errorf("field '%s' is missing and can not be read as a map[string]string{}", field)
+		return fmt.Errorf("field '%s' is missing and cannot be read as a map[string]string{}", field)
 	}
 
 	switch m := val.(type) {
@@ -139,7 +139,7 @@ func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]strin
 			if vStr, ok := v.(string); ok {
 				newDest[k] = vStr
 			} else {
-				return fmt.Errorf("can not cast map members '%s' of type '%s' to string", k, v)
+				return fmt.Errorf("cannot cast map members '%s' of type '%s' to string", k, v)
 			}
 		}
 		*dest = newDest
@@ -148,11 +148,11 @@ func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]strin
 		for k, v := range m {
 			keyStr, ok := k.(string)
 			if !ok {
-				return fmt.Errorf("can not cast map key of type '%T' to string", k)
+				return fmt.Errorf("cannot cast map key of type '%T' to string", k)
 			}
 			vStr, ok := v.(string)
 			if !ok {
-				return fmt.Errorf("can not cast map value of type '%T' to string", v)
+				return fmt.Errorf("cannot cast map value of type '%T' to string", v)
 			}
 			newDest[keyStr] = vStr
 		}

@@ -158,9 +158,9 @@ and its contributors.
   [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
   and in the respective testing harnesses. To align with the test goal of the
   project, components must be testable within the framework defined within the
-  folder. If a component can not be properly tested within the existing
+  folder. If a component cannot be properly tested within the existing
   framework, it must increase the non testable components number with a comment
-  within the PR explaining as to why it can not be tested. **(Note: this does
+  within the PR explaining as to why it cannot be tested. **(Note: this does
   not automatically include any components in official release binaries. See
   [Releasing new components](#releasing-new-components).)**
 

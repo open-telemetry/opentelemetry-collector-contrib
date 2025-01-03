@@ -158,7 +158,7 @@ func connectNode(graph *simple.DirectedGraph, inputNode OperatorNode) error {
 		outputNode := graph.Node(outputNodeID).(OperatorNode)
 		if !outputNode.Operator().CanProcess() {
 			return stanzaerrors.NewError(
-				"operators cannot be connected, because the output operator can not process logs",
+				"operators cannot be connected, because the output operator cannot process logs",
 				"ensure that the output operator can process logs (like a parser or destination)",
 				"input_operator", inputNode.Operator().ID(),
 				"output_operator", outputOperatorID,

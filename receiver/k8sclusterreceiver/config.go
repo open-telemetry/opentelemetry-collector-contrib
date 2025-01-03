@@ -42,7 +42,7 @@ type Config struct {
 
 	// Namespace to fetch resources from. If this is set, certain cluster-wide resources such as Nodes or Namespaces
 	// will not be able to be observed. Setting this option is recommended in environments where due to security restrictions
-	// the collector can not be granted cluster-wide permissions.
+	// the collector cannot be granted cluster-wide permissions.
 	Namespace string `mapstructure:"namespace"`
 }
 

@@ -62,7 +62,7 @@ func TestWriterOperatorWrite(t *testing.T) {
 
 func TestWriterOperatorWriteAfterError(t *testing.T) {
 	output1 := testutil.NewMockOperator("output1")
-	output1.On("Process", mock.Anything, mock.Anything).Return(errors.NewError("Operator can not process logs.", ""))
+	output1.On("Process", mock.Anything, mock.Anything).Return(errors.NewError("Operator cannot process logs.", ""))
 	output2 := testutil.NewMockOperator("output2")
 	output2.On("Process", mock.Anything, mock.Anything).Return(nil)
 
@@ -131,7 +131,7 @@ func TestWriterSetOutputsInvalid(t *testing.T) {
 	}
 
 	err := writer.SetOutputs([]operator.Operator{output1})
-	require.ErrorContains(t, err, "can not process entries")
+	require.ErrorContains(t, err, "cannot process entries")
 }
 
 func TestWriterSetOutputsValid(t *testing.T) {

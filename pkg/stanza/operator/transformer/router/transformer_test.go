@@ -196,7 +196,7 @@ func TestTransformer(t *testing.T) {
 			mock1.On(
 				"Process", mock.Anything, mock.Anything,
 			).Return(
-				errors.NewError("Operator can not process logs.", ""),
+				errors.NewError("Operator cannot process logs.", ""),
 			).Run(func(args mock.Arguments) {
 				results["output1"]++
 				if entry, ok := args[1].(*entry.Entry); ok {
