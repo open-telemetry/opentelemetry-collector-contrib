@@ -72,7 +72,7 @@ receivers:
     no_verify_ssl: True
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go).
 
 ### Huawei Cloud SDK Authentication Setup
 
