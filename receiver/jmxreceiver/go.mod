@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxrec
 go 1.22.0
 
 require (
+	github.com/magiconair/properties v1.8.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.115.0
@@ -55,7 +56,6 @@ require (
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
