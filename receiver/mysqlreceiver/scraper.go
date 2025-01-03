@@ -139,9 +139,13 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
 				metadata.AttributeBufferPoolPagesFree))
 		case "Innodb_buffer_pool_pages_misc":
+			_, err := strconv.ParseInt(v, 10, 64)
+			if err != nil {
+				m.logger.Warn("Innodb_buffer_pool_pages_misc reports an out-of-bounds value and will be ignored. See https://bugs.mysql.com/bug.php?id=59550.")
+				continue
+			}
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPagesDataPoint(now, v,
 				metadata.AttributeBufferPoolPagesMisc))
-
 		// buffer_pool.page_flushes
 		case "Innodb_buffer_pool_pages_flushed":
 			addPartialIfError(errs, m.mb.RecordMysqlBufferPoolPageFlushesDataPoint(now, v))
