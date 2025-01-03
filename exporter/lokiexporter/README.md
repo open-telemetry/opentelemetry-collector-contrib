@@ -308,7 +308,7 @@ If `service.instance.id` is not present then `instance` label is not set
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
 configurations [here](./testdata/config.yaml).
 
-More information on how to send logs to Grafana Loki using the OpenTelemetry Collector could be found [here](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
+For more information, see [how to send logs to Grafana Loki using the OpenTelemetry Collector](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
 
 ### Tenant information
 
