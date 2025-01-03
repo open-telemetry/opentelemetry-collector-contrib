@@ -588,5 +588,5 @@ Note that if multiple detectors are inserting the same attribute name, the first
 * ecs
 * ec2
 
-The full list of settings exposed for this extension are documented [here](./config.go)
+The full list of settings exposed for this extension are documented in [config.go](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
