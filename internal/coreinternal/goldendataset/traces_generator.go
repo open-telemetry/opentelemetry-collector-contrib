@@ -14,7 +14,7 @@ import (
 
 // GenerateTraces generates a slice of OTLP ResourceSpans objects based on the PICT-generated pairwise
 // parameters defined in the parameters file specified by the tracePairsFile parameter. The pairs to generate
-// spans for for defined in the file specified by the spanPairsFile parameter.
+// spans for defined in the file specified by the spanPairsFile parameter.
 // The slice of ResourceSpans are returned. If an err is returned, the slice elements will be nil.
 func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]ptrace.Traces, error) {
 	random := io.Reader(rand.New(rand.NewSource(42)))
