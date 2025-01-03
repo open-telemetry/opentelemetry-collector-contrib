@@ -14,6 +14,8 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
 			rb.SetAwsVolumeID("aws.volume.id-val")
+			rb.SetContainerCsiPluginName("container.csi.plugin.name-val")
+			rb.SetContainerCsiVolumeID("container.csi.volume.id-val")
 			rb.SetContainerID("container.id-val")
 			rb.SetFsType("fs.type-val")
 			rb.SetGcePdName("gce.pd.name-val")
@@ -34,9 +36,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 17, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 17, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -48,6 +50,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "aws.volume.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.csi.plugin.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "container.csi.plugin.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.csi.volume.id")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "container.csi.volume.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.id")
 			assert.True(t, ok)
