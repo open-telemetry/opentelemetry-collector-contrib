@@ -102,7 +102,7 @@ As a special case, the [`time_parser`](../operators/time_parser.md) operator sup
 
 ### Example Configurations
 
-The following examples use file log receiver, but they also apply to other components that use the stanza libarary.
+The following examples use file log receiver, but they also apply to other components that use the stanza library.
 
 #### Parse timestamps from plain text logs
 
