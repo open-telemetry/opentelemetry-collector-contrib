@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -82,52 +81,49 @@ var baseProviderMock = providerMock{
 }
 
 var testCases = []struct {
-	name             string
-	goldenDir        string
-	context          ContextID
-	lookupAttributes []attribute.Key
+	name      string
+	goldenDir string
+	context   ContextID
 }{
 	{
-		name:             "default source.address attribute, not found",
-		goldenDir:        "no_source_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute, not found",
+		goldenDir: "no_source_address",
+		context:   resource,
 	},
 	{
-		name:             "default source.address attribute",
-		goldenDir:        "source_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute",
+		goldenDir: "source_address",
+		context:   resource,
 	},
 	{
-		name:             "default source.address attribute no geo metadata found by providers",
-		goldenDir:        "source_address_geo_not_found",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute no geo metadata found by providers",
+		goldenDir: "source_address_geo_not_found",
+		context:   resource,
 	},
 	{
-		name:             "default source.ip attribute with an unspecified IP address should be skipped",
-		goldenDir:        "unspecified_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.ip attribute with an unspecified IP address should be skipped",
+		goldenDir: "unspecified_address",
+		context:   resource,
 	},
 	{
-		name:             "custom source attributes",
-		goldenDir:        "custom_sources",
-		context:          resource,
-		lookupAttributes: []attribute.Key{"ip", "host.ip"},
+		name:      "custom source attributes",
+		goldenDir: "custom_sources",
+		context:   resource,
 	},
 	{
-		name:             "do not add resource attributes with an invalid ip",
-		goldenDir:        "invalid_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "do not add resource attributes with an invalid ip",
+		goldenDir: "invalid_address",
+		context:   resource,
 	},
 	{
-		name:             "source address located in inner attributes",
-		goldenDir:        "attribute_source_address",
-		context:          record,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "source address located in inner attributes",
+		goldenDir: "attribute_source_address",
+		context:   record,
+	},
+	{
+		name:      "client address located in inner attributes",
+		goldenDir: "attribute_client_address",
+		context:   record,
 	},
 }
 
@@ -205,7 +201,6 @@ func TestProcessor(t *testing.T) {
 	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
 		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
 			return attribute.NewSet([]attribute.KeyValue{
-				semconv.SourceAddress("1.2.3.4"),
 				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
 				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
 				attribute.String(conventions.AttributeGeoContinentName, "Europe"),

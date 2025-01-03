@@ -24,7 +24,10 @@ var (
 	// defaultResourceAttributes holds a list of default resource attribute keys.
 	// These keys are used to identify an IP address attribute associated with the resource.
 	defaultResourceAttributes = []attribute.Key{
-		semconv.SourceAddressKey, // This key represents the standard source address attribute as defined in the OpenTelemetry semantic conventions.
+		// The client attributes are in use by the HTTP semantic conventions
+		semconv.ClientAddressKey,
+		// The source attributes are used when there is no client/server relationship between the two sides, or when that relationship is unknown
+		semconv.SourceAddressKey,
 	}
 )
 
