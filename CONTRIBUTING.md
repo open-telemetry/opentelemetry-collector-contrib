@@ -259,8 +259,7 @@ in general try to follow them.
 - When implementing exporters try to leverage the exporter helpers from the core repo, see [exporterhelper
   package](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper). This will
   ensure that the exporter provides [zPages](https://opencensus.io/zpages/) and a standard set of metrics.
-- `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
-  on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
+- `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information, see the [`crosslink` tool README](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
 
 ## Issue Triaging
 
