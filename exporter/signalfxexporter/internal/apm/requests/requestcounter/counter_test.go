@@ -32,7 +32,7 @@ func TestContextWithRequestCounter(t *testing.T) {
 
 	// ensure increment on parent also increments child
 	IncrementRequestCount(parent)
-	assert.Equal(t, uint32(3), GetRequestCount(parent), "parent context can still still increment counter")
+	assert.Equal(t, uint32(3), GetRequestCount(parent), "parent context can still increment counter")
 	assert.Equal(t, uint32(3), GetRequestCount(child), "child context counter was incremented when parent was incremented")
 
 	assert.Equal(t, uint32(3), GetRequestCount(ContextWithRequestCounter(parent)), "trying to get a context with a counter shouldn't not overwrite an existing counter")
