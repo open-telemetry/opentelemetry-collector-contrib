@@ -58,7 +58,7 @@ For example, `events` resource is available in both `v1` and `events.k8s.io/v1` 
 this case, it will select `v1` by default.
 
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.

@@ -75,7 +75,7 @@ receivers:
       extension: ack/in_memory
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
 [configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls

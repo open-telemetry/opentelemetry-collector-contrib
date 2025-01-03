@@ -71,4 +71,4 @@ service:
       exporters: [debug]
 ```
 
-For a full list of settings exposed by this receiver please look [here](./config.go) with a detailed configuration [here](./testdata/config.yaml).
+For a full list of settings exposed by this receiver please look in [config.go](./config.go) with a detailed configuration [here](./testdata/config.yaml).

@@ -46,4 +46,4 @@ receivers:
         enabled: false
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
+The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
