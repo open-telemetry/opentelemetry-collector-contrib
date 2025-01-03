@@ -734,6 +734,36 @@ func TestExporterLogs(t *testing.T) {
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
+
+	t.Run("otel mode attribute complex value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		logs := plog.NewLogs()
+		resourceLog := logs.ResourceLogs().AppendEmpty()
+		resourceLog.Resource().Attributes().PutEmptyMap("some.resource.attribute").PutEmptyMap("foo").PutStr("bar", "baz")
+		scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+		scopeLog.Scope().Attributes().PutEmptyMap("some.scope.attribute").PutEmptyMap("foo").PutStr("bar", "baz")
+		logRecord := scopeLog.LogRecords().AppendEmpty()
+		logRecord.Attributes().PutEmptyMap("some.record.attribute").PutEmptyMap("foo").PutStr("bar", "baz")
+
+		mustSendLogs(t, exporter, logs)
+
+		rec.WaitItems(1)
+
+		assert.Len(t, rec.Items(), 1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"some.record.attribute":{"foo":{"bar":"baz"}}}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"some.scope.attribute.foo.bar":"baz"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"some.resource.attribute.foo.bar":"baz"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
 }
 
 func TestExporterMetrics(t *testing.T) {

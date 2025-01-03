@@ -221,7 +221,7 @@ func TestEncodeAttributes(t *testing.T) {
 			mappingMode: MappingNone,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
-				doc.AddAttributes("Attributes", attributes)
+				doc.AddFlattenedAttributes("Attributes", attributes)
 				return doc
 			},
 		},
@@ -229,7 +229,7 @@ func TestEncodeAttributes(t *testing.T) {
 			mappingMode: MappingECS,
 			want: func() objmodel.Document {
 				doc := objmodel.Document{}
-				doc.AddAttributes("Attributes", attributes)
+				doc.AddFlattenedAttributes("Attributes", attributes)
 				return doc
 			},
 		},

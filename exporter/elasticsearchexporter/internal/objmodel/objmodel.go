@@ -111,7 +111,7 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 	}
 
 	fields := make([]field, 0, am.Len())
-	fields = appendAttributeFields(fields, path, am)
+	fields = appendAttributeFields(fields, path, am, true)
 	return Document{fields: fields}
 }
 
@@ -175,10 +175,16 @@ func (doc *Document) AddUInt(key string, value uint64) {
 	doc.Add(key, UIntValue(value))
 }
 
-// AddAttributes expands and flattens all key-value pairs from the input attribute map into
+// AddFlattenedAttributes expands and flattens all key-value pairs from the input attribute map into
 // the document.
-func (doc *Document) AddAttributes(key string, attributes pcommon.Map) {
-	doc.fields = appendAttributeFields(doc.fields, key, attributes)
+func (doc *Document) AddFlattenedAttributes(key string, attributes pcommon.Map) {
+	doc.AddAttributes(key, attributes, true)
+}
+
+// AddAttributes optionally expands and flattens all key-value pairs from the input attribute map into
+// the document.
+func (doc *Document) AddAttributes(key string, attributes pcommon.Map, flattenValues bool) {
+	doc.fields = appendAttributeFields(doc.fields, key, attributes, flattenValues)
 }
 
 // AddAttribute converts and adds a AttributeValue to the document. If the attribute represents a map,
@@ -188,7 +194,7 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	case pcommon.ValueTypeEmpty:
 		// do not add 'null'
 	case pcommon.ValueTypeMap:
-		doc.AddAttributes(key, attribute.Map())
+		doc.AddFlattenedAttributes(key, attribute.Map())
 	default:
 		doc.Add(key, ValueFromAttribute(attribute))
 	}
@@ -199,7 +205,7 @@ func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
 		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
-		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
+		doc.AddFlattenedAttributes(flattenKey(key, e.Name()), e.Attributes())
 	}
 }
 
@@ -584,21 +590,21 @@ func arrFromAttributes(aa pcommon.Slice) []Value {
 	return values
 }
 
-func appendAttributeFields(fields []field, path string, am pcommon.Map) []field {
+func appendAttributeFields(fields []field, path string, am pcommon.Map, flattenValues bool) []field {
 	am.Range(func(k string, val pcommon.Value) bool {
-		fields = appendAttributeValue(fields, path, k, val)
+		fields = appendAttributeValue(fields, path, k, val, flattenValues)
 		return true
 	})
 	return fields
 }
 
-func appendAttributeValue(fields []field, path string, key string, attr pcommon.Value) []field {
+func appendAttributeValue(fields []field, path string, key string, attr pcommon.Value, flattenValues bool) []field {
 	if attr.Type() == pcommon.ValueTypeEmpty {
 		return fields
 	}
 
-	if attr.Type() == pcommon.ValueTypeMap {
-		return appendAttributeFields(fields, flattenKey(path, key), attr.Map())
+	if flattenValues && attr.Type() == pcommon.ValueTypeMap {
+		return appendAttributeFields(fields, flattenKey(path, key), attr.Map(), true)
 	}
 
 	return append(fields, field{
