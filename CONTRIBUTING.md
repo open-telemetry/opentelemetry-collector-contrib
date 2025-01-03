@@ -16,8 +16,7 @@ change. For instance:
 ### Description guidelines
 
 When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
-following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
-[here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
+following keywords: `Resolves`, `Fixes`, or `Closes`. For more information, see the [documentation on this functionality (and more keyword options)](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
 This will automatically close the issue once your PR has been merged.
 
 ## Changelog
