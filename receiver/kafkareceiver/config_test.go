@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -65,6 +66,9 @@ func TestLoadConfig(t *testing.T) {
 				MinFetchSize:     1,
 				DefaultFetchSize: 1048576,
 				MaxFetchSize:     0,
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -101,6 +105,13 @@ func TestLoadConfig(t *testing.T) {
 				MinFetchSize:     1,
 				DefaultFetchSize: 1048576,
 				MaxFetchSize:     0,
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled:         true,
+					InitialInterval: 1 * time.Second,
+					MaxInterval:     10 * time.Second,
+					MaxElapsedTime:  1 * time.Minute,
+					Multiplier:      1.5,
+				},
 			},
 		},
 	}

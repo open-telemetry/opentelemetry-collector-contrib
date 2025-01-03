@@ -97,7 +97,13 @@ The following settings can be optionally configured:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel piepline
   - `headers` (default = []): List of headers they'd like to extract from kafka record. 
   **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
-
+- `error_backoff`:
+  - `enabled`: (default = false) Whether to enable backoff when next consumers return errors 
+  - `initial_interval`: The time to wait after the first error before consuming the next message
+  - `max_interval`: The upper bound on backoff interval between consecutive message consumption
+  - `multiplier`: The value multiplied by the backoff interval bounds
+  - `randomization_factor`: A random factor used to calculate next backoff. Randomized interval = RetryInterval * (1 ± RandomizationFactor)
+  - `max_elapsed_time`: The maximum time trying to backoff before giving up. If set to 0, the backoff is never stopped.
 Example:
 
 ```yaml
