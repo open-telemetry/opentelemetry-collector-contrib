@@ -6,7 +6,7 @@ toolchain go1.22.8
 
 require (
 	github.com/apache/pulsar-client-go v0.14.0
-	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cenkalti/backoff/v5 v5.0.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.64.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
