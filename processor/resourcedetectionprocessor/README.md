@@ -589,4 +589,4 @@ Note that if multiple detectors are inserting the same attribute name, the first
 * ec2
 
 The full list of settings exposed for this extension are documented in [config.go](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
