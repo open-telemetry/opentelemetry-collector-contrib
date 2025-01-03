@@ -146,8 +146,8 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
 	document.AddAttribute("Body", record.Body())
 	m.encodeAttributes(&document, record.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	document.AddAttributes("Scope", scopeToAttributes(scope))
+	document.AddFlattenedAttributes("Resource", resource.Attributes())
+	document.AddFlattenedAttributes("Scope", scopeToAttributes(scope))
 
 	return document
 }
@@ -178,7 +178,7 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	m.encodeAttributesOTelMode(&document, record.Attributes())
+	m.encodeAttributesOTelMode(&document, record.Attributes(), false)
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
@@ -314,7 +314,7 @@ func (m *encodeModel) upsertMetricDataPointValueECSMode(documents map[uint32]obj
 	if document, ok = documents[hash]; !ok {
 		encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
 		document.AddTimestamp("@timestamp", dp.Timestamp())
-		document.AddAttributes("", dp.Attributes())
+		document.AddFlattenedAttributes("", dp.Attributes())
 	}
 
 	document.AddAttribute(metric.Name(), value)
@@ -342,7 +342,7 @@ func (m *encodeModel) upsertMetricDataPointValueOTelMode(documents map[uint32]ob
 		}
 		document.AddString("unit", metric.Unit())
 
-		m.encodeAttributesOTelMode(&document, dp.Attributes())
+		m.encodeAttributesOTelMode(&document, dp.Attributes(), true)
 		m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 		m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 	}
@@ -630,7 +630,7 @@ func (m *encodeModel) encodeScopeOTelMode(document *objmodel.Document, scope pco
 	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
 }
 
-func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map) {
+func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attributeMap pcommon.Map, flattenValues bool) {
 	attrsCopy := pcommon.NewMap() // Copy to avoid mutating original map
 	attributeMap.CopyTo(attrsCopy)
 	attrsCopy.RemoveIf(func(key string, val pcommon.Value) bool {
@@ -647,7 +647,7 @@ func (m *encodeModel) encodeAttributesOTelMode(document *objmodel.Document, attr
 		return false
 	})
 	mergeGeolocation(attrsCopy)
-	document.AddAttributes("attributes", attrsCopy)
+	document.AddAttributes("attributes", attrsCopy, flattenValues)
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
@@ -676,7 +676,7 @@ func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSche
 	document.AddString("kind", span.Kind().String())
 	document.AddUInt("duration", uint64(span.EndTimestamp()-span.StartTimestamp()))
 
-	m.encodeAttributesOTelMode(&document, span.Attributes())
+	m.encodeAttributesOTelMode(&document, span.Attributes(), true)
 
 	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
 	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
@@ -719,10 +719,10 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	document.AddString("TraceStatusDescription", span.Status().Message())
 	document.AddString("Link", spanLinksToString(span.Links()))
 	m.encodeAttributes(&document, span.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
+	document.AddFlattenedAttributes("Resource", resource.Attributes())
 	m.encodeEvents(&document, span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
-	document.AddAttributes("Scope", scopeToAttributes(scope))
+	document.AddFlattenedAttributes("Scope", scopeToAttributes(scope))
 	return document
 }
 
@@ -739,7 +739,7 @@ func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaU
 	document.AddTraceID("trace_id", span.TraceID())
 	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
 
-	m.encodeAttributesOTelMode(&document, spanEvent.Attributes())
+	m.encodeAttributesOTelMode(&document, spanEvent.Attributes(), true)
 	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
 	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
 
@@ -751,7 +751,7 @@ func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes p
 	if m.mode == MappingRaw {
 		key = ""
 	}
-	document.AddAttributes(key, attributes)
+	document.AddFlattenedAttributes(key, attributes)
 }
 
 func (m *encodeModel) encodeEvents(document *objmodel.Document, events ptrace.SpanEventSlice) {
@@ -796,7 +796,7 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.
-		document.AddAttributes("", attrs)
+		document.AddFlattenedAttributes("", attrs)
 		return
 	}
 

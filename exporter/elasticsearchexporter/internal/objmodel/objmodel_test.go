@@ -58,7 +58,7 @@ func TestObjectModel_CreateMap(t *testing.T) {
 				m := pcommon.NewMap()
 				m.PutInt("i", 42)
 				m.PutStr("str", "test")
-				doc.AddAttributes("prefix", m)
+				doc.AddFlattenedAttributes("prefix", m)
 				return doc
 			},
 			want: Document{fields: []field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},
