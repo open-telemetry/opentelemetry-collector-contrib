@@ -663,7 +663,7 @@ func TestZipkinV1ToSpanAnsEndpointInvalidTraceId(t *testing.T) {
 		},
 	}
 	_, err := jsonToSpanAndEndpoint(zSpan, false)
-	assert.EqualError(t, err, "zipkinV1 span traceId: hex traceId span has wrong length (expected 16 or 32)")
+	assert.EqualError(t, err, "zipkinV1 span traceID: hex traceID span has wrong length (expected 16 or 32)")
 }
 
 func TestZipkinV1ToSpanAnsEndpointInvalidSpanId(t *testing.T) {
@@ -675,5 +675,5 @@ func TestZipkinV1ToSpanAnsEndpointInvalidSpanId(t *testing.T) {
 		},
 	}
 	_, err := jsonToSpanAndEndpoint(zSpan, false)
-	assert.EqualError(t, err, "zipkinV1 span id: hex Id has wrong length (expected 16)")
+	assert.EqualError(t, err, "zipkinV1 span ID: hex ID has wrong length (expected 16)")
 }
