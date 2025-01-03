@@ -69,6 +69,70 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	// TODO(jpkroehling): assert that the authentication routine set the subject/membership to the resource
 }
 
+func TestOIDCAuthenticationSucceededIgnoreAudienceMismatch(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		IssuerURL:      oidcServer.URL,
+		Audience:       "unit-test",
+		IgnoreAudience: true,
+	}
+	p := newExtension(config, zap.NewNop())
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"iss": oidcServer.URL,
+		"aud": "not-unit-test",
+		"exp": time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	// test
+	ctx, err := p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.NoError(t, err)
+	assert.NotNil(t, ctx)
+}
+
+func TestOIDCAuthenticationFailAudienceMismatch(t *testing.T) {
+	// prepare
+	oidcServer, err := newOIDCServer()
+	require.NoError(t, err)
+	oidcServer.Start()
+	defer oidcServer.Close()
+
+	config := &Config{
+		IssuerURL: oidcServer.URL,
+		Audience:  "unit-test",
+	}
+	p := newExtension(config, zap.NewNop())
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	payload, _ := json.Marshal(map[string]any{
+		"iss": oidcServer.URL,
+		"aud": "not-unit-test",
+		"exp": time.Now().Add(time.Minute).Unix(),
+	})
+	token, err := oidcServer.token(payload)
+	require.NoError(t, err)
+
+	// test
+	_, err = p.Authenticate(context.Background(), map[string][]string{"authorization": {fmt.Sprintf("Bearer %s", token)}})
+
+	// verify
+	assert.Error(t, err)
+}
+
 func TestOIDCProviderForConfigWithTLS(t *testing.T) {
 	// prepare the CA cert for the TLS handler
 	cert := x509.Certificate{
@@ -421,6 +485,20 @@ func TestMissingClient(t *testing.T) {
 
 	// verify
 	assert.Equal(t, errNoAudienceProvided, err)
+}
+
+func TestIgnoreMissingClient(t *testing.T) {
+	// prepare
+	config := &Config{
+		IssuerURL:      "http://example.com/",
+		IgnoreAudience: true,
+	}
+
+	// test
+	err := config.Validate()
+
+	// verify
+	assert.NoError(t, err)
 }
 
 func TestMissingIssuerURL(t *testing.T) {
