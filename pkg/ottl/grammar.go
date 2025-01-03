@@ -272,8 +272,8 @@ type path struct {
 
 func (p *path) accept(v grammarVisitor) {
 	v.visitPath(p)
-	for _, arg := range p.Fields {
-		arg.accept(v)
+	for _, field := range p.Fields {
+		field.accept(v)
 	}
 }
 
@@ -284,8 +284,8 @@ type field struct {
 }
 
 func (f *field) accept(v grammarVisitor) {
-	for _, arg := range f.Keys {
-		arg.accept(v)
+	for _, key := range f.Keys {
+		key.accept(v)
 	}
 }
 
