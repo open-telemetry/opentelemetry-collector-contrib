@@ -51,7 +51,7 @@ Input file:
 ```
 2016-10-06T00:17:09.669794202Z stdout F Single entry log 1
 2016-10-06T00:17:10.113242941Z stdout P This is a very very long line th
-2016-10-06T00:17:10.113242941Z stdout P at is really really long and spa
+2016-10-06T00:17:10.113242941Z stdout P at is really, really, long and spa
 2016-10-06T00:17:10.113242941Z stdout F ns across multiple log entries
 ```
 
@@ -73,7 +73,7 @@ Output logs:
     "timestamp": "2020-12-04T13:03:38.411664-05:00",
     "severity": 0,
     "body": {
-      "message": "This is a very very long line that is really really long and spans across multiple log entries",
+      "message": "This is a very very long line that is really, really, long and spans across multiple log entries",
       "logtag": "F",
       "stream": "stdout",
       "timestamp": "2016-10-06T00:17:10.113242941Z"

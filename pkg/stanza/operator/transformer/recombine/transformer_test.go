@@ -306,7 +306,7 @@ func TestTransformer(t *testing.T) {
 					"timestamp": "2016-10-06T00:17:10.113242941Z",
 				}),
 				entryWithBody(t1, map[string]any{
-					"message":   "at is really really long and spa",
+					"message":   "at is really, really, long and spa",
 					"logtag":    "P",
 					"stream":    "stdout",
 					"timestamp": "2016-10-06T00:17:10.113242941Z",
@@ -326,7 +326,7 @@ func TestTransformer(t *testing.T) {
 					"timestamp": "2016-10-06T00:17:09.669794202Z",
 				}),
 				entryWithBody(t1, map[string]any{
-					"message":   "This is a very very long line that is really really long and spans across multiple log entries",
+					"message":   "This is a very very long line that is really, really, long and spans across multiple log entries",
 					"logtag":    "F",
 					"stream":    "stdout",
 					"timestamp": "2016-10-06T00:17:10.113242941Z",
