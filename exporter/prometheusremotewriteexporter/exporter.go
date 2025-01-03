@@ -124,13 +124,21 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
+	concurrency := 5
+	if !enableMultipleWorkersFeatureGate.IsEnabled() {
+		concurrency = cfg.RemoteWriteQueue.NumConsumers
+	}
+	if cfg.MaxBatchRequestParallelism != nil {
+		concurrency = *cfg.MaxBatchRequestParallelism
+	}
+
 	prwe := &prwExporter{
 		endpointURL:       endpointURL,
 		wg:                new(sync.WaitGroup),
 		closeChan:         make(chan struct{}),
 		userAgentHeader:   userAgentHeader,
 		maxBatchSizeBytes: cfg.MaxBatchSizeBytes,
-		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
+		concurrency:       concurrency,
 		clientSettings:    &cfg.ClientConfig,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
