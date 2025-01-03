@@ -5052,7 +5052,7 @@ in outgoing logs data.
   This allows users to disable particular metrics in through user settings.
 - `mongodbatlasreceiver`: Add logs retrieval capability (#12347)
 - `mongodbreceiver`: Enhance partial error handling with descriptive metric/attribute messages. (#13367)
-- `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Add ability to set log body when when parsing. (#10274)
+- `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Add ability to set log body when parsing. (#10274)
 - `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Enhance error message when csv_parser finds unexpected number of fields (#13427)
 - `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Enable debugging operators `stdout` and `file_output` (#13394)
 - `postgresqlreceiver`: Adds background writer metrics (#13327)
