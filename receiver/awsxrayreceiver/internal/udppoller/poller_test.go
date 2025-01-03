@@ -126,7 +126,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	randString, _ := uuid.NewRandom()
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n" + randString.String())
 	err = writePacket(t, addr, string(rawData))
-	assert.NoError(t, err, "can not write packet in the TestSuccessfullyPollPacket case")
+	assert.NoError(t, err, "cannot write packet in the TestSuccessfullyPollPacket case")
 
 	assert.Eventuallyf(t, func() bool {
 		select {
@@ -161,7 +161,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 
 	rawData := []byte(`{"format": "json", "version": 1}`) // no separator
 	err = writePacket(t, addr, string(rawData))
-	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoSeparator case")
+	assert.NoError(t, err, "cannot write packet in the TestIncompletePacketNoSeparator case")
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
@@ -191,7 +191,7 @@ func TestIncompletePacketNoBody(t *testing.T) {
 
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n") // no body
 	err = writePacket(t, addr, string(rawData))
-	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoBody case")
+	assert.NoError(t, err, "cannot write packet in the TestIncompletePacketNoBody case")
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
@@ -216,7 +216,7 @@ func TestNonJsonHeader(t *testing.T) {
 
 	// the header (i.e. the portion before \n) is invalid
 	err = writePacket(t, addr, "nonJson\nBody")
-	assert.NoError(t, err, "can not write packet in the TestNonJsonHeader case")
+	assert.NoError(t, err, "cannot write packet in the TestNonJsonHeader case")
 	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
 		logs := recordedLogs.All()
@@ -248,7 +248,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 	// the header (i.e. the portion before \n) is invalid
 	err = writePacket(t, addr,
 		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
-	assert.NoError(t, err, "can not write packet in the TestJsonInvalidHeader case")
+	assert.NoError(t, err, "cannot write packet in the TestJsonInvalidHeader case")
 	assert.Eventuallyf(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
 		logs := recordedLogs.All()

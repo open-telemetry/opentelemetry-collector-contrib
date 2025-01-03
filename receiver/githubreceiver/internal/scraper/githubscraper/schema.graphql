@@ -1443,7 +1443,7 @@ type CommitComment implements Node & Comment & Deletable & Minimizable & Updatab
   viewerCanReact: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -3114,7 +3114,7 @@ type DiscussionComment implements Comment & Deletable & Minimizable & Updatable 
   viewerCanUpdate: Boolean!
   "Whether or not the current user can add or remove an upvote on this subject."
   viewerCanUpvote: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -4615,7 +4615,7 @@ type GistComment implements Node & Comment & Deletable & Minimizable & Updatable
   viewerCanMinimize: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -5126,7 +5126,7 @@ type Issue implements Node & Assignable & Closable & Comment & Deletable & Updat
   viewerCanSubscribe: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -5221,7 +5221,7 @@ type IssueComment implements Node & Comment & Deletable & Minimizable & Updatabl
   viewerCanReact: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -11284,7 +11284,7 @@ type PullRequest implements Node & Assignable & Closable & Comment & Updatable &
   If the head ref is up to date or unable to be updated by this user, this will return false.
   """
   viewerCanUpdateBranch: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -11541,7 +11541,7 @@ type PullRequestReview implements Node & Comment & Deletable & Updatable & Updat
   viewerCanReact: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -11661,7 +11661,7 @@ type PullRequestReviewComment implements Node & Comment & Deletable & Minimizabl
   viewerCanReact: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -16434,7 +16434,7 @@ type TeamDiscussion implements Node & Comment & Deletable & Reactable & Subscrib
   viewerCanSubscribe: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -16532,7 +16532,7 @@ type TeamDiscussionComment implements Node & Comment & Deletable & Reactable & U
   viewerCanReact: Boolean!
   "Check if the current viewer can update this object."
   viewerCanUpdate: Boolean!
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
   "Did the viewer author this comment."
   viewerDidAuthor: Boolean!
@@ -19304,7 +19304,7 @@ interface Updatable {
 }
 "Comments that can be updated."
 interface UpdatableComment {
-  "Reasons why the current viewer can not update this comment."
+  "Reasons why the current viewer cannot update this comment."
   viewerCannotUpdateReasons: [CommentCannotUpdateReason!]!
 }
 "A subject that may be upvoted."
