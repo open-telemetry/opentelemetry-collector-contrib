@@ -21,18 +21,30 @@ type FakeInformer struct {
 	fieldSelector fields.Selector
 }
 
+func NewFakeInformerProviders() *InformerProviders {
+	return &InformerProviders{
+		PodInformerProvider:        NewFakeInformer,
+		NamespaceInformerProvider:  NewFakeNamespaceInformer,
+		ReplicaSetInformerProvider: NewFakeReplicaSetInformer,
+		NodeInformerProvider:       NewFakeNodeInformer,
+	}
+}
+
 func NewFakeInformer(
-	_ kubernetes.Interface,
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
-) cache.SharedInformer {
-	return &FakeInformer{
+	_ cache.TransformFunc,
+	closeCh <-chan struct{},
+) (cache.SharedInformer, error) {
+	informer := &FakeInformer{
 		FakeController: &FakeController{},
 		namespace:      namespace,
 		labelSelector:  labelSelector,
 		fieldSelector:  fieldSelector,
 	}
+	go informer.Run(closeCh)
+	return informer, nil
 }
 
 func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
@@ -68,11 +80,15 @@ type FakeNamespaceInformer struct {
 }
 
 func NewFakeNamespaceInformer(
-	_ kubernetes.Interface,
-) cache.SharedInformer {
-	return &FakeInformer{
+	fs fields.Selector,
+	closeCh <-chan struct{},
+) (cache.SharedInformer, error) {
+	informer := &FakeInformer{
 		FakeController: &FakeController{},
+		fieldSelector:  fs,
 	}
+	go informer.Run(closeCh)
+	return informer, nil
 }
 
 func (f *FakeNamespaceInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
@@ -93,12 +109,15 @@ type FakeReplicaSetInformer struct {
 }
 
 func NewFakeReplicaSetInformer(
-	_ kubernetes.Interface,
 	_ string,
-) cache.SharedInformer {
-	return &FakeInformer{
+	_ cache.TransformFunc,
+	stopCh <-chan struct{},
+) (cache.SharedInformer, error) {
+	informer := &FakeInformer{
 		FakeController: &FakeController{},
 	}
+	go informer.Run(stopCh)
+	return informer, nil
 }
 
 func (f *FakeReplicaSetInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
@@ -116,6 +135,18 @@ func (f *FakeReplicaSetInformer) GetStore() cache.Store {
 
 func (f *FakeReplicaSetInformer) GetController() cache.Controller {
 	return f.FakeController
+}
+
+func NewFakeNodeInformer(
+	_ string,
+	_ time.Duration,
+	stopCh <-chan struct{},
+) (cache.SharedInformer, error) {
+	informer := &FakeInformer{
+		FakeController: &FakeController{},
+	}
+	go informer.Run(stopCh)
+	return informer, nil
 }
 
 type FakeController struct {
@@ -154,10 +185,13 @@ type NoOpInformer struct {
 
 func NewNoOpInformer(
 	_ kubernetes.Interface,
+	stopCh <-chan struct{},
 ) cache.SharedInformer {
-	return &NoOpInformer{
+	informer := &NoOpInformer{
 		NoOpController: &NoOpController{},
 	}
+	go informer.Run(stopCh)
+	return informer
 }
 
 func (f *NoOpInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {

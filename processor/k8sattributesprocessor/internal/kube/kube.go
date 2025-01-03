@@ -96,7 +96,15 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet, bool, time.Duration) (Client, error)
+type ClientProvider func(
+	component.TelemetrySettings,
+	ExtractionRules,
+	Filters,
+	[]Association,
+	Excludes,
+	*InformerProviders,
+	bool, time.Duration,
+) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -245,6 +253,22 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
+	return false
+}
+
+func (rules *ExtractionRules) extractNamespaceLabelsAnnotations() bool {
+	for _, r := range rules.Labels {
+		if r.From == MetadataFromNamespace {
+			return true
+		}
+	}
+
+	for _, r := range rules.Annotations {
+		if r.From == MetadataFromNamespace {
+			return true
+		}
+	}
+
 	return false
 }
 
