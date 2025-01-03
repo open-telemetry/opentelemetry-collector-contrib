@@ -60,7 +60,7 @@ func (vs *valkeyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if opts.TLSConfig, err = vs.cfg.TLS.LoadTLSConfig(context.Background()); err != nil {
 			return pmetric.Metrics{}, err
 		}
-		if vs.client, err = newValkeyClient(opts, vs.logger); err != nil {
+		if vs.client, err = newValkeyClient(opts); err != nil {
 			return pmetric.Metrics{}, err
 		}
 	}

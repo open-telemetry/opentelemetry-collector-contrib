@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/valkey-io/valkey-go"
-	"go.uber.org/zap"
 )
 
 var attrDelimiter = "\r\n"
@@ -29,7 +28,7 @@ type valkeyClient struct {
 var _ client = (*valkeyClient)(nil)
 
 // Creates a new real Valkey client from the passed-in valkey.Options.
-func newValkeyClient(options valkey.ClientOption, logger *zap.Logger) (client, error) {
+func newValkeyClient(options valkey.ClientOption) (client, error) {
 	innerClient, err := valkey.NewClient(options)
 	if err != nil {
 		return nil, err
@@ -54,12 +53,11 @@ func parseRawDataMap(data string) (map[string]string, error) {
 		if len(line) == 0 || strings.HasPrefix(line, "#") {
 			continue
 		}
-		pair := strings.Split(line, ":")
-		if len(pair) == 2 { // defensive, should always == 2
-			attrs[pair[0]] = pair[1]
-		} else {
-			fmt.Errorf("could not split line %q using \":\" as delimiter", line)
+		key, value, found := strings.Cut(line, ":")
+		if !found {
+			return nil, fmt.Errorf("could not cut line %q using \":\" as delimiter", line)
 		}
+		attrs[key] = value
 	}
 	return attrs, nil
 }
