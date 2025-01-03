@@ -410,7 +410,7 @@ If accurate parsing cannot be performed, the infrastructure resource group value
 
 ### Consul
 
-Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
+Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
 
 The list of the populated resource attributes can be found at [Consul Detector Resource Attributes](./internal/consul/documentation.md).
 
