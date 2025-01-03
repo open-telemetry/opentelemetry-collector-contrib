@@ -6,7 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import "fmt"
 
 const (
-	DefaultErrorMessage = "segment %q from path %q is not a valid path nor a valid OTTL keyword for the %v context - review %v to see all valid paths"
+	DefaultErrorMessage = "segment %q from path %q is neither a valid path nor a valid OTTL keyword for the %v context - review %v to see all valid paths"
 
 	ResourceContextRef      = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlresource"
 	InstrumentationScopeRef = "https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/contexts/ottlscope"
