@@ -5,6 +5,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	goerrors "errors"
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
@@ -75,6 +76,14 @@ func (t *TransformerOperator) CanProcess() bool {
 	return true
 }
 
+func (t *TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, process(ctx, entries[i]))
+	}
+	return goerrors.Join(errs...)
+}
+
 // ProcessWith will process an entry with a transform function.
 func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entry, transform TransformFunction) error {
 	// Short circuit if the "if" condition does not match
@@ -124,6 +133,9 @@ func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool,
 
 	return !matches.(bool), nil
 }
+
+// ProcessFunction is a function that processes an entry.
+type ProcessFunction = func(context.Context, *entry.Entry) error
 
 // TransformFunction is function that transforms an entry.
 type TransformFunction = func(*entry.Entry) error
