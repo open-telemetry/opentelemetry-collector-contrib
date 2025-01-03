@@ -240,8 +240,8 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 ## Adding metrics to existing receivers
 Following these steps for contributing additional metrics to existing receivers.
- - Read instructions [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#fork) on how to
-   fork, build and create PRs. The only difference is to change repository name from `opentelemetry-collector` to `opentelemetry-collector-contrib`
+ - Read [instructions on how to fork
+  ](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#fork), build and create PRs. The only difference is to change repository name from `opentelemetry-collector` to `opentelemetry-collector-contrib`
  - Edit `metadata.yaml` of your metrics receiver to add new metrics, e.g.: `redisreceiver/metadata.yaml`
  - To generate new metrics on top of this updated YAML file.
    - Run `cd receiver/redisreceiver`
