@@ -19,7 +19,7 @@ Exports data in the [Prometheus format](https://prometheus.io/docs/concepts/data
 
 The following settings are required:
 
-- `endpoint` (no default): the address on which metrics will be exposed, using path `/metrics`. For full list of `ServerConfig` refer [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
+- `endpoint` (no default): the address on which metrics will be exposed, using path `/metrics`. For more info, see the [full list of `ServerConfig`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp).
 
 The following settings can be optionally configured:
 
