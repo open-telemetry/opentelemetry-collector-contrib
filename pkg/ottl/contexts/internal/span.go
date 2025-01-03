@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const (
@@ -63,6 +65,10 @@ func SpanPathGetSetter[K SpanContext](path ottl.Path[K]) (ottl.GetSetter[K], err
 		return accessSpanID[K](), nil
 	case "trace_state":
 		mapKey := path.Keys()
+		nextPath := path.Next()
+		if nextPath != nil && nextPath.Name() == "adjusted_count" {
+			return accessAdjustedCount[K](), nil
+		}
 		if mapKey == nil {
 			return accessTraceState[K](), nil
 		}
@@ -569,6 +575,31 @@ func accessStatusMessage[K SpanContext]() ottl.StandardGetSetter[K] {
 				tCtx.GetSpan().Status().SetMessage(str)
 			}
 			return nil
+		},
+	}
+}
+
+func accessAdjustedCount[K SpanContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			tracestate := tCtx.GetSpan().TraceState().AsRaw()
+			w3cTraceState, err := sampling.NewW3CTraceState(tracestate)
+			if err != nil {
+				return float64(0), fmt.Errorf("failed to parse w3c tracestate: %w", err)
+			}
+			otTraceState := w3cTraceState.OTelValue()
+			if otTraceState == nil {
+				// If otel trace state is missing, default to 1
+				return float64(1), nil
+			}
+			if len(otTraceState.TValue()) == 0 {
+				// For non-probabilistic sampler OR always sampling threshold, default to 1
+				return float64(1), nil
+			}
+			return otTraceState.AdjustedCount(), nil
+		},
+		Setter: func(context.Context, K, any) error {
+			return errors.New("adjusted count cannot be set")
 		},
 	}
 }
