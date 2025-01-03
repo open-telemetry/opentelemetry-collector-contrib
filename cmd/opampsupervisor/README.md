@@ -24,7 +24,7 @@ The supervisor is currently undergoing heavy development and is not ready for an
    make otelcontribcol
    ```
 
-3. Run the supervisor in the `cmd/opampsupervisor` directory of Collector contrib repository, substituting `<OS>` for your operating system (`darwin` for MacOS, `linux` or `windows`):
+3. Run the supervisor in the `cmd/opampsupervisor` directory of Collector contrib repository, substituting `<OS>` for your operating system (`darwin` for macOS, `linux` or `windows`):
 
    ```shell
    cd cmd/opampsupervisor

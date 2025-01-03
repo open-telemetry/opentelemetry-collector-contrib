@@ -38,7 +38,7 @@ func (f *Factory) CreateMetricsScraper(
 	cfg internal.Config,
 ) (scraper.Metrics, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
-		return nil, errors.New("uptime scraper only available on Linux, Windows, or MacOS")
+		return nil, errors.New("uptime scraper only available on Linux, Windows, or macOS")
 	}
 
 	uptimeScraper := newUptimeScraper(ctx, settings, cfg.(*Config))
