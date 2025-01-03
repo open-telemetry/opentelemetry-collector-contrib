@@ -118,3 +118,34 @@ transform/unknown_context:
 
 transform/unknown_error_mode:
   error_mode: test
+
+transform/flat_configuration:
+  trace_statements:
+    - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
+    - set(resource.attributes["name"], "bear")
+  metric_statements:
+    - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
+    - set(resource.attributes["name"], "bear")
+  log_statements:
+    - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+    - set(resource.attributes["name"], "bear")
+
+transform/mixed_configuration_styles:
+  trace_statements:
+    - set(span.name, "bear") where span.attributes["http.path"] == "/animal"
+    - context: span
+      statements:
+        - set(attributes["name"], "bear")
+        - keep_keys(attributes, ["http.method", "http.path"])
+  metric_statements:
+    - set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
+        - keep_keys(attributes, ["http.method", "http.path"])
+  log_statements:
+    - set(log.body, "bear") where log.attributes["http.path"] == "/animal"
+    - context: resource
+      statements:
+        - set(attributes["name"], "bear")
+        - keep_keys(attributes, ["http.method", "http.path"])
