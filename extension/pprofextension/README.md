@@ -42,7 +42,7 @@ extensions:
   pprof:
 ```
 
-The full list of settings exposed for this exporter are documented [here](./config.go)
+The full list of settings exposed for this exporter are documented in [config.go](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
 

@@ -69,7 +69,7 @@ The following settings are available:
 
 ## Additional Settings
 
-The full list of settings exposed for this connector are documented [here](./config.go) with detailed sample configuration files:
+The full list of settings exposed for this connector are documented in [config.go](./config.go) with detailed sample configuration files:
 
 - [logs](./testdata/config/logs.yaml)
 - [metrics](./testdata/config/metrics.yaml)
