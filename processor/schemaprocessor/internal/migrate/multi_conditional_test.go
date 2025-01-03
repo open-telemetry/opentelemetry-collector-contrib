@@ -139,7 +139,6 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			require.NoError(t, tc.cond.Do(StateSelectorApply, tc.inAttr, tc.inCondData))
