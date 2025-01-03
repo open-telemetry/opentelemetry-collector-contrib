@@ -244,7 +244,7 @@ For metrics and logs, this exporter maps the OpenTelemetry Resource to a Google
 Cloud [Logging](https://cloud.google.com/logging/docs/api/v2/resource-list) or
 [Monitoring](https://cloud.google.com/monitoring/api/resources) Monitored Resource.
 
-The complete mapping logic can be found [here](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/internal/resourcemapping/resourcemapping.go).
+The complete mapping logic can be found in [resourcemapping.go](https://github.com/GoogleCloudPlatform/opentelemetry-operations-go/blob/main/internal/resourcemapping/resourcemapping.go).
 That may be the most helpful reference if you want to map to a specific monitored
 resource.
 
