@@ -72,8 +72,8 @@ go.opentelemetry.io/collector/extension v0.115.0 h1:/cBb8AUdD0KMWC6V3lvCC16eP9Fg
 go.opentelemetry.io/collector/extension v0.115.0/go.mod h1:HI7Ak6loyi6ZrZPsQJW1OO1wbaAW8OqXLFNQlTZnreQ=
 go.opentelemetry.io/collector/extension/extensiontest v0.115.0 h1:GBVFxFEskR8jSdu9uaQh2qpXnN5VNXhXjpJ2UjxtE8I=
 go.opentelemetry.io/collector/extension/extensiontest v0.115.0/go.mod h1:eu1ecbz5mT+cHoH2H3GmD/rOO0WsicSJD2RLrYuOmRA=
-go.opentelemetry.io/collector/pdata v1.22.0 h1:3yhjL46NLdTMoP8rkkcE9B0pzjf2973crn0KKhX5UrI=
-go.opentelemetry.io/collector/pdata v1.22.0/go.mod h1:nLLf6uDg8Kn5g3WNZwGyu8+kf77SwOqQvMTb5AXEbEY=
+go.opentelemetry.io/collector/pdata v1.21.0 h1:PG+UbiFMJ35X/WcAR7Rf/PWmWtRdW0aHlOidsR6c5MA=
+go.opentelemetry.io/collector/pdata v1.21.0/go.mod h1:GKb1/zocKJMvxKbS+sl0W85lxhYBTFJ6h6I1tphVyDU=
 go.opentelemetry.io/otel v1.32.0 h1:WnBN+Xjcteh0zdk01SVqV55d/m62NJLJdIyb4y/WO5U=
 go.opentelemetry.io/otel v1.32.0/go.mod h1:00DCVSB0RQcnzlwyTfqtxSm+DRr9hpYrHjNGiBHVQIg=
 go.opentelemetry.io/otel/metric v1.32.0 h1:xV2umtmNcThh2/a/aCP+h64Xx5wsj8qqnkYZktzNa0M=
