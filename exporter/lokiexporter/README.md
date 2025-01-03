@@ -27,7 +27,7 @@ The new format for OpenTelemetry logs introduced in Loki V3 brings the following
 
 ### Loki log message format changes for OpenTelemetry logs
 
-See OpenTelemetry Logs Data Model specification [here](https://opentelemetry.io/docs/specs/otel/logs/data-model/).
+See [OpenTelemetry Logs Data Model specification](https://opentelemetry.io/docs/specs/otel/logs/data-model/).
 
 | OpenTelemetry log field | Pre Loki V3 | Loki V3 through the Loki OTLP Endpoint |
 | ----- | ----- | ----- |
