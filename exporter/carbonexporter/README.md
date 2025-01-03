@@ -39,7 +39,7 @@ exporters:
     timeout: 10s
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Advanced Configuration
