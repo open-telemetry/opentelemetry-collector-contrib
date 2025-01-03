@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmex
 
 go 1.22.7
 
-toolchain go1.22.8
+toolchain go1.23.4
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0

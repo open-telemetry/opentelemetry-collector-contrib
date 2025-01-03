@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskin
 
 go 1.22.7
 
-toolchain go1.22.8
+toolchain go1.23.4
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.32.7
