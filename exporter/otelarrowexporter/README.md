@@ -187,7 +187,7 @@ receivers:
 
 ### Exporter metrics
 
-In addition to the the standard
+In addition to the standard
 [exporterhelper](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 and
 [obsreport](https://pkg.go.dev/go.opentelemetry.io/collector/obsreport)

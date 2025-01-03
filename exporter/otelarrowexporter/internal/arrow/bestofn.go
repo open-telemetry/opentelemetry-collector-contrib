@@ -71,7 +71,7 @@ func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFun
 	}
 
 	for i := 0; i < numStreams; i++ {
-		// TODO It's not clear if/when the the prioritizer can
+		// TODO It's not clear if/when the prioritizer can
 		// become a bottleneck.
 		go lp.run()
 	}
