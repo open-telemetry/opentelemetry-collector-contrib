@@ -171,7 +171,7 @@ func (sr *sapmReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-// Shutdown stops the the sapmReceiver's server.
+// Shutdown stops the sapmReceiver's server.
 func (sr *sapmReceiver) Shutdown(context.Context) error {
 	if sr.server == nil {
 		return nil

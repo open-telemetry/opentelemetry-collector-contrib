@@ -171,7 +171,7 @@ exporters:
 
 ### Receiver metrics
 
-In addition to the the standard
+In addition to the standard
 [obsreport](https://pkg.go.dev/go.opentelemetry.io/collector/obsreport)
 metrics, this component provides network-level measurement instruments 
 measuring bytes transported.  At the `normal` level of metrics detail:
