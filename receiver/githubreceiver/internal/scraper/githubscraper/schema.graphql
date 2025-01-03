@@ -10585,7 +10585,7 @@ type ProjectV2SingleSelectField implements ProjectV2FieldCommon & Node {
   name: String!
   "Options for the single select field"
   options(
-    "Filter returned options to only those matching these names, case insensitive."
+    "Filter returned options to only those matching these names, case-insensitive."
     names: [String!]
   ): [ProjectV2SingleSelectFieldOption!]!
   "The project that contains this field."
