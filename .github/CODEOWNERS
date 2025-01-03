@@ -289,6 +289,7 @@ receiver/systemdreceiver/                         @open-telemetry/collector-cont
 receiver/tcplogreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tlscheckreceiver/                        @open-telemetry/collector-contrib-approvers @atoulme @michael-burt
 receiver/udplogreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/valkeyreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax @rogercoll
 receiver/vcenterreceiver/                         @open-telemetry/collector-contrib-approvers @schmikei @StefanKurek
 receiver/wavefrontreceiver/                       @open-telemetry/collector-contrib-approvers @samiura
 receiver/webhookeventreceiver/                    @open-telemetry/collector-contrib-approvers @atoulme @shalper2

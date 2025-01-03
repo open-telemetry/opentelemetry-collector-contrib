@@ -193,6 +193,7 @@ components:
         - tcplog
         - tlscheck
         - udplog
+        - valkey
         - vcenter
         - wavefront
         - webhookevent
