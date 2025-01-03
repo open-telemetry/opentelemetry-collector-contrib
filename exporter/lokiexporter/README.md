@@ -271,8 +271,7 @@ processors:
 ```
 
 Currently, Loki does not support label names with dots. 
-That's why lokiexporter normalizes label names to follow Prometheus label names standard before sending requests to Loki.
-More information on label normalization could be found [here](../../pkg/translator/prometheus/README.md#Labels)
+That's why lokiexporter normalizes label names to follow [Prometheus label names standard](../../pkg/translator/prometheus/README.md#Labels) before sending requests to Loki.
 
 The promotion of multiple resource and log attributes to labels is done with single action with comma-separated desired labels:
 ```yaml
