@@ -1,0 +1,3 @@
+# AWS Kueue Receiver
+
+PLACEHOLDER
