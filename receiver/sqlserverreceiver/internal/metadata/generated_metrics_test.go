@@ -170,6 +170,8 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
 			rb := mb.NewResourceBuilder()
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
 			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
 			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
