@@ -1,0 +1,4 @@
+[submodule "pkg/translator/jaeger/idl"]
+	path = pkg/translator/jaeger/idl
+	url = https://github.com/jaegertracing/jaeger-idl.git
+    branch = main
