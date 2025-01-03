@@ -1153,7 +1153,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `pkg/ottl`: Added Hex() converter function (#31929)
 - `pkg/ottl`: Add IsRootSpan() converter function. (#32918)
-  Converter `IsRootSpan()` returns `true` if the span in the corresponding context is root, that means its `parent_span_id` equals to hexadecimal representation of zero. In all other scenarios function returns `false`.
+  Converter `IsRootSpan()` returns `true` if the span in the corresponding context is root, that means its `parent_span_id` equals the hexadecimal representation of zero. In all other scenarios function returns `false`.
 - `vcenterreceiver`: Adds additional vCenter resource pool metrics and a memory_usage_type attribute for vcenter.resource_pool.memory.usage metric to use. (#33607)
   Added "vcenter.resource_pool.memory.swapped", "vcenter.resource_pool.memory.ballooned", and "vcenter.resource_pool.memory.granted"
   metrics. Also added an additional attribute, "memory_usage_type" for "vcenter.resource_pool.memory.usage" metric, which is
