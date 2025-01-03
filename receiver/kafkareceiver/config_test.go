@@ -34,6 +34,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Topic:                                "spans",
+				TopicRegex:                           "",
 				Encoding:                             "otlp_proto",
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ResolveCanonicalBootstrapServersOnly: true,
@@ -71,6 +72,44 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				Topic:             "logs",
+				TopicRegex:        "",
+				Encoding:          "direct",
+				Brokers:           []string{"coffee:123", "foobar:456"},
+				ClientID:          "otel-collector",
+				GroupID:           "otel-collector",
+				InitialOffset:     "earliest",
+				SessionTimeout:    45 * time.Second,
+				HeartbeatInterval: 15 * time.Second,
+				Authentication: kafka.Authentication{
+					TLS: &configtls.ClientConfig{
+						Config: configtls.Config{
+							CAFile:   "ca.pem",
+							CertFile: "cert.pem",
+							KeyFile:  "key.pem",
+						},
+					},
+				},
+				Metadata: kafkaexporter.Metadata{
+					Full: true,
+					Retry: kafkaexporter.MetadataRetry{
+						Max:     10,
+						Backoff: time.Second * 5,
+					},
+				},
+				AutoCommit: AutoCommit{
+					Enable:   true,
+					Interval: 1 * time.Second,
+				},
+				MinFetchSize:     1,
+				DefaultFetchSize: 1048576,
+				MaxFetchSize:     0,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "topics_err"),
+			expected: &Config{
+				Topic:             "logs",
+				TopicRegex:        "logs[0-9]",
 				Encoding:          "direct",
 				Brokers:           []string{"coffee:123", "foobar:456"},
 				ClientID:          "otel-collector",
@@ -114,7 +153,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			if tt.id.String() == "kafka/topics_err" {
+				assert.EqualError(t, component.ValidateConfig(cfg), "only one setting 'topic' or 'topics_regex' can be used")
+			} else {
+				assert.NoError(t, component.ValidateConfig(cfg))
+			}
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
