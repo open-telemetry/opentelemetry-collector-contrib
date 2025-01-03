@@ -158,7 +158,6 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	if prwe.exporterSettings.ExportCreatedMetric {
 		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
 	}
-	prwe.settings.Logger.Warn(fmt.Sprintf("asdasdas - %d", concurrency))
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
 	return prwe, nil
