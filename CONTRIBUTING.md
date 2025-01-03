@@ -248,7 +248,7 @@ Following these steps for contributing additional metrics to existing receivers.
    - Run `cd receiver/redisreceiver`
    - Run `go generate ./...`
 - Review the changed files and merge the changes into your forked repo.
-- Create PR from Github web console following the instructions above.
+- Create PR from GitHub web console following the instructions above.
 
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not rigid rules and there are exceptions but
@@ -340,9 +340,9 @@ Be sure to tag the existing Code Owners, if any, within the PR to ensure they re
 
 ### Emeritus roles
 
-Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on Github.
+Contributors who are unable to meet the responsibilities of their role are encouraged to move to [emeritus](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager). In case of long temporary absences, contributors are encouraged to let maintainers know on the CNCF Slack (e.g. on the #otel-collector-dev channel or privately via DM) and to mark themselves as 'Busy' on GitHub.
 
-In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both Github and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the Github review auto-assignment.
+In the event that a contributor becomes inactive without prior notice, the maintainers will attempt to contact the contributor via both GitHub and the CNCF Slack to confirm their status. After two weeks, if the contributor is an approver or maintainer, they may be removed from the GitHub review auto-assignment.
 
 If the contributor does not respond within a period of two months, they may be moved to emeritus status at the discretion of the maintainers, following a majority vote among the maintainers (possibly excluding the contributor in question).
 

@@ -24,7 +24,7 @@ type generator interface {
 	generate(data *githubData) error
 }
 
-// Generates files specific to Github according to status metadata:
+// Generates files specific to GitHub according to status metadata:
 // .github/CODEOWNERS
 // .github/ALLOWLIST
 // .github/ISSUE_TEMPLATES/*.yaml (list of components)
@@ -32,7 +32,7 @@ type generator interface {
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
 	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
-	skipGithubCheck := flag.Bool("skipgithub", false, "skip checking GitHub membership check for CODEOWNERS generator")
+	skipGitHubCheck := flag.Bool("skipgithub", false, "skip checking GitHub membership check for CODEOWNERS generator")
 	flag.Parse()
 	var generators []generator
 	for _, arg := range flag.Args() {
@@ -40,7 +40,7 @@ func main() {
 		case "issue-templates":
 			generators = append(generators, issueTemplatesGenerator{})
 		case "codeowners":
-			generators = append(generators, codeownersGenerator{skipGithub: *skipGithubCheck})
+			generators = append(generators, codeownersGenerator{skipGitHub: *skipGitHubCheck})
 		case "distributions":
 			generators = append(generators, distributionsGenerator{})
 		default:
@@ -48,7 +48,7 @@ func main() {
 		}
 	}
 	if len(generators) == 0 {
-		generators = []generator{issueTemplatesGenerator{}, codeownersGenerator{skipGithub: *skipGithubCheck}}
+		generators = []generator{issueTemplatesGenerator{}, codeownersGenerator{skipGitHub: *skipGitHubCheck}}
 	}
 	if err := run(*folder, *allowlistFilePath, generators); err != nil {
 		log.Fatal(err)

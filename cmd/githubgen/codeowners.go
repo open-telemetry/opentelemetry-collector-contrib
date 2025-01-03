@@ -71,7 +71,7 @@ const distributionCodeownersHeader = `
 `
 
 type codeownersGenerator struct {
-	skipGithub bool
+	skipGitHub bool
 }
 
 func (cg codeownersGenerator) generate(data *githubData) error {
@@ -92,7 +92,7 @@ func (cg codeownersGenerator) generate(data *githubData) error {
 	}
 	var missingCodeowners []string
 	var duplicateCodeowners []string
-	members, err := cg.getGithubMembers()
+	members, err := cg.getGitHubMembers()
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (cg codeownersGenerator) generate(data *githubData) error {
 			duplicateCodeowners = append(duplicateCodeowners, codeowner)
 		}
 	}
-	if len(missingCodeowners) > 0 && !cg.skipGithub {
+	if len(missingCodeowners) > 0 && !cg.skipGitHub {
 		sort.Strings(missingCodeowners)
 		return fmt.Errorf("codeowners are not members: %s", strings.Join(missingCodeowners, ", "))
 	}
@@ -190,8 +190,8 @@ LOOP:
 	return nil
 }
 
-func (cg codeownersGenerator) getGithubMembers() (map[string]struct{}, error) {
-	if cg.skipGithub {
+func (cg codeownersGenerator) getGitHubMembers() (map[string]struct{}, error) {
+	if cg.skipGitHub {
 		// don't try to get organization members if no token is expected
 		return map[string]struct{}{}, nil
 	}

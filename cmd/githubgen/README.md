@@ -17,7 +17,7 @@ $> cd cmd/githubgen && $(GOCMD) install .
 $> GITHUB_TOKEN=<mypattoken> githubgen --folder . [--allowlist cmd/githubgen/allowlist.txt] 
 ```
 
-## Checking codeowners against OpenTelemetry membership via Github API
+## Checking codeowners against OpenTelemetry membership via GitHub API
 
 To authenticate, set the environment variable `GITHUB_TOKEN` to a PAT token.  If a PAT is not available you can use the `--skipgithub` flag to avoid checking for membership in the GitHub organization.
 
