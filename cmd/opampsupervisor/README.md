@@ -1,7 +1,7 @@
 # OpAMP Supervisor for the OpenTelemetry Collector
 
 This is an implementation of an OpAMP Supervisor that runs a Collector instance using configuration provided from an OpAMP server. This implementation
-is following a design specified [here](./specification/README.md).
+is following a [specification](./specification/README.md).
 The design is still undergoing changes, and as such this implementation may change as well.
 
 ## Experimenting with the supervisor
