@@ -296,7 +296,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `exporter/loadbalancing`: Shutdown exporters during collector shutdown. This fixes a memory leak. (#36024)
 - `pkg/ottl`: Respect the `depth` option when flattening slices using `flatten` (#36161)
   The `depth` option is also now required to be at least `1`.
-- `prometheusexporter`: reject metrics whose types have changed, use pre-existing descriptions when help strings change (#28617)
+- `prometheusexporter`: reject metrics whose types have changed, use preexisting descriptions when help strings change (#28617)
 - `pkg/stanza`: Synchronous handling of entries passed from the log emitter to the receiver adapter (#35453)
 - `prometheusreceiver`: Fix prometheus receiver to support static scrape config with Target Allocator (#36062)
 
