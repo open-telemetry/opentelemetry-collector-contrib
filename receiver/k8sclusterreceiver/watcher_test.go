@@ -74,7 +74,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			false,
 		},
 		{
-			"Non-existent exporter",
+			"Nonexistent exporter",
 			fields{
 				metadataConsumers: []metadataConsumer{},
 			},

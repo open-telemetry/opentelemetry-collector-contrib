@@ -172,7 +172,7 @@ func readString(dirpath string, file string) (string, error) {
 	// Read
 	out, err := os.ReadFile(cgroupFile)
 	if err != nil {
-		// Ignore non-existent files
+		// Ignore nonexistent files
 		log.Printf("W! readString: Failed to read %q: %s", cgroupFile, err)
 		return "", err
 	}
