@@ -32,7 +32,7 @@ receivers:
         enabled: false
 ```
 
-The full list of settings exposed for this receiver is documented [here](./config.go), along with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver is documented in [config.go](./config.go), along with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Metrics
 
