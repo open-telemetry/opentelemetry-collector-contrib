@@ -23903,7 +23903,7 @@ input Environments {
   "The direction in which to order environments by the specified field."
   direction: OrderDirection!
 }
-"A command to add a file at the given path with the given contents as part of a commit.  Any existing file at that that path will be replaced."
+"A command to add a file at the given path with the given contents as part of a commit.  Any existing file at that path will be replaced."
 input FileAddition {
   "The path in the repository where the file will be located"
   path: String!
