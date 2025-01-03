@@ -1,10 +1,8 @@
 # OpenTelemetry to Sentry Transformation
 
-This document aims to define the transformations between an OpenTelemetry span and a Sentry Span. It will also describe how a Sentry transaction is created from a set of Sentry spans.
+This document aims to define the transformations between an OpenTelemetry span and a [Sentry Span](https://develop.sentry.dev/sdk/event-payloads/span/). It will also describe how a Sentry transaction is created from a set of Sentry spans.
 
 ## Spans
-
-The interface for a Sentry Span can be found [here](https://develop.sentry.dev/sdk/event-payloads/span/)
 
 | Sentry              | OpenTelemetry                           | Notes                                                                                                             |
 | ------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
