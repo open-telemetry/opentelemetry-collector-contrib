@@ -35,7 +35,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.115.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.115.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.22.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.21.0 // indirect
 	go.opentelemetry.io/otel v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect

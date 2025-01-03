@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.115.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.115.0
 	go.opentelemetry.io/collector/featuregate v1.21.0
-	go.opentelemetry.io/collector/pdata v1.22.0
+	go.opentelemetry.io/collector/pdata v1.21.0
 	go.opentelemetry.io/collector/semconv v0.115.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
