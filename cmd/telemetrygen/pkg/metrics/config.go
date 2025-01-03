@@ -16,26 +16,43 @@ type Config struct {
 	common.Config
 	NumMetrics int
 	MetricName string
-	MetricType metricType
+	MetricType MetricType
 	SpanID     string
 	TraceID    string
 }
 
+// NewConfig creates a new Config with default values.
+func NewConfig() *Config {
+	cfg := &Config{}
+	cfg.Config.SetDefaults()
+	cfg.SetDefault()
+	return cfg
+}
+
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
-	// Use Gauge as default metric type.
-	c.MetricName = "gen"
-	c.MetricType = metricTypeGauge
 
 	c.CommonFlags(fs)
 
-	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", "/v1/metrics", "Which URL path to write to")
+	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", c.HTTPPath, "Which URL path to write to")
 
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
-	fs.IntVar(&c.NumMetrics, "metrics", 1, "Number of metrics to generate in each worker (ignored if duration is provided)")
+	fs.IntVar(&c.NumMetrics, "metrics", c.NumMetrics, "Number of metrics to generate in each worker (ignored if duration is provided)")
 
-	fs.StringVar(&c.TraceID, "trace-id", "", "TraceID to use as exemplar")
-	fs.StringVar(&c.SpanID, "span-id", "", "SpanID to use as exemplar")
+	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID to use as exemplar")
+	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID to use as exemplar")
+}
+
+// SetDefault sets the default values for the configuration.
+func (c *Config) SetDefault() {
+	c.HTTPPath = "/v1/metrics"
+	c.NumMetrics = 1
+
+	// Use Gauge as default metric type.
+	c.MetricType = MetricTypeGauge
+	c.MetricName = "gen"
+	c.TraceID = ""
+	c.SpanID = ""
 }
 
 // Validate validates the test scenario parameters.

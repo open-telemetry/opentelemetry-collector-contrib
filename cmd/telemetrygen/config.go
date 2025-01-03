@@ -13,15 +13,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metadata"
-	logs2 "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/logs"
-	metrics2 "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/metrics"
-	traces2 "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/traces"
 )
 
 var (
-	tracesCfg  *traces2.Config
-	metricsCfg *metrics2.Config
-	logsCfg    *logs2.Config
+	tracesCfg  *traces.Config
+	metricsCfg *metrics.Config
+	logsCfg    *logs.Config
 )
 
 // rootCmd is the root command on which will be run children commands
@@ -37,7 +37,7 @@ var tracesCmd = &cobra.Command{
 	Short:   fmt.Sprintf("Simulates a client generating traces. (Stability level: %s)", metadata.TracesStability),
 	Example: "telemetrygen traces",
 	RunE: func(_ *cobra.Command, _ []string) error {
-		return traces2.Start(tracesCfg)
+		return traces.Start(tracesCfg)
 	},
 }
 
@@ -47,7 +47,7 @@ var metricsCmd = &cobra.Command{
 	Short:   fmt.Sprintf("Simulates a client generating metrics. (Stability level: %s)", metadata.MetricsStability),
 	Example: "telemetrygen metrics",
 	RunE: func(_ *cobra.Command, _ []string) error {
-		return metrics2.Start(metricsCfg)
+		return metrics.Start(metricsCfg)
 	},
 }
 
@@ -57,20 +57,20 @@ var logsCmd = &cobra.Command{
 	Short:   fmt.Sprintf("Simulates a client generating logs. (Stability level: %s)", metadata.LogsStability),
 	Example: "telemetrygen logs",
 	RunE: func(_ *cobra.Command, _ []string) error {
-		return logs2.Start(logsCfg)
+		return logs.Start(logsCfg)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(tracesCmd, metricsCmd, logsCmd)
 
-	tracesCfg = new(traces2.Config)
+	tracesCfg = traces.NewConfig()
 	tracesCfg.Flags(tracesCmd.Flags())
 
-	metricsCfg = new(metrics2.Config)
+	metricsCfg = metrics.NewConfig()
 	metricsCfg.Flags(metricsCmd.Flags())
 
-	logsCfg = new(logs2.Config)
+	logsCfg = logs.NewConfig()
 	logsCfg.Flags(logsCmd.Flags())
 
 	// Disabling completion command for end user

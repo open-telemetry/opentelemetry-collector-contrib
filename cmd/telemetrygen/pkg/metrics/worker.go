@@ -20,7 +20,7 @@ import (
 type worker struct {
 	running        *atomic.Bool                 // pointer to shared flag that indicates it's time to stop the test
 	metricName     string                       // name of metric to generate
-	metricType     metricType                   // type of metric to generate
+	metricType     MetricType                   // type of metric to generate
 	exemplars      []metricdata.Exemplar[int64] // exemplars to attach to the metric
 	numMetrics     int                          // how many metrics the worker has to generate (only when duration==0)
 	totalDuration  time.Duration                // how long to run the test for (overrides `numMetrics`)
@@ -97,7 +97,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 		var metrics []metricdata.Metrics
 
 		switch w.metricType {
-		case metricTypeGauge:
+		case MetricTypeGauge:
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
 				Data: metricdata.Gauge[int64]{
@@ -111,7 +111,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 					},
 				},
 			})
-		case metricTypeSum:
+		case MetricTypeSum:
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
 				Data: metricdata.Sum[int64]{
@@ -128,7 +128,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 					},
 				},
 			})
-		case metricTypeHistogram:
+		case MetricTypeHistogram:
 			iteration := uint64(i) % 10
 			sum := histogramBucketSamples[iteration].sum
 			bucketCounts := histogramBucketSamples[iteration].bucketCounts

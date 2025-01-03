@@ -22,18 +22,35 @@ type Config struct {
 	SpanID         string
 }
 
+func NewConfig() *Config {
+	cfg := &Config{}
+	cfg.Config.SetDefaults()
+	cfg.SetDefaults()
+	return cfg
+}
+
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
 	c.CommonFlags(fs)
 
-	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", "/v1/logs", "Which URL path to write to")
+	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", c.HTTPPath, "Which URL path to write to")
 
-	fs.IntVar(&c.NumLogs, "logs", 1, "Number of logs to generate in each worker (ignored if duration is provided)")
-	fs.StringVar(&c.Body, "body", "the message", "Body of the log")
-	fs.StringVar(&c.SeverityText, "severity-text", "Info", "Severity text of the log")
-	fs.Int32Var(&c.SeverityNumber, "severity-number", 9, "Severity number of the log, range from 1 to 24 (inclusive)")
-	fs.StringVar(&c.TraceID, "trace-id", "", "TraceID of the log")
-	fs.StringVar(&c.SpanID, "span-id", "", "SpanID of the log")
+	fs.IntVar(&c.NumLogs, "logs", c.NumLogs, "Number of logs to generate in each worker (ignored if duration is provided)")
+	fs.StringVar(&c.Body, "body", c.Body, "Body of the log")
+	fs.StringVar(&c.SeverityText, "severity-text", c.SeverityText, "Severity text of the log")
+	fs.Int32Var(&c.SeverityNumber, "severity-number", c.SeverityNumber, "Severity number of the log, range from 1 to 24 (inclusive)")
+	fs.StringVar(&c.TraceID, "trace-id", c.TraceID, "TraceID of the log")
+	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID of the log")
+}
+
+func (c *Config) SetDefaults() {
+	c.HTTPPath = "/v1/logs"
+	c.NumLogs = 1
+	c.Body = "the message"
+	c.SeverityText = "Info"
+	c.SeverityNumber = 9
+	c.TraceID = ""
+	c.SpanID = ""
 }
 
 // Validate validates the test scenario parameters.
