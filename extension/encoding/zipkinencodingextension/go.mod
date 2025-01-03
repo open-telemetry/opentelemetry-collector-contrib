@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 
 go 1.22.7
 
-toolchain go1.22.8
+toolchain go1.23.4
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.116.0

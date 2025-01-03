@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 
 go 1.22.7
 
-toolchain go1.22.8
+toolchain go1.23.4
 
 require (
 	github.com/elastic/go-docappender/v2 v2.3.2
