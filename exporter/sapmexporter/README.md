@@ -38,9 +38,9 @@ and some useful related utilities can be found [here](https://github.com/signalf
 
 The following configuration options are required:
 
-- `access_token` (no default): AccessToken is the authentication token provided by Splunk Observability Cloud or
+- `access_token` (no default): AccessToken is the [authentication token provided by Splunk Observability Cloud](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html) or
 another backend that supports the SAPM proto. The access token can be obtained from the
-web app. For details on how to do so please refer the documentation [here](https://docs.splunk.com/observability/en/admin/authentication/authentication-tokens/manage-usage.html).
+web app.
 - `endpoint` (no default): This is the destination to where traces will be sent to in SAPM
 format. It must be a full URL and include the scheme, port and path e.g,
 <!-- markdown-link-check-disable-line -->https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx 
