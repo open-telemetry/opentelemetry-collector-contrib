@@ -168,7 +168,7 @@ func (ca ConfigAction) isValid() bool {
 	return false
 }
 
-// operationAction is the enum to capture the thress types of actions to perform for an operation.
+// operationAction is the enum to capture the types of actions to perform for an operation.
 type operationAction string
 
 const (
