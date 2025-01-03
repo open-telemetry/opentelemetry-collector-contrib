@@ -6,7 +6,7 @@ body:
   - type: textarea
     attributes:
       label: The purpose and use-cases of the new component
-      description: This information can be used later on to populate the README for the component. See an example overview [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
+      description: This information can be used later on to populate the README for the component. See an [example overview](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/awsecscontainermetricsreceiver#overview).
     validations:
       required: true
   - type: textarea
