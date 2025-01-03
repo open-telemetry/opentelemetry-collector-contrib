@@ -469,7 +469,7 @@ A circular buffer is used to ensure the number of traces in-memory doesn't excee
 otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
 ```
 
-**Pre-emptively Preventing Dropped Traces**
+**Preemptively Preventing Dropped Traces**
 
 A trace is dropped without sampling if it's removed from the circular buffer before `decision_wait`.
 
