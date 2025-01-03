@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
+package http // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/server/http"
 
 import (
 	"context"
@@ -12,10 +12,11 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source"
 )
 
 var errMissingStrategyStore = errors.New("the strategy store has not been provided")
@@ -25,14 +26,14 @@ var _ component.Component = (*SamplingHTTPServer)(nil)
 type SamplingHTTPServer struct {
 	telemetry     component.TelemetrySettings
 	settings      confighttp.ServerConfig
-	strategyStore samplingstrategy.Provider
+	strategyStore source.Source
 
 	mux        *http.ServeMux
 	srv        *http.Server
 	shutdownWG *sync.WaitGroup
 }
 
-func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore samplingstrategy.Provider) (*SamplingHTTPServer, error) {
+func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore source.Source) (*SamplingHTTPServer, error) {
 	if strategyStore == nil {
 		return nil, errMissingStrategyStore
 	}

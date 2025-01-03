@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal"
+package grpc // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/server/grpc"
 
 import (
 	"context"
@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -18,11 +16,16 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/source"
 )
 
 var _ component.Component = (*SamplingGRPCServer)(nil)
 
-var errGRPCServerNotRunning = errors.New("gRPC server is not running")
+var (
+	errMissingStrategyStore = errors.New("the strategy store has not been provided")
+	errGRPCServerNotRunning = errors.New("gRPC server is not running")
+)
 
 type grpcServer interface {
 	Serve(lis net.Listener) error
@@ -34,7 +37,7 @@ type grpcServer interface {
 func NewGRPC(
 	telemetry component.TelemetrySettings,
 	settings configgrpc.ServerConfig,
-	strategyStore samplingstrategy.Provider,
+	strategyStore source.Source,
 ) (*SamplingGRPCServer, error) {
 	if strategyStore == nil {
 		return nil, errMissingStrategyStore
@@ -51,7 +54,7 @@ func NewGRPC(
 type SamplingGRPCServer struct {
 	telemetry     component.TelemetrySettings
 	settings      configgrpc.ServerConfig
-	strategyStore samplingstrategy.Provider
+	strategyStore source.Source
 
 	grpcServer grpcServer
 }
@@ -64,7 +67,7 @@ func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) err
 	reflection.Register(server)
 	s.grpcServer = server
 
-	api_v2.RegisterSamplingManagerServer(server, sampling.NewGRPCHandler(s.strategyStore))
+	api_v2.RegisterSamplingManagerServer(server, NewGRPCHandler(s.strategyStore))
 
 	healthServer := health.NewServer()
 	healthServer.SetServingStatus("jaeger.api_v2.SamplingManager", grpc_health_v1.HealthCheckResponse_SERVING)
