@@ -49,11 +49,16 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 type Option func(*ottl.Parser[TransformContext])
 
 func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans) TransformContext {
+	return NewTransformContextWithCache(span, instrumentationScope, resource, scopeSpans, resourceSpans, pcommon.NewMap())
+}
+
+// Experimental: *NOTE* this function is subject to change or removal in the future.
+func NewTransformContextWithCache(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeSpans ptrace.ScopeSpans, resourceSpans ptrace.ResourceSpans, cache pcommon.Map) TransformContext {
 	return TransformContext{
 		span:                 span,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                pcommon.NewMap(),
+		cache:                cache,
 		scopeSpans:           scopeSpans,
 		resourceSpans:        resourceSpans,
 	}

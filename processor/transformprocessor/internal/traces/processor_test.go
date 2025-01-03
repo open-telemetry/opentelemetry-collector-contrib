@@ -1001,6 +1001,125 @@ func Test_ProcessTraces_Error(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_CacheAccess(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []common.ContextStatements
+		want       func(td ptrace.Traces)
+	}{
+		{
+			name: "resource:resource.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(resource.cache["test"], "pass")`}},
+				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "resource:cache",
+			statements: []common.ContextStatements{
+				{
+					Context: common.Resource,
+					Statements: []string{
+						`set(cache["test"], "pass")`,
+						`set(attributes["test"], cache["test"])`,
+					},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:scope.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(scope.cache["test"], "pass")`}},
+				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "scope:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Scope,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"])`,
+				},
+			}},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "span:span.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(span.cache["test"], "pass")`}},
+				{Statements: []string{`set(span.attributes["test"], span.cache["test"]) where span.name == "operationA"`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "span:cache",
+			statements: []common.ContextStatements{{
+				Context: common.Span,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"]) where name == "operationA"`,
+				},
+			}},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "spanevent:spanevent.cache",
+			statements: []common.ContextStatements{
+				{Statements: []string{`set(spanevent.cache["test"], "pass")`}},
+				{Statements: []string{`set(spanevent.attributes["test"], spanevent.cache["test"]) where spanevent.name == "eventA"`}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "spanevent:cache",
+			statements: []common.ContextStatements{{
+				Context: common.SpanEvent,
+				Statements: []string{
+					`set(cache["test"], "pass")`,
+					`set(attributes["test"], cache["test"]) where name == "eventA"`,
+				},
+			}},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessTraces(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func BenchmarkTwoSpans(b *testing.B) {
 	tests := []struct {
 		name       string

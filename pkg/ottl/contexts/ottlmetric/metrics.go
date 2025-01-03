@@ -39,12 +39,17 @@ type TransformContext struct {
 type Option func(*ottl.Parser[TransformContext])
 
 func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
+	return NewTransformContextWithCache(metric, metrics, instrumentationScope, resource, scopeMetrics, resourceMetrics, pcommon.NewMap())
+}
+
+// Experimental: *NOTE* this function is subject to change or removal in the future.
+func NewTransformContextWithCache(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics, cache pcommon.Map) TransformContext {
 	return TransformContext{
 		metric:               metric,
 		metrics:              metrics,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
-		cache:                pcommon.NewMap(),
+		cache:                cache,
 		scopeMetrics:         scopeMetrics,
 		resourceMetrics:      resourceMetrics,
 	}

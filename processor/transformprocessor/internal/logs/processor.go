@@ -5,9 +5,11 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"reflect"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -55,8 +57,17 @@ func (p *Processor) ProcessLogs(ctx context.Context, ld plog.Logs) (plog.Logs, e
 		pdatautil.FlattenLogs(ld.ResourceLogs())
 		defer pdatautil.GroupByResourceLogs(ld.ResourceLogs())
 	}
+
+	contextCache := make(map[string]*pcommon.Map, len(p.contexts))
 	for _, c := range p.contexts {
-		err := c.ConsumeLogs(ctx, ld)
+		cacheKey := reflect.TypeOf(c).String()
+		cache, ok := contextCache[cacheKey]
+		if !ok {
+			m := pcommon.NewMap()
+			cache = &m
+			contextCache[cacheKey] = cache
+		}
+		err := c.ConsumeLogs(common.WithCache(ctx, cache), ld)
 		if err != nil {
 			p.logger.Error("failed processing logs", zap.Error(err))
 			return ld, err

@@ -38,7 +38,7 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
-				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
+				tCtx := ottlmetric.NewTransformContextWithCache(metrics.At(k), smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics, newCacheFrom(ctx))
 				condition, err := m.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
 					return err
@@ -101,7 +101,7 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 
 func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics)
+		tCtx := ottldatapoint.NewTransformContextWithCache(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, newCacheFrom(ctx))
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -118,7 +118,7 @@ func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pme
 
 func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics)
+		tCtx := ottldatapoint.NewTransformContextWithCache(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, newCacheFrom(ctx))
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -135,7 +135,7 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps 
 
 func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics)
+		tCtx := ottldatapoint.NewTransformContextWithCache(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, newCacheFrom(ctx))
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -152,7 +152,7 @@ func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Con
 
 func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics)
+		tCtx := ottldatapoint.NewTransformContextWithCache(dps.At(i), metric, metrics, is, resource, scopeMetrics, resourceMetrics, newCacheFrom(ctx))
 		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
