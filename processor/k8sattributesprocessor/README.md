@@ -389,7 +389,7 @@ When running as an agent, the processor detects IP addresses of pods sending spa
 and uses this information to extract metadata from pods. When running as an agent, it is important to apply
 a discovery filter so that the processor only discovers pods from the same host that it is running on. Not using
 such a filter can result in unnecessary resource usage especially on very large clusters. Once the filter is applied,
-each processor will only query the k8s API for pods running on it's own node.
+each processor will only query the k8s API for pods running on its own node.
 
 Node filter can be applied by setting the `filter.node` config option to the name of a k8s node. While this works
 as expected, it cannot be used to automatically filter pods by the same node that the processor is running on in

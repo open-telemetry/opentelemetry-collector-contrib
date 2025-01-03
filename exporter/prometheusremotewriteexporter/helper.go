@@ -95,7 +95,7 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 
 func convertTimeseriesToRequest(tsArray []prompb.TimeSeries) *prompb.WriteRequest {
 	// the remote_write endpoint only requires the timeseries.
-	// otlp defines it's own way to handle metric metadata
+	// otlp defines its own way to handle metric metadata
 	return &prompb.WriteRequest{
 		// Prometheus requires time series to be sorted by Timestamp to avoid out of order problems.
 		// See:
