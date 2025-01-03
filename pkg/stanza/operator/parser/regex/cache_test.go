@@ -215,7 +215,7 @@ func TestLimiter(t *testing.T) {
 func TestThrottledLimiter(t *testing.T) {
 	const maxVal = uint64(3)
 
-	// Limiter with a count higher than the max, which will force
+	// Limiter with a count greater than the max, which will force
 	// it to be throttled by default. Also note that the init method
 	// has not been called yet, so the reset go routine is not running
 	count := &atomic.Uint64{}

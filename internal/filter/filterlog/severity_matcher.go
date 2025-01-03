@@ -7,7 +7,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-// severtiyNumberMatcher is a Matcher that matches if the input log record has a severity higher than
+// severtiyNumberMatcher is a Matcher that matches if the input log record has a severity greater than
 // the minSeverityNumber.
 type severityNumberMatcher struct {
 	matchUndefined    bool
