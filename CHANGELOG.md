@@ -139,7 +139,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   respond to GET requests for the health check only.
   
 - `kafkaexporter, kafkareceiver`: Add a new mechanism "AWS_MSK_IAM_OAUTHBEARER" for kafka exporter and kafka receiver. This mechanism use the AWS MSK IAM SASL Signer for Go https://github.com/aws/aws-msk-iam-sasl-signer-go. (#19747)
-- `loadbalancingexporter`: Adds a an optional configuration to the k8s resolver which returns hostnames instead of IPs for headless services pointing at statefulsets (#18412)
+- `loadbalancingexporter`: Adds an optional configuration to the k8s resolver which returns hostnames instead of IPs for headless services pointing at statefulsets (#18412)
 - `mongodbatlasreceiver`: Adds additional metrics to the MongoDB Atlas receiver (#36525)
   Adds a number of new default disabled metrics to the MongoDB Atlas receiver. These metrics are:
   - mongodbatlas.disk.partition.queue.depth
