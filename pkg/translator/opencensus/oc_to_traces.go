@@ -45,7 +45,7 @@ func OCToTraces(node *occommon.Node, resource *ocresource.Resource, spans []*oct
 	// that have nil Resource field must be placed in one other ResourceSpans instance,
 	// which will gets its Resource field from "td.Resource".
 	//
-	// We will end up with with one or more ResourceSpans like this:
+	// We will end up with one or more ResourceSpans like this:
 	//
 	// ResourceSpans           ResourceSpans  ResourceSpans
 	// +-----+-----+---+-----+ +------------+ +------------+

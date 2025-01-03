@@ -39,7 +39,7 @@ func OCToMetrics(node *occommon.Node, resource *ocresource.Resource, metrics []*
 	// that have nil Resource field must be placed in one other ResourceMetrics instance,
 	// which will gets its Resource field from "md.Resource".
 	//
-	// We will end up with with one or more ResourceMetrics like this:
+	// We will end up with one or more ResourceMetrics like this:
 	//
 	// ResourceMetrics           ResourceMetrics  ResourceMetrics
 	// +-------+-------+---+-------+ +--------------+ +--------------+
