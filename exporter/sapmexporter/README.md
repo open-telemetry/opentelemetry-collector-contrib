@@ -67,8 +67,7 @@ In addition to setting this option to `true`, debug logging at the Collector lev
   compressed and `compression` option is ignored.
 
 In addition, this exporter offers queued retry which is enabled by default.
-Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+For more info, see the [exporterhelper configuration parameters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 Example:
 
