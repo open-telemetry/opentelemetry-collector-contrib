@@ -1744,7 +1744,7 @@ func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp,
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	ept := apiDict[`SplunkHealth`]
-	var ha HealthArtifacts
+	var ha healthArtifacts
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
@@ -1770,7 +1770,7 @@ func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp,
 	}
 }
 
-func (s *splunkScraper) traverseHealthDetailFeatures(details HealthDetails, now pcommon.Timestamp) {
+func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now pcommon.Timestamp) {
 	if details.Features == nil {
 		return
 	}
