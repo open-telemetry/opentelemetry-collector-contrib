@@ -58,7 +58,7 @@ receivers:
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
 

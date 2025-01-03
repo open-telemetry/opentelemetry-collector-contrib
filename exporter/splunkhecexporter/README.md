@@ -145,7 +145,7 @@ exporters:
 ```
 
 The full list of settings exposed for this exporter are documented in [config.go](./config.go)
-with detailed sample configurations [here](testdata/config.yaml).
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 This exporter also [offers proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 

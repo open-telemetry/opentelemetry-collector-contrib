@@ -51,7 +51,7 @@ receivers:
     collection_interval: 10s
 ```
 
-The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ## Metrics
 

@@ -57,7 +57,7 @@ The following configuration options can also be configured:
 - `exclude_metrics`: List of metric filters that will determine metrics to be
   excluded from sending to Signalfx backend. The filtering is applied after the default 
   translations controlled by `disable_default_translation_rules` option.
-  See [here](./testdata/config.yaml) for examples. Apart from the values explicitly
+  See in [testdata/config.yaml](./testdata/config.yaml) for examples. Apart from the values explicitly
   provided via this option, by default, [default metrics](./internal/translation/default_metrics.go) are
   also appended to this list. Setting this option to `[]` will override all the default
   excludes.
@@ -300,7 +300,7 @@ service:
 ```
 
 The full list of settings exposed for this exporter are documented in [config.go](./config.go)
-with detailed sample configurations [here](testdata/config.yaml).
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 This exporter also [offers proxy support](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
 

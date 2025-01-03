@@ -43,7 +43,7 @@ extensions:
 ```
 
 The full list of settings exposed for this exporter are documented in [config.go](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 
 ### Go Profiling with pprof basics
