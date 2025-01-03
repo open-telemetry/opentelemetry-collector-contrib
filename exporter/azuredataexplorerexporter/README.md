@@ -216,7 +216,7 @@ with ( docstring = "Histo sum count processing function", folder = "UpdatePolicy
 
 ### OpenTelemetry Exporter Helper Configurations
 
-The ADX exporter now includes support for OpenTelemetry exporter helper configurations. This feature allows you to leverage the exporter helper capabilities(retries, timeout etc.) provided natively by Otel. Read more [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+The ADX exporter now includes support for OpenTelemetry exporter helper configurations. This feature allows you to leverage the exporter helper capabilities(retries, timeout etc.) provided natively by Otel. Read more about [exporterhelper](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 Please note that this configuration is not enabled by default. To utilize the OpenTelemetry exporter helper, you will need to add it manually to the configuration.
 
