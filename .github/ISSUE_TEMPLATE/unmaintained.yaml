@@ -47,6 +47,7 @@ body:
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
+      - exporter/bmchelix
       - exporter/carbon
       - exporter/cassandra
       - exporter/clickhouse

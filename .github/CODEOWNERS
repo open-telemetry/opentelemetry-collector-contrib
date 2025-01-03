@@ -49,6 +49,7 @@ exporter/awss3exporter/                           @open-telemetry/collector-cont
 exporter/awsxrayexporter/                         @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 exporter/azuredataexplorerexporter/               @open-telemetry/collector-contrib-approvers @ag-ramachandran
 exporter/azuremonitorexporter/                    @open-telemetry/collector-contrib-approvers @pcwiese
+exporter/bmchelixexporter/                        @open-telemetry/collector-contrib-approvers @bertysentry @NassimBtk
 exporter/carbonexporter/                          @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 exporter/cassandraexporter/                       @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                      @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen @SpencerTorres
