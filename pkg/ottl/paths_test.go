@@ -373,7 +373,7 @@ func Test_getParsedStatementPaths(t *testing.T) {
 			},
 		},
 		{
-			name:      "converter math math expression",
+			name:      "converter math expression",
 			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / One()`,
 			expected: []path{
 				{
