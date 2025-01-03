@@ -20,6 +20,8 @@ import (
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
+	collectorVersionResolver collectorVersionResolver
+
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
@@ -146,6 +148,15 @@ func (cfg *Config) buildDSN() (string, error) {
 	} else if !queryParams.Has("compress") {
 		queryParams.Set("compress", cfg.Compress)
 	}
+
+	productInfo := queryParams.Get("client_info_product")
+	binaryProductInfo := fmt.Sprintf("%s/%s", "otelcol", cfg.collectorVersionResolver.GetVersion())
+	if productInfo == "" {
+		productInfo = binaryProductInfo
+	} else {
+		productInfo = fmt.Sprintf("%s,%s", productInfo, binaryProductInfo)
+	}
+	queryParams.Set("client_info_product", productInfo)
 
 	// Use database from config if not specified in path, or if config is not default.
 	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
