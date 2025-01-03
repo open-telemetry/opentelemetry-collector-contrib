@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -247,6 +248,8 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			return err
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
+
+		jr.settings.Logger.Info("Starting UDP server for Binary Thrift", zap.String("endpoint", jr.config.AgentBinaryThrift.Endpoint))
 	}
 
 	if jr.config.AgentCompactThrift.Endpoint != "" {
@@ -267,6 +270,8 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 			return err
 		}
 		jr.agentProcessors = append(jr.agentProcessors, processor)
+
+		jr.settings.Logger.Info("Starting UDP server for Compact Thrift", zap.String("endpoint", jr.config.AgentCompactThrift.Endpoint))
 	}
 
 	jr.goroutines.Add(len(jr.agentProcessors))
@@ -388,6 +393,8 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 			return err
 		}
 
+		jr.settings.Logger.Info("Starting HTTP server for Jaeger Thrift", zap.String("endpoint", jr.config.HTTPServerConfig.Endpoint))
+
 		jr.goroutines.Add(1)
 		go func() {
 			defer jr.goroutines.Done()
@@ -410,6 +417,8 @@ func (jr *jReceiver) startCollector(ctx context.Context, host component.Host) er
 		}
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
+
+		jr.settings.Logger.Info("Starting gRPC server for Jaeger Protobuf", zap.String("endpoint", jr.config.GRPCServerConfig.NetAddr.Endpoint))
 
 		jr.goroutines.Add(1)
 		go func() {
