@@ -178,10 +178,9 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
 
-	eventNameAttr, ok := record.Attributes().Get("event.name")
 	if record.EventName() != "" {
 		document.AddString("event_name", record.EventName())
-	} else if ok && eventNameAttr.Str() != "" {
+	} else if eventNameAttr, ok := record.Attributes().Get("event.name"); ok && eventNameAttr.Str() != "" {
 		document.AddString("event_name", eventNameAttr.Str())
 	}
 
