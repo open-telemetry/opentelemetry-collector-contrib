@@ -164,7 +164,7 @@ func Test_Start(t *testing.T) {
 	clientConfigTLS.Endpoint = "https://some.url:9411/api/prom/push"
 	clientConfigTLS.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
-			CAFile:   "non-existent file",
+			CAFile:   "nonexistent file",
 			CertFile: "",
 			KeyFile:  "",
 		},
