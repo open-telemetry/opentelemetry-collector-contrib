@@ -594,10 +594,14 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 					session.MarkMessage(message, "")
 				}
 				if errorRequiresBackoff(err) && c.backOff != nil {
+					backOffDelay := c.backOff.NextBackOff()
+					if backOffDelay == backoff.Stop {
+						return err
+					}
 					select {
 					case <-session.Context().Done():
 						return nil
-					case <-time.After(c.backOff.NextBackOff()):
+					case <-time.After(backOffDelay):
 					}
 				}
 				return err
@@ -685,10 +689,14 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 					session.MarkMessage(message, "")
 				}
 				if errorRequiresBackoff(err) && c.backOff != nil {
+					backOffDelay := c.backOff.NextBackOff()
+					if backOffDelay == backoff.Stop {
+						return err
+					}
 					select {
 					case <-session.Context().Done():
 						return nil
-					case <-time.After(c.backOff.NextBackOff()):
+					case <-time.After(backOffDelay):
 					}
 				}
 				return err
@@ -771,10 +779,14 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 					session.MarkMessage(message, "")
 				}
 				if errorRequiresBackoff(err) && c.backOff != nil {
+					backOffDelay := c.backOff.NextBackOff()
+					if backOffDelay == backoff.Stop {
+						return err
+					}
 					select {
 					case <-session.Context().Done():
 						return nil
-					case <-time.After(c.backOff.NextBackOff()):
+					case <-time.After(backOffDelay):
 					}
 				}
 				return err
