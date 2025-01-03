@@ -194,6 +194,7 @@ body:
       - receiver/awscloudwatch
       - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
+      - receiver/awscontainerinsightskueue
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
       - receiver/awss3
