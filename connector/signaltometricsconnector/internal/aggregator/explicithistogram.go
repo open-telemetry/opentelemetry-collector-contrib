@@ -29,7 +29,7 @@ type explicitHistogramDP struct {
 
 	// counts represents the count values of histogram for each bucket. The sum of
 	// counts across all buckets must be equal to the count variable. The length of
-	// counts must be one greather than the length of bounds slice.
+	// counts must be one greater than the length of bounds slice.
 	counts []uint64
 }
 
