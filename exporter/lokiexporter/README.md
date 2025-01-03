@@ -306,7 +306,7 @@ If `service.instance.id` is present then `instance=service.instance.id` is set
 If `service.instance.id` is not present then `instance` label is not set
 
 The full list of settings exposed for this exporter are documented in [config.go](./config.go) with detailed sample
-configurations [here](./testdata/config.yaml).
+configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 For more information, see [how to send logs to Grafana Loki using the OpenTelemetry Collector](https://grafana.com/docs/opentelemetry/collector/send-logs-to-loki/)
 
