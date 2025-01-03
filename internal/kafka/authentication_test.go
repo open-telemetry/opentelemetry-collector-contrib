@@ -103,7 +103,7 @@ func TestAuthentication(t *testing.T) {
 		},
 		{
 			auth: Authentication{TLS: &configtls.ClientConfig{
-				Config: configtls.Config{CAFile: "/doesnotexists"},
+				Config: configtls.Config{CAFile: "/nonexistent"},
 			}},
 			saramaConfig: saramaTLSCfg,
 			err:          "failed to load TLS config",

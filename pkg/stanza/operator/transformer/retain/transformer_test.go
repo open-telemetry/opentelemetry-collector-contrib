@@ -409,7 +409,7 @@ func TestBuildAndProcess(t *testing.T) {
 			false,
 			func() *Config {
 				cfg := NewConfig()
-				cfg.Fields = append(cfg.Fields, entry.NewBodyField("aNonExsistentKey"))
+				cfg.Fields = append(cfg.Fields, entry.NewBodyField("aNonexistentKey"))
 				return cfg
 			}(),
 			newTestEntry,

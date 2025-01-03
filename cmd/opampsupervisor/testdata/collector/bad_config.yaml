@@ -1,11 +1,11 @@
 receivers:
-  doesntexist:
+  nonexistent:
 
 exporters:
-  doesntexist:
+  nonexistent:
 
 service:
   pipelines:
     traces:
-      receivers: [doesntexist]
-      exporters: [doesntexist]
+      receivers: [nonexistent]
+      exporters: [nonexistent]

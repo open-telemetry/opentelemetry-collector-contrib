@@ -60,7 +60,7 @@ func Test_Append(t *testing.T) {
 		Want   func(pcommon.Slice)
 	}{
 		{
-			"Single: non existing target",
+			"Single: nonexistent target",
 			&ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil
@@ -74,7 +74,7 @@ func Test_Append(t *testing.T) {
 			},
 		},
 		{
-			"Single: non existing target - non string value",
+			"Single: nonexistent target - non string value",
 			&ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil

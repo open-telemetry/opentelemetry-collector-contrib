@@ -102,7 +102,7 @@ func TestUnsupportedScheme(t *testing.T) {
 }
 
 func TestNonExistent(t *testing.T) {
-	fp := NewTestProvider("./testdata/non-existent.yaml")
+	fp := NewTestProvider("./testdata/nonexistent.yaml")
 	_, err := fp.Retrieve(context.Background(), "s3://non-exist-bucket.s3.region.amazonaws.com/key", nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/non-exist-key.yaml", nil)

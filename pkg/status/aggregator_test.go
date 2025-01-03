@@ -176,8 +176,8 @@ func TestPipelineAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	traces := testhelpers.NewPipelineMetadata("traces")
 
-	t.Run("non existent pipeline", func(t *testing.T) {
-		st, ok := agg.AggregateStatus("doesnotexist", status.Concise)
+	t.Run("nonexistent pipeline", func(t *testing.T) {
+		st, ok := agg.AggregateStatus("nonexistent", status.Concise)
 		require.Nil(t, st)
 		require.False(t, ok)
 	})
@@ -212,8 +212,8 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	traces := testhelpers.NewPipelineMetadata("traces")
 
-	t.Run("non existent pipeline", func(t *testing.T) {
-		st, ok := agg.AggregateStatus("doesnotexist", status.Verbose)
+	t.Run("nonexistent pipeline", func(t *testing.T) {
+		st, ok := agg.AggregateStatus("nonexistent", status.Verbose)
 		require.Nil(t, st)
 		require.False(t, ok)
 	})

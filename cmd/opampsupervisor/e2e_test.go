@@ -456,7 +456,7 @@ func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
 			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, "doesntexist")
+			return strings.Contains(cfg, "nonexistent")
 		}
 
 		return false

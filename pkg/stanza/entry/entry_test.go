@@ -38,7 +38,7 @@ func TestRead(t *testing.T) {
 
 	t.Run("field not exist error", func(t *testing.T) {
 		var s string
-		err := testEntry.Read(NewBodyField("nonexistant_field"), &s)
+		err := testEntry.Read(NewBodyField("nonexistent_field"), &s)
 		require.Error(t, err)
 	})
 

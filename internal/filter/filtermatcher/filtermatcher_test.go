@@ -185,7 +185,7 @@ func Test_Matching_False(t *testing.T) {
 				Services: []string{},
 				Attributes: []filterconfig.Attribute{
 					{
-						Key:   "doesnotexist",
+						Key:   "nonexistent",
 						Value: nil,
 					},
 				},

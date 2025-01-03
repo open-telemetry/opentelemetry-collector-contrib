@@ -4,4 +4,4 @@ prometheus:
       - job_name: 'test'
         scrape_interval: 5s
         file_sd_configs:
-        - files: ["./testdata/non-existent-sd-file.json"]
+        - files: ["./testdata/nonexistent-sd-file.json"]
