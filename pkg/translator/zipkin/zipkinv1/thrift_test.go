@@ -11,8 +11,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -20,6 +18,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkincore"
 )
 
 // compareTraces compares got to want while ignoring order. Both are modified in place.
@@ -52,7 +51,7 @@ func TestV1ThriftToTraces(t *testing.T) {
 
 	var zSpans []*zipkincore.Span
 	require.NoError(t, json.Unmarshal(blob, &zSpans), "failed to unmarshal json test file")
-	thriftBytes := zipkin.SerializeThrift(context.TODO(), zSpans)
+	thriftBytes := SerializeThrift(context.TODO(), zSpans)
 
 	td, err := thriftUnmarshaler{}.UnmarshalTraces(thriftBytes)
 	require.NoError(t, err, "Failed to translate zipkinv1 thrift to OC proto")

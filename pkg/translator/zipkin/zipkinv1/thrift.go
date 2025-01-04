@@ -13,19 +13,18 @@ import (
 	"math"
 	"net"
 
-	jaegerzipkin "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkincore"
 )
 
 type thriftUnmarshaler struct{}
 
 // UnmarshalTraces from Thrift bytes.
 func (t thriftUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
-	spans, err := jaegerzipkin.DeserializeThrift(context.TODO(), buf)
+	spans, err := DeserializeThrift(context.TODO(), buf)
 	if err != nil {
 		return ptrace.Traces{}, err
 	}

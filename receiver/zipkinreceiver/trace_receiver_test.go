@@ -17,8 +17,6 @@ import (
 	"testing"
 	"time"
 
-	zipkin2 "github.com/jaegertracing/jaeger/model/converter/thrift/zipkin"
-	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -30,6 +28,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkincore"
+	zipkin "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv1"
 )
 
 const (
@@ -323,7 +324,7 @@ func thriftExample() []byte {
 		},
 	}
 
-	return zipkin2.SerializeThrift(context.TODO(), zSpans)
+	return zipkin.SerializeThrift(context.TODO(), zSpans)
 }
 
 func compressGzip(body []byte) (*bytes.Buffer, error) {
