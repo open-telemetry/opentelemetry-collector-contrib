@@ -48,7 +48,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 		{
-			name: "No condition set, applys to all",
+			name: "No condition set, applies to all",
 			cond: NewConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
@@ -127,7 +127,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 			}),
 		},
 		{
-			name: "No condition set, applys to all",
+			name: "No condition set, applies to all",
 			cond: NewConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
