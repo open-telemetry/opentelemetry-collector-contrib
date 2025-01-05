@@ -38,7 +38,7 @@ Notice that for this example, the current parser will parse every nested object 
 ["Hello", 42, "{\"name\": \"Alice\", \"age\": 25}", "[1, 2, 3]", true, null]
 ```
 
-More information on json arrays can be found [here](https://json-schema.org/understanding-json-schema/reference/array)
+For more information, see [json-schema.org/understanding-json-schema/reference/array](https://json-schema.org/understanding-json-schema/reference/array)
 
 
 ### Configuration Fields
