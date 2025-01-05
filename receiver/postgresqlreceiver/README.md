@@ -83,7 +83,7 @@ When this feature gate is enabled, the following optional settings are available
 - `max_idle`: The maximum number of connections in the idle connection pool.
 - `max_open`: The maximum number of open connections to the database.
 
-Those settings and their defaults are further documented in the `sql/database` package [here](https://pkg.go.dev/database/sql#DB).
+Those settings and their defaults are further documented in the [`sql/database`](https://pkg.go.dev/database/sql#DB) package.
 
 ### Example Configuration
 
