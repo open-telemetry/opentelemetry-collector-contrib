@@ -52,6 +52,10 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 			t.Fatal(err)
 		}
 		assert.NotNil(t, body)
+		if len(body) == 0 {
+			// No content, nothing to do. The request is just checking that the server is up.
+			return
+		}
 		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
@@ -123,6 +127,12 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 	defer func() {
 		require.NoError(t, prwe.Shutdown(ctx))
 	}()
+
+	// Ensure that the test server is up before making the requests
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		_, checkRequestErr := http.Get(server.URL)
+		assert.NoError(c, checkRequestErr)
+	}, 5*time.Second, 100*time.Millisecond)
 
 	var wg sync.WaitGroup
 	wg.Add(n)
