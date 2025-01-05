@@ -17,4 +17,4 @@ The `severity_parser` operator sets the severity on an entry by parsing a value 
 
 ### Example Configurations
 
-Several detailed examples are available [here](../types/severity.md).
+[Detailed configuration examples are available](../types/severity.md).

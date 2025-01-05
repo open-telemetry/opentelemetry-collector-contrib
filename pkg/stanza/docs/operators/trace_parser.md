@@ -16,4 +16,4 @@ The `trace_parser` operator sets the trace on an entry by parsing a value from t
 
 ### Example Configurations
 
-Several detailed examples are available [here](../types/trace.md).
+[Detailed configuration examples are available](../types/trace.md).

@@ -17,4 +17,4 @@ The `time_parser` operator sets the timestamp on an entry by parsing a value fro
 
 ### Example Configurations
 
-Several detailed examples are available [here](../types/timestamp.md).
+[Detailed configuration examples are available](../types/timestamp.md).

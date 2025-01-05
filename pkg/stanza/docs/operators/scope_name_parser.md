@@ -14,4 +14,4 @@ The `scope_name_parser` operator sets the scope name on an entry by parsing a va
 
 ### Example Configurations
 
-Several detailed examples are available [here](../types/scope_name.md).
+[Detailed configuration examples are available](../types/scope_name.md).
