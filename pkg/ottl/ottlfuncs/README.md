@@ -2107,7 +2107,7 @@ The `UserAgent` Converter parses the string argument trying to match it against 
 The results of the parsing are returned as a map containing `user_agent.name`, `user_agent.version` and `user_agent.original`
 as defined in semconv v1.25.0.
 
-Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found [here](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
+Parsing is done using the [uap-go package](https://github.com/ua-parser/uap-go). The specific formats it recognizes can be found in [regexes.yaml](https://github.com/ua-parser/uap-core/blob/master/regexes.yaml).
 
 Examples:
 
