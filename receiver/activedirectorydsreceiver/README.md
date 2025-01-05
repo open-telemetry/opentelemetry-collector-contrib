@@ -17,7 +17,7 @@ The `active_directory_ds` receiver scrapes metric relating to an Active Director
 
 ## Configuration
 The following settings are optional:
-- `metrics` (default: see `DefaultMetricsSettings` [here](./internal/metadata/generated_metrics.go)): Allows enabling and disabling specific metrics from being collected in this receiver.
+- `metrics` (default: see [`DefaultMetricsSettings`](./internal/metadata/generated_metrics.go)): Allows enabling and disabling specific metrics from being collected in this receiver.
 - `collection_interval` (default = `10s`): The interval at which metrics are emitted by this receiver.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
