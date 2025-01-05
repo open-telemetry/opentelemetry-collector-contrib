@@ -1,6 +1,6 @@
 ## `journald_input` operator
 
-The `journald_input` operator reads logs from the systemd journal using the `journalctl` binary, which must be in the `$PATH` of the agentt.
+The `journald_input` operator reads logs from the systemd journal using the `journalctl` binary, which must be in the `$PATH` of the agent.
 
 By default, `journalctl` will read from `/run/journal` or `/var/log/journal`. If either `directory` or `files` are set, `journalctl` will instead read from those.
 
