@@ -25,7 +25,7 @@ func NewAppendFactory[K any]() ottl.Factory[K] {
 func createAppendFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*AppendArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("AppendFactory args must be of type *Appendrguments[K]")
+		return nil, fmt.Errorf("AppendFactory args must be of type *AppendArguments[K]")
 	}
 
 	return appendTo(args.Target, args.Value, args.Values)
