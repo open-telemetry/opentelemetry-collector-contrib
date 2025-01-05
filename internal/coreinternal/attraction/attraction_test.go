@@ -87,13 +87,13 @@ func TestAttributes_InsertValue(t *testing.T) {
 
 func TestAttributes_InsertFromAttribute(t *testing.T) {
 	testCases := []testCase{
-		// Ensure no attribute is inserted because because attributes do not exist.
+		// Ensure no attribute is inserted because attributes do not exist.
 		{
 			name:               "InsertEmptyAttributes",
 			inputAttributes:    map[string]any{},
 			expectedAttributes: map[string]any{},
 		},
-		// Ensure no attribute is inserted because because from_attribute `string_key` does not exist.
+		// Ensure no attribute is inserted because from_attribute `string_key` does not exist.
 		{
 			name: "InsertMissingFromAttribute",
 			inputAttributes: map[string]any{
