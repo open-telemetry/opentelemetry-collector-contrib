@@ -123,7 +123,7 @@ type MetadataDelta struct {
 }
 ```
 
-See [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/experimentalmetricmetadata/metadata.go) for details about the above types.
+See [experimentalmetricmetadata/metadata.go](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/experimentalmetricmetadata/metadata.go) for details about the above types.
 
 The same metadata will be also emitted as entity events in the form of log records if
 this receiver is connected to a logs pipeline.
