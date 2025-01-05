@@ -32,7 +32,7 @@ After this first iteration, we are left with two structures, an array of transac
 
 We can then try again to classify these orphan spans, but if not possible, we can assume these orphan spans to be a root span (as we could not find their parent in the trace). Those root spans generated from orphan spans can be also be then used to create their respective transactions.
 
-The interface for a Sentry Transaction can be found [here](https://develop.sentry.dev/sdk/event-payloads/transaction/)
+For more information, see the [interface for a Sentry Transaction](https://develop.sentry.dev/sdk/event-payloads/transaction/)
 
 | Sentry                        | Used to generate                               |
 | ----------------------------- | ---------------------------------------------- |
