@@ -52,7 +52,7 @@ func TestStart(t *testing.T) {
 
 	stanzaReceiver.consumeEntries(context.Background(), []*entry.Entry{entry.New()})
 
-	// Eventually because of asynchronuous nature of the receiver.
+	// Eventually because of asynchronous nature of the receiver.
 	require.Equal(t, 1, mockConsumer.LogRecordCount())
 
 	require.NoError(t, logsReceiver.Shutdown(context.Background()))
@@ -87,7 +87,7 @@ func TestHandleConsume(t *testing.T) {
 
 	stanzaReceiver.consumeEntries(context.Background(), []*entry.Entry{entry.New()})
 
-	// Eventually because of asynchronuous nature of the receiver.
+	// Eventually because of asynchronous nature of the receiver.
 	require.Eventually(t,
 		func() bool {
 			return mockConsumer.LogRecordCount() == 1
@@ -155,7 +155,7 @@ func TestShutdownFlush(t *testing.T) {
 
 	close(closeCh)
 
-	// Eventually because of asynchronuous nature of the receiver.
+	// Eventually because of asynchronous nature of the receiver.
 	require.EventuallyWithT(t,
 		func(t *assert.CollectT) {
 			assert.Equal(t, consumedLogCount.Load(), int32(mockConsumer.LogRecordCount()))
