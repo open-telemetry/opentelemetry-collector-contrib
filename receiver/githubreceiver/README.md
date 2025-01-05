@@ -73,9 +73,7 @@ service:
             exporters: [...]
 ```
 
-A Grafana Dashboard exists on the marketplace for metrics from this receiver
-and can be found
-[here](https://grafana.com/grafana/dashboards/20976-engineering-effectiveness-metrics/).
+A [Grafana Dashboard for metrics from this receiver is on the marketplace](https://grafana.com/grafana/dashboards/20976-engineering-effectiveness-metrics/).
 
 ## Scraping
 
