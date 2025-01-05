@@ -38,8 +38,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 
 Note that by default, no logs will be read unless the monitored file is actively being written to because `start_at` defaults to `end`.
 
-`include` and `exclude` fields use `github.com/bmatcuk/doublestar` for expression language.
-For reference documentation see [here](https://github.com/bmatcuk/doublestar#patterns).
+`include` and `exclude` fields use [`github.com/bmatcuk/doublestar`](https://github.com/bmatcuk/doublestar#patterns) for expression language.
 
 #### `multiline` configuration
 
