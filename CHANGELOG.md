@@ -4524,7 +4524,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 💡 Enhancements 💡
 
-- `exporter/loki`: Automatic mapping beetwen `LogRecord.SeverityNumber` to `LogRecord.Attributes["level"]` (#14313)
+- `exporter/loki`: Automatic mapping between `LogRecord.SeverityNumber` to `LogRecord.Attributes["level"]` (#14313)
 - `jmxreceiver`: Add the JMX metrics gatherer version 1.20.0-alpha to the supported jars hash list (#16356)
 - `mongodbreceiver`: Add additional metrics for mongodb locks (#13661)
   Add additional metrics for locks.acquire_count, locks.acquire_wait_count, locks.deadlock_count, locks.time_acquiring_micros
