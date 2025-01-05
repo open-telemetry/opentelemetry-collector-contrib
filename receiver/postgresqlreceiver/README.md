@@ -42,7 +42,7 @@ The following settings are also optional and nested under `tls` to help configur
 
 - `insecure` (default = `false`): Whether to enable client transport security for the postgresql connection.
 - `insecure_skip_verify` (default = `true`): Whether to validate server name and certificate if client transport security is enabled.
-- `cert_file` (default = `$HOME/.postgresql/postgresql.crt`): A cerficate used for client authentication, if necessary.
+- `cert_file` (default = `$HOME/.postgresql/postgresql.crt`): A certificate used for client authentication, if necessary.
 - `key_file` (default = `$HOME/.postgresql/postgresql.key`): An SSL key used for client authentication, if necessary.
 - `ca_file` (default = ""): A set of certificate authorities used to validate the database server's SSL certificate.
 
