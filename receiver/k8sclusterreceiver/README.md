@@ -125,7 +125,7 @@ See [experimentalmetricmetadata/metadata.go](https://github.com/open-telemetry/o
 
 The same metadata will be also emitted as entity events in the form of log records if
 this receiver is connected to a logs pipeline.
-See [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23565)
+See [opentelemetry-collector-contrib#23565](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23565)
 for the format of emitted log records. 
 
 ## Example
