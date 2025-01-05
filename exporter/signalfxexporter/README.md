@@ -145,9 +145,7 @@ will be replaced with a `_`.
   ```
 - `drop_histogram_buckets`:  (default = `false`) if set to true, histogram buckets will not be translated into datapoints with `_bucket` suffix but will be dropped instead, only datapoints with `_sum`, `_count`, `_min` (optional) and `_max` (optional) suffixes will be sent. Please note that this option does not apply to histograms sent in OTLP format with `send_otlp_histograms` enabled.
 - `send_otlp_histograms`: (default: `false`) if set to true, any histogram metrics receiver by the exporter will be sent to Splunk Observability backend in OTLP format without conversion to SignalFx format. This can only be enabled if the Splunk Observability environment (realm) has the new Histograms feature rolled out. Please note that histograms sent in OTLP format do not apply to the exporter configurations `include_metrics` and `exclude_metrics`.
-In addition, this exporter offers queued retry which is enabled by default.
-Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+In addition, this [exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md) offers queued retry which is enabled by default.
 
 ## Traces Configuration (correlation only)
 

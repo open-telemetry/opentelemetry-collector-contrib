@@ -76,9 +76,8 @@ The following configuration options can also be configured:
 - `telemetry/extra_attributes` (default: empty map): Specifies the extra metrics attributes in splunk hec exporter.
 - `batcher`(Experimental, disabled by default): Specifies [batching configuration on the exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
-In addition, this exporter offers queued retry which is enabled by default.
-Information about queued retry configuration parameters can be found
-[here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
+In addition, this [exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md) offers queued retry which is enabled by default.
+
 <br />
 If you are getting throttled due to high volume of events the collector might experience memory issues, in those cases it is recommended to change the queued retry [configuration](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration) to drop events more frequently, for example you can reduce the maximum amount of time spent trying to send a batch from 120s (default) to 60s:
 ```yaml
