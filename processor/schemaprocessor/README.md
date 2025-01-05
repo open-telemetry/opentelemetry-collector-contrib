@@ -26,7 +26,7 @@ the translations needed for signals that match the schema URL.
 
 ## Schema Formats
 
-A schema URL is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
+A [schema URL](https://opentelemetry.io/docs/reference/specification/schemas/overview/#schema-url) is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
 
 ```text
 |                       Schema URL                           |
@@ -35,7 +35,6 @@ A schema URL is made up in two parts, _Schema Family_ and _Schema Version_, the 
 ```
 
 The final path in the schema URL _MUST_ be the schema version and the preceding portion of the URL is the _Schema Family_.
-To read about schema formats, please read more [here](https://opentelemetry.io/docs/reference/specification/schemas/overview/#schema-url)
 
 ## Targets Schemas
 
