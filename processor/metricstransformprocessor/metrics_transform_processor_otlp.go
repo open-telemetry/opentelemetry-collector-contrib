@@ -442,7 +442,7 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 
 // groupMetrics groups all the provided timeseries that will be aggregated together based on all the label values.
 // Returns a map of grouped timeseries and the corresponding selected labels
-// canBeCombined must be callled before.
+// canBeCombined must be called before.
 func groupMetrics(metrics pmetric.MetricSlice, aggType aggregateutil.AggregationType, to pmetric.Metric) {
 	ag := aggregateutil.AggGroups{}
 	for i := 0; i < metrics.Len(); i++ {
