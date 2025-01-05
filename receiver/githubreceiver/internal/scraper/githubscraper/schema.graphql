@@ -24667,7 +24667,7 @@ input RepositoryRulesetBypassActorInput {
   actorId: ID
   "For role bypasses, the role database ID"
   repositoryRoleDatabaseId: Int
-  "For org admin bupasses, true"
+  "For org admin bypasses, true"
   organizationAdmin: Boolean
   "The bypass mode for this actor."
   bypassMode: RepositoryRulesetBypassActorBypassMode!
