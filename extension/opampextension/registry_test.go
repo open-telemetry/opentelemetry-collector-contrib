@@ -20,7 +20,7 @@ func TestRegistry_Register(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 
 		client := mockCustomCapabilityClient{
-			setCustomCapabilites: func(customCapabilities *protobufs.CustomCapabilities) error {
+			setCustomCapabilities: func(customCapabilities *protobufs.CustomCapabilities) error {
 				require.Equal(t,
 					&protobufs.CustomCapabilities{
 						Capabilities: []string{capabilityString},
@@ -42,7 +42,7 @@ func TestRegistry_Register(t *testing.T) {
 		capabilityErr := errors.New("network error")
 
 		client := mockCustomCapabilityClient{
-			setCustomCapabilites: func(_ *protobufs.CustomCapabilities) error {
+			setCustomCapabilities: func(_ *protobufs.CustomCapabilities) error {
 				return capabilityErr
 			},
 		}
@@ -225,7 +225,7 @@ func TestCustomCapability_Unregister(t *testing.T) {
 		require.NotNil(t, unregisteredSender)
 		require.NoError(t, err)
 
-		client.setCustomCapabilites = func(_ *protobufs.CustomCapabilities) error {
+		client.setCustomCapabilities = func(_ *protobufs.CustomCapabilities) error {
 			return fmt.Errorf("failed to set capabilities")
 		}
 
@@ -268,12 +268,12 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 type mockCustomCapabilityClient struct {
 	sendCustomMessage    func(message *protobufs.CustomMessage) (chan struct{}, error)
-	setCustomCapabilites func(customCapabilities *protobufs.CustomCapabilities) error
+	setCustomCapabilities func(customCapabilities *protobufs.CustomCapabilities) error
 }
 
 func (m mockCustomCapabilityClient) SetCustomCapabilities(customCapabilities *protobufs.CustomCapabilities) error {
-	if m.setCustomCapabilites != nil {
-		return m.setCustomCapabilites(customCapabilities)
+	if m.setCustomCapabilities != nil {
+		return m.setCustomCapabilities(customCapabilities)
 	}
 	return nil
 }
