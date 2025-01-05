@@ -364,7 +364,7 @@ func TestTCPInput(t *testing.T) {
 	t.Run("CarriageReturn", tcpInputTest([]byte("message\r\n"), []string{"message"}))
 }
 
-func TestTCPInputAattributes(t *testing.T) {
+func TestTCPInputAttributes(t *testing.T) {
 	t.Run("Simple", tcpInputAttributesTest([]byte("message\n"), []string{"message"}))
 	t.Run("CarriageReturn", tcpInputAttributesTest([]byte("message\r\n"), []string{"message"}))
 }
