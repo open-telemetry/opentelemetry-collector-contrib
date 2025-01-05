@@ -22370,7 +22370,7 @@ enum ThreadSubscriptionState {
   SUBSCRIBED_TO_THREAD_EVENTS
   "The User is never notified because they are ignoring the thread"
   IGNORING_THREAD
-  "The User is notified becuase they are watching the list"
+  "The User is notified because they are watching the list"
   SUBSCRIBED_TO_LIST
   "The User is notified because they chose custom settings for this thread."
   SUBSCRIBED_TO_THREAD_TYPE
