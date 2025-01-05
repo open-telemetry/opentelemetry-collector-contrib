@@ -45,7 +45,7 @@ The following settings are optional:
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `replica_set`: If the deployment of MongoDB is a replica set then this allows users to specify the replica set name which allows for autodiscovery of other nodes in the replica set.
 - `timeout`: (default = `1m`) The timeout of running commands against mongo.
-- `tls`: (defaults defined [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)): TLS control. By default insecure settings are rejected and certificate verification is on.
+- `tls`: TLS control. [By default, insecure settings are rejected and certificate verification is on](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 - `direct_connection`: If true, then the driver will not try to autodiscover other nodes, and perform instead a direct connection o the host.
 
 ### Example Configuration
