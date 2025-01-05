@@ -16,8 +16,8 @@
 
 The SAPM receiver builds on the Jaeger proto. This allows the collector to
 receive traces from other collectors or the SignalFx Smart Agent. SAPM proto
-and some useful related utilities can be found
-[here](https://github.com/signalfx/sapm-proto/).
+and some useful related utilities can be found in
+[signalfx/sapm-proto](https://github.com/signalfx/sapm-proto/).
 
 ## Configuration
 
