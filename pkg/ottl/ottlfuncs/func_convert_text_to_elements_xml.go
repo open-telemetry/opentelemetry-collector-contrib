@@ -26,7 +26,7 @@ func createConvertTextToElementsXMLFunction[K any](_ ottl.FunctionContext, oArgs
 	args, ok := oArgs.(*ConvertTextToElementsXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLAguments[K]")
+		return nil, fmt.Errorf("ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLArguments[K]")
 	}
 
 	xPath := args.XPath.Get()

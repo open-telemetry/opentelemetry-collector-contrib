@@ -25,7 +25,7 @@ func createGetXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	args, ok := oArgs.(*GetXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("GetXML args must be of type *GetXMLAguments[K]")
+		return nil, fmt.Errorf("GetXML args must be of type *GetXMLArguments[K]")
 	}
 
 	if err := validateXPath(args.XPath); err != nil {

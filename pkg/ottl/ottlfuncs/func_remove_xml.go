@@ -27,7 +27,7 @@ func createRemoveXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	args, ok := oArgs.(*RemoveXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("RemoveXML args must be of type *RemoveXMLAguments[K]")
+		return nil, fmt.Errorf("RemoveXML args must be of type *RemoveXMLArguments[K]")
 	}
 
 	if err := validateXPath(args.XPath); err != nil {

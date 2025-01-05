@@ -25,7 +25,7 @@ func createParseSimplifiedXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 	args, ok := oArgs.(*ParseSimplifiedXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ParseSimplifiedXML args must be of type *ParseSimplifiedXMLAguments[K]")
+		return nil, fmt.Errorf("ParseSimplifiedXML args must be of type *ParseSimplifiedXMLArguments[K]")
 	}
 
 	return parseSimplifiedXML(args.Target), nil
