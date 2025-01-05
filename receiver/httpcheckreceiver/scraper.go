@@ -35,9 +35,9 @@ type httpcheckScraper struct {
 // start starts the scraper by creating a new HTTP Client on the scraper
 func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err error) {
 	for _, target := range h.cfg.Targets {
-		client, clentErr := target.ToClient(ctx, host, h.settings)
-		if clentErr != nil {
-			err = multierr.Append(err, clentErr)
+		client, clientErr := target.ToClient(ctx, host, h.settings)
+		if clientErr != nil {
+			err = multierr.Append(err, clientErr)
 		}
 		h.clients = append(h.clients, client)
 	}
