@@ -38,9 +38,9 @@ The following settings are required:
 
 - `no_verify_ssl`: A boolean flag indicating whether SSL verification should be disabled. Set to True to disable SSL verification.
 
-- `access_key`: The access key needed for CES authentification. Check `Huawei Cloud SDK Authentication Setup` section for more details.
+- `access_key`: The access key needed for CES authentication. Check `Huawei Cloud SDK Authentication Setup` section for more details.
 
-- `secret_key`: The secret key needed for CES authentification. Check `Huawei Cloud SDK Authentication Setup` section for more details.
+- `secret_key`: The secret key needed for CES authentication. Check `Huawei Cloud SDK Authentication Setup` section for more details.
 
 The following settings are optional:
 
