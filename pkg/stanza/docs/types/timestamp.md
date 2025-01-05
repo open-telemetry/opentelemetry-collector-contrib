@@ -19,7 +19,7 @@ If a timestamp block is specified, the parser operator will perform the timestam
 
 The `strptime` layout type approximates familiar strptime/strftime formats. See the table below for a list of supported directives.
 
-The `gotime` layout type uses Golang's native time parsing capabilities. Golang takes an [unconventional approach](https://www.pauladamsmith.com/blog/2011/05/go_time.html) to time parsing. Finer details are documented [here](https://golang.org/src/time/format.go?s=25102:25148#L9).
+The `gotime` layout type uses Golang's native time parsing capabilities. Golang takes an [unconventional approach](https://www.pauladamsmith.com/blog/2011/05/go_time.html) to time parsing. [Finer details are documented](https://golang.org/src/time/format.go?s=25102:25148#L9).
 
 | `strptime` directive | `gotime` equivalent | Description |
 | --- | --- | --- |
