@@ -212,7 +212,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `awsemfexporter`: Add support for 1 second metric resolution in CloudWatch Embedded Metrics Format based on metric attributes (#29506)
 - `awsemfexporter`: Improvement unit conversion during EMF log translation (#35937)
 - `sumologicexporter`: adding new products for auto discovery (#35622)
-- `postgresqlreceiver`: Added new postgresql metrics to acheive parity with Telegraf (#36528)
+- `postgresqlreceiver`: Added new postgresql metrics to achieve parity with Telegraf (#36528)
 - `loadbalancingexporter`: Adding sending_queue, retry_on_failure and timeout settings to loadbalancing exporter configuration (#35378, #16826)
   When switching to top-level sending_queue configuration - users should carefully review queue size
   In some rare cases setting top-level queue size to n*queueSize might be not enough to prevent data loss
