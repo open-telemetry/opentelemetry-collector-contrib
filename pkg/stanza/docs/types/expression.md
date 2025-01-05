@@ -4,7 +4,7 @@ Expressions give the config flexibility by allowing dynamic business logic rules
 Most notably, expressions can be used to route log records and add new fields based on the contents of the log entry
 being processed.
 
-For reference documentation of the expression language, see [here](https://github.com/expr-lang/expr/blob/master/docs/language-definition.md).
+For more information, see the [expression language reference documentation](https://github.com/expr-lang/expr/blob/master/docs/language-definition.md).
 
 Available to the expressions are a few special variables:
 - `body` contains the entry's body
