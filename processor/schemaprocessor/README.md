@@ -26,7 +26,7 @@ the translations needed for signals that match the schema URL.
 
 ## Schema Formats
 
-A schema URl is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
+A schema URL is made up in two parts, _Schema Family_ and _Schema Version_, the schema URL is broken down like so:
 
 ```text
 |                       Schema URL                           |
