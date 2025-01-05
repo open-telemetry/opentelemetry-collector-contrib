@@ -45,11 +45,9 @@ In addition, metadata of all entities is collected periodically even if no chang
 This setting controls the interval between periodic collections.
 Setting the duration to 0 will disable periodic collection (however will not impact
 metadata collection on changes).
-- `node_conditions_to_report` (default = `[Ready]`): An array of node
-conditions this receiver should report. See
-[here](https://kubernetes.io/docs/concepts/architecture/nodes/#condition) for
-list of node conditions. The receiver will emit one metric per entry in the
-array.
+- `node_conditions_to_report` (default = `[Ready]`): An array of [node
+conditions](https://kubernetes.io/docs/concepts/architecture/nodes/#condition)
+this receiver should report. The receiver will emit one metric per entry in the array.
 - `distribution` (default = `kubernetes`): The Kubernetes distribution being used
 by the cluster. Currently supported versions are `kubernetes` and `openshift`. Setting
 the value to `openshift` enables OpenShift specific metrics in addition to standard
