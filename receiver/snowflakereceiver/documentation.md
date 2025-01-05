@@ -306,7 +306,7 @@ Reported total credits used in the cloud service over the last 24 hour window.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| service_type | Service type associateed with metric query. | Any Str |
+| service_type | Service type associated with metric query. | Any Str |
 
 ### snowflake.billing.total_credit.total
 
@@ -320,7 +320,7 @@ Reported total credits used across account over the last 24 hour window.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| service_type | Service type associateed with metric query. | Any Str |
+| service_type | Service type associated with metric query. | Any Str |
 
 ### snowflake.billing.virtual_warehouse.total
 
@@ -334,7 +334,7 @@ Reported total credits used by virtual warehouse service over the last 24 hour w
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| service_type | Service type associateed with metric query. | Any Str |
+| service_type | Service type associated with metric query. | Any Str |
 
 ### snowflake.billing.warehouse.cloud_service.total
 
