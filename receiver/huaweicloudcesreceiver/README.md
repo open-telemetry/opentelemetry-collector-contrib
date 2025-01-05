@@ -17,7 +17,7 @@ This receiver contains the implementation of the Huawei Cloud [Cloud Eye Service
 
 The following settings are required:
 
-- `region_id`: The ID of the Huawei Cloud region from which metrics are collected. For example, `eu-west-101`. The full list of the available regions can be found [here](https://pkg.go.dev/github.com/huaweicloud/huaweicloud-sdk-go-v3@v0.1.104/services/ces/v1/region).
+- `region_id`: The ID of the [Huawei Cloud region](https://pkg.go.dev/github.com/huaweicloud/huaweicloud-sdk-go-v3@v0.1.104/services/ces/v1/region) from which metrics are collected. For example, `eu-west-101`.
 
 - `project_id`: The ID of the project in Huawei Cloud. This is used to identify which project's metrics are to be collected. See [Obtaining a Project ID](https://support.huaweicloud.com/intl/en-us/devg-apisign/api-sign-provide-proid.html).
 
