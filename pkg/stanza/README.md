@@ -22,7 +22,7 @@ is modeled as an [`entry.Entry`](./docs/types/entry.md).
 
 Functionality in this module is primarily organized into distinct [operators](./docs/operators/README.md). There are four types of operators:
 
-- Input operators are the point of ingestion, e.g. reading from a file, or a TCP socket. These are anologous to receivers in the collector.
+- Input operators are the point of ingestion, e.g. reading from a file, or a TCP socket. These are analogous to receivers in the collector.
 - Parser operators are responsible for extracting structured information from unstructured elements of a log record.
 - Transform operators are responsible for modifying log records in some way, e.g. adding or removing a field.
 - Output operators emit logs to an external destination. Most of these were removed because they were redundant with
