@@ -222,7 +222,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `tailsamplingprocessor`: Adds decision cache for non-sampled trace IDs (#31583)
 - `cmd/opampsupervisor`: Support environment variable expansion in the OpAMP supervisor config. (#36269)
 - `pkg/ottl`: Move debug log to `Statement.Execute` so that components using it instead of `StatementSequence` also get debug logs. (#36456)
-- `routingconnector`: Add abiilty to route by 'datapoint' context (#36523)
+- `routingconnector`: Add ability to route by 'datapoint' context (#36523)
 - `signalfxreceiver`: Follow receiver contract based on type of error (#5909)
   Use 503 error code for retryable and 400 error code for not-retryable errors instead of responding with a 500 unconditionally.
 
