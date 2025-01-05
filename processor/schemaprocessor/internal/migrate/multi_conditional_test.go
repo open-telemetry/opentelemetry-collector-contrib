@@ -49,7 +49,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 		{
-			name: "No condition set, applys to all",
+			name: "No condition set, applies to all",
 			cond: NewMultiConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
