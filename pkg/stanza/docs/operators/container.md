@@ -219,7 +219,7 @@ Configuration:
 }
 {
   "timestamp": "",
-  "body": "2023-06-22T10:27:25.813799277Z stdout F s super awesomne",
+  "body": "2023-06-22T10:27:25.813799277Z stdout F s super awesome",
   "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
 }
 ```
