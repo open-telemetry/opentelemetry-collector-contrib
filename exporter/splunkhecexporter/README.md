@@ -74,7 +74,7 @@ The following configuration options can also be configured:
 - `telemetry/enabled` (default: false): Specifies whether to enable telemetry inside splunk hec exporter.
 - `telemetry/override_metrics_names` (default: empty map): Specifies the metrics name to overrides in splunk hec exporter.
 - `telemetry/extra_attributes` (default: empty map): Specifies the extra metrics attributes in splunk hec exporter.
-- `batcher`(Experimental, disabled by default): Specifies batching configuration on the exporter. Information about the configuration can be found [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+- `batcher`(Experimental, disabled by default): Specifies [batching configuration on the exporter](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
