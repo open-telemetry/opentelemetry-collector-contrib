@@ -3873,7 +3873,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 🚀 New components 🚀
 
-- `lokireceiver`: The Loki receiver implements the [Loki push api](https://grafana.com/docs/loki/latest/clients/promtail/#loki-push-api) as specified [here](https://grafana.com/docs/loki/latest/api/#push-log-entries-to-loki) (#18635)
+- `lokireceiver`: The Loki receiver implements the [Loki push api](https://grafana.com/docs/loki/latest/clients/promtail/#loki-push-api) as specified in [Loki HTTP API: Ingest logs](https://grafana.com/docs/loki/latest/reference/loki-http-api/#ingest-logs) (#18635)
 - `cloudflarereceiver`: Adds support for receiving logs from Cloudflare's LogPush API. (#19201)
 - `webhookeventreceiver`: New component wireframe for webhookeventreceiver (#18101)
 - `spanmetricsconnector`: Add the `spanmetricsconnector` connector to build. (#18760)
