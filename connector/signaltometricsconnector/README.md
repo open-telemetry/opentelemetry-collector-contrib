@@ -105,7 +105,7 @@ histogram:
   recorded in the histogram from the incoming data. If no expression is provided
   then it defaults to the count of the signal. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data. For spans, a special converter [adjusted count](#custom-ottl-functions),
-  is provided to help calculte the span's [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count).
+  is provided to help calculate the span's [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count).
 - [**Required**] `value` represents an OTTL expression to extract the value to be
   recorded in the histogram from the incoming data. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
@@ -127,7 +127,7 @@ exponential_histogram:
   recorded in the expoential histogram from the incoming data. If no expression
   is provided then it defaults to the count of the signal. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data. For spans, a special converter [adjusted count](#custom-ottl-functions),
-  is provided to help calculte the span's [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count).
+  is provided to help calculate the span's [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count).
 - [**Required**] `value` represents an OTTL expression to extract the value to be
   recorded in the exponential histogram from the incoming data. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data.
