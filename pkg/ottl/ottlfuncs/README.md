@@ -728,7 +728,7 @@ Default set consists of:
 | UUID |"123e4567-e89b-12d3-a456-426614174000" |
 | URN | "urn:isbn:0451450523", "urn:ietf:rfc:2648" |
 
-and many more. Complete list can be found [here](https://github.com/elastic/go-grok/blob/main/patterns/default.go).
+and many more. The complete list can be found in [elastic/go-grok: patterns/default.go](https://github.com/elastic/go-grok/blob/main/patterns/default.go).
 
 Examples:
 
