@@ -2907,7 +2907,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `processor/routing`: When using attributes instead of resource attributes, the routing processor would crash the collector. This does not affect the connector version of this component. (#26462)
 - `awsemfexporter`: Fix possible panic in when configuration option `awsemf.output_destination:stdout` is set (#26250)
 - `snmpreceiver`: Fix how to determine how many RAs on a metric are scalar (#26363)
-  We now create the proper number of resources for configurations where a resource uses fewer than the available number of scalar resource attribtues.
+  We now create the proper number of resources for configurations where a resource uses fewer than the available number of scalar resource attributes.
 - `processor/tailsampling`: Added saving instrumentation library information for tail-sampling (#13642)
 - `receiver/kubeletstats`: Fixes client to refresh service account token when authenticating with kubelet (#26120)
 - `datadogexporter`: Fixes crash when mapping OTLP Exponential Histograms with no buckets. These will now be dropped instead. (#26103)
@@ -2937,7 +2937,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `redisreceiver`: Adding username parameter for connecting to redis (#24408)
 - `postgresqlreceiver`: Added `postgresql.temp_files` metric. (#26080)
-- `receiver/azuremonitor`: Added new attrbutes to the metrics like name, type and resource_group. (#24774)
+- `receiver/azuremonitor`: Added new attributes to the metrics like name, type and resource_group. (#24774)
 - `clickhouseexporter`: Change writing of metrics data to batch (#24403)
 - `signalfxexporter`: Added a mechanism to drop histogram buckets (#25845)
 - `journaldreceiver`: add support for identifiers (#20295)
@@ -3962,7 +3962,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   Add emf and raw log support for aws cloudwatch exporter.
 - `awsemfexporter`: The AWS EMF exporter now supports the additional configuration flag `retain_initial_value_of_delta_metric`. With this flag active the first value of a metric is not discarded but instead sent to AWS. (#16218)
 - `processor/tailsampling`: adds support for a BooleanAttribute PolicyType (#17545)
-  enables use of boolean attrbiutes in defining tail sampling policies
+  enables use of boolean attributes in defining tail sampling policies
 - `pkg/stanza`: Add `header_delimiter` option to the `csv_parser`. (#18198)
 - `datadogexporter`: Enable gzip compression for metric payloads submitted by native Datadog client (#17373)
 - `hostmetrics`: Have the hostmetrics receiver file system scraper use more debug messages (#18236)
