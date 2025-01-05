@@ -151,7 +151,7 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 	translateJaegerVersionAttr(attrs)
 }
 
-// translateHostnameAttr translates "hostname" atttribute
+// translateHostnameAttr translates "hostname" attribute
 func translateHostnameAttr(attrs pcommon.Map) {
 	hostname, hostnameFound := attrs.Get("hostname")
 	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
@@ -161,7 +161,7 @@ func translateHostnameAttr(attrs pcommon.Map) {
 	}
 }
 
-// translateHostnameAttr translates "jaeger.version" atttribute
+// translateHostnameAttr translates "jaeger.version" attribute
 func translateJaegerVersionAttr(attrs pcommon.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
