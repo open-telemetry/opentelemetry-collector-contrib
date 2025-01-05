@@ -6,7 +6,7 @@
 //
 // The JSON parsing in OpenSearch does not support parsing JSON documents
 // with duplicate fields. The fields in the docuemt can be sort and duplicate entries
-// can be removed before serializing. Deduplication ensures that ambigious
+// can be removed before serializing. Deduplication ensures that ambiguous
 // events can still be indexed.
 //
 // With attributes map encoded as a list of key value
