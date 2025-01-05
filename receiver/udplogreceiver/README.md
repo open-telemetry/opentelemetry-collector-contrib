@@ -70,7 +70,7 @@ for other encodings available.
 
 #### `async` configuration
 
-If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronsouly and concurrently.
+If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronously and concurrently.
 
 **note** If `async` is not set at all, a single thread will read lines synchronously.
 
