@@ -376,7 +376,7 @@ func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.
 
 // createSummaryRecord - creates a Summary type record
 //
-//	@receiver e - Method aplicable to [kineticaMetricsExporter]
+//	@receiver e - Method applicable to [kineticaMetricsExporter]
 //	@param resAttr - a map of key to value of resource attributes
 //	@param _ schemaURL - unused
 //	@param scopeInstr - the instrumentation scope
