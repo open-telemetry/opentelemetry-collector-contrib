@@ -28,8 +28,8 @@ func TestBuild(t *testing.T) {
 
 	generateConf := generate.NewConfig("")
 	stdoutConf := stdout.NewConfig("")
-	filterConfg := filter.NewConfig()
-	filterConfg.Expression = "true"
+	filterConfig := filter.NewConfig()
+	filterConfig.Expression = "true"
 
 	testCases := []struct {
 		name        string
@@ -125,7 +125,7 @@ func TestBuild(t *testing.T) {
 			pattern: "^#",
 			ops: []operator.Config{
 				{
-					Builder: filterConfg,
+					Builder: filterConfig,
 				},
 			},
 			expectedErr: "operator of type filter is not allowed in `metadata_operators`",
