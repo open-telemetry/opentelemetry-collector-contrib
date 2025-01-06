@@ -109,7 +109,10 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 		}()
 
 		for _, model := range g.gaugeModels {
-			serviceName, _ := model.metadata.ResAttr.Get(conventions.AttributeServiceName)
+			var serviceName string
+			if v, ok := model.metadata.ResAttr.Get(conventions.AttributeServiceName); ok {
+				serviceName = v.AsString()
+			}
 
 			for i := 0; i < model.gauge.DataPoints().Len(); i++ {
 				dp := model.gauge.DataPoints().At(i)
@@ -122,7 +125,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 					AttributesToMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
-					serviceName.AsString(),
+					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,

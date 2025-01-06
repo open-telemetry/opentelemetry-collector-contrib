@@ -103,7 +103,10 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			_ = statement.Close()
 		}()
 		for _, model := range s.summaryModel {
-			serviceName, _ := model.metadata.ResAttr.Get(conventions.AttributeServiceName)
+			var serviceName string
+			if v, ok := model.metadata.ResAttr.Get(conventions.AttributeServiceName); ok {
+				serviceName = v.AsString()
+			}
 
 			for i := 0; i < model.summary.DataPoints().Len(); i++ {
 				dp := model.summary.DataPoints().At(i)
@@ -117,7 +120,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 					AttributesToMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
-					serviceName.AsString(),
+					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,

@@ -130,7 +130,10 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		}()
 
 		for _, model := range e.expHistogramModels {
-			serviceName, _ := model.metadata.ResAttr.Get(conventions.AttributeServiceName)
+			var serviceName string
+			if v, ok := model.metadata.ResAttr.Get(conventions.AttributeServiceName); ok {
+				serviceName = v.AsString()
+			}
 
 			for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
 				dp := model.expHistogram.DataPoints().At(i)
@@ -143,7 +146,7 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 					AttributesToMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
-					serviceName.AsString(),
+					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,
