@@ -45,16 +45,16 @@ func NewMurmur3Hex128Factory[K any]() ottl.Factory[K] {
 
 func NewMurmur3Factory[K any](name string, variant murmur3Variant) ottl.Factory[K] {
 	return ottl.NewFactory(name, &Murmur3Arguments[K]{}, func(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-		args, ok := oArgs.(*Murmur3Arguments[K])
-		if !ok {
-			return nil, fmt.Errorf("%s args must be of type *Murmur3Arguments[K]", name)
-		}
-
-		return createMurmur3Function[K](args, variant)
+		return createMurmur3Function[K](name, oArgs, variant)
 	})
 }
 
-func createMurmur3Function[K any](args *Murmur3Arguments[K], variant murmur3Variant) (ottl.ExprFunc[K], error) {
+func createMurmur3Function[K any](name string, oArgs ottl.Arguments, variant murmur3Variant) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*Murmur3Arguments[K])
+	if !ok {
+		return nil, fmt.Errorf("%s args must be of type *Murmur3Arguments[K]", name)
+	}
+
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := args.Target.Get(ctx, tCtx)
 		if err != nil {

@@ -120,7 +120,7 @@ func Test_Murmur3(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := createMurmur3Function[any](tt.oArgs, tt.variant)
+			exprFunc, err := createMurmur3Function[any]("Murmur3Factory", tt.oArgs, tt.variant)
 			assert.NoError(t, err)
 			result, err := exprFunc(context.Background(), nil)
 			if tt.funcError != "" {
