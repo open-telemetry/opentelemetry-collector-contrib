@@ -346,6 +346,13 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		finalDecision = sampling.Sampled
 	}
 
+	switch finalDecision {
+	case sampling.Sampled:
+		metrics.decisionSampled++
+	case sampling.NotSampled:
+		metrics.decisionNotSampled++
+	}
+
 	return finalDecision
 }
 
