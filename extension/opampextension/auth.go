@@ -25,7 +25,7 @@ func (h *headerCaptureRoundTripper) RoundTrip(req *http.Request) (*http.Response
 	// Dummy response is recorded here
 	return &http.Response{
 		Status:     "200 OK",
-		StatusCode: 200,
+		StatusCode: http.StatusOK,
 		Proto:      "HTTP/1.0",
 		ProtoMajor: 1,
 		ProtoMinor: 0,

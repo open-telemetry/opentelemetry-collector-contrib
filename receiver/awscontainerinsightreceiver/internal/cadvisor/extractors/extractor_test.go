@@ -120,5 +120,4 @@ func TestMergeMetrics(t *testing.T) {
 	require.Len(t, mergedMetrics, 1)
 	assert.Equal(t, expected.GetTags(), mergedMetrics[0].GetTags())
 	assert.Equal(t, expected.GetFields(), mergedMetrics[0].GetFields())
-
 }

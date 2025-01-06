@@ -27,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "traces.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalTraces, "otlp-all"),
 				},
@@ -52,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "metrics.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalMetrics, "otlp-all"),
 				},
@@ -77,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "logs.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalLogs, "otlp-all"),
 				},
@@ -219,6 +222,54 @@ func TestValidateConfig(t *testing.T) {
 			error: "invalid context: invalid",
 		},
 		{
+			name: "span context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "span",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"span" context is not supported with "match_once: false"`,
+		},
+		{
+			name: "metric context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "metric",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"metric" context is not supported with "match_once: false"`,
+		},
+		{
+			name: "datapoint context with match_once false",
+			config: &Config{
+				MatchOnce: false,
+				Table: []RoutingTableItem{
+					{
+						Context:   "datapoint",
+						Statement: `route() where attributes["attr"] == "acme"`,
+						Pipelines: []pipeline.ID{
+							pipeline.NewIDWithName(pipeline.SignalTraces, "otlp"),
+						},
+					},
+				},
+			},
+			error: `"datapoint" context is not supported with "match_once: false"`,
+		},
+		{
 			name: "log context with match_once false",
 			config: &Config{
 				MatchOnce: false,
@@ -275,4 +326,32 @@ func TestValidateConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+type testConfigOption func(*Config)
+
+func withRoute(context, condition string, pipelines ...pipeline.ID) testConfigOption {
+	return func(cfg *Config) {
+		cfg.Table = append(cfg.Table,
+			RoutingTableItem{
+				Context:   context,
+				Condition: condition,
+				Pipelines: pipelines,
+			})
+	}
+}
+
+func withDefault(pipelines ...pipeline.ID) testConfigOption {
+	return func(cfg *Config) {
+		cfg.DefaultPipelines = pipelines
+	}
+}
+
+func testConfig(opts ...testConfigOption) *Config {
+	cfg := createDefaultConfig().(*Config)
+	cfg.MatchOnce = true
+	for _, opt := range opts {
+		opt(cfg)
+	}
+	return cfg
 }

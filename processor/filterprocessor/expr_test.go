@@ -21,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 )
 
-const filteredMetric = "p0_metric_1"
-const filteredAttrKey = "pt-label-key-1"
+const (
+	filteredMetric  = "p0_metric_1"
+	filteredAttrKey = "pt-label-key-1"
+)
 
 var filteredAttrVal = pcommon.NewValueStr("pt-label-val-1")
 

@@ -54,7 +54,7 @@ func (b *Bookmark) Update(event Event) error {
 }
 
 // Render will render the bookmark as xml.
-func (b *Bookmark) Render(buffer Buffer) (string, error) {
+func (b *Bookmark) Render(buffer *Buffer) (string, error) {
 	if b.handle == 0 {
 		return "", fmt.Errorf("bookmark handle is not open")
 	}

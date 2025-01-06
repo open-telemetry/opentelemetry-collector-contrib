@@ -7,8 +7,8 @@ RUN adduser --system --uid 1000 snmpsim
 
 ADD data /usr/local/snmpsim/data
 
-EXPOSE 1024/udp
+EXPOSE 161/udp
 
 USER snmpsim
 
-CMD snmpsimd.py --agent-udpv4-endpoint=0.0.0.0:1024 $EXTRA_FLAGS
+CMD snmpsimd.py --agent-udpv4-endpoint=0.0.0.0:161 $EXTRA_FLAGS

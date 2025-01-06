@@ -77,7 +77,8 @@ func TestLoadConfig(t *testing.T) {
 					LocalMode:   true,
 					ServiceName: "xray",
 				},
-			}},
+			},
+		},
 	}
 
 	for _, tt := range tests {

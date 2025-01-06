@@ -11,7 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sync"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -82,44 +83,50 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
-	converter.Start()
-	defer converter.Stop()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
-
 	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
+	expectedLogs := []plog.Logs{}
 	// Build the expected set by using adapter.Converter to translate entries
 	// to pdata Logs.
-	queueEntry := func(t *testing.T, c *adapter.Converter, msg string, severity entry.Severity) {
+	entries := []*entry.Entry{}
+	queueEntry := func(msg string, severity entry.Severity) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
+		e.Body = fmt.Sprintf("2020-08-25 %s %s", severity.String(), msg)
 		e.Severity = severity
-		e.AddAttribute("file_name", "simple.log")
-		require.NoError(t, c.Batch([]*entry.Entry{e}))
+		e.AddAttribute("log.file.name", "simple.log")
+		e.AddAttribute("time", "2020-08-25")
+		e.AddAttribute("sev", severity.String())
+		e.AddAttribute("msg", msg)
+		entries = append(entries, e)
 	}
-	queueEntry(t, converter, "Something routine", entry.Info)
-	queueEntry(t, converter, "Something bad happened!", entry.Error)
-	queueEntry(t, converter, "Some details...", entry.Debug)
+	queueEntry("Something routine", entry.Info)
+	queueEntry("Something bad happened!", entry.Error)
+	queueEntry("Some details...", entry.Debug)
+
+	expectedLogs = append(expectedLogs, adapter.ConvertEntries(entries))
 
 	dir, err := os.Getwd()
 	require.NoError(t, err)
 	t.Logf("Working Directory: %s", dir)
 
-	wg.Wait()
-
 	require.Eventually(t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
 		"expected %d but got %d logs",
 		3, sink.LogRecordCount(),
 	)
-	// TODO: Figure out a nice way to assert each logs entry content.
-	// require.Equal(t, expectedLogs, sink.AllLogs())
+
+	for i, expectedLog := range expectedLogs {
+		require.NoError(t,
+			plogtest.CompareLogs(
+				expectedLog,
+				sink.AllLogs()[i],
+				plogtest.IgnoreObservedTimestamp(),
+				plogtest.IgnoreTimestamp(),
+			),
+		)
+	}
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
@@ -167,20 +174,11 @@ func (rt *rotationTest) Run(t *testing.T) {
 	fileName := filepath.Join(tempDir, "test.log")
 	backupFileName := filepath.Join(tempDir, "test-backup.log")
 
-	// Build expected outputs
-	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
-	converter.Start()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
-
 	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
-	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+	file, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0o600)
 	defer func() {
 		require.NoError(t, file.Close())
 	}()
@@ -198,7 +196,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 					return errors.Is(removeErr, os.ErrNotExist)
 				}, 5*time.Second, 100*time.Millisecond)
 
-				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0600)
+				backupFile, openErr := os.OpenFile(backupFileName, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, openErr)
 
 				// Copy the current file to the backup file
@@ -216,18 +214,12 @@ func (rt *rotationTest) Run(t *testing.T) {
 			} else {
 				require.NoError(t, file.Close())
 				require.NoError(t, os.Rename(fileName, backupFileName))
-				file, err = os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0600)
+				file, err = os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, 0o600)
 				require.NoError(t, err)
 			}
 		}
 
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
-
-		// Build the expected set by converting entries to pdata Logs...
-		e := entry.New()
-		e.Timestamp = expectedTimestamp
-		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
-		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
 		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
@@ -235,28 +227,14 @@ func (rt *rotationTest) Run(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 
-	wg.Wait()
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, 10*time.Millisecond,
 		"expected %d but got %d logs",
 		numLogs, sink.LogRecordCount(),
 	)
+
 	// TODO: Figure out a nice way to assert each logs entry content.
 	// require.Equal(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
-	converter.Stop()
-}
-
-func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	n := 0
-	for pLog := range ch {
-		n += pLog.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len()
-
-		if n == count {
-			return
-		}
-	}
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
@@ -320,7 +298,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 		},
 		InputConfig: func() file.Config {
 			c := file.NewConfig()
-			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
+			c.Include = []string{tempDir + "/*"}
 			c.StartAt = "beginning"
 			c.PollInterval = 10 * time.Millisecond
 			c.IncludeFileName = false
@@ -383,7 +361,7 @@ func (g *fileLogGenerator) Stop() {
 }
 
 func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
-	id := receivertest.UniqueIDAttrVal(fmt.Sprintf("%d", atomic.AddInt64(&g.sequenceNum, 1)))
+	id := receivertest.UniqueIDAttrVal(strconv.FormatInt(atomic.AddInt64(&g.sequenceNum, 1), 10))
 	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id,
 		receivertest.UniqueIDAttrName, id)
 	_, err := g.tmpFile.WriteString(logLine + "\n")

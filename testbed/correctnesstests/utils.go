@@ -27,13 +27,12 @@ type ProcessorNameAndConfigBody struct {
 // processors, and a pipeline type. A collector created from the resulting yaml string should be able to talk
 // the specified sender and receiver.
 func CreateConfigYaml(
-	t testing.TB,
+	tb testing.TB,
 	sender testbed.DataSender,
 	receiver testbed.DataReceiver,
 	connector testbed.DataConnector,
 	processors []ProcessorNameAndConfigBody,
 ) string {
-
 	// Prepare extra processor config section and comma-separated list of extra processor
 	// names to use in corresponding "processors" settings.
 	processorsSections := ""
@@ -59,7 +58,7 @@ func CreateConfigYaml(
 	case testbed.LogDataSender:
 		pipeline1 = "logs"
 	default:
-		t.Error("Invalid DataSender type")
+		tb.Error("Invalid DataSender type")
 	}
 
 	if connector != nil {
@@ -97,7 +96,7 @@ service:
 			receiver.GenConfigYAMLStr(),
 			processorsSections,
 			connector.GenConfigYAMLStr(),
-			testutil.GetAvailablePort(t),
+			testutil.GetAvailablePort(tb),
 			pipeline1,
 			sender.ProtocolName(),
 			processorsList,
@@ -133,7 +132,7 @@ service:
 		sender.GenConfigYAMLStr(),
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
-		testutil.GetAvailablePort(t),
+		testutil.GetAvailablePort(tb),
 		pipeline1,
 		sender.ProtocolName(),
 		processorsList,

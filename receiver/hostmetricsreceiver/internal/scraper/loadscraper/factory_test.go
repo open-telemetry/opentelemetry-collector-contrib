@@ -25,5 +25,4 @@ func TestCreateMetricsScraper(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.NotNil(t, scraper)
-	assert.Equal(t, scraperType.String(), scraper.ID().String())
 }

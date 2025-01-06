@@ -28,7 +28,6 @@ type ClientAuthSettings struct {
 	Password configopaque.String `mapstructure:"password"`
 }
 type Config struct {
-
 	// Htpasswd settings.
 	Htpasswd *HtpasswdSettings `mapstructure:"htpasswd,omitempty"`
 

@@ -10,8 +10,8 @@
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fprobabilisticsampler%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fprobabilisticsampler) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fprobabilisticsampler%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fprobabilisticsampler) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@jmacd](https://www.github.com/jmacd) |
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
+[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
@@ -314,7 +314,7 @@ The following configuration options can be modified:
 
 - `attribute_source` (string, optional, default = "traceID"): defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
 - `from_attribute` (string, optional, default = ""): The name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
-- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.
+- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. The record attribute value's should be between 0 and 100, while 0 means to never sample the log record, and >= 100 means to always sample the log record.
 
 Examples:
 

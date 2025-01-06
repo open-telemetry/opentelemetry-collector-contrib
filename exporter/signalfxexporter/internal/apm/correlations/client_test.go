@@ -24,9 +24,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 )
 
-var getPathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)`)                    // /dimName/dimVal
-var putPathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)`)            // /dimName/dimVal/{service,environment}
-var deletePathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)/([^/]+)`) // /dimName/dimValue/{service,environment}/value
+var (
+	getPathRegexp    = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)`)                 // /dimName/dimVal
+	putPathRegexp    = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)`)         // /dimName/dimVal/{service,environment}
+	deletePathRegexp = regexp.MustCompile(`/v2/apm/correlate/([^/]+)/([^/]+)/([^/]+)/([^/]+)`) // /dimName/dimValue/{service,environment}/value
+)
 
 func waitForCors(corCh <-chan *request, count, waitSeconds int) []*request { // nolint: unparam
 	cors := make([]*request, 0, count)
@@ -85,7 +87,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
-				rw.WriteHeader(400)
+				rw.WriteHeader(http.StatusBadRequest)
 				return
 			}
 			cor = &request{
@@ -189,8 +191,6 @@ func TestCorrelationClient(t *testing.T) {
 
 	for _, correlationType := range []Type{Service, Environment} {
 		for _, op := range []string{http.MethodPut, http.MethodDelete} {
-			op := op
-			correlationType := correlationType
 			t.Run(fmt.Sprintf("%v %v", op, correlationType), func(t *testing.T) {
 				testData := &Correlation{Type: correlationType, DimName: "host", DimValue: "test-box", Value: "test-service"}
 				switch op {

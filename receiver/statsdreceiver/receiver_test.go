@@ -75,7 +75,7 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 	rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, nextConsumer)
 	assert.NoError(t, err)
 	r := rcv.(*statsdReceiver)
-	var metrics = pmetric.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	assert.NoError(t, r.Flush(ctx, metrics, nextConsumer))
 	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 	assert.NoError(t, r.Shutdown(ctx))
@@ -102,6 +102,24 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			},
 			clientFn: func(t *testing.T, addr string) *client.StatsD {
 				c, err := client.NewStatsD("udp", addr)
+				require.NoError(t, err)
+				return c
+			},
+		},
+		{
+			name: "UDS server with 4s interval",
+			addr: "/tmp/statsd_test.sock",
+			configFn: func() *Config {
+				return &Config{
+					NetAddr: confignet.AddrConfig{
+						Endpoint:  "/tmp/statsd_test.sock",
+						Transport: confignet.TransportTypeUnixgram,
+					},
+					AggregationInterval: 4 * time.Second,
+				}
+			},
+			clientFn: func(t *testing.T, addr string) *client.StatsD {
+				c, err := client.NewStatsD("unixgram", addr)
 				require.NoError(t, err)
 				return c
 			},

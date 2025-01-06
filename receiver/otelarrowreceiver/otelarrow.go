@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow"
@@ -45,7 +45,7 @@ type otelArrowReceiver struct {
 
 	obsrepGRPC   *receiverhelper.ObsReport
 	netReporter  *netstats.NetworkReporter
-	boundedQueue *admission.BoundedQueue
+	boundedQueue admission2.Queue
 
 	settings receiver.Settings
 }
@@ -66,7 +66,15 @@ func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceive
 	if err != nil {
 		return nil, err
 	}
-	bq := admission.NewBoundedQueue(set.TelemetrySettings, int64(cfg.Admission.RequestLimitMiB<<20), cfg.Admission.WaiterLimit)
+	var bq admission2.Queue
+	if cfg.Admission.RequestLimitMiB == 0 {
+		bq = admission2.NewUnboundedQueue()
+	} else {
+		bq, err = admission2.NewBoundedQueue(set.ID, set.TelemetrySettings, cfg.Admission.RequestLimitMiB<<20, cfg.Admission.WaitingLimitMiB<<20)
+		if err != nil {
+			return nil, err
+		}
+	}
 	r := &otelArrowReceiver{
 		cfg:          cfg,
 		settings:     set,
@@ -138,7 +146,6 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.boundedQueue, r.netReporter)
-
 	if err != nil {
 		return err
 	}

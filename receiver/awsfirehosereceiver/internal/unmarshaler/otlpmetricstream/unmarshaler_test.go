@@ -20,24 +20,24 @@ func TestType(t *testing.T) {
 }
 
 func createMetricRecord() []byte {
-	var er = pmetricotlp.NewExportRequest()
-	var rsm = er.Metrics().ResourceMetrics().AppendEmpty()
-	var sm = rsm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	er := pmetricotlp.NewExportRequest()
+	rsm := er.Metrics().ResourceMetrics().AppendEmpty()
+	sm := rsm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	sm.SetName("TestMetric")
-	var dp = sm.SetEmptySummary().DataPoints().AppendEmpty()
+	dp := sm.SetEmptySummary().DataPoints().AppendEmpty()
 	dp.SetCount(1)
 	dp.SetSum(1)
 	qv := dp.QuantileValues()
-	min := qv.AppendEmpty()
-	min.SetQuantile(0)
-	min.SetValue(0)
-	max := qv.AppendEmpty()
-	max.SetQuantile(1)
-	max.SetValue(1)
+	minQ := qv.AppendEmpty()
+	minQ.SetQuantile(0)
+	minQ.SetValue(0)
+	maxQ := qv.AppendEmpty()
+	maxQ.SetQuantile(1)
+	maxQ.SetValue(1)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	temp, _ := er.MarshalProto()
-	var record = proto.EncodeVarint(uint64(len(temp)))
+	record := proto.EncodeVarint(uint64(len(temp)))
 	record = append(record, temp...)
 	return record
 }
@@ -97,7 +97,6 @@ func TestUnmarshal(t *testing.T) {
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-
 			got, err := unmarshaler.Unmarshal(testCase.records)
 			if testCase.wantErr != nil {
 				require.Error(t, err)

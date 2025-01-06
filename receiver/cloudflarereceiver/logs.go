@@ -113,7 +113,6 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				l.logger.Error("ServeTLS failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-
 		} else {
 			l.logger.Debug("Starting Serve",
 				zap.String("address", l.cfg.Endpoint))
@@ -126,7 +125,6 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 				l.logger.Error("Serve failed", zap.Error(err))
 				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 			}
-
 		}
 	}()
 	return nil
@@ -243,12 +241,12 @@ func (l *logsReceiver) processLogs(now pcommon.Timestamp, logs []map[string]any)
 				if stringV, ok := v.(string); ok {
 					ts, err := time.Parse(time.RFC3339, stringV)
 					if err != nil {
-						l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Error(err), zap.String("value", stringV))
+						l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.Error(err), zap.String("value", stringV))
 					} else {
 						logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 					}
 				} else {
-					l.logger.Warn(fmt.Sprintf("unable to parse %s", l.cfg.TimestampField), zap.Any("value", v))
+					l.logger.Warn("unable to parse "+l.cfg.TimestampField, zap.Any("value", v))
 				}
 			}
 

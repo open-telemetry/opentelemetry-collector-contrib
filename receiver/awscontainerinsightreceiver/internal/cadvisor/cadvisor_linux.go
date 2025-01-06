@@ -62,7 +62,8 @@ type createCadvisorManager func(*memory.InMemoryCache, sysfs.SysFs, manager.Hous
 // a better way to mock the cadvisor related part in the future.
 var defaultCreateManager = func(memoryCache *memory.InMemoryCache, sysfs sysfs.SysFs, housekeepingConfig manager.HousekeepingConfig,
 	includedMetricsSet cadvisormetrics.MetricSet, collectorHTTPClient *http.Client, rawContainerCgroupPathPrefixWhiteList []string,
-	perfEventsFile string) (cadvisorManager, error) {
+	perfEventsFile string,
+) (cadvisorManager, error) {
 	return manager.New(memoryCache, sysfs, housekeepingConfig, includedMetricsSet, collectorHTTPClient, rawContainerCgroupPathPrefixWhiteList, []string{}, perfEventsFile, 0)
 }
 
@@ -196,7 +197,6 @@ func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIDsUsedAsPV
 }
 
 func (c *Cadvisor) addECSMetrics(cadvisormetrics []*extractors.CAdvisorMetric) {
-
 	if len(cadvisormetrics) == 0 {
 		c.logger.Warn("cadvisor can't collect any metrics!")
 	}
@@ -300,7 +300,6 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 
 		// add tags for EKS
 		if c.containerOrchestrator == ci.EKS {
-
 			tags[ci.ClusterNameKey] = c.hostInfo.GetClusterName()
 
 			out := c.k8sDecorator.Decorate(m)
@@ -308,7 +307,6 @@ func (c *Cadvisor) decorateMetrics(cadvisormetrics []*extractors.CAdvisorMetric)
 				result = append(result, out)
 			}
 		}
-
 	}
 
 	return result

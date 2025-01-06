@@ -48,8 +48,10 @@ var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cp
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
-var expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
-var expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+var (
+	expectedLogBodyWithEmptyTimestamp         = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
+	expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+)
 
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
@@ -338,7 +340,6 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, want, string(doc))
-
 }
 
 func TestEncodeLogECSMode(t *testing.T) {
@@ -381,6 +382,13 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"k8s.pod.name":                         "opentelemetry-pod-autoconf",
 		"k8s.pod.uid":                          "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
 		"k8s.deployment.name":                  "coredns",
+		semconv.AttributeK8SJobName:            "job.name",
+		semconv.AttributeK8SCronJobName:        "cronjob.name",
+		semconv.AttributeK8SStatefulSetName:    "statefulset.name",
+		semconv.AttributeK8SReplicaSetName:     "replicaset.name",
+		semconv.AttributeK8SDaemonSetName:      "daemonset.name",
+		semconv.AttributeK8SContainerName:      "container.name",
+		semconv.AttributeK8SClusterName:        "cluster.name",
 	})
 	require.NoError(t, err)
 
@@ -444,7 +452,14 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"kubernetes.node.name":       "node-1",
 		"kubernetes.pod.name":        "opentelemetry-pod-autoconf",
 		"kubernetes.pod.uid":         "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
-		"kubernetes.deployment.name": "coredns"
+		"kubernetes.deployment.name": "coredns",
+		"kubernetes.job.name":         "job.name",
+		"kubernetes.cronjob.name":     "cronjob.name",
+		"kubernetes.statefulset.name": "statefulset.name",
+		"kubernetes.replicaset.name":  "replicaset.name",
+		"kubernetes.daemonset.name":   "daemonset.name",
+		"kubernetes.container.name":   "container.name",
+		"orchestrator.cluster.name":   "cluster.name"
 	}`, buf.String())
 }
 
@@ -1094,8 +1109,8 @@ func TestEncodeLogOtelMode(t *testing.T) {
 // helper function that creates the OTel LogRecord from the test structure
 func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
-	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))
-	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano())))
+	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controlled by tests
+	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano()))) //nolint:gosec // this input is controlled by tests
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
@@ -1122,7 +1137,6 @@ func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcom
 }
 
 func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelRecord {
-
 	s := `{
     "@timestamp": "2024-03-12T20:00:41.123456780Z",
     "attributes": {
@@ -1162,7 +1176,6 @@ func buildOTelRecordTestData(t *testing.T, fn func(OTelRecord) OTelRecord) OTelR
 		record = fn(record)
 	}
 	return record
-
 }
 
 func deleteDatasetAttributes(or OTelRecord) {
@@ -1232,7 +1245,7 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	logRecords := scopeLogs.LogRecords()
-	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano()) // nolint:gosec // UnixNano is positive and thus safe to convert to signed integer.
 
 	logRecord := logRecords.AppendEmpty()
 	logRecord.SetObservedTimestamp(observedTimestamp)
@@ -1264,4 +1277,37 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	_, err = m.encodeLogBodyMapMode(logRecord)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
+}
+
+func TestMergeGeolocation(t *testing.T) {
+	attributes := map[string]any{
+		"geo.location.lon":          1.1,
+		"geo.location.lat":          2.2,
+		"foo.bar.geo.location.lon":  3.3,
+		"foo.bar.geo.location.lat":  4.4,
+		"a.geo.location.lon":        5.5,
+		"b.geo.location.lat":        6.6,
+		"unrelatedgeo.location.lon": 7.7,
+		"unrelatedgeo.location.lat": 8.8,
+		"d":                         9.9,
+		"e.geo.location.lon":        "foo",
+		"e.geo.location.lat":        "bar",
+	}
+	wantAttributes := map[string]any{
+		"geo.location":              []any{1.1, 2.2},
+		"foo.bar.geo.location":      []any{3.3, 4.4},
+		"a.geo.location.lon":        5.5,
+		"b.geo.location.lat":        6.6,
+		"unrelatedgeo.location.lon": 7.7,
+		"unrelatedgeo.location.lat": 8.8,
+		"d":                         9.9,
+		"e.geo.location.lon":        "foo",
+		"e.geo.location.lat":        "bar",
+	}
+	input := pcommon.NewMap()
+	err := input.FromRaw(attributes)
+	require.NoError(t, err)
+	mergeGeolocation(input)
+	after := input.AsRaw()
+	assert.Equal(t, wantAttributes, after)
 }

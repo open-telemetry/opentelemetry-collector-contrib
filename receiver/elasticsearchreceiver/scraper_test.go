@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -23,10 +23,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
 )
 
-const fullLinuxExpectedMetricsPath = "./testdata/expected_metrics/full_linux.yaml"
-const fullOtherExpectedMetricsPath = "./testdata/expected_metrics/full_other.yaml"
-const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.yaml"
-const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.yaml"
+const (
+	fullLinuxExpectedMetricsPath   = "./testdata/expected_metrics/full_linux.yaml"
+	fullOtherExpectedMetricsPath   = "./testdata/expected_metrics/full_other.yaml"
+	skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.yaml"
+	noNodesExpectedMetricsPath     = "./testdata/expected_metrics/noNodes.yaml"
+)
 
 func TestScraper(t *testing.T) {
 	t.Parallel()
@@ -258,7 +260,6 @@ func TestScrapingError(t *testing.T) {
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
 				require.EqualError(t, err, err404.Error())
-
 			},
 		},
 		{
@@ -285,7 +286,6 @@ func TestScrapingError(t *testing.T) {
 				_, err = sc.scrape(context.Background())
 				require.True(t, scrapererror.IsPartialScrapeError(err))
 				require.EqualError(t, err, err404.Error())
-
 			},
 		},
 		{

@@ -32,7 +32,7 @@ func TestClient(t *testing.T) {
 	require.Equal(t, baseURL.String()+"/stats", tr.url)
 	require.Len(t, tr.header, 1)
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
-	require.Equal(t, "GET", tr.method)
+	require.Equal(t, http.MethodGet, tr.method)
 }
 
 func TestNewClientProvider(t *testing.T) {

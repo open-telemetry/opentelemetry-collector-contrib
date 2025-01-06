@@ -111,7 +111,6 @@ func TestDatadogServer(t *testing.T) {
 			expectContent: "{}",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -180,7 +179,6 @@ func TestDatadogResponse(t *testing.T) {
 			require.Equal(t, tc.expectedStatus, resp.StatusCode)
 		})
 	}
-
 }
 
 func TestDatadogInfoEndpoint(t *testing.T) {
@@ -278,7 +276,6 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 }`,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
@@ -431,6 +428,85 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 		fmt.Sprintf("http://%s/api/v2/series", dd.(*datadogReceiver).address),
 		io.NopCloser(bytes.NewReader(pb)),
 	)
+	require.NoError(t, err, "Must not error when creating request")
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err, "Must not error performing request")
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.JSONEq(t, `{"errors": []}`, string(body), "Expected JSON response to be `{\"errors\": []}`, got %s", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
+
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	got := mds[0]
+	require.Equal(t, 1, got.ResourceMetrics().Len())
+	metrics := got.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	assert.Equal(t, 1, metrics.Len())
+	metric := metrics.At(0)
+	assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+	assert.Equal(t, "system.load.1", metric.Name())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, metric.Sum().AggregationTemporality())
+	assert.False(t, metric.Sum().IsMonotonic())
+	assert.Equal(t, pcommon.Timestamp(1636629071*1_000_000_000), metric.Sum().DataPoints().At(0).Timestamp())
+	assert.Equal(t, 1.5, metric.Sum().DataPoints().At(0).DoubleValue())
+	assert.Equal(t, pcommon.Timestamp(0), metric.Sum().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1636629081*1_000_000_000), metric.Sum().DataPoints().At(1).Timestamp())
+	assert.Equal(t, 2.0, metric.Sum().DataPoints().At(1).DoubleValue())
+	assert.Equal(t, pcommon.Timestamp(1636629071*1_000_000_000), metric.Sum().DataPoints().At(1).StartTimestamp())
+}
+
+func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+	sink := new(consumertest.MetricsSink)
+
+	dd, err := newDataDogReceiver(
+		cfg,
+		receivertest.NewNopSettings(),
+	)
+	require.NoError(t, err, "Must not error when creating receiver")
+	dd.(*datadogReceiver).nextMetricsConsumer = sink
+
+	require.NoError(t, dd.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, dd.Shutdown(context.Background()))
+	}()
+
+	metricsPayloadV2 := []byte(`{
+		"series": [
+			{
+				"metric": "system.load.1",
+				"type": 1,
+				"points": [
+					{
+						"timestamp": 1636629071,
+						"value":     1.5
+					},
+					{
+						"timestamp": 1636629081,
+						"value":     2.0
+					}
+				],
+				"resources": [
+					{
+						"name": "dummyhost",
+						"type": "host"
+					}
+				]
+			}
+		]
+	}`)
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s/api/v2/series", dd.(*datadogReceiver).address),
+		io.NopCloser(bytes.NewReader(metricsPayloadV2)),
+	)
+
+	req.Header.Set("Content-Type", "application/json")
+
 	require.NoError(t, err, "Must not error when creating request")
 
 	resp, err := http.DefaultClient.Do(req)

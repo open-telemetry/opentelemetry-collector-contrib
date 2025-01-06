@@ -14,7 +14,6 @@ import (
 )
 
 func TestDiskIOStats(t *testing.T) {
-
 	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 	// for eks node-level metrics

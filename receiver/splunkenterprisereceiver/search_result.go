@@ -146,10 +146,13 @@ type DispatchArtifactEntry struct {
 }
 
 type DispatchArtifactContent struct {
-	AdhocCount     string `json:"adhoc_count"`
-	ScheduledCount string `json:"scheduled_count"`
-	SsCount        string `json:"ss_count"`
-	CompletedCount string `json:"completed_count"`
-	IncompleCount  string `json:"incomple_count"`
-	InvalidCount   string `json:"invalid_count"`
+	AdhocCount         string `json:"adhoc_count"`
+	ScheduledCount     string `json:"scheduled_count"`
+	SavedSearchesCount string `json:"ss_count"`
+	CompletedCount     string `json:"completed_count"`
+	IncompleteCount    string `json:"incomple_count"`
+	InvalidCount       string `json:"invalid_count"`
+	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
+	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
+	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
 }

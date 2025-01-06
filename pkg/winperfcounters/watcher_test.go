@@ -128,7 +128,7 @@ func TestPerfCounter_Reset(t *testing.T) {
 
 	// new query is different instance of same counter.
 	require.NoError(t, err)
-	assert.NotSame(t, handle, pc.handle)
+	assert.NotEqual(t, handle, pc.handle)
 	assert.NotSame(t, query, pc.query)
 	assert.Equal(t, path, pc.Path())
 

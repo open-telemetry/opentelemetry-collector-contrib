@@ -187,7 +187,6 @@ func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format strin
 	default:
 		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
 	}
-
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {

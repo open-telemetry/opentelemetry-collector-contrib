@@ -12,9 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var (
-	ErrTooManyItems = errors.New("too many items")
-)
+var ErrTooManyItems = errors.New("too many items")
 
 type Callback func(e *Edge)
 

@@ -18,7 +18,6 @@ import (
 )
 
 func TestECSTaskInfoSuccess(t *testing.T) {
-
 	ctx := context.Background()
 
 	taskReadyC := make(chan bool)
@@ -48,7 +47,6 @@ func TestECSTaskInfoSuccess(t *testing.T) {
 	assert.Equal(t, int64(1), ecsTaskinfo.getRunningTaskCount())
 
 	assert.NotEmpty(t, ecsTaskinfo.getRunningTasksInfo())
-
 }
 
 func TestECSTaskInfoFail(t *testing.T) {
@@ -88,5 +86,4 @@ func TestECSTaskInfoFail(t *testing.T) {
 	assert.NotNil(t, ecsTaskinfo)
 	assert.Equal(t, int64(0), ecsTaskinfo.getRunningTaskCount())
 	assert.Empty(t, ecsTaskinfo.getRunningTasksInfo())
-
 }

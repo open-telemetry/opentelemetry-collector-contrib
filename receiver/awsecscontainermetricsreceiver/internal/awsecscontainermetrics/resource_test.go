@@ -195,5 +195,4 @@ func TestGetNameFromCluster(t *testing.T) {
 
 	clusterName = getNameFromCluster("")
 	require.LessOrEqual(t, 0, len(clusterName))
-
 }

@@ -166,7 +166,7 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 func TestAllFailed(t *testing.T) {
 	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Example log\nAnother example log", body)
@@ -204,7 +204,7 @@ func TestPartiallyFailed(t *testing.T) {
 			assert.Empty(t, req.Header.Get("X-Sumo-Fields"))
 		},
 		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 
 			body := extractBody(t, req)
 			assert.Equal(t, "Another example log", body)
@@ -395,7 +395,7 @@ func TestAllMetricsFailed(t *testing.T) {
 			name: "sent together when metrics under the same resource",
 			callbacks: []func(w http.ResponseWriter, req *http.Request){
 				func(w http.ResponseWriter, req *http.Request) {
-					w.WriteHeader(500)
+					w.WriteHeader(http.StatusInternalServerError)
 
 					body := extractBody(t, req)
 					expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000
@@ -421,7 +421,7 @@ gauge_metric_name{test="test_value",test2="second_value",remote_name="156955",ur
 			name: "sent together when metrics under different resources",
 			callbacks: []func(w http.ResponseWriter, req *http.Request){
 				func(w http.ResponseWriter, req *http.Request) {
-					w.WriteHeader(500)
+					w.WriteHeader(http.StatusInternalServerError)
 
 					body := extractBody(t, req)
 					expected := `test.metric.data{test="test_value",test2="second_value"} 14500 1605534165000

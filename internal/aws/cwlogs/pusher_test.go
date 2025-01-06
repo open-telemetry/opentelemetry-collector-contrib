@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -53,29 +54,29 @@ func TestValidateLogEventFailed(t *testing.T) {
 
 // eventBatch Tests
 func TestLogEventBatch_timestampWithin24Hours(t *testing.T) {
-	min := time.Date(2017, time.June, 20, 23, 38, 0, 0, time.Local)
-	max := min.Add(23 * time.Hour)
+	minDate := time.Date(2017, time.June, 20, 23, 38, 0, 0, time.Local)
+	maxDate := minDate.Add(23 * time.Hour)
 	logEventBatch := &eventBatch{
-		maxTimestampMs: max.UnixNano() / 1e6,
-		minTimestampMs: min.UnixNano() / 1e6,
+		maxTimestampMs: maxDate.UnixNano() / 1e6,
+		minTimestampMs: minDate.UnixNano() / 1e6,
 	}
 
 	// less than the min
-	target := min.Add(-1 * time.Hour)
+	target := minDate.Add(-1 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(-1 * time.Millisecond)
 	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	// more than the max
-	target = max.Add(1 * time.Hour)
+	target = maxDate.Add(1 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(1 * time.Millisecond)
 	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	// in between min and max
-	target = min.Add(2 * time.Hour)
+	target = minDate.Add(2 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 }
 
@@ -83,7 +84,9 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 	totalEvents := 10
 	logEventBatch := &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
-			LogEvents: make([]*cloudwatchlogs.InputLogEvent, 0, totalEvents)}}
+			LogEvents: make([]*cloudwatchlogs.InputLogEvent, 0, totalEvents),
+		},
+	}
 
 	for i := 0; i < totalEvents; i++ {
 		timestamp := rand.Int()
@@ -120,8 +123,10 @@ func newMockPusher() *logPusher {
 // pusher Tests
 //
 
-var timestampMs = time.Now().UnixNano() / 1e6
-var msg = "test log message"
+var (
+	timestampMs = time.Now().UnixNano() / 1e6
+	msg         = "test log message"
+)
 
 func TestPusher_newLogEventBatch(t *testing.T) {
 	p := newMockPusher()
@@ -172,7 +177,6 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 	p.logEventBatch.byteTotal = 1
 	assert.Nil(t, p.addLogEvent(nil))
 	assert.Len(t, p.logEventBatch.putLogEventsInput.LogEvents, 1)
-
 }
 
 func TestAddLogEventWithValidation(t *testing.T) {
@@ -182,10 +186,7 @@ func TestAddLogEventWithValidation(t *testing.T) {
 	logEvent := NewEvent(timestampMs, largeEventContent)
 	expectedTruncatedContent := (*logEvent.InputLogEvent.Message)[0:(defaultMaxEventPayloadBytes-perEventHeaderBytes-len(truncatedSuffix))] + truncatedSuffix
 
-	err := p.AddLogEntry(logEvent)
-	if err != nil {
-		t.Errorf("Error adding log entry: %v", err)
-	}
+	require.NoError(t, p.AddLogEntry(logEvent), "Error adding log entry")
 	assert.Equal(t, expectedTruncatedContent, *logEvent.InputLogEvent.Message)
 
 	logEvent = NewEvent(timestampMs, "")

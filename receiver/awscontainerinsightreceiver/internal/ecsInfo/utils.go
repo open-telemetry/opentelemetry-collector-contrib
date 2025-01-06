@@ -43,7 +43,6 @@ func GetContainerInstanceIDFromArn(arn string) (containerInstanceID string, err 
 	}
 	err = errors.New("Can't get ecs container instance id from ContainerInstance arn: " + arn)
 	return
-
 }
 
 // Check the channel is closed or not.
@@ -94,7 +93,6 @@ func request(ctx context.Context, endpoint string, client doer) ([]byte, error) 
 		return nil, fmt.Errorf("response from %s, execeeds the maximum length: %v", endpoint, maxHTTPResponseLength)
 	}
 	return body, nil
-
 }
 
 func clientGet(ctx context.Context, url string, client doer) (resp *http.Response, err error) {

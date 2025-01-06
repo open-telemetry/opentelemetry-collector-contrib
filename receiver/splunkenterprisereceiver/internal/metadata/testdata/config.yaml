@@ -71,6 +71,10 @@ all_set:
       enabled: true
     splunk.server.searchartifacts.invalid:
       enabled: true
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: true
+    splunk.server.searchartifacts.job.cache.size:
+      enabled: true
     splunk.server.searchartifacts.savedsearches:
       enabled: true
     splunk.server.searchartifacts.scheduled:
@@ -148,6 +152,10 @@ none_set:
     splunk.server.searchartifacts.incomplete:
       enabled: false
     splunk.server.searchartifacts.invalid:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.count:
+      enabled: false
+    splunk.server.searchartifacts.job.cache.size:
       enabled: false
     splunk.server.searchartifacts.savedsearches:
       enabled: false

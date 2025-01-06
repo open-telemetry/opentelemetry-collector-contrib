@@ -31,7 +31,6 @@ import (
 func setupTestMain(m *testing.M) {
 	// Enable the feature gates before all tests to avoid flaky tests.
 	err := featuregate.GlobalRegistry().Set(updateCollectorMetadataID, true)
-
 	if err != nil {
 		panic("unable to set feature gates")
 	}
@@ -97,7 +96,6 @@ func TestBasicStart(t *testing.T) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
-
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -118,7 +116,7 @@ func TestBasicStart(t *testing.T) {
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -159,7 +157,6 @@ func TestStoreCredentials(t *testing.T) {
 				reqNum := atomic.AddInt32(&reqCount, 1)
 
 				switch reqNum {
-
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
@@ -180,7 +177,7 @@ func TestStoreCredentials(t *testing.T) {
 				// heartbeat
 				case 3:
 					assert.Equal(t, heartbeatURL, req.URL.Path)
-					w.WriteHeader(204)
+					w.WriteHeader(http.StatusNoContent)
 
 				// should not produce any more requests
 				default:
@@ -238,7 +235,7 @@ func TestStoreCredentials(t *testing.T) {
 		cfg.CollectorCredentialsDirectory = dir
 
 		// Ensure the directory has 600 permissions
-		require.NoError(t, os.Chmod(dir, 0600))
+		require.NoError(t, os.Chmod(dir, 0o600))
 
 		se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
@@ -263,7 +260,7 @@ func TestStoreCredentials(t *testing.T) {
 		cfg.CollectorCredentialsDirectory = dir
 
 		// Ensure the directory has 700 permissions
-		require.NoError(t, os.Chmod(dir, 0700))
+		require.NoError(t, os.Chmod(dir, 0o700))
 
 		se, err := newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 		require.NoError(t, err)
@@ -318,7 +315,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 				// heartbeat
 				case 1:
 					assert.Equal(t, heartbeatURL, req.URL.Path)
-					w.WriteHeader(204)
+					w.WriteHeader(http.StatusNoContent)
 
 				// metadata
 				case 2:
@@ -402,7 +399,6 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 				reqNum := atomic.AddInt32(&reqCount, 1)
 
 				switch reqNum {
-
 				// register
 				case 1:
 					assert.Equal(t, registerURL, req.URL.Path)
@@ -423,7 +419,7 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 				// heartbeat
 				case 3:
 					assert.Equal(t, heartbeatURL, req.URL.Path)
-					w.WriteHeader(204)
+					w.WriteHeader(http.StatusNoContent)
 
 				// should not produce any more requests
 				default:
@@ -506,7 +502,6 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
-
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -532,7 +527,7 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -575,7 +570,6 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
-
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -669,7 +663,6 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch reqNum {
-
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -695,7 +688,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -773,7 +766,6 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 						reqNum := atomic.AddInt32(&reqCount, 1)
 
 						switch reqNum {
-
 						// heatbeat
 						case 1:
 							assert.NotEqual(t, registerURL, req.URL.Path,
@@ -788,7 +780,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 							assert.Equal(t, "Basic "+token, authHeader,
 								"collector didn't send correct Authorization header with heartbeat request")
 
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// metadata
 						case 2:
@@ -821,7 +813,6 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 						reqNum := atomic.AddInt32(&reqCount, 1)
 
 						switch reqNum {
-
 						// failing heatbeat
 						case 1:
 							assert.NotEqual(t, registerURL, req.URL.Path,
@@ -852,7 +843,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 							assert.Equal(t, "Basic "+token, authHeader,
 								"collector didn't send correct Authorization header with heartbeat request")
 
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// metadata
 						case 3:
@@ -885,7 +876,6 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 						reqNum := atomic.AddInt32(&reqCount, 1)
 
 						switch reqNum {
-
 						// failing heatbeat
 						case 1:
 							assert.NotEqual(t, registerURL, req.URL.Path,
@@ -925,7 +915,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// heartbeat
 						case 4:
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// should not produce any more requests
 						default:
@@ -953,7 +943,6 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 						reqNum := atomic.AddInt32(&reqCount, 1)
 
 						switch reqNum {
-
 						// register
 						case 1:
 							assert.Equal(t, registerURL, req.URL.Path)
@@ -977,7 +966,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 						// heartbeat
 						case 3:
-							w.WriteHeader(204)
+							w.WriteHeader(http.StatusNoContent)
 
 						// should not produce any more requests
 						default:
@@ -999,8 +988,6 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc := tc
-
 			srv, reqCount := tc.srvFn()
 			t.Cleanup(func() { srv.Close() })
 
@@ -1044,7 +1031,6 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 			reqNum := atomic.AddInt32(&reqCount, 1)
 
 			switch {
-
 			// register
 			case reqNum <= retriesLimit:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -1056,7 +1042,6 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 				if reqCount < retriesLimit {
 					w.WriteHeader(http.StatusTooManyRequests)
 				} else {
-
 					_, err = w.Write([]byte(`{
 						"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 						"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -1075,7 +1060,7 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 			// heartbeat
 			case reqNum == retriesLimit+2:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -1163,7 +1148,6 @@ func TestRegistrationRedirect(t *testing.T) {
 	destSrv := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
 			switch atomic.AddInt32(&destReqCount, 1) {
-
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -1190,12 +1174,12 @@ func TestRegistrationRedirect(t *testing.T) {
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// heartbeat
 			case 4:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// metadata
 			case 5:
@@ -1205,7 +1189,7 @@ func TestRegistrationRedirect(t *testing.T) {
 			// heartbeat
 			case 6:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// should not produce any more requests
 			default:
@@ -1221,7 +1205,6 @@ func TestRegistrationRedirect(t *testing.T) {
 	origSrv := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
 			switch atomic.AddInt32(&origReqCount, 1) {
-
 			// register
 			case 1:
 				assert.Equal(t, registerURL, req.URL.Path)
@@ -1330,7 +1313,7 @@ func TestCollectorReregistersAfterHTTPUnathorizedFromHeartbeat(t *testing.T) {
 			// heartbeat
 			case 3:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 
 			// heartbeat
 			case 4:
@@ -1345,7 +1328,7 @@ func TestCollectorReregistersAfterHTTPUnathorizedFromHeartbeat(t *testing.T) {
 
 			default:
 				assert.Equal(t, heartbeatURL, req.URL.Path)
-				w.WriteHeader(204)
+				w.WriteHeader(http.StatusNoContent)
 			}
 		})
 	}())
@@ -1431,7 +1414,6 @@ func TestRegistrationRequestPayload(t *testing.T) {
 				assert.Equal(t, metadataURL, req.URL.Path)
 				w.WriteHeader(http.StatusOK)
 			}
-
 		})
 	}())
 

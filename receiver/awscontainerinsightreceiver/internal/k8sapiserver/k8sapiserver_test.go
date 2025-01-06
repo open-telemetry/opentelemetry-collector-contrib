@@ -31,8 +31,7 @@ func NewService(name, namespace string) k8sclient.Service {
 
 var mockClient = new(MockClient)
 
-type mockK8sClient struct {
-}
+type mockK8sClient struct{}
 
 func (m *mockK8sClient) GetClientSet() kubernetes.Interface {
 	return fake.NewSimpleClientset()
@@ -51,11 +50,9 @@ func (m *mockK8sClient) GetPodClient() k8sclient.PodClient {
 }
 
 func (m *mockK8sClient) ShutdownNodeClient() {
-
 }
 
 func (m *mockK8sClient) ShutdownPodClient() {
-
 }
 
 type MockClient struct {
@@ -89,8 +86,7 @@ func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 	return args.Get(0).(map[k8sclient.Service]int)
 }
 
-type mockEventBroadcaster struct {
-}
+type mockEventBroadcaster struct{}
 
 func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.Interface {
 	return watch.NewFake()
@@ -144,8 +140,7 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 	assert.Fail(t, msg)
 }
 
-type MockClusterNameProvicer struct {
-}
+type MockClusterNameProvicer struct{}
 
 func (m MockClusterNameProvicer) GetClusterName() string {
 	return "cluster-name"

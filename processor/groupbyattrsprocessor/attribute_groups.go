@@ -64,7 +64,6 @@ func (mg *metricsGroup) findOrCreateResourceMetrics(originResource pcommon.Resou
 	referenceResource.MoveTo(rm.Resource())
 	mg.resourceHashes = append(mg.resourceHashes, referenceResourceHash)
 	return rm
-
 }
 
 type logsGroup struct {

@@ -29,7 +29,7 @@ func (scale Scale) Idx(v float64) int {
 // This means a value min < v <= max belongs to this bucket.
 //
 // NOTE: this is different from Go slice intervals, which are [a,b)
-func (scale Scale) Bounds(index int) (min, max float64) {
+func (scale Scale) Bounds(index int) (minVal, maxVal float64) {
 	// from: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#all-scales-use-the-logarithm-function
 	lower := func(index int) float64 {
 		inverseFactor := math.Ldexp(math.Ln2, int(-scale))

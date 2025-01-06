@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
@@ -19,15 +19,8 @@ import (
 
 // This file implements Factory for Process scraper.
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "process"
-)
-
-var (
-	// scraperType is the component type used for the built scraper.
-	scraperType component.Type = component.MustNewType(TypeStr)
-)
+// Type the value of "type" key in configuration.
+var Type = component.MustNewType("process")
 
 var (
 	bootTimeCacheFeaturegateID = "hostmetrics.process.bootTimeCache"
@@ -41,8 +34,7 @@ var (
 )
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -56,7 +48,7 @@ func (f *Factory) CreateMetricsScraper(
 	_ context.Context,
 	settings receiver.Settings,
 	cfg internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
 		return nil, errors.New("process scraper only available on Linux, Windows, or MacOS")
 	}
@@ -66,9 +58,8 @@ func (f *Factory) CreateMetricsScraper(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraper.NewMetrics(
 		s.scrape,
-		scraperhelper.WithStart(s.start),
+		scraper.WithStart(s.start),
 	)
 }

@@ -365,7 +365,6 @@ func TestSendingPushRequestToGRPCEndpoint(t *testing.T) {
 }
 
 func TestExpectedStatus(t *testing.T) {
-
 	testcases := []struct {
 		name              string
 		err               error
