@@ -13,6 +13,99 @@ import (
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
+func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, dataPoints []dataPoint, validationErrors *[]error) ([]byte, map[string]string, error) {
+	if len(dataPoints) == 0 {
+		return nil, nil, nil
+	}
+	dp0 := dataPoints[0]
+	var buf bytes.Buffer
+
+	v := json.NewVisitor(&buf)
+	// Enable ExplicitRadixPoint such that 1.0 is encoded as 1.0 instead of 1.
+	// This is required to generate the correct dynamic mapping in ES.
+	v.SetExplicitRadixPoint(true)
+	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
+		return nil, nil, err
+	}
+	if err := writeTimestampField(v, "@timestamp", dp0.Timestamp()); err != nil {
+		return nil, nil, err
+	}
+	if dp0.StartTimestamp() != 0 {
+		if err := writeTimestampField(v, "start_timestamp", dp0.StartTimestamp()); err != nil {
+			return nil, nil, err
+		}
+	}
+	if err := writeStringFieldSkipDefault(v, "unit", dp0.Metric().Unit()); err != nil {
+		return nil, nil, err
+	}
+	if err := writeDataStream(v, dp0.Attributes()); err != nil {
+		return nil, nil, err
+	}
+	if err := writeAttributes(v, dp0.Attributes(), true); err != nil {
+		return nil, nil, err
+	}
+	if err := writeResource(v, resource, resourceSchemaURL, true); err != nil {
+		return nil, nil, err
+	}
+	if err := writeScope(v, scope, scopeSchemaURL, true); err != nil {
+		return nil, nil, err
+	}
+	dynamicTemplates, err := serializeDataPoints(v, dataPoints, validationErrors)
+	if err := v.OnObjectFinished(); err != nil {
+		return nil, nil, err
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return buf.Bytes(), dynamicTemplates, nil
+}
+
+func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErrors *[]error) (map[string]string, error) {
+	if err := v.OnKey("metrics"); err != nil {
+		return nil, err
+	}
+	if err := v.OnObjectStart(-1, structform.AnyType); err != nil {
+		return nil, err
+	}
+
+	dynamicTemplates := make(map[string]string, len(dataPoints))
+	var docCount uint64 = 0
+	for _, dp := range dataPoints {
+		metric := dp.Metric()
+		value, err := dp.Value()
+		if dp.HasMappingHint(hintDocCount) {
+			docCount = dp.DocCount()
+		}
+		if err != nil {
+			*validationErrors = append(*validationErrors, err)
+			continue
+		}
+		if err = v.OnKey(metric.Name()); err != nil {
+			return nil, err
+		}
+		// TODO: support quantiles
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34561
+		if err := writeValue(v, value, false); err != nil {
+			return nil, err
+		}
+		// DynamicTemplate returns the name of dynamic template that applies to the metric and data point,
+		// so that the field is indexed into Elasticsearch with the correct mapping. The name should correspond to a
+		// dynamic template that is defined in ES mapping, e.g.
+		// https://github.com/elastic/elasticsearch/blob/8.15/x-pack/plugin/core/template-resources/src/main/resources/metrics%40mappings.json
+		dynamicTemplates["metrics."+metric.Name()] = dp.DynamicTemplate(metric)
+	}
+	if err := v.OnObjectFinished(); err != nil {
+		return nil, err
+	}
+	if docCount != 0 {
+		if err := writeUIntField(v, "_doc_count", docCount); err != nil {
+			return nil, err
+		}
+	}
+	return dynamicTemplates, nil
+}
+
 func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent) ([]byte, error) {
 	var buf bytes.Buffer
 
@@ -53,10 +146,10 @@ func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	if err := writeAttributes(v, attributes, false); err != nil {
 		return nil, err
 	}
-	if err := writeResource(v, resource, resourceSchemaURL); err != nil {
+	if err := writeResource(v, resource, resourceSchemaURL, false); err != nil {
 		return nil, err
 	}
-	if err := writeScope(v, scope, scopeSchemaURL); err != nil {
+	if err := writeScope(v, scope, scopeSchemaURL, false); err != nil {
 		return nil, err
 	}
 	if err := v.OnObjectFinished(); err != nil {
@@ -120,10 +213,10 @@ func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pc
 	if err := writeStatus(v, span.Status()); err != nil {
 		return nil, err
 	}
-	if err := writeResource(v, resource, resourceSchemaURL); err != nil {
+	if err := writeResource(v, resource, resourceSchemaURL, false); err != nil {
 		return nil, err
 	}
-	if err := writeScope(v, scope, scopeSchemaURL); err != nil {
+	if err := writeScope(v, scope, scopeSchemaURL, false); err != nil {
 		return nil, err
 	}
 	if err := v.OnObjectFinished(); err != nil {
@@ -230,10 +323,10 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(record.DroppedAttributesCount())); err != nil {
 		return nil, err
 	}
-	if err := writeResource(v, resource, resourceSchemaURL); err != nil {
+	if err := writeResource(v, resource, resourceSchemaURL, false); err != nil {
 		return nil, err
 	}
-	if err := writeScope(v, scope, scopeSchemaURL); err != nil {
+	if err := writeScope(v, scope, scopeSchemaURL, false); err != nil {
 		return nil, err
 	}
 	if err := writeLogBody(v, record); err != nil {
@@ -324,7 +417,7 @@ func writeLogBody(v *json.Visitor, record plog.LogRecord) error {
 	return nil
 }
 
-func writeResource(v *json.Visitor, resource pcommon.Resource, resourceSchemaURL string) error {
+func writeResource(v *json.Visitor, resource pcommon.Resource, resourceSchemaURL string, stringifyMapAttributes bool) error {
 	if err := v.OnKey("resource"); err != nil {
 		return err
 	}
@@ -334,7 +427,7 @@ func writeResource(v *json.Visitor, resource pcommon.Resource, resourceSchemaURL
 	if err := writeStringFieldSkipDefault(v, "schema_url", resourceSchemaURL); err != nil {
 		return err
 	}
-	if err := writeAttributes(v, resource.Attributes(), true); err != nil {
+	if err := writeAttributes(v, resource.Attributes(), stringifyMapAttributes); err != nil {
 		return err
 	}
 	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(resource.DroppedAttributesCount())); err != nil {
@@ -346,7 +439,7 @@ func writeResource(v *json.Visitor, resource pcommon.Resource, resourceSchemaURL
 	return nil
 }
 
-func writeScope(v *json.Visitor, scope pcommon.InstrumentationScope, scopeSchemaURL string) error {
+func writeScope(v *json.Visitor, scope pcommon.InstrumentationScope, scopeSchemaURL string, stringifyMapAttributes bool) error {
 	if err := v.OnKey("scope"); err != nil {
 		return err
 	}
@@ -362,7 +455,7 @@ func writeScope(v *json.Visitor, scope pcommon.InstrumentationScope, scopeSchema
 	if err := writeStringFieldSkipDefault(v, "version", scope.Version()); err != nil {
 		return err
 	}
-	if err := writeAttributes(v, scope.Attributes(), true); err != nil {
+	if err := writeAttributes(v, scope.Attributes(), stringifyMapAttributes); err != nil {
 		return err
 	}
 	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(scope.DroppedAttributesCount())); err != nil {
@@ -378,19 +471,22 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	if attributes.Len() == 0 {
 		return nil
 	}
-	if err := v.OnKey("attributes"); err != nil {
-		return err
-	}
 	attrCopy := pcommon.NewMap()
 	attributes.CopyTo(attrCopy)
 	attrCopy.RemoveIf(func(key string, _ pcommon.Value) bool {
 		switch key {
-		case dataStreamType, dataStreamDataset, dataStreamNamespace:
+		case dataStreamType, dataStreamDataset, dataStreamNamespace, mappingHintsAttrKey:
 			return true
 		}
 		return false
 	})
 	mergeGeolocation(attrCopy)
+	if attrCopy.Len() == 0 {
+		return nil
+	}
+	if err := v.OnKey("attributes"); err != nil {
+		return err
+	}
 	if err := writeMap(v, attrCopy, stringifyMapValues); err != nil {
 		return err
 	}

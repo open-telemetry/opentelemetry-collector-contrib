@@ -99,24 +99,26 @@ func TestEncodeMetric(t *testing.T) {
 		mode:  MappingECS,
 	}
 
-	docs := make(map[uint32]objmodel.Document)
+	groupedDataPoints := make(map[uint32][]dataPoint)
 
 	var docsBytes [][]byte
-	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
-		err := model.upsertMetricDataPointValue(
-			docs,
-			metrics.ResourceMetrics().At(0).Resource(),
-			"",
-			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
-			"",
-			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
-			newNumberDataPoint(metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i)),
-		)
-		require.NoError(t, err)
+	rm := metrics.ResourceMetrics().At(0)
+	sm := rm.ScopeMetrics().At(0)
+	m := sm.Metrics().At(0)
+	dps := m.Sum().DataPoints()
+	for i := 0; i < dps.Len(); i++ {
+		dp := newNumberDataPoint(m, dps.At(i))
+		dpHash := model.hashDataPoint(dp)
+		dataPoints, ok := groupedDataPoints[dpHash]
+		if !ok {
+			groupedDataPoints[dpHash] = []dataPoint{dp}
+		} else {
+			groupedDataPoints[dpHash] = append(dataPoints, dp)
+		}
 	}
 
-	for _, doc := range docs {
-		bytes, err := model.encodeDocument(doc)
+	for _, dataPoints := range groupedDataPoints {
+		bytes, _, err := model.encodeMetrics(rm.Resource(), rm.SchemaUrl(), sm.Scope(), sm.SchemaUrl(), dataPoints, nil)
 		require.NoError(t, err)
 		docsBytes = append(docsBytes, bytes)
 	}

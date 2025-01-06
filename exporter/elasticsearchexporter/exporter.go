@@ -19,8 +19,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
 type elasticsearchExporter struct {
@@ -193,21 +191,18 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	defer session.End()
 
-	var (
-		validationErrs []error // log instead of returning these so that upstream does not retry
-		errs           []error
-	)
+	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
 		resource := resourceMetric.Resource()
 		scopeMetrics := resourceMetric.ScopeMetrics()
 
-		resourceDocs := make(map[string]map[uint32]objmodel.Document)
-
 		for j := 0; j < scopeMetrics.Len(); j++ {
+			var validationErrs []error // log instead of returning these so that upstream does not retry
 			scopeMetrics := scopeMetrics.At(j)
 			scope := scopeMetrics.Scope()
+			groupedDataPointsByIndex := make(map[string]map[uint32][]dataPoint)
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
@@ -216,13 +211,17 @@ func (e *elasticsearchExporter) pushMetricsData(
 					if err != nil {
 						return err
 					}
-					if _, ok := resourceDocs[fIndex]; !ok {
-						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
+					groupedDataPoints, ok := groupedDataPointsByIndex[fIndex]
+					if !ok {
+						groupedDataPoints = make(map[uint32][]dataPoint)
+						groupedDataPointsByIndex[fIndex] = groupedDataPoints
 					}
-
-					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource,
-						resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), metric, dp); err != nil {
-						return err
+					dpHash := e.model.hashDataPoint(dp)
+					dataPoints, ok := groupedDataPoints[dpHash]
+					if !ok {
+						groupedDataPoints[dpHash] = []dataPoint{dp}
+					} else {
+						groupedDataPoints[dpHash] = append(dataPoints, dp)
 					}
 					return nil
 				}
@@ -232,7 +231,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
+						if err := upsertDataPoint(newNumberDataPoint(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -241,7 +240,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newNumberDataPoint(dp)); err != nil {
+						if err := upsertDataPoint(newNumberDataPoint(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -254,7 +253,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newExponentialHistogramDataPoint(dp)); err != nil {
+						if err := upsertDataPoint(newExponentialHistogramDataPoint(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -267,7 +266,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newHistogramDataPoint(dp)); err != nil {
+						if err := upsertDataPoint(newHistogramDataPoint(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
@@ -276,36 +275,31 @@ func (e *elasticsearchExporter) pushMetricsData(
 					dps := metric.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						if err := upsertDataPoint(newSummaryDataPoint(dp)); err != nil {
+						if err := upsertDataPoint(newSummaryDataPoint(metric, dp)); err != nil {
 							validationErrs = append(validationErrs, err)
 							continue
 						}
 					}
 				}
 			}
-		}
 
-		if len(validationErrs) > 0 {
-			e.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
-		}
-
-		for fIndex, docs := range resourceDocs {
-			for _, doc := range docs {
-				var (
-					docBytes []byte
-					err      error
-				)
-				docBytes, err = e.model.encodeDocument(doc)
-				if err != nil {
-					errs = append(errs, err)
-					continue
-				}
-				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), doc.DynamicTemplates()); err != nil {
-					if cerr := ctx.Err(); cerr != nil {
-						return cerr
+			for fIndex, groupedDataPoints := range groupedDataPointsByIndex {
+				for _, dataPoints := range groupedDataPoints {
+					docBytes, dynamicTemplates, err := e.model.encodeMetrics(resource, resourceMetric.SchemaUrl(), scope, scopeMetrics.SchemaUrl(), dataPoints, &validationErrs)
+					if err != nil {
+						errs = append(errs, err)
+						continue
 					}
-					errs = append(errs, err)
+					if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), dynamicTemplates); err != nil {
+						if cerr := ctx.Err(); cerr != nil {
+							return cerr
+						}
+						errs = append(errs, err)
+					}
 				}
+			}
+			if len(validationErrs) > 0 {
+				e.Logger.Warn("validation errors", zap.Error(errors.Join(validationErrs...)))
 			}
 		}
 	}

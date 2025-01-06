@@ -43,12 +43,16 @@ func TestSerializeLog(t *testing.T) {
 			"severity_text": "debug",
 			"resource": map[string]interface{}{
 				"attributes": map[string]interface{}{
-					"resource_map": `{"foo":"bar"}`,
+					"resource_map": map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			"scope": map[string]interface{}{
 				"attributes": map[string]interface{}{
-					"scope_map": `{"foo":"bar"}`,
+					"scope_map": map[string]interface{}{
+						"foo": "bar",
+					},
 				},
 			},
 			"attributes": map[string]interface{}{
