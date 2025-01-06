@@ -253,4 +253,6 @@ type Config struct {
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
 	// DecisionCache holds configuration for the decision cache(s)
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
+	// Options allows for additional configuration of the tail-based sampling processor in code.
+	Options []Option `mapstructure:"-"`
 }
