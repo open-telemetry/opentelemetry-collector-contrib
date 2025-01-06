@@ -1,0 +1,47 @@
+default:
+all_set:
+  metrics:
+    systemd.unit.active_state:
+      enabled: true
+    systemd.unit.errno:
+      enabled: true
+    systemd.unit.load_state:
+      enabled: true
+    systemd.unit.restarts:
+      enabled: true
+    systemd.unit.state:
+      enabled: true
+    systemd.unit.sub_state:
+      enabled: true
+  resource_attributes:
+    systemd.unit.name:
+      enabled: true
+none_set:
+  metrics:
+    systemd.unit.active_state:
+      enabled: false
+    systemd.unit.errno:
+      enabled: false
+    systemd.unit.load_state:
+      enabled: false
+    systemd.unit.restarts:
+      enabled: false
+    systemd.unit.state:
+      enabled: false
+    systemd.unit.sub_state:
+      enabled: false
+  resource_attributes:
+    systemd.unit.name:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    systemd.unit.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    systemd.unit.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "systemd.unit.name-val"
