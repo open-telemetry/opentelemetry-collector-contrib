@@ -213,7 +213,7 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 		s.updateStickySessionCookie(resp)
 	}
 
-	// API responds with a 200 or 204 with ConentLength set to 0 when all data
+	// API responds with a 200 or 204 with ContentLength set to 0 when all data
 	// has been successfully ingested.
 	if resp.ContentLength == 0 && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent) {
 		return nil
