@@ -283,7 +283,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 
 func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
 	tsp.logger.Debug("Setting pending sampling policy", zap.Int("pending.len", len(cfgs)))
-	
+
 	tsp.setPolicyMux.Lock()
 	defer tsp.setPolicyMux.Unlock()
 
