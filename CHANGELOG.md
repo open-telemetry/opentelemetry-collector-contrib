@@ -3414,7 +3414,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `pkg/ottl`: Add new `IsString` and `IsMap` functions to facilitate type checking. (#22750)
   Especially useful for checking log body type before parsing.
 - `pkg/ottl`: Adds `StandardFuncs` and `StandardConverters` to facilitate function map generation. (#23190)
-  This change means that new functions added to ottlfuncs get automatically added to Cotnrib components that use OTTL
+  This change means that new functions added to ottlfuncs get automatically added to Contrib components that use OTTL
 - `pkg/ottl`: Change replacement functions to accept a path expression as a replacement (#22787)
   The following replacement functions now accept a path expression as a replacement:
   - replace_match
