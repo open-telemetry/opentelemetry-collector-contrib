@@ -35,22 +35,9 @@ type worker struct {
 	spanID         string          // spanID string
 }
 
-func (w worker) simulateLogs(res *resource.Resource, exporterFunc func() (sdklog.Exporter, error), telemetryAttributes []attribute.KeyValue) {
+func (w worker) simulateLogs(res *resource.Resource, exporter sdklog.Exporter, telemetryAttributes []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
-
-	exporter, err := exporterFunc()
-	if err != nil {
-		w.logger.Error("failed to create the exporter", zap.Error(err))
-		return
-	}
-
-	defer func() {
-		w.logger.Info("stopping the exporter")
-		if tempError := exporter.Shutdown(context.Background()); tempError != nil {
-			w.logger.Error("failed to stop the exporter", zap.Error(tempError))
-		}
-	}()
 
 	for w.running.Load() {
 		var tid trace.TraceID

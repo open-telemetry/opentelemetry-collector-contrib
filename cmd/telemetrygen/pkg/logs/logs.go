@@ -29,37 +29,10 @@ func Start(cfg *Config) error {
 	if err != nil {
 		return err
 	}
-	expFunc := func() (sdklog.Exporter, error) {
-		var exp sdklog.Exporter
-		if cfg.UseHTTP {
-			var exporterOpts []otlploghttp.Option
 
-			logger.Info("starting HTTP exporter")
-			exporterOpts, err = httpExporterOptions(cfg)
-			if err != nil {
-				return nil, err
-			}
-			exp, err = otlploghttp.New(context.Background(), exporterOpts...)
-			if err != nil {
-				return nil, fmt.Errorf("failed to obtain OTLP HTTP exporter: %w", err)
-			}
-		} else {
-			var exporterOpts []otlploggrpc.Option
+	logger.Info("starting the logs generator with configuration", zap.Any("config", cfg))
 
-			logger.Info("starting gRPC exporter")
-			exporterOpts, err = grpcExporterOptions(cfg)
-			if err != nil {
-				return nil, err
-			}
-			exp, err = otlploggrpc.New(context.Background(), exporterOpts...)
-			if err != nil {
-				return nil, fmt.Errorf("failed to obtain OTLP gRPC exporter: %w", err)
-			}
-		}
-		return exp, err
-	}
-
-	if err = run(cfg, expFunc, logger); err != nil {
+	if err = run(cfg, logger); err != nil {
 		return err
 	}
 
@@ -67,7 +40,7 @@ func Start(cfg *Config) error {
 }
 
 // run executes the test scenario.
-func run(c *Config, exp func() (sdklog.Exporter, error), logger *zap.Logger) error {
+func run(c *Config, logger *zap.Logger) error {
 	if err := c.Validate(); err != nil {
 		return err
 	}
@@ -111,7 +84,17 @@ func run(c *Config, exp func() (sdklog.Exporter, error), logger *zap.Logger) err
 			traceID:        c.TraceID,
 			spanID:         c.SpanID,
 		}
-
+		exp, err := createExporter(c, logger)
+		if err != nil {
+			w.logger.Error("failed to create the exporter", zap.Error(err))
+			return err
+		}
+		defer func() {
+			w.logger.Info("stopping the exporter")
+			if tempError := exp.Shutdown(context.Background()); tempError != nil {
+				w.logger.Error("failed to stop the exporter", zap.Error(tempError))
+			}
+		}()
 		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())
 	}
 	if c.TotalDuration > 0 {
@@ -120,6 +103,37 @@ func run(c *Config, exp func() (sdklog.Exporter, error), logger *zap.Logger) err
 	}
 	wg.Wait()
 	return nil
+}
+
+func createExporter(cfg *Config, logger *zap.Logger) (sdklog.Exporter, error) {
+	var exp sdklog.Exporter
+	var err error
+	if cfg.UseHTTP {
+		var exporterOpts []otlploghttp.Option
+
+		logger.Info("starting HTTP exporter")
+		exporterOpts, err = httpExporterOptions(cfg)
+		if err != nil {
+			return nil, err
+		}
+		exp, err = otlploghttp.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to obtain OTLP HTTP exporter: %w", err)
+		}
+	} else {
+		var exporterOpts []otlploggrpc.Option
+
+		logger.Info("starting gRPC exporter")
+		exporterOpts, err = grpcExporterOptions(cfg)
+		if err != nil {
+			return nil, err
+		}
+		exp, err = otlploggrpc.New(context.Background(), exporterOpts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to obtain OTLP gRPC exporter: %w", err)
+		}
+	}
+	return exp, err
 }
 
 func parseSeverity(severityText string, severityNumber int32) (string, log.Severity, error) {

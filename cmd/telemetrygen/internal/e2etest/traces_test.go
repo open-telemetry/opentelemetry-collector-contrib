@@ -15,9 +15,9 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/traces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/traces"
 )
 
 func TestGenerateTraces(t *testing.T) {
@@ -33,25 +33,15 @@ func TestGenerateTraces(t *testing.T) {
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()))
 	}()
-	cfg := &traces.Config{
-		Config: common.Config{
-			WorkerCount:           10,
-			Rate:                  10,
-			TotalDuration:         10 * time.Second,
-			ReportingInterval:     10,
-			CustomEndpoint:        endpoint,
-			Insecure:              true,
-			UseHTTP:               false,
-			Headers:               nil,
-			ResourceAttributes:    nil,
-			SkipSettingGRPCLogger: true,
-		},
-		NumTraces:   6000,
-		ServiceName: "foo",
-		StatusCode:  "0",
-		LoadSize:    0,
-		Batch:       true,
-	}
+	cfg := traces.NewConfig()
+	cfg.WorkerCount = 10
+	cfg.Rate = 10
+	cfg.TotalDuration = 10 * time.Second
+	cfg.ReportingInterval = 10
+	cfg.CustomEndpoint = endpoint
+	cfg.Insecure = true
+	cfg.SkipSettingGRPCLogger = true
+	cfg.NumTraces = 6000
 	go func() {
 		err = traces.Start(cfg)
 		assert.NoError(t, err)
