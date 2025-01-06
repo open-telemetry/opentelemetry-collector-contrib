@@ -34,7 +34,7 @@ var (
 	errInvalidValue = errors.New("invalid value")
 )
 
-func newDefaultCongfig() component.Config {
+func newDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.Timeout = 10 * time.Second
 	return &Config{
