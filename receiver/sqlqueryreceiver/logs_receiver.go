@@ -285,7 +285,9 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	}
 
 	var errs []error
-	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	scope := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	scope.Scope().SetName(metadata.ScopeName)
+	scopeLogs := scope.LogRecords()
 	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
 		for _, row := range rows {
 			logRecord := scopeLogs.AppendEmpty()
