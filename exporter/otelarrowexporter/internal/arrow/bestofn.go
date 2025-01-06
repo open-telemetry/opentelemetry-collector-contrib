@@ -30,7 +30,7 @@ type bestOfNPrioritizer struct {
 	// state tracks the work being handled by all streams.
 	state []*streamWorkState
 
-	// numChoices is the number of streams to consder in each decision.
+	// numChoices is the number of streams to consider in each decision.
 	numChoices int
 
 	// loadFunc is the load function.
