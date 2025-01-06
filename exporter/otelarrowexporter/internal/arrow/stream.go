@@ -380,7 +380,7 @@ func (s *Stream) read(_ context.Context) error {
 	}
 }
 
-// getSenderChannel takes the stream lock and removes the corresonding
+// getSenderChannel takes the stream lock and removes the corresponding
 // sender channel.
 func (sws *streamWorkState) getSenderChannel(bstat *arrowpb.BatchStatus) (chan<- error, error) {
 	sws.lock.Lock()
