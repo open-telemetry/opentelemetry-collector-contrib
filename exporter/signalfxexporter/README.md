@@ -210,7 +210,7 @@ help ensure compatibility with custom charts and dashboards when using the OpenT
 The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go).  Translation rules currently allow the following actions:
 
 * `aggregate_metric` - Aggregates a metric through removal of specified dimensions
-* `calculate_new_metric` - Creates a new metric via operating on two consistuent ones
+* `calculate_new_metric` - Creates a new metric via operating on two constituent ones
 * `convert_values` - Convert float values to int or int to float for specified metric names
 * `copy_metrics` - Creates a new metric as a copy of another
 * `delta_metric` - Creates a new delta metric for a specified non-delta one
