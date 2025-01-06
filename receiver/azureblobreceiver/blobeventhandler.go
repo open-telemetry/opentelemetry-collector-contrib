@@ -25,7 +25,7 @@ type azureBlobEventHandler struct {
 	tracesDataConsumer       tracesDataConsumer
 	logsContainerName        string
 	tracesContainerName      string
-	eventHubSonnectionString string
+	eventHubConnectionString string
 	hub                      *eventhub.Hub
 	logger                   *zap.Logger
 }
@@ -41,7 +41,7 @@ func (p *azureBlobEventHandler) run(ctx context.Context) error {
 		return nil
 	}
 
-	hub, err := eventhub.NewHubFromConnectionString(p.eventHubSonnectionString)
+	hub, err := eventhub.NewHubFromConnectionString(p.eventHubConnectionString)
 	if err != nil {
 		return err
 	}
@@ -127,12 +127,12 @@ func (p *azureBlobEventHandler) setTracesDataConsumer(tracesDataConsumer tracesD
 	p.tracesDataConsumer = tracesDataConsumer
 }
 
-func newBlobEventHandler(eventHubSonnectionString string, logsContainerName string, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
+func newBlobEventHandler(eventHubConnectionString string, logsContainerName string, tracesContainerName string, blobClient blobClient, logger *zap.Logger) *azureBlobEventHandler {
 	return &azureBlobEventHandler{
 		blobClient:               blobClient,
 		logsContainerName:        logsContainerName,
 		tracesContainerName:      tracesContainerName,
-		eventHubSonnectionString: eventHubSonnectionString,
+		eventHubConnectionString: eventHubConnectionString,
 		logger:                   logger,
 	}
 }
