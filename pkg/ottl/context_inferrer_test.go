@@ -11,13 +11,13 @@ import (
 )
 
 var defaultDummyPriorityContextInferrerCandidate = &priorityContextInferrerCandidate{
-	hasFunctionName: func(name string) bool {
+	hasFunctionName: func(_ string) bool {
 		return true
 	},
-	hasEnumSymbol: func(enum *EnumSymbol) bool {
+	hasEnumSymbol: func(_ *EnumSymbol) bool {
 		return true
 	},
-	getLowerContexts: func(context string) []string {
+	getLowerContexts: func(_ string) []string {
 		return nil
 	},
 }
