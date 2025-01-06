@@ -61,7 +61,7 @@ type tailSamplingSpanProcessor struct {
 	deleteChan        chan pcommon.TraceID
 	numTracesOnMap    *atomic.Uint64
 
-	setPolicyMux  sync.RWMutex
+	setPolicyMux  sync.Mutex
 	pendingPolicy []PolicyCfg
 }
 
