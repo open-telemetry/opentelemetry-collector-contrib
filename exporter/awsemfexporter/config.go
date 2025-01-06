@@ -124,7 +124,7 @@ func (config *Config) Validate() error {
 		if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
-			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
+			config.logger.Warn("Dropped unsupported metric descriptor.", zap.String("unit", descriptor.Unit))
 		}
 	}
 	config.MetricDescriptors = validDescriptors
