@@ -5371,7 +5371,7 @@ This version has been skipped.
 - `datadogexporter`: Fix logs related to the source provider. (#12160)
 - `pkg/stanza/fileconsumer`: Fix issue where reader could become stuck on newlines (#10125, #10127, #10128)
 - `receivercreator`: dynamically created receivers log with their `name` field (#16481)
-- `skywalkingreceiver`: Fix skywalking traceid and spanid convertion (#11562)
+- `skywalkingreceiver`: Fix skywalking traceid and spanid conversion (#11562)
 - `spanmetricsprocessor`: Fixes the number of explicit bucket counts by removing the manually added "catch-all" bucket. (#11784)
 - `spanmetricsprocessor`: Fix concurrency bug causing premature key eviction. (#9018)
 - `spanmetricsprocessor`: Removes a comment that is no longer relevant due to a fix. (#12427)
