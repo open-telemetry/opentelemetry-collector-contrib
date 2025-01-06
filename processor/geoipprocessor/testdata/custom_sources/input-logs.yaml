@@ -1,9 +1,6 @@
 resourceLogs:
   - resource:
       attributes:
-        - key: host.ip
-          value:
-            stringValue: 1.2.3.4
         - key: ip
           value:
             stringValue: 1.2.3.4
@@ -12,6 +9,9 @@ resourceLogs:
           - body:
               stringValue: "hello one"
             attributes:
+              - key: custom.address
+                value:
+                  stringValue: 1.2.3.4
               - key: host.name
                 value:
                   stringValue: HOST.ONE

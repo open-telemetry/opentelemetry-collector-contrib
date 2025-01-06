@@ -2,9 +2,6 @@ resourceMetrics:
   - schemaUrl: https://test-res-schema.com/schema
     resource:
       attributes:
-        - key: host.ip
-          value:
-            stringValue: 1.2.3.4
         - key: ip
           value:
             stringValue: 1.2.3.4
@@ -24,6 +21,9 @@ resourceMetrics:
                 - timeUnixNano: "1000000"
                   asDouble: 345
                   attributes:
+                    - key: custom.address
+                      value:
+                        stringValue: 1.2.3.4
                     - key: aaa
                       value:
                         stringValue: bbb

@@ -108,7 +108,7 @@ var testCases = []struct {
 	{
 		name:      "custom source attributes",
 		goldenDir: "custom_sources",
-		context:   resource,
+		context:   record,
 	},
 	{
 		name:      "do not add resource attributes with an invalid ip",
@@ -221,7 +221,7 @@ func TestProcessor(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}, Attributes: defaultAttributes}
+			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}, Attributes: []attribute.Key{"source.address", "client.address", "custom.address"}}
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
