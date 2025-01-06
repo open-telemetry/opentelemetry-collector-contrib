@@ -117,7 +117,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL str
 	case MappingECS:
 		document = m.encodeLogECSMode(resource, record, scope)
 	case MappingOTel:
-		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
+		return serializeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, record)
 	case MappingBodyMap:
 		return m.encodeLogBodyMapMode(record)
 	default:
@@ -159,78 +159,6 @@ func (m *encodeModel) encodeLogBodyMapMode(record plog.LogRecord) ([]byte, error
 	}
 
 	return jsoniter.Marshal(body.Map().AsRaw())
-}
-
-func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
-	var document objmodel.Document
-
-	docTimeStamp := record.Timestamp()
-	if docTimeStamp.AsTime().UnixNano() == 0 {
-		docTimeStamp = record.ObservedTimestamp()
-	}
-
-	document.AddTimestamp("@timestamp", docTimeStamp)
-	document.AddTimestamp("observed_timestamp", record.ObservedTimestamp())
-
-	document.AddTraceID("trace_id", record.TraceID())
-	document.AddSpanID("span_id", record.SpanID())
-	document.AddString("severity_text", record.SeverityText())
-	document.AddInt("severity_number", int64(record.SeverityNumber()))
-	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
-
-	m.encodeAttributesOTelMode(&document, record.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
-
-	// Body
-	setOTelLogBody(&document, record.Body(), record.Attributes())
-
-	return document
-}
-
-func setOTelLogBody(doc *objmodel.Document, body pcommon.Value, attributes pcommon.Map) {
-	// Determine if this log record is an event, as they are mapped differently
-	// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/general/events.md
-	_, isEvent := attributes.Get("event.name")
-
-	switch body.Type() {
-	case pcommon.ValueTypeMap:
-		if isEvent {
-			doc.AddAttribute("body.structured", body)
-		} else {
-			doc.AddAttribute("body.flattened", body)
-		}
-	case pcommon.ValueTypeSlice:
-		// output must be an array of objects due to ES limitations
-		// otherwise, wrap the array in an object
-		s := body.Slice()
-		allMaps := true
-		for i := 0; i < s.Len(); i++ {
-			if s.At(i).Type() != pcommon.ValueTypeMap {
-				allMaps = false
-			}
-		}
-
-		var outVal pcommon.Value
-		if allMaps {
-			outVal = body
-		} else {
-			vm := pcommon.NewValueMap()
-			m := vm.SetEmptyMap()
-			body.Slice().CopyTo(m.PutEmptySlice("value"))
-			outVal = vm
-		}
-
-		if isEvent {
-			doc.AddAttribute("body.structured", outVal)
-		} else {
-			doc.AddAttribute("body.flattened", outVal)
-		}
-	case pcommon.ValueTypeStr:
-		doc.AddString("body.text", body.Str())
-	default:
-		doc.AddString("body.text", body.AsString())
-	}
 }
 
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {

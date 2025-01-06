@@ -427,7 +427,7 @@ func TestExporterLogs(t *testing.T) {
 				body: func() pcommon.Value {
 					return pcommon.NewValueStr("foo")
 				}(),
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"text":"foo"}}`),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"text":"foo"}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -438,7 +438,7 @@ func TestExporterLogs(t *testing.T) {
 					m.PutEmptyMap("inner").PutStr("foo", "bar")
 					return vm
 				}(),
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"flattened":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"flattened":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -450,7 +450,7 @@ func TestExporterLogs(t *testing.T) {
 					return vm
 				}(),
 				isEvent:      true,
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"true":true,"false":false,"inner":{"foo":"bar"}}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -461,7 +461,7 @@ func TestExporterLogs(t *testing.T) {
 					s.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 					return vs
 				}(),
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"flattened":{"value":["foo",false,{"foo":"bar"}]}}}`),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"flattened":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 			{
 				body: func() pcommon.Value {
@@ -473,7 +473,7 @@ func TestExporterLogs(t *testing.T) {
 					return vs
 				}(),
 				isEvent:      true,
-				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"dropped_attributes_count":0,"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"},"dropped_attributes_count":0},"scope":{"dropped_attributes_count":0},"severity_number":0,"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
+				wantDocument: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","attributes":{"attr.foo":"attr.foo.value","event.name":"foo"},"data_stream":{"dataset":"attr.dataset.otel","namespace":"resource.attribute.namespace","type":"logs"},"observed_timestamp":"1970-01-01T00:00:00.000000000Z","resource":{"attributes":{"resource.attr.foo":"resource.attr.foo.value"}},"scope":{},"body":{"structured":{"value":["foo",false,{"foo":"bar"}]}}}`),
 			},
 		} {
 			rec := newBulkRecorder()
@@ -733,6 +733,36 @@ func TestExporterLogs(t *testing.T) {
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `attributes`).Raw)
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	})
+
+	t.Run("otel mode attribute complex value", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
+		})
+
+		logs := plog.NewLogs()
+		resourceLog := logs.ResourceLogs().AppendEmpty()
+		resourceLog.Resource().Attributes().PutEmptyMap("some.resource.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
+		scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+		scopeLog.Scope().Attributes().PutEmptyMap("some.scope.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
+		logRecord := scopeLog.LogRecords().AppendEmpty()
+		logRecord.Attributes().PutEmptyMap("some.record.attribute").PutEmptyMap("foo.bar").PutStr("baz", "qux")
+
+		mustSendLogs(t, exporter, logs)
+
+		rec.WaitItems(1)
+
+		assert.Len(t, rec.Items(), 1)
+		doc := rec.Items()[0].Document
+		assert.JSONEq(t, `{"some.record.attribute":{"foo.bar":{"baz":"qux"}}}`, gjson.GetBytes(doc, `attributes`).Raw)
+		assert.JSONEq(t, `{"some.scope.attribute":"{\"foo.bar\":{\"baz\":\"qux\"}}"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
+		assert.JSONEq(t, `{"some.resource.attribute":"{\"foo.bar\":{\"baz\":\"qux\"}}"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
 }
 
