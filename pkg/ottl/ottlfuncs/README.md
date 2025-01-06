@@ -452,6 +452,7 @@ Available Converters:
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
 - [RemoveXML](#removexml)
+- [Second](#second)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
@@ -1610,6 +1611,20 @@ Delete all comments
 Delete text from nodes that contain the word "sensitive"
 
 - `RemoveXML(body, "//*[contains(text(), 'sensitive')]")`
+
+### Second
+
+`Second(value)`
+
+The `Second` Converter returns the second component from the specified time using the Go stdlib [`time.Second` function](https://pkg.go.dev/time#Time.Second).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Second(Now())`
 
 ### Seconds
 
