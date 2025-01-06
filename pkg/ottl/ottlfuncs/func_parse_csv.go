@@ -69,8 +69,8 @@ func createParseCSVFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 		delimiter = []rune(args.Delimiter.Get())[0]
 	}
 
-	// headerDelimiter defaults to the chosen delimter,
-	// since in most cases headerDelimiter == delmiter.
+	// headerDelimiter defaults to the chosen delimiter,
+	// since in most cases headerDelimiter == delimiter.
 	headerDelimiter := string(delimiter)
 	if !args.HeaderDelimiter.IsEmpty() {
 		headerDelimiter = args.HeaderDelimiter.Get()
