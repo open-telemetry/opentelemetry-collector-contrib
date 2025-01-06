@@ -254,7 +254,6 @@ func (m *encodeModel) encodeMetrics(resource pcommon.Resource, resourceSchemaURL
 		return serializeMetrics(resource, resourceSchemaURL, scope, scopeSchemaURL, dataPoints, validationErrors)
 	default:
 		return m.encodeDataPointsECSMode(resource, dataPoints, validationErrors)
-
 	}
 }
 

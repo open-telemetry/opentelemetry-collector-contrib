@@ -1,14 +1,18 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
 	"bytes"
 	"encoding/hex"
+	"strings"
+
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"strings"
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
@@ -50,14 +54,13 @@ func serializeMetrics(resource pcommon.Resource, resourceSchemaURL string, scope
 	if err := writeScope(v, scope, scopeSchemaURL, true); err != nil {
 		return nil, nil, err
 	}
-	dynamicTemplates, err := serializeDataPoints(v, dataPoints, validationErrors)
+	dynamicTemplates, serr := serializeDataPoints(v, dataPoints, validationErrors)
+	if serr != nil {
+		return nil, nil, serr
+	}
 	if err := v.OnObjectFinished(); err != nil {
 		return nil, nil, err
 	}
-	if err != nil {
-		return nil, nil, err
-	}
-
 	return buf.Bytes(), dynamicTemplates, nil
 }
 
@@ -70,7 +73,7 @@ func serializeDataPoints(v *json.Visitor, dataPoints []dataPoint, validationErro
 	}
 
 	dynamicTemplates := make(map[string]string, len(dataPoints))
-	var docCount uint64 = 0
+	var docCount uint64
 	for _, dp := range dataPoints {
 		metric := dp.Metric()
 		value, err := dp.Value()
@@ -122,10 +125,10 @@ func serializeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, sco
 	if err := writeDataStream(v, spanEvent.Attributes()); err != nil {
 		return nil, err
 	}
-	if err := writeTraceIdField(v, span.TraceID()); err != nil {
+	if err := writeTraceIDField(v, span.TraceID()); err != nil {
 		return nil, err
 	}
-	if err := writeSpanIdField(v, "span_id", span.SpanID()); err != nil {
+	if err := writeSpanIDField(v, "span_id", span.SpanID()); err != nil {
 		return nil, err
 	}
 	if err := writeIntFieldSkipDefault(v, "dropped_attributes_count", int64(spanEvent.DroppedAttributesCount())); err != nil {
@@ -174,16 +177,16 @@ func serializeSpan(resource pcommon.Resource, resourceSchemaURL string, scope pc
 	if err := writeDataStream(v, span.Attributes()); err != nil {
 		return nil, err
 	}
-	if err := writeTraceIdField(v, span.TraceID()); err != nil {
+	if err := writeTraceIDField(v, span.TraceID()); err != nil {
 		return nil, err
 	}
-	if err := writeSpanIdField(v, "span_id", span.SpanID()); err != nil {
+	if err := writeSpanIDField(v, "span_id", span.SpanID()); err != nil {
 		return nil, err
 	}
 	if err := writeStringFieldSkipDefault(v, "trace_state", span.TraceState().AsRaw()); err != nil {
 		return nil, err
 	}
-	if err := writeSpanIdField(v, "parent_span_id", span.ParentSpanID()); err != nil {
+	if err := writeSpanIDField(v, "parent_span_id", span.ParentSpanID()); err != nil {
 		return nil, err
 	}
 	if err := writeStringFieldSkipDefault(v, "name", span.Name()); err != nil {
@@ -311,10 +314,10 @@ func serializeLog(resource pcommon.Resource, resourceSchemaURL string, scope pco
 	if err := writeIntFieldSkipDefault(v, "severity_number", int64(record.SeverityNumber())); err != nil {
 		return nil, err
 	}
-	if err := writeTraceIdField(v, record.TraceID()); err != nil {
+	if err := writeTraceIDField(v, record.TraceID()); err != nil {
 		return nil, err
 	}
-	if err := writeSpanIdField(v, "span_id", record.SpanID()); err != nil {
+	if err := writeSpanIDField(v, "span_id", record.SpanID()); err != nil {
 		return nil, err
 	}
 	if err := writeAttributes(v, record.Attributes(), false); err != nil {
@@ -613,7 +616,7 @@ func writeStringFieldSkipDefault(v *json.Visitor, key, value string) error {
 	return nil
 }
 
-func writeTraceIdField(v *json.Visitor, id pcommon.TraceID) error {
+func writeTraceIDField(v *json.Visitor, id pcommon.TraceID) error {
 	if id.IsEmpty() {
 		return nil
 	}
@@ -626,7 +629,7 @@ func writeTraceIdField(v *json.Visitor, id pcommon.TraceID) error {
 	return nil
 }
 
-func writeSpanIdField(v *json.Visitor, key string, id pcommon.SpanID) error {
+func writeSpanIDField(v *json.Visitor, key string, id pcommon.SpanID) error {
 	if id.IsEmpty() {
 		return nil
 	}
