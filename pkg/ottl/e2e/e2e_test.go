@@ -595,6 +595,32 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Murmur3Hash128("Hello World"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("test")
+				s.AppendEmpty().SetInt(1901405986810282715)
+				s.AppendEmpty().SetInt(-8942425033498643417)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Murmur3Hash("Hello World"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", int64(427197390))
+			},
+		},
+		{
+			statement: `set(attributes["test"], Murmur3Hex128("Hello World"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "dbc2a0c1ab26631a27b4c09fcf1fe683")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Murmur3Hex("Hello World"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "ce837619")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Nanoseconds(Duration("1ms")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 1000000)
