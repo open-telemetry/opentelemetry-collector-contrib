@@ -152,7 +152,7 @@ and its contributors.
 - Add a README.md on the root of your component describing its configuration and usage, likely referencing some of the
   yaml files used in the component tests. We also suggest that the yaml files used in tests have comments for all
   available configuration settings so users can copy and modify them as needed.
-- Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
+- Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependent. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
 - All components included in the distribution must be included in
   [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
