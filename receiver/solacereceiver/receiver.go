@@ -41,7 +41,7 @@ const (
 )
 
 const (
-	brokerComponenteNameAttr = "receiver_name"
+	brokerComponentNameAttr = "receiver_name"
 )
 
 // solaceTracesReceiver uses azure AMQP to consume and handle telemetry data from SOlace. Implements receiver.Traces
@@ -88,7 +88,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 		receiverName = "solace"
 	}
 	solaceBrokerAttrs := attribute.NewSet(
-		attribute.String(brokerComponenteNameAttr, receiverName),
+		attribute.String(brokerComponentNameAttr, receiverName),
 	)
 
 	unmarshaller := newTracesUnmarshaller(set.Logger, telemetryBuilder, solaceBrokerAttrs)
