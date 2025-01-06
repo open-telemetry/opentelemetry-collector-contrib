@@ -79,7 +79,7 @@ var ErrInvalidTypeForBodyMapMode = errors.New("invalid log record body type for 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, string, ptrace.Span, pcommon.InstrumentationScope, string) ([]byte, error)
-	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document
+	encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error)
 	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, string, pcommon.InstrumentationScope, string, pmetric.Metric, dataPoint) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
@@ -582,7 +582,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 	var document objmodel.Document
 	switch m.mode {
 	case MappingOTel:
-		document = m.encodeSpanOTelMode(resource, resourceSchemaURL, span, scope, scopeSchemaURL)
+		return serializeSpan(resource, resourceSchemaURL, scope, scopeSchemaURL, span)
 	default:
 		document = m.encodeSpanDefaultMode(resource, span, scope)
 	}
@@ -591,47 +591,6 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, resourceSchemaURL st
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
 	return buf.Bytes(), err
-}
-
-func (m *encodeModel) encodeSpanOTelMode(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
-	var document objmodel.Document
-	document.AddTimestamp("@timestamp", span.StartTimestamp())
-	document.AddTraceID("trace_id", span.TraceID())
-	document.AddSpanID("span_id", span.SpanID())
-	document.AddString("trace_state", span.TraceState().AsRaw())
-	document.AddSpanID("parent_span_id", span.ParentSpanID())
-	document.AddString("name", span.Name())
-	document.AddString("kind", span.Kind().String())
-	document.AddUInt("duration", uint64(span.EndTimestamp()-span.StartTimestamp()))
-
-	m.encodeAttributesOTelMode(&document, span.Attributes())
-
-	document.AddInt("dropped_attributes_count", int64(span.DroppedAttributesCount()))
-	document.AddInt("dropped_events_count", int64(span.DroppedEventsCount()))
-
-	links := pcommon.NewValueSlice()
-	linkSlice := links.SetEmptySlice()
-	spanLinks := span.Links()
-	for i := 0; i < spanLinks.Len(); i++ {
-		linkMap := linkSlice.AppendEmpty().SetEmptyMap()
-		spanLink := spanLinks.At(i)
-		linkMap.PutStr("trace_id", spanLink.TraceID().String())
-		linkMap.PutStr("span_id", spanLink.SpanID().String())
-		linkMap.PutStr("trace_state", spanLink.TraceState().AsRaw())
-		mAttr := linkMap.PutEmptyMap("attributes")
-		spanLink.Attributes().CopyTo(mAttr)
-		linkMap.PutInt("dropped_attributes_count", int64(spanLink.DroppedAttributesCount()))
-	}
-	document.AddAttribute("links", links)
-
-	document.AddInt("dropped_links_count", int64(span.DroppedLinksCount()))
-	document.AddString("status.message", span.Status().Message())
-	document.AddString("status.code", span.Status().Code().String())
-
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
-
-	return document
 }
 
 func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) objmodel.Document {
@@ -654,24 +613,13 @@ func (m *encodeModel) encodeSpanDefaultMode(resource pcommon.Resource, span ptra
 	return document
 }
 
-func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) *objmodel.Document {
+func (m *encodeModel) encodeSpanEvent(resource pcommon.Resource, resourceSchemaURL string, span ptrace.Span, spanEvent ptrace.SpanEvent, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
 	if m.mode != MappingOTel {
 		// Currently span events are stored separately only in OTel mapping mode.
 		// In other modes, they are stored within the span document.
-		return nil
+		return nil, nil
 	}
-	var document objmodel.Document
-	document.AddTimestamp("@timestamp", spanEvent.Timestamp())
-	document.AddString("attributes.event.name", spanEvent.Name())
-	document.AddSpanID("span_id", span.SpanID())
-	document.AddTraceID("trace_id", span.TraceID())
-	document.AddInt("dropped_attributes_count", int64(spanEvent.DroppedAttributesCount()))
-
-	m.encodeAttributesOTelMode(&document, spanEvent.Attributes())
-	m.encodeResourceOTelMode(&document, resource, resourceSchemaURL)
-	m.encodeScopeOTelMode(&document, scope, scopeSchemaURL)
-
-	return &document
+	return serializeSpanEvent(resource, resourceSchemaURL, scope, scopeSchemaURL, span, spanEvent)
 }
 
 func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {

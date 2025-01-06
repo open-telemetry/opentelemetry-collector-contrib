@@ -440,14 +440,13 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		}
 		fIndex = formattedIndex
 	}
-
-	document := e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)
-	if document == nil {
-		return nil
-	}
-	docBytes, err := e.model.encodeDocument(*document)
+	docBytes, err := e.model.encodeSpanEvent(resource, resourceSchemaURL, span, spanEvent, scope, scopeSchemaURL)
 	if err != nil {
 		return err
 	}
+	if docBytes == nil {
+		return nil
+	}
+
 	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(docBytes), nil)
 }
