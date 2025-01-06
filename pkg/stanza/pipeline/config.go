@@ -31,7 +31,7 @@ func (c Config) Build(set component.TelemetrySettings) (*DirectedPipeline, error
 		return nil, errors.NewError("empty pipeline not allowed", "")
 	}
 
-	dedeplucateIDs(c.Operators)
+	deduplicateIDs(c.Operators)
 
 	ops := make([]operator.Operator, 0, len(c.Operators))
 	for _, opCfg := range c.Operators {
@@ -64,7 +64,7 @@ func (c Config) Build(set component.TelemetrySettings) (*DirectedPipeline, error
 	return NewDirectedPipeline(ops)
 }
 
-func dedeplucateIDs(ops []operator.Config) {
+func deduplicateIDs(ops []operator.Config) {
 	typeMap := make(map[string]int)
 	for _, op := range ops {
 		if op.Type() != op.ID() {

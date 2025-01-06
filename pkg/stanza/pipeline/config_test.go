@@ -242,7 +242,7 @@ func TestDeduplicateIDs(t *testing.T) {
 	for _, tc := range cases {
 		t.Run("Deduplicate/"+tc.name, func(t *testing.T) {
 			ops := tc.ops()
-			dedeplucateIDs(ops)
+			deduplicateIDs(ops)
 			require.Equal(t, tc.expectedOps, ops)
 		})
 	}
