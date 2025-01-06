@@ -20,7 +20,7 @@ func TestMonitorPPID(t *testing.T) {
 		t.Parallel()
 
 		cmdContext, cmdCancel := context.WithCancel(context.Background())
-		cmd := longRunningComand(cmdContext)
+		cmd := longRunningCommand(cmdContext)
 		cmd.Stdout = os.Stdout
 		require.NoError(t, cmd.Start())
 		cmdPid := cmd.Process.Pid
@@ -49,7 +49,7 @@ func TestMonitorPPID(t *testing.T) {
 		t.Parallel()
 
 		cmdContext, cmdCancel := context.WithCancel(context.Background())
-		cmd := longRunningComand(cmdContext)
+		cmd := longRunningCommand(cmdContext)
 		require.NoError(t, cmd.Start())
 		cmdPid := cmd.Process.Pid
 
@@ -82,7 +82,7 @@ func TestMonitorPPID(t *testing.T) {
 	})
 }
 
-func longRunningComand(ctx context.Context) *exec.Cmd {
+func longRunningCommand(ctx context.Context) *exec.Cmd {
 	switch runtime.GOOS {
 	case "windows":
 		// Would prefer to use timeout.exe here, but it doesn't seem to work in
