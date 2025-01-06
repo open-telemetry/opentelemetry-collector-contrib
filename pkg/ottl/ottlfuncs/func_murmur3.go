@@ -17,42 +17,57 @@ import (
 type murmur3Variant int
 
 const (
-	Murmur3Sum32 murmur3Variant = iota
-	Murmur3Sum128
-	Murmur3Hex32
+	Murmur3Hash murmur3Variant = iota
+	Murmur3Hash128
+	Murmur3Hex
 	Murmur3Hex128
 )
+
+func (v murmur3Variant) String() string {
+	switch v {
+	case Murmur3Hash:
+		return "Murmur3Hash"
+	case Murmur3Hash128:
+		return "Murmur3Hash128"
+	case Murmur3Hex:
+		return "Murmur3Hex"
+	case Murmur3Hex128:
+		return "Murmur3Hex128"
+	default:
+		return fmt.Sprintf("Unknown(%d) Murmur3 variant", v)
+	}
+}
 
 type Murmur3Arguments[K any] struct {
 	Target ottl.StringGetter[K]
 }
 
 func NewMurmur3HashFactory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K]("Murmur3Hash", Murmur3Sum32)
+	return NewMurmur3Factory[K](Murmur3Hash)
 }
 
 func NewMurmur3Hash128Factory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K]("Murmur3Hash128", Murmur3Sum128)
+	return NewMurmur3Factory[K](Murmur3Hash128)
 }
 
 func NewMurmur3HexFactory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K]("Murmur3Hex", Murmur3Hex32)
+	return NewMurmur3Factory[K](Murmur3Hex)
 }
 
 func NewMurmur3Hex128Factory[K any]() ottl.Factory[K] {
-	return NewMurmur3Factory[K]("Murmur3Hex128", Murmur3Hex128)
+	return NewMurmur3Factory[K](Murmur3Hex128)
 }
 
-func NewMurmur3Factory[K any](name string, variant murmur3Variant) ottl.Factory[K] {
-	return ottl.NewFactory(name, &Murmur3Arguments[K]{}, func(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-		return createMurmur3Function[K](name, oArgs, variant)
+func NewMurmur3Factory[K any](variant murmur3Variant) ottl.Factory[K] {
+	return ottl.NewFactory(variant.String(), &Murmur3Arguments[K]{}, func(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+		return createMurmur3Function[K](oArgs, variant)
 	})
 }
 
-func createMurmur3Function[K any](name string, oArgs ottl.Arguments, variant murmur3Variant) (ottl.ExprFunc[K], error) {
+func createMurmur3Function[K any](oArgs ottl.Arguments, variant murmur3Variant) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*Murmur3Arguments[K])
 	if !ok {
-		return nil, fmt.Errorf("%s args must be of type *Murmur3Arguments[K]", name)
+		return nil, fmt.Errorf("%s args must be of type *Murmur3Arguments[K]", variant.String())
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -62,15 +77,15 @@ func createMurmur3Function[K any](name string, oArgs ottl.Arguments, variant mur
 		}
 
 		switch variant {
-		case Murmur3Sum32:
+		case Murmur3Hash:
 			h := murmur3.Sum32([]byte(val))
 			return int64(h), nil
-		case Murmur3Sum128:
+		case Murmur3Hash128:
 			h1, h2 := murmur3.Sum128([]byte(val))
 			return []int64{int64(h1), int64(h2)}, nil
 		// MurmurHash3 is sensitive to endianness
 		// Hex returns the hexadecimal representation of the hash in little-endian
-		case Murmur3Hex32:
+		case Murmur3Hex:
 			h := murmur3.Sum32([]byte(val))
 			b := make([]byte, 4)
 			binary.LittleEndian.PutUint32(b, h)

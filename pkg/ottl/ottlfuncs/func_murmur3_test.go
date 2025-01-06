@@ -30,7 +30,7 @@ func Test_Murmur3(t *testing.T) {
 					},
 				},
 			},
-			variant:  Murmur3Sum32,
+			variant:  Murmur3Hash,
 			expected: int64(427197390),
 		},
 		{
@@ -42,7 +42,7 @@ func Test_Murmur3(t *testing.T) {
 					},
 				},
 			},
-			variant:  Murmur3Sum128,
+			variant:  Murmur3Hash128,
 			expected: []int64{int64(1901405986810282715), int64(-8942425033498643417)},
 		},
 		{
@@ -78,7 +78,7 @@ func Test_Murmur3(t *testing.T) {
 					},
 				},
 			},
-			variant:  Murmur3Hex32,
+			variant:  Murmur3Hex,
 			expected: "ce837619",
 		},
 		{
@@ -102,7 +102,7 @@ func Test_Murmur3(t *testing.T) {
 					},
 				},
 			},
-			variant:   Murmur3Sum32,
+			variant:   Murmur3Hash,
 			funcError: "expected string but got int",
 		},
 		{
@@ -114,13 +114,13 @@ func Test_Murmur3(t *testing.T) {
 					},
 				},
 			},
-			variant:   Murmur3Sum32,
+			variant:   Murmur3Hash,
 			funcError: "expected string but got nil",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := createMurmur3Function[any]("Murmur3Factory", tt.oArgs, tt.variant)
+			exprFunc, err := createMurmur3Function[any](tt.oArgs, tt.variant)
 			assert.NoError(t, err)
 			result, err := exprFunc(context.Background(), nil)
 			if tt.funcError != "" {
