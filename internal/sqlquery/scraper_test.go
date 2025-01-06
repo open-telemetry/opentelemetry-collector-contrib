@@ -20,6 +20,7 @@ import (
 
 func TestScraper_ErrorOnStart(t *testing.T) {
 	scrpr := Scraper{
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
 		DbProviderFunc: func() (*sql.DB, error) {
 			return nil, errors.New("oops")
 		},
@@ -33,7 +34,8 @@ func TestScraper_ClientErrorOnScrape(t *testing.T) {
 		Err: errors.New("oops"),
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 	}
 	_, err := scrpr.ScrapeMetrics(context.Background())
 	require.Error(t, err)
@@ -46,7 +48,8 @@ func TestScraper_RowToMetricErrorOnScrape_Float(t *testing.T) {
 		},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.float",
@@ -68,7 +71,8 @@ func TestScraper_RowToMetricErrorOnScrape_Int(t *testing.T) {
 		},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.int",
@@ -91,7 +95,8 @@ func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 		}},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.col",
@@ -108,6 +113,7 @@ func TestScraper_RowToMetricMultiErrorsOnScrape(t *testing.T) {
 
 func TestScraper_SingleRow_MultiMetrics(t *testing.T) {
 	scrpr := Scraper{
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
 		Client: &FakeDBClient{
 			StringMaps: [][]StringMap{{{
 				"count":    "42",
@@ -191,7 +197,8 @@ func TestScraper_MultiRow(t *testing.T) {
 		}},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{
 				{
@@ -231,7 +238,8 @@ func TestScraper_MultiResults_CumulativeSum(t *testing.T) {
 		},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "transaction.count",
@@ -254,7 +262,8 @@ func TestScraper_MultiResults_DeltaSum(t *testing.T) {
 		},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "transaction.count",
@@ -290,7 +299,8 @@ func TestScraper_Float(t *testing.T) {
 		},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.float",
@@ -314,7 +324,8 @@ func TestScraper_DescriptionAndUnit(t *testing.T) {
 		},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.name",
@@ -335,8 +346,9 @@ func TestScraper_FakeDB_Warnings(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}}}
 	logger := zap.NewNop()
 	scrpr := Scraper{
-		Client: NewDbClient(db, "", logger, TelemetryConfig{}),
-		Logger: logger,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               NewDbClient(db, "", logger, TelemetryConfig{}),
+		Logger:               logger,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.name",
@@ -354,8 +366,9 @@ func TestScraper_FakeDB_MultiRows_Warnings(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
 	logger := zap.NewNop()
 	scrpr := Scraper{
-		Client: NewDbClient(db, "", logger, TelemetryConfig{}),
-		Logger: logger,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               NewDbClient(db, "", logger, TelemetryConfig{}),
+		Logger:               logger,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:  "my.col.0",
@@ -375,8 +388,9 @@ func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 	db := fakeDB{rowVals: [][]any{{42, nil}, {43, nil}}}
 	logger := zap.NewNop()
 	scrpr := Scraper{
-		Client: NewDbClient(db, "", logger, TelemetryConfig{}),
-		Logger: logger,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               NewDbClient(db, "", logger, TelemetryConfig{}),
+		Logger:               logger,
 		Query: Query{
 			Metrics: []MetricCfg{
 				{
@@ -412,7 +426,8 @@ func TestScraper_StartAndTSColumn(t *testing.T) {
 		}},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",
@@ -441,7 +456,8 @@ func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
 		}},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",
@@ -466,7 +482,8 @@ func TestScraper_CollectRowToMetricsErrors(t *testing.T) {
 		}},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:       "my.name",
@@ -496,7 +513,8 @@ func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
 		}},
 	}
 	scrpr := Scraper{
-		Client: client,
+		InstrumentationScope: pcommon.NewInstrumentationScope(),
+		Client:               client,
 		Query: Query{
 			Metrics: []MetricCfg{{
 				MetricName:    "my.name",

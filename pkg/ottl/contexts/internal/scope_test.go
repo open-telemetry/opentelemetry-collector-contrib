@@ -334,6 +334,18 @@ func TestScopePathGetSetter(t *testing.T) {
 				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
+		{
+			name: "scope with context",
+			path: &TestPath[*instrumentationScopeContext]{
+				C: "scope",
+				N: "name",
+			},
+			orig:   refIS.Name(),
+			newVal: "newname",
+			modified: func(is pcommon.InstrumentationScope) {
+				is.SetName("newname")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
