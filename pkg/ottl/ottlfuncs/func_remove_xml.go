@@ -83,12 +83,12 @@ func validateXPath(xPath string) error {
 // the XML declaration is included in the result only if it was present in
 // the original document.
 func parseNodesXML(targetVal string) (*xmlquery.Node, error) {
-	preserveDeclearation := strings.HasPrefix(targetVal, "<?xml")
+	preserveDeclaration := strings.HasPrefix(targetVal, "<?xml")
 	top, err := xmlquery.Parse(strings.NewReader(targetVal))
 	if err != nil {
 		return nil, fmt.Errorf("parse xml: %w", err)
 	}
-	if !preserveDeclearation && top.FirstChild != nil {
+	if !preserveDeclaration && top.FirstChild != nil {
 		xmlquery.RemoveFromTree(top.FirstChild)
 	}
 	return top, nil
