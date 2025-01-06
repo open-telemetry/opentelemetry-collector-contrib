@@ -87,42 +87,42 @@ var testCases = []struct {
 }{
 	{
 		name:      "default source.address attribute, not found",
-		goldenDir: "no_source_address",
+		goldenDir: "resource_no_source_address",
 		context:   resource,
 	},
 	{
 		name:      "default source.address attribute",
-		goldenDir: "source_address",
+		goldenDir: "resource_source_address",
 		context:   resource,
 	},
 	{
 		name:      "default source.address attribute no geo metadata found by providers",
-		goldenDir: "source_address_geo_not_found",
+		goldenDir: "resource_source_address_geo_not_found",
 		context:   resource,
 	},
 	{
 		name:      "default source.ip attribute with an unspecified IP address should be skipped",
-		goldenDir: "unspecified_address",
+		goldenDir: "resource_unspecified_address",
 		context:   resource,
-	},
-	{
-		name:      "custom source attributes",
-		goldenDir: "custom_sources",
-		context:   record,
 	},
 	{
 		name:      "do not add resource attributes with an invalid ip",
-		goldenDir: "invalid_address",
+		goldenDir: "resource_invalid_address",
 		context:   resource,
 	},
 	{
-		name:      "source address located in inner attributes",
-		goldenDir: "attribute_source_address",
+		name:      "source address located in the record attributes",
+		goldenDir: "record_source_address",
 		context:   record,
 	},
 	{
-		name:      "client address located in inner attributes",
-		goldenDir: "attribute_client_address",
+		name:      "client address located in the record attributes",
+		goldenDir: "record_client_address",
+		context:   record,
+	},
+	{
+		name:      "custom address located in the record attributes",
+		goldenDir: "record_custom_address",
 		context:   record,
 	},
 }
