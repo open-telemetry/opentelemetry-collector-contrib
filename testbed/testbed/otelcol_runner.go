@@ -34,7 +34,7 @@ type OtelcolRunner interface {
 	// Stop stops the otelcol instance(s) which are the subject of the test just run if applicable. Returns whether
 	// the instance was actually stopped or not.
 	Stop() (stopped bool, err error)
-	// WatchResourceConsumption toggles on the monitoring of resource consumpution by the otelcol instance under test.
+	// WatchResourceConsumption toggles on the monitoring of resource consumption by the otelcol instance under test.
 	WatchResourceConsumption() error
 	// GetProcessMon returns the Process being used to monitor resource consumption.
 	GetProcessMon() *process.Process
