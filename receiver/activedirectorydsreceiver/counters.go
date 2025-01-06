@@ -81,7 +81,7 @@ func (w *watchers) Close() error {
 	return err
 }
 
-func getWatchers(wc watcherCreater) (*watchers, error) {
+func getWatchers(wc watcherCreator) (*watchers, error) {
 	var err error
 
 	w := &watchers{
@@ -219,7 +219,7 @@ func getWatchers(wc watcherCreater) (*watchers, error) {
 	return w, nil
 }
 
-type watcherCreater interface {
+type watcherCreator interface {
 	Create(counterName string) (winperfcounters.PerfCounterWatcher, error)
 }
 
@@ -228,8 +228,8 @@ const (
 	object       = "DirectoryServices"
 )
 
-type defaultWatcherCreater struct{}
+type defaultWatcherCreator struct{}
 
-func (defaultWatcherCreater) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
+func (defaultWatcherCreator) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
 	return winperfcounters.NewWatcher(object, instanceName, counterName)
 }
