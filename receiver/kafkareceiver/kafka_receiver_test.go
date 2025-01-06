@@ -343,18 +343,20 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name            string
-		err             error
-		expectedBackoff time.Duration
+		name               string
+		err, expectedError error
+		expectedBackoff    time.Duration
 	}{
 		{
 			name:            "memory limiter data refused error",
 			err:             errMemoryLimiterDataRefused,
+			expectedError:   nil,
 			expectedBackoff: backoff.DefaultInitialInterval,
 		},
 		{
 			name:            "consumer error that does not require backoff",
 			err:             consumerError,
+			expectedError:   consumerError,
 			expectedBackoff: 0,
 		},
 	}
@@ -383,7 +385,11 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 				start := time.Now()
 				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
 				end := time.Now()
-				assert.EqualError(t, e, tt.err.Error())
+				if tt.expectedError != nil {
+					assert.EqualError(t, e, tt.expectedError.Error())
+				} else {
+					assert.NoError(t, e)
+				}
 				assert.WithinDuration(t, start.Add(tt.expectedBackoff), end, 100*time.Millisecond)
 				wg.Done()
 			}()
@@ -715,18 +721,20 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name            string
-		err             error
-		expectedBackoff time.Duration
+		name               string
+		err, expectedError error
+		expectedBackoff    time.Duration
 	}{
 		{
 			name:            "memory limiter data refused error",
 			err:             errMemoryLimiterDataRefused,
+			expectedError:   nil,
 			expectedBackoff: backoff.DefaultInitialInterval,
 		},
 		{
 			name:            "consumer error that does not require backoff",
 			err:             consumerError,
+			expectedError:   consumerError,
 			expectedBackoff: 0,
 		},
 	}
@@ -755,7 +763,11 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 				start := time.Now()
 				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
 				end := time.Now()
-				assert.EqualError(t, e, tt.err.Error())
+				if tt.expectedError != nil {
+					assert.EqualError(t, e, tt.expectedError.Error())
+				} else {
+					assert.NoError(t, e)
+				}
 				assert.WithinDuration(t, start.Add(tt.expectedBackoff), end, 100*time.Millisecond)
 				wg.Done()
 			}()
@@ -1102,18 +1114,20 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	require.NoError(t, err)
 
 	tests := []struct {
-		name            string
-		err             error
-		expectedBackoff time.Duration
+		name               string
+		err, expectedError error
+		expectedBackoff    time.Duration
 	}{
 		{
 			name:            "memory limiter data refused error",
 			err:             errMemoryLimiterDataRefused,
+			expectedError:   nil,
 			expectedBackoff: backoff.DefaultInitialInterval,
 		},
 		{
 			name:            "consumer error that does not require backoff",
 			err:             consumerError,
+			expectedError:   consumerError,
 			expectedBackoff: 0,
 		},
 	}
@@ -1142,7 +1156,11 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 				start := time.Now()
 				e := c.ConsumeClaim(testConsumerGroupSession{ctx: context.Background()}, groupClaim)
 				end := time.Now()
-				assert.EqualError(t, e, tt.err.Error())
+				if tt.expectedError != nil {
+					assert.EqualError(t, e, tt.expectedError.Error())
+				} else {
+					assert.NoError(t, e)
+				}
 				assert.WithinDuration(t, start.Add(tt.expectedBackoff), end, 100*time.Millisecond)
 				wg.Done()
 			}()
@@ -1390,7 +1408,6 @@ func (t testConsumerGroupSession) MarkOffset(string, int32, int64, string) {
 }
 
 func (t testConsumerGroupSession) ResetOffset(string, int32, int64, string) {
-	panic("implement me")
 }
 
 func (t testConsumerGroupSession) MarkMessage(*sarama.ConsumerMessage, string) {}

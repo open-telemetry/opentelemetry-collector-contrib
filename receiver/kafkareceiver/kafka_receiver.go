@@ -552,6 +552,9 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 	if !c.autocommitEnabled {
 		defer session.Commit()
 	}
+	if c.backOff != nil {
+		c.backOff.Reset()
+	}
 	for {
 		select {
 		case message, ok := <-claim.Messages():
@@ -590,24 +593,29 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
 			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
 			if err != nil {
-				if c.messageMarking.After && c.messageMarking.OnError {
-					session.MarkMessage(message, "")
-				}
 				if errorRequiresBackoff(err) && c.backOff != nil {
 					backOffDelay := c.backOff.NextBackOff()
 					if backOffDelay == backoff.Stop {
+						if c.messageMarking.After && c.messageMarking.OnError {
+							session.MarkMessage(message, "")
+						}
 						return err
 					}
 					select {
 					case <-session.Context().Done():
 						return nil
 					case <-time.After(backOffDelay):
+						if !c.messageMarking.After {
+							// Unmark the message so it can be retried
+							session.ResetOffset(claim.Topic(), claim.Partition(), message.Offset, "")
+						}
 					}
+				} else {
+					if c.messageMarking.After && c.messageMarking.OnError {
+						session.MarkMessage(message, "")
+					}
+					return err
 				}
-				return err
-			}
-			if c.backOff != nil {
-				c.backOff.Reset()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -647,6 +655,9 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 	if !c.autocommitEnabled {
 		defer session.Commit()
 	}
+	if c.backOff != nil {
+		c.backOff.Reset()
+	}
 	for {
 		select {
 		case message, ok := <-claim.Messages():
@@ -685,24 +696,29 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
 			c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
 			if err != nil {
-				if c.messageMarking.After && c.messageMarking.OnError {
-					session.MarkMessage(message, "")
-				}
 				if errorRequiresBackoff(err) && c.backOff != nil {
 					backOffDelay := c.backOff.NextBackOff()
 					if backOffDelay == backoff.Stop {
+						if c.messageMarking.After && c.messageMarking.OnError {
+							session.MarkMessage(message, "")
+						}
 						return err
 					}
 					select {
 					case <-session.Context().Done():
 						return nil
 					case <-time.After(backOffDelay):
+						if !c.messageMarking.After {
+							// Unmark the message so it can be retried
+							session.ResetOffset(claim.Topic(), claim.Partition(), message.Offset, "")
+						}
 					}
+				} else {
+					if c.messageMarking.After && c.messageMarking.OnError {
+						session.MarkMessage(message, "")
+					}
+					return err
 				}
-				return err
-			}
-			if c.backOff != nil {
-				c.backOff.Reset()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -737,6 +753,9 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 	c.logger.Info("Starting consumer group", zap.Int32("partition", claim.Partition()))
 	if !c.autocommitEnabled {
 		defer session.Commit()
+	}
+	if c.backOff != nil {
+		c.backOff.Reset()
 	}
 	for {
 		select {
@@ -775,24 +794,29 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
 			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logRecordCount, err)
 			if err != nil {
-				if c.messageMarking.After && c.messageMarking.OnError {
-					session.MarkMessage(message, "")
-				}
 				if errorRequiresBackoff(err) && c.backOff != nil {
 					backOffDelay := c.backOff.NextBackOff()
 					if backOffDelay == backoff.Stop {
+						if c.messageMarking.After && c.messageMarking.OnError {
+							session.MarkMessage(message, "")
+						}
 						return err
 					}
 					select {
 					case <-session.Context().Done():
 						return nil
 					case <-time.After(backOffDelay):
+						if !c.messageMarking.After {
+							// Unmark the message so it can be retried
+							session.ResetOffset(claim.Topic(), claim.Partition(), message.Offset, "")
+						}
 					}
+				} else {
+					if c.messageMarking.After && c.messageMarking.OnError {
+						session.MarkMessage(message, "")
+					}
+					return err
 				}
-				return err
-			}
-			if c.backOff != nil {
-				c.backOff.Reset()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")

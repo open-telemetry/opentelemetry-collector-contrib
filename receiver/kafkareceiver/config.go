@@ -86,7 +86,6 @@ type Config struct {
 	DefaultFetchSize int32 `mapstructure:"default_fetch_size"`
 	// The maximum bytes per fetch from Kafka (default "0", no limit)
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
-
 	// In case of some errors returned by the next consumer, the receiver will wait before consuming the next message
 	ErrorBackOff configretry.BackOffConfig `mapstructure:"error_backoff"`
 }
