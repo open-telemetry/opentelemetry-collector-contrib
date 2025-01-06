@@ -46,9 +46,9 @@ func checkCgroupSystem(tb testing.TB) {
 	}
 }
 
-// cgroupMaxCpu returns the CPU max definition for a given cgroup slice path
+// cgroupMaxCPU returns the CPU max definition for a given cgroup slice path
 // File format: cpu_quote cpu_period
-func cgroupMaxCpu(filename string) (quota int64, period uint64, err error) {
+func cgroupMaxCPU(filename string) (quota int64, period uint64, err error) {
 	out, err := os.ReadFile(filepath.Join(defaultCgroup2Path, filename, "cpu.max"))
 	if err != nil {
 		return 0, 0, err
@@ -75,8 +75,8 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	tests := []struct {
 		name string
 		// nil CPU quota == "max" cgroup string value
-		cgroupCpuQuota     *int64
-		cgroupCpuPeriod    uint64
+		cgroupCPUQuota     *int64
+		cgroupCPUPeriod    uint64
 		cgroupMaxMemory    int64
 		config             *Config
 		expectedGoMaxProcs int
@@ -84,8 +84,8 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	}{
 		{
 			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
-			cgroupCpuQuota:  pointerInt64(100000),
-			cgroupCpuPeriod: 8000,
+			cgroupCPUQuota:  pointerInt64(100000),
+			cgroupCPUPeriod: 8000,
 			// 128 Mb
 			cgroupMaxMemory: 134217728,
 			config: &Config{
@@ -104,8 +104,8 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 		},
 		{
 			name:            "50% of the max cgroup memory and 1 GOMAXPROCS",
-			cgroupCpuQuota:  pointerInt64(100000),
-			cgroupCpuPeriod: 100000,
+			cgroupCPUQuota:  pointerInt64(100000),
+			cgroupCPUPeriod: 100000,
 			// 128 Mb
 			cgroupMaxMemory: 134217728,
 			config: &Config{
@@ -124,8 +124,8 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 		},
 		{
 			name:            "10% of the max cgroup memory, max cpu, default GOMAXPROCS",
-			cgroupCpuQuota:  nil,
-			cgroupCpuPeriod: 100000,
+			cgroupCPUQuota:  nil,
+			cgroupCPUPeriod: 100000,
 			// 128 Mb
 			cgroupMaxMemory: 134217728,
 			config: &Config{
@@ -173,19 +173,19 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 		}
 	}
 
-	initialCpuQuota, initialCpuPeriod, err := cgroupMaxCpu(cgroupPath)
+	initialCPUQuota, initialCPUPeriod, err := cgroupMaxCPU(cgroupPath)
 	require.NoError(t, err)
 	cpuCgroupCleanUp := func() {
-		fmt.Println(initialCpuQuota)
+		fmt.Println(initialCPUQuota)
 		err = manager.Update(&cgroup2.Resources{
 			CPU: &cgroup2.CPU{
-				Max: cgroup2.NewCPUMax(pointerInt64(initialCpuQuota), pointerUint64(initialCpuPeriod)),
+				Max: cgroup2.NewCPUMax(pointerInt64(initialCPUQuota), pointerUint64(initialCPUPeriod)),
 			},
 		})
 		assert.NoError(t, err)
 	}
 
-	if initialCpuQuota == math.MaxInt64 {
+	if initialCPUQuota == math.MaxInt64 {
 		// fallback solution to set cgroup's max cpu to "max"
 		cpuCgroupCleanUp = func() {
 			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "cpu.max"), []byte("max"), 0o600)
@@ -215,7 +215,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 					Max: pointerInt64(test.cgroupMaxMemory),
 				},
 				CPU: &cgroup2.CPU{
-					Max: cgroup2.NewCPUMax(test.cgroupCpuQuota, pointerUint64(test.cgroupCpuPeriod)),
+					Max: cgroup2.NewCPUMax(test.cgroupCPUQuota, pointerUint64(test.cgroupCPUPeriod)),
 				},
 			})
 			require.NoError(t, err)
