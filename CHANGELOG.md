@@ -1436,7 +1436,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `OTel-Arrow`: Update to OTel-Arrow v0.24.0 (#26491)
 - `pkg/ottl`: Add debug logs to help troubleshoot OTTL statements/conditions (#33274)
 - `pkg/ottl`: Introducing `append` function for appending items into an existing array (#32141)
-- `pkg/ottl`: Introducing `Uri` converter parsing URI string into SemConv (#32433)
+- `pkg/ottl`: Introducing `URI` converter parsing URI string into SemConv (#32433)
 - `probabilisticsamplerprocessor`: Add Proportional and Equalizing sampling modes (#31918)
   Both the existing hash_seed mode and the two new modes use OTEP 235 semantic conventions to encode sampling probability.
 - `prometheusreceiver`: Resource attributes produced by the prometheus receiver now include stable semantic conventions for `server` and `url`. (#32814)
