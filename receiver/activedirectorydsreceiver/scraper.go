@@ -203,7 +203,7 @@ func (a *activeDirectoryDSScraper) scrape(_ context.Context) (pmetric.Metrics, e
 		a.mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(now, int64(securityPropEvents))
 	}
 
-	securityDescSubops, err := a.w.Scrape(dsSecurityDescripterSubOperations)
+	securityDescSubops, err := a.w.Scrape(dsSecurityDescriptorSubOperations)
 	multiErr = multierr.Append(multiErr, err)
 	if err == nil {
 		a.mb.RecordActiveDirectoryDsSuboperationRateDataPoint(now, securityDescSubops, metadata.AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
