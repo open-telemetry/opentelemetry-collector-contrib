@@ -511,8 +511,8 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 			buffersAllocated:     bufferAllocated,
 			maxWritten:           maxWritten,
 		}, nil
-	} else {
-		query := `SELECT
+	}
+	query := `SELECT
 		cp.num_requested AS checkpoint_req,
 		cp.num_timed AS checkpoint_scheduled,
 		cp.write_time AS checkpoint_duration_write,
@@ -523,34 +523,33 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 		bg.maxwritten_clean AS maxwritten_count
 		FROM pg_stat_bgwriter bg, pg_stat_checkpointer cp;`
 
-		row := c.client.QueryRowContext(ctx, query)
+	row := c.client.QueryRowContext(ctx, query)
 
-		if err = row.Scan(
-			&checkpointsReq,
-			&checkpointsScheduled,
-			&checkpointWriteTime,
-			&checkpointSyncTime,
-			&bufferCheckpoints,
-			&bgWrites,
-			&bufferAllocated,
-			&maxWritten,
-		); err != nil {
-			return nil, err
-		}
-
-		return &bgStat{
-			checkpointsReq:       checkpointsReq,
-			checkpointsScheduled: checkpointsScheduled,
-			checkpointWriteTime:  checkpointWriteTime,
-			checkpointSyncTime:   checkpointSyncTime,
-			bgWrites:             bgWrites,
-			bufferBackendWrites:  -1, // Not found in pg17+ tables
-			bufferFsyncWrites:    -1, // Not found in pg17+ tables
-			bufferCheckpoints:    bufferCheckpoints,
-			buffersAllocated:     bufferAllocated,
-			maxWritten:           maxWritten,
-		}, nil
+	if err = row.Scan(
+		&checkpointsReq,
+		&checkpointsScheduled,
+		&checkpointWriteTime,
+		&checkpointSyncTime,
+		&bufferCheckpoints,
+		&bgWrites,
+		&bufferAllocated,
+		&maxWritten,
+	); err != nil {
+		return nil, err
 	}
+
+	return &bgStat{
+		checkpointsReq:       checkpointsReq,
+		checkpointsScheduled: checkpointsScheduled,
+		checkpointWriteTime:  checkpointWriteTime,
+		checkpointSyncTime:   checkpointSyncTime,
+		bgWrites:             bgWrites,
+		bufferBackendWrites:  -1, // Not found in pg17+ tables
+		bufferFsyncWrites:    -1, // Not found in pg17+ tables
+		bufferCheckpoints:    bufferCheckpoints,
+		buffersAllocated:     bufferAllocated,
+		maxWritten:           maxWritten,
+	}, nil
 }
 
 func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error) {
