@@ -59,7 +59,7 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	alreadyUsedFields = append(alreadyUsedFields, cfg.Attributes.DurationFields...)
 
 	for _, lhe := range lhes {
-		parent_id, err := lhe.GetParentID(cfg.Attributes.ParentID)
+		parentID, err := lhe.GetParentID(cfg.Attributes.ParentID)
 		if err != nil {
 			logger.Warn("parent id not found")
 		}
@@ -83,9 +83,9 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 				logger.Warn("log could not be converted from libhoney to plog", zap.String("span.object", lhe.DebugString()))
 			}
 		case "span_event":
-			spanEvents[parent_id] = append(spanEvents[parent_id], lhe)
+			spanEvents[parentID] = append(spanEvents[parentID], lhe)
 		case "span_link":
-			spanLinks[parent_id] = append(spanLinks[parent_id], lhe)
+			spanLinks[parentID] = append(spanLinks[parentID], lhe)
 		}
 	}
 
@@ -93,13 +93,13 @@ func ToPdata(dataset string, lhes []libhoneyevent.LibhoneyEvent, cfg libhoneyeve
 	for _, ss := range foundScopes.Scope {
 		for i := 0; i < ss.ScopeSpans.Len(); i++ {
 			sp := ss.ScopeSpans.At(i)
-			spId := trc.SpanID(sp.SpanID())
+			spID := trc.SpanID(sp.SpanID())
 
-			if speArr, ok := spanEvents[spId]; ok {
+			if speArr, ok := spanEvents[spID]; ok {
 				addSpanEventsToSpan(sp, speArr, alreadyUsedFields, &logger)
 			}
 
-			if splArr, ok := spanLinks[spId]; ok {
+			if splArr, ok := spanLinks[spID]; ok {
 				addSpanLinksToSpan(sp, splArr, alreadyUsedFields, &logger)
 			}
 		}
