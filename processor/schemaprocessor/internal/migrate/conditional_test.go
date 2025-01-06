@@ -39,7 +39,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 				},
 				"application start",
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -54,7 +54,7 @@ func TestConditionalAttributeSetApply(t *testing.T) {
 					"service.version": "application.version",
 				},
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -118,7 +118,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 				},
 				"application start",
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -133,7 +133,7 @@ func TestConditionalAttributeSetRollback(t *testing.T) {
 					"service.version": "application.version",
 				},
 			),
-			check: "datatbase operation",
+			check: "database operation",
 			attr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("application.version", "v0.0.0")
 			}),
