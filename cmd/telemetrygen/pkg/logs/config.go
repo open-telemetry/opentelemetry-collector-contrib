@@ -24,7 +24,6 @@ type Config struct {
 
 func NewConfig() *Config {
 	cfg := &Config{}
-	cfg.Config.SetDefaults()
 	cfg.SetDefaults()
 	return cfg
 }
@@ -43,7 +42,11 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID of the log")
 }
 
+// SetDefaults sets the default values for the configuration
+// This is called before parsing the command line flags and when
+// calling NewConfig()
 func (c *Config) SetDefaults() {
+	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/logs"
 	c.NumLogs = 1
 	c.Body = "the message"

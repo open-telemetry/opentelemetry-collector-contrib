@@ -24,14 +24,12 @@ type Config struct {
 // NewConfig creates a new Config with default values.
 func NewConfig() *Config {
 	cfg := &Config{}
-	cfg.Config.SetDefaults()
-	cfg.SetDefault()
+	cfg.SetDefaults()
 	return cfg
 }
 
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
-
 	c.CommonFlags(fs)
 
 	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", c.HTTPPath, "Which URL path to write to")
@@ -43,8 +41,11 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.SpanID, "span-id", c.SpanID, "SpanID to use as exemplar")
 }
 
-// SetDefault sets the default values for the configuration.
-func (c *Config) SetDefault() {
+// SetDefaults sets the default values for the configuration
+// This is called before parsing the command line flags and when
+// calling NewConfig()
+func (c *Config) SetDefaults() {
+	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/metrics"
 	c.NumMetrics = 1
 

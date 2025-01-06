@@ -28,7 +28,6 @@ type Config struct {
 
 func NewConfig() *Config {
 	cfg := &Config{}
-	cfg.Config.SetDefaults()
 	cfg.SetDefaults()
 	return cfg
 }
@@ -49,7 +48,11 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.DurationVar(&c.SpanDuration, "span-duration", c.SpanDuration, "The duration of each generated span.")
 }
 
+// SetDefaults sets the default values for the configuration
+// This is called before parsing the command line flags and when
+// calling NewConfig()
 func (c *Config) SetDefaults() {
+	c.Config.SetDefaults()
 	c.HTTPPath = "/v1/traces"
 	c.NumTraces = 1
 	c.NumChildSpans = 1
