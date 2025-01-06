@@ -26,19 +26,17 @@ var (
 
 // newGeoIPProcessor creates a new instance of geoIPProcessor with the specified fields.
 type geoIPProcessor struct {
-	providers          []provider.GeoIPProvider
-	resourceAttributes []attribute.Key
-	logger             *zap.Logger
+	providers []provider.GeoIPProvider
+	logger    *zap.Logger
 
 	cfg *Config
 }
 
-func newGeoIPProcessor(processorConfig *Config, resourceAttributes []attribute.Key, providers []provider.GeoIPProvider, params processor.Settings) *geoIPProcessor {
+func newGeoIPProcessor(processorConfig *Config, providers []provider.GeoIPProvider, params processor.Settings) *geoIPProcessor {
 	return &geoIPProcessor{
-		resourceAttributes: resourceAttributes,
-		providers:          providers,
-		cfg:                processorConfig,
-		logger:             params.Logger,
+		providers: providers,
+		cfg:       processorConfig,
+		logger:    params.Logger,
 	}
 }
 
@@ -92,7 +90,7 @@ func (g *geoIPProcessor) geoLocation(ctx context.Context, ip net.IP) (attribute.
 
 // processAttributes processes a pcommon.Map by adding geolocation attributes based on the found IP address.
 func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon.Map) error {
-	ipAddr, err := ipFromAttributes(g.resourceAttributes, metadata)
+	ipAddr, err := ipFromAttributes(g.cfg.Attributes, metadata)
 	if err != nil {
 		// TODO: log IP error not found
 		if errors.Is(err, errIPNotFound) {
