@@ -152,7 +152,7 @@ type MetricInfo struct {
 	// attribute is included in the list then all attributes are included.
 	IncludeResourceAttributes []Attribute `mapstructure:"include_resource_attributes"`
 	Attributes                []Attribute `mapstructure:"attributes"`
-	// Conditions are a set of OTTL condtions which are ORed. Data is
+	// Conditions are a set of OTTL conditions which are ORed. Data is
 	// processed into metrics only if the sequence evaluates to true.
 	Conditions           []string              `mapstructure:"conditions"`
 	Histogram            *Histogram            `mapstructure:"histogram"`
