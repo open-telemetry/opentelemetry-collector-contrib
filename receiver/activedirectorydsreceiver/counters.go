@@ -40,7 +40,7 @@ const (
 	dsNotifyQueueSize                      = "DS Notify Queue Size"
 	dsSecurityDescriptorPropagationsEvents = "DS Security Descriptor Propagations Events"
 	dsSearchSubOperations                  = "DS Search sub-operations/sec"
-	dsSecurityDescripterSubOperations      = "DS Security Descriptor sub-operations/sec"
+	dsSecurityDescriptorSubOperations      = "DS Security Descriptor sub-operations/sec"
 	dsThreadsInUse                         = "DS Threads in Use"
 	ldapClientSessions                     = "LDAP Client Sessions"
 	ldapBindTime                           = "LDAP Bind Time"
@@ -192,7 +192,7 @@ func getWatchers(wc watcherCreator) (*watchers, error) {
 		return nil, err
 	}
 
-	if w.counterNameToWatcher[dsSecurityDescripterSubOperations], err = wc.Create(dsSecurityDescripterSubOperations); err != nil {
+	if w.counterNameToWatcher[dsSecurityDescriptorSubOperations], err = wc.Create(dsSecurityDescriptorSubOperations); err != nil {
 		return nil, err
 	}
 
