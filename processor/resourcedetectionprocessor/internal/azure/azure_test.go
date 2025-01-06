@@ -22,7 +22,7 @@ import (
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
+	d, err := NewDetector(processortest.NewNopSettings(), dcfg)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }

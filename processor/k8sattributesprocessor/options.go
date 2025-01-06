@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -21,10 +22,15 @@ const (
 	filterOPNotEquals    = "not-equals"
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
+	metadataPodIP        = "k8s.pod.ip"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
-	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUID with conventions.AttributeClusterUid
-	clusterUID = "k8s.cluster.uid"
+	// TODO: use k8s.cluster.uid, container.image.repo_digests
+	// from semconv when available,
+	//   replace clusterUID with conventions.AttributeK8SClusterUID
+	//   replace containerRepoDigests with conventions.AttributeContainerImageRepoDigests
+	clusterUID                = "k8s.cluster.uid"
+	containerImageRepoDigests = "container.image.repo_digests"
 )
 
 // option represents a configuration option that can be passes.
@@ -60,6 +66,9 @@ func enabledAttributes() (attributes []string) {
 	}
 	if defaultConfig.ContainerImageName.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerImageName)
+	}
+	if defaultConfig.ContainerImageRepoDigests.Enabled {
+		attributes = append(attributes, containerImageRepoDigests)
 	}
 	if defaultConfig.ContainerImageTag.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerImageTag)
@@ -109,6 +118,9 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sPodUID.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SPodUID)
 	}
+	if defaultConfig.K8sPodIP.Enabled {
+		attributes = append(attributes, metadataPodIP)
+	}
 	if defaultConfig.K8sReplicasetName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SReplicaSetName)
 	}
@@ -140,6 +152,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.PodHostName = true
 			case metadataPodStartTime:
 				p.rules.StartTime = true
+			case metadataPodIP:
+				p.rules.PodIP = true
 			case conventions.AttributeK8SDeploymentName:
 				p.rules.DeploymentName = true
 			case conventions.AttributeK8SDeploymentUID:
@@ -172,6 +186,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerID = true
 			case conventions.AttributeContainerImageName:
 				p.rules.ContainerImageName = true
+			case containerImageRepoDigests:
+				p.rules.ContainerImageRepoDigests = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
 			case clusterUID:
@@ -363,6 +379,22 @@ func withExcludes(podExclude ExcludeConfig) option {
 			ignoredNames.Pods = append(ignoredNames.Pods, kube.ExcludePods{Name: regexp.MustCompile(name.Name)})
 		}
 		p.podIgnore = ignoredNames
+		return nil
+	}
+}
+
+// withWaitForMetadata allows specifying whether to wait for pod metadata to be synced.
+func withWaitForMetadata(wait bool) option {
+	return func(p *kubernetesprocessor) error {
+		p.waitForMetadata = wait
+		return nil
+	}
+}
+
+// withWaitForMetadataTimeout allows specifying the timeout for waiting for pod metadata to be synced.
+func withWaitForMetadataTimeout(timeout time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.waitForMetadataTimeout = timeout
 		return nil
 	}
 }

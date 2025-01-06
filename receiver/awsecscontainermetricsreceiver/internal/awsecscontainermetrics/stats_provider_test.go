@@ -4,7 +4,7 @@
 package awsecscontainermetrics
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"testing"
 
@@ -28,7 +28,7 @@ func (f testRestClient) GetResponse(path string) ([]byte, error) {
 	}
 
 	if f.fail {
-		return []byte{}, fmt.Errorf("failed")
+		return []byte{}, errors.New("failed")
 	}
 	if f.invalidJSON {
 		return []byte("wrong-json-body"), nil
@@ -69,7 +69,7 @@ func TestGetStats(t *testing.T) {
 			stats, metadata, err := provider.GetStats()
 			if tt.wantError == "" {
 				require.NoError(t, err)
-				require.Less(t, 0, len(stats))
+				require.NotEmpty(t, stats)
 				require.Equal(t, "test200", metadata.Cluster)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())

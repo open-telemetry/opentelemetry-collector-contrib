@@ -18,12 +18,12 @@ func Test_Scrape(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
-	s := newScraper(cfg, receivertest.NewNopCreateSettings())
+	s := newScraper(cfg, receivertest.NewNopSettings())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())
 	logFile := filepath.Join(tmpDir, "my.log")
-	err = os.WriteFile(logFile, []byte("something"), 0600)
+	err = os.WriteFile(logFile, []byte("something"), 0o600)
 	t.Cleanup(func() {
 		_ = os.Remove(tmpDir)
 	})
@@ -54,7 +54,7 @@ func Test_Scrape_All(t *testing.T) {
 	cfg.Metrics.FileCtime.Enabled = true
 	cfg.Metrics.FileCount.Enabled = true
 
-	s := newScraper(cfg, receivertest.NewNopCreateSettings())
+	s := newScraper(cfg, receivertest.NewNopSettings())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 1, metrics.ResourceMetrics().Len())
@@ -62,7 +62,7 @@ func Test_Scrape_All(t *testing.T) {
 	require.Equal(t, int64(0), fileCount.Gauge().DataPoints().At(0).IntValue())
 	require.Equal(t, "file.count", fileCount.Name())
 	logFile := filepath.Join(tmpDir, "my.log")
-	err = os.WriteFile(logFile, []byte("something"), 0600)
+	err = os.WriteFile(logFile, []byte("something"), 0o600)
 	t.Cleanup(func() {
 		_ = os.Remove(tmpDir)
 	})

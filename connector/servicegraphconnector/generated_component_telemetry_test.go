@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 )
@@ -21,12 +23,18 @@ type componentTestTelemetry struct {
 	meterProvider *sdkmetric.MeterProvider
 }
 
-func (tt *componentTestTelemetry) NewCreateSettings() connector.CreateSettings {
-	settings := connectortest.NewNopCreateSettings()
-	settings.MeterProvider = tt.meterProvider
-	settings.ID = component.NewID(component.MustNewType("servicegraph"))
+func (tt *componentTestTelemetry) NewSettings() connector.Settings {
+	set := connectortest.NewNopSettings()
+	set.ID = component.NewID(component.MustNewType("servicegraph"))
+	set.TelemetrySettings = tt.newTelemetrySettings()
+	return set
+}
 
-	return settings
+func (tt *componentTestTelemetry) newTelemetrySettings() component.TelemetrySettings {
+	set := componenttest.NewNopTelemetrySettings()
+	set.MeterProvider = tt.meterProvider
+	set.MetricsLevel = configtelemetry.LevelDetailed
+	return set
 }
 
 func setupTestTelemetry() componentTestTelemetry {

@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -27,7 +28,7 @@ import (
 )
 
 type k8sobjectsreceiver struct {
-	setting         receiver.CreateSettings
+	setting         receiver.Settings
 	config          *Config
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
@@ -37,7 +38,7 @@ type k8sobjectsreceiver struct {
 	cancel          context.CancelFunc
 }
 
-func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
+func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -154,9 +155,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 		case <-stopperChan:
 			return
 		}
-
 	}
-
 }
 
 func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
@@ -254,7 +253,7 @@ func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource 
 			return "", fmt.Errorf("could not perform initial list for watch on %v, %w", config.gvr.String(), err)
 		}
 		if objects == nil {
-			return "", fmt.Errorf("nil objects returned, this is an error in the k8sobjectsreceiver")
+			return "", errors.New("nil objects returned, this is an error in the k8sobjectsreceiver")
 		}
 
 		resourceVersion = objects.GetResourceVersion()

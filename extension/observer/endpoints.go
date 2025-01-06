@@ -6,6 +6,7 @@ package observer // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"fmt"
+	"net"
 	"reflect"
 )
 
@@ -23,8 +24,12 @@ const (
 	PortType EndpointType = "port"
 	// PodType is a pod endpoint.
 	PodType EndpointType = "pod"
+	// PodContainerType is a pod's container endpoint.
+	PodContainerType EndpointType = "pod.container"
 	// K8sServiceType is a service endpoint.
 	K8sServiceType EndpointType = "k8s.service"
+	// K8sIngressType is a ingress endpoint.
+	K8sIngressType EndpointType = "k8s.ingress"
 	// K8sNodeType is a Kubernetes Node endpoint.
 	K8sNodeType EndpointType = "k8s.node"
 	// HostPortType is a hostport endpoint.
@@ -68,6 +73,27 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	env["endpoint"] = e.Target
 	env["type"] = string(e.Details.Type())
 	env["id"] = string(e.ID)
+
+	// Exposing the target as a split "host" and "port" enables the receiver creator
+	// to be able to discover receivers that require these options to be configured
+	// separately.
+	const hostKey = "host"
+	const portKey = "port"
+	host, port, err := net.SplitHostPort(e.Target)
+	// An error most likely means there was no port when splitting, so the host
+	// can simply be the target.
+	if err != nil {
+		host = e.Target
+	} else {
+		// Only try to set the port if a valid port was found when splitting the target
+		if _, keyExists := env[portKey]; !keyExists {
+			env[portKey] = port
+		}
+	}
+
+	if _, keyExists := env[hostKey]; !keyExists {
+		env[hostKey] = host
+	}
 
 	return env, nil
 }
@@ -129,6 +155,43 @@ func (s *K8sService) Type() EndpointType {
 	return K8sServiceType
 }
 
+// K8sIngress is a discovered k8s ingress.
+type K8sIngress struct {
+	// Name of the ingress.
+	Name string
+	// UID is the unique ID in the cluster for the ingress.
+	UID string
+	// Labels is a map of user-specified metadata.
+	Labels map[string]string
+	// Annotations is a map of user-specified metadata.
+	Annotations map[string]string
+	// Namespace must be unique for ingress with same name.
+	Namespace string
+	// Scheme represents whether the ingress path is accessible via HTTPS or HTTP.
+	Scheme string
+	// Host is the fully qualified domain name of a network host
+	Host string
+	// Path that map requests to backends
+	Path string
+}
+
+func (s *K8sIngress) Env() EndpointEnv {
+	return map[string]any{
+		"uid":         s.UID,
+		"name":        s.Name,
+		"labels":      s.Labels,
+		"annotations": s.Annotations,
+		"namespace":   s.Namespace,
+		"scheme":      s.Scheme,
+		"host":        s.Host,
+		"path":        s.Path,
+	}
+}
+
+func (s *K8sIngress) Type() EndpointType {
+	return K8sIngressType
+}
+
 // Pod is a discovered k8s pod.
 type Pod struct {
 	// Name of the pod.
@@ -155,6 +218,31 @@ func (p *Pod) Env() EndpointEnv {
 
 func (p *Pod) Type() EndpointType {
 	return PodType
+}
+
+// PodContainer is a discovered k8s pod's container
+type PodContainer struct {
+	// Name of the container
+	Name string `mapstructure:"container_name"`
+	// Image of the container
+	Image string `mapstructure:"container_image"`
+	// ContainerID is the id of the container exposing the Endpoint
+	ContainerID string `mapstructure:"container_id"`
+	// Pod is the k8s pod in which the container is running
+	Pod Pod
+}
+
+func (p *PodContainer) Env() EndpointEnv {
+	return map[string]any{
+		"container_name":  p.Name,
+		"container_id":    p.ContainerID,
+		"container_image": p.Image,
+		"pod":             p.Pod.Env(),
+	}
+}
+
+func (p *PodContainer) Type() EndpointType {
+	return PodContainerType
 }
 
 // Port is an endpoint that has a target as well as a port.

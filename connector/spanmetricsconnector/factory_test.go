@@ -5,6 +5,7 @@ package spanmetricsconnector
 
 import (
 	"context"
+	"net/http"
 	"testing"
 	"time"
 
@@ -12,17 +13,19 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 func TestNewConnector(t *testing.T) {
-	defaultMethod := "GET"
+	defaultMethod := http.MethodGet
 	defaultMethodValue := pcommon.NewValueStr(defaultMethod)
 	for _, tc := range []struct {
 		name                         string
 		durationHistogramBuckets     []time.Duration
 		dimensions                   []Dimension
 		wantDurationHistogramBuckets []float64
-		wantDimensions               []dimension
+		wantDimensions               []pdatautil.Dimension
 	}{
 		{
 			name: "simplest config (use defaults)",
@@ -34,9 +37,9 @@ func TestNewConnector(t *testing.T) {
 				{Name: "http.method", Default: &defaultMethod},
 				{Name: "http.status_code"},
 			},
-			wantDimensions: []dimension{
-				{name: "http.method", value: &defaultMethodValue},
-				{"http.status_code", nil},
+			wantDimensions: []pdatautil.Dimension{
+				{Name: "http.method", Value: &defaultMethodValue},
+				{Name: "http.status_code", Value: nil},
 			},
 		},
 	} {
@@ -44,7 +47,7 @@ func TestNewConnector(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := connectortest.NewNopCreateSettings()
+			creationParams := connectortest.NewNopSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
 				Buckets: tc.durationHistogramBuckets,

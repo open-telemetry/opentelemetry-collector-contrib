@@ -20,18 +20,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
-var (
-	showStatsCommand = []byte("show stat\n")
-)
+var showStatsCommand = []byte("show stat\n")
 
-type scraper struct {
+type haproxyScraper struct {
 	cfg               *Config
 	httpClient        *http.Client
 	logger            *zap.Logger
@@ -39,11 +37,9 @@ type scraper struct {
 	telemetrySettings component.TelemetrySettings
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-
+func (s *haproxyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var records []map[string]string
 	if u, notURLerr := url.Parse(s.cfg.Endpoint); notURLerr == nil && strings.HasPrefix(u.Scheme, "http") {
-
 		resp, err := s.httpClient.Get(s.cfg.Endpoint + ";csv")
 		if err != nil {
 			return pmetric.NewMetrics(), err
@@ -260,7 +256,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func (s *scraper) readStats(buf []byte) ([]map[string]string, error) {
+func (s *haproxyScraper) readStats(buf []byte) ([]map[string]string, error) {
 	reader := csv.NewReader(bytes.NewReader(bytes.TrimSpace(buf)))
 	headers, err := reader.Read()
 	if err != nil {
@@ -284,14 +280,14 @@ func (s *scraper) readStats(buf []byte) ([]map[string]string, error) {
 	return results, err
 }
 
-func (s *scraper) start(ctx context.Context, host component.Host) error {
+func (s *haproxyScraper) start(ctx context.Context, host component.Host) error {
 	var err error
 	s.httpClient, err = s.cfg.ClientConfig.ToClient(ctx, host, s.telemetrySettings)
 	return err
 }
 
-func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
-	return &scraper{
+func newScraper(cfg *Config, settings receiver.Settings) *haproxyScraper {
+	return &haproxyScraper{
 		logger:            settings.TelemetrySettings.Logger,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		cfg:               cfg,

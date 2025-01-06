@@ -215,7 +215,7 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "oracle",
 			sample:         "2019-10-15T10:42:01.900436-10:00",
-			expected:       time.Date(2019, time.October, 15, 10, 42, 01, 900436*1000, hst),
+			expected:       time.Date(2019, time.October, 15, 10, 42, 0o1, 900436*1000, hst),
 			gotimeLayout:   "2006-01-02T15:04:05.999999-07:00",
 			strptimeLayout: "%Y-%m-%dT%H:%M:%S.%f%j",
 		},
@@ -531,7 +531,7 @@ func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr
 		require.Equal(t, ots, ent.ObservedTimestamp, "time parsing should not change observed timestamp")
 
 		diff := time.Duration(math.Abs(float64(expected.Sub(ent.Timestamp))))
-		require.True(t, diff <= maxLoss)
+		require.LessOrEqual(t, diff, maxLoss)
 	}
 }
 

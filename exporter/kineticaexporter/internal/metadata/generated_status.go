@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("kinetica")
+	Type      = component.MustNewType("kinetica")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter"
 )
 
 const (
-	MetricsStability = component.StabilityLevelDevelopment
-	TracesStability  = component.StabilityLevelDevelopment
-	LogsStability    = component.StabilityLevelDevelopment
+	MetricsStability = component.StabilityLevelUnmaintained
+	TracesStability  = component.StabilityLevelUnmaintained
+	LogsStability    = component.StabilityLevelUnmaintained
 )

@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### processor_filter_datapoints.filtered
+### otelcol_processor_filter_datapoints.filtered
 
 Number of metric data points dropped by the filter processor
 
@@ -14,7 +14,7 @@ Number of metric data points dropped by the filter processor
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_filter_logs.filtered
+### otelcol_processor_filter_logs.filtered
 
 Number of logs dropped by the filter processor
 
@@ -22,7 +22,7 @@ Number of logs dropped by the filter processor
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
-### processor_filter_spans.filtered
+### otelcol_processor_filter_spans.filtered
 
 Number of spans dropped by the filter processor
 

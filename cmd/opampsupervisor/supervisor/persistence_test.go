@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,24 +19,23 @@ func TestCreateOrLoadPersistentState(t *testing.T) {
 		require.NoError(t, err)
 
 		// instance ID should be populated
-		require.NotEqual(t, ulid.ULID{}, state.InstanceID)
+		require.NotEqual(t, uuid.Nil, state.InstanceID)
 		require.FileExists(t, f)
 	})
 
 	t.Run("loads state from file if it exists", func(t *testing.T) {
 		f := filepath.Join(t.TempDir(), "state.yaml")
 
-		err := os.WriteFile(f, []byte(`instance_id: "01HW3GS9NWD840C5C2BZS3KYPW"`), 0600)
+		err := os.WriteFile(f, []byte(`instance_id: "018feed6-905b-7aa6-ba37-b0eec565de03"`), 0o600)
 		require.NoError(t, err)
 
 		state, err := loadOrCreatePersistentState(f)
 		require.NoError(t, err)
 
 		// instance ID should be populated with value from file
-		require.Equal(t, ulid.MustParse("01HW3GS9NWD840C5C2BZS3KYPW"), state.InstanceID)
+		require.Equal(t, uuid.MustParse("018feed6-905b-7aa6-ba37-b0eec565de03"), state.InstanceID)
 		require.FileExists(t, f)
 	})
-
 }
 
 func TestPersistentState_SetInstanceID(t *testing.T) {
@@ -45,29 +44,18 @@ func TestPersistentState_SetInstanceID(t *testing.T) {
 	require.NoError(t, err)
 
 	// instance ID should be populated
-	require.NotEqual(t, ulid.ULID{}, state.InstanceID)
+	require.NotEqual(t, uuid.Nil, state.InstanceID)
 	require.FileExists(t, f)
 
-	newULID := ulid.MustParse("01HW3GS9NWD840C5C2BZS3KYPW")
-	err = state.SetInstanceID(newULID)
+	newUUID := uuid.MustParse("018fee1f-871a-7d82-b22f-478085b3a1d6")
+	err = state.SetInstanceID(newUUID)
 	require.NoError(t, err)
 
-	require.Equal(t, newULID, state.InstanceID)
+	require.Equal(t, newUUID, state.InstanceID)
 
 	// Test that loading the state after setting the instance ID has the new instance ID
 	loadedState, err := loadPersistentState(f)
 	require.NoError(t, err)
 
-	require.Equal(t, newULID, loadedState.InstanceID)
-}
-
-func TestGenerateNewULID(t *testing.T) {
-	// Test generating a new ULID twice returns 2 different results
-	id1, err := generateNewULID()
-	require.NoError(t, err)
-
-	id2, err := generateNewULID()
-	require.NoError(t, err)
-
-	require.NotEqual(t, id1, id2)
+	require.Equal(t, newUUID, loadedState.InstanceID)
 }

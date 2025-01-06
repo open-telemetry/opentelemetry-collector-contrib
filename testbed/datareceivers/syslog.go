@@ -43,9 +43,9 @@ func (cr *SyslogDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc co
 	}
 	cfg.InputConfig.Protocol = cr.protocol
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	var err error
-	cr.receiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
+	cr.receiver, err = factory.CreateLogs(context.Background(), set, cfg, lc)
 	if err != nil {
 		return err
 	}

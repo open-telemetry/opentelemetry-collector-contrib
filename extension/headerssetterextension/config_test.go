@@ -38,6 +38,13 @@ func TestLoadConfig(t *testing.T) {
 						Value:       nil,
 					},
 					{
+						Key:          stringp("X-Scope-OrgID"),
+						Action:       INSERT,
+						FromContext:  stringp("tenant_id"),
+						DefaultValue: stringp("some_id"),
+						Value:        nil,
+					},
+					{
 						Key:         stringp("User-ID"),
 						Action:      UPDATE,
 						FromContext: stringp("user_id"),
@@ -66,10 +73,10 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedError != nil {
-				assert.Error(t, component.ValidateConfig(cfg), tt.expectedError)
+				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedError)
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
@@ -147,6 +154,18 @@ func TestValidateConfig(t *testing.T) {
 				},
 			},
 			errMissingSource,
+		},
+		{
+			"header value source is missing snd default value set",
+			[]HeaderConfig{
+				{
+					Key:          stringp("name"),
+					Action:       INSERT,
+					FromContext:  stringp("from context"),
+					DefaultValue: stringp("default"),
+				},
+			},
+			nil,
 		},
 		{
 			"delete header action",

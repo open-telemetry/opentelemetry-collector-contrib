@@ -84,5 +84,5 @@ resourceMetrics:
               isMonotonic: true
             unit: '{operation}'
         scope:
-          name: otelcol/riakreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver
           version: latest

@@ -12,8 +12,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
@@ -39,16 +40,16 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig: cfg,
 		TCPAddrConfig: confignet.TCPAddrConfig{
-			Endpoint: localhostgate.EndpointForPort(defaultPort),
+			Endpoint: testutil.EndpointForPort(defaultPort),
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
-// CreateMetricsReceiver creates zookeeper (metrics) receiver.
+// CreateMetrics creates zookeeper (metrics) receiver.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -58,10 +59,9 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := scraperhelper.NewScraper(
-		metadata.Type.String(),
+	scrp, err := scraper.NewMetrics(
 		zms.scrape,
-		scraperhelper.WithShutdown(zms.shutdown),
+		scraper.WithShutdown(zms.shutdown),
 	)
 	if err != nil {
 		return nil, err
@@ -71,6 +71,6 @@ func createMetricsReceiver(
 		&rConfig.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(scrp),
+		scraperhelper.AddScraper(metadata.Type, scrp),
 	)
 }

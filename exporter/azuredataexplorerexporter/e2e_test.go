@@ -53,7 +53,7 @@ const (
 )
 
 // E2E tests while sending the trace data through the exporter
-func TestCreateTracesExporterE2E(t *testing.T) {
+func TestCreateTracesE2E(t *testing.T) {
 	t.Parallel()
 	config, isValid := getConfig()
 	if !isValid {
@@ -61,7 +61,7 @@ func TestCreateTracesExporterE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestCreateTracesExporterE2E(t *testing.T) {
 }
 
 // E2E tests while sending the logs data through the exporter
-func TestCreateLogsExporterE2E(t *testing.T) {
+func TestCreateLogsE2E(t *testing.T) {
 	t.Parallel()
 	config, isValid := getConfig()
 	if !isValid {
@@ -124,7 +124,7 @@ func TestCreateLogsExporterE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -177,7 +177,7 @@ func TestCreateLogsExporterE2E(t *testing.T) {
 }
 
 // E2E tests while sending the metrics data through the exporter
-func TestCreateMetricsExporterE2E(t *testing.T) {
+func TestCreateMetricsE2E(t *testing.T) {
 	t.Parallel()
 	config, isValid := getConfig()
 	if !isValid {
@@ -185,7 +185,7 @@ func TestCreateMetricsExporterE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

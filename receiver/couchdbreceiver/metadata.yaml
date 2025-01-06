@@ -1,5 +1,4 @@
 type: couchdb
-scope_name: otelcol/couchdbreceiver
 
 status:
   class: receiver

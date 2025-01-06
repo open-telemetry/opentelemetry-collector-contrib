@@ -6,11 +6,13 @@ package awsfirehosereceiver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -43,7 +45,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 		"WithInvalidRecordType": {
 			consumer:   consumertest.NewNop(),
 			recordType: "test",
-			wantErr:    errUnrecognizedRecordType,
+			wantErr:    fmt.Errorf("%w: recordType = %s", errUnrecognizedRecordType, "test"),
 		},
 	}
 	for name, testCase := range testCases {
@@ -52,7 +54,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 			cfg.RecordType = testCase.recordType
 			got, err := newMetricsReceiver(
 				cfg,
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				defaultMetricsUnmarshalers(zap.NewNop()),
 				testCase.consumer,
 			)
@@ -79,9 +81,14 @@ func TestMetricsConsumer(t *testing.T) {
 			wantStatus:     http.StatusBadRequest,
 			wantErr:        testErr,
 		},
+		"WithConsumerErrorPermanent": {
+			consumerErr: consumererror.NewPermanent(testErr),
+			wantStatus:  http.StatusBadRequest,
+			wantErr:     consumererror.NewPermanent(testErr),
+		},
 		"WithConsumerError": {
 			consumerErr: testErr,
-			wantStatus:  http.StatusInternalServerError,
+			wantStatus:  http.StatusServiceUnavailable,
 			wantErr:     testErr,
 		},
 		"WithNoError": {

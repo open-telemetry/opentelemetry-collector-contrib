@@ -19,13 +19,13 @@ import (
 )
 
 // newCarbonExporter returns a new Carbon exporter.
-func newCarbonExporter(ctx context.Context, cfg *Config, set exporter.CreateSettings) (exporter.Metrics, error) {
+func newCarbonExporter(ctx context.Context, cfg *Config, set exporter.Settings) (exporter.Metrics, error) {
 	sender := carbonSender{
-		writeTimeout: cfg.Timeout,
-		conns:        newConnPool(cfg.TCPAddrConfig, cfg.Timeout, cfg.MaxIdleConns),
+		writeTimeout: cfg.TimeoutSettings.Timeout,
+		conns:        newConnPool(cfg.TCPAddrConfig, cfg.TimeoutSettings.Timeout, cfg.MaxIdleConns),
 	}
 
-	exp, err := exporterhelper.NewMetricsExporter(
+	exp, err := exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,

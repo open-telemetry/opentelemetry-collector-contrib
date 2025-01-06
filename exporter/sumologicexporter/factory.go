@@ -29,7 +29,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueSettings()
+	qs := exporterhelper.NewDefaultQueueConfig()
 	qs.Enabled = false
 
 	return &Config{
@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exp, err := newLogsExporter(ctx, params, cfg.(*Config))
@@ -60,7 +60,7 @@ func createLogsExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newMetricsExporter(ctx, params, cfg.(*Config))
@@ -73,7 +73,7 @@ func createMetricsExporter(
 
 func createTracesExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	exp, err := newTracesExporter(ctx, params, cfg.(*Config))

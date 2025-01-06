@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 func createSimpleLogData(numberOfLogs int) plog.Logs {
@@ -39,7 +39,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{
 		Region: "ap-beijing",
 		LogSet: "demo-logset",
 		Topic:  "demo-topic",
@@ -53,7 +53,7 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 }

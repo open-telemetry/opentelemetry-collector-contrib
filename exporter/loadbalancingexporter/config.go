@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/servicediscovery/types"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
@@ -18,10 +20,24 @@ const (
 	metricNameRouting
 	resourceRouting
 	resourceKeysRouting
+	streamIDRouting
+)
+
+const (
+	svcRoutingStr          = "service"
+	traceIDRoutingStr      = "traceID"
+	metricNameRoutingStr   = "metric"
+	resourceRoutingStr     = "resource"
+	resourceKeysRoutingStr = "resource_keys"
+	streamIDRoutingStr     = "streamID"
 )
 
 // Config defines configuration for the exporter.
 type Config struct {
+	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+
 	Protocol     Protocol         `mapstructure:"protocol"`
 	Resolver     ResolverSettings `mapstructure:"resolver"`
 	RoutingKey   string           `mapstructure:"routing_key"`
@@ -56,9 +72,10 @@ type DNSResolver struct {
 
 // K8sSvcResolver defines the configuration for the DNS resolver
 type K8sSvcResolver struct {
-	Service string        `mapstructure:"service"`
-	Ports   []int32       `mapstructure:"ports"`
-	Timeout time.Duration `mapstructure:"timeout"`
+	Service         string        `mapstructure:"service"`
+	Ports           []int32       `mapstructure:"ports"`
+	Timeout         time.Duration `mapstructure:"timeout"`
+	ReturnHostnames bool          `mapstructure:"return_hostnames"`
 }
 
 type AWSCloudMapResolver struct {

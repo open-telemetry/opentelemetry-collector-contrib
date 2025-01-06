@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -24,6 +26,7 @@ type dataConsumer interface {
 	consume(ctx context.Context, event *eventhub.Event) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 	setNextMetricsConsumer(nextLogsConsumer consumer.Metrics)
+	setNextTracesConsumer(nextTracesConsumer consumer.Traces)
 }
 
 type eventLogsUnmarshaler interface {
@@ -34,14 +37,20 @@ type eventMetricsUnmarshaler interface {
 	UnmarshalMetrics(event *eventhub.Event) (pmetric.Metrics, error)
 }
 
+type eventTracesUnmarshaler interface {
+	UnmarshalTraces(event *eventhub.Event) (ptrace.Traces, error)
+}
+
 type eventhubReceiver struct {
 	eventHandler        *eventhubHandler
-	dataType            component.Type
+	signal              pipeline.Signal
 	logger              *zap.Logger
 	logsUnmarshaler     eventLogsUnmarshaler
 	metricsUnmarshaler  eventMetricsUnmarshaler
+	tracesUnmarshaler   eventTracesUnmarshaler
 	nextLogsConsumer    consumer.Logs
 	nextMetricsConsumer consumer.Metrics
+	nextTracesConsumer  consumer.Traces
 	obsrecv             *receiverhelper.ObsReport
 }
 
@@ -61,21 +70,24 @@ func (receiver *eventhubReceiver) setNextMetricsConsumer(nextMetricsConsumer con
 	receiver.nextMetricsConsumer = nextMetricsConsumer
 }
 
+func (receiver *eventhubReceiver) setNextTracesConsumer(nextTracesConsumer consumer.Traces) {
+	receiver.nextTracesConsumer = nextTracesConsumer
+}
+
 func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.Event) error {
-	switch receiver.dataType {
-	case component.DataTypeLogs:
+	switch receiver.signal {
+	case pipeline.SignalLogs:
 		return receiver.consumeLogs(ctx, event)
-	case component.DataTypeMetrics:
+	case pipeline.SignalMetrics:
 		return receiver.consumeMetrics(ctx, event)
-	case component.DataTypeTraces:
-		fallthrough
+	case pipeline.SignalTraces:
+		return receiver.consumeTraces(ctx, event)
 	default:
-		return fmt.Errorf("invalid data type: %v", receiver.dataType)
+		return fmt.Errorf("invalid data type: %v", receiver.signal)
 	}
 }
 
 func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextLogsConsumer == nil {
 		return nil
 	}
@@ -99,7 +111,6 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventh
 }
 
 func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eventhub.Event) error {
-
 	if receiver.nextMetricsConsumer == nil {
 		return nil
 	}
@@ -123,14 +134,38 @@ func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eve
 	return err
 }
 
+func (receiver *eventhubReceiver) consumeTraces(ctx context.Context, event *eventhub.Event) error {
+	if receiver.nextTracesConsumer == nil {
+		return nil
+	}
+
+	if receiver.tracesUnmarshaler == nil {
+		return errors.New("unable to unmarshal traces with configured format")
+	}
+
+	tracesContext := receiver.obsrecv.StartTracesOp(ctx)
+
+	traces, err := receiver.tracesUnmarshaler.UnmarshalTraces(event)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal traces: %w", err)
+	}
+
+	receiver.logger.Debug("traces Records", zap.Any("traces", traces))
+	err = receiver.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
+
+	receiver.obsrecv.EndTracesOp(tracesContext, metadata.Type.String(), 1, err)
+
+	return err
+}
+
 func newReceiver(
-	receiverType component.Type,
+	signal pipeline.Signal,
 	logsUnmarshaler eventLogsUnmarshaler,
 	metricsUnmarshaler eventMetricsUnmarshaler,
+	tracesUnmarshaler eventTracesUnmarshaler,
 	eventHandler *eventhubHandler,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 ) (component.Component, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "event",
@@ -141,11 +176,12 @@ func newReceiver(
 	}
 
 	eventhubReceiver := &eventhubReceiver{
-		dataType:           receiverType,
+		signal:             signal,
 		eventHandler:       eventHandler,
 		logger:             settings.Logger,
 		logsUnmarshaler:    logsUnmarshaler,
 		metricsUnmarshaler: metricsUnmarshaler,
+		tracesUnmarshaler:  tracesUnmarshaler,
 		obsrecv:            obsrecv,
 	}
 

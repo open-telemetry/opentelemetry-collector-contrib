@@ -5,12 +5,12 @@ on:
     branches:
       - main
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "v[0-9]+.[0-9]+.[0-9]+*"
     paths-ignore:
-      - '**/README.md'
+      - "**/README.md"
   pull_request:
     paths-ignore:
-      - '**/README.md'
+      - "**/README.md"
   merge_group:
 
 env:
@@ -19,14 +19,14 @@ env:
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 jobs:
   collector-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.10"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -40,6 +40,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
@@ -49,13 +51,13 @@ jobs:
           path: ./bin/*
 
   supervisor-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: collector-build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.10"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -81,13 +83,13 @@ jobs:
           go test -v --tags=e2e
 
   docker-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.10"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -101,6 +103,8 @@ jobs:
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
+      - name: Generate otelcontribcol files
+        run: make genotelcontribcol
       - name: Build Docker Image
         run: |
           make docker-otelcontribcol
@@ -120,22 +124,20 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
-          - "v1.26.0"
-          - "v1.25.3"
-          - "v1.24.7"
-          - "v1.23.13"
+          - "v1.30.0"
+          - "v1.23.17"
         component:
           - receiver/k8sclusterreceiver
           - processor/k8sattributesprocessor
           - receiver/kubeletstatsreceiver
           - receiver/k8sobjectsreceiver
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: docker-build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.10"
+          go-version: "1.22.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -177,8 +179,8 @@ jobs:
 
   kubernetes-test:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
-    needs: [ kubernetes-test-matrix ]
+    runs-on: ubuntu-24.04
+    needs: [kubernetes-test-matrix]
     steps:
       - name: Print result
         run: echo ${{ needs.kubernetes-test-matrix.result }}
@@ -191,4 +193,3 @@ jobs:
             echo "One or more matrix jobs failed."
             false
           fi
-

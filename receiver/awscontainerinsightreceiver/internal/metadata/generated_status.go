@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("awscontainerinsightreceiver")
+	Type      = component.MustNewType("awscontainerinsightreceiver")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 )
 
 const (

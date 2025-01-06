@@ -26,13 +26,13 @@ func TestCreateExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://local"
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
-	te, err := factory.CreateTracesExporter(context.Background(), params, eCfg)
+	te, err := factory.CreateTraces(context.Background(), params, eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetricsExporter(context.Background(), params, eCfg)
+	me, err := factory.CreateMetrics(context.Background(), params, eCfg)
 	assert.Error(t, err)
 	assert.Nil(t, me)
 }

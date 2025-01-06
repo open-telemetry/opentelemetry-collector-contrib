@@ -1,13 +1,13 @@
 type: elasticsearch
-scope_name: otelcol/elasticsearch
 
 status:
   class: exporter
   stability:
     beta: [traces, logs]
+    development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [JaredTan95, ycombinator, carsonip]
+    active: [JaredTan95, carsonip, lahsivjar]
 
 tests:
   config:

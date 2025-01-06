@@ -15,53 +15,33 @@ import (
 )
 
 func TestParseValidTimestamp(t *testing.T) {
-	xml := EventXML{
-		TimeCreated: TimeCreated{
-			SystemTime: "2020-07-30T01:01:01.123456789Z",
-		},
-	}
-	timestamp := xml.parseTimestamp()
+	timestamp := parseTimestamp("2020-07-30T01:01:01.123456789Z")
 	expected, _ := time.Parse(time.RFC3339Nano, "2020-07-30T01:01:01.123456789Z")
 	require.Equal(t, expected, timestamp)
 }
 
 func TestParseInvalidTimestamp(t *testing.T) {
-	xml := EventXML{
-		TimeCreated: TimeCreated{
-			SystemTime: "invalid",
-		},
-	}
-	timestamp := xml.parseTimestamp()
+	timestamp := parseTimestamp("invalid")
 	require.Equal(t, time.Now().Year(), timestamp.Year())
 	require.Equal(t, time.Now().Month(), timestamp.Month())
 	require.Equal(t, time.Now().Day(), timestamp.Day())
 }
 
 func TestParseSeverity(t *testing.T) {
-	xmlRenderedCritical := EventXML{RenderedLevel: "Critical"}
-	xmlRenderedError := EventXML{RenderedLevel: "Error"}
-	xmlRenderedWarning := EventXML{RenderedLevel: "Warning"}
-	xmlRenderedInformation := EventXML{RenderedLevel: "Information"}
-	xmlRenderedUnknown := EventXML{RenderedLevel: "Unknown"}
-	xmlCritical := EventXML{Level: "1"}
-	xmlError := EventXML{Level: "2"}
-	xmlWarning := EventXML{Level: "3"}
-	xmlInformation := EventXML{Level: "4"}
-	xmlUnknown := EventXML{Level: "0"}
-	require.Equal(t, entry.Fatal, xmlRenderedCritical.parseRenderedSeverity())
-	require.Equal(t, entry.Error, xmlRenderedError.parseRenderedSeverity())
-	require.Equal(t, entry.Warn, xmlRenderedWarning.parseRenderedSeverity())
-	require.Equal(t, entry.Info, xmlRenderedInformation.parseRenderedSeverity())
-	require.Equal(t, entry.Default, xmlRenderedUnknown.parseRenderedSeverity())
-	require.Equal(t, entry.Fatal, xmlCritical.parseRenderedSeverity())
-	require.Equal(t, entry.Error, xmlError.parseRenderedSeverity())
-	require.Equal(t, entry.Warn, xmlWarning.parseRenderedSeverity())
-	require.Equal(t, entry.Info, xmlInformation.parseRenderedSeverity())
-	require.Equal(t, entry.Default, xmlUnknown.parseRenderedSeverity())
+	require.Equal(t, entry.Fatal, parseSeverity("Critical", ""))
+	require.Equal(t, entry.Error, parseSeverity("Error", ""))
+	require.Equal(t, entry.Warn, parseSeverity("Warning", ""))
+	require.Equal(t, entry.Info, parseSeverity("Information", ""))
+	require.Equal(t, entry.Default, parseSeverity("Unknown", ""))
+	require.Equal(t, entry.Fatal, parseSeverity("", "1"))
+	require.Equal(t, entry.Error, parseSeverity("", "2"))
+	require.Equal(t, entry.Warn, parseSeverity("", "3"))
+	require.Equal(t, entry.Info, parseSeverity("", "4"))
+	require.Equal(t, entry.Default, parseSeverity("", "0"))
 }
 
 func TestParseBody(t *testing.T) {
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID:         1,
 			Qualifiers: 2,
@@ -118,11 +98,11 @@ func TestParseBody(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, expected, xml.parseBody())
+	require.Equal(t, expected, formattedBody(xml))
 }
 
 func TestParseBodySecurityExecution(t *testing.T) {
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID:         1,
 			Qualifiers: 2,
@@ -193,7 +173,7 @@ func TestParseBodySecurityExecution(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, expected, xml.parseBody())
+	require.Equal(t, expected, formattedBody(xml))
 }
 
 func TestParseBodyFullExecution(t *testing.T) {
@@ -203,7 +183,7 @@ func TestParseBodyFullExecution(t *testing.T) {
 	userTime := uint(100)
 	processorTime := uint(200)
 
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID:         1,
 			Qualifiers: 2,
@@ -284,11 +264,11 @@ func TestParseBodyFullExecution(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, expected, xml.parseBody())
+	require.Equal(t, expected, formattedBody(xml))
 }
 
 func TestParseNoRendered(t *testing.T) {
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID:         1,
 			Qualifiers: 2,
@@ -341,11 +321,11 @@ func TestParseNoRendered(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, expected, xml.parseBody())
+	require.Equal(t, expected, formattedBody(xml))
 }
 
 func TestParseBodySecurity(t *testing.T) {
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID:         1,
 			Qualifiers: 2,
@@ -402,11 +382,11 @@ func TestParseBodySecurity(t *testing.T) {
 		},
 	}
 
-	require.Equal(t, expected, xml.parseBody())
+	require.Equal(t, expected, formattedBody(xml))
 }
 
 func TestParseEventData(t *testing.T) {
-	xmlMap := EventXML{
+	xmlMap := &EventXML{
 		EventData: EventData{
 			Name:   "EVENT_DATA",
 			Data:   []Data{{Name: "name", Value: "value"}},
@@ -414,7 +394,7 @@ func TestParseEventData(t *testing.T) {
 		},
 	}
 
-	parsed := xmlMap.parseBody()
+	parsed := formattedBody(xmlMap)
 	expectedMap := map[string]any{
 		"name": "EVENT_DATA",
 		"data": []any{
@@ -424,17 +404,18 @@ func TestParseEventData(t *testing.T) {
 	}
 	require.Equal(t, expectedMap, parsed["event_data"])
 
-	xmlMixed := EventXML{
+	xmlMixed := &EventXML{
 		EventData: EventData{
 			Data: []Data{{Name: "name", Value: "value"}, {Value: "no_name"}},
 		},
 	}
 
-	parsed = xmlMixed.parseBody()
+	parsed = formattedBody(xmlMixed)
 	expectedSlice := map[string]any{
 		"data": []any{
 			map[string]any{"name": "value"},
-			map[string]any{"": "no_name"}},
+			map[string]any{"": "no_name"},
+		},
 	}
 	require.Equal(t, expectedSlice, parsed["event_data"])
 }
@@ -442,8 +423,8 @@ func TestParseEventData(t *testing.T) {
 func TestInvalidUnmarshal(t *testing.T) {
 	_, err := unmarshalEventXML([]byte("Test \n Invalid \t Unmarshal"))
 	require.Error(t, err)
-
 }
+
 func TestUnmarshalWithEventData(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
 	require.NoError(t, err)
@@ -451,7 +432,7 @@ func TestUnmarshalWithEventData(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID:         16384,
 			Qualifiers: 16384,
@@ -476,9 +457,11 @@ func TestUnmarshalWithEventData(t *testing.T) {
 		EventData: EventData{
 			Data: []Data{
 				{Name: "Time", Value: "2022-04-28T19:48:52Z"},
-				{Name: "Source", Value: "RulesEngine"}},
+				{Name: "Source", Value: "RulesEngine"},
+			},
 		},
 		Keywords: []string{"0x80000000000000"},
+		Original: string(data),
 	}
 
 	require.Equal(t, xml, event)
@@ -491,7 +474,7 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID:         8194,
 			Qualifiers: 0,
@@ -516,6 +499,7 @@ func TestUnmarshalWithAnonymousEventDataEntries(t *testing.T) {
 		Keywords:  []string{"0x80000000000000"},
 		Security:  &Security{},
 		Execution: &Execution{},
+		Original:  string(data),
 	}
 
 	require.Equal(t, xml, event)
@@ -528,7 +512,7 @@ func TestUnmarshalWithUserData(t *testing.T) {
 	event, err := unmarshalEventXML(data)
 	require.NoError(t, err)
 
-	xml := EventXML{
+	xml := &EventXML{
 		EventID: EventID{
 			ID: 1102,
 		},
@@ -554,6 +538,7 @@ func TestUnmarshalWithUserData(t *testing.T) {
 			ProcessID: 1472,
 			ThreadID:  7784,
 		},
+		Original: string(data),
 	}
 
 	require.Equal(t, xml, event)

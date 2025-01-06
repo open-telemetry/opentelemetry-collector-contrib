@@ -6,7 +6,6 @@ package arrow
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -14,8 +13,6 @@ import (
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
 	otelAssert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
@@ -31,16 +28,24 @@ import (
 	"go.uber.org/zap/zaptest"
 	"golang.org/x/net/http2/hpack"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
 
 var AllPrioritizers = []PrioritizerName{LeastLoadedPrioritizer, LeastLoadedTwoPrioritizer}
 
 const defaultMaxStreamLifetime = 11 * time.Second
 
-type compareJSONTraces struct{ ptrace.Traces }
-type compareJSONMetrics struct{ pmetric.Metrics }
-type compareJSONLogs struct{ plog.Logs }
+type (
+	compareJSONTraces  struct{ ptrace.Traces }
+	compareJSONMetrics struct{ pmetric.Metrics }
+	compareJSONLogs    struct{ plog.Logs }
+)
 
 func (c compareJSONTraces) MarshalJSON() ([]byte, error) {
 	var m ptrace.JSONMarshaler
@@ -226,7 +231,7 @@ func TestArrowExporterSuccess(t *testing.T) {
 					case ptrace.Traces:
 						traces, err := testCon.TracesFrom(outputData)
 						require.NoError(t, err)
-						require.Equal(t, 1, len(traces))
+						require.Len(t, traces, 1)
 						otelAssert.Equiv(stdTesting, []json.Marshaler{
 							compareJSONTraces{testData},
 						}, []json.Marshaler{
@@ -235,7 +240,7 @@ func TestArrowExporterSuccess(t *testing.T) {
 					case plog.Logs:
 						logs, err := testCon.LogsFrom(outputData)
 						require.NoError(t, err)
-						require.Equal(t, 1, len(logs))
+						require.Len(t, logs, 1)
 						otelAssert.Equiv(stdTesting, []json.Marshaler{
 							compareJSONLogs{testData},
 						}, []json.Marshaler{
@@ -244,7 +249,7 @@ func TestArrowExporterSuccess(t *testing.T) {
 					case pmetric.Metrics:
 						metrics, err := testCon.MetricsFrom(outputData)
 						require.NoError(t, err)
-						require.Equal(t, 1, len(metrics))
+						require.Len(t, metrics, 1)
 						otelAssert.Equiv(stdTesting, []json.Marshaler{
 							compareJSONMetrics{testData},
 						}, []json.Marshaler{
@@ -278,7 +283,18 @@ func TestArrowExporterTimeout(t *testing.T) {
 			sent, err := tc.exporter.SendAndWait(ctx, twoTraces)
 			require.True(t, sent)
 			require.Error(t, err)
-			require.True(t, errors.Is(err, context.Canceled))
+
+			stat, is := status.FromError(err)
+			require.True(t, is, "is a gRPC status")
+			require.Equal(t, codes.Canceled, stat.Code())
+
+			// Repeat the request, will get immediate timeout.
+			sent, err = tc.exporter.SendAndWait(ctx, twoTraces)
+			require.False(t, sent)
+			stat, is = status.FromError(err)
+			require.True(t, is, "is a gRPC status error: %v", err)
+			require.Equal(t, "context done before send: context canceled", stat.Message())
+			require.Equal(t, codes.Canceled, stat.Code())
 
 			require.NoError(t, tc.exporter.Shutdown(ctx))
 		})
@@ -304,8 +320,8 @@ func TestArrowExporterStreamConnectError(t *testing.T) {
 
 			require.NoError(t, tc.exporter.Shutdown(bg))
 
-			require.Less(t, 0, len(tc.observedLogs.All()), "should have at least one log: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "cannot start arrow stream")
+			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
+			require.Equal(t, "cannot start arrow stream", tc.observedLogs.All()[0].Message)
 		})
 	}
 }
@@ -331,7 +347,7 @@ func TestArrowExporterDowngrade(t *testing.T) {
 			require.NoError(t, tc.exporter.Shutdown(bg))
 
 			require.Less(t, 1, len(tc.observedLogs.All()), "should have at least two logs: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
 			require.Contains(t, tc.observedLogs.All()[1].Message, "downgrading")
 		})
 	}
@@ -380,7 +396,7 @@ func TestArrowExporterDisableDowngrade(t *testing.T) {
 			require.NoError(t, tc.exporter.Shutdown(bg))
 
 			require.Less(t, 1, len(tc.observedLogs.All()), "should have at least two logs: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
 			require.NotContains(t, tc.observedLogs.All()[1].Message, "downgrading")
 		})
 	}
@@ -406,7 +422,10 @@ func TestArrowExporterConnectTimeout(t *testing.T) {
 			}()
 			_, err := tc.exporter.SendAndWait(ctx, twoTraces)
 			require.Error(t, err)
-			require.True(t, errors.Is(err, context.Canceled))
+
+			stat, is := status.FromError(err)
+			require.True(t, is, "is a gRPC status error: %v", err)
+			require.Equal(t, codes.Canceled, stat.Code())
 
 			require.NoError(t, tc.exporter.Shutdown(bg))
 		})
@@ -488,8 +507,11 @@ func TestArrowExporterStreamRace(t *testing.T) {
 			defer wg.Done()
 			// This blocks until the cancelation.
 			_, err := tc.exporter.SendAndWait(callctx, twoTraces)
-			require.Error(t, err)
-			require.True(t, errors.Is(err, context.Canceled))
+			assert.Error(t, err)
+
+			stat, is := status.FromError(err)
+			assert.True(t, is, "is a gRPC status error: %v", err)
+			assert.Equal(t, codes.Canceled, stat.Code())
 		}()
 	}
 
@@ -527,8 +549,8 @@ func TestArrowExporterStreaming(t *testing.T) {
 				defer wg.Done()
 				for data := range channel.sendChannel() {
 					traces, err := testCon.TracesFrom(data)
-					require.NoError(t, err)
-					require.Equal(t, 1, len(traces))
+					assert.NoError(t, err)
+					assert.Len(t, traces, 1)
 					actualOutput = append(actualOutput, traces[0])
 					channel.recv <- statusOKFor(data.BatchId)
 				}
@@ -557,65 +579,93 @@ func TestArrowExporterStreaming(t *testing.T) {
 
 // TestArrowExporterHeaders tests a mix of outgoing context headers.
 func TestArrowExporterHeaders(t *testing.T) {
-	tc := newSingleStreamMetadataTestCase(t)
-	channel := newHealthyTestChannel()
+	for _, withDeadline := range []bool{true, false} {
+		t.Run(fmt.Sprint("with_deadline=", withDeadline), func(t *testing.T) {
+			tc := newSingleStreamMetadataTestCase(t)
+			channel := newHealthyTestChannel()
 
-	tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
+			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	require.NoError(t, tc.exporter.Start(ctx))
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
 
-	var expectOutput []metadata.MD
-	var actualOutput []metadata.MD
+			require.NoError(t, tc.exporter.Start(ctx))
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		md := metadata.MD{}
-		hpd := hpack.NewDecoder(4096, func(f hpack.HeaderField) {
-			md[f.Name] = append(md[f.Name], f.Value)
-		})
-		for data := range channel.sendChannel() {
-			if len(data.Headers) == 0 {
-				actualOutput = append(actualOutput, nil)
-			} else {
-				_, err := hpd.Write(data.Headers)
+			var expectOutput []metadata.MD
+			var actualOutput []metadata.MD
+
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				md := metadata.MD{}
+				hpd := hpack.NewDecoder(4096, func(f hpack.HeaderField) {
+					md[f.Name] = append(md[f.Name], f.Value)
+				})
+				for data := range channel.sendChannel() {
+					if len(data.Headers) == 0 {
+						actualOutput = append(actualOutput, nil)
+					} else {
+						_, err := hpd.Write(data.Headers)
+						assert.NoError(t, err)
+						actualOutput = append(actualOutput, md)
+						md = metadata.MD{}
+					}
+					channel.recv <- statusOKFor(data.BatchId)
+				}
+			}()
+
+			for times := 0; times < 10; times++ {
+				input := testdata.GenerateTraces(2)
+
+				if times%2 == 1 {
+					md := metadata.MD{
+						"expected1":       []string{"metadata1"},
+						"expected2":       []string{fmt.Sprint(times)},
+						"otlp-pdata-size": []string{"329"},
+					}
+					expectOutput = append(expectOutput, md)
+				} else {
+					expectOutput = append(expectOutput, metadata.MD{
+						"otlp-pdata-size": []string{"329"},
+					})
+				}
+
+				sendCtx := ctx
+				if withDeadline {
+					var sendCancel context.CancelFunc
+					sendCtx, sendCancel = context.WithTimeout(sendCtx, time.Second)
+					defer sendCancel()
+				}
+
+				sent, err := tc.exporter.SendAndWait(sendCtx, input)
 				require.NoError(t, err)
-				actualOutput = append(actualOutput, md)
-				md = metadata.MD{}
+				require.True(t, sent)
 			}
-			channel.recv <- statusOKFor(data.BatchId)
-		}
-	}()
+			// Stop the test conduit started above.
+			cancel()
+			wg.Wait()
 
-	for times := 0; times < 10; times++ {
-		input := testdata.GenerateTraces(2)
-
-		if times%2 == 1 {
-			md := metadata.MD{
-				"expected1":       []string{"metadata1"},
-				"expected2":       []string{fmt.Sprint(times)},
-				"otlp-pdata-size": []string{"329"},
+			// Manual check for proper deadline propagation.  Since the test
+			// is timed we don't expect an exact match.
+			if withDeadline {
+				for _, out := range actualOutput {
+					dead := out.Get("grpc-timeout")
+					require.Len(t, dead, 1)
+					require.NotEmpty(t, dead[0])
+					to, err := grpcutil.DecodeTimeout(dead[0])
+					require.NoError(t, err)
+					// Allow the test to lapse for 0.5s.
+					require.Less(t, time.Second/2, to)
+					require.GreaterOrEqual(t, time.Second, to)
+					out.Delete("grpc-timeout")
+				}
 			}
-			expectOutput = append(expectOutput, md)
-		} else {
-			expectOutput = append(expectOutput, metadata.MD{
-				"otlp-pdata-size": []string{"329"},
-			})
-		}
 
-		sent, err := tc.exporter.SendAndWait(context.Background(), input)
-		require.NoError(t, err)
-		require.True(t, sent)
+			require.Equal(t, expectOutput, actualOutput)
+			require.NoError(t, tc.exporter.Shutdown(ctx))
+		})
 	}
-	// Stop the test conduit started above.
-	cancel()
-	wg.Wait()
-
-	require.Equal(t, expectOutput, actualOutput)
-	require.NoError(t, tc.exporter.Shutdown(ctx))
 }
 
 // TestArrowExporterIsTraced tests whether trace and span ID are
@@ -649,7 +699,7 @@ func TestArrowExporterIsTraced(t *testing.T) {
 						actualOutput = append(actualOutput, nil)
 					} else {
 						_, err := hpd.Write(data.Headers)
-						require.NoError(t, err)
+						assert.NoError(t, err)
 						actualOutput = append(actualOutput, md)
 						md = metadata.MD{}
 					}
@@ -737,8 +787,8 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 
 							for data := range channel.sendChannel() {
 								traces, err := testCon.TracesFrom(data)
-								require.NoError(t, err)
-								require.Equal(t, 1, len(traces))
+								assert.NoError(t, err)
+								assert.Len(t, traces, 1)
 								atomic.AddUint64(&actualCount, 1)
 								channel.recv <- statusOKFor(data.BatchId)
 							}
@@ -872,9 +922,7 @@ func benchmarkPrioritizer(b *testing.B, numStreams int, pname PrioritizerName) {
 
 	wg.Add(1)
 	defer func() {
-		if err := tc.exporter.Shutdown(bg); err != nil {
-			b.Errorf("shutdown failed: %v", err)
-		}
+		assert.NoError(b, tc.exporter.Shutdown(bg), "shutdown failed")
 		wg.Done()
 		wg.Wait()
 	}()

@@ -1,0 +1,18 @@
+receivers:
+  nop:
+
+processors:
+
+  probabilistic_sampler/traces:
+    sampling_percentage: 15.3
+    sampling_precision: 0
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ nop ]
+      processors: [ probabilistic_sampler/traces ]
+      exporters: [ nop ]

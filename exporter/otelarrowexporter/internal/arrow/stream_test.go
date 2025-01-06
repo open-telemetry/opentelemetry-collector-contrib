@@ -5,19 +5,20 @@ package arrow
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 var oneBatch = &arrowpb.BatchArrowRecords{
@@ -44,7 +45,7 @@ func newStreamTestCase(t *testing.T, pname PrioritizerName) *streamTestCase {
 	producer := arrowRecordMock.NewMockProducerAPI(ctrl)
 
 	bg, dc := newDoneCancel(context.Background())
-	prio, state := newStreamPrioritizer(dc, pname, 1)
+	prio, state := newStreamPrioritizer(dc, pname, 1, 10*time.Second)
 
 	ctc := newCommonTestCase(t, NotNoisy)
 	cts := ctc.newMockStream(bg)
@@ -53,7 +54,6 @@ func newStreamTestCase(t *testing.T, pname PrioritizerName) *streamTestCase {
 	ctc.requestMetadataCall.AnyTimes().Return(nil, nil)
 
 	stream := newStream(producer, prio, ctc.telset, netstats.Noop{}, state[0])
-	stream.maxStreamLifetime = 10 * time.Second
 
 	fromTracesCall := producer.EXPECT().BatchArrowRecordsFromTraces(gomock.Any()).Times(0)
 	fromMetricsCall := producer.EXPECT().BatchArrowRecordsFromMetrics(gomock.Any()).Times(0)
@@ -141,9 +141,7 @@ func (tc *streamTestCase) mustSendAndWait() error {
 func TestStreamNoMaxLifetime(t *testing.T) {
 	for _, pname := range AllPrioritizers {
 		t.Run(string(pname), func(t *testing.T) {
-
 			tc := newStreamTestCase(t, pname)
-			tc.stream.maxStreamLifetime = 0
 
 			tc.fromTracesCall.Times(1).Return(oneBatch, nil)
 			tc.closeSendCall.Times(0)
@@ -182,8 +180,12 @@ func TestStreamEncodeError(t *testing.T) {
 			// sender should get a permanent testErr
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, testErr))
-			require.True(t, consumererror.IsPermanent(err))
+
+			stat, is := status.FromError(err)
+			require.True(t, is, "is a gRPC status error: %v", err)
+			require.Equal(t, codes.Internal, stat.Code())
+
+			require.Contains(t, stat.Message(), testErr.Error())
 		})
 	}
 }
@@ -212,7 +214,7 @@ func TestStreamUnknownBatchError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }
@@ -244,12 +246,10 @@ func TestStreamStatusUnavailableInvalid(t *testing.T) {
 			}()
 			// sender should get "test unavailable" once, success second time.
 			err := tc.mustSendAndWait()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "test unavailable")
+			require.ErrorContains(t, err, "test unavailable")
 
 			err = tc.mustSendAndWait()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "test invalid")
+			require.ErrorContains(t, err, "test invalid")
 
 			err = tc.mustSendAndWait()
 			require.NoError(t, err)
@@ -279,8 +279,7 @@ func TestStreamStatusUnrecognized(t *testing.T) {
 				channel.recv <- statusUnrecognizedFor(batch.BatchId)
 			}()
 			err := tc.mustSendAndWait()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), "test unrecognized")
+			require.ErrorContains(t, err, "test unrecognized")
 
 			// Note: do not cancel the context, the stream should be
 			// shutting down due to the error.
@@ -317,8 +316,8 @@ func TestStreamUnsupported(t *testing.T) {
 
 			tc.waitForShutdown()
 
-			require.Less(t, 0, len(tc.observedLogs.All()), "should have at least one log: %v", tc.observedLogs.All())
-			require.Equal(t, tc.observedLogs.All()[0].Message, "arrow is not supported")
+			require.NotEmpty(t, tc.observedLogs.All(), "should have at least one log: %v", tc.observedLogs.All())
+			require.Equal(t, "arrow is not supported", tc.observedLogs.All()[0].Message)
 		})
 	}
 }
@@ -343,7 +342,7 @@ func TestStreamSendError(t *testing.T) {
 			// sender should get ErrStreamRestarting
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, ErrStreamRestarting))
+			require.ErrorIs(t, err, ErrStreamRestarting)
 		})
 	}
 }

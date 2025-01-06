@@ -37,7 +37,7 @@ import (
 
 // DataCollector emits metrics with CollectMetricData based on the Kubernetes API objects in the metadata store.
 type DataCollector struct {
-	settings                 receiver.CreateSettings
+	settings                 receiver.Settings
 	metadataStore            *metadata.Store
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
@@ -45,8 +45,9 @@ type DataCollector struct {
 }
 
 // NewDataCollector returns a DataCollector.
-func NewDataCollector(set receiver.CreateSettings, ms *metadata.Store,
-	metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
+func NewDataCollector(set receiver.Settings, ms *metadata.Store,
+	metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string,
+) *DataCollector {
 	return &DataCollector{
 		settings:                 set,
 		metadataStore:            ms,

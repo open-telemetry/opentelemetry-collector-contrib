@@ -6,6 +6,7 @@ package cwlogs
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -27,7 +28,8 @@ func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *Cli
 
 	svc.On("PutLogEvents", mock.Anything).Return(
 		&cloudwatchlogs.PutLogEventsOutput{
-			NextSequenceToken: &expectedNextSequenceToken},
+			NextSequenceToken: &expectedNextSequenceToken,
+		},
 		nil).Run(putLogEventsFunc)
 
 	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
@@ -36,7 +38,8 @@ func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *Cli
 
 	svc.On("DescribeLogStreams", mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogStreamsOutput{
-			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}}},
+			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}},
+		},
 		nil)
 	return newCloudWatchLogClient(svc, 0, nil, logger)
 }
@@ -77,11 +80,13 @@ func (svc *mockCloudWatchLogsClient) TagResource(input *cloudwatchlogs.TagResour
 }
 
 // Tests
-var previousSequenceToken = "0000"
-var expectedNextSequenceToken = "1111"
-var logGroup = "logGroup"
-var logStreamName = "logStream"
-var emptySequenceToken = ""
+var (
+	previousSequenceToken     = "0000"
+	expectedNextSequenceToken = "1111"
+	logGroup                  = "logGroup"
+	logStreamName             = "logStream"
+	emptySequenceToken        = ""
+)
 
 func TestPutLogEvents_HappyCase(t *testing.T) {
 	logger := zap.NewNop()
@@ -92,7 +97,8 @@ func TestPutLogEvents_HappyCase(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
 
@@ -114,7 +120,8 @@ func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
 	rejectedLogEventsInfo := &cloudwatchlogs.RejectedLogEventsInfo{
 		ExpiredLogEventEndIndex:  aws.Int64(1),
 		TooNewLogEventStartIndex: aws.Int64(2),
-		TooOldLogEventEndIndex:   aws.Int64(3)}
+		TooOldLogEventEndIndex:   aws.Int64(3),
+	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
 		NextSequenceToken:     &expectedNextSequenceToken,
 		RejectedLogEventsInfo: rejectedLogEventsInfo,
@@ -138,7 +145,8 @@ func TestPutLogEvents_NonAWSError(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, errors.New("some random error")).Once()
 
@@ -158,7 +166,8 @@ func TestPutLogEvents_InvalidParameterException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	invalidParameterException := &cloudwatchlogs.InvalidParameterException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, invalidParameterException).Once()
@@ -179,7 +188,8 @@ func TestPutLogEvents_OperationAbortedException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	operationAbortedException := &cloudwatchlogs.OperationAbortedException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, operationAbortedException).Once()
@@ -200,7 +210,8 @@ func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	serviceUnavailableException := &cloudwatchlogs.ServiceUnavailableException{}
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, serviceUnavailableException).Once()
@@ -221,7 +232,8 @@ func TestPutLogEvents_UnknownException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	unknownException := awserr.New("unknownException", "", nil)
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, unknownException).Once()
@@ -242,7 +254,8 @@ func TestPutLogEvents_ThrottlingException(t *testing.T) {
 		SequenceToken: &previousSequenceToken,
 	}
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 
 	throttlingException := awserr.New(errCodeThrottlingException, "", nil)
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, throttlingException).Once()
@@ -264,7 +277,8 @@ func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -291,7 +305,8 @@ func TestLogRetention_NeverExpire(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -326,7 +341,8 @@ func TestLogRetention_RetentionDaysInputted(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -362,7 +378,8 @@ func TestSetTags_NotCalled(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
@@ -397,7 +414,8 @@ func TestSetTags_Called(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
+		NextSequenceToken: &expectedNextSequenceToken,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	avalue := "avalue"
@@ -433,7 +451,8 @@ func TestPutLogEvents_AllRetriesFail(t *testing.T) {
 	}
 
 	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: nil}
+		NextSequenceToken: nil,
+	}
 	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
 
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Twice()
@@ -538,54 +557,103 @@ func TestUserAgent(t *testing.T) {
 		name                 string
 		buildInfo            component.BuildInfo
 		logGroupName         string
+		clientOptions        []ClientOption
 		expectedUserAgentStr string
 	}{
 		{
-			"emptyLogGroup",
+			"emptyLogGroupAndEmptyClientOptions",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"",
+			[]ClientOption{},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s)", expectedComponentName),
+		},
+		{
+			"emptyLogGroupWithEmptyUserAgentExtras",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"",
+			[]ClientOption{WithUserAgentExtras()},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s)", expectedComponentName),
 		},
 		{
 			"buildInfoCommandUsed",
 			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
 			"",
+			[]ClientOption{},
 			fmt.Sprintf("test-collector-contrib/1.0 (%s)", expectedComponentName),
 		},
 		{
-			"non container insights",
+			"buildInfoCommandUsedWithEmptyUserAgentExtras",
+			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
+			"",
+			[]ClientOption{WithUserAgentExtras()},
+			fmt.Sprintf("test-collector-contrib/1.0 (%s)", expectedComponentName),
+		},
+		{
+			"nonContainerInsights",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.1"},
 			"test-group",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.1 (%s)", expectedComponentName),
 		},
 		{
-			"container insights EKS",
+			"containerInsightsEKS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/eks-cluster-name/performance",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
 		},
 		{
-			"container insights ECS",
+			"containerInsightsECS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
 		},
 		{
-			"container insights prometheus",
+			"containerInsightsPrometheus",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/cluster-name/prometheus",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
+		},
+		{
+			"validAppSignalsLogGroupAndAgentString",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/application-signals",
+			[]ClientOption{WithUserAgentExtras("AppSignals")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; AppSignals)", expectedComponentName),
+		},
+		{
+			"multipleAgentStringExtras",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/application-signals",
+			[]ClientOption{WithUserAgentExtras("abcde", "vwxyz", "12345")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; abcde; vwxyz; 12345)", expectedComponentName),
+		},
+		{
+			"containerInsightsEKSWithMultipleAgentStringExtras",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/containerinsights/eks-cluster-name/performance",
+			[]ClientOption{WithUserAgentExtras("extra0", "extra1", "extra2")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; extra0; extra1; extra2; ContainerInsights)", expectedComponentName),
+		},
+		{
+			"validAppSignalsEMFEnabled",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/application-signals",
+			[]ClientOption{WithUserAgentExtras("AppSignals")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; AppSignals)", expectedComponentName),
 		},
 	}
 
 	testSession, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName)
+			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName, tc.clientOptions...)
 			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
-				HTTPMethod: "GET",
+				HTTPMethod: http.MethodGet,
 				HTTPPath:   "/",
 			}, nil, nil)
 

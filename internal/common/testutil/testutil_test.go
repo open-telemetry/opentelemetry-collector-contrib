@@ -26,6 +26,7 @@ func TestGetAvailableLocalAddress(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, ln1)
 }
+
 func TestGetAvailableLocalUDPAddress(t *testing.T) {
 	addr := GetAvailableLocalNetworkAddress(t, "udp")
 	// Endpoint should be free.
@@ -40,6 +41,10 @@ func TestGetAvailableLocalUDPAddress(t *testing.T) {
 	ln1, err := net.ListenPacket("udp", addr)
 	require.Error(t, err)
 	require.Nil(t, ln1)
+}
+
+func TestEndpointForPort(t *testing.T) {
+	require.Equal(t, "localhost:22", EndpointForPort(22))
 }
 
 func TestCreateExclusionsList(t *testing.T) {
@@ -63,8 +68,8 @@ Start Port    End Port
 * - Administered port exclusions.
 `
 	exclusions := createExclusionsList(t, exclusionsText)
-	require.Equal(t, len(exclusions), 2)
+	require.Len(t, exclusions, 2)
 
 	emptyExclusions := createExclusionsList(t, emptyExclusionsText)
-	require.Equal(t, len(emptyExclusions), 0)
+	require.Empty(t, emptyExclusions)
 }

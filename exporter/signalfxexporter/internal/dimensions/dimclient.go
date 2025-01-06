@@ -32,7 +32,7 @@ import (
 // updates are currently not done by this port.
 type DimensionClient struct {
 	sync.RWMutex
-	ctx           context.Context
+	cancel        context.CancelFunc
 	Token         configopaque.String
 	APIURL        *url.URL
 	client        *http.Client
@@ -84,7 +84,7 @@ type DimensionClientOptions struct {
 }
 
 // NewDimensionClient returns a new client
-func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *DimensionClient {
+func NewDimensionClient(options DimensionClientOptions) *DimensionClient {
 	client := &http.Client{
 		Timeout: options.Timeout,
 		Transport: &http.Transport{
@@ -102,10 +102,9 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 			TLSClientConfig:     options.APITLSConfig,
 		},
 	}
-	sender := NewReqSender(ctx, client, 20, map[string]string{"client": "dimension"})
+	sender := NewReqSender(client, 20, map[string]string{"client": "dimension"})
 
 	return &DimensionClient{
-		ctx:               ctx,
 		Token:             options.Token,
 		APIURL:            options.APIURL,
 		sendDelay:         options.SendDelay,
@@ -123,7 +122,18 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 
 // Start the client's processing queue
 func (dc *DimensionClient) Start() {
-	go dc.processQueue()
+	var ctx context.Context
+	// The dimension client is started during the exporter's startup functionality.
+	// The collector spec states that for long-running operations, components should
+	// use the background context, rather than the passed in context.
+	ctx, dc.cancel = context.WithCancel(context.Background())
+	go dc.processQueue(ctx)
+}
+
+func (dc *DimensionClient) Shutdown() {
+	if dc.cancel != nil {
+		dc.cancel()
+	}
 }
 
 // acceptDimension to be sent to the API.  This will return fairly quickly and
@@ -185,10 +195,10 @@ func mergeTags(tagSets ...map[string]bool) map[string]bool {
 	return out
 }
 
-func (dc *DimensionClient) processQueue() {
+func (dc *DimensionClient) processQueue(ctx context.Context) {
 	for {
 		select {
-		case <-dc.ctx.Done():
+		case <-ctx.Done():
 			return
 		case delayedDimUpdate := <-dc.delayedQueue:
 			now := dc.now()
@@ -201,7 +211,7 @@ func (dc *DimensionClient) processQueue() {
 			delete(dc.delayedSet, delayedDimUpdate.Key())
 			dc.Unlock()
 
-			if err := dc.handleDimensionUpdate(delayedDimUpdate.DimensionUpdate); err != nil {
+			if err := dc.handleDimensionUpdate(ctx, delayedDimUpdate.DimensionUpdate); err != nil {
 				dc.logger.Error(
 					"Could not send dimension update",
 					zap.Error(err),
@@ -213,44 +223,45 @@ func (dc *DimensionClient) processQueue() {
 }
 
 // handleDimensionUpdate will set custom properties on a specific dimension value.
-func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) error {
+func (dc *DimensionClient) handleDimensionUpdate(ctx context.Context, dimUpdate *DimensionUpdate) error {
 	var (
 		req *http.Request
 		err error
 	)
 
-	req, err = dc.makePatchRequest(dimUpdate)
-
+	req, err = dc.makePatchRequest(ctx, dimUpdate)
 	if err != nil {
 		return err
 	}
 
 	req = req.WithContext(
 		context.WithValue(req.Context(), RequestFailedCallbackKey, RequestFailedCallback(func(statusCode int, err error) {
-			if statusCode >= 400 && statusCode < 500 && statusCode != 404 {
-				dc.logger.Error(
-					"Unable to update dimension, not retrying",
-					zap.Error(err),
-					zap.String("URL", sanitize.URL(req.URL)),
-					zap.String("dimensionUpdate", dimUpdate.String()),
-					zap.Int("statusCode", statusCode),
-				)
-
-				// Don't retry if it is a 4xx error (except 404) since these
-				// imply an input/auth error, which is not going to be remedied
-				// by retrying.
-				// 404 errors are special because they can occur due to races
-				// within the dimension patch endpoint.
-				return
+			retry := false
+			retryMsg := "not retrying"
+			if statusCode == 400 && len(dimUpdate.Tags) > 0 {
+				// It's possible that number of tags is too large. In this case,
+				// we should retry the request without tags to update the dimension properties at least.
+				dimUpdate.Tags = nil
+				retry = true
+				retryMsg = "retrying without tags"
+			} else if statusCode == 404 || statusCode >= 500 {
+				// Retry on 5xx server errors or 404s which can occur due to races within the dimension patch endpoint.
+				retry = true
+				retryMsg = "retrying"
 			}
 
 			dc.logger.Error(
-				"Unable to update dimension, retrying",
+				"Unable to update dimension, "+retryMsg,
 				zap.Error(err),
 				zap.String("URL", sanitize.URL(req.URL)),
 				zap.String("dimensionUpdate", dimUpdate.String()),
 				zap.Int("statusCode", statusCode),
 			)
+
+			if !retry {
+				return
+			}
+
 			// The retry is meant to provide some measure of robustness against
 			// temporary API failures.  If the API is down for significant
 			// periods of time, dimension updates will probably eventually back
@@ -276,7 +287,7 @@ func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) err
 			}
 		})))
 
-	dc.requestSender.Send(req)
+	dc.requestSender.Send(ctx, req)
 
 	return nil
 }
@@ -290,7 +301,7 @@ func (dc *DimensionClient) makeDimURL(key, value string) (*url.URL, error) {
 	return url, nil
 }
 
-func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request, error) {
+func (dc *DimensionClient) makePatchRequest(ctx context.Context, dim *DimensionUpdate) (*http.Request, error) {
 	var (
 		tagsToAdd    []string
 		tagsToRemove []string
@@ -319,8 +330,8 @@ func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request
 	}
 
 	req, err := http.NewRequestWithContext(
-		context.Background(),
-		"PATCH",
+		ctx,
+		http.MethodPatch,
 		strings.TrimRight(url.String(), "/")+"/_/sfxagent",
 		bytes.NewReader(json))
 	if err != nil {

@@ -6,6 +6,7 @@ package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,12 +28,12 @@ type expVar struct {
 
 type expVarScraper struct {
 	cfg    *Config
-	set    *receiver.CreateSettings
+	set    *receiver.Settings
 	client *http.Client
 	mb     *metadata.MetricsBuilder
 }
 
-func newExpVarScraper(cfg *Config, set receiver.CreateSettings) *expVarScraper {
+func newExpVarScraper(cfg *Config, set receiver.Settings) *expVarScraper {
 	return &expVarScraper{
 		cfg: cfg,
 		set: &set,
@@ -51,7 +52,7 @@ func (e *expVarScraper) start(ctx context.Context, host component.Host) error {
 
 func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	emptyMetrics := pmetric.NewMetrics()
-	req, err := http.NewRequestWithContext(ctx, "GET", e.cfg.Endpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, e.cfg.Endpoint, nil)
 	if err != nil {
 		return emptyMetrics, err
 	}
@@ -70,7 +71,7 @@ func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 	memStats := result.MemStats
 	if memStats == nil {
-		return emptyMetrics, fmt.Errorf("unmarshalled memstats data is nil")
+		return emptyMetrics, errors.New("unmarshalled memstats data is nil")
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())

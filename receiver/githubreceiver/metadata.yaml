@@ -1,0 +1,134 @@
+type: github
+
+sem_conv_version: 1.27.0
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+    development: [traces]
+  distributions: [contrib]
+  codeowners:
+    active: [adrielp, andrzej-stencel, crobert-1, TylerHelmuth]
+
+resource_attributes:
+  organization.name:
+    enabled: true
+    description: VCS Organization
+    type: string
+  vcs.vendor.name:
+    enabled: true
+    description: The name of the VCS vendor/provider (ie. GitHub)
+    type: string
+
+attributes:
+  vcs.repository.url.full:
+    description: The canonical URL of the repository providing the complete HTTPS address.
+    type: string
+  vcs.repository.name:
+    description: The name of the VCS repository.
+    type: string
+  vcs.ref.head.name:
+    description: The name of the VCS head reference (branch).
+    type: string
+  vcs.ref.head.type:
+    description: The type of the head reference (branch, tag).
+    type: string
+    enum:
+      - branch
+      - tag
+  vcs.change.state:
+    description: The state of a change (pull request)
+    type: string
+    enum:
+      - open
+      - merged
+  vcs.revision_delta.direction:
+    description: The type of revision comparison.
+    type: string
+    enum:
+      - ahead
+      - behind
+  vcs.line_change.type:
+    description: The type of line change being measured on a ref (branch).
+    type: string
+    enum:
+      - added
+      - removed
+
+metrics:
+  vcs.repository.count:
+    enabled: true
+    description: The number of repositories in an organization.
+    unit: "{repository}"
+    gauge:
+      value_type: int
+    attributes: []
+  vcs.ref.count:
+    enabled: true
+    description: The number of refs of type branch in a repository.
+    unit: "{ref}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.type]
+  vcs.ref.time:
+    enabled: true
+    description: Time a ref (branch) created from the default branch (trunk) has existed. The `vcs.ref.head.type` attribute will always be `branch`.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type]
+  vcs.ref.revisions_delta:
+    enabled: true
+    description: The number of revisions (commits) a ref (branch) is ahead/behind the branch from trunk (default).
+    unit: "{revision}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.revision_delta.direction]
+  vcs.ref.lines_delta:
+    enabled: true
+    description: The number of lines added/removed in a ref (branch) relative to the default branch (trunk).
+    unit: "{line}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.ref.head.type, vcs.line_change.type]
+  vcs.contributor.count:
+    enabled: false
+    description: The number of unique contributors to a repository.
+    unit: "{contributor}"
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name]
+  vcs.change.duration:
+    enabled: true
+    description: The time duration a change (pull request/merge request/changelist) has been in an open state.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name, vcs.change.state]
+  vcs.change.time_to_merge:
+    enabled: true
+    description: The amount of time it took a change (pull request) to go from open to merged.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
+  vcs.change.time_to_approval:
+    enabled: true
+    description: The amount of time it took a change (pull request) to go from open to approved.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [vcs.repository.url.full, vcs.repository.name, vcs.ref.head.name]
+  vcs.change.count:
+    description: The number of changes (pull requests) in a repository, categorized by their state (either open or merged).
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{change}"
+    attributes: [vcs.repository.url.full, vcs.change.state, vcs.repository.name]
+
+tests:
+  config:
+    webhook:
+      endpoint: "localhost:8080"

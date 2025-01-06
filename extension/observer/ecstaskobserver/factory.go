@@ -38,7 +38,7 @@ type baseExtension struct {
 
 func createExtension(
 	_ context.Context,
-	params extension.CreateSettings,
+	params extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
 	obsCfg := cfg.(*Config)

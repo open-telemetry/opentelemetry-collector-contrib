@@ -13,8 +13,8 @@ import (
 
 var (
 	errMissingEndpointFromConfig   = errors.New("missing receiver server endpoint from config")
-	errReadTimeoutExceedsMaxValue  = errors.New("The duration specified for read_timeout exceeds the maximum allowed value of 10s")
-	errWriteTimeoutExceedsMaxValue = errors.New("The duration specified for write_timeout exceeds the maximum allowed value of 10s")
+	errReadTimeoutExceedsMaxValue  = errors.New("the duration specified for read_timeout exceeds the maximum allowed value of 10s")
+	errWriteTimeoutExceedsMaxValue = errors.New("the duration specified for write_timeout exceeds the maximum allowed value of 10s")
 	errRequiredHeader              = errors.New("both key and value are required to assign a required_header")
 )
 

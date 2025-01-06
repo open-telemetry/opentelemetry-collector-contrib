@@ -43,7 +43,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	ccfg.Credentials.InstallationToken = "dummy_install_token"
 
 	ext, err := createExtension(context.Background(),
-		extension.CreateSettings{
+		extension.Settings{
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		},
 		cfg,
@@ -52,13 +52,13 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	require.NotNil(t, ext)
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactory_Create(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = "test_collector"
 	cfg.Credentials.InstallationToken = "dummy_install_token"
 
 	ext, err := createExtension(context.Background(),
-		extension.CreateSettings{
+		extension.Settings{
 			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		},
 		cfg,

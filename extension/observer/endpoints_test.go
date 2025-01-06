@@ -46,6 +46,7 @@ func TestEndpointEnv(t *testing.T) {
 				},
 				"uid":       "pod-uid",
 				"namespace": "pod-namespace",
+				"host":      "192.68.73.2",
 			},
 		},
 		{
@@ -88,6 +89,7 @@ func TestEndpointEnv(t *testing.T) {
 					"namespace": "pod-namespace",
 				},
 				"transport": ProtocolTCP,
+				"host":      "192.68.73.2",
 			},
 		},
 		{
@@ -124,6 +126,7 @@ func TestEndpointEnv(t *testing.T) {
 				"namespace":    "service-namespace",
 				"cluster_ip":   "192.68.73.2",
 				"service_type": "LoadBalancer",
+				"host":         "service.namespace",
 			},
 		},
 		{
@@ -148,6 +151,7 @@ func TestEndpointEnv(t *testing.T) {
 				"is_ipv6":      true,
 				"port":         uint16(2379),
 				"transport":    ProtocolUDP,
+				"host":         "127.0.0.1",
 			},
 		},
 		{
@@ -228,6 +232,54 @@ func TestEndpointEnv(t *testing.T) {
 				"labels": map[string]string{
 					"label_key": "label_val",
 				},
+				"host": "127.0.0.1",
+				"port": "1234",
+			},
+		},
+		{
+			// This is an invalid test case, to ensure "port" keeps the original value and
+			// isn't overwritten by a port parsed from the "Target". The two ports shouldn't mismatch
+			// if they're exposed in both places.
+			name: "K8s pod port - conflicting ports",
+			endpoint: Endpoint{
+				ID:     EndpointID("port_id"),
+				Target: "192.68.73.2:4321",
+				Details: &Port{
+					Name: "port_name",
+					Pod: Pod{
+						Name: "pod_name",
+						Labels: map[string]string{
+							"label_key": "label_val",
+						},
+						Annotations: map[string]string{
+							"annotation_1": "value_1",
+						},
+						Namespace: "pod-namespace",
+						UID:       "pod-uid",
+					},
+					Port:      2379,
+					Transport: ProtocolTCP,
+				},
+			},
+			want: EndpointEnv{
+				"type":     "port",
+				"endpoint": "192.68.73.2:4321",
+				"id":       "port_id",
+				"name":     "port_name",
+				"port":     uint16(2379),
+				"pod": EndpointEnv{
+					"name": "pod_name",
+					"labels": map[string]string{
+						"label_key": "label_val",
+					},
+					"annotations": map[string]string{
+						"annotation_1": "value_1",
+					},
+					"uid":       "pod-uid",
+					"namespace": "pod-namespace",
+				},
+				"transport": ProtocolTCP,
+				"host":      "192.68.73.2",
 			},
 		},
 	}

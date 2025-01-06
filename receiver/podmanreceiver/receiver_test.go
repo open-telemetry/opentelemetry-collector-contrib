@@ -28,22 +28,16 @@ func TestNewReceiver(t *testing.T) {
 			InitialDelay:       time.Second,
 		},
 	}
-	mr := newMetricsReceiver(receivertest.NewNopCreateSettings(), config, nil)
+	mr := newMetricsReceiver(receivertest.NewNopSettings(), config, nil)
 	assert.NotNil(t, mr)
 }
 
 func TestErrorsInStart(t *testing.T) {
-	recv := newMetricsReceiver(receivertest.NewNopCreateSettings(), &Config{}, nil)
+	recv := newMetricsReceiver(receivertest.NewNopSettings(), &Config{}, nil)
 	assert.NotNil(t, recv)
 	err := recv.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
-	assert.Equal(t, "config.Endpoint must be specified", err.Error())
-
-	recv = newMetricsReceiver(receivertest.NewNopCreateSettings(), &Config{Endpoint: "someEndpoint"}, nil)
-	assert.NotNil(t, recv)
-	err = recv.start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
+	assert.Equal(t, `unable to create connection. "" is not a supported schema`, err.Error())
 }
 
 func TestScraperLoop(t *testing.T) {
@@ -55,7 +49,7 @@ func TestScraperLoop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	r := newMetricsReceiver(receivertest.NewNopCreateSettings(), cfg, client.factory)
+	r := newMetricsReceiver(receivertest.NewNopSettings(), cfg, client.factory)
 	assert.NotNil(t, r)
 
 	go func() {

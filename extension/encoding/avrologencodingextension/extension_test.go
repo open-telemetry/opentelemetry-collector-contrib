@@ -34,16 +34,15 @@ func TestUnmarshal(t *testing.T) {
 	logRecord := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"count\":5,\"hostname\":\"host1\",\"level\":\"warn\",\"levelEnum\":\"INFO\",\"mapField\":{},\"message\":\"log message\",\"nestedRecord\":{\"field1\":12,\"field2\":\"val2\"},\"properties\":[\"prop1\",\"prop2\"],\"severity\":1,\"timestamp\":1697187201488000000}", logRecord.Body().AsString())
+	assert.JSONEq(t, "{\"count\":5,\"hostname\":\"host1\",\"level\":\"warn\",\"levelEnum\":\"INFO\",\"mapField\":{},\"message\":\"log message\",\"nestedRecord\":{\"field1\":12,\"field2\":\"val2\"},\"properties\":[\"prop1\",\"prop2\"],\"severity\":1,\"timestamp\":1697187201488000000}", logRecord.Body().AsString())
 }
 
 func TestInvalidUnmarshal(t *testing.T) {
 	t.Parallel()
 
 	schema, err := loadAVROSchemaFromFile("testdata/schema1.avro")
-	if err != nil {
-		t.Fatalf("Failed to read avro schema file: %q", err.Error())
-	}
+
+	require.NoError(t, err, "Failed to read avro schema file")
 
 	e, err := newExtension(&Config{Schema: string(schema)})
 	assert.NoError(t, err)

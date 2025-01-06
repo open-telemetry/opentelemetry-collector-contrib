@@ -76,12 +76,11 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			var hosts []confignet.AddrConfig
+			var hosts []confignet.TCPAddrConfig
 
 			for _, ep := range tc.endpoints {
-				hosts = append(hosts, confignet.AddrConfig{
-					Endpoint:  ep,
-					Transport: confignet.TransportTypeTCP,
+				hosts = append(hosts, confignet.TCPAddrConfig{
+					Endpoint: ep,
 				})
 			}
 
@@ -95,7 +94,7 @@ func TestValidate(t *testing.T) {
 			if tc.expected == nil {
 				require.NoError(t, err)
 			} else {
-				require.Contains(t, err.Error(), tc.expected.Error())
+				require.ErrorContains(t, err, tc.expected.Error())
 			}
 		})
 	}
@@ -135,10 +134,9 @@ func TestBadTLSConfigs(t *testing.T) {
 			cfg := &Config{
 				Username: "otel",
 				Password: "pword",
-				Hosts: []confignet.AddrConfig{
+				Hosts: []confignet.TCPAddrConfig{
 					{
-						Endpoint:  "localhost:27017",
-						Transport: confignet.TransportTypeTCP,
+						Endpoint: defaultEndpoint,
 					},
 				},
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -156,9 +154,9 @@ func TestBadTLSConfigs(t *testing.T) {
 
 func TestOptions(t *testing.T) {
 	cfg := &Config{
-		Hosts: []confignet.AddrConfig{
+		Hosts: []confignet.TCPAddrConfig{
 			{
-				Endpoint: "localhost:27017",
+				Endpoint: defaultEndpoint,
 			},
 		},
 		Username:   "uname",
@@ -181,9 +179,9 @@ func TestOptionsTLS(t *testing.T) {
 	caFile := filepath.Join("testdata", "certs", "ca.crt")
 
 	cfg := &Config{
-		Hosts: []confignet.AddrConfig{
+		Hosts: []confignet.TCPAddrConfig{
 			{
-				Endpoint: "localhost:27017",
+				Endpoint: defaultEndpoint,
 			},
 		},
 		ClientConfig: configtls.ClientConfig{
@@ -206,12 +204,12 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Hosts = []confignet.AddrConfig{
+	expected.Hosts = []confignet.TCPAddrConfig{
 		{
-			Endpoint: "localhost:27017",
+			Endpoint: defaultEndpoint,
 		},
 	}
 	expected.Username = "otel"

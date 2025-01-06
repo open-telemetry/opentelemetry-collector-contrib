@@ -44,10 +44,10 @@ func (sf *SFxMetricsDataSender) Start() error {
 		APIURL:      "http://127.0.0.1",
 		AccessToken: "access_token",
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
-	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	exporter, err := factory.CreateMetrics(context.Background(), params, cfg)
 	if err != nil {
 		return err
 	}

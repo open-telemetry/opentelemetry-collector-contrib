@@ -12,10 +12,12 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
@@ -45,7 +47,7 @@ type firehoseConsumer interface {
 // firehoseReceiver
 type firehoseReceiver struct {
 	// settings is the base receiver settings.
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	// config is the configuration for the receiver.
 	config *Config
 	// server is the HTTP/HTTPS server set up to listen
@@ -100,8 +102,10 @@ type firehoseCommonAttributes struct {
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
-var _ receiver.Metrics = (*firehoseReceiver)(nil)
-var _ http.Handler = (*firehoseReceiver)(nil)
+var (
+	_ receiver.Metrics = (*firehoseReceiver)(nil)
+	_ http.Handler     = (*firehoseReceiver)(nil)
+)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
@@ -126,7 +130,7 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 		defer fmr.shutdownWG.Done()
 
 		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			fmr.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -232,10 +236,14 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // validate checks the Firehose access key in the header against
 // the one passed into the Config
 func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
-	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != string(fmr.config.AccessKey) {
-		return http.StatusUnauthorized, errInvalidAccessKey
+	if string(fmr.config.AccessKey) == "" {
+		// No access key is configured - accept all requests.
+		return http.StatusAccepted, nil
 	}
-	return http.StatusAccepted, nil
+	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey == string(fmr.config.AccessKey) {
+		return http.StatusAccepted, nil
+	}
+	return http.StatusUnauthorized, errInvalidAccessKey
 }
 
 // getBody reads the body from the request as a slice of bytes.
@@ -277,7 +285,7 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 	}
 	payload, _ := json.Marshal(body)
 	w.Header().Set(headerContentType, "application/json")
-	w.Header().Set(headerContentLength, fmt.Sprintf("%d", len(payload)))
+	w.Header().Set(headerContentLength, strconv.Itoa(len(payload)))
 	w.WriteHeader(statusCode)
 	if _, err = w.Write(payload); err != nil {
 		fmr.settings.Logger.Error("Failed to send response", zap.Error(err))

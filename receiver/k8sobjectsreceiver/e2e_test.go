@@ -27,9 +27,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
-const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
-const testObjectsDir = "./testdata/e2e/testobjects/"
-const expectedDir = "./testdata/e2e/expected/"
+const (
+	testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
+	testObjectsDir = "./testdata/e2e/testobjects/"
+	expectedDir    = "./testdata/e2e/expected/"
+)
 
 type objAction int
 
@@ -40,7 +42,6 @@ const (
 )
 
 func TestE2E(t *testing.T) {
-
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
 
@@ -49,8 +50,9 @@ func TestE2E(t *testing.T) {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.HTTP = nil
+	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 	logsConsumer := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, logsConsumer)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, logsConsumer)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, err, "failed creating logs receiver")
 	defer func() {

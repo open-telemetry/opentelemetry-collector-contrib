@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
 
@@ -20,8 +21,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
-var _ extension.Extension = (*k8sObserver)(nil)
-var _ observer.Observable = (*k8sObserver)(nil)
+var (
+	_ extension.Extension = (*k8sObserver)(nil)
+	_ observer.Observable = (*k8sObserver)(nil)
+)
 
 type k8sObserver struct {
 	*observer.EndpointsWatcher
@@ -29,6 +32,7 @@ type k8sObserver struct {
 	podListerWatcher     cache.ListerWatcher
 	serviceListerWatcher cache.ListerWatcher
 	nodeListerWatcher    cache.ListerWatcher
+	ingressListerWatcher cache.ListerWatcher
 	handler              *handler
 	once                 *sync.Once
 	stop                 chan struct{}
@@ -69,6 +73,14 @@ func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 				k.telemetry.Logger.Error("error adding event handler to node informer", zap.Error(err))
 			}
 		}
+		if k.ingressListerWatcher != nil {
+			k.telemetry.Logger.Debug("creating and starting ingress informer")
+			ingressInformer := cache.NewSharedInformer(k.ingressListerWatcher, &networkingv1.Ingress{}, 0)
+			go ingressInformer.Run(k.stop)
+			if _, err := ingressInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to ingress informer", zap.Error(err))
+			}
+		}
 	})
 	return nil
 }
@@ -80,7 +92,7 @@ func (k *k8sObserver) Shutdown(_ context.Context) error {
 }
 
 // newObserver creates a new k8s observer extension.
-func newObserver(config *Config, set extension.CreateSettings) (extension.Extension, error) {
+func newObserver(config *Config, set extension.Settings) (extension.Extension, error) {
 	client, err := k8sconfig.MakeClient(config.APIConfig)
 	if err != nil {
 		return nil, err
@@ -101,7 +113,7 @@ func newObserver(config *Config, set extension.CreateSettings) (extension.Extens
 
 	var serviceListerWatcher cache.ListerWatcher
 	if config.ObserveServices {
-		var serviceSelector = fields.Everything()
+		serviceSelector := fields.Everything()
 		set.Logger.Debug("observing services")
 		serviceListerWatcher = cache.NewListWatchFromClient(restClient, "services", v1.NamespaceAll, serviceSelector)
 	}
@@ -117,6 +129,13 @@ func newObserver(config *Config, set extension.CreateSettings) (extension.Extens
 		set.Logger.Debug("observing nodes")
 		nodeListerWatcher = cache.NewListWatchFromClient(restClient, "nodes", v1.NamespaceAll, nodeSelector)
 	}
+
+	var ingressListerWatcher cache.ListerWatcher
+	if config.ObserveIngresses {
+		ingressSelector := fields.Everything()
+		set.Logger.Debug("observing ingresses")
+		ingressListerWatcher = cache.NewListWatchFromClient(client.NetworkingV1().RESTClient(), "ingresses", v1.NamespaceAll, ingressSelector)
+	}
 	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.TelemetrySettings.Logger}
 	obs := &k8sObserver{
 		EndpointsWatcher:     observer.NewEndpointsWatcher(h, time.Second, set.TelemetrySettings.Logger),
@@ -124,6 +143,7 @@ func newObserver(config *Config, set extension.CreateSettings) (extension.Extens
 		podListerWatcher:     podListerWatcher,
 		serviceListerWatcher: serviceListerWatcher,
 		nodeListerWatcher:    nodeListerWatcher,
+		ingressListerWatcher: ingressListerWatcher,
 		stop:                 make(chan struct{}),
 		config:               config,
 		handler:              h,

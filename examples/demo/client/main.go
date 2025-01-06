@@ -174,7 +174,6 @@ func main() {
 }
 
 func makeRequest(ctx context.Context) {
-
 	demoServerAddr, ok := os.LookupEnv("DEMO_SERVER_ENDPOINT")
 	if !ok {
 		demoServerAddr = "http://0.0.0.0:7080/hello"
@@ -186,7 +185,7 @@ func makeRequest(ctx context.Context) {
 	}
 
 	// Make sure we pass the context to the request to avoid broken traces.
-	req, err := http.NewRequestWithContext(ctx, "GET", demoServerAddr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, demoServerAddr, nil)
 	if err != nil {
 		handleErr(err, "failed to http request")
 	}

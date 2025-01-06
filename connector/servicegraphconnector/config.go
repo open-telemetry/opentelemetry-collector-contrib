@@ -9,7 +9,6 @@ import (
 
 // Config defines the configuration options for servicegraphprocessor.
 type Config struct {
-
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
 	//
 	// Deprecated: The exporter is defined as part of the pipeline and this option is currently noop.
@@ -30,12 +29,18 @@ type Config struct {
 
 	// Store contains the config for the in-memory store used to find requests between services by pairing spans.
 	Store StoreConfig `mapstructure:"store"`
+
 	// CacheLoop is the time to cleans the cache periodically.
 	CacheLoop time.Duration `mapstructure:"cache_loop"`
+
 	// CacheLoop is the time to expire old entries from the store periodically.
 	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
+
 	// VirtualNodePeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
 	VirtualNodePeerAttributes []string `mapstructure:"virtual_node_peer_attributes"`
+
+	// VirtualNodeExtraLabel enables the `virtual_node` label to be added to the spans.
+	VirtualNodeExtraLabel bool `mapstructure:"virtual_node_extra_label"`
 
 	// MetricsFlushInterval is the interval at which metrics are flushed to the exporter.
 	// If set to 0, metrics are flushed on every received batch of traces.

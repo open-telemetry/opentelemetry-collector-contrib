@@ -15,12 +15,12 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -32,14 +32,11 @@ func factory() (rcvr.Factory, *Config) {
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (rcvr.Settings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
-	settings.ReportStatus = func(event *component.StatusEvent) {
-		require.NoError(t, event.Err())
-	}
 	return settings, ctx, cancel
 }
 
@@ -83,10 +80,14 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, recv.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, recv.Start(ctx, &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
+	}))
 
 	assert.Eventuallyf(t, func() bool {
 		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
@@ -102,9 +103,13 @@ func TestMonitoringAddedAndRemovedContainerIntegration(t *testing.T) {
 	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, recv.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, recv.Start(ctx, &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
+	}))
 
 	container := createNginxContainer(ctx, t)
 
@@ -135,13 +140,31 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	config.ExcludedImages = append(config.ExcludedImages, "*nginx*")
 
 	consumer := new(consumertest.MetricsSink)
-	recv, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	recv, err := f.CreateMetrics(ctx, params, config, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, recv.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, recv.Start(ctx, &nopHost{
+		reportFunc: func(event *componentstatus.Event) {
+			require.NoError(t, event.Err())
+		},
+	}))
 
 	assert.Never(t, func() bool {
 		return hasResourceScopeMetrics(container.GetContainerID(), consumer.AllMetrics())
 	}, 5*time.Second, 1*time.Second, "received undesired metrics")
 
 	assert.NoError(t, recv.Shutdown(ctx))
+}
+
+var _ componentstatus.Reporter = (*nopHost)(nil)
+
+type nopHost struct {
+	reportFunc func(event *componentstatus.Event)
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) Report(event *componentstatus.Event) {
+	nh.reportFunc(event)
 }

@@ -215,6 +215,7 @@ type BasicIndexOperation struct {
 
 type MergeOperations struct {
 	BasicIndexOperation
+	Current          int64 `json:"current"`
 	TotalSizeInBytes int64 `json:"total_size_in_bytes"`
 	TotalDocs        int64 `json:"total_docs"`
 }

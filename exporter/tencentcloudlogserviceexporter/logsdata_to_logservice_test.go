@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 type logKeyValuePair struct {
@@ -89,7 +89,7 @@ func TestConvertLogs(t *testing.T) {
 	totalLogCount := 10
 	validLogCount := totalLogCount - 1
 	gotLogs := convertLogs(createLogData(10))
-	assert.Equal(t, len(gotLogs), 9)
+	assert.Len(t, gotLogs, 9)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
@@ -102,7 +102,6 @@ func TestConvertLogs(t *testing.T) {
 			})
 		}
 		gotLogPairs = append(gotLogPairs, pairs)
-
 	}
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)

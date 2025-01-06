@@ -23,7 +23,7 @@ func TestDetectTrue(t *testing.T) {
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 	t.Setenv("HEROKU_SLUG_COMMIT", "23456")
 
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -46,7 +46,7 @@ func TestDetectTruePartial(t *testing.T) {
 	t.Setenv("HEROKU_APP_NAME", "appname")
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -66,7 +66,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 	t.Setenv("HEROKU_APP_NAME", "appname")
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -81,8 +81,7 @@ func TestDetectTruePartialMissingDynoId(t *testing.T) {
 }
 
 func TestDetectFalse(t *testing.T) {
-
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)

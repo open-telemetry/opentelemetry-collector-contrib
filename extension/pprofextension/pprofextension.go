@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
 )
 
@@ -28,7 +29,7 @@ type pprofExtension struct {
 	telemetrySettings component.TelemetrySettings
 }
 
-func (p *pprofExtension) Start(_ context.Context, _ component.Host) error {
+func (p *pprofExtension) Start(_ context.Context, host component.Host) error {
 	// The runtime settings are global to the application, so while in principle it
 	// is possible to have more than one instance, running multiple will mean that
 	// the settings of the last started instance will prevail. In order to avoid
@@ -67,7 +68,7 @@ func (p *pprofExtension) Start(_ context.Context, _ component.Host) error {
 
 		// The listener ownership goes to the server.
 		if errHTTP := p.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			p.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

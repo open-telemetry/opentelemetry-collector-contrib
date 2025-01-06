@@ -52,7 +52,7 @@ func TestStartAndShutdown(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			sink := &consumertest.LogsSink{}
-			r := newEventsReceiver(receivertest.NewNopCreateSettings(), tc.getConfig(), sink)
+			r := newEventsReceiver(receivertest.NewNopSettings(), tc.getConfig(), sink)
 			err := r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 			if tc.expectedStartErr != nil {
 				require.ErrorContains(t, err, tc.expectedStartErr.Error())
@@ -79,7 +79,7 @@ func TestContextDone(t *testing.T) {
 		},
 	}
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopCreateSettings(), cfg, sink)
+	r := newEventsReceiver(receivertest.NewNopSettings(), cfg, sink)
 	r.pollInterval = 500 * time.Millisecond
 	mClient := &mockEventsClient{}
 	mClient.setupMock(t)
@@ -115,7 +115,7 @@ func TestPoll(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopCreateSettings(), cfg, sink)
+	r := newEventsReceiver(receivertest.NewNopSettings(), cfg, sink)
 	mClient := &mockEventsClient{}
 	mClient.setupMock(t)
 	r.client = mClient
@@ -160,7 +160,7 @@ func TestProjectGetFailure(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopCreateSettings(), cfg, sink)
+	r := newEventsReceiver(receivertest.NewNopSettings(), cfg, sink)
 	mClient := &mockEventsClient{}
 	mClient.On("GetProject", mock.Anything, "fake-project").Return(nil, fmt.Errorf("unable to get project: %d", http.StatusUnauthorized))
 	mClient.On("GetOrganization", mock.Anything, "fake-org").Return(nil, fmt.Errorf("unable to get org: %d", http.StatusUnauthorized))

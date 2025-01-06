@@ -1,5 +1,4 @@
 type: windowsperfcounters
-scope_name: otelcol/windowsperfcountersreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, alxbl]
+    active: [dashpole, alxbl, pjanotti]
     seeking_new: true
   unsupported_platforms: [darwin, linux]
 

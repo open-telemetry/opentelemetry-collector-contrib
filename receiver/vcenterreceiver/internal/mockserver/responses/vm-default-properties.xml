@@ -1,271 +1,291 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Body>
-        <RetrievePropertiesResponse xmlns="urn:vim25">
+        <RetrievePropertiesExResponse xmlns="urn:vim25">
             <returnval>
-                <obj type="VirtualMachine">vm-1040</obj>
+                <objects>
+                    <obj type="VirtualMachine">vm-1040</obj>
+                    <propSet>
+                        <name>name</name>
+                        <val xsi:type="xsd:string">CentOS 7</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.hardware.numCPU</name>
+                        <val xsi:type="xsd:int">4</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.instanceUuid</name>
+                        <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb61</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.template</name>
+                        <val xsi:type="xsd:boolean">false</val>
+                    </propSet>
+                    <propSet>
+                        <name>resourcePool</name>
+                        <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-9</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.maxCpuUsage</name>
+                        <val xsi:type="xsd:int">10372</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.powerState</name>
+                        <val xsi:type="VirtualMachinePowerState">poweredOn</val>
+                    </propSet>
                 <propSet>
-                    <name>name</name>
-                    <val xsi:type="xsd:string">CentOS 7</val>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
                 </propSet>
-                <propSet>
-                    <name>config.hardware.numCPU</name>
-                    <val xsi:type="xsd:int">4</val>
-                </propSet>
-                <propSet>
-                    <name>config.instanceUuid</name>
-                    <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb61</val>
-                </propSet>
-                <propSet>
-                    <name>config.template</name>
-                    <val xsi:type="xsd:boolean">false</val>
-                </propSet>
-                <propSet>
-                    <name>resourcePool</name>
-                    <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-9</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.maxCpuUsage</name>
-                    <val xsi:type="xsd:int">10372</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.powerState</name>
-                    <val xsi:type="VirtualMachinePowerState">poweredOn</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.memorySizeMB</name>
-                    <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.balloonedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.guestMemoryUsage</name>
-                    <val xsi:type="xsd:int">163</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallCpuUsage</name>
-                    <val xsi:type="xsd:int">12</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.ssdSwappedMemory</name>
-                    <val xsi:type="xsd:long">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.swappedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.runtime.host</name>
-                    <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.committed</name>
-                    <val xsi:type="xsd:long">16311648256</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.uncommitted</name>
-                    <val xsi:type="xsd:long">258847277056</val>
-                </propSet>
+                    <propSet>
+                        <name>summary.config.memorySizeMB</name>
+                        <val xsi:type="xsd:int">16384</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.balloonedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.guestMemoryUsage</name>
+                        <val xsi:type="xsd:int">163</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallCpuUsage</name>
+                        <val xsi:type="xsd:int">12</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.ssdSwappedMemory</name>
+                        <val xsi:type="xsd:long">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.swappedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.runtime.host</name>
+                        <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.committed</name>
+                        <val xsi:type="xsd:long">16311648256</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.uncommitted</name>
+                        <val xsi:type="xsd:long">258847277056</val>
+                    </propSet>
+                </objects>
             </returnval>
             <returnval>
-                <obj type="VirtualMachine">vm-6004</obj>
+                <objects>
+                    <obj type="VirtualMachine">vm-6004</obj>
+                    <propSet>
+                        <name>name</name>
+                        <val xsi:type="xsd:string">CentOS 8</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.hardware.numCPU</name>
+                        <val xsi:type="xsd:int">4</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.instanceUuid</name>
+                        <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb62</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.template</name>
+                        <val xsi:type="xsd:boolean">false</val>
+                    </propSet>
+                    <propSet>
+                        <name>resourcePool</name>
+                        <val type="VirtualApp" xsi:type="ManagedObjectReference">resgroup-v10</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.maxCpuUsage</name>
+                        <val xsi:type="xsd:int">10372</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.powerState</name>
+                        <val xsi:type="VirtualMachinePowerState">poweredOn</val>
+                    </propSet>
                 <propSet>
-                    <name>name</name>
-                    <val xsi:type="xsd:string">CentOS 8</val>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
                 </propSet>
-                <propSet>
-                    <name>config.hardware.numCPU</name>
-                    <val xsi:type="xsd:int">4</val>
-                </propSet>
-                <propSet>
-                    <name>config.instanceUuid</name>
-                    <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb62</val>
-                </propSet>
-                <propSet>
-                    <name>config.template</name>
-                    <val xsi:type="xsd:boolean">false</val>
-                </propSet>
-                <propSet>
-                    <name>resourcePool</name>
-                    <val type="VirtualApp" xsi:type="ManagedObjectReference">resgroup-v10</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.maxCpuUsage</name>
-                    <val xsi:type="xsd:int">10372</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.powerState</name>
-                    <val xsi:type="VirtualMachinePowerState">poweredOn</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.memorySizeMB</name>
-                    <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.balloonedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.guestMemoryUsage</name>
-                    <val xsi:type="xsd:int">163</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallCpuUsage</name>
-                    <val xsi:type="xsd:int">12</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.ssdSwappedMemory</name>
-                    <val xsi:type="xsd:long">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.swappedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.runtime.host</name>
-                    <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.committed</name>
-                    <val xsi:type="xsd:long">16311648256</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.uncommitted</name>
-                    <val xsi:type="xsd:long">258847277056</val>
-                </propSet>
+                    <propSet>
+                        <name>summary.config.memorySizeMB</name>
+                        <val xsi:type="xsd:int">16384</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.balloonedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.guestMemoryUsage</name>
+                        <val xsi:type="xsd:int">163</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallCpuUsage</name>
+                        <val xsi:type="xsd:int">12</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.ssdSwappedMemory</name>
+                        <val xsi:type="xsd:long">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.swappedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.runtime.host</name>
+                        <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.committed</name>
+                        <val xsi:type="xsd:long">16311648256</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.uncommitted</name>
+                        <val xsi:type="xsd:long">258847277056</val>
+                    </propSet>
+                </objects>
             </returnval>
             <returnval>
-                <obj type="VirtualMachine">vm-6005</obj>
+                <objects>
+                    <obj type="VirtualMachine">vm-6005</obj>
+                    <propSet>
+                        <name>name</name>
+                        <val xsi:type="xsd:string">CentOS 9</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.hardware.numCPU</name>
+                        <val xsi:type="xsd:int">4</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.instanceUuid</name>
+                        <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb63</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.template</name>
+                        <val xsi:type="xsd:boolean">false</val>
+                    </propSet>
+                    <propSet>
+                        <name>resourcePool</name>
+                        <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-10</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.maxCpuUsage</name>
+                        <val xsi:type="xsd:int">10372</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.powerState</name>
+                        <val xsi:type="VirtualMachinePowerState">poweredOn</val>
+                    </propSet>
                 <propSet>
-                    <name>name</name>
-                    <val xsi:type="xsd:string">CentOS 9</val>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">yellow</val>
                 </propSet>
-                <propSet>
-                    <name>config.hardware.numCPU</name>
-                    <val xsi:type="xsd:int">4</val>
-                </propSet>
-                <propSet>
-                    <name>config.instanceUuid</name>
-                    <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb63</val>
-                </propSet>
-                <propSet>
-                    <name>config.template</name>
-                    <val xsi:type="xsd:boolean">false</val>
-                </propSet>
-                <propSet>
-                    <name>resourcePool</name>
-                    <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-10</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.maxCpuUsage</name>
-                    <val xsi:type="xsd:int">10372</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.powerState</name>
-                    <val xsi:type="VirtualMachinePowerState">poweredOn</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.memorySizeMB</name>
-                    <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.balloonedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.guestMemoryUsage</name>
-                    <val xsi:type="xsd:int">163</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallCpuUsage</name>
-                    <val xsi:type="xsd:int">12</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.ssdSwappedMemory</name>
-                    <val xsi:type="xsd:long">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.swappedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.runtime.host</name>
-                    <val type="HostSystem" xsi:type="ManagedObjectReference">host-1003</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.committed</name>
-                    <val xsi:type="xsd:long">16311648256</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.uncommitted</name>
-                    <val xsi:type="xsd:long">258847277056</val>
-                </propSet>
+                    <propSet>
+                        <name>summary.config.memorySizeMB</name>
+                        <val xsi:type="xsd:int">16384</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.balloonedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.guestMemoryUsage</name>
+                        <val xsi:type="xsd:int">163</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallCpuUsage</name>
+                        <val xsi:type="xsd:int">12</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.ssdSwappedMemory</name>
+                        <val xsi:type="xsd:long">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.swappedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.runtime.host</name>
+                        <val type="HostSystem" xsi:type="ManagedObjectReference">host-1003</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.committed</name>
+                        <val xsi:type="xsd:long">16311648256</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.uncommitted</name>
+                        <val xsi:type="xsd:long">258847277056</val>
+                    </propSet>
+                </objects>
             </returnval>
             <returnval>
-                <obj type="VirtualMachine">vm-template</obj>
-                <propSet>
-                    <name>name</name>
-                    <val xsi:type="xsd:string">CentOS 7 Template</val>
-                </propSet>
-                <propSet>
-                    <name>config.hardware.numCPU</name>
-                    <val xsi:type="xsd:int">4</val>
-                </propSet>
-                <propSet>
-                    <name>config.instanceUuid</name>
-                    <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb64</val>
-                </propSet>
-                <propSet>
-                    <name>config.template</name>
-                    <val xsi:type="xsd:boolean">true</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.maxCpuUsage</name>
-                    <val xsi:type="xsd:int">10372</val>
-                </propSet>
-                <propSet>
-                    <name>runtime.powerState</name>
-                    <val xsi:type="VirtualMachinePowerState">poweredOn</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.memorySizeMB</name>
-                    <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.balloonedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.guestMemoryUsage</name>
-                    <val xsi:type="xsd:int">163</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.overallCpuUsage</name>
-                    <val xsi:type="xsd:int">12</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.ssdSwappedMemory</name>
-                    <val xsi:type="xsd:long">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.quickStats.swappedMemory</name>
-                    <val xsi:type="xsd:int">0</val>
-                </propSet>
-                <propSet>
-                    <name>summary.runtime.host</name>
-                    <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.committed</name>
-                    <val xsi:type="xsd:long">16311648256</val>
-                </propSet>
-                <propSet>
-                    <name>summary.storage.uncommitted</name>
-                    <val xsi:type="xsd:long">258847277056</val>
-                </propSet>
+                <objects>
+                    <obj type="VirtualMachine">vm-template</obj>
+                    <propSet>
+                        <name>name</name>
+                        <val xsi:type="xsd:string">CentOS 7 Template</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.hardware.numCPU</name>
+                        <val xsi:type="xsd:int">4</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.instanceUuid</name>
+                        <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb64</val>
+                    </propSet>
+                    <propSet>
+                        <name>config.template</name>
+                        <val xsi:type="xsd:boolean">true</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.maxCpuUsage</name>
+                        <val xsi:type="xsd:int">10372</val>
+                    </propSet>
+                    <propSet>
+                        <name>runtime.powerState</name>
+                        <val xsi:type="VirtualMachinePowerState">poweredOn</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.config.memorySizeMB</name>
+                        <val xsi:type="xsd:int">16384</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.balloonedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.guestMemoryUsage</name>
+                        <val xsi:type="xsd:int">163</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.overallCpuUsage</name>
+                        <val xsi:type="xsd:int">12</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.ssdSwappedMemory</name>
+                        <val xsi:type="xsd:long">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.quickStats.swappedMemory</name>
+                        <val xsi:type="xsd:int">0</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.runtime.host</name>
+                        <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.committed</name>
+                        <val xsi:type="xsd:long">16311648256</val>
+                    </propSet>
+                    <propSet>
+                        <name>summary.storage.uncommitted</name>
+                        <val xsi:type="xsd:long">258847277056</val>
+                    </propSet>
+                </objects>
             </returnval>
-        </RetrievePropertiesResponse>
+        </RetrievePropertiesExResponse>
     </soapenv:Body>
 </soapenv:Envelope>

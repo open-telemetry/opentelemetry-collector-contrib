@@ -10,15 +10,16 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
@@ -31,43 +32,51 @@ type traceExporterImp struct {
 	routingKey          routingKey
 	routingResourceKeys []string
 
+	logger     *zap.Logger
 	stopped    bool
 	shutdownWg sync.WaitGroup
+	telemetry  *metadata.TelemetryBuilder
 }
 
 // Create new traces exporter
-func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*traceExporterImp, error) {
-	exporterFactory := otlpexporter.NewFactory()
-
-	eCfg := cfg.(*Config)
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
-		oCfg := buildExporterConfig(eCfg, endpoint)
-		return exporterFactory.CreateTracesExporter(ctx, params, &oCfg)
-	})
+func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceExporterImp, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 
-	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
+	exporterFactory := otlpexporter.NewFactory()
+	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
+		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
+		oParams := buildExporterSettings(params, endpoint)
 
-	switch eCfg.RoutingKey {
-	case "service":
+		return exporterFactory.CreateTraces(ctx, oParams, &oCfg)
+	}
+
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
+	if err != nil {
+		return nil, err
+	}
+
+	traceExporter := traceExporterImp{
+		loadBalancer: lb,
+		routingKey:   traceIDRouting,
+		telemetry:    telemetry,
+		logger:       params.Logger,
+	}
+
+	switch cfg.(*Config).RoutingKey {
+	case svcRoutingStr:
 		traceExporter.routingKey = resourceKeysRouting
 		traceExporter.routingResourceKeys = []string{"service.name"}
-	case "resource":
+	case resourceKeysRoutingStr:
 		traceExporter.routingKey = resourceKeysRouting
-		traceExporter.routingResourceKeys = eCfg.ResourceKeys
-	case "traceID", "":
+		traceExporter.routingResourceKeys = cfg.(*Config).ResourceKeys
+	case traceIDRoutingStr, "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
 	return &traceExporter, nil
-}
-
-func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
-	oCfg := cfg.Protocol.OTLP
-	oCfg.Endpoint = endpoint
-	return oCfg
 }
 
 func (e *traceExporterImp) Capabilities() consumer.Capabilities {
@@ -121,17 +130,12 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 		exp.consumeWG.Done()
 		errs = multierr.Append(errs, err)
 		duration := time.Since(start)
-
+		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoints[exp]), successTrueMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
 		} else {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoints[exp]), successFalseMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
+			e.logger.Debug("failed to export traces", zap.Error(err))
 		}
 	}
 

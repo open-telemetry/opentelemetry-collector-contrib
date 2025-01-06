@@ -29,7 +29,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -39,7 +39,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestCreateTracesReceiver(t *testing.T) {
+func TestCreateTraces(t *testing.T) {
 	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: confignet.TransportTypeTCP,
@@ -82,21 +82,21 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTracesReceiver(ctx, set, tt.cfg, consumertest.NewNop())
 			require.NoError(t, err)
 			err = tr.Start(context.Background(), componenttest.NewNopHost())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("factory.CreateTracesReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("factory.CreateTraces() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			require.NoError(t, tr.Shutdown(context.Background()))
 		})
 	}
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: confignet.TransportTypeTCP,
@@ -146,7 +146,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 		},
 	}
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tc, err := createMetricsReceiver(context.Background(), set, tt.cfg, consumertest.NewNop())
@@ -156,7 +156,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				require.NoError(t, tc.Shutdown(context.Background()))
 			}()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("factory.CreateMetrics() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 		})

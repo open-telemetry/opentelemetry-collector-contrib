@@ -14,8 +14,7 @@ import (
 )
 
 // newLogsExporter return a new LogService logs exporter.
-func newLogsExporter(set exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
-
+func newLogsExporter(set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	l := &logServiceLogsSender{
 		logger: set.Logger,
 	}
@@ -25,7 +24,7 @@ func newLogsExporter(set exporter.CreateSettings, cfg component.Config) (exporte
 		return nil, err
 	}
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		context.TODO(),
 		set,
 		cfg,
@@ -39,7 +38,8 @@ type logServiceLogsSender struct {
 
 func (s *logServiceLogsSender) pushLogsData(
 	_ context.Context,
-	md plog.Logs) error {
+	md plog.Logs,
+) error {
 	var err error
 	slsLogs := logDataToLogService(md)
 	if len(slsLogs) > 0 {

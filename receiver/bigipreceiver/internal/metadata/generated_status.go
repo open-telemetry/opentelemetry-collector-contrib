@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("bigip")
+	Type      = component.MustNewType("bigip")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 )
 
 const (

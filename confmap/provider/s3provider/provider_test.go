@@ -61,7 +61,6 @@ func TestFunctionalityS3URISplit(t *testing.T) {
 }
 
 func TestURIs(t *testing.T) {
-
 	tests := []struct {
 		name   string
 		uri    string

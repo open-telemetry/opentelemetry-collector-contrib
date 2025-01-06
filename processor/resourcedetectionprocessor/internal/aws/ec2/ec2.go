@@ -40,7 +40,8 @@ type ec2ClientBuilder struct{}
 func (e *ec2ClientBuilder) buildClient(region string, client *http.Client) (ec2iface.EC2API, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:     aws.String(region),
-		HTTPClient: client},
+		HTTPClient: client,
+	},
 	)
 	if err != nil {
 		return nil, err
@@ -56,7 +57,7 @@ type Detector struct {
 	ec2ClientBuilder ec2ifaceBuilder
 }
 
-func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	sess, err := session.NewSession()
 	if err != nil {

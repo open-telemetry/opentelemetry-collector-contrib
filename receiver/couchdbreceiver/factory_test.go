@@ -31,7 +31,7 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, component.ValidateConfig(cfg))
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	testCases := []struct {
 		desc string
 		run  func(t *testing.T)
@@ -43,13 +43,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
 
 				require.NoError(t, err)
-
 			},
 		},
 	}

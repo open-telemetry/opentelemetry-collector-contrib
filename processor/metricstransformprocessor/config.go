@@ -3,6 +3,8 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
+import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
+
 const (
 	// includeFieldName is the mapstructure field name for Include field
 	includeFieldName = "include"
@@ -40,14 +42,12 @@ const (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-
 	// transform specifies a list of transforms on metrics with each transform focusing on one metric.
 	Transforms []transform `mapstructure:"transforms"`
 }
 
 // transform defines the transformation applied to the specific metric
 type transform struct {
-
 	// --- SPECIFY WHICH METRIC(S) TO MATCH ---
 
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
@@ -75,7 +75,7 @@ type transform struct {
 
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.
-	AggregationType aggregationType `mapstructure:"aggregation_type"`
+	AggregationType aggregateutil.AggregationType `mapstructure:"aggregation_type"`
 
 	// SubmatchCase specifies what case to use for label values created from regexp submatches.
 	SubmatchCase submatchCase `mapstructure:"submatch_case"`
@@ -112,7 +112,7 @@ type Operation struct {
 	LabelSet []string `mapstructure:"label_set"`
 
 	// AggregationType specifies how to aggregate.
-	AggregationType aggregationType `mapstructure:"aggregation_type"`
+	AggregationType aggregateutil.AggregationType `mapstructure:"aggregation_type"`
 
 	// AggregatedValues is a list of label values to aggregate away.
 	AggregatedValues []string `mapstructure:"aggregated_values"`
@@ -209,35 +209,6 @@ var operationActions = []operationAction{addLabel, updateLabel, deleteLabelValue
 func (oa operationAction) isValid() bool {
 	for _, operationAction := range operationActions {
 		if oa == operationAction {
-			return true
-		}
-	}
-
-	return false
-}
-
-// aggregationType is the enum to capture the three types of aggregation for the aggregation operation.
-type aggregationType string
-
-const (
-	// sum indicates taking the sum of the aggregated data.
-	sum aggregationType = "sum"
-
-	// mean indicates taking the mean of the aggregated data.
-	mean aggregationType = "mean"
-
-	// min indicates taking the minimum of the aggregated data.
-	min aggregationType = "min"
-
-	// max indicates taking the max of the aggregated data.
-	max aggregationType = "max"
-)
-
-var aggregationTypes = []aggregationType{sum, mean, min, max}
-
-func (at aggregationType) isValid() bool {
-	for _, aggregationType := range aggregationTypes {
-		if at == aggregationType {
 			return true
 		}
 	}

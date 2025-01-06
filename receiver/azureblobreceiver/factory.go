@@ -24,9 +24,7 @@ const (
 	defaultCloud        = AzureCloudType
 )
 
-var (
-	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
-)
+var errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Blob Config")
 
 type blobReceiverFactory struct {
 	receivers *sharedcomponent.SharedComponents
@@ -56,13 +54,11 @@ func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 
 func (f *blobReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
-
 	receiver, err := f.getReceiver(set, cfg)
-
 	if err != nil {
 		set.Logger.Error(err.Error())
 		return nil, err
@@ -75,13 +71,11 @@ func (f *blobReceiverFactory) createLogsReceiver(
 
 func (f *blobReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
-
 	receiver, err := f.getReceiver(set, cfg)
-
 	if err != nil {
 		set.Logger.Error(err.Error())
 		return nil, err
@@ -92,9 +86,9 @@ func (f *blobReceiverFactory) createTracesReceiver(
 }
 
 func (f *blobReceiverFactory) getReceiver(
-	set receiver.CreateSettings,
-	cfg component.Config) (component.Component, error) {
-
+	set receiver.Settings,
+	cfg component.Config,
+) (component.Component, error) {
 	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)
@@ -134,6 +128,15 @@ func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logge
 		}
 	case ServicePrincipalAuth:
 		cred, err := azidentity.NewClientSecretCredential(cfg.ServicePrincipal.TenantID, cfg.ServicePrincipal.ClientID, string(cfg.ServicePrincipal.ClientSecret), nil)
+		if err != nil {
+			return nil, err
+		}
+		bc, err = newBlobClientFromCredential(cfg.StorageAccountURL, cred, logger)
+		if err != nil {
+			return nil, err
+		}
+	case DefaultAuth:
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
 			return nil, err
 		}

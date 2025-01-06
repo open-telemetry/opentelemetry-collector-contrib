@@ -40,7 +40,7 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 }
 
 func TestNewLogsExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{
 		Endpoint: "us-west-1.log.aliyuncs.com",
 		Project:  "demo-project",
 		Logstore: "demo-logstore",
@@ -55,7 +55,7 @@ func TestNewLogsExporter(t *testing.T) {
 }
 
 func TestSTSTokenExporter(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{
+	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{
 		Endpoint:      "us-west-1.log.aliyuncs.com",
 		Project:       "demo-project",
 		Logstore:      "demo-logstore",
@@ -66,7 +66,7 @@ func TestSTSTokenExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyLogsExporterName(t *testing.T) {
-	got, err := newLogsExporter(exportertest.NewNopCreateSettings(), &Config{})
+	got, err := newLogsExporter(exportertest.NewNopSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

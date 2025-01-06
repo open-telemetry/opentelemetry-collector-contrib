@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/leoluk/perflib_exporter/perflib"
+	"github.com/prometheus-community/windows_exporter/pkg/perflib"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 )

@@ -1,5 +1,4 @@
 type: prometheusremotewrite
-scope_name: otelcol/prometheusremotewrite
 
 status:
   class: exporter
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib]
   codeowners:
-    active: [Aneurysm9, rapphil]
+    active: [Aneurysm9, rapphil, dashpole, ArthurSens]
 
 tests:
   expect_consumer_error: true
@@ -17,14 +16,14 @@ telemetry:
     exporter_prometheusremotewrite_failed_translations:
       enabled: true
       description: Number of translation operations that failed to translate metrics from Otel to Prometheus
-      unit: 1
+      unit: "1"
       sum:
         value_type: int
         monotonic: true
     exporter_prometheusremotewrite_translated_time_series:
       enabled: true
       description: Number of Prometheus time series that were translated from OTel metrics
-      unit: 1
+      unit: "1"
       sum:
         value_type: int
         monotonic: true

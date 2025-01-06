@@ -31,84 +31,82 @@ type deltaToRateTest struct {
 	outMetrics pmetric.Metrics
 }
 
-var (
-	testCases = []deltaToRateTest{
-		{
-			name:    "delta_to_rate_expect_same",
-			metrics: nil,
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				isDelta:      []bool{true, true},
-				deltaSecond:  120,
-			}),
-			outMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				isDelta:      []bool{true, true},
-				deltaSecond:  120,
-			}),
-		},
-		{
-			name:    "delta_to_rate_one_positive",
-			metrics: []string{"metric_1", "metric_2"},
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{120, 240, 360}, {360}},
-				isDelta:      []bool{true, true},
-				deltaSecond:  120,
-			}),
-			outMetrics: generateGaugeMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{1, 2, 3}, {3}},
-			}),
-		},
-		{
-			name:    "delta_to_rate_with_cumulative",
-			metrics: []string{"metric_1", "metric_2"},
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				isDelta:      []bool{false, false},
-				deltaSecond:  120,
-			}),
-			outMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100}, {4}},
-				isDelta:      []bool{false, false},
-				deltaSecond:  120,
-			}),
-		},
-		{
-			name:    "delta_to_rate_expect_zero",
-			metrics: []string{"metric_1", "metric_2"},
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{120, 240, 360}, {360}},
-				isDelta:      []bool{true, true},
-				deltaSecond:  0,
-			}),
-			outMetrics: generateGaugeMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{0, 0, 0}, {0}},
-			}),
-		},
-		{
-			name:    "int64-delta_to_rate_one_positive",
-			metrics: []string{"metric_1", "metric_2"},
-			inMetrics: generateSumMetrics(testMetric{
-				metricNames:     []string{"metric_1", "metric_2"},
-				metricIntValues: [][]int64{{120, 240, 360}, {360}},
-				isDelta:         []bool{true, true},
-				deltaSecond:     120,
-			}),
-			outMetrics: generateGaugeMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{1, 2, 3}, {3}},
-			}),
-		},
-	}
-)
+var testCases = []deltaToRateTest{
+	{
+		name:    "delta_to_rate_expect_same",
+		metrics: nil,
+		inMetrics: generateSumMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			isDelta:      []bool{true, true},
+			deltaSecond:  120,
+		}),
+		outMetrics: generateSumMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			isDelta:      []bool{true, true},
+			deltaSecond:  120,
+		}),
+	},
+	{
+		name:    "delta_to_rate_one_positive",
+		metrics: []string{"metric_1", "metric_2"},
+		inMetrics: generateSumMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{120, 240, 360}, {360}},
+			isDelta:      []bool{true, true},
+			deltaSecond:  120,
+		}),
+		outMetrics: generateGaugeMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{1, 2, 3}, {3}},
+		}),
+	},
+	{
+		name:    "delta_to_rate_with_cumulative",
+		metrics: []string{"metric_1", "metric_2"},
+		inMetrics: generateSumMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			isDelta:      []bool{false, false},
+			deltaSecond:  120,
+		}),
+		outMetrics: generateSumMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{100}, {4}},
+			isDelta:      []bool{false, false},
+			deltaSecond:  120,
+		}),
+	},
+	{
+		name:    "delta_to_rate_expect_zero",
+		metrics: []string{"metric_1", "metric_2"},
+		inMetrics: generateSumMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{120, 240, 360}, {360}},
+			isDelta:      []bool{true, true},
+			deltaSecond:  0,
+		}),
+		outMetrics: generateGaugeMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{0, 0, 0}, {0}},
+		}),
+	},
+	{
+		name:    "int64-delta_to_rate_one_positive",
+		metrics: []string{"metric_1", "metric_2"},
+		inMetrics: generateSumMetrics(testMetric{
+			metricNames:     []string{"metric_1", "metric_2"},
+			metricIntValues: [][]int64{{120, 240, 360}, {360}},
+			isDelta:         []bool{true, true},
+			deltaSecond:     120,
+		}),
+		outMetrics: generateGaugeMetrics(testMetric{
+			metricNames:  []string{"metric_1", "metric_2"},
+			metricValues: [][]float64{{1, 2, 3}, {3}},
+		}),
+	},
+}
 
 func TestCumulativeToDeltaProcessor(t *testing.T) {
 	for _, test := range testCases {
@@ -119,9 +117,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				Metrics: test.metrics,
 			}
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
@@ -134,10 +132,10 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			require.NoError(t, mgp.Start(ctx, nil))
 
 			cErr := mgp.ConsumeMetrics(context.Background(), test.inMetrics)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 			got := next.AllMetrics()
 
-			require.Equal(t, 1, len(got))
+			require.Len(t, got, 1)
 			require.Equal(t, test.outMetrics.ResourceMetrics().Len(), got[0].ResourceMetrics().Len())
 
 			expectedMetrics := test.outMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
@@ -172,7 +170,6 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 						require.Equal(t, eDataPoints.At(j).DoubleValue(), aDataPoints.At(j).DoubleValue())
 					}
 				}
-
 			}
 
 			require.NoError(t, mgp.Shutdown(ctx))

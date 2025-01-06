@@ -23,6 +23,8 @@ func NewFactory() processor.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
 	)
 }
 
@@ -33,7 +35,7 @@ func createDefaultConfig() component.Config {
 // createTracesProcessor creates an instance of redaction for processing traces
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	next consumer.Traces,
 ) (processor.Traces, error) {
@@ -45,11 +47,57 @@ func createTracesProcessor(
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTraces(
 		ctx,
 		set,
 		cfg,
 		next,
 		redaction.processTraces,
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+}
+
+// createLogsProcessor creates an instance of redaction for processing logs
+func createLogsProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	next consumer.Logs,
+) (processor.Logs, error) {
+	oCfg := cfg.(*Config)
+
+	red, err := newRedaction(ctx, oCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
+	}
+
+	return processorhelper.NewLogs(
+		ctx,
+		set,
+		cfg,
+		next,
+		red.processLogs,
+		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+}
+
+// createMetricsProcessor creates an instance of redaction for processing metrics
+func createMetricsProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	next consumer.Metrics,
+) (processor.Metrics, error) {
+	oCfg := cfg.(*Config)
+
+	red, err := newRedaction(ctx, oCfg, set.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
+	}
+
+	return processorhelper.NewMetrics(
+		ctx,
+		set,
+		cfg,
+		next,
+		red.processMetrics,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }

@@ -12,9 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/egress/v1"
 	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/receive/v1"
 )
@@ -217,18 +219,20 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic) receive")
+				span.SetName("someTopic receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 				spanAttrs := span.Attributes()
 				populateAttributes(t, spanAttrs, map[string]any{
 					"messaging.system":                                        "SolacePubSub+",
-					"messaging.operation":                                     "receive",
-					"messaging.protocol":                                      "MQTT",
-					"messaging.protocol_version":                              "5.0",
-					"messaging.message_id":                                    "someMessageID",
-					"messaging.conversation_id":                               "someConversationID",
-					"messaging.message_payload_size_bytes":                    int64(1234),
-					"messaging.destination":                                   "someTopic",
+					"messaging.operation.name":                                "receive",
+					"messaging.operation.type":                                "receive",
+					"network.protocol.name":                                   "MQTT",
+					"network.protocol.version":                                "5.0",
+					"messaging.message.id":                                    "someMessageID",
+					"messaging.message.conversation_id":                       "someConversationID", // message correlation ID
+					"messaging.message.body.size":                             int64(1200),          // payload (binary + xml attachments)
+					"messaging.message.envelope.size":                         int64(1234),          // payload with metadata
+					"messaging.destination.name":                              "someTopic",
 					"messaging.solace.client_username":                        "someClientUsername",
 					"messaging.solace.client_name":                            "someClient1234",
 					"messaging.solace.replication_group_message_id":           "rmid1:00010-40910192431-40516479-90a9c4e1",
@@ -241,18 +245,18 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"messaging.solace.broker_receive_time_unix_nano":          int64(1357924680),
 					"messaging.solace.dropped_application_message_properties": false,
 					"messaging.solace.delivery_mode":                          "direct",
-					"net.host.ip":                                             "1.2.3.4",
-					"net.host.port":                                           int64(55555),
-					"net.peer.ip":                                             "2345:425:2ca1::567:5673:23b5",
-					"net.peer.port":                                           int64(12345),
+					"server.address":                                          "1.2.3.4",
+					"server.port":                                             int64(55555),
+					"network.peer.address":                                    "2345:425:2ca1::567:5673:23b5",
+					"network.peer.port":                                       int64(12345),
 					"messaging.solace.user_properties.special_key":            true,
 				})
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]any{
-					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.destination.type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]any{
-					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.destination.type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "session_timeout", 123456789, map[string]any{
@@ -316,11 +320,14 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTracesUnmarshaller(zap.NewNop(), newTestMetrics(t))
+			tel := setupTestTelemetry()
+			telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+			require.NoError(t, err)
+			metricAttr := attribute.NewSet(attribute.String("receiver_name", tel.NewSettings().ID.Name()))
+			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder, metricAttr)
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), tt.err.Error())
+				assert.ErrorContains(t, err, tt.err.Error())
 			} else {
 				assert.NoError(t, err)
 			}

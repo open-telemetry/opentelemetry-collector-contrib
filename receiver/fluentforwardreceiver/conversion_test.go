@@ -188,8 +188,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 
 		var event PackedForwardEventLogRecords
 		err := event.DecodeMsg(reader)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "gzip")
+		require.ErrorContains(t, err, "gzip")
 		fmt.Println(err.Error())
 	})
 }

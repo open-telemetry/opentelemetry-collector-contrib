@@ -18,10 +18,10 @@ func TestNewFactory(t *testing.T) {
 	assert.NotNil(t, c)
 }
 
-func TestCreateMetricsReceiver(t *testing.T) {
+func TestCreateMetrics(t *testing.T) {
 	metricsReceiver, _ := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)

@@ -26,10 +26,11 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t, &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		ClusterAlias:     "kafka-test",
 		Brokers:          []string{"10.10.10.10:9092"},
 		ProtocolVersion:  "2.0.0",
 		TopicMatch:       "test_\\w+",

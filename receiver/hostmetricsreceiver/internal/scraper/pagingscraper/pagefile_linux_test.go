@@ -27,19 +27,19 @@ func TestGetPageFileStats_ValidFile(t *testing.T) {
 	stats, err := parseSwapsFile(strings.NewReader(validFile))
 	assert.NoError(err)
 
-	assert.Equal(*stats[0], pageFileStats{
+	assert.Equal(pageFileStats{
 		deviceName: "/dev/dm-2",
 		usedBytes:  502566912,
 		freeBytes:  68128825344,
 		totalBytes: 68631392256,
-	})
+	}, *stats[0])
 
-	assert.Equal(*stats[1], pageFileStats{
+	assert.Equal(pageFileStats{
 		deviceName: "/swapfile",
 		usedBytes:  1024,
 		freeBytes:  1024,
 		totalBytes: 2048,
-	})
+	}, *stats[1])
 }
 
 func TestGetPageFileStats_InvalidFile(t *testing.T) {

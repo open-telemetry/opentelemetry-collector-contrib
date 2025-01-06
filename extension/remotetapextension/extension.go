@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/extension"
 )
 
@@ -19,12 +20,11 @@ var httpFS embed.FS
 
 type remoteObserverExtension struct {
 	config   *Config
-	settings extension.CreateSettings
+	settings extension.Settings
 	server   *http.Server
 }
 
 func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host) error {
-
 	htmlContent, err := fs.Sub(httpFS, "html")
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host
 	go func() {
 		err := s.server.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			s.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

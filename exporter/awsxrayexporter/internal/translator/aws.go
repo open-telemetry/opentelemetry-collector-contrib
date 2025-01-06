@@ -9,7 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -230,7 +230,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	case logGroups != (pcommon.Slice{}) && logGroups.Len() > 0:
 		cwl = getLogGroupMetadata(logGroups, false)
 	case logGroupNames != nil:
-		var configSlice = pcommon.NewSlice()
+		configSlice := pcommon.NewSlice()
 		configSlice.EnsureCapacity(len(logGroupNames))
 
 		for _, s := range logGroupNames {
@@ -272,16 +272,35 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	return filtered, awsData
 }
 
+func getLogGroupNamesOrArns(logGroupNamesOrArns string) []string {
+	// Split the input string by '&'
+	items := strings.Split(logGroupNamesOrArns, "&")
+
+	// Filter out empty strings
+	var result []string
+	for _, item := range items {
+		if item != "" {
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
 // Normalize value to slice.
-// 1. String values are converted to a slice of size 1 so that we can also handle resource
+// 1. String values are converted to a slice so that we can also handle resource
 // attributes that are set using the OTEL_RESOURCE_ATTRIBUTES
+// (multiple log group names or arns are separate by & like this "log-group1&log-group2&log-group3")
 // 2. Slices are kept as they are
 // 3. Other types will result in a empty slice so that we avoid panic.
 func normalizeToSlice(v pcommon.Value) pcommon.Slice {
 	switch v.Type() {
 	case pcommon.ValueTypeStr:
 		s := pcommon.NewSlice()
-		s.AppendEmpty().SetStr(v.Str())
+		logGroupNamesOrArns := getLogGroupNamesOrArns(v.Str())
+		for _, logGroupOrArn := range logGroupNamesOrArns {
+			s.AppendEmpty().SetStr(logGroupOrArn)
+		}
 		return s
 	case pcommon.ValueTypeSlice:
 		return v.Slice()

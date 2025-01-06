@@ -5,13 +5,12 @@ package lokiexporter
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 const (
@@ -19,11 +18,12 @@ const (
 )
 
 func TestExporter_new(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = validEndpoint
+
 	t.Run("with valid config", func(t *testing.T) {
 		config := &Config{
-			ClientConfig: confighttp.ClientConfig{
-				Endpoint: validEndpoint,
-			},
+			ClientConfig: clientConfig,
 		}
 		exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 		require.NoError(t, err)
@@ -32,10 +32,11 @@ func TestExporter_new(t *testing.T) {
 }
 
 func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = validEndpoint
+
 	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: validEndpoint,
-		},
+		ClientConfig: clientConfig,
 	}
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -44,13 +45,16 @@ func TestExporter_startReturnsNillWhenValidConfig(t *testing.T) {
 }
 
 func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
-	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: "",
-			CustomRoundTripper: func(_ http.RoundTripper) (http.RoundTripper, error) {
-				return nil, fmt.Errorf("this causes ClientConfig.ToClient() to error")
-			},
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = ""
+	clientConfig.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			MinVersion: "invalid",
 		},
+	}
+
+	config := &Config{
+		ClientConfig: clientConfig,
 	}
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -59,10 +63,11 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 }
 
 func TestExporter_stopAlwaysReturnsNil(t *testing.T) {
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = validEndpoint
+
 	config := &Config{
-		ClientConfig: confighttp.ClientConfig{
-			Endpoint: validEndpoint,
-		},
+		ClientConfig: clientConfig,
 	}
 	exp, err := newExporter(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

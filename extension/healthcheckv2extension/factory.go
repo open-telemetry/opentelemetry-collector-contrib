@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/http"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 const (
@@ -39,13 +39,13 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		LegacyConfig: http.LegacyConfig{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 			},
 			Path: "/",
 		},
 		HTTPConfig: &http.Config{
 			ServerConfig: confighttp.ServerConfig{
-				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
+				Endpoint: testutil.EndpointForPort(defaultHTTPPort),
 			},
 			Status: http.PathConfig{
 				Enabled: true,
@@ -59,7 +59,7 @@ func createDefaultConfig() component.Config {
 		GRPCConfig: &grpc.Config{
 			ServerConfig: configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
-					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+					Endpoint:  testutil.EndpointForPort(defaultGRPCPort),
 					Transport: "tcp",
 				},
 			},
@@ -67,7 +67,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(ctx context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 	return newExtension(ctx, *config, set), nil
 }

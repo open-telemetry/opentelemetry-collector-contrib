@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
@@ -16,10 +17,10 @@ import (
 // represents none/absent/unset in several tests
 const ø = math.MaxUint64
 
-func TestAdd(t *testing.T) {
+func TestExpoAdd(t *testing.T) {
 	type expdp = expotest.Histogram
 	type bins = expotest.Bins
-	var obs0 = expotest.Observe0
+	obs0 := expotest.Observe0
 
 	cases := []struct {
 		name   string
@@ -92,7 +93,7 @@ func TestAdd(t *testing.T) {
 	for _, cs := range cases {
 		run := func(dp, in expdp) func(t *testing.T) {
 			return func(t *testing.T) {
-				is := expotest.Is(t)
+				is := datatest.New(t)
 
 				var (
 					dp   = ExpHistogram{dp.Into()}
@@ -116,7 +117,6 @@ func TestAdd(t *testing.T) {
 		}
 		t.Run(cs.name, run(cs.dp, cs.in))
 	}
-
 }
 
 func rawbs(data []uint64, offset int32) expo.Buckets {

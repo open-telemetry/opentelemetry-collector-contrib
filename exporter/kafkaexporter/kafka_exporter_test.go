@@ -12,6 +12,7 @@ import (
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -22,65 +23,91 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 )
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
-	require.NoError(t, err)
-	err = texp.start(context.Background(), componenttest.NewNopHost())
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, texp)
+	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, texp)
 }
 
 func TestNewMetricsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
-	require.NoError(t, err)
-	err = mexp.start(context.Background(), componenttest.NewNopHost())
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	err := mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, mexp)
+	err := mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, mexp)
+	err := mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
+}
+
+func TestMetricsExporter_encoding_extension(t *testing.T) {
+	c := Config{
+		Encoding: "metrics_encoding",
+	}
+	texp := newMetricsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), &testComponentHost{})
+	assert.Error(t, err)
+	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
 }
 
 func TestNewLogsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
-	require.NoError(t, err)
-	err = lexp.start(context.Background(), componenttest.NewNopHost())
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, lexp)
+	err := lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, lexp)
+	err := lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	assert.NotNil(t, lexp)
+	err := lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-	assert.Nil(t, mexp)
+}
+
+func TestLogsExporter_encoding_extension(t *testing.T) {
+	c := Config{
+		Encoding: "logs_encoding",
+	}
+	texp := newLogsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), &testComponentHost{})
+	assert.Error(t, err)
+	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
 }
 
 func TestNewExporter_err_auth_type(t *testing.T) {
@@ -101,22 +128,18 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Compression: "none",
 		},
 	}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
-	require.NoError(t, err)
-	err = texp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
-	require.NoError(t, err)
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), componenttest.NewNopHost())
+	assert.ErrorContains(t, err, "failed to load TLS config")
+	mexp := newMetricsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, mexp)
 	err = mexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
-	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
-	require.NoError(t, err)
+	assert.ErrorContains(t, err, "failed to load TLS config")
+	lexp := newLogsExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, lexp)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to load TLS config")
-
+	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewExporter_err_compression(t *testing.T) {
@@ -126,11 +149,22 @@ func TestNewExporter_err_compression(t *testing.T) {
 			Compression: "idk",
 		},
 	}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
-	require.NoError(t, err)
-	err = texp.start(context.Background(), componenttest.NewNopHost())
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+	assert.ErrorContains(t, err, "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
+}
+
+func TestTracesExporter_encoding_extension(t *testing.T) {
+	c := Config{
+		Encoding: "traces_encoding",
+	}
+	texp := newTracesExporter(c, exportertest.NewNopSettings())
+	require.NotNil(t, texp)
+	err := texp.start(context.Background(), &testComponentHost{})
+	assert.Error(t, err)
+	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
 }
 
 func TestTracesPusher(t *testing.T) {
@@ -140,7 +174,7 @@ func TestTracesPusher(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -159,12 +193,28 @@ func TestTracesPusher_attr(t *testing.T) {
 			TopicFromAttribute: "kafka_topic",
 		},
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
 	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
+	require.NoError(t, err)
+}
+
+func TestTracesPusher_ctx(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaTracesProducer{
+		producer:  producer,
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.tracesPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
@@ -176,7 +226,7 @@ func TestTracesPusher_err(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -195,8 +245,7 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 	}
 	td := testdata.GenerateTraces(2)
 	err := p.tracesPusher(context.Background(), td)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 func TestMetricsDataPusher(t *testing.T) {
@@ -206,7 +255,7 @@ func TestMetricsDataPusher(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -225,12 +274,28 @@ func TestMetricsDataPusher_attr(t *testing.T) {
 			TopicFromAttribute: "kafka_topic",
 		},
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
 	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
+	require.NoError(t, err)
+}
+
+func TestMetricsDataPusher_ctx(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		producer:  producer,
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.metricsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
@@ -242,7 +307,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 
 	p := kafkaMetricsProducer{
 		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -261,8 +326,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 	}
 	md := testdata.GenerateMetrics(2)
 	err := p.metricsDataPusher(context.Background(), md)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 func TestLogsDataPusher(t *testing.T) {
@@ -272,7 +336,7 @@ func TestLogsDataPusher(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -291,12 +355,28 @@ func TestLogsDataPusher_attr(t *testing.T) {
 			TopicFromAttribute: "kafka_topic",
 		},
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
 	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
+	require.NoError(t, err)
+}
+
+func TestLogsDataPusher_ctx(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.logsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
 	require.NoError(t, err)
 }
 
@@ -308,7 +388,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 
 	p := kafkaLogsProducer{
 		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -327,8 +407,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 	}
 	ld := testdata.GenerateLogs(1)
 	err := p.logsDataPusher(context.Background(), ld)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), expErr.Error())
+	assert.ErrorContains(t, err, expErr.Error())
 }
 
 type tracesErrorMarshaler struct {
@@ -373,6 +452,7 @@ func Test_GetTopic(t *testing.T) {
 	tests := []struct {
 		name      string
 		cfg       Config
+		ctx       context.Context
 		resource  any
 		wantTopic string
 	}{
@@ -382,6 +462,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -391,6 +472,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -400,6 +482,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
 			wantTopic: "resource-attr-val-1",
 		},
@@ -409,14 +492,58 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
+			ctx:       context.Background(),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+
+		{
+			name: "Valid metric context, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "context-topic",
+		},
+		{
+			name: "Valid trace context, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
+			resource:  testdata.GenerateTraces(1).ResourceSpans(),
+			wantTopic: "context-topic",
+		},
+		{
+			name: "Valid log context, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       topic.WithTopic(context.Background(), "context-topic"),
+			resource:  testdata.GenerateLogs(1).ResourceLogs(),
+			wantTopic: "context-topic",
+		},
+
+		{
+			name: "Attribute not found",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 		{
-			name: "TopicFromAttribute not set, return default topic",
+			name: "TopicFromAttribute, return default topic",
 			cfg: Config{
 				Topic: "defaultTopic",
 			},
+			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
@@ -427,13 +554,74 @@ func Test_GetTopic(t *testing.T) {
 			topic := ""
 			switch r := tests[i].resource.(type) {
 			case pmetric.ResourceMetricsSlice:
-				topic = getTopic(&tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
 			case ptrace.ResourceSpansSlice:
-				topic = getTopic(&tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
 			case plog.ResourceLogsSlice:
-				topic = getTopic(&tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
 			}
 			assert.Equal(t, tests[i].wantTopic, topic)
 		})
 	}
+}
+
+func TestLoadEncodingExtension_logs(t *testing.T) {
+	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_encoding")
+	require.NoError(t, err)
+	require.NotNil(t, extension)
+}
+
+func TestLoadEncodingExtension_notfound_error(t *testing.T) {
+	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_notfound")
+	require.Error(t, err)
+	require.Nil(t, extension)
+}
+
+func TestLoadEncodingExtension_nomarshaler_error(t *testing.T) {
+	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_nomarshaler")
+	require.Error(t, err)
+	require.Nil(t, extension)
+}
+
+type testComponentHost struct{}
+
+func (h *testComponentHost) GetExtensions() map[component.ID]component.Component {
+	return map[component.ID]component.Component{
+		component.MustNewID("logs_encoding"):    &nopComponent{},
+		component.MustNewID("logs_nomarshaler"): &nopNoMarshalerComponent{},
+		component.MustNewID("metrics_encoding"): &nopComponent{},
+		component.MustNewID("traces_encoding"):  &nopComponent{},
+	}
+}
+
+type nopComponent struct{}
+
+func (c *nopComponent) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (c *nopComponent) Shutdown(_ context.Context) error {
+	return nil
+}
+
+func (c *nopComponent) MarshalLogs(_ plog.Logs) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (c *nopComponent) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
+	return []byte{}, nil
+}
+
+func (c *nopComponent) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
+	return []byte{}, nil
+}
+
+type nopNoMarshalerComponent struct{}
+
+func (c *nopNoMarshalerComponent) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (c *nopNoMarshalerComponent) Shutdown(_ context.Context) error {
+	return nil
 }

@@ -1,5 +1,4 @@
 type: dataset
-scope_name: otelcol/dataset
 
 status:
   class: exporter

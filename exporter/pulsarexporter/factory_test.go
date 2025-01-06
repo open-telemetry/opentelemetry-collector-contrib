@@ -18,19 +18,19 @@ import (
 
 func Test_createDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	assert.Equal(t, cfg, &Config{
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+	assert.Equal(t, &Config{
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		Endpoint:        defaultBroker,
-		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
+
 		Topic:                   "",
 		Encoding:                defaultEncoding,
 		Authentication:          Authentication{},
 		MaxConnectionsPerBroker: 1,
 		ConnectionTimeout:       5 * time.Second,
 		OperationTimeout:        30 * time.Second,
-	})
+	}, cfg)
 }
 
 func TestWithTracesMarshalers_err(t *testing.T) {
@@ -39,42 +39,42 @@ func TestWithTracesMarshalers_err(t *testing.T) {
 
 	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
 	f := NewFactory(withTracesMarshalers(tracesMarshaler))
-	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
 	require.Error(t, err)
 }
 
-func TestCreateTracesExporter_err(t *testing.T) {
+func TestCreateTraces_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
 	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
-	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
 	require.Error(t, err)
 }
 
-func TestCreateMetricsExporter_err(t *testing.T) {
+func TestCreateMetrics_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
-	r, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 }
 
-func TestCreateLogsExporter_err(t *testing.T) {
+func TestCreateLogs_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
-	r, err := mf.createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := mf.createLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)

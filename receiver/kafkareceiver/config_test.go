@@ -40,6 +40,8 @@ func TestLoadConfig(t *testing.T) {
 				ClientID:                             "otel-collector",
 				GroupID:                              "otel-collector",
 				InitialOffset:                        "latest",
+				SessionTimeout:                       10 * time.Second,
+				HeartbeatInterval:                    3 * time.Second,
 				Authentication: kafka.Authentication{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
@@ -60,18 +62,22 @@ func TestLoadConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
+				MinFetchSize:     1,
+				DefaultFetchSize: 1048576,
+				MaxFetchSize:     0,
 			},
 		},
 		{
-
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
-				Topic:         "logs",
-				Encoding:      "direct",
-				Brokers:       []string{"coffee:123", "foobar:456"},
-				ClientID:      "otel-collector",
-				GroupID:       "otel-collector",
-				InitialOffset: "earliest",
+				Topic:             "logs",
+				Encoding:          "direct",
+				Brokers:           []string{"coffee:123", "foobar:456"},
+				ClientID:          "otel-collector",
+				GroupID:           "otel-collector",
+				InitialOffset:     "earliest",
+				SessionTimeout:    45 * time.Second,
+				HeartbeatInterval: 15 * time.Second,
 				Authentication: kafka.Authentication{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
@@ -92,6 +98,9 @@ func TestLoadConfig(t *testing.T) {
 					Enable:   true,
 					Interval: 1 * time.Second,
 				},
+				MinFetchSize:     1,
+				DefaultFetchSize: 1048576,
+				MaxFetchSize:     0,
 			},
 		},
 	}
@@ -103,7 +112,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

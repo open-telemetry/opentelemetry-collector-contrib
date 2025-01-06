@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 )
 
@@ -39,14 +39,14 @@ type snmpScraper struct {
 	client    client
 	logger    *zap.Logger
 	cfg       *Config
-	settings  receiver.CreateSettings
+	settings  receiver.Settings
 	startTime pcommon.Timestamp
 }
 
 type indexedAttributeValues map[string]string
 
 // newScraper creates an initialized snmpScraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *snmpScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *snmpScraper {
 	return &snmpScraper{
 		logger:   logger,
 		cfg:      cfg,

@@ -10,7 +10,7 @@ import (
 	"net"
 
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
-	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
+	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/samplingstrategy"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -34,7 +34,7 @@ type grpcServer interface {
 func NewGRPC(
 	telemetry component.TelemetrySettings,
 	settings configgrpc.ServerConfig,
-	strategyStore strategystore.StrategyStore,
+	strategyStore samplingstrategy.Provider,
 ) (*SamplingGRPCServer, error) {
 	if strategyStore == nil {
 		return nil, errMissingStrategyStore
@@ -51,7 +51,7 @@ func NewGRPC(
 type SamplingGRPCServer struct {
 	telemetry     component.TelemetrySettings
 	settings      configgrpc.ServerConfig
-	strategyStore strategystore.StrategyStore
+	strategyStore samplingstrategy.Provider
 
 	grpcServer grpcServer
 }

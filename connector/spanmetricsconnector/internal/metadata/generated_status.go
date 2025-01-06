@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	Type = component.MustNewType("spanmetrics")
+	Type      = component.MustNewType("spanmetrics")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 )
 
 const (

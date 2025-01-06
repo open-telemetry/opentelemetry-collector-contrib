@@ -41,8 +41,8 @@ func TestStorage(t *testing.T) {
 	ext := storagetest.NewFileBackedStorageExtension("test", storageDir)
 	host := storagetest.NewStorageHost().WithExtension(ext.ID, ext)
 	sink := new(consumertest.LogsSink)
-	set := receivertest.NewNopCreateSettings()
-	rcvr, err := f.CreateLogsReceiver(ctx, set, cfg, sink)
+	set := receivertest.NewNopSettings()
+	rcvr, err := f.CreateLogs(ctx, set, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 
@@ -73,7 +73,7 @@ func TestStorage(t *testing.T) {
 	// Start the components again
 	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
 	host = storagetest.NewStorageHost().WithExtension(ext.ID, ext)
-	rcvr, err = f.CreateLogsReceiver(ctx, set, cfg, sink)
+	rcvr, err = f.CreateLogs(ctx, set, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()
@@ -118,7 +118,7 @@ func TestStorage(t *testing.T) {
 	// Start the components again
 	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
 	host = storagetest.NewStorageHost().WithExtension(ext.ID, ext)
-	rcvr, err = f.CreateLogsReceiver(ctx, set, cfg, sink)
+	rcvr, err = f.CreateLogs(ctx, set, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
 	sink.Reset()
@@ -148,7 +148,7 @@ type recallLogger struct {
 
 func newRecallLogger(t *testing.T, tempDir string) *recallLogger {
 	path := filepath.Join(tempDir, "test.log")
-	logFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	logFile, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
 	require.NoError(t, err)
 
 	return &recallLogger{
@@ -174,7 +174,6 @@ func (l *recallLogger) close() error {
 
 func expectLogs(sink *consumertest.LogsSink, expected []string) func() bool {
 	return func() bool {
-
 		if sink.LogRecordCount() != len(expected) {
 			return false
 		}

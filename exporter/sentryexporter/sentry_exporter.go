@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -480,7 +480,7 @@ func generateEventID() sentry.EventID {
 }
 
 // createSentryExporter returns a new Sentry Exporter.
-func createSentryExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
+func createSentryExporter(config *Config, set exporter.Settings) (exporter.Traces, error) {
 	transport := newSentryTransport()
 
 	clientOptions := sentry.ClientOptions{
@@ -499,7 +499,7 @@ func createSentryExporter(config *Config, set exporter.CreateSettings) (exporter
 		environment: config.Environment,
 	}
 
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		config,

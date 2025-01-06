@@ -30,7 +30,7 @@ const (
 // request and then posts the request to the configured region's X-Ray endpoint.
 func newTracesExporter(
 	cfg *Config,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cn awsutil.ConnAttr,
 	registry telemetry.Registry,
 ) (exporter.Traces, error) {
@@ -48,7 +48,7 @@ func newTracesExporter(
 		opts = append(opts, telemetry.WithLogger(set.Logger))
 		sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
 	}
-	return exporterhelper.NewTracesExporter(
+	return exporterhelper.NewTraces(
 		context.TODO(),
 		set,
 		cfg,

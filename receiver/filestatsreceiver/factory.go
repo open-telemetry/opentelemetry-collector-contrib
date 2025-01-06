@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
@@ -31,18 +32,18 @@ func newDefaultConfig() component.Config {
 
 func newReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	fileStatsConfig := cfg.(*Config)
 
 	mp := newScraper(fileStatsConfig, settings)
-	s, err := scraperhelper.NewScraper(metadata.Type.String(), mp.scrape)
+	s, err := scraper.NewMetrics(mp.scrape)
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(s)
+	opt := scraperhelper.AddScraper(metadata.Type, s)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&fileStatsConfig.ControllerConfig,

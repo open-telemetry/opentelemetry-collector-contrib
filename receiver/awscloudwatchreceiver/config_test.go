@@ -87,7 +87,8 @@ func TestValidate(t *testing.T) {
 						AutodiscoverConfig: &AutodiscoverConfig{
 							Limit: -10000,
 						},
-					}},
+					},
+				},
 			},
 			expectedErr: errInvalidAutodiscoverLimit,
 		},
@@ -259,8 +260,8 @@ func TestLoadConfig(t *testing.T) {
 
 			loaded, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(loaded, cfg))
-			require.Equal(t, cfg, tc.expectedConfig)
+			require.NoError(t, loaded.Unmarshal(cfg))
+			require.Equal(t, tc.expectedConfig, cfg)
 			require.NoError(t, component.ValidateConfig(cfg))
 		})
 	}

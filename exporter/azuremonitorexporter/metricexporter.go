@@ -37,11 +37,13 @@ func (exporter *metricExporter) onMetricData(_ context.Context, metricData pmetr
 		}
 	}
 
+	// Flush the transport channel to force the telemetry to be sent
+	exporter.transportChannel.Flush()
 	return nil
 }
 
 // Returns a new instance of the metric exporter
-func newMetricsExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Metrics, error) {
+func newMetricsExporter(config *Config, transportChannel transportChannel, set exporter.Settings) (exporter.Metrics, error) {
 	exporter := &metricExporter{
 		config:           config,
 		transportChannel: transportChannel,
@@ -49,7 +51,7 @@ func newMetricsExporter(config *Config, transportChannel transportChannel, set e
 		packer:           newMetricPacker(set.Logger),
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetrics(
 		context.TODO(),
 		set,
 		config,

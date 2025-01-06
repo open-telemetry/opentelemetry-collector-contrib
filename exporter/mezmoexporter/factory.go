@@ -29,13 +29,13 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig:  createDefaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		IngestURL:     defaultIngestURL,
 	}
 }
 
 // Create a log exporter for exporting to Mezmo
-func createLogsExporter(ctx context.Context, settings exporter.CreateSettings, exporterConfig component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, settings exporter.Settings, exporterConfig component.Config) (exporter.Logs, error) {
 	log := settings.Logger
 
 	if exporterConfig == nil {
@@ -45,13 +45,13 @@ func createLogsExporter(ctx context.Context, settings exporter.CreateSettings, e
 
 	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		ctx,
 		settings,
 		expCfg,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.BackOffConfig),
 		exporterhelper.WithQueue(expCfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),

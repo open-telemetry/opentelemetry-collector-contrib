@@ -39,13 +39,13 @@ func TestScraper(t *testing.T) {
 	mockDB := mockDB{mock}
 	mockDB.initMockDB()
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
 
 	// by default our scraper does not start with a client. the client we use must contain
 	// the mock database
 	scraperClient := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopCreateSettings().Logger,
+		logger: receivertest.NewNopSettings().Logger,
 	}
 	scraper.client = &scraperClient
 
@@ -69,7 +69,7 @@ func TestStart(t *testing.T) {
 	cfg.Warehouse = "warehouse"
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Problem starting scraper")
 	require.NoError(t, scraper.shutdown(context.Background()))
@@ -108,15 +108,19 @@ func (m *mockDB) initMockDB() {
 		},
 		{
 			query: dbMetricsQuery,
-			columns: []string{"schemaname", "execution_status", "error_message",
+			columns: []string{
+				"schemaname", "execution_status", "error_message",
 				"query_type", "wh_name", "db_name", "wh_size", "username",
 				"count_queryid", "queued_overload", "queued_repair", "queued_provision",
 				"total_elapsed", "execution_time", "comp_time", "bytes_scanned",
 				"bytes_written", "bytes_deleted", "bytes_spilled_local", "bytes_spilled_remote",
 				"percentage_cache", "partitions_scanned", "rows_unloaded", "rows_deleted",
-				"rows_updated", "rows_inserted", "rows_produced"},
-			params: []driver.Value{"a", "b", "c", "d", "e", "f", "g", "h", 1, 2.0, 3.0, 4.0, 5.0, 6.0,
-				7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0},
+				"rows_updated", "rows_inserted", "rows_produced",
+			},
+			params: []driver.Value{
+				"a", "b", "c", "d", "e", "f", "g", "h", 1, 2.0, 3.0, 4.0, 5.0, 6.0,
+				7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0,
+			},
 		},
 		{
 			query:   sessionMetricsQuery,

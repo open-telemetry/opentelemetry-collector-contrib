@@ -19,9 +19,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
@@ -153,7 +155,7 @@ func TestResourceProcessor(t *testing.T) {
 			require.NoError(t, res.Attributes().FromRaw(tt.detectedResource))
 			md1.On("Detect").Return(res, tt.detectedError)
 			factory.resourceProviderFactory = internal.NewProviderFactory(
-				map[internal.DetectorType]internal.DetectorFactory{"mock": func(processor.CreateSettings, internal.DetectorConfig) (internal.Detector, error) {
+				map[internal.DetectorType]internal.DetectorFactory{"mock": func(processor.Settings, internal.DetectorConfig) (internal.Detector, error) {
 					return md1, nil
 				}})
 
@@ -169,7 +171,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test trace consumer
 			ttn := new(consumertest.TracesSink)
-			rtp, err := factory.createTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, ttn)
+			rtp, err := factory.createTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, ttn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -200,7 +202,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
-			rmp, err := factory.createMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, tmn)
+			rmp, err := factory.createMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, tmn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -231,7 +233,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
-			rlp, err := factory.createLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, tln)
+			rlp, err := factory.createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, tln)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -259,6 +261,37 @@ func TestResourceProcessor(t *testing.T) {
 			got = tln.AllLogs()[0].ResourceLogs().At(0).Resource().Attributes().AsRaw()
 
 			assert.Equal(t, tt.expectedResource, got)
+
+			// Test profiles consumer
+			tpn := new(consumertest.ProfilesSink)
+			rpp, err := factory.createProfilesProcessor(context.Background(), processortest.NewNopSettings(), cfg, tpn)
+
+			if tt.expectedNewError != "" {
+				assert.EqualError(t, err, tt.expectedNewError)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.True(t, rpp.Capabilities().MutatesData)
+
+			err = rpp.Start(context.Background(), componenttest.NewNopHost())
+
+			if tt.detectedError != nil {
+				require.NoError(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, rpp.Shutdown(context.Background())) }()
+
+			pd := pprofile.NewProfiles()
+			require.NoError(t, pd.ResourceProfiles().AppendEmpty().Resource().Attributes().FromRaw(tt.sourceResource))
+
+			err = rpp.ConsumeProfiles(context.Background(), pd)
+			require.NoError(t, err)
+			got = tpn.AllProfiles()[0].ResourceProfiles().At(0).Resource().Attributes().AsRaw()
+
+			assert.Equal(t, tt.expectedResource, got)
 		})
 	}
 }
@@ -266,7 +299,7 @@ func TestResourceProcessor(t *testing.T) {
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.TracesSink)
-	processor, _ := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+	processor, _ := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -288,7 +321,7 @@ func BenchmarkConsumeTracesAll(b *testing.B) {
 func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.MetricsSink)
-	processor, _ := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+	processor, _ := factory.CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -310,7 +343,7 @@ func BenchmarkConsumeMetricsAll(b *testing.B) {
 func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := new(consumertest.LogsSink)
-	processor, _ := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+	processor, _ := factory.CreateLogs(context.Background(), processortest.NewNopSettings(), cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -327,4 +360,26 @@ func BenchmarkConsumeLogsDefault(b *testing.B) {
 func BenchmarkConsumeLogsAll(b *testing.B) {
 	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
 	benchmarkConsumeLogs(b, cfg)
+}
+
+func benchmarkConsumeProfiles(b *testing.B, cfg *Config) {
+	factory := NewFactory()
+	sink := new(consumertest.ProfilesSink)
+	processor, _ := factory.(xprocessor.Factory).CreateProfiles(context.Background(), processortest.NewNopSettings(), cfg, sink)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// TODO use testbed.PerfTestDataProvider here once that includes resources
+		assert.NoError(b, processor.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	}
+}
+
+func BenchmarkConsumeProfilesDefault(b *testing.B) {
+	cfg := NewFactory().CreateDefaultConfig()
+	benchmarkConsumeProfiles(b, cfg.(*Config))
+}
+
+func BenchmarkConsumeProfilesAll(b *testing.B) {
+	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gcp.TypeStr}}
+	benchmarkConsumeProfiles(b, cfg)
 }

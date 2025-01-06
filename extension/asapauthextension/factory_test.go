@@ -29,7 +29,7 @@ func TestNewFactory(t *testing.T) {
 	assert.NotNil(t, f)
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	testKey := privateKey
 
@@ -72,7 +72,7 @@ func TestCreateExtension(t *testing.T) {
 			cfg.PrivateKey = testcase.settings.PrivateKey
 
 			// validate extension creation
-			ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+			ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 			if testcase.shouldError {
 				assert.Error(t, err)
 			} else {

@@ -1,5 +1,4 @@
 type: cloudflare
-scope_name: otelcol/cloudflarereceiver
 
 status:
   class: receiver
@@ -7,5 +6,5 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [dehaansa, djaglowski]
+    active: [dehaansa]
     seeking_new: true

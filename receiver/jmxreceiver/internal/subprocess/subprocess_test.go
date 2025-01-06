@@ -21,8 +21,8 @@ func TestSubprocessAndConfig(t *testing.T) {
 	require.Same(t, logger, subprocess.logger)
 	require.NotNil(t, subprocess.Stdout)
 
-	require.Equal(t, *config.ShutdownTimeout, 5*time.Second)
-	require.Equal(t, *config.RestartDelay, 5*time.Second)
+	require.Equal(t, 5*time.Second, *config.ShutdownTimeout)
+	require.Equal(t, 5*time.Second, *config.RestartDelay)
 }
 
 func TestConfigDurations(t *testing.T) {
@@ -65,5 +65,4 @@ func TestPidAccessors(t *testing.T) {
 	subprocess.pid.setPid(123)
 	require.Equal(t, 123, subprocess.pid.getPid())
 	require.Equal(t, 123, subprocess.Pid())
-
 }

@@ -103,7 +103,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	}))
 
 	lr.SetObservedTimestamp(now)
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 444000000, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 444000000, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberInfo)
 	lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
@@ -125,7 +125,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 
 	lr.SetObservedTimestamp(now)
 	// Second log does not have internal timestamp in ISO8601, it has external in unixDate format with less precision
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 02, 38, 56, 0, time.UTC)))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, time.April, 26, 0o2, 38, 56, 0, time.UTC)))
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText(plog.SeverityNumberWarn.String())
 
@@ -276,7 +276,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			logSink := &consumertest.LogsSink{}
-			rcvr := newAccessLogsReceiver(receivertest.NewNopCreateSettings(), tc.config(), logSink)
+			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
 			tc.setup(rcvr)
 
 			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
@@ -313,7 +313,7 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	logSink := &consumertest.LogsSink{}
-	rcvr := newAccessLogsReceiver(receivertest.NewNopCreateSettings(), config, logSink)
+	rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), config, logSink)
 	rcvr.client = simpleAccessLogClient()
 
 	// First cluster checkpoint should be nil

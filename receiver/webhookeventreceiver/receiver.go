@@ -16,6 +16,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/julienschmidt/httprouter"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -36,7 +37,7 @@ var (
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
 
 type eventReceiver struct {
-	settings    receiver.CreateSettings
+	settings    receiver.Settings
 	cfg         *Config
 	logConsumer consumer.Logs
 	server      *http.Server
@@ -45,7 +46,7 @@ type eventReceiver struct {
 	gzipPool    *sync.Pool
 }
 
-func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
+func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
 	if consumer == nil {
 		return nil, errNilLogsConsumer
 	}
@@ -64,7 +65,6 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 		Transport:              transport,
 		ReceiverCreateSettings: params,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		defer er.shutdownWG.Done()
 		if errHTTP := er.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			er.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -179,7 +179,6 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 	if encoding == "gzip" || encoding == "x-gzip" {
 		reader := er.gzipPool.Get().(*gzip.Reader)
 		err := reader.Reset(bodyReader)
-
 		if err != nil {
 			er.failBadReq(ctx, w, http.StatusBadRequest, err)
 			_, _ = io.ReadAll(r.Body)
@@ -190,7 +189,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 		defer er.gzipPool.Put(reader)
 	}
 
-	// finish reading the body into a log
+	// send body into a scanner and then convert the request body into a log
 	sc := bufio.NewScanner(bodyReader)
 	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg, er.settings)
 	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
@@ -199,11 +198,10 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	if consumerErr != nil {
 		er.failBadReq(ctx, w, http.StatusInternalServerError, consumerErr)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	} else {
 		w.WriteHeader(http.StatusOK)
-		er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, nil)
 	}
+	er.obsrecv.EndLogsOp(ctx, metadata.Type.String(), numLogs, consumerErr)
 }
 
 // Simple healthcheck endpoint.
@@ -220,7 +218,8 @@ func (er *eventReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Reques
 func (er *eventReceiver) failBadReq(_ context.Context,
 	w http.ResponseWriter,
 	httpStatusCode int,
-	err error) {
+	err error,
+) {
 	jsonResp, err := jsoniter.Marshal(err.Error())
 	if err != nil {
 		er.settings.Logger.Warn("failed to marshall error to json")

@@ -42,9 +42,7 @@ rpc_duration_seconds_sum 5000
 rpc_duration_seconds_count 1000
 `
 
-var (
-	totalScrapes = 10
-)
+var totalScrapes = 10
 
 // TestStaleNaNs validates that staleness marker gets generated when the timeseries is no longer present
 func TestStaleNaNs(t *testing.T) {
@@ -298,8 +296,11 @@ func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.Reso
 					summaryPointComparator: []summaryPointComparator{
 						compareSummaryStartTimestamp(ts1),
 						compareSummaryTimestamp(ts1),
-						compareSummary(1000, 5000, [][]float64{{0.01, math.Float64frombits(value.NormalNaN)},
-							{0.9, math.Float64frombits(value.NormalNaN)}, {0.99, math.Float64frombits(value.NormalNaN)}}),
+						compareSummary(1000, 5000, [][]float64{
+							{0.01, math.Float64frombits(value.NormalNaN)},
+							{0.9, math.Float64frombits(value.NormalNaN)},
+							{0.99, math.Float64frombits(value.NormalNaN)},
+						}),
 					},
 				},
 			}),

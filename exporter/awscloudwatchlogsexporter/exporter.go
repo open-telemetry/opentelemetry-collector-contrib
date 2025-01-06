@@ -47,7 +47,7 @@ type emfMetadata struct {
 	LogStreamName string       `json:"log_stream_name,omitempty"`
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter, error) {
+func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
@@ -63,7 +63,6 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter
 	// create CWLogs client with aws session config
 	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, expConfig.Tags, session, metadata.Type.String())
 	collectorIdentifier, err := uuid.NewRandom()
-
 	if err != nil {
 		return nil, err
 	}
@@ -82,13 +81,13 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter
 	return logsExporter, nil
 }
 
-func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.Logs, error) {
+func newCwLogsExporter(config component.Config, params exp.Settings) (exp.Logs, error) {
 	expConfig := config.(*Config)
 	logsPusher, err := newCwLogsPusher(expConfig, params)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
+	return exporterhelper.NewLogs(
 		context.TODO(),
 		params,
 		config,
@@ -105,13 +104,11 @@ func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	var errs error
 
 	err := pushLogsToCWLogs(e.logger, ld, e.Config, pusher)
-
 	if err != nil {
 		errs = errors.Join(errs, fmt.Errorf("Error pushing logs: %w", err))
 	}
 
 	err = pusher.ForceFlush()
-
 	if err != nil {
 		errs = errors.Join(errs, fmt.Errorf("Error flushing logs: %w", err))
 	}

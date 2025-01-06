@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -42,7 +42,6 @@ func (_m *MockClient) Close() error {
 
 // Connect provides a mock function with given fields:
 func (_m *MockClient) Connect() error {
-
 	ret := _m.Called()
 	var r0 error
 	if rf, ok := ret.Get(0).(func() error); ok {
@@ -92,7 +91,7 @@ func TestStart(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.Error(t, err)
@@ -101,10 +100,9 @@ func TestStart(t *testing.T) {
 		{
 			desc: "Valid Config",
 			testFunc: func(t *testing.T) {
-
 				scraper := &snmpScraper{
 					cfg:      createDefaultConfig().(*Config),
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 				}
 				err := scraper.start(context.Background(), componenttest.NewNopHost())
 				require.NoError(t, err)
@@ -131,13 +129,13 @@ func TestScrape(t *testing.T) {
 				mockClient.On("Close").Return(nil)
 				scraper := &snmpScraper{
 					cfg:      &Config{},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.NoError(t, err)
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -166,13 +164,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, clientErr.Error())
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -202,13 +200,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, expectedScrapeErr.Error())
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -240,7 +238,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -287,7 +285,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -336,7 +334,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -386,7 +384,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -451,7 +449,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -517,7 +515,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -589,7 +587,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -633,13 +631,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, clientErr.Error())
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -681,13 +679,13 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, expectedScrapeErrMsg)
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -736,7 +734,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -800,7 +798,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -866,7 +864,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -933,7 +931,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1016,7 +1014,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1110,7 +1108,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1202,7 +1200,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1282,14 +1280,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr1, expectedErr2))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -1366,14 +1364,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr3, expectedErr4))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -1435,7 +1433,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1513,7 +1511,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1591,7 +1589,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1669,7 +1667,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1755,7 +1753,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -1831,14 +1829,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s", clientErr, expectedErr1, expectedErr2))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -1911,14 +1909,14 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
 
 				metrics, err := scraper.scrape(context.Background())
 				require.EqualError(t, err, fmt.Sprintf("%s; %s; %s; %s", expectedErr1, expectedErr2, expectedErr3, expectedErr4))
-				require.Equal(t, metrics.MetricCount(), 0)
+				require.Equal(t, 0, metrics.MetricCount())
 			},
 		},
 		{
@@ -2001,7 +1999,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2099,7 +2097,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2175,7 +2173,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2258,7 +2256,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2340,7 +2338,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2422,7 +2420,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2491,7 +2489,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2596,7 +2594,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2685,7 +2683,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2761,7 +2759,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2820,7 +2818,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2887,7 +2885,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -2964,7 +2962,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}
@@ -3061,7 +3059,7 @@ func TestScrape(t *testing.T) {
 							},
 						},
 					},
-					settings: receivertest.NewNopCreateSettings(),
+					settings: receivertest.NewNopSettings(),
 					client:   mockClient,
 					logger:   zap.NewNop(),
 				}

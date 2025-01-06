@@ -64,7 +64,7 @@ resourceMetrics:
               isMonotonic: true
             unit: By
         scope:
-          name: otelcol/nsxtreceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver
           version: latest
           attributes:
             - key: a
@@ -84,7 +84,7 @@ resourceMetrics:
               isMonotonic: false
             unit: "1"
         scope:
-          name: otelcol/fakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fakereceiver
           version: latest
           attributes:
             - key: a
@@ -104,7 +104,7 @@ resourceMetrics:
               isMonotonic: false
             unit: "1"
         scope:
-          name: otelcol/anotherfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/anotherfakereceiver
           version: latest
           attributes:
             - key: a
@@ -130,7 +130,7 @@ resourceMetrics:
               isMonotonic: false
             unit: "1"
         scope:
-          name: otelcol/anotherfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/anotherfakereceiver
           version: latest
           attributes:
             - key: a
@@ -156,7 +156,7 @@ resourceMetrics:
               isMonotonic: false
             unit: "1"
         scope:
-          name: otelcol/questionablyfakereceiver
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/questionablyfakereceiver
           version: latest
           attributes:
             - key: a

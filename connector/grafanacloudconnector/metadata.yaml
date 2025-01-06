@@ -1,5 +1,4 @@
 type: grafanacloud
-scope_name: otelcol/grafanacloud
 
 status:
   class: connector
@@ -7,9 +6,33 @@ status:
     alpha: [traces_to_metrics]
   distributions: [contrib]
   codeowners:
-    active: [jpkrohling, rlankfo, jcreixell]
+    active: [rlankfo, jcreixell]
     emeritus: []
-    seeking_new: true
+    seeking_new: false
 
 tests:
   config:
+
+telemetry:
+  metrics:
+    grafanacloud_host_count:
+      description: Number of unique hosts
+      unit: "1"
+      enabled: true
+      gauge:
+        value_type: int
+        async: true
+    grafanacloud_flush_count:
+      description: Number of metrics flushes
+      unit: "1"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true
+    grafanacloud_datapoint_count:
+      description: Number of datapoints sent to Grafana Cloud
+      unit: "1"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true

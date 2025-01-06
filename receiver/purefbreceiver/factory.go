@@ -28,7 +28,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ClientConfig: confighttp.ClientConfig{},
+		ClientConfig: confighttp.NewDefaultClientConfig(),
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
 				Array:   15 * time.Second,
@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rCfg component.Config,
 	next consumer.Metrics,
 ) (receiver.Metrics, error) {

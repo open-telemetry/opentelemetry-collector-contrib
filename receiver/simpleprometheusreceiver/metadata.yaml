@@ -1,5 +1,4 @@
 type: prometheus_simple
-scope_name: otelcol/simpleprometheusreceiver
 
 status:
   class: receiver

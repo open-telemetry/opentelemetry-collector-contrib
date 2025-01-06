@@ -6,7 +6,6 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -20,6 +19,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
 // connectAndReceive with connect failure
@@ -28,10 +30,75 @@ import (
 
 func TestReceiveMessage(t *testing.T) {
 	someError := errors.New("some error")
-
-	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan any) func(t *testing.T, receiver *solaceTracesReceiver) {
-		return func(t *testing.T, receiver *solaceTracesReceiver) {
-			validateReceiverMetrics(t, receiver, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan)
+	validateMetrics := func(receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan int64) func(t *testing.T, tt componentTestTelemetry) {
+		return func(t *testing.T, tt componentTestTelemetry) {
+			var expected []metricdata.Metrics
+			if reportedSpan > 0 {
+				expected = append(expected,
+					metricdata.Metrics{
+						Name:        "otelcol_solacereceiver_reported_spans",
+						Description: "Number of reported spans",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: reportedSpan,
+								},
+							},
+						},
+					})
+			}
+			if receivedMsgVal > 0 {
+				expected = append(expected, metricdata.Metrics{
+					Name:        "otelcol_solacereceiver_received_span_messages",
+					Description: "Number of received span messages",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: receivedMsgVal,
+							},
+						},
+					},
+				})
+			}
+			if droppedMsgVal > 0 {
+				expected = append(expected, metricdata.Metrics{
+					Name:        "otelcol_solacereceiver_dropped_span_messages",
+					Description: "Number of dropped span messages",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: droppedMsgVal,
+							},
+						},
+					},
+				})
+			}
+			if fatalUnmarshalling > 0 {
+				expected = append(expected, metricdata.Metrics{
+					Name:        "otelcol_solacereceiver_fatal_unmarshalling_errors",
+					Description: "Number of fatal message unmarshalling errors",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: fatalUnmarshalling,
+							},
+						},
+					},
+				})
+			}
+			tt.assertMetrics(t, expected)
 		}
 	}
 
@@ -45,55 +112,55 @@ func TestReceiveMessage(t *testing.T) {
 		// expected error from receiveMessage
 		expectedErr error
 		// validate constraints after the fact
-		validation func(t *testing.T, receiver *solaceTracesReceiver)
+		validation func(t *testing.T, tt componentTestTelemetry)
 		// traces provided by the trace function
 		traces ptrace.Traces
 	}{
 		{ // no errors, expect no error, validate metrics
 			name:       "Receive Message Success",
-			validation: validateMetrics(1, nil, nil, 1),
+			validation: validateMetrics(1, 0, 0, 1),
 			traces:     newTestTracesWithSpans(1),
 		},
 		{ // no errors, expect no error, validate metrics
 			name:       "Receive Message Multiple Traces Success",
-			validation: validateMetrics(1, nil, nil, 3),
+			validation: validateMetrics(1, 0, 0, 3),
 			traces:     newTestTracesWithSpans(3),
 		},
 		{ // fail at receiveMessage and expect the error
 			name:              "Receive Messages Error",
 			receiveMessageErr: someError,
 			expectedErr:       someError,
-			validation:        validateMetrics(nil, nil, nil, nil),
+			validation:        validateMetrics(0, 0, 0, 0),
 		},
 		{ // unmarshal error expecting the error to be swallowed, the message to be acknowledged, stats incremented
 			name:         "Unmarshal Error",
 			unmarshalErr: errUnknownTopic,
-			validation:   validateMetrics(1, 1, 1, nil),
+			validation:   validateMetrics(1, 1, 1, 0),
 		},
 		{ // unmarshal error with wrong version expecting error to be propagated, message to be rejected
 			name:         "Unmarshal Version Error",
 			unmarshalErr: errUpgradeRequired,
 			expectedErr:  errUpgradeRequired,
 			expectNack:   true,
-			validation:   validateMetrics(1, nil, 1, nil),
+			validation:   validateMetrics(1, 0, 1, 0),
 		},
 		{ // expect forward to error and message to be swallowed with ack, no error returned
 			name:         "Forward Permanent Error",
 			nextConsumer: consumertest.NewErr(consumererror.NewPermanent(errors.New("a permanent error"))),
-			validation:   validateMetrics(1, 1, nil, nil),
+			validation:   validateMetrics(1, 1, 0, 0),
 		},
 		{ // expect forward to error and message to be swallowed with ack which fails returning an error
 			name:         "Forward Permanent Error with Ack Error",
 			nextConsumer: consumertest.NewErr(consumererror.NewPermanent(errors.New("a permanent error"))),
 			ackErr:       someError,
 			expectedErr:  someError,
-			validation:   validateMetrics(1, 1, nil, nil),
+			validation:   validateMetrics(1, 1, 0, 0),
 		},
 	}
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			receiver, messagingService, unmarshaller := newReceiver(t)
+			receiver, messagingService, unmarshaller, tt := newReceiver(t)
 			if testCase.nextConsumer != nil {
 				receiver.nextConsumer = testCase.nextConsumer
 			}
@@ -148,15 +215,16 @@ func TestReceiveMessage(t *testing.T) {
 				assert.Equal(t, !testCase.expectNack, ackCalled)
 			}
 			if testCase.validation != nil {
-				testCase.validation(t, receiver)
+				testCase.validation(t, tt)
 			}
+			require.NoError(t, tt.Shutdown(context.Background()))
 		})
 	}
 }
 
 // receiveMessages ctx done return
 func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
-	receiver, messagingService, unmarshaller := newReceiver(t)
+	receiver, messagingService, unmarshaller, tt := newReceiver(t)
 	receiveMessagesCalled := false
 	ctx, cancel := context.WithCancel(context.Background())
 	msg := &inboundMessage{}
@@ -184,26 +252,130 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 	assert.True(t, receiveMessagesCalled)
 	assert.True(t, unmarshalCalled)
 	assert.True(t, ackCalled)
-	validateReceiverMetrics(t, receiver, 1, nil, nil, 1)
+	tt.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_solacereceiver_received_span_messages",
+			Description: "Number of received span messages",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_reported_spans",
+			Description: "Number of reported spans",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverLifecycle(t *testing.T) {
-	receiver, messagingService, _ := newReceiver(t)
+	receiver, messagingService, _, tt := newReceiver(t)
 	dialCalled := make(chan struct{})
 	messagingService.dialFunc = func(context.Context) error {
-		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnecting)
-		validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateClear)
+		tt.assertMetrics(t, []metricdata.Metrics{
+			{
+				Name:        "otelcol_solacereceiver_receiver_status",
+				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(receiverStateConnecting),
+						},
+					},
+				},
+			},
+			{
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(flowControlStateClear),
+						},
+					},
+				},
+			},
+		})
 		close(dialCalled)
 		return nil
 	}
 	closeCalled := make(chan struct{})
 	messagingService.closeFunc = func(context.Context) {
-		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminating)
+		tt.assertMetrics(t, []metricdata.Metrics{
+			{
+				Name:        "otelcol_solacereceiver_receiver_status",
+				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(receiverStateTerminating),
+						},
+					},
+				},
+			},
+			{
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(flowControlStateClear),
+						},
+					},
+				},
+			},
+		})
 		close(closeCalled)
 	}
 	receiveMessagesCalled := make(chan struct{})
 	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
-		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnected)
+		tt.assertMetrics(t, []metricdata.Metrics{
+			{
+				Name:        "otelcol_solacereceiver_receiver_status",
+				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(receiverStateConnected),
+						},
+					},
+				},
+			},
+			{
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(flowControlStateClear),
+						},
+					},
+				},
+			},
+		})
 		close(receiveMessagesCalled)
 		<-ctx.Done()
 		return nil, errors.New("some error")
@@ -216,13 +388,38 @@ func TestReceiverLifecycle(t *testing.T) {
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 	assertChannelClosed(t, closeCalled)
-	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminated)
-	// we error on receive message, so we should not report any metrics
-	validateReceiverMetrics(t, receiver, nil, nil, nil, nil)
+	// we error on receive message, so we should not report any additional metrics
+	tt.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_solacereceiver_receiver_status",
+			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: int64(receiverStateTerminated),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: int64(flowControlStateClear),
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverDialFailureContinue(t *testing.T) {
-	receiver, msgService, _ := newReceiver(t)
+	receiver, msgService, _, tt := newReceiver(t)
 	dialErr := errors.New("Some dial error")
 	const expectedAttempts = 3 // the number of attempts to perform prior to resolving
 	dialCalled := 0
@@ -247,8 +444,47 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	}
 	msgService.closeFunc = func(ctx context.Context) {
 		closeCalled++
-		// asset we never left connecting state prior to closing closeDone
-		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateConnecting)
+		// assert we never left connecting state prior to closing closeDone
+		tt.assertMetrics(t, []metricdata.Metrics{
+			{
+				Name:        "otelcol_solacereceiver_receiver_status",
+				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(receiverStateConnecting),
+						},
+					},
+				},
+			},
+			{
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+				Unit:        "1",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(flowControlStateClear),
+						},
+					},
+				},
+			},
+			{
+				Name:        "otelcol_solacereceiver_failed_reconnections",
+				Description: "Number of failed broker reconnections",
+				Unit:        "1",
+				Data: metricdata.Sum[int64]{
+					Temporality: metricdata.CumulativeTemporality,
+					IsMonotonic: true,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							Value: int64(closeCalled),
+						},
+					},
+				},
+			},
+		})
 		if closeCalled == expectedAttempts {
 			close(closeDone)
 			<-ctx.Done() // wait for ctx.Done
@@ -265,17 +501,55 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	// expect close to be called twice
 	assertChannelClosed(t, closeDone)
 	// assert failed reconnections
-	validateMetric(t, receiver.metrics.views.failedReconnections, expectedAttempts)
 
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
-	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminated)
 	// we error on dial, should never get to receive messages
-	validateReceiverMetrics(t, receiver, nil, nil, nil, nil)
+	tt.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_solacereceiver_receiver_status",
+			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: int64(receiverStateTerminated),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: int64(flowControlStateClear),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_failed_reconnections",
+			Description: "Number of failed broker reconnections",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 3,
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
-	receiver, msgService, unmarshaller := newReceiver(t)
+	receiver, msgService, unmarshaller, tt := newReceiver(t)
 	dialDone := make(chan struct{})
 	nackCalled := make(chan struct{})
 	closeDone := make(chan struct{})
@@ -317,21 +591,84 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	// expect close to be called twice
 	assertChannelClosed(t, closeDone)
 	// we receive 1 message, encounter a fatal unmarshalling error and we nack the message so it is not actually dropped
-	validateReceiverMetrics(t, receiver, 1, nil, 1, nil)
 	// assert idle state
-	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateIdle)
-
+	tt.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_solacereceiver_received_span_messages",
+			Description: "Number of received span messages",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_fatal_unmarshalling_errors",
+			Description: "Number of fatal message unmarshalling errors",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_receiver_status",
+			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: int64(receiverStateIdle),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: int64(flowControlStateClear),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_need_upgrade",
+			Description: "Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+	})
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
-	validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminated)
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
 func TestReceiverFlowControlDelayedRetry(t *testing.T) {
-	someError := consumererror.NewPermanent(fmt.Errorf("some error"))
+	someError := consumererror.NewPermanent(errors.New("some error"))
 	testCases := []struct {
 		name         string
 		nextConsumer consumer.Traces
-		validation   func(*testing.T, *opencensusMetrics)
+		validation   func(*testing.T, componentTestTelemetry)
 	}{
 		{
 			name:         "Without error",
@@ -340,14 +677,95 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 		{
 			name:         "With error",
 			nextConsumer: consumertest.NewErr(someError),
-			validation: func(t *testing.T, metrics *opencensusMetrics) {
-				validateMetric(t, metrics.views.droppedSpanMessages, 1)
+			validation: func(t *testing.T, tt componentTestTelemetry) {
+				tt.assertMetrics(t, []metricdata.Metrics{
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
+						Description: "Most recent/current retry count when flow controlled",
+						Unit:        "1",
+						Data: metricdata.Gauge[int64]{
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_received_span_messages",
+						Description: "Number of received span messages",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+						Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+						Unit:        "1",
+						Data: metricdata.Gauge[int64]{
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: int64(flowControlStateClear),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_total",
+						Description: "Number of times the receiver instance became flow controlled",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_dropped_span_messages",
+						Description: "Number of dropped span messages",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
+						Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+				})
 			},
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			receiver, messagingService, unmarshaller := newReceiver(t)
+			receiver, messagingService, unmarshaller, tt := newReceiver(t)
 			delay := 50 * time.Millisecond
 			// Increase delay on windows due to tick granularity
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17197
@@ -359,7 +777,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			// we want to return an error at first, then set the next consumer to a noop consumer
 			receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 				receiver.nextConsumer = tc.nextConsumer
-				return fmt.Errorf("Some temporary error")
+				return errors.New("Some temporary error")
 			})
 			require.NoError(t, err)
 
@@ -388,7 +806,46 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 				require.Fail(t, "Did not expect receiveMessage to return before delay interval")
 			}
 			// Check that we are currently flow controlled
-			validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateControlled)
+			tt.assertMetrics(t, []metricdata.Metrics{
+				{
+					Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
+					Description: "Most recent/current retry count when flow controlled",
+					Unit:        "1",
+					Data: metricdata.Gauge[int64]{
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: 1,
+							},
+						},
+					},
+				},
+				{
+					Name:        "otelcol_solacereceiver_received_span_messages",
+					Description: "Number of received span messages",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: 1,
+							},
+						},
+					},
+				},
+				{
+					Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+					Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+					Unit:        "1",
+					Data: metricdata.Gauge[int64]{
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: int64(flowControlStateControlled),
+							},
+						},
+					},
+				},
+			})
 			// since we set the next consumer to a noop, this should succeed
 			select {
 			case <-time.After(delay):
@@ -398,18 +855,98 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			}
 			assert.True(t, ackCalled)
 			if tc.validation != nil {
-				tc.validation(t, receiver.metrics)
+				tc.validation(t, tt)
+			} else {
+				tt.assertMetrics(t, []metricdata.Metrics{
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
+						Description: "Most recent/current retry count when flow controlled",
+						Unit:        "1",
+						Data: metricdata.Gauge[int64]{
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_received_span_messages",
+						Description: "Number of received span messages",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+						Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+						Unit:        "1",
+						Data: metricdata.Gauge[int64]{
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: int64(flowControlStateClear),
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_total",
+						Description: "Number of times the receiver instance became flow controlled",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_reported_spans",
+						Description: "Number of reported spans",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 0,
+								},
+							},
+						},
+					},
+					{
+						Name:        "otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
+						Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value: 1,
+								},
+							},
+						},
+					},
+				})
 			}
-			validateMetric(t, receiver.metrics.views.flowControlRecentRetries, 1)
-			validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateClear)
-			validateMetric(t, receiver.metrics.views.flowControlTotal, 1)
-			validateMetric(t, receiver.metrics.views.flowControlSingleSuccess, 1)
+			require.NoError(t, tt.Shutdown(context.Background()))
 		})
 	}
 }
 
 func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
-	receiver, messagingService, unmarshaller := newReceiver(t)
+	receiver, messagingService, unmarshaller, _ := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
 	receiver.config.Flow.DelayedRetry.Delay = 10 * time.Second
 	var err error
@@ -421,7 +958,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 			return nil
 		})
 		require.NoError(t, err)
-		return fmt.Errorf("Some temporary error")
+		return errors.New("Some temporary error")
 	})
 	require.NoError(t, err)
 
@@ -455,7 +992,7 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 }
 
 func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
-	receiver, messagingService, unmarshaller := newReceiver(t)
+	receiver, messagingService, unmarshaller, tt := newReceiver(t)
 	// we won't wait 10 seconds since we will interrupt well before
 	retryInterval := 50 * time.Millisecond
 	// Increase delay on windows due to tick granularity
@@ -470,7 +1007,46 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	// we want to return an error at first, then set the next consumer to a noop consumer
 	receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		if currentRetries > 0 {
-			validateMetric(t, receiver.metrics.views.flowControlRecentRetries, currentRetries)
+			tt.assertMetrics(t, []metricdata.Metrics{
+				{
+					Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
+					Description: "Most recent/current retry count when flow controlled",
+					Unit:        "1",
+					Data: metricdata.Gauge[int64]{
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: currentRetries,
+							},
+						},
+					},
+				},
+				{
+					Name:        "otelcol_solacereceiver_received_span_messages",
+					Description: "Number of received span messages",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: 1,
+							},
+						},
+					},
+				},
+				{
+					Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+					Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+					Unit:        "1",
+					Data: metricdata.Gauge[int64]{
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: int64(flowControlStateControlled),
+							},
+						},
+					},
+				},
+			})
 		}
 		currentRetries++
 		if currentRetries == retryCount {
@@ -479,7 +1055,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 			})
 		}
 		require.NoError(t, err)
-		return fmt.Errorf("Some temporary error")
+		return errors.New("Some temporary error")
 	})
 	require.NoError(t, err)
 
@@ -507,7 +1083,6 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	case <-receiveMessageComplete:
 		require.Fail(t, "Did not expect receiveMessage to return before delay interval")
 	}
-	validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateControlled)
 	// since we set the next consumer to a noop, this should succeed
 	select {
 	case <-time.After(2 * retryInterval * time.Duration(retryCount)):
@@ -516,21 +1091,88 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 		assert.NoError(t, err)
 	}
 	assert.True(t, ackCalled)
-	validateMetric(t, receiver.metrics.views.flowControlRecentRetries, retryCount)
-	validateMetric(t, receiver.metrics.views.flowControlStatus, flowControlStateClear)
-	validateMetric(t, receiver.metrics.views.flowControlTotal, 1)
-	validateMetric(t, receiver.metrics.views.flowControlSingleSuccess, nil)
+	tt.assertMetrics(t, []metricdata.Metrics{
+		{
+			Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
+			Description: "Most recent/current retry count when flow controlled",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: retryCount,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_received_span_messages",
+			Description: "Number of received span messages",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
+			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
+			Unit:        "1",
+			Data: metricdata.Gauge[int64]{
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: int64(flowControlStateClear),
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_receiver_flow_control_total",
+			Description: "Number of times the receiver instance became flow controlled",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 1,
+					},
+				},
+			},
+		},
+		{
+			Name:        "otelcol_solacereceiver_reported_spans",
+			Description: "Number of reported spans",
+			Unit:        "1",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Value: 0,
+					},
+				},
+			},
+		},
+	})
+	require.NoError(t, tt.Shutdown(context.Background()))
 }
 
-func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller) {
+func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *mockUnmarshaller, componentTestTelemetry) {
 	unmarshaller := &mockUnmarshaller{}
 	service := &mockMessagingService{}
 	messagingServiceFactory := func() messagingService {
 		return service
 	}
-	metrics := newTestMetrics(t)
+	tel := setupTestTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+	require.NoError(t, err)
 	receiver := &solaceTracesReceiver{
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config: &Config{
 			Flow: FlowControl{
 				DelayedRetry: &FlowControlDelayedRetry{
@@ -539,21 +1181,14 @@ func newReceiver(t *testing.T) (*solaceTracesReceiver, *mockMessagingService, *m
 			},
 		},
 		nextConsumer:      consumertest.NewNop(),
-		metrics:           metrics,
+		telemetryBuilder:  telemetryBuilder,
 		unmarshaller:      unmarshaller,
 		factory:           messagingServiceFactory,
 		shutdownWaitGroup: &sync.WaitGroup{},
 		retryTimeout:      1 * time.Millisecond,
 		terminating:       &atomic.Bool{},
 	}
-	return receiver, service, unmarshaller
-}
-
-func validateReceiverMetrics(t *testing.T, receiver *solaceTracesReceiver, receivedMsgVal, droppedMsgVal, fatalUnmarshalling, reportedSpan any) {
-	validateMetric(t, receiver.metrics.views.receivedSpanMessages, receivedMsgVal)
-	validateMetric(t, receiver.metrics.views.droppedSpanMessages, droppedMsgVal)
-	validateMetric(t, receiver.metrics.views.fatalUnmarshallingErrors, fatalUnmarshalling)
-	validateMetric(t, receiver.metrics.views.reportedSpans, reportedSpan)
+	return receiver, service, unmarshaller, tel
 }
 
 type mockMessagingService struct {

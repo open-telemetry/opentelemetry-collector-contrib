@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -31,9 +30,9 @@ func TestType(t *testing.T) {
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
 		ErrorMode: ottl.PropagateError,
-	})
+	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -86,16 +85,16 @@ func TestCreateProcessors(t *testing.T) {
 
 				sub, err := cm.Sub(k)
 				require.NoError(t, err)
-				require.NoError(t, component.UnmarshalConfig(sub, cfg))
+				require.NoError(t, sub.Unmarshal(cfg))
 
-				tp, tErr := factory.CreateTracesProcessor(
+				tp, tErr := factory.CreateTraces(
 					context.Background(),
-					processortest.NewNopCreateSettings(),
+					processortest.NewNopSettings(),
 					cfg, consumertest.NewNop(),
 				)
-				mp, mErr := factory.CreateMetricsProcessor(
+				mp, mErr := factory.CreateMetrics(
 					context.Background(),
-					processortest.NewNopCreateSettings(),
+					processortest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -104,11 +103,11 @@ func TestCreateProcessors(t *testing.T) {
 					assert.Equal(t, tt.succeed, tErr == nil)
 
 					assert.NotNil(t, mp)
-					assert.Nil(t, mErr)
+					assert.NoError(t, mErr)
 				} else {
 					// Should not break configs with no trace data
 					assert.NotNil(t, tp)
-					assert.Nil(t, tErr)
+					assert.NoError(t, tErr)
 
 					assert.Equal(t, tt.succeed, mp != nil)
 					assert.Equal(t, tt.succeed, mErr == nil)

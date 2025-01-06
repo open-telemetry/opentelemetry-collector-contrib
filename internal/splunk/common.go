@@ -5,6 +5,7 @@ package splunk // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/json"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -31,7 +32,13 @@ const (
 	DefaultRawPath     = "/services/collector/raw"
 	DefaultHealthPath  = "/services/collector/health"
 	DefaultAckPath     = "/services/collector/ack"
+
+	// https://docs.splunk.com/Documentation/Splunk/9.2.1/Metrics/Overview#What_is_a_metric_data_point.3F
+	// metric name can contain letters, numbers, underscore, dot or colon. cannot start with number or underscore, or contain metric_name
+	metricNamePattern = "^metric_name:([A-Za-z\\.:][A-Za-z0-9_\\.:]*)$"
 )
+
+var metricNameRegexp = regexp.MustCompile(metricNamePattern)
 
 // AccessTokenPassthroughConfig configures passing through access tokens.
 type AccessTokenPassthroughConfig struct {
@@ -55,6 +62,18 @@ func (e *Event) IsMetric() bool {
 	return e.Event == HecEventMetricType || (e.Event == nil && len(e.GetMetricValues()) > 0)
 }
 
+// checks if the field name matches the requirements for a metric datapoint field,
+// and returns the metric name and a bool indicating whether the field is a metric.
+func getMetricNameFromField(fieldName string) (string, bool) {
+	// only consider metric name if it fits regex criteria.
+	// use matches[1] since first element contains entire string.
+	// first subgroup will be the actual metric name.
+	if matches := metricNameRegexp.FindStringSubmatch(fieldName); len(matches) > 1 {
+		return matches[1], !strings.Contains(matches[1], "metric_name")
+	}
+	return "", false
+}
+
 // GetMetricValues extracts metric key value pairs from a Splunk HEC metric.
 func (e *Event) GetMetricValues() map[string]any {
 	if v, ok := e.Fields["metric_name"]; ok {
@@ -63,8 +82,8 @@ func (e *Event) GetMetricValues() map[string]any {
 
 	values := map[string]any{}
 	for k, v := range e.Fields {
-		if strings.HasPrefix(k, "metric_name:") {
-			values[k[12:]] = v
+		if metricName, ok := getMetricNameFromField(k); ok {
+			values[metricName] = v
 		}
 	}
 	return values
@@ -118,6 +137,16 @@ type HecToOtelAttrs struct {
 	Index string `mapstructure:"index"`
 	// Host indicates the mapping of the host field to a specific unified model attribute.
 	Host string `mapstructure:"host"`
+}
+
+func (h HecToOtelAttrs) Equal(o HecToOtelAttrs) bool {
+	if h.Host != o.Host ||
+		h.Source != o.Source ||
+		h.SourceType != o.SourceType ||
+		h.Index != o.Index {
+		return false
+	}
+	return true
 }
 
 type AckRequest struct {

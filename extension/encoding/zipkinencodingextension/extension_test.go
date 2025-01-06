@@ -25,7 +25,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_json"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 			},
 		},
 		{
@@ -34,7 +34,7 @@ func TestExtension_Start(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_proto"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestExtension_Start(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_thrift"
 				cfg.(*Config).Version = "v1"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 			},
 		},
 		{
@@ -54,7 +54,7 @@ func TestExtension_Start(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				cfg.(*Config).Protocol = "zipkin_thrift"
 				cfg.(*Config).Version = "v2"
-				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+				return factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
 			},
 			expectedErr: "unsupported version: \"v2\"",
 		},

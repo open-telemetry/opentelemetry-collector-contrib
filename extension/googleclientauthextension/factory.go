@@ -24,7 +24,7 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func createExtension(ctx context.Context, set extension.CreateSettings, cfg component.Config) (component.Component, error) {
+func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (component.Component, error) {
 	eCfg := cfg.(*Config)
 	return googleclientauthextension.CreateExtension(ctx, set, &eCfg.Config)
 }

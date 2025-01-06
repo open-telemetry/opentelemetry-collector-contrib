@@ -47,7 +47,7 @@ func TestFSStats(t *testing.T) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}
 
-	assert.Equal(t, len(cMetrics), 0)
+	assert.Empty(t, cMetrics)
 
 	// node type for eks
 
@@ -107,11 +107,11 @@ func TestFSStats(t *testing.T) {
 
 func TestAllowList(t *testing.T) {
 	extractor := NewFileSystemMetricExtractor(nil)
-	assert.Equal(t, true, extractor.allowListRegexP.MatchString("/dev/shm"))
-	assert.Equal(t, true, extractor.allowListRegexP.MatchString("tmpfs"))
-	assert.Equal(t, true, extractor.allowListRegexP.MatchString("overlay"))
-	assert.Equal(t, false, extractor.allowListRegexP.MatchString("overlaytest"))
-	assert.Equal(t, false, extractor.allowListRegexP.MatchString("/dev"))
+	assert.True(t, extractor.allowListRegexP.MatchString("/dev/shm"))
+	assert.True(t, extractor.allowListRegexP.MatchString("tmpfs"))
+	assert.True(t, extractor.allowListRegexP.MatchString("overlay"))
+	assert.False(t, extractor.allowListRegexP.MatchString("overlaytest"))
+	assert.False(t, extractor.allowListRegexP.MatchString("/dev"))
 }
 
 func TestFSStatsWithAllowList(t *testing.T) {
@@ -131,9 +131,8 @@ func TestFSStatsWithAllowList(t *testing.T) {
 	}
 
 	// There are 3 valid device names which pass the allowlist in testAllowList json.
-	assert.Equal(t, 3, len(cMetrics))
+	assert.Len(t, cMetrics, 3)
 	assert.Equal(t, "tmpfs", cMetrics[0].tags["device"])
 	assert.Equal(t, "/dev/xvda1", cMetrics[1].tags["device"])
 	assert.Equal(t, "overlay", cMetrics[2].tags["device"])
-
 }

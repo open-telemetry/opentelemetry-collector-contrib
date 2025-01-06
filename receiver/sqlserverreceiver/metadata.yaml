@@ -1,5 +1,4 @@
 type: sqlserver
-scope_name: otelcol/sqlserverreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, StefanKurek]
+    active: [StefanKurek]
     seeking_new: true
 
 resource_attributes:
@@ -43,6 +42,10 @@ attributes:
     description: The current status of a database
     type: string
     enum: [online, restoring, recovering, pending_recovery, suspect, offline]
+  direction:
+    description: The direction of flow of bytes or operations.
+    type: string
+    enum: [read, write]
 
 metrics:
   sqlserver.user.connection.count:
@@ -51,7 +54,6 @@ metrics:
     unit: "{connections}"
     gauge:
       value_type: int
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.lock.wait_time.avg:
     enabled: true
     description: Average wait time for all lock requests that had to wait.
@@ -71,28 +73,24 @@ metrics:
     unit: "{requests}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.batch.sql_compilation.rate:
     enabled: true
     description: Number of SQL compilations needed.
     unit: "{compilations}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.batch.sql_recompilation.rate:
     enabled: true
     description: Number of SQL recompilations needed.
     unit: "{compilations}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.buffer_cache.hit_ratio:
     enabled: true
     description: Pages found in the buffer pool without having to read from disk.
     unit: "%"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.page.life_expectancy:
     enabled: true
     description: Time a page will stay in the buffer pool.
@@ -189,15 +187,37 @@ metrics:
     gauge:
       value_type: double
     extended_documentation: This metric is only available when running on Windows.
-  sqlserver.database.io.read_latency:
+  sqlserver.database.latency:
     enabled: false
-    description: Total time that the users waited for reads issued on this file.
+    description: Total time that the users waited for I/O issued on this file.
     unit: "s"
     sum:
       monotonic: true
       aggregation_temporality: cumulative
       value_type: double
-    attributes: [physical_filename, logical_filename, file_type]
+    attributes: [physical_filename, logical_filename, file_type, direction]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.operations:
+    enabled: false
+    description: The number of operations issued on the file.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ physical_filename, logical_filename, file_type, direction ]
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.io:
+    enabled: false
+    description: The number of bytes of I/O on this file.
+    unit: "By"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+      input_type: string
+    attributes: [ physical_filename, logical_filename, file_type, direction ]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
   sqlserver.resource_pool.disk.throttled.read.rate:
     enabled: false

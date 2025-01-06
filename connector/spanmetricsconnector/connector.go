@@ -9,19 +9,21 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/simplelru"
+	"github.com/jonboulle/clockwork"
 	"github.com/lightstep/go-expohisto/structure"
-	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
@@ -50,7 +52,7 @@ type connectorImp struct {
 	metricsConsumer consumer.Metrics
 
 	// Additional dimensions to add to metrics.
-	dimensions []dimension
+	dimensions []utilattri.Dimension
 
 	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
@@ -62,16 +64,20 @@ type connectorImp struct {
 	// e.g. { "foo/barOK": { "serviceName": "foo", "span.name": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache[metrics.Key, pcommon.Map]
 
-	ticker  *clock.Ticker
+	clock   clockwork.Clock
+	ticker  clockwork.Ticker
 	done    chan struct{}
 	started bool
 
 	shutdownOnce sync.Once
 
 	// Event dimensions to add to the events metric.
-	eDimensions []dimension
+	eDimensions []utilattri.Dimension
 
 	events EventsConfig
+
+	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
+	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
 }
 
 type resourceMetrics struct {
@@ -85,27 +91,22 @@ type resourceMetrics struct {
 	lastSeen time.Time
 }
 
-type dimension struct {
-	name  string
-	value *pcommon.Value
-}
-
-func newDimensions(cfgDims []Dimension) []dimension {
+func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 	if len(cfgDims) == 0 {
 		return nil
 	}
-	dims := make([]dimension, len(cfgDims))
+	dims := make([]utilattri.Dimension, len(cfgDims))
 	for i := range cfgDims {
-		dims[i].name = cfgDims[i].Name
+		dims[i].Name = cfgDims[i].Name
 		if cfgDims[i].Default != nil {
 			val := pcommon.NewValueStr(*cfgDims[i].Default)
-			dims[i].value = &val
+			dims[i].Value = &val
 		}
 	}
 	return dims
 }
 
-func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*connectorImp, error) {
+func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock) (*connectorImp, error) {
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
 
@@ -125,6 +126,16 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		resourceMetricsKeyAttributes[attr] = s
 	}
 
+	var lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		lastDeltaTimestamps, err = simplelru.NewLRU[metrics.Key, pcommon.Timestamp](cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
+			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k)))
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &connectorImp{
 		logger:                       logger,
 		config:                       *cfg,
@@ -133,7 +144,9 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		dimensions:                   newDimensions(cfg.Dimensions),
 		keyBuf:                       bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions:        metricKeyToDimensionsCache,
-		ticker:                       ticker,
+		lastDeltaTimestamps:          lastDeltaTimestamps,
+		clock:                        clock,
+		ticker:                       clock.NewTicker(cfg.MetricsFlushInterval),
 		done:                         make(chan struct{}),
 		eDimensions:                  newDimensions(cfg.Events.Dimensions),
 		events:                       cfg.Events,
@@ -196,7 +209,7 @@ func (p *connectorImp) Start(ctx context.Context, _ component.Host) error {
 			select {
 			case <-p.done:
 				return
-			case <-p.ticker.C:
+			case <-p.ticker.Chan():
 				p.exportMetrics(ctx)
 			}
 		}
@@ -251,6 +264,7 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 // buildMetrics collects the computed raw metrics data and builds OTLP metrics.
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
+	timestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
@@ -259,23 +273,52 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("spanmetricsconnector")
 
+		/**
+		 * To represent an uninterrupted stream of metrics as per the spec, the (StartTimestamp, Timestamp)'s of successive data points should be:
+		 * - For cumulative metrics: (T1, T2), (T1, T3), (T1, T4) ...
+		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
+		 */
+		deltaMetricKeys := make(map[metrics.Key]bool)
+		startTimeGenerator := func(mk metrics.Key) pcommon.Timestamp {
+			startTime := rawMetrics.startTimestamp
+			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
+					startTime = lastTimestamp
+				}
+				// Collect lastDeltaTimestamps keys that need to be updated. Metrics can share the same key, so defer the update.
+				deltaMetricKeys[mk] = true
+			}
+			return startTime
+		}
+
+		metricsNamespace := p.config.Namespace
+		if legacyMetricNamesFeatureGate.IsEnabled() && metricsNamespace == DefaultNamespace {
+			metricsNamespace = ""
+		}
+
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
-		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
-		sums.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
+		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
+		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
+			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
-			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
-			events.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
+			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
+			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+		}
+
+		for mk := range deltaMetricKeys {
+			// For delta metrics, cache the current data point's timestamp, which will be the start timestamp for the next data points in the series
+			p.lastDeltaTimestamps.Add(mk, timestamp)
 		}
 	})
 
@@ -297,7 +340,7 @@ func (p *connectorImp) resetState() {
 			return
 		}
 
-		now := time.Now()
+		now := p.clock.Now()
 		p.resourceMetrics.ForEach(func(k resourceKey, m *resourceMetrics) {
 			// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
 			if p.config.Exemplars.Enabled {
@@ -315,7 +358,6 @@ func (p *connectorImp) resetState() {
 				}
 			}
 		})
-
 	}
 }
 
@@ -326,6 +368,7 @@ func (p *connectorImp) resetState() {
 // and span metadata such as name, kind, status_code and any additional
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
+	startTimestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -334,7 +377,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			continue
 		}
 
-		rm := p.getOrCreateResourceMetrics(resourceAttr)
+		rm := p.getOrCreateResourceMetrics(resourceAttr, startTimestamp)
 		sums := rm.sums
 		histograms := rm.histograms
 		events := rm.events
@@ -366,7 +409,6 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					h := histograms.GetOrCreate(key, attributes)
 					p.addExemplar(span, duration, h)
 					h.Observe(duration)
-
 				}
 				// aggregate sums metrics
 				s := sums.GetOrCreate(key, attributes)
@@ -431,7 +473,7 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	return pdatautil.MapHash(m)
 }
 
-func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
+func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimestamp pcommon.Timestamp) *resourceMetrics {
 	key := p.createResourceKey(attr)
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
@@ -440,14 +482,14 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
 			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
 			attributes:     attr,
-			startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
+			startTimestamp: startTimestamp,
 		}
 		p.resourceMetrics.Add(key, v)
 	}
 
 	// If expiration is enabled, track the last seen time.
 	if p.config.MetricsExpiration > 0 {
-		v.lastSeen = time.Now()
+		v.lastSeen = p.clock.Now()
 	}
 
 	return v
@@ -463,7 +505,7 @@ func contains(elements []string, value string) bool {
 	return false
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []dimension) pcommon.Map {
+func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(4 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -479,8 +521,8 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
 	for _, d := range dimensions {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			v.CopyTo(attr.PutEmpty(d.name))
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+			v.CopyTo(attr.PutEmpty(d.Name))
 		}
 	}
 	return attr
@@ -498,7 +540,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // or resource/event attributes. If the dimension exists in both, the span's attributes, being the most specific, takes precedence.
 //
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
-func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
+func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
@@ -514,34 +556,12 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 	}
 
 	for _, d := range optionalDims {
-		if v, ok := getDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
 			concatDimensionValue(p.keyBuf, v.AsString(), true)
 		}
 	}
 
 	return metrics.Key(p.keyBuf.String())
-}
-
-// getDimensionValue gets the dimension value for the given configured dimension.
-// It searches through the span's attributes first, being the more specific;
-// falling back to searching in resource attributes if it can't be found in the span.
-// Finally, falls back to the configured default value if provided.
-//
-// The ok flag indicates if a dimension value was fetched in order to differentiate
-// an empty string value from a state where no value was found.
-func getDimensionValue(d dimension, spanAttr pcommon.Map, resourceAttr pcommon.Map) (v pcommon.Value, ok bool) {
-	// The more specific span attribute should take precedence.
-	if attr, exists := spanAttr.Get(d.name); exists {
-		return attr, true
-	}
-	if attr, exists := resourceAttr.Get(d.name); exists {
-		return attr, true
-	}
-	// Set the default if configured, otherwise this metric will have no value set for the dimension.
-	if d.value != nil {
-		return *d.value, true
-	}
-	return v, ok
 }
 
 // buildMetricName builds the namespace prefix for the metric name.

@@ -22,7 +22,7 @@ func TestReplicationController(t *testing.T) {
 	rc := testutils.NewReplicationController("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, rc, ts)
 	m := mb.Emit()
 

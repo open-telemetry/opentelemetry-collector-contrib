@@ -5,23 +5,29 @@ package ottldatapoint // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
 const (
 	contextName = "DataPoint"
 )
 
-var _ internal.ResourceContext = TransformContext{}
-var _ internal.InstrumentationScopeContext = TransformContext{}
+var (
+	_ internal.ResourceContext             = (*TransformContext)(nil)
+	_ internal.InstrumentationScopeContext = (*TransformContext)(nil)
+	_ zapcore.ObjectMarshaler              = (*TransformContext)(nil)
+)
 
 type TransformContext struct {
 	dataPoint            any
@@ -30,11 +36,33 @@ type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
+	scopeMetrics         pmetric.ScopeMetrics
+	resourceMetrics      pmetric.ResourceMetrics
+}
+
+func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
+	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
+	err = errors.Join(err, encoder.AddObject("metric", logging.Metric(tCtx.metric)))
+
+	switch dp := tCtx.dataPoint.(type) {
+	case pmetric.NumberDataPoint:
+		err = encoder.AddObject("datapoint", logging.NumberDataPoint(dp))
+	case pmetric.HistogramDataPoint:
+		err = encoder.AddObject("datapoint", logging.HistogramDataPoint(dp))
+	case pmetric.ExponentialHistogramDataPoint:
+		err = encoder.AddObject("datapoint", logging.ExponentialHistogramDataPoint(dp))
+	case pmetric.SummaryDataPoint:
+		err = encoder.AddObject("datapoint", logging.SummaryDataPoint(dp))
+	}
+
+	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	return err
 }
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, scopeMetrics pmetric.ScopeMetrics, resourceMetrics pmetric.ResourceMetrics) TransformContext {
 	return TransformContext{
 		dataPoint:            dataPoint,
 		metric:               metric,
@@ -42,6 +70,8 @@ func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.M
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
+		scopeMetrics:         scopeMetrics,
+		resourceMetrics:      resourceMetrics,
 	}
 }
 
@@ -67,6 +97,14 @@ func (tCtx TransformContext) GetMetrics() pmetric.MetricSlice {
 
 func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
+}
+
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.scopeMetrics
+}
+
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.resourceMetrics
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {

@@ -1,5 +1,4 @@
 type: bigip
-scope_name: otelcol/bigipreceiver
 
 status:
   class: receiver
@@ -7,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, StefanKurek]
+    active: [StefanKurek]
     seeking_new: true
 
 resource_attributes:
@@ -107,14 +106,14 @@ metrics:
     enabled: true
   bigip.virtual_server.availability:
     description: Availability of the virtual server.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.virtual_server.enabled:
     description: Enabled state of of the virtual server.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]
@@ -164,14 +163,14 @@ metrics:
     enabled: true
   bigip.pool.availability:
     description: Availability of the pool.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.pool.enabled:
     description: Enabled state of of the pool.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]
@@ -220,14 +219,14 @@ metrics:
     enabled: true
   bigip.pool_member.availability:
     description: Availability of the pool member.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.pool_member.enabled:
     description: Enabled state of of the pool member.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]
@@ -276,14 +275,14 @@ metrics:
     enabled: true
   bigip.node.availability:
     description: Availability of the node.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [availability.status]
     enabled: true
   bigip.node.enabled:
     description: Enabled state of of the node.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [enabled.status]

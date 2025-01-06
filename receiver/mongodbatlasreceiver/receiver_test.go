@@ -17,12 +17,12 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	require.Equal(t, cfg.(*Config).ControllerConfig.CollectionInterval, 3*time.Minute)
+	require.Equal(t, 3*time.Minute, cfg.(*Config).ControllerConfig.CollectionInterval)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	recv, err := createMetricsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	recv, err := createMetricsReceiver(ctx, receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, recv, "receiver creation failed")
 

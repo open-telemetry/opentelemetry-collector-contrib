@@ -4,6 +4,15 @@ exporters:
 extensions:
     health_check:
         endpoint: localhost:8000
+    opamp:
+        instance_uid: 00000000-0000-0000-0000-000000000000
+        ppid: 1234
+        ppid_poll_interval: 5s
+        server:
+            ws:
+                endpoint: ws://127.0.0.1:0/v1/opamp
+                tls:
+                    insecure: true
 receivers:
     filelog:
         include:
@@ -12,6 +21,7 @@ receivers:
 service:
     extensions:
         - health_check
+        - opamp
     pipelines:
         logs:
             exporters:

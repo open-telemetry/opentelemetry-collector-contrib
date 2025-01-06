@@ -1,5 +1,4 @@
 type: influxdb
-scope_name: otelcol/influxdbreceiver
 
 status:
   class: receiver

@@ -21,7 +21,7 @@ const (
 
 var jsonArrayParserFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"logs.jsonParserArray",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of `json_array_parser`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30321"),
 )

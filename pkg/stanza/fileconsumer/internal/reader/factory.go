@@ -30,18 +30,21 @@ const (
 
 type Factory struct {
 	component.TelemetrySettings
-	HeaderConfig      *header.Config
-	FromBeginning     bool
-	FingerprintSize   int
-	InitialBufferSize int
-	MaxLogSize        int
-	Encoding          encoding.Encoding
-	SplitFunc         bufio.SplitFunc
-	TrimFunc          trim.Func
-	FlushTimeout      time.Duration
-	EmitFunc          emit.Callback
-	Attributes        attrs.Resolver
-	DeleteAtEOF       bool
+	HeaderConfig            *header.Config
+	FromBeginning           bool
+	FingerprintSize         int
+	InitialBufferSize       int
+	MaxLogSize              int
+	Encoding                encoding.Encoding
+	SplitFunc               bufio.SplitFunc
+	TrimFunc                trim.Func
+	FlushTimeout            time.Duration
+	EmitFunc                emit.Callback
+	Attributes              attrs.Resolver
+	DeleteAtEOF             bool
+	IncludeFileRecordNumber bool
+	Compression             string
+	AcquireFSLock           bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -61,18 +64,19 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
-
 	r = &Reader{
-		Metadata:          m,
-		set:               f.TelemetrySettings,
-		file:              file,
-		fileName:          file.Name(),
-		fingerprintSize:   f.FingerprintSize,
-		initialBufferSize: f.InitialBufferSize,
-		maxLogSize:        f.MaxLogSize,
-		decoder:           decode.New(f.Encoding),
-		lineSplitFunc:     f.SplitFunc,
-		deleteAtEOF:       f.DeleteAtEOF,
+		Metadata:             m,
+		set:                  f.TelemetrySettings,
+		file:                 file,
+		fileName:             file.Name(),
+		fingerprintSize:      f.FingerprintSize,
+		initialBufferSize:    f.InitialBufferSize,
+		maxLogSize:           f.MaxLogSize,
+		decoder:              decode.New(f.Encoding),
+		deleteAtEOF:          f.DeleteAtEOF,
+		includeFileRecordNum: f.IncludeFileRecordNumber,
+		compression:          f.Compression,
+		acquireFSLock:        f.AcquireFSLock,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
@@ -80,7 +84,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		// User has reconfigured fingerprint_size
 		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize)
 		if rereadErr != nil {
-			return nil, fmt.Errorf("reread fingerprint: %w", err)
+			return nil, fmt.Errorf("reread fingerprint: %w", rereadErr)
 		}
 		if !r.Fingerprint.StartsWith(shorter) {
 			return nil, errors.New("file truncated")
@@ -97,18 +101,14 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	}
 
 	flushFunc := m.FlushState.Func(f.SplitFunc, f.FlushTimeout)
-	r.lineSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.MaxLogSize), f.TrimFunc)
+	r.contentSplitFunc = trim.WithFunc(trim.ToLength(flushFunc, f.MaxLogSize), f.TrimFunc)
 	r.emitFunc = f.EmitFunc
-	if f.HeaderConfig == nil || m.HeaderFinalized {
-		r.splitFunc = r.lineSplitFunc
-		r.processFunc = r.emitFunc
-	} else {
+	if f.HeaderConfig != nil && !m.HeaderFinalized {
+		r.headerSplitFunc = f.HeaderConfig.SplitFunc
 		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)
 		if err != nil {
 			return nil, err
 		}
-		r.splitFunc = f.HeaderConfig.SplitFunc
-		r.processFunc = r.headerReader.Process
 	}
 
 	attributes, err := f.Attributes.Resolve(file)
@@ -119,5 +119,6 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	for k, v := range attributes {
 		r.FileAttributes[k] = v
 	}
+
 	return r, nil
 }

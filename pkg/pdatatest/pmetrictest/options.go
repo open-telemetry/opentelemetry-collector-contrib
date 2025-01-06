@@ -6,6 +6,7 @@ package pmetrictest // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"regexp"
 	"time"
 
@@ -53,7 +54,14 @@ func maskMetricSliceValues(metrics pmetric.MetricSlice, metricNames ...string) {
 	}
 	for i := 0; i < metrics.Len(); i++ {
 		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
-			maskDataPointSliceValues(getDataPointSlice(metrics.At(i)))
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeEmpty, pmetric.MetricTypeSum, pmetric.MetricTypeGauge:
+				maskDataPointSliceValues(getDataPointSlice(metrics.At(i)))
+			case pmetric.MetricTypeHistogram:
+				maskHistogramDataPointSliceValues(metrics.At(i).Histogram().DataPoints())
+			default:
+				panic(fmt.Sprintf("data type not supported: %s", metrics.At(i).Type()))
+			}
 		}
 	}
 }
@@ -66,7 +74,9 @@ func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 		dataPointSlice = metric.Gauge().DataPoints()
 	case pmetric.MetricTypeSum:
 		dataPointSlice = metric.Sum().DataPoints()
-	case pmetric.MetricTypeEmpty, pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty:
+		dataPointSlice = pmetric.NewNumberDataPointSlice()
+	case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 		fallthrough
 	default:
 		panic(fmt.Sprintf("data type not supported: %s", metric.Type()))
@@ -80,6 +90,72 @@ func maskDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice) {
 		dataPoint := dataPoints.At(i)
 		dataPoint.SetIntValue(0)
 		dataPoint.SetDoubleValue(0)
+	}
+}
+
+// maskHistogramDataPointSliceValues sets all data point values to zero.
+func maskHistogramDataPointSliceValues(dataPoints pmetric.HistogramDataPointSlice) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		dataPoint := dataPoints.At(i)
+		dataPoint.SetCount(0)
+		dataPoint.SetSum(0)
+		dataPoint.SetMin(0)
+		dataPoint.SetMax(0)
+		dataPoint.BucketCounts().FromRaw([]uint64{})
+		dataPoint.Exemplars().RemoveIf(func(pmetric.Exemplar) bool {
+			return true
+		})
+		dataPoint.ExplicitBounds().FromRaw([]float64{})
+	}
+}
+
+// IgnoreMetricFloatPrecision is a CompareMetricsOption that rounds away float precision discrepancies in metric values.
+func IgnoreMetricFloatPrecision(precision int, metricNames ...string) CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		floatMetricValues(precision, expected, metricNames...)
+		floatMetricValues(precision, actual, metricNames...)
+	})
+}
+
+func floatMetricValues(precision int, metrics pmetric.Metrics, metricNames ...string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			floatMetricSliceValues(precision, ilms.At(j).Metrics(), metricNames...)
+		}
+	}
+}
+
+// floatMetricSliceValues sets all data point values to zero.
+func floatMetricSliceValues(precision int, metrics pmetric.MetricSlice, metricNames ...string) {
+	metricNameSet := make(map[string]bool, len(metricNames))
+	for _, metricName := range metricNames {
+		metricNameSet[metricName] = true
+	}
+	for i := 0; i < metrics.Len(); i++ {
+		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeEmpty, pmetric.MetricTypeSum, pmetric.MetricTypeGauge:
+				roundDataPointSliceValues(getDataPointSlice(metrics.At(i)), precision)
+			default:
+				panic(fmt.Sprintf("data type not supported: %s", metrics.At(i).Type()))
+			}
+		}
+	}
+}
+
+// maskDataPointSliceValues rounds all data point values at a given decimal.
+func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precision int) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		dataPoint := dataPoints.At(i)
+		factor := math.Pow(10, float64(precision))
+		switch {
+		case dataPoint.DoubleValue() != 0.0:
+			dataPoint.SetDoubleValue(math.Round(dataPoint.DoubleValue()*factor) / factor)
+		case dataPoint.IntValue() != 0:
+			panic(fmt.Sprintf("integers can not have float precision ignored: %v", dataPoints.At(i)))
+		}
 	}
 }
 
@@ -179,6 +255,55 @@ func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) Com
 	})
 }
 
+// IgnoreDatapointAttributesOrder is a CompareMetricsOption that ignores the order of datapoint attributes.
+func IgnoreDatapointAttributesOrder() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		orderDatapointAttributes(expected)
+		orderDatapointAttributes(actual)
+	})
+}
+
+func orderDatapointAttributes(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			msl := ilms.At(j).Metrics()
+			for g := 0; g < msl.Len(); g++ {
+				msl.At(g)
+				switch msl.At(g).Type() {
+				case pmetric.MetricTypeGauge:
+					for k := 0; k < msl.At(g).Gauge().DataPoints().Len(); k++ {
+						rawOrdered := internal.OrderMapByKey(msl.At(g).Gauge().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Gauge().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeSum:
+					for k := 0; k < msl.At(g).Sum().DataPoints().Len(); k++ {
+						rawOrdered := internal.OrderMapByKey(msl.At(g).Sum().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Sum().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeHistogram:
+					for k := 0; k < msl.At(g).Histogram().DataPoints().Len(); k++ {
+						rawOrdered := internal.OrderMapByKey(msl.At(g).Histogram().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Histogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					for k := 0; k < msl.At(g).ExponentialHistogram().DataPoints().Len(); k++ {
+						rawOrdered := internal.OrderMapByKey(msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeSummary:
+					for k := 0; k < msl.At(g).Summary().DataPoints().Len(); k++ {
+						rawOrdered := internal.OrderMapByKey(msl.At(g).Summary().DataPoints().At(k).Attributes().AsRaw())
+						_ = msl.At(g).Summary().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
+					}
+				case pmetric.MetricTypeEmpty:
+				}
+			}
+		}
+	}
+}
+
 func maskMetricAttributeValue(metrics pmetric.Metrics, attributeName string, metricNames []string) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -201,21 +326,52 @@ func maskMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName s
 
 	for i := 0; i < metrics.Len(); i++ {
 		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
-			dps := getDataPointSlice(metrics.At(i))
-			maskDataPointSliceAttributeValues(dps, attributeName)
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				maskHistogramSliceAttributeValues(dps, attributeName)
 
-			// If attribute values are ignored, some data points may become
-			// indistinguishable from each other, but sorting by value allows
-			// for a reasonably thorough comparison and a deterministic outcome.
-			dps.Sort(func(a, b pmetric.NumberDataPoint) bool {
-				if a.IntValue() < b.IntValue() {
-					return true
-				}
-				if a.DoubleValue() < b.DoubleValue() {
-					return true
-				}
-				return false
-			})
+				// If attribute values are ignored, some data points may become
+				// indistinguishable from each other, but sorting by value allows
+				// for a reasonably thorough comparison and a deterministic outcome.
+				dps.Sort(func(a, b pmetric.HistogramDataPoint) bool {
+					if a.Sum() < b.Sum() {
+						return true
+					}
+					if a.Min() < b.Min() {
+						return true
+					}
+					if a.Max() < b.Max() {
+						return true
+					}
+					if a.Count() < b.Count() {
+						return true
+					}
+					if a.BucketCounts().Len() < b.BucketCounts().Len() {
+						return true
+					}
+					if a.ExplicitBounds().Len() < b.ExplicitBounds().Len() {
+						return true
+					}
+					return false
+				})
+			default:
+				dps := getDataPointSlice(metrics.At(i))
+				maskDataPointSliceAttributeValues(dps, attributeName)
+
+				// If attribute values are ignored, some data points may become
+				// indistinguishable from each other, but sorting by value allows
+				// for a reasonably thorough comparison and a deterministic outcome.
+				dps.Sort(func(a, b pmetric.NumberDataPoint) bool {
+					if a.IntValue() < b.IntValue() {
+						return true
+					}
+					if a.DoubleValue() < b.DoubleValue() {
+						return true
+					}
+					return false
+				})
+			}
 		}
 	}
 }
@@ -223,6 +379,29 @@ func maskMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName s
 // maskDataPointSliceAttributeValues sets the value of the specified attribute to
 // the zero value associated with the attribute data type.
 func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, attributeName string) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		attributes := dataPoints.At(i).Attributes()
+		attribute, ok := attributes.Get(attributeName)
+		if ok {
+			switch attribute.Type() {
+			case pcommon.ValueTypeStr:
+				attribute.SetStr("")
+			case pcommon.ValueTypeBool:
+				attribute.SetBool(false)
+			case pcommon.ValueTypeInt:
+				attribute.SetInt(0)
+			case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
+				fallthrough
+			default:
+				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
+			}
+		}
+	}
+}
+
+// maskHistogramSliceAttributeValues sets the value of the specified attribute to
+// the zero value associated with the attribute data type.
+func maskHistogramSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlice, attributeName string) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		attributes := dataPoints.At(i).Attributes()
 		attribute, ok := attributes.Get(attributeName)
@@ -270,26 +449,70 @@ func matchMetricSliceAttributeValues(metrics pmetric.MetricSlice, attributeName 
 
 	for i := 0; i < metrics.Len(); i++ {
 		if len(metricNames) == 0 || metricNameSet[metrics.At(i).Name()] {
-			dps := getDataPointSlice(metrics.At(i))
-			matchDataPointSliceAttributeValues(dps, attributeName, re)
+			switch metrics.At(i).Type() {
+			case pmetric.MetricTypeHistogram:
+				dps := metrics.At(i).Histogram().DataPoints()
+				matchHistogramDataPointSliceAttributeValues(dps, attributeName, re)
 
-			// If attribute values are ignored, some data points may become
-			// indistinguishable from each other, but sorting by value allows
-			// for a reasonably thorough comparison and a deterministic outcome.
-			dps.Sort(func(a, b pmetric.NumberDataPoint) bool {
-				if a.IntValue() < b.IntValue() {
-					return true
-				}
-				if a.DoubleValue() < b.DoubleValue() {
-					return true
-				}
-				return false
-			})
+				// If attribute values are ignored, some data points may become
+				// indistinguishable from each other, but sorting by value allows
+				// for a reasonably thorough comparison and a deterministic outcome.
+				dps.Sort(func(a, b pmetric.HistogramDataPoint) bool {
+					if a.Sum() < b.Sum() {
+						return true
+					}
+					if a.Min() < b.Min() {
+						return true
+					}
+					if a.Max() < b.Max() {
+						return true
+					}
+					if a.Count() < b.Count() {
+						return true
+					}
+					if a.BucketCounts().Len() < b.BucketCounts().Len() {
+						return true
+					}
+					if a.ExplicitBounds().Len() < b.ExplicitBounds().Len() {
+						return true
+					}
+					return false
+				})
+			default:
+				dps := getDataPointSlice(metrics.At(i))
+				matchDataPointSliceAttributeValues(dps, attributeName, re)
+
+				// If attribute values are ignored, some data points may become
+				// indistinguishable from each other, but sorting by value allows
+				// for a reasonably thorough comparison and a deterministic outcome.
+				dps.Sort(func(a, b pmetric.NumberDataPoint) bool {
+					if a.IntValue() < b.IntValue() {
+						return true
+					}
+					if a.DoubleValue() < b.DoubleValue() {
+						return true
+					}
+					return false
+				})
+			}
 		}
 	}
 }
 
 func matchDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, attributeName string, re *regexp.Regexp) {
+	for i := 0; i < dataPoints.Len(); i++ {
+		attributes := dataPoints.At(i).Attributes()
+		attribute, ok := attributes.Get(attributeName)
+		if ok {
+			results := re.FindStringSubmatch(attribute.Str())
+			if len(results) > 0 {
+				attribute.SetStr(results[0])
+			}
+		}
+	}
+}
+
+func matchHistogramDataPointSliceAttributeValues(dataPoints pmetric.HistogramDataPointSlice, attributeName string, re *regexp.Regexp) {
 	for i := 0; i < dataPoints.Len(); i++ {
 		attributes := dataPoints.At(i).Attributes()
 		attribute, ok := attributes.Get(attributeName)
@@ -369,12 +592,22 @@ func maskSubsequentDataPoints(metrics pmetric.Metrics, metricNames []string) {
 			ms := sms.At(j).Metrics()
 			for k := 0; k < ms.Len(); k++ {
 				if len(metricNames) == 0 || metricNameSet[ms.At(k).Name()] {
-					dps := getDataPointSlice(ms.At(k))
-					n := 0
-					dps.RemoveIf(func(pmetric.NumberDataPoint) bool {
-						n++
-						return n > 1
-					})
+					switch ms.At(k).Type() {
+					case pmetric.MetricTypeHistogram:
+						dps := ms.At(k).Histogram().DataPoints()
+						n := 0
+						dps.RemoveIf(func(pmetric.HistogramDataPoint) bool {
+							n++
+							return n > 1
+						})
+					default:
+						dps := getDataPointSlice(ms.At(k))
+						n := 0
+						dps.RemoveIf(func(pmetric.NumberDataPoint) bool {
+							n++
+							return n > 1
+						})
+					}
 				}
 			}
 		}

@@ -21,39 +21,42 @@ import (
 func TestAggregation(t *testing.T) {
 	t.Parallel()
 
-	testCases := []string{
-		"basic_aggregation",
-		"non_monotonic_sums_are_passed_through",
-		"summaries_are_passed_through",
-		"histograms_are_aggregated",
-		"exp_histograms_are_aggregated",
-		"all_delta_metrics_are_passed_through",
+	testCases := []struct {
+		name        string
+		passThrough bool
+	}{
+		{name: "basic_aggregation"},
+		{name: "histograms_are_aggregated"},
+		{name: "exp_histograms_are_aggregated"},
+		{name: "gauges_are_aggregated"},
+		{name: "summaries_are_aggregated"},
+		{name: "all_delta_metrics_are_passed_through"},  // Deltas are passed through even when aggregation is enabled
+		{name: "non_monotonic_sums_are_passed_through"}, // Non-monotonic sums are passed through even when aggregation is enabled
+		{name: "gauges_are_passed_through", passThrough: true},
+		{name: "summaries_are_passed_through", passThrough: true},
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	config := &Config{Interval: time.Second}
-
+	var config *Config
 	for _, tc := range testCases {
-		testName := tc
+		config = &Config{Interval: time.Second, PassThrough: PassThrough{Gauge: tc.passThrough, Summary: tc.passThrough}}
 
-		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
-
+		t.Run(tc.name, func(t *testing.T) {
 			// next stores the results of the filter metric processor
 			next := &consumertest.MetricsSink{}
 
 			factory := NewFactory()
-			mgp, err := factory.CreateMetricsProcessor(
+			mgp, err := factory.CreateMetrics(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				config,
 				next,
 			)
 			require.NoError(t, err)
 
-			dir := filepath.Join("testdata", testName)
+			dir := filepath.Join("testdata", tc.name)
 
 			md, err := golden.ReadMetrics(filepath.Join(dir, "input.yaml"))
 			require.NoError(t, err)
@@ -75,6 +78,7 @@ func TestAggregation(t *testing.T) {
 			require.Empty(t, processor.numberLookup)
 			require.Empty(t, processor.histogramLookup)
 			require.Empty(t, processor.expHistogramLookup)
+			require.Empty(t, processor.summaryLookup)
 
 			// Exporting again should return nothing
 			processor.exportMetrics()

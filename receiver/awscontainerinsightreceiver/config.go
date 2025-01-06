@@ -9,7 +9,6 @@ import (
 
 // Config defines configuration for aws ecs container metrics receiver.
 type Config struct {
-
 	// CollectionInterval is the interval at which metrics should be collected. The default is 60 second.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 

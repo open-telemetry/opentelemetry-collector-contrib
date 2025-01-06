@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.MustNewID("namedpipe").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
@@ -55,11 +55,7 @@ func TestReadPipe(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
-	converter.Start()
-	defer converter.Stop()
-
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() { require.NoError(t, rcvr.Shutdown(context.Background())) }()

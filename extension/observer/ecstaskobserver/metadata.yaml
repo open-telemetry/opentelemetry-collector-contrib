@@ -1,13 +1,13 @@
 type: ecs_task_observer
-scope_name: otelcol/ecstaskobserver
 
 status:
   class: extension
   stability:
-    beta: [extension]
+    unmaintained: [extension]
   distributions: [contrib]
   codeowners:
-    active: [rmfitzpatrick]
+    active: []
+    emeritus: [rmfitzpatrick]
 
 # TODO: Update the extension to make the tests pass
 tests:

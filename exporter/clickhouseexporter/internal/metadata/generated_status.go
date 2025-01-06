@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	Type = component.MustNewType("clickhouse")
+	Type      = component.MustNewType("clickhouse")
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 )
 
 const (
-	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelAlpha
-	LogsStability    = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )

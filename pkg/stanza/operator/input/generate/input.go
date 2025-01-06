@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -44,7 +46,11 @@ func (i *Input) Start(_ operator.Persister) error {
 			if !i.static {
 				entry.Timestamp = time.Now()
 			}
-			i.Write(ctx, entry)
+			err := i.Write(ctx, entry)
+			if err != nil {
+				i.Logger().Error("failed to write entry", zap.Error(err))
+				return
+			}
 
 			n++
 			if n == i.count {

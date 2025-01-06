@@ -5,7 +5,6 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"encoding/binary"
-	"strings"
 	"testing"
 	"time"
 
@@ -20,7 +19,7 @@ func TestSpanLinkSimple(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
-	var traceID = newTraceID()
+	traceID := newTraceID()
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(traceID)
@@ -28,19 +27,19 @@ func TestSpanLinkSimple(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	var convertedTraceID, _ = convertToAmazonTraceID(traceID, false)
+	convertedTraceID, _ := convertToAmazonTraceID(traceID, false)
 
-	assert.Equal(t, 1, len(segment.Links))
+	assert.Len(t, segment.Links, 1)
 	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
 	assert.Equal(t, convertedTraceID, *segment.Links[0].TraceID)
-	assert.Equal(t, 0, len(segment.Links[0].Attributes))
+	assert.Empty(t, segment.Links[0].Attributes)
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.True(t, strings.Contains(jsonStr, "links"))
-	assert.False(t, strings.Contains(jsonStr, "attributes"))
-	assert.True(t, strings.Contains(jsonStr, convertedTraceID))
-	assert.True(t, strings.Contains(jsonStr, spanLink.SpanID().String()))
+	assert.Contains(t, jsonStr, "links")
+	assert.NotContains(t, jsonStr, "attributes")
+	assert.Contains(t, jsonStr, convertedTraceID)
+	assert.Contains(t, jsonStr, spanLink.SpanID().String())
 }
 
 func TestSpanLinkEmpty(t *testing.T) {
@@ -52,11 +51,11 @@ func TestSpanLinkEmpty(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.Equal(t, 0, len(segment.Links))
+	assert.Empty(t, segment.Links)
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.False(t, strings.Contains(jsonStr, "links"))
+	assert.NotContains(t, jsonStr, "links")
 }
 
 func TestOldSpanLinkError(t *testing.T) {
@@ -69,7 +68,7 @@ func TestOldSpanLinkError(t *testing.T) {
 	const maxAge = 60 * 60 * 24 * 30
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
-	var traceID = newTraceID()
+	traceID := newTraceID()
 	binary.BigEndian.PutUint32(traceID[0:4], uint32(ExpiredEpoch))
 
 	spanLink := span.Links().AppendEmpty()
@@ -78,11 +77,11 @@ func TestOldSpanLinkError(t *testing.T) {
 
 	_, error1 := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, error1)
+	assert.Error(t, error1)
 
 	_, error2 := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, error2)
+	assert.Error(t, error2)
 }
 
 func TestTwoSpanLinks(t *testing.T) {
@@ -92,14 +91,14 @@ func TestTwoSpanLinks(t *testing.T) {
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
 
-	var traceID1 = newTraceID()
+	traceID1 := newTraceID()
 
 	spanLink1 := span.Links().AppendEmpty()
 	spanLink1.SetTraceID(traceID1)
 	spanLink1.SetSpanID(newSegmentID())
 	spanLink1.Attributes().PutStr("myKey1", "ABC")
 
-	var traceID2 = newTraceID()
+	traceID2 := newTraceID()
 
 	spanLink2 := span.Links().AppendEmpty()
 	spanLink2.SetTraceID(traceID2)
@@ -108,31 +107,31 @@ func TestTwoSpanLinks(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	var convertedTraceID1, _ = convertToAmazonTraceID(traceID1, false)
-	var convertedTraceID2, _ = convertToAmazonTraceID(traceID2, false)
+	convertedTraceID1, _ := convertToAmazonTraceID(traceID1, false)
+	convertedTraceID2, _ := convertToAmazonTraceID(traceID2, false)
 
-	assert.Equal(t, 2, len(segment.Links))
+	assert.Len(t, segment.Links, 2)
 	assert.Equal(t, spanLink1.SpanID().String(), *segment.Links[0].SpanID)
 	assert.Equal(t, convertedTraceID1, *segment.Links[0].TraceID)
 
-	assert.Equal(t, 1, len(segment.Links[0].Attributes))
+	assert.Len(t, segment.Links[0].Attributes, 1)
 	assert.Equal(t, "ABC", segment.Links[0].Attributes["myKey1"])
 
 	assert.Equal(t, spanLink2.SpanID().String(), *segment.Links[1].SpanID)
 	assert.Equal(t, convertedTraceID2, *segment.Links[1].TraceID)
-	assert.Equal(t, 1, len(segment.Links[0].Attributes))
+	assert.Len(t, segment.Links[0].Attributes, 1)
 	assert.Equal(t, int64(1234), segment.Links[1].Attributes["myKey2"])
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.True(t, strings.Contains(jsonStr, "attributes"))
-	assert.True(t, strings.Contains(jsonStr, "links"))
-	assert.True(t, strings.Contains(jsonStr, "myKey1"))
-	assert.True(t, strings.Contains(jsonStr, "myKey2"))
-	assert.True(t, strings.Contains(jsonStr, "ABC"))
-	assert.True(t, strings.Contains(jsonStr, "1234"))
-	assert.True(t, strings.Contains(jsonStr, convertedTraceID1))
-	assert.True(t, strings.Contains(jsonStr, convertedTraceID2))
+	assert.Contains(t, jsonStr, "attributes")
+	assert.Contains(t, jsonStr, "links")
+	assert.Contains(t, jsonStr, "myKey1")
+	assert.Contains(t, jsonStr, "myKey2")
+	assert.Contains(t, jsonStr, "ABC")
+	assert.Contains(t, jsonStr, "1234")
+	assert.Contains(t, jsonStr, convertedTraceID1)
+	assert.Contains(t, jsonStr, convertedTraceID2)
 }
 
 func TestSpanLinkComplexAttributes(t *testing.T) {
@@ -150,30 +149,30 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 	spanLink.Attributes().PutInt("myKey3", 112233)
 	spanLink.Attributes().PutDouble("myKey4", 3.1415)
 
-	var slice1 = spanLink.Attributes().PutEmptySlice("myKey5")
+	slice1 := spanLink.Attributes().PutEmptySlice("myKey5")
 	slice1.AppendEmpty().SetStr("apple")
 	slice1.AppendEmpty().SetStr("pear")
 	slice1.AppendEmpty().SetStr("banana")
 
-	var slice2 = spanLink.Attributes().PutEmptySlice("myKey6")
+	slice2 := spanLink.Attributes().PutEmptySlice("myKey6")
 	slice2.AppendEmpty().SetBool(true)
 	slice2.AppendEmpty().SetBool(false)
 	slice2.AppendEmpty().SetBool(false)
 	slice2.AppendEmpty().SetBool(true)
 
-	var slice3 = spanLink.Attributes().PutEmptySlice("myKey7")
+	slice3 := spanLink.Attributes().PutEmptySlice("myKey7")
 	slice3.AppendEmpty().SetInt(1234)
 	slice3.AppendEmpty().SetInt(5678)
 	slice3.AppendEmpty().SetInt(9012)
 
-	var slice4 = spanLink.Attributes().PutEmptySlice("myKey8")
+	slice4 := spanLink.Attributes().PutEmptySlice("myKey8")
 	slice4.AppendEmpty().SetDouble(2.718)
 	slice4.AppendEmpty().SetDouble(1.618)
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 
-	assert.Equal(t, 1, len(segment.Links))
-	assert.Equal(t, 8, len(segment.Links[0].Attributes))
+	assert.Len(t, segment.Links, 1)
+	assert.Len(t, segment.Links[0].Attributes, 8)
 
 	assert.Equal(t, "myValue", segment.Links[0].Attributes["myKey1"])
 	assert.Equal(t, true, segment.Links[0].Attributes["myKey2"])
@@ -198,34 +197,34 @@ func TestSpanLinkComplexAttributes(t *testing.T) {
 
 	jsonStr, _ := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.True(t, strings.Contains(jsonStr, "links"))
+	assert.Contains(t, jsonStr, "links")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey1"))
-	assert.True(t, strings.Contains(jsonStr, "myValue"))
+	assert.Contains(t, jsonStr, "myKey1")
+	assert.Contains(t, jsonStr, "myValue")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey2"))
-	assert.True(t, strings.Contains(jsonStr, "true"))
+	assert.Contains(t, jsonStr, "myKey2")
+	assert.Contains(t, jsonStr, "true")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey3"))
-	assert.True(t, strings.Contains(jsonStr, "112233"))
+	assert.Contains(t, jsonStr, "myKey3")
+	assert.Contains(t, jsonStr, "112233")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey4"))
-	assert.True(t, strings.Contains(jsonStr, "3.1415"))
+	assert.Contains(t, jsonStr, "myKey4")
+	assert.Contains(t, jsonStr, "3.1415")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey5"))
-	assert.True(t, strings.Contains(jsonStr, "apple"))
-	assert.True(t, strings.Contains(jsonStr, "pear"))
-	assert.True(t, strings.Contains(jsonStr, "banana"))
+	assert.Contains(t, jsonStr, "myKey5")
+	assert.Contains(t, jsonStr, "apple")
+	assert.Contains(t, jsonStr, "pear")
+	assert.Contains(t, jsonStr, "banana")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey6"))
-	assert.True(t, strings.Contains(jsonStr, "false"))
+	assert.Contains(t, jsonStr, "myKey6")
+	assert.Contains(t, jsonStr, "false")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey7"))
-	assert.True(t, strings.Contains(jsonStr, "1234"))
-	assert.True(t, strings.Contains(jsonStr, "5678"))
-	assert.True(t, strings.Contains(jsonStr, "9012"))
+	assert.Contains(t, jsonStr, "myKey7")
+	assert.Contains(t, jsonStr, "1234")
+	assert.Contains(t, jsonStr, "5678")
+	assert.Contains(t, jsonStr, "9012")
 
-	assert.True(t, strings.Contains(jsonStr, "myKey8"))
-	assert.True(t, strings.Contains(jsonStr, "2.718"))
-	assert.True(t, strings.Contains(jsonStr, "1.618"))
+	assert.Contains(t, jsonStr, "myKey8")
+	assert.Contains(t, jsonStr, "2.718")
+	assert.Contains(t, jsonStr, "1.618")
 }
