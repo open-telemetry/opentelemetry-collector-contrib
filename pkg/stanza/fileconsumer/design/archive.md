@@ -1,7 +1,5 @@
 # File archiving
 
-The file consumer now supports archiving. Previously, file offsets older than three poll cycles were discarded, and if such files reappeared (which could happen if they were temporarily removed or if `exclude_older_than` was enabled), the entire file contents would be read again.
-
 With archiving enabled, file offsets older than three poll cycles are stored on disk rather than being discarded. This feature enabled fileconsumer to remember file for a longer period and also aims to use limited amount of memory. 
 
 ## Settings exposed for archiving
@@ -16,6 +14,7 @@ With archiving enabled, file offsets older than three poll cycles are stored on 
 - We stores the offsets older than three poll cycles on disk. If we use `polls_to_archive: 10`, the on-disk structure looks like following:
 ![on-disk](images/on-disk.png)
     - Once we hit the limit of `polls_to_archive` poll cycles, we roll over and overwrite oldest data. The on-disk structure represents a ring buffer
+    - We retain a total of 13 poll cycles: 3 cycles in memory and 10 cycles on disk.
 
 Basic terminology before we proceed further:
 1. `archiveIndex`: The `archiveIndex` refers to the on-disk position where the next data will be written.
