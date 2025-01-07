@@ -394,7 +394,7 @@ The pseudocode showing the overall flow.
 NewECSSD() {
   session := awsconfig.NewSssion()
   ecsClient := awsecs.NewClient(session)
-  filters := config.NewFileters()
+  filters := config.NewFilters()
   decorator := awsec2.NewClient(session)
   for {
     select {
@@ -402,7 +402,7 @@ NewECSSD() {
       // Fetch ALL
       tasks := ecsClient.FetchAll()
       // Filter
-      filteredTasks := fileters.Apply(tasks)
+      filteredTasks := filters.Apply(tasks)
       // Add EC2 info
       decorator.Apply(filteredTask)
       // Generate output
