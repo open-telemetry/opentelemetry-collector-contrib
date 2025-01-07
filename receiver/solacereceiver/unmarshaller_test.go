@@ -36,7 +36,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 		err     error
 	}{
 		{
-			name: "Unknown Topic Stirng",
+			name: "Unknown Topic String",
 			message: &inboundMessage{
 				Properties: &amqp.MessageProperties{
 					To: &invalidTopicString,
