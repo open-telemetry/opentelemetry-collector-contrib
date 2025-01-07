@@ -1272,7 +1272,7 @@ func TestRegistrationRedirect(t *testing.T) {
 	})
 }
 
-func TestCollectorReregistersAfterHTTPUnathorizedFromHeartbeat(t *testing.T) {
+func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 	t.Parallel()
 
 	var reqCount int32
