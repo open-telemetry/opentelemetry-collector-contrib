@@ -77,7 +77,7 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 	case "Logout":
 		return loadResponse("logout.xml")
 	case "RetrievePropertiesEx":
-		return routeRetreivePropertiesEx(t, body)
+		return routeRetrievePropertiesEx(t, body)
 	case "QueryPerf":
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
@@ -91,7 +91,7 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 	return []byte{}, errNotFound
 }
 
-func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
+func routeRetrievePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
 	rp, ok := body["RetrievePropertiesEx"].(map[string]any)
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
