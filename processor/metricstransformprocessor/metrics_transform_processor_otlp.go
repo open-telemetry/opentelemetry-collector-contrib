@@ -91,9 +91,9 @@ func (f internalFilterRegexp) submatches(metric pmetric.Metric) []int {
 	return f.include.FindStringSubmatchIndex(metric.Name())
 }
 
-func (f internalFilterRegexp) expand(metricTempate, metricName string) string {
+func (f internalFilterRegexp) expand(metricTemplate, metricName string) string {
 	if submatches := f.include.FindStringSubmatchIndex(metricName); submatches != nil {
-		return string(f.include.ExpandString([]byte{}, metricTempate, metricName, submatches))
+		return string(f.include.ExpandString([]byte{}, metricTemplate, metricName, submatches))
 	}
 	return ""
 }
