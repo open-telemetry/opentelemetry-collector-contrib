@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
