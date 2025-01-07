@@ -341,7 +341,7 @@ type serviceNameFilter func(name string) bool
 func (f *taskFetcher) getAllServices(ctx context.Context) ([]*ecs.Service, error) {
 	svc := f.ecs
 	cluster := aws.String(f.cluster)
-	// List and filter out services we need to desribe.
+	// List and filter out services we need to describe.
 	listReq := ecs.ListServicesInput{Cluster: cluster}
 	var servicesToDescribe []*string
 	for {
