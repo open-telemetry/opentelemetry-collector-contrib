@@ -903,14 +903,14 @@ func TestGetResourceID(t *testing.T) {
 			name: "Empty value/key",
 			input: map[string]any{
 				"SomeKey": "",
-				"":        "Ooops",
+				"":        "Oops",
 			},
 		},
 		{
 			name: "Empty value/key (reversed)",
 			input: map[string]any{
-				"":      "SomeKey",
-				"Ooops": "",
+				"":     "SomeKey",
+				"Oops": "",
 			},
 		},
 		{
