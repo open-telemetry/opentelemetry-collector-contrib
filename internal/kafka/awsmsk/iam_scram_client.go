@@ -130,7 +130,7 @@ func (sc *IAMSASLClient) Step(challenge string) (string, error) {
 	case serverResponse:
 		if challenge == "" {
 			sc.state = failed
-			return "", fmt.Errorf("challenge must not be empty for server resposne: %w", ErrBadChallenge)
+			return "", fmt.Errorf("challenge must not be empty for server response: %w", ErrBadChallenge)
 		}
 
 		var resp response
