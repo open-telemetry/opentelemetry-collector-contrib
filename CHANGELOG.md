@@ -3145,7 +3145,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 - `dynatraceexporter`: Add deprecation note to Dynatrace metrics exporter (#23992)
 - `pkg/stanza`: Deprecate fileconsumer.EmitFunc in favor of fileconsumer.emit.Callback (#24036)
-- `pkg/stanza`: Deprecate filconsumer.Finder and related sortation structs and functions (#24013)
+- `pkg/stanza`: Deprecate fileconsumer.Finder and related sortation structs and functions (#24013)
 - `servicegraphprocessor`: Service Graph Processor is deprecated in favor of the Service Graph Connector (#19737)
 
 ### 🚀 New components 🚀
