@@ -190,7 +190,7 @@ type MetricConfig struct {
 
 // GaugeMetric contains info about the value of the gauge metric
 type GaugeMetric struct {
-	// ValueType is required can can be either int or double
+	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
 }
 
@@ -200,7 +200,7 @@ type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	// Monotonic is required and can be true or false
 	Monotonic bool `mapstructure:"monotonic"`
-	// ValueType is required can can be either int or double
+	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
 }
 
