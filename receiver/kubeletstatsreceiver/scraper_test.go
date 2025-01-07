@@ -627,7 +627,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			dataLen: numVolumes,
 		},
 		{
-			name:         "pvc_doesnot_exist",
+			name:         "nonexistent_pvc",
 			k8sAPIClient: fake.NewSimpleClientset(),
 			dataLen:      numVolumes - 3,
 			volumeClaimsToMiss: map[string]bool{
