@@ -44,7 +44,7 @@ func createTracesToMetrics(
 	c := cfg.(*config.Config)
 	parser, err := ottlspan.NewParser(customottl.SpanFuncs(), set.TelemetrySettings)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OTTL statement parser for datapoints: %w", err)
+		return nil, fmt.Errorf("failed to create OTTL statement parser for spans: %w", err)
 	}
 
 	metricDefs := make([]model.MetricDef[ottlspan.TransformContext], 0, len(c.Spans))
