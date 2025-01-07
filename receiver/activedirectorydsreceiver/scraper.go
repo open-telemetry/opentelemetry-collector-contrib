@@ -136,10 +136,10 @@ func (a *activeDirectoryDSScraper) scrape(_ context.Context) (pmetric.Metrics, e
 		a.mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(now, int64(draPendingReplicationOperations))
 	}
 
-	draSyncFailuresSchemaMistmatch, schemaMismatchErr := a.w.Scrape(draSyncFailuresSchemaMismatch)
+	draSyncFailuresSchemaMismatch, schemaMismatchErr := a.w.Scrape(draSyncFailuresSchemaMismatch)
 	multiErr = multierr.Append(multiErr, schemaMismatchErr)
 	if schemaMismatchErr == nil {
-		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(draSyncFailuresSchemaMistmatch), metadata.AttributeSyncResultSchemaMismatch)
+		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(draSyncFailuresSchemaMismatch), metadata.AttributeSyncResultSchemaMismatch)
 	}
 
 	draSyncRequestsSuccessful, requestsSuccessfulErr := a.w.Scrape(draSyncRequestsSuccessful)
@@ -151,7 +151,7 @@ func (a *activeDirectoryDSScraper) scrape(_ context.Context) (pmetric.Metrics, e
 	draSyncRequestsTotal, totalErr := a.w.Scrape(draSyncRequestsMade)
 	multiErr = multierr.Append(multiErr, totalErr)
 	if totalErr == nil && requestsSuccessfulErr == nil && schemaMismatchErr == nil {
-		otherReplicationSyncRequests := draSyncRequestsTotal - draSyncRequestsSuccessful - draSyncFailuresSchemaMistmatch
+		otherReplicationSyncRequests := draSyncRequestsTotal - draSyncRequestsSuccessful - draSyncFailuresSchemaMismatch
 		a.mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(now, int64(otherReplicationSyncRequests), metadata.AttributeSyncResultOther)
 	}
 

@@ -58,7 +58,7 @@ func TestMatcherMatches(t *testing.T) {
 			shouldMatch: true,
 		},
 		{
-			name:        "regexpNameMisatch",
+			name:        "regexpNameMismatch",
 			cfg:         createConfig(regexpFilters, filterset.Regexp),
 			metric:      createMetric("test/match/wrongsuffix"),
 			shouldMatch: false,
