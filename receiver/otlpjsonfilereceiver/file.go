@@ -8,14 +8,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -29,13 +29,13 @@ const (
 
 // NewFactory creates a factory for file receiver
 func NewFactory() receiver.Factory {
-	return receiverprofiles.NewFactory(
+	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiverprofiles.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiverprofiles.WithLogs(createLogsReceiver, metadata.LogsStability),
-		receiverprofiles.WithTraces(createTracesReceiver, metadata.TracesStability),
-		receiverprofiles.WithProfiles(createProfilesReceiver, metadata.ProfilesStability))
+		xreceiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		xreceiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		xreceiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		xreceiver.WithProfiles(createProfilesReceiver, metadata.ProfilesStability))
 }
 
 type Config struct {
@@ -183,7 +183,7 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles consumerprofiles.Profiles) (receiverprofiles.Profiles, error) {
+func createProfilesReceiver(_ context.Context, settings receiver.Settings, configuration component.Config, profiles xconsumer.Profiles) (xreceiver.Profiles, error) {
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	cfg := configuration.(*Config)
 	opts := make([]fileconsumer.Option, 0)
