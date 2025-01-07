@@ -1639,11 +1639,11 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   This fixes the bug when all errors are retriable in bulk request response, retried docs will be included in failed docs.
   
 - `cmd/opampsupervisor`: The OpAMP supervisor now configures the `ppid` parameter of the opamp extension, which allows the collector to shut down if the supervisor is no longer running. (#32189)
-- `vcenterreceiver`: Adds inititially disabled packet drop rate metric for VMs. (#32929)
+- `vcenterreceiver`: Adds initially disabled packet drop rate metric for VMs. (#32929)
 - `awskinesisexporter`: fixed compressed data not generating the compression footers (#32860)
 - `splunkhecreceiver`: Fix single metric value parsing (#33084)
 - `vcenterreceiver`: vcenterreceiver client no longer returns error if no Virtual Apps are found. (#33073)
-- `vcenterreceiver`: Adds inititially disabled new packet rate metrics to replace the existing ones for VMs & Hosts. (#32835)
+- `vcenterreceiver`: Adds initially disabled new packet rate metrics to replace the existing ones for VMs & Hosts. (#32835)
 - `googlecloudpubsubreceiver`: Fix memory leak during shutdown (#32361)
 - `datadogexporter`: Compress host metadata before sending with gzip. (#32992)
 - `resourcedetectionprocessor`: Change type of `host.cpu.stepping` from int to string. (#31136)
