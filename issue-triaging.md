@@ -78,27 +78,30 @@ Here is a diagram outlining the potential issue states and how issues move throu
 
 ```mermaid
 flowchart TD
- subgraph graph1["**needs-triage**"]
+  subgraph graph1["**needs-triage**"]
         n1(["Needs Triage"])
   end
- subgraph graph2["**waiting-for-codeowners**"]
+  subgraph graph2["**waiting-for-codeowners**"]
         n3["Waiting for Codeowners<br>to further validate the issue"]
   end
- subgraph graph3["**waiting-for-author**"]
+  subgraph graph3["**waiting-for-author**"]
         n4["Waiting for author to provide more details"]
   end
- subgraph graph4["**help-wanted**"]
+  subgraph graph4["**help-wanted**"]
         n8["Mark as help-wanted"]
+  end
+  subgraph graph5["**closed**"]
+        n9(["Close the issue and provide details as needed"])
   end
     n1 --> n2["Has good repro steps <br>and/or description?"]
     n2 -- Yes --> n3
     n2 -- No/Need more details --> n4
-    n2 -- Invalid configuration/alternative available --> n5(["Provide a detailed comment on the issue and close it."])
-    n3 -- Invalid Issue --> n5
+    n2 -- Invalid configuration/alternative available --> n9
+    n3 -- Invalid Issue --> n9
     n3 -- Valid Issue -->  n6["Codeowner has time<br>to fix it?"]
     n6 -- Yes --> n7["Valid issue and to be fixed <br>by a codeowner"]
     n6 -- No --> n8
-    n7 --> n9(["Issue closed once fix is merged"])
+    n7 --> n9
     n8 --> n9
     n4 -- Once enough details are available --> n2
 
