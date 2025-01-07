@@ -30,13 +30,13 @@ func push[T Matchable](ele ...T) func(t *testing.T, fileset *Fileset[T]) {
 	}
 }
 
-func pop[T Matchable](expectedErr error, expectedElemet T) func(t *testing.T, fileset *Fileset[T]) {
+func pop[T Matchable](expectedErr error, expectedElement T) func(t *testing.T, fileset *Fileset[T]) {
 	return func(t *testing.T, fileset *Fileset[T]) {
 		pr := fileset.Len()
 		el, err := fileset.Pop()
 		if expectedErr == nil {
 			require.NoError(t, err)
-			require.Equal(t, expectedElemet, el)
+			require.Equal(t, expectedElement, el)
 			require.Equal(t, pr-1, fileset.Len())
 		} else {
 			require.ErrorIs(t, err, expectedErr)
