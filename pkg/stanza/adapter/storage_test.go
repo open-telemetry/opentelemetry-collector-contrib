@@ -64,13 +64,13 @@ func TestStorage(t *testing.T) {
 }
 
 func TestFindCorrectStorageExtension(t *testing.T) {
-	correctStoragedExt := storagetest.NewInMemoryStorageExtension("want")
-	id := correctStoragedExt.ID
+	correctStorageExt := storagetest.NewInMemoryStorageExtension("want")
+	id := correctStorageExt.ID
 	r := createReceiver(t, id)
 	host := storagetest.NewStorageHost().
 		WithNonStorageExtension("one").
 		WithFileBackedStorageExtension("foo", t.TempDir()).
-		WithExtension(id, correctStoragedExt).
+		WithExtension(id, correctStorageExt).
 		WithFileBackedStorageExtension("bar", t.TempDir()).
 		WithNonStorageExtension("two")
 
