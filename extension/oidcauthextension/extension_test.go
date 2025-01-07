@@ -228,7 +228,7 @@ func TestOIDCNotAuthenticated(t *testing.T) {
 	assert.NotNil(t, ctx)
 }
 
-func TestProviderNotReacheable(t *testing.T) {
+func TestProviderNotReachable(t *testing.T) {
 	// prepare
 	p := newExtension(&Config{
 		Audience:  "some-audience",
