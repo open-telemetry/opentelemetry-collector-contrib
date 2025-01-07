@@ -1200,7 +1200,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   which fields should be redacted. As a result, fields that are not sensitive are no longer redacted.
   
 - `azuremonitorreceiver`: Upgrade stability to alpha (#33689)
-- `windowsperfcountersreceiver`: `windowsperfcountersreceiver` now appends an index number to additional instance names that share a name. An example of this is when scraping ` rocess(*)` counters with multiple running instances of the same executable. (#32319)
+- `windowsperfcountersreceiver`: `windowsperfcountersreceiver` now appends an index number to additional instance names that share a name. An example of this is when scraping `\Process(*)` counters with multiple running instances of the same executable. (#32319)
   **NOTES**
   - This change can expose cardinality issues where the counters were previously collapsed under the non-indexed instance name.
   - The change mimics Windows Performance Monitor behavior: The first instance name remains unchanged, additional instances are suffixed with `#<N>` where `N=1` and is increased for each duplicate.
