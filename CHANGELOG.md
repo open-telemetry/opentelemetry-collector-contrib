@@ -7,6 +7,108 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.116.0
+
+### 🛑 Breaking changes 🛑
+
+- `jsonlogencodingextension`: Change how logs are marshaled. Instead of marshaling just the first log, marshal all logs into a JSON array. (#34064)
+- `githubreceiver`: Update metric names to match VCS Metric Semantic Conventions and scraper key name. (#36714)
+  * Change the `github` scraper key to `scraper`
+  * Add `vcs.repository.url.full` attribute
+  * Change attribute `repository.name` to `vcs.repository.name`
+  * Change attribute `ref.name` to `vcs.ref.head.name`
+  * Change attribute `ref.type` to `vcs.ref.head.type`
+  * Change attribute `change.state` to `vcs.change.state`
+  * Add attribute `vcs.revision_delta.direction` with `ahead` and `behind` values
+  * Change metric `vcs.repository.ref.revisions_ahead` to `vcs.ref.revisions_delta` with `vcs.revision_delta.direction=ahead`
+  * Change metric `vcs.repository.ref.revisions_behind` to `vcs.ref.revisions_delta` with `vcs.revision_delta.direction=behind`
+  * Change metric `vcs.repository.ref.count` to `vcs.ref.count`
+  * Change metric `vcs.repository.ref.time` to `vcs.ref.time`
+  * Add attribute `vcs.line_change.type` with `added` and `removed` values
+  * Change metric `vcs.repository.ref.lines_added` to `vcs.ref.lines_delta` with `vcs.line_change.type=added`
+  * Change metric `vcs.repository.ref.lines_removed` to `vcs.ref.lines_delta` with `vcs.line_change.type=removed`
+  * Change metric `vcs.repository.contributor.count` to `vcs.contributor.count`
+  * Change metric `vcs.repository.change.time_open` to `vcs.change.duration` with `vcs.change.state=open`
+  * Change metric `vcs.repository.change.time_to_approval` to `vcs.change.time_to_approval`
+  * Change metric `vcs.repository.change.time_to_merge` to `vcs.change.time_to_merge`
+  * Change metric `vcs.repository.change.count` to `vcs.change.count`
+  
+- `processor/tailsampling`: Reverts #33671, allowing for composite policies to specify inverted clauses in conjunction with other policies. This is a change bringing the previous state into place, breaking users who rely on what was introduced as part of #33671. (#34085)
+
+### 🚩 Deprecations 🚩
+
+- `connector/routing`: Deprecate `match_once` parameter. (#29882)
+- `routingprocessor`: Deprecated in favor of the routing connector. (#36616)
+- `splunkhecexporter`: Add `otel_attrs_to_hec_metadata/*` config fields to replace `hec_metadata_to_otel_attrs/*` fields. (#35092)
+  `otel_attrs_to_hec_metadata/*` config fields will replace the `hec_metadata_to_otel_attrs/*` fields in a later release.
+  
+- `kineticaexporter`: The kineticaexporter is now Unmaintained as it has no active code owners from the vendor (#36808)
+
+### 🚀 New components 🚀
+
+- `dorisexporter`: Mark the Doris exporter as Alpha. (#33479)
+- `libhoneyreceiver`: Introduce the scaffolding of a new component, libhoneyreceiver (#36693)
+
+### 💡 Enhancements 💡
+
+- `purefareceiver`: Implements support for scraping Pure Storage FlashArray with Purity version 6.6.11+ (#36251)
+- `azureeventhubreceiver`: support providing one or more time formats for timestamp parsing (#36650)
+- `googlecloudmonitoringreceiver`: Add metric-specific labels to googlecloudmonitoringreceiver component (#35711)
+- `awss3receiver`: Add support RFC3339 format for starttime and endtime (#36787)
+- `awsxrayexporter`: Generate url section in xray segment when `net.peer.name` is available (#35375)
+- `clickhouseexporter`: Exporter now sorts attribute maps' keys during INSERT, yielding better compression and predictable aggregates (#33634)
+- `datadogconnector`: Flip configs `traces::compute_stats_by_span_kind`, `traces::peer_tags_aggregation` and `traces::peer_service_aggregation` to true by default (#35969)
+  This enables Datadog APM stats on peer tags by default and is a backwards-compatible change. Read more on https://docs.datadoghq.com/tracing/guide/inferred-service-opt-in/.
+- `datadogexporter`: Flip configs `traces::compute_stats_by_span_kind`, `traces::peer_tags_aggregation` and `traces::peer_service_aggregation` to true by default (#35969)
+  This enables Datadog APM stats on peer tags by default and is a backwards-compatible change. Read more on https://docs.datadoghq.com/tracing/guide/inferred-service-opt-in/.
+- `elasticsearchexporter`: Map *.geo.location.{lat,lon} as geo_point field in OTel mode (#36565)
+  In OTel mapping mode, merge *.geo.location.{lat,lon} to *.geo.location such that they are stored as geo_point in Elasticsearch.
+- `fileexporter`: Add support for profiles signal. (#35978)
+- `pkg/ottl`: GetXML Converter now supports selecting text, CDATA, and attribute (value) content. (#36821)
+- `githubreceiver`: Adds webhook skeleton to GitHub receiver to receive events from GitHub for tracing. (#27460)
+  This PR adds a skeleton for the GitHub receiver to receive events from GitHub
+  for tracing via a webhook. The trace portion of this receiver will run and
+  respond to GET requests for the health check only.
+  
+- `kafkaexporter, kafkareceiver`: Add a new mechanism "AWS_MSK_IAM_OAUTHBEARER" for kafka exporter and kafka receiver. This mechanism use the AWS MSK IAM SASL Signer for Go https://github.com/aws/aws-msk-iam-sasl-signer-go. (#19747)
+- `loadbalancingexporter`: Adds a an optional configuration to the k8s resolver which returns hostnames instead of IPs for headless services pointing at statefulsets (#18412)
+- `mongodbatlasreceiver`: Adds additional metrics to the MongoDB Atlas receiver (#36525)
+  Adds a number of new default disabled metrics to the MongoDB Atlas receiver. These metrics are:
+  - mongodbatlas.disk.partition.queue.depth
+  - mongodbatlas.disk.partition.throughput
+  - mongodbatlas.process.cache.ratio
+  
+- `s3exporter`: Upgrading to adopt aws sdk v2 (#36699)
+- `opampextension`: Use status subscription for fine granular component health reporting (#35856)
+- `pkg/pdatatest`: Add support for Profiles signal comparison. (#36232)
+- `receiver/prometheusremotewrite`: Parse labels from Prometheus Remote Write requests into Resource and Metric Attributes. (#35656)
+  Warning - The HTTP Server still doesn't pass metrics to the next consumer. The component is unusable for now.
+- `signaltometrics`: Add config validation and custom OTTL functions (#35930)
+  Adds config validation for the signal to metrics connector. Also introduces `AdjustedCount` OTTL function.
+- `testbed`: Add batcher performance tests (#36206)
+- `tesbed`: add options for retry/storage for filelog sender (#36781)
+
+### 🧰 Bug fixes 🧰
+
+- `azuremonitorexporter`: fix bug to remove default config of endpoint which causes failing to parse endpoint correctly. (#36704)
+- `receiver/prometheusreceiver`: Metric adjuster no longer assumes that all metrics from a scrape come from the same resource (#36477)
+- `connector/datadog, exporter/datadog, pkg/datadog`: throw error if datadog API key contains invalid characters (#36509)
+- `parseutils`: Handle escaped quotes when parsing pairs using SplitString. (#36176)
+- `exporter/prometheusremotewrite`: Fix exemplar handling when the exemplar is an integer value. (#36657)
+  Send metrics with exemplars as integer values now are correctly handled.
+- `googlecloudmonitoringreceiver`: Fix "no validation found" error if workload is running on Google Cloud Platform (#36607)
+- `k8sattributesprocessor`: Override extracted k8s attributes if original value has been empty (#36373)
+- `k8sattributesreceiver`: Log any errors encountered during kube client initialisation (#35879)
+  This addresses an issue where the collector, due to an error encountered during the kubernetes client initialisation,
+  was reporting an 'unavailable' status via the health check extension without any further information to be found in the logs.
+  
+- `opampextension`: Fix blocking agent shutdown due to unclosed channel (#36764)
+- `opampsupervisor`: avoid nil pointer access when reporting the last received remote config (#36850)
+- `postgresqlreceiver`: Update the postgresqlreceiver to handle new table schema for the bgwriter metrics in pg17+ (#36784)
+- `jaegerreceiver`: Remove ineffectual warning from jaegerreceiver (#35894)
+- `datadogexporter`: read response body on pushSketches to allow connection re-use (#36779)
+- `sumologicextension`: Skip likely zombie processes on Windows. (#36481)
+
 ## v0.115.0
 
 ### 🛑 Breaking changes 🛑
