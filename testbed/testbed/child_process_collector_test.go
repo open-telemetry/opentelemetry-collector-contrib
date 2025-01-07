@@ -33,11 +33,11 @@ func TestAgentEnvVarOption(t *testing.T) {
 	cpc, ok := col.(*childProcessCollector)
 	require.True(t, ok)
 
-	expeectedEnvVarMap := map[string]string{
+	expectedEnvVarMap := map[string]string{
 		"var-one": "var-one-value",
 		"var-two": "actual-var-two-value",
 	}
-	require.Equal(t, expeectedEnvVarMap, cpc.additionalEnv)
+	require.Equal(t, expectedEnvVarMap, cpc.additionalEnv)
 
 	// results from `not-real` not being found but contents unrelated to this test
 	require.Error(t, col.Start(
