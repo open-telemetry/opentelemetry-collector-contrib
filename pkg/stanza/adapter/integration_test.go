@@ -100,7 +100,7 @@ func BenchmarkEmitterToConsumer(b *testing.B) {
 	}
 }
 
-func BenchmarkEmitterToConsumerScopeGroupping(b *testing.B) {
+func BenchmarkEmitterToConsumerScopeGrouping(b *testing.B) {
 	const (
 		entryCount  = 1_000_000
 		hostsCount  = 2
