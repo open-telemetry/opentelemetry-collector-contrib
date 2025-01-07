@@ -171,7 +171,7 @@ func (t *fileTracker) archive(metadata *fileset.Fileset[*reader.Metadata]) {
 	t.archiveIndex = (t.archiveIndex + 1) % t.pollsToArchive // increment the index
 }
 
-// readArchive loads data from the archive for a given index and returns a fileset.Filset.
+// readArchive loads data from the archive for a given index and returns a fileset.Fileset.
 func (t *fileTracker) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
 	key := fmt.Sprintf("knownFiles%d", index)
 	metadata, err := checkpoint.LoadKey(context.Background(), t.persister, key)
