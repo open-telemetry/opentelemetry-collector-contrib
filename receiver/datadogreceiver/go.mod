@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.22.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.137
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.60.0
-	github.com/DataDog/datadog-agent/pkg/proto v0.60.0
-	github.com/DataDog/datadog-agent/pkg/trace v0.60.0
-	github.com/DataDog/datadog-api-client-go/v2 v2.33.0
+	github.com/DataDog/agent-payload/v5 v5.0.140
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.60.1
+	github.com/DataDog/datadog-agent/pkg/proto v0.60.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.60.1
+	github.com/DataDog/datadog-api-client-go/v2 v2.34.0
 	github.com/DataDog/sketches-go v1.4.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.116.0
@@ -29,13 +29,13 @@ require (
 	go.opentelemetry.io/collector/semconv v0.116.1-0.20241220212031-7c2639723f67
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.36.0
+	google.golang.org/protobuf v1.36.1
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.60.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.60.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.60.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.60.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.60.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.60.1 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/go-sqllexer v0.0.16 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
@@ -130,3 +130,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267

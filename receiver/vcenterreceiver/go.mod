@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.116.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.116.0
 	github.com/stretchr/testify v1.10.0
-	github.com/vmware/govmomi v0.46.2
+	github.com/vmware/govmomi v0.47.0
 	go.opentelemetry.io/collector/component v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/component/componenttest v0.116.1-0.20241220212031-7c2639723f67
 	go.opentelemetry.io/collector/config/configopaque v1.22.1-0.20241220212031-7c2639723f67
@@ -121,3 +121,7 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267

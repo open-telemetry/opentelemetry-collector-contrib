@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.1
-	github.com/antchfx/xmlquery v1.4.2
-	github.com/antchfx/xpath v1.3.2
+	github.com/antchfx/xmlquery v1.4.3
+	github.com/antchfx/xpath v1.3.3
 	github.com/elastic/go-grok v0.3.1
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.4
@@ -69,3 +69,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden
+
+replace go.opentelemetry.io/collector/scraper/scraperhelper v0.116.0 => go.opentelemetry.io/collector/scraper/scraperhelper v0.0.0-20250106214556-67fdcd1f4267
+
+replace go.opentelemetry.io/collector/extension/xextension v0.116.0 => go.opentelemetry.io/collector/extension/xextension v0.0.0-20250106214556-67fdcd1f4267
