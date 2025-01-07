@@ -60,11 +60,11 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 	t.Run("Calls registered callback", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 		messageType := "steep"
-		mesageBytes := []byte("blackTea")
+		messageBytes := []byte("blackTea")
 		customMessage := &protobufs.CustomMessage{
 			Capability: capabilityString,
 			Type:       messageType,
-			Data:       mesageBytes,
+			Data:       messageBytes,
 		}
 
 		client := mockCustomCapabilityClient{}
@@ -83,11 +83,11 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 	t.Run("Skips blocked message channels", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 		messageType := "steep"
-		mesageBytes := []byte("blackTea")
+		messageBytes := []byte("blackTea")
 		customMessage := &protobufs.CustomMessage{
 			Capability: capabilityString,
 			Type:       messageType,
-			Data:       mesageBytes,
+			Data:       messageBytes,
 		}
 
 		client := mockCustomCapabilityClient{}
@@ -148,18 +148,18 @@ func TestRegistry_ProcessMessage(t *testing.T) {
 	})
 }
 
-func TestCustomCapability_SendMesage(t *testing.T) {
+func TestCustomCapability_SendMessage(t *testing.T) {
 	t.Run("Sends message", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 		messageType := "brew"
-		mesageBytes := []byte("black")
+		messageBytes := []byte("black")
 
 		client := mockCustomCapabilityClient{
 			sendCustomMessage: func(message *protobufs.CustomMessage) (chan struct{}, error) {
 				require.Equal(t, &protobufs.CustomMessage{
 					Capability: capabilityString,
 					Type:       messageType,
-					Data:       mesageBytes,
+					Data:       messageBytes,
 				}, message)
 				return nil, nil
 			},
@@ -171,7 +171,7 @@ func TestCustomCapability_SendMesage(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, sender)
 
-		channel, err := sender.SendMessage(messageType, mesageBytes)
+		channel, err := sender.SendMessage(messageType, messageBytes)
 		require.NoError(t, err)
 		require.Nil(t, channel, nil)
 	})
@@ -181,11 +181,11 @@ func TestCustomCapability_Unregister(t *testing.T) {
 	t.Run("Unregistered capability callback is no longer called", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 		messageType := "steep"
-		mesageBytes := []byte("blackTea")
+		messageBytes := []byte("blackTea")
 		customMessage := &protobufs.CustomMessage{
 			Capability: capabilityString,
 			Type:       messageType,
-			Data:       mesageBytes,
+			Data:       messageBytes,
 		}
 
 		client := mockCustomCapabilityClient{}
@@ -210,11 +210,11 @@ func TestCustomCapability_Unregister(t *testing.T) {
 	t.Run("Unregister is successful even if set capabilities fails", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 		messageType := "steep"
-		mesageBytes := []byte("blackTea")
+		messageBytes := []byte("blackTea")
 		customMessage := &protobufs.CustomMessage{
 			Capability: capabilityString,
 			Type:       messageType,
-			Data:       mesageBytes,
+			Data:       messageBytes,
 		}
 
 		client := &mockCustomCapabilityClient{}
@@ -243,7 +243,7 @@ func TestCustomCapability_Unregister(t *testing.T) {
 	t.Run("Does not send if unregistered", func(t *testing.T) {
 		capabilityString := "io.opentelemetry.teapot"
 		messageType := "steep"
-		mesageBytes := []byte("blackTea")
+		messageBytes := []byte("blackTea")
 
 		client := mockCustomCapabilityClient{}
 
@@ -255,7 +255,7 @@ func TestCustomCapability_Unregister(t *testing.T) {
 
 		unregisteredSender.Unregister()
 
-		_, err = unregisteredSender.SendMessage(messageType, mesageBytes)
+		_, err = unregisteredSender.SendMessage(messageType, messageBytes)
 		require.ErrorContains(t, err, "capability has already been unregistered")
 
 		select {
@@ -267,7 +267,7 @@ func TestCustomCapability_Unregister(t *testing.T) {
 }
 
 type mockCustomCapabilityClient struct {
-	sendCustomMessage    func(message *protobufs.CustomMessage) (chan struct{}, error)
+	sendCustomMessage     func(message *protobufs.CustomMessage) (chan struct{}, error)
 	setCustomCapabilities func(customCapabilities *protobufs.CustomCapabilities) error
 }
 
