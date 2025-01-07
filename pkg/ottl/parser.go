@@ -266,7 +266,7 @@ func parseCondition(raw string) (*booleanExpression, error) {
 func parseValueExpression(raw string) (*value, error) {
 	parsed, err := valueExpressionParser.ParseString("", raw)
 	if err != nil {
-		return nil, fmt.Errorf("condition has invalid syntax: %w", err)
+		return nil, fmt.Errorf("expression has invalid syntax: %w", err)
 	}
 	err = parsed.checkForCustomError()
 	if err != nil {
