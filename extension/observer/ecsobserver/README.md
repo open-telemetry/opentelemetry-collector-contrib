@@ -400,7 +400,7 @@ NewECSSD() {
     select {
     case <- timer:
       // Fetch ALL
-      tasks := ecsClient.FaetchAll()
+      tasks := ecsClient.FetchAll()
       // Filter
       filteredTasks := fileters.Apply(tasks)
       // Add EC2 info
