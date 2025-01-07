@@ -26,8 +26,6 @@ can be found by browsing [the metadata file](./metadata.yaml).
 
 ## Configuration
 
-> :information_source: This receiver is in beta and configuration fields are subject to change.
-
 The following settings are required:
 
 - `endpoint` (no default): The hostname and port of the Valkey instance,
@@ -41,11 +39,7 @@ next consumer. The `collection_interval` configuration option tells this
 receiver the duration between runs. This value must be a string readable by
 Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
-- `tls`:
-  - `insecure` (default = true): whether to disable client transport security for the exporter's connection.
-  - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used if `insecure` is set to false.
-  - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to false.
-  - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to false.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings) for the full set of available options.
 
 Example:
 
