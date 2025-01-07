@@ -3567,7 +3567,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receivers`: Updating receivers that run intervals to use standard interval by default (#22138)
 - `datadog receiver`: Updating datadog translations to align more closely to semantic convention (#21210, #21525)
   - `service.name` is moved from assigned from span attributes to resource attributes
-  - Moved from using datadog's `span.Resouce` to `span.Name` to set span name
+  - Moved from using datadog's `span.Resource` to `span.Name` to set span name
   - Exported traces are now grouped by `service.name` by default
   
 - `nginxreceiver`: Add featuregate to emit 'nginx.connections_current' as a non-monotonic sum (#4326)

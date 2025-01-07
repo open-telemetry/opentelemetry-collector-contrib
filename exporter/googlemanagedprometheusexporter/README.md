@@ -281,7 +281,7 @@ by applications in a way that uniquely identifies each instance.
 
 The next most common reason is (2), which means that the exporter's mapping
 logic from OpenTelemetry resource to Google Cloud's `prometheus_target`
-monitored resouce didn't preserve a resource attribute that was needed to
+monitored resource didn't preserve a resource attribute that was needed to
 distinguish timeseries. This can be mitigated by adding resource
 attributes as metric labels using `resource_filters` configuration in the
 exporter. The following example adds common identifying resource attributes.

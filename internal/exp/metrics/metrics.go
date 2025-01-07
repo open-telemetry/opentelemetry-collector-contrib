@@ -16,7 +16,7 @@ import (
 // exist, new entries will be created as needed.
 //
 // NOTE: Any "unnecessary" duplicate entries in mdA will *not* be combined. For example if
-// mdA contains two ResourcMetric entries with identical Resource values, they will not be
+// mdA contains two ResourceMetric entries with identical Resource values, they will not be
 // combined. If you wish to have this behavior, you could call this function twice:
 //
 //	cleanedMetrics := Merge(pmetric.NewMetrics(), mdA)

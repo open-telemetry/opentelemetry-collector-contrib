@@ -320,11 +320,11 @@ operations:
 - include: ^k8s\.pod\.(.*)$$
   match_type: regexp
   action: group
-  group_resource_labels: {"resouce.type": "k8s.pod", "source": "kubelet"}
+  group_resource_labels: {"resource.type": "k8s.pod", "source": "kubelet"}
 - include: ^container\.(.*)$$
   match_type: regexp
   action: group
-  group_resource_labels: {"resouce.type": "container", "source": "kubelet"}
+  group_resource_labels: {"resource.type": "container", "source": "kubelet"}
 ```
 
 ### Metric Transform Processor vs. [Attributes Processor for Metrics](../attributesprocessor)
