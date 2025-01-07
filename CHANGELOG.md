@@ -2820,7 +2820,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   In Linux and Darwin all fields are populated. In Windows only family, vendor.id and model.name are populated.
 - `pkg/stanza`: Add 'omit_pattern' setting to `split.Config`. (#26381)
   This can be used omit the start or end pattern from a log entry.
-- `skywaklingreceiver`: implement receiver for JVM metrics in Skywalking and adapted it to the OpenTelemetry protocol. (#20315)
+- `skywalkingreceiver`: implement receiver for JVM metrics in Skywalking and adapted it to the OpenTelemetry protocol. (#20315)
 - `statsdreceiver`: Add TCP support to statsdreceiver (#23327)
 - `azuredataexplorerexporter`: Added an optional column in the exported trace data to store the status code and message as a dynamic field. (#26496)
 - `statsdreceiver`: Allow for empty tag sets (#27011)
