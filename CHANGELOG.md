@@ -714,7 +714,7 @@ arrow.waiter_limit -> admission.waiter_limit
   Span events are now supported in OTel mapping mode. They will be routed to `logs-${data_stream.dataset}-${data_stream.namespace}` if `traces_dynamic_index::enabled` is `true`.
 - `transformprocessor`: Support aggregating metrics based on their attribute values and substituting the values with a new value. (#16224)
 - `kafkareceiver`: Adds tunable fetch sizes to Kafka Receiver (#22741, #34431)
-  Adds the ability to tune the minumum, default and maximum fetch sizes for the Kafka Receiver
+  Adds the ability to tune the minimum, default and maximum fetch sizes for the Kafka Receiver
 - `solarwindsapmsettingsextension`: Added logic for refresh function (#27668)
 - `githubreceiver`: Promote GitHub receiver metrics to alpha status. (#34960)
 - `googlecloudmonitoringreceiver`: Enhancing the Google Cloud monitoring receiver to establish a client connection, scrape GCP Cloud Metrics, and transform them into an OpenTelemetry compatible format for pipeline processing. (#33762)
