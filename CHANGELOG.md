@@ -2551,7 +2551,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   The purpose of this list was to allow us to emit a lot whenever a path was seen for the first time.
   This removes the separate list and relies instead on the same mechanism as checkpointing. Now, a similar log is emitted
   any time a file is found which is not currently checkpointed. Because the checkpointing mechanism does not maintain history
-  indefintiely, it is now possible that a log will be emitted for the same file path. This will happen when no file exists at
+  indefinitely, it is now possible that a log will be emitted for the same file path. This will happen when no file exists at
   the path for a period of time.
   
 - `dockerstatsreceiver`: cpu.container.percent metric is removed in favor of container.cpu.utilization (#21807)
