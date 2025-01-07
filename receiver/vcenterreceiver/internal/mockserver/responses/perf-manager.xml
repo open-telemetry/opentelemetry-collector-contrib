@@ -3356,7 +3356,7 @@
                                 <key>153</key>
                                 <nameInfo>
                                     <label>Net Throughput Contention</label>
-                                    <summary>The aggregate network droppped packets for the host</summary>
+                                    <summary>The aggregate network dropped packets for the host</summary>
                                     <key>throughput.contention</key>
                                 </nameInfo>
                                 <groupInfo>
