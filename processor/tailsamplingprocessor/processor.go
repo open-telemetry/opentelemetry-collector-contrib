@@ -45,6 +45,7 @@ type policy struct {
 type tailSamplingSpanProcessor struct {
 	ctx context.Context
 
+	set       processor.Settings
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
@@ -59,6 +60,9 @@ type tailSamplingSpanProcessor struct {
 	nonSampledIDCache cache.Cache[bool]
 	deleteChan        chan pcommon.TraceID
 	numTracesOnMap    *atomic.Uint64
+
+	setPolicyMux  sync.Mutex
+	pendingPolicy []PolicyCfg
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -108,6 +112,7 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 
 	tsp := &tailSamplingSpanProcessor{
 		ctx:               ctx,
+		set:               set,
 		telemetry:         telemetry,
 		nextConsumer:      nextConsumer,
 		maxNumTraces:      cfg.NumTraces,
@@ -128,31 +133,9 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	if tsp.policies == nil {
-		policyNames := map[string]bool{}
-		tsp.policies = make([]*policy, len(cfg.PolicyCfgs))
-		componentID := set.ID.Name()
-		for i := range cfg.PolicyCfgs {
-			policyCfg := &cfg.PolicyCfgs[i]
-
-			if policyNames[policyCfg.Name] {
-				return nil, fmt.Errorf("duplicate policy name %q", policyCfg.Name)
-			}
-			policyNames[policyCfg.Name] = true
-
-			eval, err := getPolicyEvaluator(telemetrySettings, policyCfg)
-			if err != nil {
-				return nil, err
-			}
-			uniquePolicyName := policyCfg.Name
-			if componentID != "" {
-				uniquePolicyName = fmt.Sprintf("%s.%s", componentID, policyCfg.Name)
-			}
-			p := &policy{
-				name:      policyCfg.Name,
-				evaluator: eval,
-				attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
-			}
-			tsp.policies[i] = p
+		err := tsp.loadSamplingPolicy(cfg.PolicyCfgs)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -262,7 +245,82 @@ type policyMetrics struct {
 	idNotFoundOnMapCount, evaluateErrorCount, decisionSampled, decisionNotSampled int64
 }
 
+func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error {
+	telemetrySettings := tsp.set.TelemetrySettings
+	componentID := tsp.set.ID.Name()
+
+	policyNames := map[string]bool{}
+	tsp.policies = make([]*policy, len(cfgs))
+
+	for i := range cfgs {
+		policyCfg := &cfgs[i]
+
+		if policyNames[policyCfg.Name] {
+			return fmt.Errorf("duplicate policy name %q", policyCfg.Name)
+		}
+		policyNames[policyCfg.Name] = true
+
+		eval, err := getPolicyEvaluator(telemetrySettings, policyCfg)
+		if err != nil {
+			return err
+		}
+		uniquePolicyName := policyCfg.Name
+		if componentID != "" {
+			uniquePolicyName = fmt.Sprintf("%s.%s", componentID, policyCfg.Name)
+		}
+		p := &policy{
+			name:      policyCfg.Name,
+			evaluator: eval,
+			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
+		}
+		tsp.policies[i] = p
+	}
+
+	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(tsp.policies)))
+
+	return nil
+}
+
+func (tsp *tailSamplingSpanProcessor) SetSamplingPolicy(cfgs []PolicyCfg) {
+	tsp.logger.Debug("Setting pending sampling policy", zap.Int("pending.len", len(cfgs)))
+
+	tsp.setPolicyMux.Lock()
+	defer tsp.setPolicyMux.Unlock()
+
+	tsp.pendingPolicy = cfgs
+}
+
+func (tsp *tailSamplingSpanProcessor) loadPendingSamplingPolicy() {
+	tsp.setPolicyMux.Lock()
+	defer tsp.setPolicyMux.Unlock()
+
+	// Nothing pending, do nothing.
+	pLen := len(tsp.pendingPolicy)
+	if pLen == 0 {
+		return
+	}
+
+	tsp.logger.Debug("Loading pending sampling policy", zap.Int("pending.len", pLen))
+
+	// In case something goes wrong.
+	prev := tsp.policies
+
+	err := tsp.loadSamplingPolicy(tsp.pendingPolicy)
+
+	// Empty pending regardless of error. If policy is invalid, it will fail on
+	// every tick, no need to do extra work and flood the log with errors.
+	tsp.pendingPolicy = nil
+
+	if err != nil {
+		tsp.logger.Error("Failed to load pending sampling policy", zap.Error(err))
+		tsp.logger.Debug("Falling back to previous sampling policy")
+		tsp.policies = prev
+	}
+}
+
 func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
+	tsp.loadPendingSamplingPolicy()
+
 	metrics := policyMetrics{}
 
 	startTime := time.Now()
@@ -401,11 +459,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 		}
 
 		lenSpans := int64(len(spans))
-		lenPolicies := len(tsp.policies)
-		initialDecisions := make([]sampling.Decision, lenPolicies)
-		for i := 0; i < lenPolicies; i++ {
-			initialDecisions[i] = sampling.Pending
-		}
+
 		d, loaded := tsp.idToTrace.Load(id)
 		if !loaded {
 			spanCount := &atomic.Int64{}

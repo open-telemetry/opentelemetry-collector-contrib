@@ -6,7 +6,7 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [povilasv, matej-g]
+    active: [povilasv]
 
 tests:
   config:

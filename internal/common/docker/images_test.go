@@ -45,11 +45,11 @@ func TestDockerImageToElements(t *testing.T) {
 		{
 			name: "image with sha256 hash",
 			args: args{
-				image: "alpine:test@sha256:00000000000000",
+				image: "alpine:test@sha256:dbc66f8c46d4cf4793527ca0737d73527a2bb830019953c2371b5f45f515f1a8",
 			},
 			wantRepository: "alpine",
 			wantTag:        "test",
-			wantSHA256:     "00000000000000",
+			wantSHA256:     "dbc66f8c46d4cf4793527ca0737d73527a2bb830019953c2371b5f45f515f1a8",
 			wantErr:        false,
 		},
 		{

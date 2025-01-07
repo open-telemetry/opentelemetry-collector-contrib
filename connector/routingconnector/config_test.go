@@ -27,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "traces.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalTraces, "otlp-all"),
 				},
@@ -52,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "metrics.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalMetrics, "otlp-all"),
 				},
@@ -77,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 			configPath: filepath.Join("testdata", "config", "logs.yaml"),
 			id:         component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
+				MatchOnce: true,
 				DefaultPipelines: []pipeline.ID{
 					pipeline.NewIDWithName(pipeline.SignalLogs, "otlp-all"),
 				},

@@ -6,4 +6,4 @@ status:
     alpha: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [TylerHelmuth]
+    active: [TylerHelmuth, mterhar]

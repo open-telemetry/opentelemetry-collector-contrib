@@ -6,6 +6,7 @@ package statsdreceiver
 import (
 	"context"
 	"errors"
+	"runtime"
 	"testing"
 	"time"
 
@@ -128,6 +129,9 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
+			if runtime.GOOS == "windows" && (cfg.NetAddr.Transport == confignet.TransportTypeUnix || cfg.NetAddr.Transport == confignet.TransportTypeUnixgram || cfg.NetAddr.Transport == confignet.TransportTypeUnixPacket) {
+				t.Skip("skipping UDS test on windows")
+			}
 			cfg.NetAddr.Endpoint = tt.addr
 			sink := new(consumertest.MetricsSink)
 			rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, sink)
