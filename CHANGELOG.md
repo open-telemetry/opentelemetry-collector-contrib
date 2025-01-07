@@ -5780,7 +5780,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `filestorageextension`: use correct bbolt options for compaction (#9134)
 - `hostmetricsreceiver`: Use cpu times for time delta in cpu.utilization calculation (#8857)
 - `dynatraceexporter`: Remove overly verbose stacktrace from certain logs (#8989)
-- `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` fature-gate, which was not applied when the flag was provided (#9116)
+- `googlecloudexporter`: fix the `exporter.googlecloud.OTLPDirect` feature-gate, which was not applied when the flag was provided (#9116)
 - `signalfxexporter`: Fix bug to enable timeouts for correlating traces and metrics (#9101)
 - `windowsperfcountersreceiver`: fix exported values being integers instead of doubles (#9138)
 - `prometheusreceiver`: Fix issues with relabelling the `job` and `instance` labels. (#8780)
