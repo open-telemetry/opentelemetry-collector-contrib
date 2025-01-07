@@ -532,7 +532,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 ### 💡 Enhancements 💡
 
 - `changelog`: Generate separate changelogs for end users and package consumers (#24014)
-- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healtcheck_startup, as the latter doesn't take token or index into account. (#24411)
+- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healthcheck_startup, as the latter doesn't take token or index into account. (#24411)
 - `k8sclusterreceiver`: Allows disabling metrics and resource attributes (#24568)
 - `cmd/mdatagen`: Avoid reusing the same ResourceBuilder instance for multiple ResourceMetrics (#24762)
 
