@@ -26,7 +26,7 @@ const (
 	fluentPortVar     = "FLUENT_DATA_SENDER_RECEIVER_PORT"
 )
 
-// FluentLogsForwarder forwards logs to fluent forwader
+// FluentLogsForwarder forwards logs to fluent forwarder
 type FluentLogsForwarder struct {
 	testbed.DataSenderBase
 	fluentLogger *fluent.Fluent
