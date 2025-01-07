@@ -193,7 +193,7 @@ func (r *libhoneyReceiver) handleEvent(resp http.ResponseWriter, req *http.Reque
 
 	dataset, err := parser.GetDatasetFromRequest(req.RequestURI)
 	if err != nil {
-		r.settings.Logger.Info("No dataset found in URL", zap.String("req.RequstURI", req.RequestURI))
+		r.settings.Logger.Info("No dataset found in URL", zap.String("req.RequestURI", req.RequestURI))
 	}
 
 	for _, p := range r.cfg.HTTP.TracesURLPaths {
