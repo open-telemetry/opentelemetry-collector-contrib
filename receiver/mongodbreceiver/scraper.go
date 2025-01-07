@@ -70,71 +70,31 @@ func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 		return fmt.Errorf("create mongo client: %w", err)
 	}
 	s.client = c
-	s.logger.Debug("Primary client connected")
 
-	// Find and connect to secondaries
 	secondaries, err := s.findSecondaryHosts(ctx)
 	if err != nil {
 		s.logger.Warn("failed to find secondary hosts", zap.Error(err))
 		return nil
 	}
 
-	s.logger.Debug("Found secondary hosts", zap.Strings("secondaries", secondaries))
 	for _, secondary := range secondaries {
-		secondaryConfig := *s.config // Copy primary config
+		secondaryConfig := *s.config
 		secondaryConfig.Hosts = []confignet.TCPAddrConfig{
 			{
 				Endpoint: secondary,
 			},
 		}
 
-		s.logger.Debug("Attempting to connect to secondary", zap.String("host", secondary))
 		client, err := newClient(ctx, &secondaryConfig, s.logger, true)
 		if err != nil {
 			s.logger.Warn("failed to connect to secondary", zap.String("host", secondary), zap.Error(err))
 			continue
 		}
 		s.secondaryClients = append(s.secondaryClients, client)
-		s.logger.Info("Successfully connected to secondary", zap.String("host", secondary))
 	}
 
-	s.logger.Debug("Connected to secondaries", zap.Int("count", len(s.secondaryClients)))
 	return nil
 }
-
-// func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
-// 	c, err := newClient(ctx, s.config, s.logger)
-// 	if err != nil {
-// 		return fmt.Errorf("create mongo client: %w", err)
-// 	}
-// 	s.client = c
-
-// 	// Find and connect to secondaries
-// 	secondaries, err := s.findSecondaryHosts(ctx)
-// 	if err != nil {
-// 		s.logger.Warn("failed to find secondary hosts", zap.Error(err))
-// 		return nil
-// 	}
-
-// 	for _, secondary := range secondaries {
-// 		secondaryConfig := *s.config // Copy primary config
-// 		// Convert string address to TCPAddrConfig
-// 		secondaryConfig.Hosts = []confignet.TCPAddrConfig{
-// 			{
-// 				Endpoint: secondary,
-// 			},
-// 		}
-
-// 		client, err := newClient(ctx, &secondaryConfig, s.logger)
-// 		if err != nil {
-// 			s.logger.Warn("failed to connect to secondary", zap.String("host", secondary), zap.Error(err))
-// 			continue
-// 		}
-// 		s.secondaryClients = append(s.secondaryClients, client)
-// 	}
-
-// 	return nil
-// }
 
 func (s *mongodbScraper) shutdown(ctx context.Context) error {
 	var errs []error
@@ -294,6 +254,8 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordLatencyTime(now, document, errs)
 	s.recordUptime(now, document, errs)
 	s.recordHealth(now, document, errs)
+	s.recordActiveWrites(now, document, errs)
+	s.recordActiveReads(now, document, errs)
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {

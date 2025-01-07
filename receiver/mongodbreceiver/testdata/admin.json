@@ -125,13 +125,13 @@
 	"globalLock": {
 		"activeClients": {
 			"readers": {
-				"$numberInt": "0"
+				"$numberInt": "1"
 			},
 			"total": {
-				"$numberInt": "16"
+				"$numberInt": "3"
 			},
 			"writers": {
-				"$numberInt": "0"
+				"$numberInt": "2"
 			}
 		},
 		"currentQueue": {

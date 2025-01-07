@@ -12,6 +12,22 @@ metrics:
     enabled: false
 ```
 
+### mongodb.active.reads
+
+The number of read operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {reads} | Sum | Int | Cumulative | false |
+
+### mongodb.active.writes
+
+The number of write operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | false |
+
 ### mongodb.cache.operations
 
 The number of cache operations of the instance.

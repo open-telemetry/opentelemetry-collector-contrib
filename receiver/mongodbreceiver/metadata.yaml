@@ -453,7 +453,25 @@ metrics:
     gauge:
       value_type: double
       aggregation_temporality: delta
-      monotonic: false      
+      monotonic: false
+  mongodb.active.writes:
+    description: The number of write operations currently being processed.
+    unit: "{writes}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.active.reads:
+    description: The number of read operations currently being processed.
+    unit: "{reads}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []      
 
 tests:
   config:

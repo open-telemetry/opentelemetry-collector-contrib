@@ -28,6 +28,8 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for mongodb metrics.
 type MetricsConfig struct {
+	MongodbActiveReads            MetricConfig `mapstructure:"mongodb.active.reads"`
+	MongodbActiveWrites           MetricConfig `mapstructure:"mongodb.active.writes"`
 	MongodbCacheOperations        MetricConfig `mapstructure:"mongodb.cache.operations"`
 	MongodbCollectionCount        MetricConfig `mapstructure:"mongodb.collection.count"`
 	MongodbCommandsPerSec         MetricConfig `mapstructure:"mongodb.commands_per_sec"`
@@ -74,6 +76,12 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		MongodbActiveReads: MetricConfig{
+			Enabled: true,
+		},
+		MongodbActiveWrites: MetricConfig{
+			Enabled: true,
+		},
 		MongodbCacheOperations: MetricConfig{
 			Enabled: true,
 		},

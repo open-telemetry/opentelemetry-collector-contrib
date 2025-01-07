@@ -1,6 +1,10 @@
 default:
 all_set:
   metrics:
+    mongodb.active.reads:
+      enabled: true
+    mongodb.active.writes:
+      enabled: true
     mongodb.cache.operations:
       enabled: true
     mongodb.collection.count:
@@ -94,6 +98,10 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    mongodb.active.reads:
+      enabled: false
+    mongodb.active.writes:
+      enabled: false
     mongodb.cache.operations:
       enabled: false
     mongodb.collection.count:

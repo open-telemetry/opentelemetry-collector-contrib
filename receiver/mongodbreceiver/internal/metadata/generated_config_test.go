@@ -25,6 +25,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					MongodbActiveReads:            MetricConfig{Enabled: true},
+					MongodbActiveWrites:           MetricConfig{Enabled: true},
 					MongodbCacheOperations:        MetricConfig{Enabled: true},
 					MongodbCollectionCount:        MetricConfig{Enabled: true},
 					MongodbCommandsPerSec:         MetricConfig{Enabled: true},
@@ -79,6 +81,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					MongodbActiveReads:            MetricConfig{Enabled: false},
+					MongodbActiveWrites:           MetricConfig{Enabled: false},
 					MongodbCacheOperations:        MetricConfig{Enabled: false},
 					MongodbCollectionCount:        MetricConfig{Enabled: false},
 					MongodbCommandsPerSec:         MetricConfig{Enabled: false},

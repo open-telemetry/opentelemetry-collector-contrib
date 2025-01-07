@@ -112,6 +112,8 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
 				"failed to collect metric mongodb.health: could not find key for metric",
 				"failed to collect metric mongodb.uptime: could not find key for metric",
+				"failed to collect metric mongodb.active.reads: could not find key for metric",
+				"failed to collect metric mongodb.active.writes: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
@@ -342,8 +344,9 @@ func TestScraperScrape(t *testing.T) {
 			expectedMetrics := tc.expectedMetricGen(t)
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-				pmetrictest.IgnoreResourceMetricsOrder(),
-				pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+				pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricsOrder()))
 		})
 	}
 }
