@@ -4394,7 +4394,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `postgresqlreceiver`: Fix issue where WAL stats query was incorrectly coalescing intervals. (#16769)
 - `splunkhecexporter`: Fix data race when gzip compression is enabled (#17083)
   Removed gzip writer pool and create a new one when needed.
-- `splunkhecexporter`: Fix isssue where splunkhec exporter always returns over capacity error when compression is enabled and MaxContentLength is 0 (#17035)
+- `splunkhecexporter`: Fix issue where splunkhec exporter always returns over capacity error when compression is enabled and MaxContentLength is 0 (#17035)
 
 ## v0.67.0
 
