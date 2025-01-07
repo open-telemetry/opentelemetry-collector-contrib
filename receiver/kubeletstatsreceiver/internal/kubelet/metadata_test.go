@@ -339,14 +339,14 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			name: "glusterfs",
 			vs: v1.VolumeSource{
 				Glusterfs: &v1.GlusterfsVolumeSource{
-					EndpointsName: "endspoints_name",
+					EndpointsName: "endpoints_name",
 					Path:          "path",
 				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
 			want: map[string]any{
 				"k8s.volume.type":          "glusterfs",
-				"glusterfs.endpoints.name": "endspoints_name",
+				"glusterfs.endpoints.name": "endpoints_name",
 				"glusterfs.path":           "path",
 			},
 		},
