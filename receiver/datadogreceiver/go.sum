@@ -1,5 +1,5 @@
-github.com/DataDog/agent-payload/v5 v5.0.138 h1:Wg7hmWuoLC/o0X3zZ+uGcfRHPyaytljudgSY9O59zjc=
-github.com/DataDog/agent-payload/v5 v5.0.138/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
+github.com/DataDog/agent-payload/v5 v5.0.140 h1:JYsTcIKTWeidF11gtT4v+IRgL6y/XIKUc4MJWIMTgPE=
+github.com/DataDog/agent-payload/v5 v5.0.140/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.60.1 h1:JG543fsoWMXeLLERyWZpkY4/4J2Z6rMYCVRdhg6rbFg=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.60.1/go.mod h1:SPipm2vo4V7llYTcslf2oUZnvMfoZ3VIp4GAk2YlLUI=
 github.com/DataDog/datadog-agent/pkg/proto v0.60.1 h1:TPmwa8/mNDTB6dvjzc3ezjCOLAVAlGIJxIxNLohHzOM=
@@ -306,8 +306,8 @@ google.golang.org/appengine v1.6.8 h1:IhEN5q69dyKagZPYMSdIjS2HqprW324FRQZJcGqPAs
 google.golang.org/appengine v1.6.8/go.mod h1:1jJ3jBArFh5pcgW8gCtRJnepW8FzD1V44FJffLiz/Ds=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 h1:X58yt85/IXCx0Y3ZwN6sEIKZzQtDEYaBWrDvErdXrRE=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53/go.mod h1:GX3210XPVPUjJbTUbvwI8f2IpZDMZuPJWDzDuebbviI=
-google.golang.org/grpc v1.69.0 h1:quSiOM1GJPmPH5XtU+BCoVXcDVJJAzNcoyfC2cCjGkI=
-google.golang.org/grpc v1.69.0/go.mod h1:vyjdE6jLBI76dgpDojsFGNaHlxdjXN9ghpnd2o7JGZ4=
+google.golang.org/grpc v1.69.2 h1:U3S9QEtbXC0bYNvRtcoklF3xGtLViumSYxWykJS+7AU=
+google.golang.org/grpc v1.69.2/go.mod h1:vyjdE6jLBI76dgpDojsFGNaHlxdjXN9ghpnd2o7JGZ4=
 google.golang.org/protobuf v1.36.1 h1:yBPeRvTftaleIgM3PZ/WBIZ7XM/eEYAaEyCwvyjq/gk=
 google.golang.org/protobuf v1.36.1/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
