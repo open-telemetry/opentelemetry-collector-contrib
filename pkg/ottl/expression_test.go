@@ -2275,7 +2275,7 @@ func Test_StandardDurationGetter(t *testing.T) {
 			valid: true,
 		},
 		{
-			name: "complex duration values less than 1 seconc",
+			name: "complex duration values less than 1 second",
 			getter: StandardDurationGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.ParseDuration("10ms66us7000ns")
