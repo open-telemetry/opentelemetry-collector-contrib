@@ -33,9 +33,9 @@ type topicScraper struct {
 }
 
 const (
-	minInsyncRelicas = "min.insync.replicas"
-	retentionMs      = "retention.ms"
-	retentionBytes   = "retention.bytes"
+	minInsyncReplicas = "min.insync.replicas"
+	retentionMs       = "retention.ms"
+	retentionBytes    = "retention.bytes"
 )
 
 func (s *topicScraper) shutdown(context.Context) error {
@@ -141,12 +141,12 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 		configEntries, _ := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        name,
-			ConfigNames: []string{minInsyncRelicas, retentionMs, retentionBytes},
+			ConfigNames: []string{minInsyncReplicas, retentionMs, retentionBytes},
 		})
 
 		for _, config := range configEntries {
 			switch config.Name {
-			case minInsyncRelicas:
+			case minInsyncReplicas:
 				if val, err := strconv.Atoi(config.Value); err == nil {
 					s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(val), name)
 				} else {
