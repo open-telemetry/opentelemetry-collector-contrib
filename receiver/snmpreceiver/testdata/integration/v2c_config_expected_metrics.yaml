@@ -40,7 +40,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: SNMP get responses
-            name: snmp.test.column.out.get.reponses
+            name: snmp.test.column.out.get.responses
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -66,7 +66,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: SNMP get responses
-            name: snmp.test.column.out.get.reponses
+            name: snmp.test.column.out.get.responses
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -92,7 +92,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: SNMP get responses
-            name: snmp.test.column.out.get.reponses
+            name: snmp.test.column.out.get.responses
             sum:
               aggregationTemporality: 2
               dataPoints:
