@@ -734,6 +734,95 @@ func TestExporterLogs(t *testing.T) {
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `scope.attributes`).Raw)
 		assert.JSONEq(t, `{"a":"a","a.b":"a.b"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
 	})
+
+	t.Run("publish logs with dynamic id", func(t *testing.T) {
+		exampleDocID := "abc123"
+		tableTests := []struct {
+			name          string
+			expectedDocID *string // nil means the _id will not be set
+			recordAttrs   map[string]any
+			scopeAttrs    map[string]any
+			resourceAttrs map[string]any
+		}{
+			{
+				name:          "missing document id attribute should not set _id",
+				expectedDocID: nil,
+			},
+			{
+				name:          "record attributes",
+				expectedDocID: &exampleDocID,
+				recordAttrs: map[string]any{
+					documentIDAttributeName: exampleDocID,
+				},
+			},
+			{
+				name:          "scope attributes",
+				expectedDocID: &exampleDocID,
+				scopeAttrs: map[string]any{
+					documentIDAttributeName: exampleDocID,
+				},
+			},
+			{
+				name:          "resource attributes",
+				expectedDocID: &exampleDocID,
+				resourceAttrs: map[string]any{
+					documentIDAttributeName: exampleDocID,
+				},
+			},
+			{
+				name:          "record attributes takes precedence over others",
+				expectedDocID: &exampleDocID,
+				recordAttrs: map[string]any{
+					documentIDAttributeName: exampleDocID,
+				},
+				scopeAttrs: map[string]any{
+					documentIDAttributeName: "id1",
+				},
+				resourceAttrs: map[string]any{
+					documentIDAttributeName: "id2",
+				},
+			},
+			{
+				name:          "scope attributes takes precedence over resource attributes",
+				expectedDocID: &exampleDocID,
+				scopeAttrs: map[string]any{
+					documentIDAttributeName: exampleDocID,
+				},
+				resourceAttrs: map[string]any{
+					documentIDAttributeName: "id1",
+				},
+			},
+		}
+
+		for _, tt := range tableTests {
+			t.Run(tt.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+
+					if tt.expectedDocID == nil {
+						assert.NotContains(t, string(docs[0].Action), "_id", "expected _id to not be set")
+					} else {
+						assert.Equal(t, *tt.expectedDocID, actionJSONToID(t, docs[0].Action), "expected _id to be set")
+					}
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+					cfg.LogsDynamicID.Enabled = true
+				})
+				logs := newLogsWithAttributes(
+					tt.recordAttrs,
+					tt.scopeAttrs,
+					tt.resourceAttrs,
+				)
+				logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+				mustSendLogs(t, exporter, logs)
+
+				rec.WaitItems(1)
+			})
+		}
+	})
 }
 
 func TestExporterMetrics(t *testing.T) {
@@ -1908,4 +1997,15 @@ func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
 	err := json.Unmarshal(actionJSON, &action)
 	require.NoError(t, err)
 	return action.Create.Index
+}
+
+func actionJSONToID(t *testing.T, actionJSON json.RawMessage) string {
+	action := struct {
+		Create struct {
+			ID string `json:"_id"`
+		} `json:"create"`
+	}{}
+	err := json.Unmarshal(actionJSON, &action)
+	require.NoError(t, err)
+	return action.Create.ID
 }

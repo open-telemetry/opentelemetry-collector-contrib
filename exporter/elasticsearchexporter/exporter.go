@@ -23,6 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
+const (
+	// documentIDAttributeName is the attribute name used to specify the document ID.
+	documentIDAttributeName = "elasticsearch.document_id"
+)
+
 type elasticsearchExporter struct {
 	component.TelemetrySettings
 	userAgent string
@@ -177,7 +182,9 @@ func (e *elasticsearchExporter) pushLogRecord(
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
+
+	docID := e.getDocumentIDAttribute(record.Attributes(), scope.Attributes(), resource.Attributes())
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil, docID)
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
@@ -300,7 +307,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 					errs = append(errs, err)
 					continue
 				}
-				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), doc.DynamicTemplates()); err != nil {
+
+				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes), doc.DynamicTemplates(), nil); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -415,7 +423,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil)
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document), nil, nil)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -449,5 +457,15 @@ func (e *elasticsearchExporter) pushSpanEvent(
 	if err != nil {
 		return err
 	}
-	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(docBytes), nil)
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(docBytes), nil, nil)
+}
+
+func (e *elasticsearchExporter) getDocumentIDAttribute(attributeMaps ...pcommon.Map) *string {
+	if e.config.LogsDynamicID.Enabled {
+		docID, ok := getFromAttributes(documentIDAttributeName, "", attributeMaps...)
+		if docID != "" && ok {
+			return &docID
+		}
+	}
+	return nil
 }
