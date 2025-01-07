@@ -177,7 +177,7 @@ type Rule struct {
 	// DimensionKey is used by "split_metric" translation rule action to specify dimension key
 	// that will be used to translate the metric datapoints. Datapoints that don't have
 	// the specified dimension key will not be translated.
-	// DimensionKey is also used by "copy_metrics" for filterring.
+	// DimensionKey is also used by "copy_metrics" for filtering.
 	DimensionKey string `mapstructure:"dimension_key"`
 
 	// DimensionValues is used by "copy_metrics" to filter out datapoints with dimensions values
