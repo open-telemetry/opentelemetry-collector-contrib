@@ -346,7 +346,7 @@ func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 func generateTracesOneSpanNoResourceWithEventAttribute() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	event := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0)
-	event.SetName("must-be-ignorred")
+	event.SetName("must-be-ignored")
 	event.Attributes().PutStr("event", "must-be-used-instead-of-event-name")
 	return td
 }
