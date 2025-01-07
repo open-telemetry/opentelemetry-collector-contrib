@@ -31,6 +31,7 @@ func NewFactory() connector.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ErrorMode: ottl.PropagateError,
+		MatchOnce: true,
 	}
 }
 
