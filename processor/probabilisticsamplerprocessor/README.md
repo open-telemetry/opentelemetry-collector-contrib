@@ -158,7 +158,7 @@ implies collecting log records from an expected value of 10 pods.
 OpenTelemetry specifies a consistent sampling mechanism using 56 bits
 of randomness, which may be obtained from the Trace ID according to
 the W3C Trace Context Level 2 specification.  Randomness can also be
-explicly encoding in the OpenTelemetry `tracestate` field, where it is
+explicitly encoding in the OpenTelemetry `tracestate` field, where it is
 known as the R-value.
 
 This mode is named because it reduces the number of items transmitted
