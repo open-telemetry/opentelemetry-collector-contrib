@@ -448,7 +448,7 @@ func TestMidpoint_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 	}
 }
 
-func TestUniforn_convert_exponential_hist_to_explicit_hist(t *testing.T) {
+func TestUniform_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	defaultTestMetric := func() pmetric.Metric {
 		m := pmetric.NewMetric()
