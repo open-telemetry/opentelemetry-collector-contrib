@@ -36,7 +36,7 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 		{
 			name: "onlyLocalEndpointSpan",
 			zs:   generateSpanNoTags(),
-			td:   generateTraceSingleSpanMinmalResource(),
+			td:   generateTraceSingleSpanMinimalResource(),
 			err:  nil,
 		},
 		{
@@ -200,7 +200,7 @@ func generateTraceSingleSpanNoResourceOrInstrLibrary() ptrace.Traces {
 	return td
 }
 
-func generateTraceSingleSpanMinmalResource() ptrace.Traces {
+func generateTraceSingleSpanMinimalResource() ptrace.Traces {
 	td := generateTraceSingleSpanNoResourceOrInstrLibrary()
 	rs := td.ResourceSpans().At(0)
 	rsc := rs.Resource()
