@@ -449,6 +449,93 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
+func TestSetSamplingPolicy(t *testing.T) {
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "always",
+					Type: AlwaysSample,
+				},
+			},
+		},
+	}
+	s := setupTestTelemetry()
+	ct := s.NewSettings()
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	p, err := newTracesProcessor(context.Background(), ct, msp, cfg, withDecisionBatcher(idb))
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	assert.Len(t, tsp.policies, 1)
+
+	tsp.policyTicker.OnTick()
+
+	assert.Len(t, tsp.policies, 1)
+
+	cfgs := []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "always",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+	}
+	tsp.SetSamplingPolicy(cfgs)
+
+	assert.Len(t, tsp.policies, 1)
+
+	tsp.policyTicker.OnTick()
+
+	assert.Len(t, tsp.policies, 2)
+
+	// Duplicate policy name.
+	cfgs = []PolicyCfg{
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "always",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+		{
+			sharedPolicyCfg: sharedPolicyCfg{
+				Name: "everything",
+				Type: AlwaysSample,
+			},
+		},
+	}
+	tsp.SetSamplingPolicy(cfgs)
+
+	assert.Len(t, tsp.policies, 2)
+
+	tsp.policyTicker.OnTick()
+
+	// Should revert sampling policy.
+	assert.Len(t, tsp.policies, 2)
+}
+
 func TestSubSecondDecisionTime(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
