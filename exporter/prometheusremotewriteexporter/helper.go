@@ -19,7 +19,7 @@ type batchTimeSeriesState struct {
 	nextRequestBufferSize        int
 }
 
-func newBatchTimeSericesState() *batchTimeSeriesState {
+func newBatchTimeServicesState() *batchTimeSeriesState {
 	return &batchTimeSeriesState{
 		nextTimeSeriesBufferSize:     math.MaxInt,
 		nextMetricMetadataBufferSize: math.MaxInt,
