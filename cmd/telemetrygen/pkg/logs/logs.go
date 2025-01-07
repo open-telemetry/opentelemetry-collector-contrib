@@ -32,7 +32,7 @@ func Start(cfg *Config) error {
 
 	logger.Info("starting the logs generator with configuration", zap.Any("config", cfg))
 
-	if err = run(cfg, logger); err != nil {
+	if err = run(cfg, exporterFactory(cfg, logger), logger); err != nil {
 		return err
 	}
 
@@ -40,7 +40,7 @@ func Start(cfg *Config) error {
 }
 
 // run executes the test scenario.
-func run(c *Config, logger *zap.Logger) error {
+func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	if err := c.Validate(); err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func run(c *Config, logger *zap.Logger) error {
 			traceID:        c.TraceID,
 			spanID:         c.SpanID,
 		}
-		exp, err := createExporter(c, logger)
+		exp, err := expF()
 		if err != nil {
 			w.logger.Error("failed to create the exporter", zap.Error(err))
 			return err
@@ -103,6 +103,14 @@ func run(c *Config, logger *zap.Logger) error {
 	}
 	wg.Wait()
 	return nil
+}
+
+type exporterFunc func() (sdklog.Exporter, error)
+
+func exporterFactory(cfg *Config, logger *zap.Logger) exporterFunc {
+	return func() (sdklog.Exporter, error) {
+		return createExporter(cfg, logger)
+	}
 }
 
 func createExporter(cfg *Config, logger *zap.Logger) (sdklog.Exporter, error) {
