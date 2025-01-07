@@ -25,6 +25,7 @@ const (
 	AttributeURLScheme              = "url.scheme"
 	AttributeURLFull                = "url.full"
 	AttributeURLPath                = "url.path"
+	AttributeURLQuery               = "url.query"
 	AttributeUserAgentOriginal      = "user_agent.original"
 )
 
@@ -71,8 +72,8 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 			urlParts[key] = value.Str()
 			hasHTTP = true
 			hasHTTPRequestURLAttributes = true
-		case conventions.AttributeHTTPTarget:
-			urlParts[key] = value.Str()
+		case conventions.AttributeHTTPTarget, AttributeURLQuery:
+			urlParts[conventions.AttributeHTTPTarget] = value.Str()
 			hasHTTP = true
 		case conventions.AttributeHTTPServerName:
 			urlParts[key] = value.Str()

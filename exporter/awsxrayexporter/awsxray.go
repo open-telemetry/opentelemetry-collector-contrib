@@ -92,7 +92,7 @@ func newTracesExporter(
 			}
 			return err
 		},
-		exporterhelper.WithStart(func(ctx context.Context, host component.Host) error {
+		exporterhelper.WithStart(func(_ context.Context, host component.Host) error {
 			awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &cfg.AWSSessionSettings)
 			if err != nil {
 				return err
