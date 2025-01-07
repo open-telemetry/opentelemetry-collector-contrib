@@ -8064,7 +8064,7 @@
                                 <key>421</key>
                                 <nameInfo>
                                     <label>VMKMEM minfree</label>
-                                    <summary>Mininum amount of machine memory that VMkernel likes to keep free</summary>
+                                    <summary>Minimum amount of machine memory that VMkernel likes to keep free</summary>
                                     <key>kernel.minfree</key>
                                 </nameInfo>
                                 <groupInfo>
