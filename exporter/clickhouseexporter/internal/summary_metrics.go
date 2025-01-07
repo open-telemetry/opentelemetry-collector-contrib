@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -103,21 +102,20 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			_ = statement.Close()
 		}()
 		for _, model := range s.summaryModel {
-			var serviceName string
-			if v, ok := model.metadata.ResAttr.Get(conventions.AttributeServiceName); ok {
-				serviceName = v.AsString()
-			}
+			resAttr := AttributesToMap(model.metadata.ResAttr)
+			scopeAttr := AttributesToMap(model.metadata.ScopeInstr.Attributes())
+			serviceName := GetServiceName(model.metadata.ResAttr)
 
 			for i := 0; i < model.summary.DataPoints().Len(); i++ {
 				dp := model.summary.DataPoints().At(i)
 				quantiles, values := convertValueAtQuantile(dp.QuantileValues())
 
 				_, err = statement.ExecContext(ctx,
-					AttributesToMap(model.metadata.ResAttr),
+					resAttr,
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
 					model.metadata.ScopeInstr.Version(),
-					AttributesToMap(model.metadata.ScopeInstr.Attributes()),
+					scopeAttr,
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
 					serviceName,
