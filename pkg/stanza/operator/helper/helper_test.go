@@ -33,8 +33,8 @@ func newHelpersConfig() *helpersConfig {
 	}
 }
 
-// This function is impelmented for compatibility with operatortest
+// This function is implemented for compatibility with operatortest
 // but is not meant to be used directly
 func (h *helpersConfig) Build(_ component.TelemetrySettings) (operator.Operator, error) {
-	panic("not impelemented")
+	panic("not implemented")
 }
