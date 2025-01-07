@@ -124,7 +124,7 @@ exponential_histogram:
 - [**Optional**] `max_size` represents the maximum number of buckets per positive
   or negative number range. Defaults to `160`.
 - [**Optional**] `count` represents an OTTL expression to extract the count to be
-  recorded in the expoential histogram from the incoming data. If no expression
+  recorded in the exponential histogram from the incoming data. If no expression
   is provided then it defaults to the count of the signal. [OTTL converters](https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs#readme-converters)
   can be used to transform the data. For spans, a special converter [adjusted count](#custom-ottl-functions),
   is provided to help calculate the span's [adjusted count](https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling-experimental/#adjusted-count).
