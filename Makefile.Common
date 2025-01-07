@@ -61,6 +61,8 @@ $(TOOLS_BIN_DIR):
 $(TOOLS_BIN_NAMES): $(TOOLS_BIN_DIR) $(TOOLS_MOD_DIR)/go.mod
 	cd $(TOOLS_MOD_DIR) && GOOS="" GOARCH="" $(GOCMD) build -o $@ -trimpath $(filter %/$(notdir $@),$(TOOLS_PKG_NAMES))
 
+JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
+
 ADDLICENSE          := $(TOOLS_BIN_DIR)/addlicense
 MDLINKCHECK         := $(TOOLS_BIN_DIR)/markdown-link-check
 MISSPELL            := $(TOOLS_BIN_DIR)/misspell -error
@@ -97,6 +99,9 @@ ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path
 
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC_CMD := find $(ALL_PKG_DIRS) -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
+
+CURR_MOD := $(shell go list -m | tr '/' '-' )
+
 ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
 	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
 	MISSPELL_CMD := $(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
@@ -137,6 +142,12 @@ test: $(GOTESTSUM)
 test-with-cover: $(GOTESTSUM)
 	mkdir -p $(PWD)/coverage/unit
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) -cover -covermode=atomic -args -test.gocoverdir="$(PWD)/coverage/unit"
+
+.PHONY: test-with-junit
+test-with-junit: $(GOTESTSUM)
+	mkdir -p $(JUNIT_OUT_DIR)
+	$(GOTESTSUM) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./...
+
 
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover: $(GOTESTSUM)

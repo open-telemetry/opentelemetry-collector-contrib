@@ -49,6 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
+        id: setup-go
         with:
           go-version: "~1.22.5"
           cache: false
@@ -68,7 +69,12 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Run Unit Tests
-        run: make -j2 gotest GROUP=${{ matrix.group }}
+        run: make -j2 gotest-with-junit GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-results_${{ matrix.group }}_${{ runner.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
+          path: internal/tools/testresults/
+          retention-days: 4
   arm-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: ubuntu-24.04

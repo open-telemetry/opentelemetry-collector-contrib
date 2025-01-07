@@ -247,7 +247,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version: ["1.23.0", "1.22.8"] # 1.20 is interpreted as 1.2 without quotes
-        runner: [ubuntu-24.04]
+        os: [ubuntu-24.04]
         group:
           - receiver-0
           - receiver-1
@@ -271,6 +271,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
+        id: setup-go
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
@@ -297,7 +298,12 @@ jobs:
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         if: startsWith( matrix.go-version, '1.22' ) != true
-        run: make gotest GROUP=${{ matrix.group }}
+        run: make gotest-with-junit GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-results_${{ matrix.group }}_${{ runner.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
+          path: internal/tools/testresults/
+          retention-days: 4
       - name: Run Unit Tests With Coverage
         if: startsWith( matrix.go-version, '1.22' ) # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}

@@ -57,6 +57,7 @@ jobs:
       - name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - uses: actions/setup-go@v5
+        id: setup-go
         with:
           go-version: "1.22.8"
           cache: false
@@ -78,7 +79,12 @@ jobs:
         # specifically to Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34691
         run: make "$(${PWD} -replace '\\', '/')/.tools/gotestsum"
       - name: Run Unit tests
-        run: make -j2 gotest GROUP=${{ matrix.group }}
+        run: make -j2 gotest-with-junit GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-results_${{ matrix.group }}_${{ runner.os }}_${{ runner.arch }}_${{ steps.setup-go.outputs.go-version }}
+          path: internal/tools/testresults/
+          retention-days: 4
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: windows-latest
