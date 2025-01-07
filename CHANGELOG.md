@@ -995,7 +995,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `bearertokenauthextension`: use constant time comparison. This fixes CVE-2024-42368 (#34516)
 - `processor/k8sattributes`: Add support for `container.image.repo_digests` metadata (#34029)
 - `datadogconnector`: Move feature gate `connector.datadogconnector.NativeIngest` to beta (#34549)
-  When this feature gate is enabled (default), the datadog connector uses the new API to produce APM stats under the hood. | The new API has better throughput when your spans have many attributes (especially container related attributes). Funtional-wise the new API should have no user-facing change compared to the old API. | However if you observe any unexpected behaviors, you can disable this feature gate to revert to the old stats processing APIs.
+  When this feature gate is enabled (default), the datadog connector uses the new API to produce APM stats under the hood. | The new API has better throughput when your spans have many attributes (especially container related attributes). Functional-wise the new API should have no user-facing change compared to the old API. | However if you observe any unexpected behaviors, you can disable this feature gate to revert to the old stats processing APIs.
 - `elasticsearchexporter`: Add opt-in support for the experimental `batcher` config (#32377)
   By enabling (or explicitly disabling) the batcher, the Elasticsearch exporter's
   existing batching/buffering logic will be disabled, and the batch sender will be used.
