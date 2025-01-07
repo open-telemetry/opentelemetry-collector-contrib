@@ -59,7 +59,7 @@ func (c *combinedLogsReceiver) Start(ctx context.Context, host component.Host) e
 	return errs
 }
 
-// Shutsdown the combined MongoDB Atlas Logs and Alert Receiver
+// Shuts down the combined MongoDB Atlas Logs and Alert Receiver
 func (c *combinedLogsReceiver) Shutdown(ctx context.Context) error {
 	var errs error
 
