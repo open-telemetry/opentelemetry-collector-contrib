@@ -197,7 +197,7 @@ func TestAddLogEventWithValidation(t *testing.T) {
 
 func TestStreamManager(t *testing.T) {
 	svc := newAlwaysPassMockLogClient(func(_ mock.Arguments) {})
-	mockCwAPI := svc.svc.(*mockCloudWatchLogsClient)
+	mockCwAPI := svc.Svc.(*mockCloudWatchLogsClient)
 	manager := NewLogStreamManager(*svc)
 
 	// Verify that the stream is created in the first time
@@ -242,7 +242,7 @@ func TestMultiStreamPusher(t *testing.T) {
 		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
 		inputs = append(inputs, input)
 	})
-	mockCwAPI := svc.svc.(*mockCloudWatchLogsClient)
+	mockCwAPI := svc.Svc.(*mockCloudWatchLogsClient)
 	manager := NewLogStreamManager(*svc)
 	zap := zap.NewNop()
 	pusher := newMultiStreamPusher(manager, *svc, zap)

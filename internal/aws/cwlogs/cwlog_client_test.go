@@ -650,7 +650,7 @@ func TestUserAgent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName, tc.clientOptions...)
-			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
+			logClient := cwlog.Svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
 				HTTPMethod: http.MethodGet,

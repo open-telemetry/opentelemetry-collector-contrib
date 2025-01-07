@@ -6,6 +6,8 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/request"
+
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -14,6 +16,7 @@ import (
 
 type Provider interface {
 	Get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error)
+	GetHandlers() *request.Handlers
 	Hostname(ctx context.Context) (string, error)
 	InstanceID(ctx context.Context) (string, error)
 }
@@ -57,4 +60,8 @@ func (c *metadataClient) Get(_ context.Context) (ec2metadata.EC2InstanceIdentity
 		return document, err
 	}
 	return c.metadataFallbackEnable.GetInstanceIdentityDocument()
+}
+
+func (c *metadataClient) GetHandlers() *request.Handlers {
+	return &c.metadata.Handlers
 }

@@ -5,8 +5,10 @@ package host // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"log"
 	"time"
 
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
@@ -42,7 +44,7 @@ type ec2Metadata struct {
 type ec2MetadataOption func(*ec2Metadata)
 
 func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterval time.Duration,
-	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, imdsRetries int, logger *zap.Logger, options ...ec2MetadataOption,
+	instanceIDReadyC chan bool, instanceIPReadyC chan bool, localMode bool, imdsRetries int, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ec2MetadataOption,
 ) ec2MetadataProvider {
 	emd := &ec2Metadata{
 		client: awsec2metadata.New(session, &aws.Config{
@@ -55,6 +57,12 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 		instanceIPReadyC:     instanceIPReadyC,
 		localMode:            localMode,
 		logger:               logger,
+	}
+	if configurer != nil {
+		err := configurer.Configure(awsmiddleware.SDKv1(&emd.client.(*awsec2metadata.EC2Metadata).Handlers))
+		if err != nil {
+			log.Println("There was a problem configuring middleware on ec2 client")
+		}
 	}
 
 	for _, opt := range options {

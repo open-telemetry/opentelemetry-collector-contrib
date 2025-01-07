@@ -10,6 +10,7 @@ import (
 	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
@@ -121,6 +122,10 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 	return res, conventions.SchemaURL, nil
+}
+
+func (d *Detector) ExposeHandlers() (handlers *request.Handlers) {
+	return d.metadataProvider.GetHandlers()
 }
 
 func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {

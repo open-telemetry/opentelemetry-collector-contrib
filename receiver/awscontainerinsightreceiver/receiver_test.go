@@ -8,7 +8,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -155,4 +158,61 @@ func TestCollectDataWithSystemd(t *testing.T) {
 	r.containerMetricsProvider = &mockCadvisor{}
 	err = r.collectData(ctx)
 	require.NoError(t, err)
+}
+
+// MockHost is a mock implementation of component.Host
+type MockHost struct {
+	mock.Mock
+}
+
+func (m *MockHost) GetExtensions() map[component.ID]component.Component {
+	args := m.Called()
+	return args.Get(0).(map[component.ID]component.Component)
+}
+
+// MockConfigurer is a mock implementation of awsmiddleware.Configurer
+type MockConfigurer struct {
+	mock.Mock
+}
+
+func (m *MockConfigurer) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (m *MockConfigurer) Shutdown(context.Context) error {
+	return nil
+}
+
+func (m *MockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
+}
+
+func TestAWSContainerInsightReceiverStart(t *testing.T) {
+	// Create a mock host
+	mockHost := new(MockHost)
+	testType, _ := component.NewType("awsmiddleware")
+
+	// Create a mock configurer
+	mockConfigurer := new(MockConfigurer)
+	agenthealth, _ := component.NewType("agenthealth")
+	// Set up the mock host to return a map with the mock configurer
+	mockHost.On("GetExtensions").Return(map[component.ID]component.Component{
+		component.NewID(testType): mockConfigurer,
+	})
+
+	statusCodeID := component.NewIDWithName(agenthealth, "statuscode")
+
+	// Create a receiver instance
+	config := &Config{
+		CollectionInterval:    60,
+		ContainerOrchestrator: "eks",
+		MiddlewareID:          &statusCodeID,
+	}
+	consumer := consumertest.NewNop()
+	receiver, err := newAWSContainerInsightReceiver(component.TelemetrySettings{}, config, consumer)
+	assert.NoError(t, err)
+	err = receiver.Start(context.Background(), mockHost)
+	assert.Error(t, err)
+
+	mockHost.AssertCalled(t, "GetExtensions")
 }

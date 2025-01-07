@@ -5,9 +5,11 @@ package host // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"log"
 	"strings"
 	"time"
 
+	"github.com/amazon-contributing/opentelemetry-collector-contrib/extension/awsmiddleware"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -48,7 +50,7 @@ type ec2Tags struct {
 type ec2TagsOption func(*ec2Tags)
 
 func newEC2Tags(ctx context.Context, session *session.Session, instanceID string, region string, containerOrchestrator string,
-	refreshInterval time.Duration, logger *zap.Logger, options ...ec2TagsOption,
+	refreshInterval time.Duration, logger *zap.Logger, configurer *awsmiddleware.Configurer, options ...ec2TagsOption,
 ) ec2TagsProvider {
 	et := &ec2Tags{
 		instanceID:            instanceID,
@@ -57,6 +59,12 @@ func newEC2Tags(ctx context.Context, session *session.Session, instanceID string
 		maxJitterTime:         3 * time.Second,
 		logger:                logger,
 		containerOrchestrator: containerOrchestrator,
+	}
+	if configurer != nil {
+		err := configurer.Configure(awsmiddleware.SDKv1(&et.client.(*ec2.EC2).Handlers))
+		if err != nil {
+			log.Println("There was a problem configuring middleware on ec2 client")
+		}
 	}
 
 	for _, opt := range options {

@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
@@ -31,6 +32,8 @@ type mockMetadata struct {
 
 	retHostname    string
 	retErrHostname error
+
+	retHandlers *request.Handlers
 
 	isAvailable bool
 }
@@ -61,6 +64,10 @@ func (mm mockMetadata) Get(_ context.Context) (ec2metadata.EC2InstanceIdentityDo
 		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
+}
+
+func (mm mockMetadata) GetHandlers() *request.Handlers {
+	return mm.retHandlers
 }
 
 func (mm mockMetadata) Hostname(_ context.Context) (string, error) {

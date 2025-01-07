@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -54,6 +55,14 @@ func (p *mockPusher) ForceFlush() error {
 	return nil
 }
 
+type mockHost struct {
+	component.Host
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
 func TestConsumeMetrics(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -64,6 +73,13 @@ func TestConsumeMetrics(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+
+	// Create a mock host
+	mockHost := &mockHost{}
+
+	// Call start
+	err = exp.start(ctx, mockHost)
+	assert.NoError(t, err)
 
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
@@ -183,6 +199,9 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+	mockHost := &mockHost{}
+	err = exp.start(ctx, mockHost)
+	assert.NoError(t, err)
 
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
@@ -210,6 +229,9 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+	mockHost := &mockHost{}
+	err = exp.start(ctx, mockHost)
+	assert.NoError(t, err)
 
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
@@ -241,6 +263,9 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+	mockHost := &mockHost{}
+	err = exp.start(ctx, mockHost)
+	assert.NoError(t, err)
 
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
@@ -263,26 +288,45 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "{WrongKey}"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
+
+	// Create a logger
+	logger, _ := zap.NewProduction()
+
+	// Create exporter settings with the logger
+	settings := exportertest.NewNopSettings()
+	settings.Logger = logger
+
+	exp, err := newEmfExporter(expCfg, settings)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+
+	exp.config.logger = logger
+
+	// Create a mock host
+	mockHost := componenttest.NewNopHost()
+
+	// Call start
+	err = exp.start(ctx, mockHost)
+	assert.NoError(t, err)
 
 	md := generateTestMetrics(testMetric{
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
-		resourceAttributeMap: map[string]any{
+		resourceAttributeMap: map[string]interface{}{
 			"aws.ecs.cluster.name": "test-cluster-name",
 			"aws.ecs.task.id":      "test-task-id",
 		},
 	})
-	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.Error(t, exp.pushMetricsData(ctx, md)) // this returns  Permanent error: UnrecognizedClientException: The security token included in the request is invalid.
 	require.NoError(t, exp.shutdown(ctx))
+
 	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: expCfg.LogStreamName,
@@ -303,6 +347,13 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
+
+	// Create a mock host
+	mockHost := &mockHost{}
+
+	// Call start
+	err = exp.start(ctx, mockHost)
+	assert.NoError(t, err)
 
 	logPusher := new(mockPusher)
 	logPusher.On("AddLogEntry", nil).Return("some error").Once()
@@ -333,9 +384,16 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	exp, err := newEmfExporter(expCfg, settings)
-	assert.Error(t, err)
-	assert.Nil(t, exp)
+	assert.NoError(t, err)
+	assert.NotNil(t, exp)
 	assert.Equal(t, expCfg.logger, settings.Logger)
+
+	// Create a mock host
+	mockHost := &mockHost{}
+
+	// Check for error in start
+	err = exp.start(context.Background(), mockHost)
+	assert.Error(t, err)
 }
 
 func TestNewExporterWithMetricDeclarations(t *testing.T) {
@@ -425,9 +483,20 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
 	exp, err := newEmfExporter(expCfg, settings)
-	assert.Error(t, err)
-	assert.Nil(t, exp)
+	assert.NoError(t, err)
+	assert.NotNil(t, exp)
 	assert.Equal(t, expCfg.logger, settings.Logger)
+
+	// Create a mock host
+	mockHost := &mockHost{}
+
+	// Check for error in start
+	ctx := context.Background()
+	err = exp.start(ctx, mockHost)
+	assert.Error(t, err) // We expect an error here due to the fake AWS_STS_REGIONAL_ENDPOINTS
+
+	// Verify that svcStructuredLog is still nil after failed start
+	assert.Nil(t, exp.svcStructuredLog)
 }
 
 func TestMiddleware(t *testing.T) {

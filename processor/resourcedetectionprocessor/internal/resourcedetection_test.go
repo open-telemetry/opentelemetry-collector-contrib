@@ -12,9 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -316,4 +318,96 @@ func TestFilterAttributes_NoAttributes(t *testing.T) {
 	assert.True(t, ok)
 
 	assert.Empty(t, droppedAttributes)
+}
+
+// mockDetectorWithHandler is a mock detector that implements HandlerProvider
+type mockDetectorWithHandler struct {
+	handlersCalled bool
+}
+
+func (m *mockDetectorWithHandler) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	return pcommon.NewResource(), "", nil
+}
+
+func (m *mockDetectorWithHandler) ExposeHandlers() *request.Handlers {
+	m.handlersCalled = true
+	return &request.Handlers{}
+}
+
+// mockExtension implements component.Component
+type mockExtension struct{}
+
+func (m *mockExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (m *mockExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+// mockHost implements component.Host
+type mockHost struct {
+	extensions map[component.ID]component.Component
+}
+
+// mockDetector is a basic detector that doesn't implement HandlerProvider
+type mockDetector struct{}
+
+func (m *mockDetector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	return pcommon.NewResource(), "", nil
+}
+
+func newMockHost() component.Host {
+	return &mockHost{
+		extensions: make(map[component.ID]component.Component),
+	}
+}
+
+func (m *mockHost) GetExtension(id component.ID) (component.Component, error) {
+	if ext, ok := m.extensions[id]; ok {
+		return ext, nil
+	}
+	return nil, nil
+}
+
+func (m *mockHost) ReportFatalError(_ error) {}
+
+func (m *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return m.extensions
+}
+
+func TestConfigureHandlers(t *testing.T) {
+	testType, _ := component.NewType("awsmiddleware")
+	mockDetector := &mockDetectorWithHandler{}
+	logger := zap.NewNop()
+	provider := NewResourceProvider(logger, 0, nil, mockDetector)
+	mockExt := &mockExtension{}
+	host := newMockHost()
+	host.(*mockHost).extensions[component.NewID(testType)] = mockExt
+
+	middlewareID := component.NewID(testType)
+	ctx := context.Background()
+	provider.ConfigureHandlers(ctx, host, middlewareID)
+
+	assert.True(t, mockDetector.handlersCalled, "ExposeHandlers should have been called")
+}
+
+func TestConfigureHandlersWithNonHandlerDetector(t *testing.T) {
+	testType, _ := component.NewType("awsmiddleware")
+	basicDetector := &mockDetector{}
+	logger := zap.NewNop()
+	provider := NewResourceProvider(logger, 0, nil, basicDetector)
+
+	mockExt := &mockExtension{}
+	host := newMockHost()
+	host.(*mockHost).extensions[component.NewID(testType)] = mockExt
+	middlewareID := component.NewID(testType)
+
+	ctx := context.Background()
+
+	assert.NotPanics(t, func() { provider.ConfigureHandlers(ctx, host, middlewareID) }, "Attempting to configure a detector that does not expose handlers should not panic")
 }

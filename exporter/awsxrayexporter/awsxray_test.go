@@ -207,10 +207,22 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
+type mockHost struct {
+	component.Host
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
 func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	t.Helper()
 	mconn := new(awsutil.Conn)
 	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
+	if err != nil {
+		panic(err)
+	}
+	err = traceExporter.Start(context.Background(), &mockHost{})
 	if err != nil {
 		panic(err)
 	}

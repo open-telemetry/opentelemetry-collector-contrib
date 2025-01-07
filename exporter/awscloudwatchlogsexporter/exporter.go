@@ -35,6 +35,7 @@ type cwlExporter struct {
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
 	pusherFactory    cwlogs.MultiStreamPusherFactory
+	params           exp.Settings
 }
 
 type awsMetadata struct {
@@ -53,29 +54,16 @@ func newCwLogsPusher(expConfig *Config, params exp.Settings) (*cwlExporter, erro
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
 
-	// create AWS session
-	awsConfig, session, err := awsutil.GetAWSConfigSession(params.Logger, &awsutil.Conn{}, &expConfig.AWSSessionSettings)
-	if err != nil {
-		return nil, err
-	}
-
-	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, expConfig.Tags, session, metadata.Type.String())
 	collectorIdentifier, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
 	}
 
-	logStreamManager := cwlogs.NewLogStreamManager(*svcStructuredLog)
-	multiStreamPusherFactory := cwlogs.NewMultiStreamPusherFactory(logStreamManager, *svcStructuredLog, params.Logger)
-
 	logsExporter := &cwlExporter{
-		svcStructuredLog: svcStructuredLog,
-		Config:           expConfig,
-		logger:           params.Logger,
-		retryCount:       *awsConfig.MaxRetries,
-		collectorID:      collectorIdentifier.String(),
-		pusherFactory:    multiStreamPusherFactory,
+		Config:      expConfig,
+		logger:      params.Logger,
+		collectorID: collectorIdentifier.String(),
+		params:      params,
 	}
 	return logsExporter, nil
 }
@@ -117,9 +105,24 @@ func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 }
 
 func (e *cwlExporter) start(_ context.Context, host component.Host) error {
+	// Create AWS session
+	awsConfig, session, err := awsutil.GetAWSConfigSession(e.logger, &awsutil.Conn{}, &e.Config.AWSSessionSettings)
+	if err != nil {
+		return fmt.Errorf("failed to create AWS session: %w", err)
+	}
+
+	// Create CWLogs client with aws session config
+	e.svcStructuredLog = cwlogs.NewClient(e.logger, awsConfig, e.params.BuildInfo, e.Config.LogGroupName, e.Config.LogRetention, e.Config.Tags, session, metadata.Type.String())
+
+	e.retryCount = *awsConfig.MaxRetries
+
+	logStreamManager := cwlogs.NewLogStreamManager(*e.svcStructuredLog)
+	e.pusherFactory = cwlogs.NewMultiStreamPusherFactory(logStreamManager, *e.svcStructuredLog, e.logger)
+
 	if e.Config.MiddlewareID != nil {
 		awsmiddleware.TryConfigure(e.logger, host, *e.Config.MiddlewareID, awsmiddleware.SDKv1(e.svcStructuredLog.Handlers()))
 	}
+
 	return nil
 }
 

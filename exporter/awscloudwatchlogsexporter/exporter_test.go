@@ -32,6 +32,13 @@ func init() {
 type mockPusher struct {
 	mock.Mock
 }
+type mockHost struct {
+	component.Host
+}
+
+func (m *mockHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
 
 func (p *mockPusher) AddLogEntry(_ *cwlogs.Event) error {
 	args := p.Called(nil)
@@ -509,7 +516,14 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.MaxRetries = 0
+	expCfg.Region = "" // Ensure the region is not set
+
 	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopSettings())
-	assert.Nil(t, exp)
-	assert.Error(t, err)
+	assert.NoError(t, err) // The exporter creation should not fail
+	assert.NotNil(t, exp)  // The exporter should be created
+
+	// Now try to start the exporter
+	err = exp.Start(context.Background(), &mockHost{})
+	assert.Error(t, err) // The start should fail due to missing region
+	assert.Contains(t, err.Error(), "NoAwsRegion")
 }

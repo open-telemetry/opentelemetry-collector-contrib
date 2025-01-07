@@ -42,7 +42,7 @@ func TestEC2Metadata(t *testing.T) {
 		e.client = &mockMetadataClient{}
 		e.clientFallbackEnable = &mockMetadataClient{}
 	}
-	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, instanceIPReadyP, false, 0, zap.NewNop(), clientOption)
+	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, instanceIPReadyP, false, 0, zap.NewNop(), nil, clientOption)
 	assert.NotNil(t, e)
 
 	<-instanceIDReadyC

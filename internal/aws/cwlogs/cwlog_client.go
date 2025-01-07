@@ -31,7 +31,7 @@ var containerInsightsRegexPattern = regexp.MustCompile(`^/aws/.*containerinsight
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
 type Client struct {
-	svc          cloudwatchlogsiface.CloudWatchLogsAPI
+	Svc          cloudwatchlogsiface.CloudWatchLogsAPI
 	logRetention int64
 	tags         map[string]*string
 	logger       *zap.Logger
@@ -70,7 +70,7 @@ func WithUserAgentExtras(userAgentExtras ...string) ClientOption {
 // Create a log client based on the actual cloudwatch logs client.
 func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetention int64, tags map[string]*string, logger *zap.Logger) *Client {
 	logClient := &Client{
-		svc:          svc,
+		Svc:          svc,
 		logRetention: logRetention,
 		tags:         tags,
 		logger:       logger,
@@ -97,7 +97,7 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 }
 
 func (client *Client) Handlers() *request.Handlers {
-	return &client.svc.(*cloudwatchlogs.CloudWatchLogs).Handlers
+	return &client.Svc.(*cloudwatchlogs.CloudWatchLogs).Handlers
 }
 
 // PutLogEvents mainly handles different possible error could be returned from server side, and retries them
@@ -112,7 +112,7 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 	// Finally InvalidSequenceTokenException and DataAlreadyAcceptedException are
 	// never returned by the PutLogEvents action.
 	for i := 0; i <= retryCnt; i++ {
-		response, err = client.svc.PutLogEvents(input)
+		response, err = client.Svc.PutLogEvents(input)
 		if err != nil {
 			var awsErr awserr.Error
 			if !errors.As(err, &awsErr) {
@@ -176,7 +176,7 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 // Prepare the readiness for the log group and log stream.
 func (client *Client) CreateStream(logGroup, streamName *string) error {
 	// CreateLogStream / CreateLogGroup
-	_, err := client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
+	_, err := client.Svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  logGroup,
 		LogStreamName: streamName,
 	})
@@ -185,14 +185,14 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 		var awsErr awserr.Error
 		if errors.As(err, &awsErr) && awsErr.Code() == cloudwatchlogs.ErrCodeResourceNotFoundException {
 			// Create Log Group with tags if they exist and were specified in the config
-			_, err = client.svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
+			_, err = client.Svc.CreateLogGroup(&cloudwatchlogs.CreateLogGroupInput{
 				LogGroupName: logGroup,
 				Tags:         client.tags,
 			})
 			if err == nil {
 				// For newly created log groups, set the log retention polic if specified or non-zero.  Otheriwse, set to Never Expire
 				if client.logRetention != 0 {
-					_, err = client.svc.PutRetentionPolicy(&cloudwatchlogs.PutRetentionPolicyInput{LogGroupName: logGroup, RetentionInDays: &client.logRetention})
+					_, err = client.Svc.PutRetentionPolicy(&cloudwatchlogs.PutRetentionPolicyInput{LogGroupName: logGroup, RetentionInDays: &client.logRetention})
 					if err != nil {
 						var awsErr awserr.Error
 						if errors.As(err, &awsErr) {
@@ -201,7 +201,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 						}
 					}
 				}
-				_, err = client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
+				_, err = client.Svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 					LogGroupName:  logGroup,
 					LogStreamName: streamName,
 				})
