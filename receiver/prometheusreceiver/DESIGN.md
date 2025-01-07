@@ -56,7 +56,7 @@ undocumented metrics types, including:
 
 * Gaugehistogram
 * Info
-* Statset
+* Stateset
 
 More details can be found from the
 [prometheus text parser source code](https://github.com/prometheus/prometheus/blob/afdd1357e008375e693a1b4c096f81b2358cb46f/model/textparse/interface.go#L25)
