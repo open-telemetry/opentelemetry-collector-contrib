@@ -32,7 +32,7 @@ import (
 
 const (
 	defaultCgroup2Path = "/sys/fs/cgroup"
-	ecsMetadataUri     = "ECS_CONTAINER_METADATA_URI_V4"
+	ecsMetadataURI     = "ECS_CONTAINER_METADATA_URI_V4"
 )
 
 // checkCgroupSystem skips the test if is not run in a cgroupv2 system
@@ -376,14 +376,14 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 			// running in ECS environment, set the ECS metedata URI environment variable
 			// to get the Cgroup CPU quota from the httptest server
 			server := testServerECSMetadata(t, test.containerCPU, test.taskCPU)
-			os.Setenv(ecsMetadataUri, server.URL)
+			t.Setenv(ecsMetadataURI, server.URL)
 			// restore startup cgroup initial resource values
 			t.Cleanup(func() {
 				debug.SetMemoryLimit(initialGoMem)
 				runtime.GOMAXPROCS(initialGoProcs)
 				memoryCgroupCleanUp()
 				server.Close()
-				os.Unsetenv(ecsMetadataUri)
+				os.Unsetenv(ecsMetadataURI)
 			})
 
 			err = manager.Update(&cgroup2.Resources{
