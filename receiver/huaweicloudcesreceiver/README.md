@@ -103,7 +103,7 @@ If you encounter any errors, please refer to:
 - [Quota management](https://support.huaweicloud.com/intl/en-us/usermanual-ces/en-us_topic_0154940152.html)
 
 
-## Converting CES metric representation to Open Telementery metric representation
+## Converting CES metric representation to OpenTelemetry metric representation
 
 
 | Source Field             | Target Field                                 | Description                                                                                           |
