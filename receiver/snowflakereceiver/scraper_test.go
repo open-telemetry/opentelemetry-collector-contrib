@@ -124,7 +124,7 @@ func (m *mockDB) initMockDB() {
 		},
 		{
 			query:   sessionMetricsQuery,
-			columns: []string{"username", "disctinct_id"},
+			columns: []string{"username", "distinct_id"},
 			params:  []driver.Value{"t", 3.0},
 		},
 		{
