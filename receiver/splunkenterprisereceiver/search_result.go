@@ -150,7 +150,7 @@ type DispatchArtifactContent struct {
 	ScheduledCount     string `json:"scheduled_count"`
 	SavedSearchesCount string `json:"ss_count"`
 	CompletedCount     string `json:"completed_count"`
-	IncompleteCount    string `json:"incomple_count"`
+	IncompleteCount    string `json:"incomplete_count"`
 	InvalidCount       string `json:"invalid_count"`
 	InfoCacheSize      string `json:"cached_job_status_info_csv_size_mb"`
 	StatusCacheSize    string `json:"cached_job_status_status_csv_size_mb"`
