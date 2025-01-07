@@ -120,7 +120,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 }
 
 // MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination
-// and mapping to OpenTelmetry metric and log structures.
+// and mapping to OpenTelemetry metric and log structures.
 type MongoDBAtlasClient struct {
 	log          *zap.Logger
 	client       *mongodbatlas.Client
