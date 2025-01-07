@@ -175,7 +175,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 	attrMap.PutInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
 	attrMap.PutInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
 
-	// The IPs are now optional meaning we will not incluude them if they are zero length
+	// The IPs are now optional meaning we will not include them if they are zero length
 	hostIPLen := len(spanData.HostIp)
 	if hostIPLen == 4 || hostIPLen == 16 {
 		attrMap.PutStr(hostIPAttrKey, net.IP(spanData.HostIp).String())
