@@ -5,7 +5,7 @@
 // JSON documents.
 //
 // The JSON parsing in Elasticsearch does not support parsing JSON documents
-// with duplicate fields. The fields in the docuemt can be sort and duplicate entries
+// with duplicate fields. The fields in the document can be sort and duplicate entries
 // can be removed before serializing. Deduplication ensures that ambiguous
 // events can still be indexed.
 //
