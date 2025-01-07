@@ -7,6 +7,6 @@ This package provides a `ConfigMapProvider` implementation for Amazon S3 (`s3pro
 Expected URI format:
 - s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
 
-Prerequistes:
+Prerequisites:
 - Need to setup access keys from IAM console (aws_access_key_id and aws_secret_access_key) with permission to access Amazon S3
 - For details, can take a look at https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
