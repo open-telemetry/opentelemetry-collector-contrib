@@ -25,6 +25,26 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
+	clientConfigPath := confighttp.NewDefaultClientConfig()
+	clientConfigPath.Endpoint = "localhost:1234"
+	clientConfigPath.TLSSetting = configtls.ClientConfig{
+		Config: configtls.Config{
+			CAFile:   "path",
+			CertFile: "path",
+			KeyFile:  "path",
+		},
+		InsecureSkipVerify: true,
+	}
+
+	clientConfigTLS := confighttp.NewDefaultClientConfig()
+	clientConfigTLS.Endpoint = "localhost:1234"
+	clientConfigTLS.TLSSetting = configtls.ClientConfig{
+		Insecure: true,
+	}
+
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = "localhost:1234"
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -36,17 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "all_settings"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "localhost:1234",
-					TLSSetting: configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "path",
-							CertFile: "path",
-							KeyFile:  "path",
-						},
-						InsecureSkipVerify: true,
-					},
-				},
+				ClientConfig:       clientConfigPath,
 				CollectionInterval: 30 * time.Second,
 				MetricsPath:        "/v2/metrics",
 				JobName:            "job123",
@@ -57,12 +67,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "partial_settings"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "localhost:1234",
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
-				},
+				ClientConfig:       clientConfigTLS,
 				CollectionInterval: 30 * time.Second,
 				MetricsPath:        "/metrics",
 			},
@@ -70,9 +75,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "partial_tls_settings"),
 			expected: &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: "localhost:1234",
-				},
+				ClientConfig:       clientConfig,
 				CollectionInterval: 30 * time.Second,
 				MetricsPath:        "/metrics",
 			},

@@ -15,9 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
-var (
-	_ encoding.LogsUnmarshalerExtension = (*avroLogExtension)(nil)
-)
+var _ encoding.LogsUnmarshalerExtension = (*avroLogExtension)(nil)
 
 type avroLogExtension struct {
 	deserializer avroDeserializer

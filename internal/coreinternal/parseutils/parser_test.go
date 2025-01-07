@@ -86,6 +86,17 @@ func Test_SplitString(t *testing.T) {
 			},
 		},
 		{
+			name:      "embedded escaped quotes",
+			input:     `ab c="this \"is \"" d='a \'co ol\' value' e="\""`,
+			delimiter: " ",
+			expected: []string{
+				"ab",
+				`c=this \"is \"`,
+				`d=a \'co ol\' value`,
+				`e=\"`,
+			},
+		},
+		{
 			name:      "quoted values include whitespace",
 			input:     `name="    ottl " func="  key_ value"`,
 			delimiter: " ",
@@ -257,6 +268,17 @@ func Test_ParseKeyValuePairs(t *testing.T) {
 			expected: map[string]any{
 				"a": "b",
 				"c": "d",
+			},
+		},
+		{
+			name:      "escaped quotes",
+			pairs:     []string{"key=foobar", `key2="foo bar"`, `key3="foo \"bar\""`, `key4='\'foo\' \'bar\''`},
+			delimiter: "=",
+			expected: map[string]any{
+				"key":  "foobar",
+				"key2": `"foo bar"`,
+				"key3": `"foo \"bar\""`,
+				"key4": `'\'foo\' \'bar\''`,
 			},
 		},
 	}

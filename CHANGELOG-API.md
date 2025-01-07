@@ -7,6 +7,38 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.116.0
+
+### 🚩 Deprecations 🚩
+
+- `routingprocessor`: Deprecated in favor of the routing connector. (#36616)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add the `ottl.ParserCollection` utility to help handling parsers for multiple OTTL contexts (#29017)
+  The `ottl.ParserCollection` groups contexts' `ottl.Parser`s, choosing the suitable one 
+  to parse a given statement. It supports context inference using the given statements, 
+  and allows prepending the context name to the statements' paths.
+  
+
+## v0.115.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/datadog`: Refactor the API that provides metrics translator (#36474)
+  This is API change only and does not affect end users
+
+## v0.114.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Changed signature of `emit.Callback` function in `pkg/stanza/fileconsumer/emit` package by introducing `emit.Token` struct that encapsulates the token's body and attributes. (#36260)
+
+### 💡 Enhancements 💡
+
+- `pkg/datadog`: Expose an API `TranslatorFromConfig` that creates a new metrics translator (#36300)
+  This is only code refactor and has no user-facing impact
+
 ## v0.113.0
 
 ### 🛑 Breaking changes 🛑

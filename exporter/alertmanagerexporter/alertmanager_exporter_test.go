@@ -325,9 +325,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 
 	err = am.postAlert(context.Background(), alerts)
 	assert.NoError(t, err)
-	if mock.fooCalledSuccessfully == false {
-		t.Errorf("mock server wasn't called")
-	}
+	assert.True(t, mock.fooCalledSuccessfully, "mock server wasn't called")
 }
 
 func TestClientConfig(t *testing.T) {

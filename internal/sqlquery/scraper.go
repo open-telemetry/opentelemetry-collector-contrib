@@ -13,8 +13,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 )
 
@@ -25,29 +26,31 @@ type DbProviderFunc func() (*sql.DB, error)
 type ClientProviderFunc func(Db, string, *zap.Logger, TelemetryConfig) DbClient
 
 type Scraper struct {
-	id                 component.ID
-	Query              Query
-	ScrapeCfg          scraperhelper.ControllerConfig
-	StartTime          pcommon.Timestamp
-	ClientProviderFunc ClientProviderFunc
-	DbProviderFunc     DbProviderFunc
-	Logger             *zap.Logger
-	Telemetry          TelemetryConfig
-	Client             DbClient
-	Db                 *sql.DB
+	id                   component.ID
+	Query                Query
+	ScrapeCfg            scraperhelper.ControllerConfig
+	StartTime            pcommon.Timestamp
+	ClientProviderFunc   ClientProviderFunc
+	DbProviderFunc       DbProviderFunc
+	Logger               *zap.Logger
+	Telemetry            TelemetryConfig
+	Client               DbClient
+	Db                   *sql.DB
+	InstrumentationScope pcommon.InstrumentationScope
 }
 
-var _ scraperhelper.Scraper = (*Scraper)(nil)
+var _ scraper.Metrics = (*Scraper)(nil)
 
-func NewScraper(id component.ID, query Query, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, telemetry TelemetryConfig, dbProviderFunc DbProviderFunc, clientProviderFunc ClientProviderFunc) *Scraper {
+func NewScraper(id component.ID, query Query, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, telemetry TelemetryConfig, dbProviderFunc DbProviderFunc, clientProviderFunc ClientProviderFunc, instrumentationScope pcommon.InstrumentationScope) *Scraper {
 	return &Scraper{
-		id:                 id,
-		Query:              query,
-		ScrapeCfg:          scrapeCfg,
-		Logger:             logger,
-		Telemetry:          telemetry,
-		DbProviderFunc:     dbProviderFunc,
-		ClientProviderFunc: clientProviderFunc,
+		id:                   id,
+		Query:                query,
+		ScrapeCfg:            scrapeCfg,
+		Logger:               logger,
+		Telemetry:            telemetry,
+		DbProviderFunc:       dbProviderFunc,
+		ClientProviderFunc:   clientProviderFunc,
+		InstrumentationScope: instrumentationScope,
 	}
 }
 
@@ -67,7 +70,7 @@ func (s *Scraper) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *Scraper) ScrapeMetrics(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
 	rows, err := s.Client.QueryRows(ctx)
 	if err != nil {
@@ -82,6 +85,7 @@ func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	rm := rms.AppendEmpty()
 	sms := rm.ScopeMetrics()
 	sm := sms.AppendEmpty()
+	s.InstrumentationScope.CopyTo(sm.Scope())
 	ms := sm.Metrics()
 	var errs []error
 	for _, metricCfg := range s.Query.Metrics {

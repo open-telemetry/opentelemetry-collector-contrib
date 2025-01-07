@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
@@ -16,13 +16,8 @@ import (
 
 // This file implements Factory for Disk scraper.
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "disk"
-)
-
-// scraperType is the component type used for the built scraper.
-var scraperType component.Type = component.MustNewType(TypeStr)
+// Type the value of "type" key in configuration.
+var Type = component.MustNewType("disk")
 
 // Factory is the Factory for scraper.
 type Factory struct{}
@@ -39,16 +34,14 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
 	config internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	cfg := config.(*Config)
 	s, err := newDiskScraper(ctx, settings, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraper(
-		scraperType,
-		s.scrape,
-		scraperhelper.WithStart(s.start),
+	return scraper.NewMetrics(s.scrape,
+		scraper.WithStart(s.start),
 	)
 }

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -34,8 +35,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -262,9 +261,7 @@ func Test_export(t *testing.T) {
 		// The following is a handler function that reads the sent httpRequest, unmarshal, and checks if the WriteRequest
 		// preserves the TimeSeries data correctly
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 		require.NotNil(t, body)
 		// Receives the http requests and unzip, unmarshalls, and extracts TimeSeries
 		assert.Equal(t, "0.1.0", r.Header.Get("X-Prometheus-Remote-Write-Version"))
@@ -294,7 +291,8 @@ func Test_export(t *testing.T) {
 		httpResponseCode    int
 		returnErrorOnCreate bool
 	}{
-		{"success_case",
+		{
+			"success_case",
 			*ts1,
 			true,
 			http.StatusAccepted,
@@ -306,7 +304,8 @@ func Test_export(t *testing.T) {
 			false,
 			http.StatusAccepted,
 			true,
-		}, {
+		},
+		{
 			"error_status_code_case",
 			*ts1,
 			true,
@@ -452,9 +451,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		buf := make([]byte, len(body))
 		dest, err := snappy.Decode(buf, body)
@@ -688,8 +685,7 @@ func Test_PushMetrics(t *testing.T) {
 			if useWAL {
 				t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9124")
 			}
-			for _, ttt := range tests {
-				tt := ttt
+			for _, tt := range tests {
 				if useWAL && tt.skipForWAL {
 					t.Skip("test not supported when using WAL")
 				}
@@ -742,15 +738,8 @@ func Test_PushMetrics(t *testing.T) {
 					}
 					tel := setupTestTelemetry()
 					set := tel.NewSettings()
-					mp := set.LeveledMeterProvider(configtelemetry.LevelBasic)
-					set.LeveledMeterProvider = func(level configtelemetry.Level) metric.MeterProvider {
-						// detailed level enables otelhttp client instrumentation which we
-						// dont want to test here
-						if level == configtelemetry.LevelDetailed {
-							return noop.MeterProvider{}
-						}
-						return mp
-					}
+					// detailed level enables otelhttp client instrumentation which we dont want to test here
+					set.MetricsLevel = configtelemetry.LevelBasic
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
@@ -816,32 +805,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,
@@ -853,32 +848,38 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		expectedLabels      map[string]string
 		returnErrorOnCreate bool
 	}{
-		{"success_case_no_labels",
+		{
+			"success_case_no_labels",
 			map[string]string{},
 			map[string]string{},
 			false,
 		},
-		{"success_case_with_labels",
+		{
+			"success_case_with_labels",
 			map[string]string{"key1": "val1"},
 			map[string]string{"key1": "val1"},
 			false,
 		},
-		{"success_case_2_with_labels",
+		{
+			"success_case_2_with_labels",
 			map[string]string{"__key1__": "val1"},
 			map[string]string{"__key1__": "val1"},
 			false,
 		},
-		{"success_case_with_sanitized_labels",
+		{
+			"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_digit",
+		{
+			"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
 			false,
 		},
-		{"fail_case_empty_label",
+		{
+			"fail_case_empty_label",
 			map[string]string{"": "val1"},
 			map[string]string{},
 			true,
@@ -1266,6 +1267,83 @@ func benchmarkExecute(b *testing.B, numSample int) {
 	b.ResetTimer()
 	for _, req := range reqs {
 		err := exporter.execute(ctx, req)
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkPushMetrics(b *testing.B) {
+	for _, numMetrics := range []int{10, 100, 1000, 10000} {
+		b.Run(fmt.Sprintf("numMetrics=%d", numMetrics), func(b *testing.B) {
+			benchmarkPushMetrics(b, numMetrics, 1)
+		})
+	}
+}
+
+func BenchmarkPushMetricsVaryingMetrics(b *testing.B) {
+	benchmarkPushMetrics(b, -1, 1)
+}
+
+// benchmarkPushMetrics benchmarks the PushMetrics method with a given number of metrics.
+// If numMetrics is -1, it will benchmark with varying number of metrics, from 10 up to 10000.
+func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(b, err)
+
+	tel := setupTestTelemetry()
+	set := tel.NewSettings()
+	// Adjusted retry settings for faster testing
+	retrySettings := configretry.BackOffConfig{
+		Enabled:         true,
+		InitialInterval: 100 * time.Millisecond, // Shorter initial interval
+		MaxInterval:     1 * time.Second,        // Shorter max interval
+		MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
+	}
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = endpointURL.String()
+	clientConfig.ReadBufferSize = 0
+	clientConfig.WriteBufferSize = 512 * 1024
+	cfg := &Config{
+		Namespace:         "",
+		ClientConfig:      clientConfig,
+		MaxBatchSizeBytes: 3000,
+		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: numConsumers},
+		BackOffConfig:     retrySettings,
+		TargetInfo:        &TargetInfo{Enabled: true},
+		CreatedMetric:     &CreatedMetric{Enabled: false},
+	}
+	exporter, err := newPRWExporter(cfg, set)
+	require.NoError(b, err)
+
+	var metrics []pmetric.Metrics
+	for n := 0; n < b.N; n++ {
+		actualNumMetrics := numMetrics
+		if numMetrics == -1 {
+			actualNumMetrics = int(math.Pow(10, float64(n%4+1)))
+		}
+		m := testdata.GenerateMetricsManyMetricsSameResource(actualNumMetrics)
+		for i := 0; i < m.MetricCount(); i++ {
+			dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i).Sum().DataPoints().AppendEmpty()
+			dp.SetIntValue(int64(i))
+			// We add a random key to the attributes to ensure that we create a new time series during translation for each metric.
+			dp.Attributes().PutInt("random_key", int64(i))
+		}
+		metrics = append(metrics, m)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(b, exporter.Shutdown(ctx))
+	}()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for _, m := range metrics {
+		err := exporter.PushMetrics(ctx, m)
 		require.NoError(b, err)
 	}
 }

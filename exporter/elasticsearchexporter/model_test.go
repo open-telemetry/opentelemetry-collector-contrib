@@ -48,8 +48,10 @@ var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cp
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
 {"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
-var expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
-var expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+var (
+	expectedLogBodyWithEmptyTimestamp         = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
+	expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
+)
 
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedot: false}
@@ -1107,8 +1109,8 @@ func TestEncodeLogOtelMode(t *testing.T) {
 // helper function that creates the OTel LogRecord from the test structure
 func createTestOTelLogRecord(t *testing.T, rec OTelRecord) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	record := plog.NewLogRecord()
-	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))
-	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano())))
+	record.SetTimestamp(pcommon.Timestamp(uint64(rec.Timestamp.UnixNano())))                 //nolint:gosec // this input is controlled by tests
+	record.SetObservedTimestamp(pcommon.Timestamp(uint64(rec.ObservedTimestamp.UnixNano()))) //nolint:gosec // this input is controlled by tests
 
 	record.SetTraceID(pcommon.TraceID(rec.TraceID))
 	record.SetSpanID(pcommon.SpanID(rec.SpanID))
@@ -1243,7 +1245,7 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	logRecords := scopeLogs.LogRecords()
-	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano())
+	observedTimestamp := pcommon.Timestamp(time.Now().UnixNano()) // nolint:gosec // UnixNano is positive and thus safe to convert to signed integer.
 
 	logRecord := logRecords.AppendEmpty()
 	logRecord.SetObservedTimestamp(observedTimestamp)
@@ -1275,4 +1277,37 @@ func TestEncodeLogBodyMapMode(t *testing.T) {
 	_, err = m.encodeLogBodyMapMode(logRecord)
 	require.Error(t, err)
 	require.ErrorIs(t, err, ErrInvalidTypeForBodyMapMode)
+}
+
+func TestMergeGeolocation(t *testing.T) {
+	attributes := map[string]any{
+		"geo.location.lon":          1.1,
+		"geo.location.lat":          2.2,
+		"foo.bar.geo.location.lon":  3.3,
+		"foo.bar.geo.location.lat":  4.4,
+		"a.geo.location.lon":        5.5,
+		"b.geo.location.lat":        6.6,
+		"unrelatedgeo.location.lon": 7.7,
+		"unrelatedgeo.location.lat": 8.8,
+		"d":                         9.9,
+		"e.geo.location.lon":        "foo",
+		"e.geo.location.lat":        "bar",
+	}
+	wantAttributes := map[string]any{
+		"geo.location":              []any{1.1, 2.2},
+		"foo.bar.geo.location":      []any{3.3, 4.4},
+		"a.geo.location.lon":        5.5,
+		"b.geo.location.lat":        6.6,
+		"unrelatedgeo.location.lon": 7.7,
+		"unrelatedgeo.location.lat": 8.8,
+		"d":                         9.9,
+		"e.geo.location.lon":        "foo",
+		"e.geo.location.lat":        "bar",
+	}
+	input := pcommon.NewMap()
+	err := input.FromRaw(attributes)
+	require.NoError(t, err)
+	mergeGeolocation(input)
+	after := input.AsRaw()
+	assert.Equal(t, wantAttributes, after)
 }

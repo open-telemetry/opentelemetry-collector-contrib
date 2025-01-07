@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -18,7 +17,7 @@ import (
 )
 
 // scraper for Uptime Metrics
-type scraper struct {
+type systemsScraper struct {
 	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
@@ -29,12 +28,11 @@ type scraper struct {
 }
 
 // newUptimeScraper creates an Uptime related metric
-func newUptimeScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, uptime: host.UptimeWithContext}
+func newUptimeScraper(_ context.Context, settings receiver.Settings, cfg *Config) *systemsScraper {
+	return &systemsScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, uptime: host.UptimeWithContext}
 }
 
-func (s *scraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+func (s *systemsScraper) start(ctx context.Context, _ component.Host) error {
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -44,9 +42,8 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *systemsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 
 	uptime, err := s.uptime(ctx)
 	if err != nil {

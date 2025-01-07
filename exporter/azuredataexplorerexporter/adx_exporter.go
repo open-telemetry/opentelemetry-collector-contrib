@@ -150,7 +150,6 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 		return nil, err
 	}
 	metricClient, err := buildAdxClient(config, version)
-
 	if err != nil {
 		return nil, err
 	}

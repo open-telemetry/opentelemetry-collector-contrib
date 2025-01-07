@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/pmetricutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
@@ -34,6 +35,10 @@ func newMetricsConnector(
 	metrics consumer.Metrics,
 ) (*metricsConnector, error) {
 	cfg := config.(*Config)
+
+	if !cfg.MatchOnce {
+		set.Logger.Error("The 'match_once' field has been deprecated and will be removed in v0.120.0. Remove usage of the parameter to suppress this warning.")
+	}
 
 	mr, ok := metrics.(connector.MetricsRouterAndConsumer)
 	if !ok {
@@ -93,6 +98,15 @@ func (c *metricsConnector) switchMetrics(ctx context.Context, md pmetric.Metrics
 				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric) bool {
 					mtx := ottlmetric.NewTransformContext(m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
 					_, isMatch, err := route.metricStatement.Execute(ctx, mtx)
+					errs = errors.Join(errs, err)
+					return isMatch
+				},
+			)
+		case "datapoint":
+			pmetricutil.MoveDataPointsWithContextIf(md, matchedMetrics,
+				func(rm pmetric.ResourceMetrics, sm pmetric.ScopeMetrics, m pmetric.Metric, dp any) bool {
+					dptx := ottldatapoint.NewTransformContext(dp, m, sm.Metrics(), sm.Scope(), rm.Resource(), sm, rm)
+					_, isMatch, err := route.dataPointStatement.Execute(ctx, dptx)
 					errs = errors.Join(errs, err)
 					return isMatch
 				},

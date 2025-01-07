@@ -70,21 +70,25 @@ var bufferPool = sync.Pool{
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	endpointURL          *url.URL
-	client               *http.Client
-	wg                   *sync.WaitGroup
-	closeChan            chan struct{}
-	concurrency          int
-	userAgentHeader      string
-	maxBatchSizeBytes    int
-	clientSettings       *confighttp.ClientConfig
-	settings             component.TelemetrySettings
-	retrySettings        configretry.BackOffConfig
-	retryOnHTTP429       bool
-	wal                  *prweWAL
-	exporterSettings     prometheusremotewrite.Settings
-	telemetry            prwTelemetry
-	batchTimeSeriesState batchTimeSeriesState
+	endpointURL       *url.URL
+	client            *http.Client
+	wg                *sync.WaitGroup
+	closeChan         chan struct{}
+	concurrency       int
+	userAgentHeader   string
+	maxBatchSizeBytes int
+	clientSettings    *confighttp.ClientConfig
+	settings          component.TelemetrySettings
+	retrySettings     configretry.BackOffConfig
+	retryOnHTTP429    bool
+	wal               *prweWAL
+	exporterSettings  prometheusremotewrite.Settings
+	telemetry         prwTelemetry
+
+	// When concurrency is enabled, concurrent goroutines would potentially
+	// fight over the same batchState object. To avoid this, we use a pool
+	// to provide each goroutine with its own state.
+	batchStatePool sync.Pool
 }
 
 func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
@@ -139,8 +143,12 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
 		},
-		telemetry:            prwTelemetry,
-		batchTimeSeriesState: newBatchTimeSericesState(),
+		telemetry:      prwTelemetry,
+		batchStatePool: sync.Pool{New: func() any { return newBatchTimeSericesState() }},
+	}
+
+	if prwe.exporterSettings.ExportCreatedMetric {
+		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
@@ -224,8 +232,10 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 		return nil
 	}
 
+	state := prwe.batchStatePool.Get().(*batchTimeSeriesState)
+	defer prwe.batchStatePool.Put(state)
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, state)
 	if err != nil {
 		return err
 	}

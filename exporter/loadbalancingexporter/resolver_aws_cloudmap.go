@@ -101,7 +101,7 @@ func newCloudMapResolver(
 	}
 
 	if healthStatus == nil {
-		var healthStatusFilter = types.HealthStatusFilterHealthy
+		healthStatusFilter := types.HealthStatusFilterHealthy
 		healthStatus = &healthStatusFilter
 	}
 

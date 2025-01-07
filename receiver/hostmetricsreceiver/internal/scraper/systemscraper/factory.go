@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper/internal/metadata"
@@ -18,13 +18,8 @@ import (
 
 // This file implements Factory for System scraper.
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "system"
-)
-
-// scraperType is the component type used for the built scraper.
-var scraperType component.Type = component.MustNewType(TypeStr)
+// Type the value of "type" key in configuration.
+var Type = component.MustNewType("system")
 
 // Factory is the Factory for scraper.
 type Factory struct{}
@@ -41,16 +36,15 @@ func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
 	settings receiver.Settings,
 	cfg internal.Config,
-) (scraperhelper.Scraper, error) {
+) (scraper.Metrics, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
 		return nil, errors.New("uptime scraper only available on Linux, Windows, or MacOS")
 	}
 
 	uptimeScraper := newUptimeScraper(ctx, settings, cfg.(*Config))
 
-	return scraperhelper.NewScraper(
-		scraperType,
+	return scraper.NewMetrics(
 		uptimeScraper.scrape,
-		scraperhelper.WithStart(uptimeScraper.start),
+		scraper.WithStart(uptimeScraper.start),
 	)
 }

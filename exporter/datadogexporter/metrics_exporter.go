@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -29,8 +31,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
+
+var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.metricremappingdisabled",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use."),
+	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
+)
+
+// isMetricRemappingDisabled returns true if the datadogexporter should generate Datadog-compliant metrics from OpenTelemetry metrics
+func isMetricRemappingDisabled() bool {
+	return metricRemappingDisableddFeatureGate.IsEnabled()
+}
 
 type metricsExporter struct {
 	params           exporter.Settings
@@ -61,7 +74,16 @@ func newMetricsExporter(
 	metadataReporter *inframetadata.Reporter,
 	statsOut chan []byte,
 ) (*metricsExporter, error) {
-	tr, err := datadogconfig.TranslatorFromConfig(params.TelemetrySettings, cfg.Metrics, attrsTranslator, sourceProvider, statsOut)
+	options := cfg.Metrics.ToTranslatorOpts()
+	options = append(options, otlpmetrics.WithFallbackSourceProvider(sourceProvider))
+	options = append(options, otlpmetrics.WithStatsOut(statsOut))
+	if isMetricRemappingDisabled() {
+		params.TelemetrySettings.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
+	} else {
+		options = append(options, otlpmetrics.WithRemapping())
+	}
+
+	tr, err := otlpmetrics.NewTranslator(params.TelemetrySettings, attrsTranslator, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -132,6 +154,13 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 		return clientutil.WrapError(fmt.Errorf("failed to do sketches HTTP request: %w", err), resp)
 	}
 	defer resp.Body.Close()
+
+	// We must read the full response body from the http request to ensure that connections can be
+	// properly re-used. https://pkg.go.dev/net/http#Client.Do
+	_, err = io.Copy(io.Discard, resp.Body)
+	if err != nil {
+		return clientutil.WrapError(fmt.Errorf("failed to read response body from sketches HTTP request: %w", err), resp)
+	}
 
 	if resp.StatusCode >= 400 {
 		return clientutil.WrapError(fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status), resp)

@@ -15,14 +15,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
-	ps "github.com/mitchellh/go-ps"
 	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -76,6 +77,11 @@ const (
 	collectorCredentialIDField = "collector_credential_id"
 
 	stickySessionKey = "AWSALB"
+
+	activeMQJavaProcess      = "activemq.jar"
+	cassandraJavaProcess     = "org.apache.cassandra.service.CassandraDaemon"
+	dockerDesktopJavaProcess = "com.docker.backend"
+	jmxJavaProcess           = "com.sun.management.jmxremote"
 )
 
 const (
@@ -621,8 +627,10 @@ func (se *SumologicExtension) heartbeatLoop() {
 	}
 }
 
-var errUnauthorizedHeartbeat = errors.New("heartbeat unauthorized")
-var errUnauthorizedMetadata = errors.New("metadata update unauthorized")
+var (
+	errUnauthorizedHeartbeat = errors.New("heartbeat unauthorized")
+	errUnauthorizedMetadata  = errors.New("metadata update unauthorized")
+)
 
 type ErrorAPI struct {
 	status int
@@ -698,7 +706,7 @@ var sumoAppProcesses = map[string]string{
 	"apache":                "apache",
 	"apache2":               "apache",
 	"httpd":                 "apache",
-	"docker":                "docker",
+	"docker":                "docker", // docker cli
 	"elasticsearch":         "elasticsearch",
 	"mysql-server":          "mysql",
 	"mysqld":                "mysql",
@@ -709,32 +717,78 @@ var sumoAppProcesses = map[string]string{
 	"redis":                 "redis",
 	"tomcat":                "tomcat",
 	"kafka-server-start.sh": "kafka", // Need to test this, most common shell wrapper.
+	"redis-server":          "redis",
+	"mongod":                "mongodb",
+	"cassandra":             "cassandra",
+	"jmx":                   "jmx",
+	"activemq":              "activemq",
+	"memcached":             "memcached",
+	"haproxy":               "haproxy",
+	"dockerd":               "docker-ce", // docker engine, for when process runs natively
+	"com.docker.backend":    "docker-ce", // docker daemon runs on a VM in Docker Desktop, process doesn't show on mac
+	"sqlservr":              "mssql",     // linux SQL Server process
 }
 
-func filteredProcessList() ([]string, error) {
+func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 	var pl []string
 
-	p, err := ps.Processes()
+	processes, err := process.Processes()
 	if err != nil {
 		return pl, err
 	}
 
-	for _, v := range p {
-		e := strings.ToLower(v.Executable())
+	for _, v := range processes {
+		e, err := v.Name()
+		if err != nil {
+			if runtime.GOOS == "windows" {
+				// On Windows, if we can't get a process name, it is likely a zombie process, assume that and skip them.
+				se.logger.Warn(
+					"Failed to get executable name, it is likely a zombie process, skipping it",
+					zap.Int32("pid", v.Pid),
+					zap.Error(err))
+				continue
+			}
+
+			return nil, fmt.Errorf("Error getting executable name: %w", err)
+		}
+		e = strings.ToLower(e)
+
 		if a, i := sumoAppProcesses[e]; i {
 			pl = append(pl, a)
+		}
+
+		// handling for Docker Desktop
+		if e == dockerDesktopJavaProcess {
+			pl = append(pl, "docker-ce")
+		}
+
+		// handling Java background processes
+		if e == "java" {
+			cmdline, err := v.Cmdline()
+			if err != nil {
+				return nil, fmt.Errorf("error getting executable name for PID %d: %w", v.Pid, err)
+			}
+
+			switch {
+			case strings.Contains(cmdline, cassandraJavaProcess):
+				pl = append(pl, "cassandra")
+			case strings.Contains(cmdline, jmxJavaProcess):
+				pl = append(pl, "jmx")
+			case strings.Contains(cmdline, activeMQJavaProcess):
+				pl = append(pl, "activemq")
+			}
 		}
 	}
 
 	return pl, nil
 }
 
-func discoverTags() (map[string]any, error) {
+func (se *SumologicExtension) discoverTags() (map[string]any, error) {
 	t := map[string]any{
 		"sumo.disco.enabled": "true",
 	}
 
-	pl, err := filteredProcessList()
+	pl, err := se.filteredProcessList()
 	if err != nil {
 		return t, err
 	}
@@ -770,7 +824,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	td := map[string]any{}
 
 	if se.conf.DiscoverCollectorTags {
-		td, err = discoverTags()
+		td, err = se.discoverTags()
 		if err != nil {
 			return err
 		}
