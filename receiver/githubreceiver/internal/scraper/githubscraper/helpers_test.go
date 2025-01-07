@@ -685,10 +685,10 @@ func TestGetContributors(t *testing.T) {
 				contribResponse: contribResponse{
 					contribs: [][]*github.Contributor{{
 						{
-							ID: github.Int64(1),
+							ID: github.Ptr(int64(1)),
 						},
 						{
-							ID: github.Int64(2),
+							ID: github.Ptr(int64(2)),
 						},
 					}},
 					responseCode: http.StatusOK,

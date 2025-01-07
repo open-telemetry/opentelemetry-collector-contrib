@@ -148,7 +148,7 @@ func TestScrape(t *testing.T) {
 					contribs: [][]*github.Contributor{
 						{
 							{
-								ID: github.Int64(1),
+								ID: github.Ptr(int64(1)),
 							},
 						},
 					},
