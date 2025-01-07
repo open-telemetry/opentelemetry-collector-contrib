@@ -126,7 +126,7 @@ func TestScrape(t *testing.T) {
 			}
 
 			require.Greater(t, md.ResourceMetrics().Len(), 1)
-			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
+			assertValidProcessResourceAttributes(t, md.ResourceMetrics())
 			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
 			if metricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 				assertCPUUtilizationMetricValid(t, md.ResourceMetrics(), expectedStartTime)
@@ -171,16 +171,31 @@ func TestScrape(t *testing.T) {
 	}
 }
 
-func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
+// assertValidProcessResourceAttributes will assert that each process resource contains at least
+// the most important identifying attribute (the PID attribute) and only contains permissible
+// resource attributes defined by the process scraper metadata.yaml/Process Semantic Conventions.
+func assertValidProcessResourceAttributes(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
+	requiredResourceAttributes := []string{
+		conventions.AttributeProcessPID,
+	}
+	permissibleResourceAttributes := []string{
+		conventions.AttributeProcessPID,
+		conventions.AttributeProcessExecutableName,
+		conventions.AttributeProcessExecutablePath,
+		conventions.AttributeProcessCommand,
+		conventions.AttributeProcessCommandLine,
+		conventions.AttributeProcessOwner,
+		"process.parent_pid", // TODO: use this from conventions when it is available
+	}
 	for i := 0; i < resourceMetrics.Len(); i++ {
-		attr := resourceMetrics.At(0).Resource().Attributes()
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessPID)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutableName)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessExecutablePath)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
-		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
-		internal.AssertContainsAttribute(t, attr, "process.parent_pid")
+		attrs := resourceMetrics.At(i).Resource().Attributes().AsRaw()
+		for _, attr := range requiredResourceAttributes {
+			_, ok := attrs[attr]
+			require.True(t, ok, "resource %s missing required attribute %s", attrs, attr)
+		}
+		for attr := range attrs {
+			require.Contains(t, permissibleResourceAttributes, attr, "resource %s contained unknown attribute %s", attrs, attr)
+		}
 	}
 }
 
