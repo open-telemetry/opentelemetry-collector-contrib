@@ -5508,7 +5508,7 @@ This version has been skipped.
 
 ### 🧰 Bug fixes 🧰
 
-- `kubletetstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
+- `kubeletstatsreceiver`: Bring back `k8s.container.name` attribute (#10848)
 - `transformprocessor`: Fix issue where some metric fields were not working correctly in conditions. (#10473)
 - `transformprocessor`: Fix issue where some trace fields were not working correctly in conditions. (#10471)
 - `transformprocessor`: Fix issue where some log fields were not working correctly in conditions. (#10903)
