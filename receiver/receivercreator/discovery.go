@@ -281,14 +281,14 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 	if uri == nil {
 		u, err := url.Parse("http://" + endpoint)
 		if err != nil {
-			return fmt.Errorf("could not parse enpoint")
+			return fmt.Errorf("could not parse endpoint")
 		}
 		uri = u
 	}
 
 	// configured endpoint should include the target Pod's endpoint
 	if uri.Host != defaultEndpoint {
-		return fmt.Errorf("configured enpoint should include target Pod's endpoint")
+		return fmt.Errorf("configured endpoint should include target Pod's endpoint")
 	}
 	return nil
 }
