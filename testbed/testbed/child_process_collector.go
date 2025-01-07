@@ -255,14 +255,14 @@ func (cp *childProcessCollector) Stop() (stopped bool, err error) {
 
 		cp.isStopped = true
 
-		log.Printf("Gracefully terminating %s pid=%d, sending SIGTEM...", cp.name, cp.cmd.Process.Pid)
+		log.Printf("Gracefully terminating %s pid=%d, sending SIGTERM...", cp.name, cp.cmd.Process.Pid)
 
 		// Notify resource monitor to stop.
 		close(cp.doneSignal)
 
 		// Gracefully signal process to stop.
 		if err = cp.cmd.Process.Signal(syscall.SIGTERM); err != nil {
-			log.Printf("Cannot send SIGTEM: %s", err.Error())
+			log.Printf("Cannot send SIGTERM: %s", err.Error())
 		}
 
 		finished := make(chan struct{})
