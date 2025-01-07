@@ -117,7 +117,7 @@ func MustNewAPIVersion(version string) string {
 	return v
 }
 
-// VersionIsValidAndGTE evalutes version as a client api version and returns an error if invalid or less than gte.
+// VersionIsValidAndGTE evaluates version as a client api version and returns an error if invalid or less than gte.
 // gte is assumed to be valid (easiest if result of MustNewAPIVersion on initialization)
 func VersionIsValidAndGTE(version, gte string) error {
 	v, err := NewAPIVersion(version)
