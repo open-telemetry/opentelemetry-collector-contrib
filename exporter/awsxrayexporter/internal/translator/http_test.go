@@ -73,6 +73,27 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
 }
 
+func TestClientSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
+	attributes := make(map[string]any)
+	attributes[AttributeHTTPRequestMethod] = "GET"
+	attributes[AttributeURLScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "api.example.com"
+	attributes[AttributeURLQuery] = "/users/junit"
+	attributes[AttributeHTTPResponseStatusCode] = 200
+	attributes["user.id"] = "junit"
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+	w := testWriters.borrow()
+	require.NoError(t, w.Encode(httpData))
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.Contains(t, jsonStr, "https://api.example.com/users/junit")
+}
+
 func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes := make(map[string]any)
 	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
@@ -106,8 +127,8 @@ func TestClientSpanWithPeerAttributesStable(t *testing.T) {
 	attributes[conventions.AttributeNetPeerName] = "kb234.example.com"
 	attributes[conventions.AttributeNetPeerPort] = 8080
 	attributes[conventions.AttributeNetPeerIP] = "10.8.17.36"
-	attributes[conventions.AttributeHTTPTarget] = "/users/junit"
-	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes[AttributeURLQuery] = "/users/junit"
+	attributes[AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPClientSpan(attributes)
 
 	filtered, httpData := makeHTTP(span)
@@ -257,7 +278,7 @@ func TestServerSpanWithSchemeHostTargetAttributesStable(t *testing.T) {
 	attributes[AttributeHTTPRequestMethod] = http.MethodGet
 	attributes[AttributeURLScheme] = "https"
 	attributes[AttributeServerAddress] = "api.example.com"
-	attributes[AttributeURLPath] = "/users/junit"
+	attributes[AttributeURLQuery] = "/users/junit"
 	attributes[AttributeClientAddress] = "192.168.15.32"
 	attributes[AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
@@ -301,7 +322,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributesStable(t *testing.T) 
 	attributes[AttributeURLScheme] = "https"
 	attributes[AttributeServerAddress] = "api.example.com"
 	attributes[AttributeServerPort] = 443
-	attributes[AttributeURLPath] = "/users/junit"
+	attributes[AttributeURLQuery] = "/users/junit"
 	attributes[AttributeClientAddress] = "192.168.15.32"
 	attributes[AttributeHTTPResponseStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)

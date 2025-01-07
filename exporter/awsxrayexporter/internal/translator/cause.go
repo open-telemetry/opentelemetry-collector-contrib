@@ -25,7 +25,6 @@ const (
 	ExceptionEventName              = "exception"
 	AwsIndividualHTTPEventName      = "HTTP request failure"
 	AwsIndividualHTTPErrorEventType = "aws.http.error.event"
-	AwsIndividualHTTPErrorCodeAttr  = "http.response.status_code"
 	AwsIndividualHTTPErrorMsgAttr   = "aws.http.error_message"
 )
 
@@ -91,7 +90,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				parsed := parseException(exceptionType, message, stacktrace, isRemote, language)
 				exceptions = append(exceptions, parsed...)
 			} else if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
-				errorCode, ok1 := event.Attributes().Get(AwsIndividualHTTPErrorCodeAttr)
+				errorCode, ok1 := event.Attributes().Get(AttributeHTTPResponseStatusCode)
 				errorMessage, ok2 := event.Attributes().Get(AwsIndividualHTTPErrorMsgAttr)
 				if ok1 && ok2 {
 					eventEpochTime := event.Timestamp().AsTime().UnixMicro()
@@ -155,6 +154,9 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	}
 
 	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
+	if !ok {
+		val, ok = span.Attributes().Get(AttributeHTTPResponseStatusCode)
+	}
 
 	switch {
 	// The segment status for http spans will be based on their http.statuscode as we found some http

@@ -14,6 +14,10 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
+const (
+	AttributeTelemetryDistroVersion = "telemetry.distro.version"
+)
+
 func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, logGroupNames []string) (map[string]pcommon.Value, *awsxray.AWSData) {
 	var (
 		cloud        string
@@ -90,7 +94,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 			sdkLanguage = value.Str()
 		case conventions.AttributeTelemetrySDKVersion:
 			sdkVersion = value.Str()
-		case conventions.AttributeTelemetryAutoVersion:
+		case conventions.AttributeTelemetryAutoVersion, AttributeTelemetryDistroVersion:
 			autoVersion = value.Str()
 		case conventions.AttributeContainerID:
 			containerID = value.Str()

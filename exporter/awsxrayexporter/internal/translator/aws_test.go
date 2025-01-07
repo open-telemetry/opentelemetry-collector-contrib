@@ -360,6 +360,23 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 	assert.True(t, *awsData.XRay.AutoInstrumentation)
 }
 
+func TestJavaAutoInstrumentationStable(t *testing.T) {
+	attributes := make(map[string]pcommon.Value)
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.2.3")
+	resource.Attributes().PutStr(AttributeTelemetryDistroVersion, "3.4.5")
+
+	filtered, awsData := makeAws(attributes, resource, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "opentelemetry for java", *awsData.XRay.SDK)
+	assert.Equal(t, "1.2.3", *awsData.XRay.SDKVersion)
+	assert.True(t, *awsData.XRay.AutoInstrumentation)
+}
+
 func TestGoSDK(t *testing.T) {
 	attributes := make(map[string]pcommon.Value)
 	resource := pcommon.NewResource()
