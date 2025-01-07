@@ -14,7 +14,7 @@
 
 ## Description
 
-The geoIP processor `geoipprocessor` enhances the attributes of a span, log, or metric by appending information about the geographical location of an IP address. To add geographical information, the IP address must be included in the attributes specified by `attributes` ([`client.address`](https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/general/attributes.md#client-attributes) and [`source.address`](https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/general/attributes.md#source) by default). By default, only the resource attributes will be modified. Please refer to [config.go](./config.go) for the config spec.
+The geoIP processor `geoipprocessor` enhances the attributes of a span, log, or metric by appending information about the geographical location of an IP address. To add geographical information, the IP address must be included in the attributes specified by the `attributes` configuration option (e.g., [`client.address`](https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/general/attributes.md#client-attributes) and [`source.address`](https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/general/attributes.md#source) by default). By default, only the resource attributes will be modified. Please refer to [config.go](./config.go) for the config spec.
 
 ### Geographical location metadata
 
@@ -43,7 +43,7 @@ The following settings can be configured:
 - `context` (default: `resource`): Allows specifying the underlying telemetry context the processor will work with. Available values:
   - `resource`: Resource attributes.
   - `record`: Attributes within a data point, log record or a span.
-- `attributes` (default: `[client.address, source.address]`): An array of attribute names, which are used for the IP address lookup
+- `attributes` (default: `[client.address, source.address]`): An array of attribute names, which are used for the IP address lookup.
 
 ## Examples
 
