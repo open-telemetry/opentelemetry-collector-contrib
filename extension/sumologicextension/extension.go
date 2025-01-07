@@ -578,7 +578,7 @@ func (se *SumologicExtension) heartbeatLoop() {
 		cancel()
 	}()
 
-	se.logger.Info("Heartbeat loop initialized. Starting to send hearbeat requests")
+	se.logger.Info("Heartbeat loop initialized. Starting to send heartbeat requests")
 	timer := time.NewTimer(se.conf.HeartBeatInterval)
 	for {
 		select {

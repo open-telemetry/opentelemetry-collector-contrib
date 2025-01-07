@@ -766,7 +766,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 						reqNum := atomic.AddInt32(&reqCount, 1)
 
 						switch reqNum {
-						// heatbeat
+						// heartbeat
 						case 1:
 							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
@@ -813,7 +813,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 						reqNum := atomic.AddInt32(&reqCount, 1)
 
 						switch reqNum {
-						// failing heatbeat
+						// failing heartbeat
 						case 1:
 							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
@@ -829,7 +829,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 
 							w.WriteHeader(http.StatusInternalServerError)
 
-						// successful heatbeat
+						// successful heartbeat
 						case 2:
 							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
@@ -876,7 +876,7 @@ func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 						reqNum := atomic.AddInt32(&reqCount, 1)
 
 						switch reqNum {
-						// failing heatbeat
+						// failing heartbeat
 						case 1:
 							assert.NotEqual(t, registerURL, req.URL.Path,
 								"collector shouldn't call the register API when credentials locally retrieved")
