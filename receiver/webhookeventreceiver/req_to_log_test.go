@@ -51,12 +51,12 @@ func TestReqToLog(t *testing.T) {
 				if v, ok := attributes.Get("qparam1"); ok {
 					require.Equal(t, "hello", v.AsString())
 				} else {
-					require.Fail(t, "faild to set attribute from query parameter 1")
+					require.Fail(t, "failed to set attribute from query parameter 1")
 				}
 				if v, ok := attributes.Get("qparam2"); ok {
 					require.Equal(t, "world", v.AsString())
 				} else {
-					require.Fail(t, "faild to set attribute query parameter 2")
+					require.Fail(t, "failed to set attribute query parameter 2")
 				}
 			},
 		},
@@ -85,12 +85,12 @@ func TestReqToLog(t *testing.T) {
 				if v, ok := attributes.Get("qparam1"); ok {
 					require.Equal(t, "hello", v.AsString())
 				} else {
-					require.Fail(t, "faild to set attribute from query parameter 1")
+					require.Fail(t, "failed to set attribute from query parameter 1")
 				}
 				if v, ok := attributes.Get("qparam2"); ok {
 					require.Equal(t, "world", v.AsString())
 				} else {
-					require.Fail(t, "faild to set attribute query parameter 2")
+					require.Fail(t, "failed to set attribute query parameter 2")
 				}
 			},
 		},
