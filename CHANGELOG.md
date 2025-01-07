@@ -4351,7 +4351,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receiver/purefareceiver`: Set an explicit reload interval for all scrapers. (#16992)
 - `servicegraphprocessor`: fix servicegraphprocessor concurrent map read and write (#16850)
 - `filelogreceiver`: Truncate log entry if it is longer than `max_log_size` (#16487)
-- `cmd/metadata`: Ensure template files are downloaded as part of the `go get` and embeded into the application (#17442)
+- `cmd/metadata`: Ensure template files are downloaded as part of the `go get` and embedded into the application (#17442)
 
 ## v0.68.0
 
