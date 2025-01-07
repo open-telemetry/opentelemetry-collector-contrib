@@ -115,7 +115,6 @@ flowchart TD
      n8:::Ash
      n2:::Ash
      n2:::Peach
-     n5:::Rose
      n6:::Peach
      n7:::Ash
      n9:::Rose
