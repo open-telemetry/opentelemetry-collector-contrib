@@ -289,9 +289,9 @@ func (ghs *githubScraper) getCommitData(
 	tar := data.Repository.Refs.Nodes[0].GetTarget()
 
 	// We do a sanity type check just to make sure the GraphQL response was
-	// indead for commits. This is a byproduct of the `... on Commit` syntax
+	// indeed for commits. This is a byproduct of the `... on Commit` syntax
 	// within the GraphQL query and then return the actual history if the
-	// returned Target is inded of type Commit.
+	// returned Target is indeed of type Commit.
 	if ct, ok := tar.(*BranchHistoryTargetCommit); ok {
 		return &ct.History, nil
 	}
