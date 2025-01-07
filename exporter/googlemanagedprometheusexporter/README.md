@@ -125,7 +125,7 @@ The Google Managed Prometheus exporter maps metrics to the
 [prometheus_target](https://cloud.google.com/monitoring/api/resources#tag_prometheus_target)
 monitored resource. The logic for mapping to monitored resources is designed to
 be used with the prometheus receiver, but can be used with other receivers as
-well. To avoid collisions (i.e. "duplicate timeseries enountered" errors), you
+well. To avoid collisions (i.e. "duplicate timeseries encountered" errors), you
 need to ensure the prometheus_target resource uniquely identifies the source of
 metrics. The exporter uses the following resource attributes to determine
 monitored resource:
