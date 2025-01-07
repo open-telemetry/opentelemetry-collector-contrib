@@ -17,7 +17,7 @@ import (
 // ("ffffffffffffff", i.e., "100000000000000").
 const numRandomnessValues = MaxAdjustedCount
 
-// ErrRValueSize is returned by RValueToRandomess in case of
+// ErrRValueSize is returned by RValueToRandomness in case of
 // unexpected size.
 var ErrRValueSize = errors.New("r-value must have 14 hex digits")
 

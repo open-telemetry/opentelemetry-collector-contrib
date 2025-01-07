@@ -241,7 +241,7 @@ tracestate: ot=th:0;rv:9b8233f7e3a151
 This component, using either proportional or equalizing modes, could
 apply 50% sampling the Span.  This span with randomness value
 `9b8233f7e3a151` is consistently sampled at 50% because the threshold,
-when zero padded (i.e., `80000000000000`), is less than the randomess
+when zero padded (i.e., `80000000000000`), is less than the randomness
 value.  The resulting span will have the following tracestate:
 
 ```
