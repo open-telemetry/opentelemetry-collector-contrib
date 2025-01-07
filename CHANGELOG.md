@@ -2297,7 +2297,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   
 - `opensearchexporter`: added opensearch exporter to the contrib distribution metadata (#30183)
 - `pkg/ottl`: Add `flatten` function for flattening maps (#30455)
-- `redisreciever`: adds metric for slave_repl_offset (#6942)
+- `redisreceiver`: adds metric for slave_repl_offset (#6942)
   also adds a shell script to set up docker-compose integration test
 - `exporter/datadogexporter`: Add kafka metrics mapping. This allows users of the JMX Receiver/JMX Metrics Gatherer and kafka metrics receiver to have access to the OOTB kafka Dashboard. (#30731)
 - `receiver/sqlquery`: Add debug log when running SQL query (#29672)
@@ -3121,7 +3121,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 - `receiver/nsxt`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
 - `receiver/podman`: Change the type of `Config.SSHPassphrase` to be `configopaque.String` (#17273)
 - `receiver/postgresql`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
-- `prometheusreciever`: Remove unused buffer_period and buffer_count configuration options (#24258)
+- `prometheusreceiver`: Remove unused buffer_period and buffer_count configuration options (#24258)
 - `prometheusreceiver`: Add the `trim_metric_suffixes` configuration option to allow enable metric suffix trimming. (#21743, #8950)
   When enabled, suffixes for unit and type are trimmed from metric names. 
   If you previously enabled the `pkg.translator.prometheus.NormalizeName` 
@@ -3904,7 +3904,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   
 - `splunkhecreceiver`: Appends query param (index, source, sourcetype, and host) for raw path (#19632)
 - `splunkhecreceiver`: align error message with splunk enterprise to include No Data, Invalid Data Format, Event field is required, and  Event field cannot be blank (#19219)
-- `reciver/statsdreceiver`: Metrics emitted by the statsd receiver are batched by source IP address, available in context. (#15290)
+- `receiver/statsdreceiver`: Metrics emitted by the statsd receiver are batched by source IP address, available in context. (#15290)
 
 ### 🧰 Bug fixes 🧰
 
@@ -4026,7 +4026,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
   They are now being removed. You should use the following metrics instead: `process.memory.usage`, `process.memory.virtual`.
   For details, see the [docs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.71.0/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification).
   
-- `promtailreceiver`: Promtail recevier is completely removed from the repository (#18474, #18493)
+- `promtailreceiver`: Promtail receiver is completely removed from the repository (#18474, #18493)
   Promtail receiver in its current implementation has a dependency on Loki that leads to a huge amount of |
   dependencies. It is getting difficult to maintain those dependencies. That's why the decision to |
   remove promtail receiver was made
@@ -4711,7 +4711,7 @@ This release fixes CVE-2024-42368 on the `bearerauthtokenextension` (#34516)
 
 ### 🚀 New components 🚀
 
-- `azureblobreciver`: Add a new component `azureblobreciver` (#8834)
+- `azureblobreceiver`: Add a new component `azureblobreceiver` (#8834)
   Add a new component `azureblobreceiver` that reads logs and traces from Azure Blob Storage
 - `k8sobjectsreceiver`: Add a new k8sobjects receiver to collect(pull/watch) Kubernetes Objects (#14185)
 - `httpcheckreceiver`: New HTTP Check receiver allows users to run synthethic checks from the collector (#10607)
@@ -5130,7 +5130,7 @@ in outgoing logs data.
 - `dotnetdiagnosticsreceiver`: Change status to unmaintained (#12757)
 
 ### 🚀 New components 🚀
-- `azureblobreceiver`: Add a new component `azureblobreciver` (#8834)
+- `azureblobreceiver`: Add a new component `azureblobreceiver` (#8834)
   Add a new component `azureblobreceiver` that reads logs and traces from Azure Blob Storage
 - `azureeventhubreceiver`: New component to receive logs from Azure Event Hubs (#12786)
 - `headers_setter`: Add support for setting exporter headers from the upstream requests context (#5733, #7945, #4814)
@@ -5533,7 +5533,7 @@ This version has been skipped.
 - `resourcedetectionprocessor`: 'gke' and 'gce' resource detectors are replaced with a single 'gcp' detector (#10347)
 - `pkg/stanza`: Removed reference to deprecated `ClusterName` (#10426)
 - `couchbasereceiver`: Fully removed unimplemented Couchbase receiver (#10482)
-- `hostmetricsreciever`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
+- `hostmetricsreceiver`: Fix Load Scraper to normalize 1m, 5m, and 15m averages independently (#8267)
 
 ### 🚀 New components 🚀
 
