@@ -100,7 +100,7 @@ flowchart TD
     n6 -- No --> n8
     n7 --> n9(["Issue closed once fix is merged"])
     n8 --> n9
-    n4 -- Once enough detailsare available --> n2
+    n4 -- Once enough details are available --> n2
 
     n3@{ shape: rect}
     n4@{ shape: rect}
