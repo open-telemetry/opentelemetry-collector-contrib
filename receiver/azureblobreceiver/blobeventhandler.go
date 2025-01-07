@@ -72,7 +72,7 @@ func (p *azureBlobEventHandler) newMessageHandler(ctx context.Context, event *ev
 		Data            map[string]any
 		DataVersion     string
 		MetadataVersion string
-		EsventTime      string
+		EventTime       string
 	}
 	var eventDataSlice []eventData
 	marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
