@@ -115,7 +115,7 @@ func TestOCToMetrics(t *testing.T) {
 					generateOCTestMetricDoubleSummary(),
 				},
 			},
-			internal: testdata.GeneratMetricsAllTypesWithSampleDatapoints(),
+			internal: testdata.GenerateMetricsAllTypesWithSampleDatapoints(),
 		},
 	}
 

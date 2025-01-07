@@ -138,7 +138,7 @@ func GenerateMetricsMetricTypeInvalid() pmetric.Metrics {
 	return md
 }
 
-func GeneratMetricsAllTypesWithSampleDatapoints() pmetric.Metrics {
+func GenerateMetricsAllTypesWithSampleDatapoints() pmetric.Metrics {
 	md := GenerateMetricsOneEmptyInstrumentationLibrary()
 
 	ilm := md.ResourceMetrics().At(0).ScopeMetrics().At(0)

@@ -21,7 +21,7 @@ import (
 )
 
 func TestMetricsToOC(t *testing.T) {
-	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
+	sampleMetricData := testdata.GenerateMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
 	attrs.PutStr(conventions.AttributeHostName, "host1")
 	attrs.PutInt(conventions.AttributeProcessPID, 123)
