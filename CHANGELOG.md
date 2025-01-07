@@ -360,7 +360,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 ### 🧰 Bug fixes 🧰
 
 - `awsfirehosereceiver`: make otlp_v1 a valid record type (#35750, #36125)
-- `datadogreceiver`: Return a json reponse instead of "OK" when a trace is received with a newer protocol version. (#35705)
+- `datadogreceiver`: Return a json response instead of "OK" when a trace is received with a newer protocol version. (#35705)
 - `datadogreceiver`: Changes response message for `/api/v1/check_run` 202 response to be JSON and on par with Datadog API spec (#36027)
 - `receiver/windowseventlog`: Fix panic when rendering long event messages. (#36179)
 - `hostmetricsreceiver`: Do not set the default value of HOST_PROC_MOUNTINFO to respect root_path (#35990)
