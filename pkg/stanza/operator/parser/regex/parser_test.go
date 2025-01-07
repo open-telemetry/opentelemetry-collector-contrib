@@ -91,7 +91,7 @@ func TestParserRegex(t *testing.T) {
 			},
 		},
 		{
-			"MemeoryCache",
+			"MemoryCache",
 			func(p *Config) {
 				p.Regex = "a=(?P<a>.*)"
 				p.Cache.Size = 100
